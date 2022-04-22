@@ -1,0 +1,13 @@
+.container {
+    display: flex;
+    height: 100%;
+}
+
+.feed {
+    flex: 1;
+}
+
+.comments {
+    padding: 0 20px;
+    border-radius: 6px;
+}

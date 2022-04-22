@@ -1,0 +1,51 @@
+.rating {
+    display: inline-block;
+    text-align: center;
+    border-radius: 6px;
+    box-shadow: 0 0 0 1px #312647 inset;
+    height: 22px;
+    padding: 0 1px;
+    overflow: hidden;
+    vertical-align: middle;
+}
+
+.rating button {
+
+    outline: 0;
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+    border-radius: 5px;
+    border: none;
+    color: #cccccc;
+    background: #1b142a;
+    font-size: 12px;
+    padding: 0;
+    margin: 0;
+}
+
+.rating button.votedPlus {
+    font-weight: bold;
+    color: #8aff74;
+    background: #1b3f2a;
+}
+.rating button.votedMinus {
+    font-weight: bold;
+    color: #ff74ba;
+    background: #67303e;
+}
+
+
+
+.rating:hover button, .rating button.voted {
+
+}
+
+.value {
+    display: inline-block;
+    font-size: 12px;
+    line-height: 20px;
+    height: 20px;
+    margin: 0 4px;
+    min-width: 20px;
+}

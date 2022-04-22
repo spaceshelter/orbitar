@@ -1,0 +1,25 @@
+.comment {
+    background: var(--item-bg);
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+}
+
+.commentContent {
+    margin-bottom: 5px;
+}
+
+.signature {
+    font-size: 12px;
+    display: inline-block;
+    margin: 0 10px;
+}
+
+.controls {
+    height: 24px;
+}
+
+.answers {
+    margin-top: 10px;
+    margin-left: 20px;
+}

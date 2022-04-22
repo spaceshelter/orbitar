@@ -1,0 +1,84 @@
+.container {
+    display: block;
+    height: 40px;
+    border-bottom: 1px solid #41244e;
+    background: #0f0a17;
+}
+
+.topbar {
+    /*display: flex;*/
+    /*width: 100%;*/
+}
+
+.logo {
+    display: inline-block;
+
+    line-height: 40px;
+    margin-left: 10px;
+    font-weight: bold;
+    color: #8b4977;
+    font-size: 24px;
+    vertical-align: middle;
+    text-decoration: none;
+}
+
+.logo img {
+    height: 40px;
+    vertical-align: top;
+}
+
+
+.user {
+    float: right;
+    height: 40px;
+    line-height: 40px;
+    display: flex;
+    justify-content: flex-end;
+    vertical-align: middle;
+}
+
+.username a {
+    display: inline-block;
+    color: #ee7285;
+    font-weight: bold;
+    margin: 0 5px;
+    text-decoration: none;
+}
+
+.karma {
+    display: inline-block;
+    font-size: 12px;
+}
+
+.logout, .notify {
+    display: inline-block;
+    width: 32px;
+    text-align: center;
+    vertical-align: middle;
+    height: 32px;
+    line-height: 32px;
+    border-radius: 4px;
+    font-size: 15px;
+    color: #bc5880;
+    position: relative;
+    margin: 4px 2px;
+}
+.logout:hover, .notify:hover {
+    background: #5f3e68;
+    color: #ed7285;
+}
+
+.notifyCount {
+    position: absolute;
+    display: block;
+    width: 14px;
+    height: 14px;
+    border-radius: 8px;
+    line-height: 14px;
+    font-size: 10px;
+    color: white;
+    right: 0;
+    top: 0;
+    background: #ea3434;
+
+}

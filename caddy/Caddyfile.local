@@ -1,0 +1,9 @@
+http://{$SERVER_DOMAIN}, http://*.{$SERVER_DOMAIN} {
+	root * /srv
+	file_server
+	try_files {path} /index.html
+}
+
+http://api.{$SERVER_DOMAIN} {
+	reverse_proxy http://backend:5001
+}

@@ -1,0 +1,30 @@
+version: '3.7'
+
+services:
+  caddy:
+    image: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    environment:
+      SERVER_DOMAIN: ${SERVER_DOMAIN}
+    volumes:
+      - $PWD/caddy/Caddyfile.dev:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+
+  mysql:
+    build:
+      context: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - myqsl_db:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+volumes:
+  caddy_data:
+  caddy_config:
+  myqsl_db:

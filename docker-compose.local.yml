@@ -1,0 +1,50 @@
+version: '3.7'
+
+services:
+  caddy:
+    image: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    environment:
+      SERVER_DOMAIN: ${SERVER_DOMAIN}
+    volumes:
+      - $PWD/caddy/Caddyfile.local:/etc/caddy/Caddyfile
+      - frontend_build:/srv
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+
+  mysql:
+    build:
+      context: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - myqsl_db:/var/lib/mysql
+
+  frontend:
+    build:
+      context: frontend
+    restart: "no"
+    environment:
+      REACT_APP_ROOT_DOMAIN: ${SERVER_DOMAIN}
+    volumes:
+      - frontend_build:/frontend/build
+
+  backend:
+    build:
+      context: backend
+    restart: always
+    environment:
+      SERVER_DOMAIN: ${SERVER_DOMAIN}
+    depends_on:
+      - mysql
+
+volumes:
+  caddy_data:
+  caddy_config:
+  frontend_build:
+  myqsl_db:

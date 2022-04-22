@@ -1,0 +1,74 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
+
+:root {
+  --bg: #1a142a;
+  --fg: #cfc5dc;
+
+  --item-bg: #100917;
+
+  --input-bg: #2a162f;
+  --input-fg: #cfc5dc;
+  --input-border: #422450;
+  --input-focus-outline: #9d65b7;
+
+  --button-bg: #4d204d;
+  --button-border: #4c1952;
+  --button-fg: #ccb5c7;
+
+  --button-dis-bg: #3f283f;
+  --button-dis-border: #36213a;
+  --button-dis-fg: #5e4957;
+
+  --username-fg: #ee7285;
+
+  --link-fg: #d98ec5;
+  --irony-fg: #fa8e8e;
+}
+
+html,body {
+  height: 100%;
+  margin: 0;
+  font-family: 'Roboto', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+#root {
+  height: 100%;
+}
+
+input[type="text"], input[type="password"], input[type="email"], textarea {
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 4px;
+  color: var(--input-fg);
+  font-family: 'Roboto', sans-serif;
+}
+
+input:focus, textarea:focus {
+  outline: 1px solid var(--input-focus-outline);
+}
+
+input[type="submit"], button {
+  background: var(--button-bg);
+  border: 1px solid var(--button-border);
+  border-radius: 4px;
+  color: var(--button-fg);
+  cursor: pointer;
+}
+input[type="submit"]:disabled, button:disabled {
+  background: var(--button-dis-bg);
+  border: 1px solid var(--button-dis-border);
+  color: var(--button-dis-fg);
+}
+
+a {
+  color: var(--link-fg);
+}
+
+.irony {
+  font-style: italic;
+  color: var(--irony-fg);
+}

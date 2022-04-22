@@ -1,0 +1,29 @@
+.signup form {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+
+.signup label {
+    display: block;
+    font-size: 18px;
+    margin-bottom: 4px;
+}
+
+.signup input {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    padding: 5px;
+    font-size: 18px;
+    margin-bottom: 16px;
+}
+
+.signup p.error {
+    color: red;
+}
+
+.signup p.error::before {
+    display: inline;
+    content: "⚠ ";
+}

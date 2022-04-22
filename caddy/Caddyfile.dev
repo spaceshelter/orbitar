@@ -1,0 +1,7 @@
+http://{$SERVER_DOMAIN}, http://*.{$SERVER_DOMAIN} {
+	reverse_proxy http://host.docker.internal:5000
+}
+
+http://api.{$SERVER_DOMAIN} {
+	reverse_proxy http://host.docker.internal:5001
+}

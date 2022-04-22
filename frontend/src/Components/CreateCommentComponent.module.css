@@ -1,0 +1,46 @@
+.answer {
+    margin-left: 20px;
+    background: var(--item-bg);
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    margin-right: 20px;
+}
+.answer textarea {
+    width: 100%;
+    height: 60px;
+    font-size: 16px;
+}
+
+.buttons {
+    padding-bottom: 10px;
+}
+
+.buttons button {
+    margin: 0 3px;
+    color: var(--fg);
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.buttons button:hover {
+    background: #2b193f;
+}
+
+button.bold {
+    font-weight: bold;
+}
+button.italic {
+    font-style: italic;
+}
+button.underline {
+    text-decoration: underline;
+}
+button.strike {
+    text-decoration: line-through;
+}
+button.irony {
+    font-style: italic;
+    color: var(--irony-fg);
+}

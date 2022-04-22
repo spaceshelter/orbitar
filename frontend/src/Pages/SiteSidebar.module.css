@@ -1,0 +1,16 @@
+.site {
+    flex: 1;
+    max-width: 200px;
+    padding: 20px;
+    background: var(--item-bg);
+    height: 100%;
+}
+
+.siteName {
+    display: block;
+    text-decoration: none;
+    color: var(--fg);
+    margin-bottom: 20px;
+    font-size: 20px;
+    font-weight: bold;
+}
