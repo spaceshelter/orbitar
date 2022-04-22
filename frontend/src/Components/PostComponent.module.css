@@ -1,7 +1,6 @@
 .post {
     margin: 20px;
     border-radius: 6px;
-    overflow: hidden;
     background: var(--item-bg);
 }
 
