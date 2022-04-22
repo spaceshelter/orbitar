@@ -10,8 +10,17 @@
 /*    background-size: cover;*/
 /*}*/
 
+form {
+    padding: 30px;
+    background: #ffffff;
+    /*border: 10px solid rgb(51, 39, 9);*/
+    color: rgba(0, 0, 0, 0.85);
+    /*border-radius: 10px;*/
+    box-shadow: 0 14px 28px rgba(0,0,0,0.5), 0 10px 10px rgba(0,0,0,0.4);
+}
+
 .signupform form {
-    max-width: 600px;
+    max-width: 400px;
     margin: 0 auto;
 }
 
@@ -28,7 +37,7 @@
     width: 100%;
     padding: 5px;
     font-size: 18px;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
 }
 
 .signupform p.error {

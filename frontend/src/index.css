@@ -28,14 +28,15 @@
 html,body {
   height: 100%;
   margin: 0;
-  font-family: 'Roboto', sans-serif;
+  font-family: 'Open Sans', sans-serif;
+  font-size: 16px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: var(--bg);
   color: var(--fg);
 
-  font-family: 'Open Sans', sans-serif;
-  font-size: 16px;
+  /*font-family: 'Open Sans', sans-serif;*/
+  /*font-size: 16px;*/
 }
 
 #root {
@@ -43,11 +44,12 @@ html,body {
 }
 
 input[type="text"], input[type="password"], input[type="email"], textarea {
-  background: var(--input-bg);
+  background: transparent;
   border: 1px solid var(--input-border);
   border-radius: 4px;
   color: var(--input-fg);
-  font-family: 'Roboto', sans-serif;
+  font-family: 'Open Sans', sans-serif;
+  font-size: 16px;
 }
 
 input:focus, textarea:focus {
