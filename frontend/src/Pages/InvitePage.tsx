@@ -4,6 +4,7 @@ import SignUpForm, {SignUpFormErrors} from '../Components/SignUpForm';
 import {useMatch, useNavigate} from 'react-location';
 import {APIError} from '../API/APIBase';
 import {UserGender} from '../Types/UserInfo';
+import styles from "./SignInPage.module.css";
 
 enum InviteState {
     unknown,
@@ -74,7 +75,7 @@ export default function InvitePage() {
     };
 
     return (
-        <>
+        <div className={styles.signup}>
             { inviteStatus.state === InviteState.unknown && <div>Проверяем приглашение...</div> }
             { inviteStatus.state === InviteState.used && <div>Такого приглашения нет! :(</div> }
             { inviteStatus.state === InviteState.rateLimit && <div>Что-то вы зачастили! Попробуйте попозже.</div> }
@@ -85,6 +86,6 @@ export default function InvitePage() {
                     <SignUpForm onSignUp={handleSignUp} disabled={formDisabled} errors={formErrors} />
                 </div>
             }
-        </>
+        </div>
     );
 }

@@ -38,7 +38,7 @@ export default function SignUpForm(props: SignUpFormProps) {
     }
 
     return (
-        <div className={styles.signup}>
+        <div className={styles.signupform}>
             <form onSubmit={handleSubmit(onSubmit)}>
                 <label>Юзернейм</label>
                 <input type="text" {...register("username", {

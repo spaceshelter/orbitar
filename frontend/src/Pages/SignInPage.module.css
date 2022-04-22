@@ -1,3 +1,25 @@
+.signup {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+    height: 100%;
+
+    /*background: rebeccapurple;*/
+    /*background-image: ;*/
+    background: url("../images/bosch.jpg") no-repeat center center fixed;
+    background-size: cover;
+}
+
+form {
+    padding: 20px;
+    background: rgba(248, 248, 255, 0.9);
+    /*border: 10px solid rgb(51, 39, 9);*/
+    color: rgba(0, 0, 0, 0.85);
+    /*border-radius: 10px;*/
+    box-shadow: 0 14px 28px rgba(0,0,0,0.5), 0 10px 10px rgba(0,0,0,0.4);
+}
+
 .signup form {
     max-width: 600px;
     margin: 0 auto;
