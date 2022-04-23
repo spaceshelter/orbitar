@@ -1,41 +1,50 @@
 import express from 'express';
 import DB from '../db/DB';
+import VoteManager from '../db/managers/VoteManager';
+import {User} from '../types/User';
+
+type VoteType = 'post' | 'comment' | 'user';
 
 interface VoteRequest {
+    type: VoteType;
     id: number;
     vote: number;
 }
 interface VoteResponse {
+    type: VoteType;
+    id: number;
     rating: number;
     vote?: number;
 }
 
-type RawPostVote = {
-    vote_id: number;
-    post_id: number;
-    voter_id: number;
-    vote: number;
-    voted_at: Date;
+interface ListRequest {
+    type: VoteType;
+    id: number;
 }
-type RawCommentVote = {
-    vote_id: number;
-    comment_id: number;
-    voter_id: number;
-    vote: number;
-    voted_at: Date;
+interface ListResponse {
+    type: VoteType;
+    id: number;
+    rating: number;
+    votes: {
+        vote: number;
+        user: User;
+    }[]
 }
+
 
 export default class VoteController {
     public router = express.Router();
     private db: DB;
+    private voteManager: VoteManager;
 
-    constructor(db: DB) {
+    constructor(db: DB, voteManager: VoteManager) {
         this.db = db;
-        this.router.post('/vote/post/vote', (req, res) => this.postVote(req, res));
-        this.router.post('/vote/comment/vote', (req, res) => this.commentVote(req, res));
+        this.voteManager = voteManager;
+        this.router.post('/vote/set', (req, res) => this.setVote(req, res));
+        this.router.post('/vote/list', (req, res) => this.list(req, res));
     }
 
-    async postVote(request: express.Request, response: express.Response) {
+    async setVote(request: express.Request, response: express.Response) {
         if (!request.session.data.userId) {
             return response.authRequired();
         }
@@ -43,11 +52,12 @@ export default class VoteController {
             let userId = request.session.data.userId;
             let body = <VoteRequest> request.body;
 
+            let type = body.type;
             let id = body.id;
             let vote = body.vote;
 
             if (!id) {
-                return response.error('id-required', 'Post id required');
+                return response.error('id-required', 'id required');
             }
 
             if (vote < 0) {
@@ -60,39 +70,27 @@ export default class VoteController {
                 vote = 0;
             }
 
-            let currentVoteResult = await this.db.execute('select * from post_votes where post_id=:post_id and voter_id=:voter_id', {
-                post_id: id,
-                voter_id: userId
-            });
-            let currentVote = (<RawPostVote[]> currentVoteResult)[0];
-            if (!currentVote) {
-                await this.db.execute('insert into post_votes (post_id, voter_id, vote) values (:post_id, :voter_id, :vote)', {
-                    post_id: id,
-                    voter_id: userId,
-                    vote: vote
-                });
-            }
-            else if (currentVote.vote !== vote) {
-                await this.db.execute('update post_votes set vote=:vote where vote_id=:vote_id', {
-                    vote_id: currentVote.vote_id,
-                    vote: vote
-                });
+            let rating;
+            switch (type) {
+                case 'post':
+                    rating = await this.voteManager.postVote(id, vote, userId);
+                    break;
+                case 'comment':
+                    rating = await this.voteManager.commentVote(id, vote, userId);
+                    break;
+                case 'user':
+                    rating = await this.voteManager.userVote(id, vote, userId);
+                    break;
+                default:
+                    return response.error('wrong-type', 'Wrong type');
             }
 
-            let ratingResult = await this.db.execute('select sum(vote) rating from post_votes where post_id = :post_id', {
-                post_id: id
-            });
-            let rating = ratingResult[0].rating || 0;
-
-            await this.db.execute('update posts set rating=:rating where post_id=:post_id', {
-                rating: rating,
-                post_id: id
-            });
-
-            response.success({
+            response.success<VoteResponse>({
+                type: type,
+                id: id,
                 rating: rating,
                 vote: vote
-            } as VoteResponse);
+            });
         }
 
         catch (err) {
@@ -100,68 +98,10 @@ export default class VoteController {
         }
     }
 
-    async commentVote(request: express.Request, response: express.Response) {
+    async list(request: express.Request, response: express.Response) {
         if (!request.session.data.userId) {
             return response.authRequired();
         }
-        try {
-            let userId = request.session.data.userId;
-            let body = <VoteRequest> request.body;
 
-            let id = body.id;
-            let vote = body.vote;
-
-            if (!id) {
-                return response.error('id-required', 'Post id required');
-            }
-
-            if (vote < 0) {
-                vote = -1;
-            }
-            else if (vote > 0) {
-                vote = 1;
-            }
-            else {
-                vote = 0;
-            }
-
-            let currentVoteResult = await this.db.execute('select * from comment_votes where comment_id=:comment_id and voter_id=:voter_id', {
-                comment_id: id,
-                voter_id: userId
-            });
-            let currentVote = (<RawCommentVote[]> currentVoteResult)[0];
-            if (!currentVote) {
-                await this.db.execute('insert into comment_votes (comment_id, voter_id, vote) values (:comment_id, :voter_id, :vote)', {
-                    comment_id: id,
-                    voter_id: userId,
-                    vote: vote
-                });
-            }
-            else if (currentVote.vote !== vote) {
-                await this.db.execute('update comment_votes set vote=:vote where vote_id=:vote_id', {
-                    vote_id: currentVote.vote_id,
-                    vote: vote
-                });
-            }
-
-            let ratingResult = await this.db.execute('select sum(vote) rating from comment_votes where comment_id = :comment_id', {
-                comment_id: id
-            });
-            let rating = ratingResult[0].rating || 0;
-
-            await this.db.execute('update comments set rating=:rating where comment_id=:comment_id', {
-                rating: rating,
-                comment_id: id
-            });
-
-            response.success({
-                rating: rating,
-                vote: vote
-            } as VoteResponse);
-        }
-
-        catch (err) {
-            return response.error('error', 'Unknown error', 500);
-        }
     }
 }

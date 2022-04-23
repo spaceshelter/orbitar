@@ -6,7 +6,7 @@ declare global {
             session: Session;
         }
         export interface Response {
-            success(payload: object): void;
+            success<T>(payload: T): void;
             error(code: string, message: string, status?: number): void;
             authRequired(): void;
         }
