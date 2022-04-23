@@ -15,25 +15,11 @@ export default class SiteManager {
     }
 
     async getSiteRaw(siteId: number): Promise<SiteRaw | undefined> {
-        let result = await this.db.execute('select * from sites where site_id=:site_id', {site_id: siteId});
-
-        let row = (<SiteRaw> result)[0];
-        if (!row) {
-            return;
-        }
-
-        return row;
+        return await this.db.fetchOne('select * from sites where site_id=:site_id', {site_id: siteId});
     }
 
     async getSiteByNameRaw(subdomain: string): Promise<SiteRaw | undefined> {
-        let result = await this.db.execute('select * from sites where subdomain=:subdomain', {subdomain: subdomain});
-
-        let row = (<SiteRaw> result)[0];
-        if (!row) {
-            return;
-        }
-
-        return row;
+        return await this.db.fetchOne('select * from sites where subdomain=:subdomain', {subdomain: subdomain});
     }
 
     async getSiteByName(subdomain: string): Promise<Site | undefined> {

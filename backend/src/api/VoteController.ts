@@ -60,11 +60,10 @@ export default class VoteController {
                 vote = 0;
             }
 
-            let currentVoteResult = await this.db.execute('select * from post_votes where post_id=:post_id and voter_id=:voter_id', {
+            const currentVote:RawPostVote = await this.db.fetchOne('select * from post_votes where post_id=:post_id and voter_id=:voter_id', {
                 post_id: id,
                 voter_id: userId
             });
-            let currentVote = (<RawPostVote[]> currentVoteResult)[0];
             if (!currentVote) {
                 await this.db.execute('insert into post_votes (post_id, voter_id, vote) values (:post_id, :voter_id, :vote)', {
                     post_id: id,
@@ -79,10 +78,9 @@ export default class VoteController {
                 });
             }
 
-            let ratingResult = await this.db.execute('select sum(vote) rating from post_votes where post_id = :post_id', {
+            let rating = (await this.db.fetchOne('select sum(vote) rating from post_votes where post_id = :post_id', {
                 post_id: id
-            });
-            let rating = ratingResult[0].rating || 0;
+            })).rating || 0;
 
             await this.db.execute('update posts set rating=:rating where post_id=:post_id', {
                 rating: rating,
