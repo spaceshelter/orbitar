@@ -49,7 +49,7 @@ export default class PostManager {
     async getAllRaw(siteId: number, forUserId: number, page: number, perPage: number): Promise<PostRawWithVote[]> {
         let limitFrom = (page - 1) * perPage;
 
-        let result = await this.db.execute(`
+        return await this.db.execute(`
                 select p.*, v.vote 
                 from posts p 
                     left join post_votes v on (v.post_id = p.post_id and v.voter_id=:user_id)
@@ -65,14 +65,10 @@ export default class PostManager {
                 limit_from: limitFrom,
                 limit_count: perPage
             });
-        let rows = (<PostRawWithVote[]> result);
-
-        return rows;
     }
 
     async getAllCommentsRaw(postId: number, forUserId: number): Promise<CommentRawWithVote[]> {
-
-        let result = await this.db.execute(`
+         return await this.db.execute(`
                 select c.*, v.vote
                     from comments c
                       left join comment_votes v on (v.comment_id = c.comment_id and v.voter_id = :user_id)
@@ -85,14 +81,13 @@ export default class PostManager {
                 post_id: postId,
                 user_id: forUserId
             });
-        let rows = (<CommentRawWithVote[]> result);
-
-        return rows;
     }
 
     async createPost(siteId: number, userId: number, title: string, source: string, html: string): Promise<PostRaw> {
-        let postInsertResult = await this.db.execute('insert into posts (site_id, author_id, title, source, html) values(:siteId, :userId, :title, :source, :html)', {siteId, userId, title, source, html});
-        let postInsertId = (<OkPacket> postInsertResult).insertId;
+        let postInsertResult: OkPacket =
+            await this.db.execute('insert into posts (site_id, author_id, title, source, html) values(:siteId, :userId, :title, :source, :html)',
+                {siteId, userId, title, source, html})
+        let postInsertId = postInsertResult.insertId
         if (!postInsertId) {
             throw new CodeError('unknown', 'Could not insert post');
         }
@@ -111,7 +106,7 @@ export default class PostManager {
             throw new CodeError('no-post', 'Post not found');
         }
 
-        let commentInsertResult = await this.db.execute(`
+        let commentInsertResult: OkPacket = await this.db.execute(`
             insert into comments
                 (site_id, post_id, parent_comment_id, author_id, source, html)
                 values(:site_id, :post_id, :parent_comment_id, :author_id, :source, :html)
@@ -124,7 +119,7 @@ export default class PostManager {
             html: html
         });
 
-        let commentInsertId = (<OkPacket> commentInsertResult).insertId;
+        let commentInsertId = commentInsertResult.insertId;
         if (!commentInsertId) {
             throw new CodeError('unknown', 'Could not insert comment');
         }
@@ -134,9 +129,7 @@ export default class PostManager {
             last_comment_id: commentInsertId
         });
 
-        let commentResult = await this.db.execute(`select * from comments where comment_id = :comment_id`, { comment_id: commentInsertId });
-        let commentRaw = (<CommentRaw[]> commentResult)[0];
-
-        return commentRaw;
+        let commentResult:CommentRaw[] = await this.db.execute(`select * from comments where comment_id = :comment_id`, { comment_id: commentInsertId });
+        return commentResult[0];
     }
 }
