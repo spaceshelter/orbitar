@@ -324,7 +324,7 @@ export default class PostController {
         content = content.replace(/(\r\n|\n|\r)/gm, '<br/>');
 
         let html = sanitizeHtml(content, {
-            allowedTags: ['b', 'i', 'strike', 'irony', 'a', 'span', 'br', 'img'],
+            allowedTags: ['b', 'i', 'u', 'strike', 'irony', 'a', 'span', 'br', 'img'],
             allowedAttributes: {
                 'a': ['href'],
                 'img': ['src'],
