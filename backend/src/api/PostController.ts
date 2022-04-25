@@ -1,5 +1,5 @@
 import express from 'express';
-import PostManager, {PostRawWithVote} from '../db/managers/PostManager';
+import PostManager, {PostRawWithUserData} from '../db/managers/PostManager';
 import {User} from '../types/User';
 import UserManager from '../db/managers/UserManager';
 import SiteManager from '../db/managers/SiteManager';
@@ -22,6 +22,7 @@ interface PostItem {
     rating: number;
     comments: number;
     newComments: number;
+    bookmark: boolean;
     vote?: number;
 }
 interface FeedResponse {
@@ -73,13 +74,19 @@ interface CommentItem {
     rating: number;
     parentComment?: number;
 
+    isNew?: boolean;
     vote?: number;
     answers?: CommentItem[];
 }
 
+interface ReadRequest {
+    post_id: number;
+    comments: number;
+    last_comment_id?: number;
+}
 interface BookmarkRequest {
     post_id: number;
-    last_comment_id?: number;
+    bookmark: boolean;
 }
 
 export default class PostController {
@@ -97,6 +104,7 @@ export default class PostController {
         this.router.post('/post/feed', (req, res) => this.feed(req, res));
         this.router.post('/post/create', (req, res) => this.create(req, res));
         this.router.post('/post/comment', (req, res) => this.comment(req, res));
+        this.router.post('/post/read', (req, res) => this.read(req, res));
         this.router.post('/post/bookmark', (req, res) => this.bookmark(req, res));
     }
 
@@ -115,7 +123,7 @@ export default class PostController {
             return response.error('id-required', 'Post id required');
         }
 
-        let rawPost = <PostRawWithVote> await this.postManager.getRaw(postId, userId);
+        let rawPost = <PostRawWithUserData> await this.postManager.getRaw(postId, userId);
         if (!rawPost) {
             return response.error('no-post', 'Post not found');
         }
@@ -124,6 +132,9 @@ export default class PostController {
         if (!site) {
             return response.error('error', 'Unknown error', 500);
         }
+
+        let rawBookmark = await this.postManager.getBookmark(postId, userId);
+        let lastReadCommentId = rawBookmark?.last_comment_id ?? 0;
 
         let rawComments = await this.postManager.getAllCommentsRaw(postId, userId);
 
@@ -152,7 +163,8 @@ export default class PostController {
                 author: rawComment.author_id,
                 content: format === 'html' ? rawComment.html : rawComment.source,
                 rating: rawComment.rating,
-                vote: rawComment.vote
+                vote: rawComment.vote,
+                isNew: rawComment.comment_id > lastReadCommentId
             };
 
             if (!users[rawComment.author_id]) {
@@ -264,7 +276,8 @@ export default class PostController {
                 content: format === 'html' ? post.html : post.source,
                 rating: post.rating,
                 comments: post.comments,
-                newComments: 0,
+                newComments: post.read_comments ? Math.max(0, post.comments - post.read_comments) : post.comments,
+                bookmark: post.bookmark > 1,
                 vote: post.vote
             });
         }
@@ -296,7 +309,7 @@ export default class PostController {
             return response.error('id-required', 'Post id required');
         }
 
-        let rawPost = <PostRawWithVote> await this.postManager.getRaw(postId, userId);
+        let rawPost = <PostRawWithUserData> await this.postManager.getRaw(postId, userId);
         if (!rawPost) {
             return response.error('no-post', 'Post not found');
         }
@@ -347,10 +360,43 @@ export default class PostController {
         return html;
     }
 
+    async read(request: express.Request, response: express.Response) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+
+        let userId = request.session.data.userId;
+        let body = <ReadRequest> request.body;
+        let postId = body.post_id;
+        let comments = body.comments;
+        let lastCommentId = body.last_comment_id;
+
+        if (!postId || comments === undefined) {
+            return response.error('required', 'Post id and comments count required')
+        }
+
+        // update in background
+        this.postManager.setRead(postId, userId, comments, lastCommentId)
+            .then();
+
+        response.success({});
+    }
+
     async bookmark(request: express.Request, response: express.Response) {
         if (!request.session.data.userId) {
             return response.authRequired();
         }
 
+        let userId = request.session.data.userId;
+        let body = <BookmarkRequest> request.body;
+        let postId = body.post_id;
+        let bookmark = body.bookmark;
+
+        if (!postId || !bookmark) {
+            return response.error('required', 'Post id and bookmark required')
+        }
+
+        await this.postManager.setBookmark(postId, userId, bookmark);
+        response.success({ bookmark: bookmark });
     }
 }

@@ -13,6 +13,7 @@ interface PostResponse {
     post: PostInfo;
     comments: CommentInfo[];
     site: SiteInfo;
+    lastCommentId: number;
 }
 
 interface CommentResponse {
@@ -39,14 +40,17 @@ export default class PostAPIHelper {
         let post: any = { ...response.post };
         // fix fields
         post.author = this.cache.setUser(response.users[post.author]);
-        post.created = new Date(post.created);
+        post.created = this.postAPI.api.fixDate(new Date(post.created));
+
+        let lastCommentId = 0;
 
         const fixComments = (comments: CommentInfo[]) => {
             return comments.map(comment => {
+                lastCommentId = Math.max(lastCommentId, comment.id);
                 let c: any = { ...comment };
                 // fix fields
                 c.author = this.cache.setUser(response.users[c.author]);
-                c.created = new Date(comment.created);
+                c.created = this.postAPI.api.fixDate(new Date(comment.created));
 
                 if (c.answers) {
                     c.answers = fixComments(c.answers);
@@ -61,7 +65,8 @@ export default class PostAPIHelper {
         return {
             post: post,
             comments: comments,
-            site: siteInfo
+            site: siteInfo,
+            lastCommentId: lastCommentId
         };
     }
 
@@ -73,7 +78,7 @@ export default class PostAPIHelper {
             let p: any = { ...post };
             // fix fields
             p.author = this.cache.setUser(response.users[post.author]);
-            p.created = new Date(post.created);
+            p.created = this.postAPI.api.fixDate(new Date(post.created));
 
             this.cache.setPost(p);
             return p;
@@ -93,10 +98,14 @@ export default class PostAPIHelper {
 
         let c: any = { ...response.comment }
         c.author = this.cache.setUser(response.users[c.author]);
-        c.created = new Date(c.created);
+        c.created = this.postAPI.api.fixDate(new Date(c.created));
 
         return {
             comment: c
         };
+    }
+
+    async read(postId: number, comments: number, lastCommentId?: number) {
+        return await this.postAPI.read(postId, comments, lastCommentId);
     }
 }

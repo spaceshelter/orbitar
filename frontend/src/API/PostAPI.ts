@@ -40,7 +40,7 @@ interface CreateResponse {
 }
 
 export default class PostAPI {
-    private api: APIBase;
+    api: APIBase;
     constructor(api: APIBase) {
         this.api = api;
     }
@@ -89,6 +89,18 @@ export default class PostAPI {
         }
         catch (err) {
             console.log('COMMENT ERROR', err);
+            throw err;
+        }
+    }
+
+    async read(postId: number, comments: number, lastCommentId?: number) {
+        try {
+            let result = await this.api.request('/post/read', { post_id: postId, comments: comments, last_comment_id: lastCommentId });
+            console.log('READ', result);
+            return result;
+        }
+        catch (err) {
+            console.log('READ ERROR', err);
             throw err;
         }
     }

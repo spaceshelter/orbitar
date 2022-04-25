@@ -16,9 +16,11 @@ export default class APIHelper {
     post: PostAPIHelper;
     cache: APICache;
     voteAPI: VoteAPI;
+    private baseAPI: APIBase;
     private setters: AppStateSetters;
 
     constructor(api: APIBase, setters: AppStateSetters) {
+        this.baseAPI = api;
         this.cache = new APICache();
         this.authAPI = new AuthAPI(api);
         this.inviteAPI = new InviteAPI(api);
@@ -56,5 +58,9 @@ export default class APIHelper {
                 console.error('ERROR', error);
             }
         }
+    }
+
+    fixDate(date: Date) {
+        return this.baseAPI.fixDate(date);
     }
 }

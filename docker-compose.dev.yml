@@ -14,6 +14,7 @@ services:
       - caddy_config:/config
 
   mysql:
+    platform: linux/amd64
     build:
       context: mysql
     restart: always

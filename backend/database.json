@@ -1,0 +1,18 @@
+{
+  "dev": {
+    "driver": "mysql",
+    "user": "root",
+    "password": "orbitar",
+    "database": "orbitar_db",
+    "multipleStatements": true
+  },
+  "prod": {
+    "driver": "mysql",
+    "host": "mysql",
+    "user": "root",
+    "password": {
+      "ENV": "MYSQL_ROOT_PASSWORD"
+    },
+    "database": "orbitar_db"
+  }
+}

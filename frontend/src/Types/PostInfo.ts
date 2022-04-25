@@ -21,6 +21,7 @@ export interface CommentInfo {
     content: string;
     rating: number;
     vote?: number;
+    isNew?: boolean;
 
     answers?: CommentInfo[];
 }
