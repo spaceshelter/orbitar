@@ -57,9 +57,9 @@ export default class PostAPI {
         }
     }
 
-    async feed(site: string, page: number): Promise<FeedResponse> {
+    async feed(site: string, page: number, perPage: number): Promise<FeedResponse> {
         try {
-            let result = await this.api.request('/post/feed', { site: site, page: page, perpage: 10, format: 'html' }) as FeedResponse;
+            let result = await this.api.request('/post/feed', { site: site, page: page, perpage: perPage, format: 'html' }) as FeedResponse;
             console.log('FEED', result);
             return result;
         }
