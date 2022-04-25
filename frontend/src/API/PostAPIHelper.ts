@@ -65,8 +65,8 @@ export default class PostAPIHelper {
         };
     }
 
-    async feed(site: string, page: number): Promise<FeedResponse> {
-        let response = await this.postAPI.feed(site, page);
+    async feed(site: string, page: number, perPage: number): Promise<FeedResponse> {
+        let response = await this.postAPI.feed(site, page, perPage);
         let siteInfo = this.cache.setSite(response.site);
 
         let posts: PostInfo[] = response.posts.map(post => {

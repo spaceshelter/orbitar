@@ -124,7 +124,7 @@ export default class PostManager {
             throw new CodeError('unknown', 'Could not insert comment');
         }
 
-        await this.db.execute(`update posts p set comments=(select count(*) from comments c where c.post_id = p.post_id), last_comment_id=:last_comment_id where p.post_id=:post_id`, {
+        await this.db.execute(`update posts p set comments=(select count(*) from comments c where c.post_id = p.post_id), last_comment_id=:last_comment_id, commented_at=now() where p.post_id=:post_id`, {
             post_id: postId,
             last_comment_id: commentInsertId
         });

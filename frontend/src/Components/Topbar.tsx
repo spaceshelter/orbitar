@@ -26,8 +26,7 @@ export default function Topbar() {
 
     return (
         <div className={styles.container}>
-            <Link className={styles.logo} to="/"><img src="/logo.png" alt="Orbitar" /> Orbitar</Link>
-            {/*<MyThings posts={10} comments={20} />*/}
+            <a className={styles.logo} href={'//' + process.env.REACT_APP_ROOT_DOMAIN + '/'}><img src="/logo.png" alt="Orbitar" /> Orbitar</a>
             <div className={styles.user}>
                 <Link className={styles.notify} to="/my"><FiBookmark /><div className={styles.notifyCount}>∞</div></Link>
                 <Link className={styles.notify} to="/notifications"><FiBell /><div className={styles.notifyCount}>∞</div></Link>

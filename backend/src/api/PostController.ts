@@ -77,6 +77,11 @@ interface CommentItem {
     answers?: CommentItem[];
 }
 
+interface BookmarkRequest {
+    post_id: number;
+    last_comment_id?: number;
+}
+
 export default class PostController {
     public router = express.Router();
     private postManager: PostManager;
@@ -88,10 +93,11 @@ export default class PostController {
         this.userManager = userManager;
         this.siteManager = siteManager;
 
-        this.router.post('/post/get', (req, res) => this.postGet(req, res))
-        this.router.post('/post/feed', (req, res) => this.feed(req, res))
-        this.router.post('/post/create', (req, res) => this.create(req, res))
-        this.router.post('/post/comment', (req, res) => this.comment(req, res))
+        this.router.post('/post/get', (req, res) => this.postGet(req, res));
+        this.router.post('/post/feed', (req, res) => this.feed(req, res));
+        this.router.post('/post/create', (req, res) => this.create(req, res));
+        this.router.post('/post/comment', (req, res) => this.comment(req, res));
+        this.router.post('/post/bookmark', (req, res) => this.bookmark(req, res));
     }
 
     async postGet(request: express.Request, response: express.Response) {
@@ -339,5 +345,12 @@ export default class PostController {
         });
 
         return html;
+    }
+
+    async bookmark(request: express.Request, response: express.Response) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+
     }
 }
