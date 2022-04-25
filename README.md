@@ -35,21 +35,28 @@
         ```
         npm run start
         ```
+      
 3. Запустить бэк в режиме отладки (в папке `backend`):
-   
-   ```
-   npm install
-   npm run start
-   ```
-   (Те же действия, что и во фронте, но в папке `backend`).
 
+   * Установить зависимости:
+       ```
+       npm install
+       ```  
+   * Выполнить миграции БД
+      ```
+      node node_modules/db-migrate/bin/db-migrate up
+      ```
+   * Запустить node:
+       ```
+       npm run start
+       ```
 
 После первого запуска можно открыть приглашение http://orbitar.local/invite/initial и зарегистрировать первый юзернейм.
 
 ### Запуск полностью в контейнере (локально)
 ```
 # Пересборка фронта и бэка
-docker-compose -p orbitar -f docker-compose.local.yml --no-cache build
+docker-compose -p orbitar -f docker-compose.local.yml build --no-cache
 # Запуск
 docker-compose -p orbitar -f docker-compose.local.yml up
 ```
