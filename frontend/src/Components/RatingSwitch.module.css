@@ -48,4 +48,40 @@
     height: 20px;
     margin: 0 4px;
     min-width: 20px;
+    position: relative;
+}
+
+.container {
+    position: relative;
+    display: inline-block;
+}
+
+.list {
+    position: absolute;
+    top: 20px;
+    left: 0;
+}
+.list .container {
+    background: #1b142a;
+    border-radius: 6px;
+    border: 1px solid #2b193f;
+}
+.listHeader {
+    padding: 10px;
+}
+
+.listColumns {
+    display: flex;
+}
+.listLeft, .listRight {
+    flex: 1;
+    max-width: 20px;
+}
+.listColumnPlus, .listColumnMinus {
+    flex: 1;
+    padding: 0 10px;
+    min-width: 100px;
+}
+.listColumnPlus {
+    border-right: 1px solid #41244e;
 }

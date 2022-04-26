@@ -16,6 +16,7 @@ import VoteController from './api/VoteController';
 import {config} from './config';
 import expressWinston from 'express-winston';
 import winston from 'winston';
+import VoteManager from './db/managers/VoteManager';
 
 const app = express();
 const port = config.port;
@@ -26,13 +27,14 @@ const inviteManager = new InviteManager(db);
 const userManager = new UserManager(db);
 const postManager = new PostManager(db);
 const siteManager = new SiteManager(db, userManager);
+const voteManager = new VoteManager(db, postManager);
 
 const requests = [
     new AuthController(userManager),
     new InviteController(inviteManager),
     new PostController(postManager, siteManager, userManager),
     new MeController(userManager),
-    new VoteController(db)
+    new VoteController(voteManager)
 ];
 
 const filterLog = winston.format((info, opts) => {
