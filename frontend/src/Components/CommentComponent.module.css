@@ -9,6 +9,11 @@
     margin-bottom: 5px;
 }
 
+.commentContent img {
+    max-width: 500px;
+    max-height: 500px;
+}
+
 .signature {
     font-size: 12px;
     display: inline-block;
@@ -22,4 +27,8 @@
 .answers {
     margin-top: 10px;
     margin-left: 20px;
+}
+
+.isNew {
+    border: 1px solid #732a53;
 }

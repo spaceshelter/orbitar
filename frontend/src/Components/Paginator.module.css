@@ -1,0 +1,23 @@
+.paginator {
+    margin: 20px;
+}
+
+.page {
+    background: var(--item-bg);
+    border-radius: 6px;
+    padding: 6px;
+    min-width: 20px;
+    display: inline-block;
+    text-align: center;
+    margin: 0 5px;
+    color: var(--fg);
+    text-decoration: none;
+}
+
+.page:hover {
+    background: var(--button-bg);
+}
+
+.current {
+    background: var(--button-bg);
+}

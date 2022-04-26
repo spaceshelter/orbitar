@@ -46,6 +46,11 @@
 
 }
 
+.content img {
+    max-width: 500px;
+    max-height: 500px;
+}
+
 .signature {
     font-size: 12px;
     display: inline-block;

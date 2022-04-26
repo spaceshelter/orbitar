@@ -40,7 +40,7 @@ interface CreateResponse {
 }
 
 export default class PostAPI {
-    private api: APIBase;
+    api: APIBase;
     constructor(api: APIBase) {
         this.api = api;
     }
@@ -57,9 +57,9 @@ export default class PostAPI {
         }
     }
 
-    async feed(site: string, page: number): Promise<FeedResponse> {
+    async feed(site: string, page: number, perPage: number): Promise<FeedResponse> {
         try {
-            let result = await this.api.request('/post/feed', { site: site, page: page, perpage: 10, format: 'html' }) as FeedResponse;
+            let result = await this.api.request('/post/feed', { site: site, page: page, perpage: perPage, format: 'html' }) as FeedResponse;
             console.log('FEED', result);
             return result;
         }
@@ -89,6 +89,18 @@ export default class PostAPI {
         }
         catch (err) {
             console.log('COMMENT ERROR', err);
+            throw err;
+        }
+    }
+
+    async read(postId: number, comments: number, lastCommentId?: number) {
+        try {
+            let result = await this.api.request('/post/read', { post_id: postId, comments: comments, last_comment_id: lastCommentId });
+            console.log('READ', result);
+            return result;
+        }
+        catch (err) {
+            console.log('READ ERROR', err);
             throw err;
         }
     }

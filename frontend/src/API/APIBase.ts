@@ -8,6 +8,7 @@ type APIResponseError = {
 type APIResponseSuccess = {
     result: 'success';
     payload: Object;
+    sync: string;
 };
 type APIResponse = APIResponseError | APIResponseSuccess;
 
@@ -23,6 +24,7 @@ export class APIError extends Error {
 export default class APIBase {
     private sessionId?: string;
     private readonly endpoint: string;
+    private sync: number = 0;
 
     constructor() {
         this.sessionId = Cookies.get('session');
@@ -69,6 +71,16 @@ export default class APIBase {
             throw new APIError('no-payload', 'Payload required');
         }
 
+        if (responseJson.sync) {
+            let cTime = new Date();
+            let rTime = new Date(responseJson.sync);
+            this.sync = Math.round((cTime.getTime() - rTime.getTime()) / 1000 / 900) / 4 * 3600 * 1000;
+        }
+
         return responseJson.payload;
+    }
+
+    fixDate(date: Date) {
+        return new Date(date.getTime() + this.sync);
     }
 }

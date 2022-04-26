@@ -10,25 +10,11 @@ export default class UserManager {
     }
 
     async getRaw(username: string): Promise<UserRaw | undefined> {
-        let result = await this.db.execute('select * from users where username=:username', {username: username});
-
-        let row = (<UserRaw> result)[0];
-        if (!row) {
-            return;
-        }
-
-        return row;
+        return await this.db.fetchOne('select * from users where username=:username', {username: username});
     }
 
     async getRawById(userId: number): Promise<UserRaw | undefined> {
-        let result = await this.db.execute('select * from users where user_id=:user_id', {user_id: userId});
-
-        let row = (<UserRaw> result)[0];
-        if (!row) {
-            return;
-        }
-
-        return row;
+        return await this.db.fetchOne('select * from users where user_id=:user_id', {user_id: userId});
     }
 
     async get(userId: number): Promise<User | undefined> {

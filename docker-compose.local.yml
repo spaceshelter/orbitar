@@ -17,6 +17,7 @@ services:
       - backend
 
   mysql:
+    platform: linux/amd64
     build:
       context: mysql
     restart: always
@@ -40,6 +41,7 @@ services:
     restart: always
     environment:
       SERVER_DOMAIN: ${SERVER_DOMAIN}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     depends_on:
       - mysql
 

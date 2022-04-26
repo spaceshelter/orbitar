@@ -34,11 +34,9 @@ interface ListResponse {
 
 export default class VoteController {
     public router = express.Router();
-    private db: DB;
     private voteManager: VoteManager;
 
-    constructor(db: DB, voteManager: VoteManager) {
-        this.db = db;
+    constructor(voteManager: VoteManager) {
         this.voteManager = voteManager;
         this.router.post('/vote/set', (req, res) => this.setVote(req, res));
         this.router.post('/vote/list', (req, res) => this.list(req, res));
