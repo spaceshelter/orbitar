@@ -34,7 +34,7 @@ const requests = [
     new InviteController(inviteManager),
     new PostController(postManager, siteManager, userManager),
     new MeController(userManager),
-    new VoteController(db, voteManager)
+    new VoteController(voteManager)
 ];
 
 const filterLog = winston.format((info, opts) => {

@@ -41,24 +41,29 @@ export default function RatingSwitch(props: RatingSwitchProps) {
                 <button className={state.vote && state.vote > 0 ? styles.votedPlus : undefined} onClick={() => handleVote(1)}>＋</button>
 
             </div>
-            <div className={styles.list}>
-                <span className={styles.arrow}>^</span>
-                <div className={styles.container}>
-                    <div className={styles.listHeader}> Рейтинг: {state.rating}</div>
-                    <div className={styles.listColumns}>
-                        <button className={styles.listLeft}>&lt;</button>
-                        <div className={styles.listColumnPlus}>
-                            <div>плюсов: 0</div>
-                            ...<br />...<br />...
-                        </div>
-                        <div className={styles.listColumnMinus}>
-                            <div>минусов: 0</div>
-                            ...
-                        </div>
-                        <button className={styles.listRight}>&gt;</button>
+        </div>
+    )
+}
+
+function RatingList(props: RatingSwitchProps) {
+    return (
+        <div className={styles.list}>
+            <span className={styles.arrow}>^</span>
+            <div className={styles.container}>
+                <div className={styles.listHeader}> Рейтинг: {props.rating}</div>
+                <div className={styles.listColumns}>
+                    <button className={styles.listLeft}>&lt;</button>
+                    <div className={styles.listColumnPlus}>
+                        <div>плюсов: 0</div>
+                        ...<br />...<br />...
                     </div>
-                    <div className={styles.listPages}>. . . .</div>
+                    <div className={styles.listColumnMinus}>
+                        <div>минусов: 0</div>
+                        ...
+                    </div>
+                    <button className={styles.listRight}>&gt;</button>
                 </div>
+                <div className={styles.listPages}>. . . .</div>
             </div>
         </div>
     )

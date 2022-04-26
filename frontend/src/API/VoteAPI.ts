@@ -14,8 +14,9 @@ export default class VoteAPI {
     }
 
     async vote(type: 'post' | 'comment' | 'user', id: number, vote: number): Promise<VoteResponse> {
-        let response = await this.api.request('/vote/' + type + '/vote', {
+        let response = await this.api.request('/vote/set', {
             id: id,
+            type: type,
             vote: vote
         }) as VoteResponse;
 
