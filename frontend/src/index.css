@@ -76,3 +76,12 @@ a {
 .bold {
   font-weight: bold;
 }
+
+img.image-scalable {
+  cursor: zoom-in;
+}
+img.image-preview {
+  max-width: 100%;
+  max-height: none;
+  cursor: zoom-out;
+}

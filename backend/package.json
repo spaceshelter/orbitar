@@ -16,8 +16,9 @@
   "dependencies": {
     "@types/express-rate-limit": "^6.0.0",
     "@types/express-winston": "^4.0.0",
+    "@types/html-escaper": "^3.0.0",
     "@types/mysql": "^2.15.21",
-    "@types/sanitize-html": "^2.6.2",
+    "@types/url-parse": "^1.4.8",
     "@types/winston": "^2.4.4",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
@@ -27,8 +28,10 @@
     "express-rate-limit": "^6.3.0",
     "express-winston": "^4.2.0",
     "helmet": "^5.0.2",
+    "html-escaper": "^3.0.3",
+    "htmlparser2": "^8.0.0",
     "mysql2": "^2.3.3",
-    "sanitize-html": "^2.7.0",
+    "url-parse": "^1.5.10",
     "winston": "^3.7.2"
   }
 }

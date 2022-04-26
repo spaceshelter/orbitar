@@ -4,7 +4,7 @@ import {User} from '../types/User';
 import UserManager from '../db/managers/UserManager';
 import SiteManager from '../db/managers/SiteManager';
 import {Site} from '../types/Site';
-import sanitizeHtml from 'sanitize-html';
+import TheParser from '../parser/TheParser';
 
 interface FeedRequest {
     site: string;
@@ -94,11 +94,13 @@ export default class PostController {
     private postManager: PostManager;
     private userManager: UserManager;
     private siteManager: SiteManager;
+    private parser: TheParser;
 
-    constructor(postManager: PostManager, siteManager: SiteManager, userManager: UserManager) {
+    constructor(postManager: PostManager, siteManager: SiteManager, userManager: UserManager, parser: TheParser) {
         this.postManager = postManager;
         this.userManager = userManager;
         this.siteManager = siteManager;
+        this.parser = parser;
 
         this.router.post('/post/get', (req, res) => this.postGet(req, res));
         this.router.post('/post/feed', (req, res) => this.feed(req, res));
@@ -340,24 +342,25 @@ export default class PostController {
     }
 
     private parseContent(content: string) {
-        content = content.replace(/(\r\n|\n|\r)/gm, '<br/>');
-
-        let html = sanitizeHtml(content, {
-            allowedTags: ['b', 'i', 'u', 'strike', 'irony', 'a', 'span', 'br', 'img'],
-            allowedAttributes: {
-                'a': ['href'],
-                'img': ['src'],
-            },
-            disallowedTagsMode: 'escape',
-            transformTags: {
-                'irony': () => {return { tagName: 'span', attribs: { 'class': 'irony' } }}
-            },
-            allowedClasses: {
-                'span': ['irony']
-            }
-        });
-
-        return html;
+        return this.parser.parse(content);
+        // content = content.replace(/(\r\n|\n|\r)/gm, '<br/>');
+        //
+        // let html = sanitizeHtml(content, {
+        //     allowedTags: ['b', 'i', 'u', 'strike', 'irony', 'a', 'span', 'br', 'img'],
+        //     allowedAttributes: {
+        //         'a': ['href'],
+        //         'img': ['src'],
+        //     },
+        //     disallowedTagsMode: 'escape',
+        //     transformTags: {
+        //         'irony': () => {return { tagName: 'span', attribs: { 'class': 'irony' } }}
+        //     },
+        //     allowedClasses: {
+        //         'span': ['irony']
+        //     }
+        // });
+        //
+        // return html;
     }
 
     async read(request: express.Request, response: express.Response) {

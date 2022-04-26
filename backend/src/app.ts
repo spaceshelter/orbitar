@@ -17,6 +17,7 @@ import {config} from './config';
 import expressWinston from 'express-winston';
 import winston from 'winston';
 import VoteManager from './db/managers/VoteManager';
+import TheParser from './parser/TheParser';
 
 const app = express();
 const port = config.port;
@@ -29,10 +30,12 @@ const postManager = new PostManager(db);
 const siteManager = new SiteManager(db, userManager);
 const voteManager = new VoteManager(db, postManager);
 
+const theParser = new TheParser();
+
 const requests = [
     new AuthController(userManager),
     new InviteController(inviteManager),
-    new PostController(postManager, siteManager, userManager),
+    new PostController(postManager, siteManager, userManager, theParser),
     new MeController(userManager),
     new VoteController(voteManager)
 ];
