@@ -14,13 +14,13 @@ exports.setup = function(options, seedLink) {
   seed = seedLink;
 };
 
-exports.up = function(db) {
-  db.addColumn('user_bookmarks', 'read_comments', { type: 'int' });
+exports.up = function(db, callback) {
+  db.addColumn('user_bookmarks', 'read_comments', { type: 'int' }, callback);
   return null;
 };
 
-exports.down = function(db) {
-  db.removeColumn('user_bookmarks', 'read_comments');
+exports.down = function(db, callback) {
+  db.removeColumn('user_bookmarks', 'read_comments', callback);
   return null;
 };
 

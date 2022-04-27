@@ -14,7 +14,7 @@ exports.setup = function(options, seedLink) {
   seed = seedLink;
 };
 
-exports.up = function(db) {
+exports.up = function(db, callback) {
   const sql = `
     delete from post_votes where vote_id in (
       select vote_id from (
@@ -49,12 +49,12 @@ exports.up = function(db) {
       add index \`voter_id_user_id\` (voter_id, user_id);
   `;
 
-  db.runSql(sql);
+  db.runSql(sql, callback);
 
   return null;
 };
 
-exports.down = function(db) {
+exports.down = function(db, callback) {
   const sql = `
     alter table post_votes
       drop foreign key post_votes_ibfk_2,
@@ -89,7 +89,7 @@ exports.down = function(db) {
       add constraint user_karma_ibfk_4 FOREIGN KEY (voter_id) REFERENCES users(user_id);
   `;
 
-  db.runSql(sql);
+  db.runSql(sql, callback);
 
   return null;
 };
