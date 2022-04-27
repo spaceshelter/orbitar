@@ -1,7 +1,7 @@
-import express from 'express';
+import {Router} from 'express';
 import UserManager from '../db/managers/UserManager';
-import rateLimit from 'express-rate-limit';
 import {User} from '../types/User';
+import {APIRequest, APIResponse} from './ApiMiddleware';
 
 interface MeRequest {
 
@@ -16,7 +16,7 @@ interface MeResponse {
 }
 
 export default class MeController {
-    public router = express.Router();
+    public router = Router();
     private userManager: UserManager
 
     constructor(userManager: UserManager) {
@@ -24,7 +24,7 @@ export default class MeController {
         this.router.post('/me', (req, res) => this.me(req, res))
     }
 
-    async me(request: express.Request, response: express.Response) {
+    async me(request: APIRequest<MeRequest>, response: APIResponse<MeResponse>) {
         if (!request.session.data.userId) {
             return response.authRequired();
         }
@@ -37,20 +37,17 @@ export default class MeController {
                 return response.error('error', 'Unknown error', 500);
             }
 
-            response.send({
-                result: 'success',
-                payload: {
-                    user: user,
-                    bookmarks: {
-                        posts: 0,
-                        comments: 0
-                    },
-                    notifications: 0
-                } as MeResponse
-            });
+            return response.success({
+                user: user,
+                bookmarks: {
+                    posts: 0,
+                    comments: 0,
+                },
+                notifications: 0
+            })
         }
         catch (err) {
-            response.send({result: 'error', code: 'unknown', message: 'Unknown error'});
+            return response.error('error', 'Unknown error', 500);
         }
     }
 }

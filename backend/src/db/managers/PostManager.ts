@@ -24,7 +24,7 @@ export default class PostManager {
     async getRaw(postId: number, forUserId?: number): Promise<PostRaw | PostRawWithUserData | undefined> {
         let result;
         if (forUserId) {
-            result = await this.db.execute(`
+            result = await this.db.query(`
                 select p.*, v.vote, b.read_comments, b.bookmark
                 from posts p
                     left join post_votes v on (v.post_id = p.post_id and v.voter_id=:user_id)
@@ -36,7 +36,7 @@ export default class PostManager {
             });
         }
         else {
-            result = await this.db.execute('select * from posts where post_id=:post_id', {post_id: postId});
+            result = await this.db.query('select * from posts where post_id=:post_id', {post_id: postId});
         }
 
         let row = (<PostRaw> result)[0];
@@ -48,7 +48,7 @@ export default class PostManager {
     }
 
     async getTotal(siteId: number): Promise<number> {
-        let result = await this.db.execute(`select count(*) cnt from posts where site_id=:site_id`, {site_id: siteId});
+        let result = await this.db.query(`select count(*) cnt from posts where site_id=:site_id`, {site_id: siteId});
         if (!result || !result[0]) {
             return 0;
         }
@@ -59,7 +59,7 @@ export default class PostManager {
     async getAllRaw(siteId: number, forUserId: number, page: number, perPage: number): Promise<PostRawWithUserData[]> {
         let limitFrom = (page - 1) * perPage;
 
-        return await this.db.execute(`
+        return await this.db.query(`
                 select p.*, v.vote, b.read_comments, b.bookmark
                 from posts p 
                     left join post_votes v on (v.post_id = p.post_id and v.voter_id=:user_id)
@@ -79,7 +79,7 @@ export default class PostManager {
     }
 
     async getAllCommentsRaw(postId: number, forUserId: number): Promise<CommentRawWithUserData[]> {
-         return await this.db.execute(`
+         return await this.db.query(`
                 select c.*, v.vote
                     from comments c
                       left join comment_votes v on (v.comment_id = c.comment_id and v.voter_id = :user_id)
@@ -96,7 +96,7 @@ export default class PostManager {
 
     async createPost(siteId: number, userId: number, title: string, source: string, html: string): Promise<PostRaw> {
         let postInsertResult: OkPacket =
-            await this.db.execute('insert into posts (site_id, author_id, title, source, html) values(:siteId, :userId, :title, :source, :html)',
+            await this.db.query('insert into posts (site_id, author_id, title, source, html) values(:siteId, :userId, :title, :source, :html)',
                 {siteId, userId, title, source, html})
         let postInsertId = postInsertResult.insertId
         if (!postInsertId) {
@@ -117,7 +117,7 @@ export default class PostManager {
             throw new CodeError('no-post', 'Post not found');
         }
 
-        let commentInsertResult: OkPacket = await this.db.execute(`
+        let commentInsertResult: OkPacket = await this.db.query(`
             insert into comments
                 (site_id, post_id, parent_comment_id, author_id, source, html)
                 values(:site_id, :post_id, :parent_comment_id, :author_id, :source, :html)
@@ -135,12 +135,12 @@ export default class PostManager {
             throw new CodeError('unknown', 'Could not insert comment');
         }
 
-        await this.db.execute(`update posts p set comments=(select count(*) from comments c where c.post_id = p.post_id), last_comment_id=:last_comment_id, commented_at=now() where p.post_id=:post_id`, {
+        await this.db.query(`update posts p set comments=(select count(*) from comments c where c.post_id = p.post_id), last_comment_id=:last_comment_id, commented_at=now() where p.post_id=:post_id`, {
             post_id: postId,
             last_comment_id: commentInsertId
         });
 
-        let commentResult:CommentRaw[] = await this.db.execute(`select * from comments where comment_id = :comment_id`, { comment_id: commentInsertId });
+        let commentResult:CommentRaw[] = await this.db.query(`select * from comments where comment_id = :comment_id`, { comment_id: commentInsertId });
         return commentResult[0];
     }
 
@@ -153,7 +153,7 @@ export default class PostManager {
                 }, conn);
 
                 if (!bookmark) {
-                    await this.db.execute('insert into user_bookmarks (post_id, user_id, read_comments, last_comment_id) values(:post_id, :user_id, :read_comments, :last_comment_id)', {
+                    await this.db.query('insert into user_bookmarks (post_id, user_id, read_comments, last_comment_id) values(:post_id, :user_id, :read_comments, :last_comment_id)', {
                         post_id: postId,
                         user_id: userId,
                         read_comments: readComments,
@@ -161,7 +161,7 @@ export default class PostManager {
                     }, conn);
                 }
                 else {
-                    await this.db.execute('update user_bookmarks set read_comments=:read_comments, last_comment_id=:last_comment_id where bookmark_id=:bookmark_id', {
+                    await this.db.query('update user_bookmarks set read_comments=:read_comments, last_comment_id=:last_comment_id where bookmark_id=:bookmark_id', {
                         read_comments: readComments,
                         last_comment_id: lastCommentId ?? bookmark.last_comment_id,
                         bookmark_id: bookmark.bookmark_id
@@ -192,14 +192,14 @@ export default class PostManager {
                 }, conn);
 
                 if (!bookmark) {
-                    await this.db.execute('insert into user_bookmarks (post_id, user_id, bookmark) values(:post_id, :user_id, :bookmark)', {
+                    await this.db.query('insert into user_bookmarks (post_id, user_id, bookmark) values(:post_id, :user_id, :bookmark)', {
                         post_id: postId,
                         user_id: userId,
                         bookmark: bookmarked ? 1 : 0
                     }, conn);
                 }
                 else {
-                    await this.db.execute('update user_bookmarks set read_comments=:read_comments where bookmark=:bookmark', {
+                    await this.db.query('update user_bookmarks set read_comments=:read_comments where bookmark=:bookmark', {
                         bookmark: bookmarked ? 1 : 0,
                         bookmark_id: bookmark.bookmark_id
                     }, conn);

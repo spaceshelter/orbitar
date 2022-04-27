@@ -1,8 +1,10 @@
 import {createPool, OkPacket, ResultSetHeader, RowDataPacket} from 'mysql2'
 import {Pool, PoolConnection} from 'mysql2/promise'
+import {Logger} from 'winston';
 
 interface DBOptions {
     host: string;
+    port: number;
     user: string;
     database: string;
     password: string;
@@ -10,42 +12,56 @@ interface DBOptions {
 
 export default class DB {
     private readonly pool: Pool
+    private readonly logger: Logger;
 
-    constructor(options: DBOptions) {
+    constructor(options: DBOptions, logger: Logger) {
+        this.logger = logger;
+
         try {
+            this.logger.verbose('Creating connection pool');
             this.pool = createPool({
                 connectionLimit: 50,
                 host: options.host,
+                port: options.port,
                 user: options.user,
                 password: options.password,
                 database: options.database,
                 namedPlaceholders: true
-            }).promise()
-
-            console.log('Mysql pool is up')
-        } catch (e) {
-            console.error('DB', e)
-            throw new Error('Failed to initialize database pool')
+            }).promise();
+            this.logger.info('Created connection pool');
+        }
+        catch (e) {
+            this.logger.error('Failed to initialize connection pool', { error: e });
+            throw e;
         }
     }
 
-    async execute<T = RowDataPacket[][] | RowDataPacket[] | OkPacket | OkPacket[] | ResultSetHeader>(
+    async ping() {
+        this.logger.verbose('Ping database');
+        let start = new Date().getTime();
+        await this.pool.execute('select 1');
+        let diff = new Date().getTime() - start;
+        this.logger.verbose(`Database alive: ${diff}ms`, { pong: diff });
+        return diff;
+    }
+
+    async query<T = RowDataPacket[][] | RowDataPacket[] | OkPacket | OkPacket[] | ResultSetHeader>(
         query: string, params: string[] | Object, connection?: PoolConnection): Promise<T> {
+        this.logger.verbose('Query', { query: query, params: params });
+
         const conn: Pool | PoolConnection = connection || this.pool
 
-        if (!this.pool) {
-            throw new Error('Database pool was not created')
-        }
         try {
             return (await conn.query(query, params))[0] as undefined as T
-        } catch (e) {
-            console.error('DB', e)
-            throw new Error('Failed to execute database query')
+        }
+        catch (e) {
+            this.logger.error(e);
+            throw e;
         }
     }
 
     async fetchOne<T = any>(query: string, params: string[] | Object, connection?: PoolConnection): Promise<T | undefined> {
-        return (await this.execute<T[]>(query, params, connection))[0];
+        return (await this.query<T[]>(query, params, connection))[0];
     }
 
     /**
@@ -63,7 +79,8 @@ export default class DB {
         const conn = await this.pool.getConnection()
         try {
             return await transactionFunc(conn)
-        } finally {
+        }
+        finally {
             conn.release()
         }
     }

@@ -1,3 +1,4 @@
+import 'dotenv-flow/config';
 import express from 'express';
 import DB from './db/DB';
 import InviteController from './api/InviteController';
@@ -18,12 +19,49 @@ import expressWinston from 'express-winston';
 import winston from 'winston';
 import VoteManager from './db/managers/VoteManager';
 import TheParser from './parser/TheParser';
+import colors from '@colors/colors/safe';
+import jsonStringify from 'safe-stable-stringify';
 
 const app = express();
-const port = config.port;
 
-const db = new DB(config.mysql);
+const loggerColors = {
+    'DB': 'blue',
+    'HTTP': 'yellow'
+};
 
+const consoleTransport = new winston.transports.Console({
+    format: winston.format.combine(
+        winston.format((info) => {
+            info.level = `[${info.level.padEnd(7)}]`;
+            return info;
+        })(),
+        winston.format.colorize(),
+        winston.format.printf((info) => {
+            let rest = jsonStringify(Object.assign({}, info, {
+                level: undefined,
+                message: undefined,
+                splat: undefined,
+                service: undefined
+            }));
+            if (rest === '{}') {
+                rest = '';
+            }
+
+            let service = (info.service || '').padEnd(8);
+            let color = info.service && loggerColors[info.service] ? loggerColors[info.service] : 'cyan';
+            service = colors[color](service);
+            return `${info.level} ${service} ${info.message} ${colors.gray(rest)}`;
+        }),
+    )
+});
+
+const logger = winston.createLogger({
+    level: config.logLevel,
+    transports: [
+        consoleTransport
+    ]
+});
+const db = new DB(config.mysql, logger.child({ service: 'DB' }));
 const inviteManager = new InviteManager(db);
 const userManager = new UserManager(db);
 const postManager = new PostManager(db);
@@ -33,14 +71,14 @@ const voteManager = new VoteManager(db, postManager);
 const theParser = new TheParser();
 
 const requests = [
-    new AuthController(userManager),
-    new InviteController(inviteManager),
-    new PostController(postManager, siteManager, userManager, theParser),
+    new AuthController(userManager, logger.child({ service: 'AUTH' })),
+    new InviteController(inviteManager, logger.child({ service: 'INVITE' })),
+    new PostController(postManager, siteManager, userManager, theParser, logger.child({ service: 'POST' })),
     new MeController(userManager),
-    new VoteController(voteManager)
+    new VoteController(voteManager, logger.child({ service: 'VOTE' }))
 ];
 
-const filterLog = winston.format((info, opts) => {
+const filterLog = winston.format((info) => {
     if (info.meta.req?.body?.password) {
         info.meta.req.body.password = '***';
     }
@@ -49,16 +87,15 @@ const filterLog = winston.format((info, opts) => {
 
 app.use(expressWinston.logger({
     transports: [
-        new winston.transports.Console()
+        consoleTransport
     ],
+    baseMeta: { service: 'HTTP' },
     format: winston.format.combine(
         filterLog(),
-        winston.format.colorize(),
-        winston.format.simple()
     ),
     requestWhitelist: ['body'],
     meta: true, // optional: control whether you want to log the meta data about the request (default to true)
-    msg: "HTTP {{res.statusCode}} {{req.method}} {{req.ip}} {{req.url}}", // optional: customize the default logging message. E.g. "{{res.statusCode}} {{req.method}} {{res.responseTime}}ms {{req.url}}"
+    msg: "{{res.statusCode}} {{req.method}} {{req.ip}} {{req.url}}", // optional: customize the default logging message. E.g. "{{res.statusCode}} {{req.method}} {{res.responseTime}}ms {{req.url}}"
     expressFormat: false, // Use the default Express/morgan request formatting. Enabling this will override any msg if true. Will only output colors with colorize set to true
     colorize: false, // Color the text and status code, using the Express/morgan color palette (text: gray, status: default green, 3XX cyan, 4XX yellow, 5XX red).
 }))
@@ -72,7 +109,7 @@ app.use(cors({
     maxAge: 60 * 60
 }));
 
-app.use(session());
+app.use(session(db, logger));
 app.use(apiMiddleware());
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
@@ -85,6 +122,16 @@ app.all('*', (req, res) => {
     res.status(404).json({ result: 'error', code: '404', message: 'Unknown endpoint' });
 });
 
-app.listen(port, () => {
-    return console.log(`Express is listening at http://localhost:${port}`);
-});
+db.ping()
+    .then(() => {
+        app.listen(config.port, () => {
+            logger.info(`Server is listening on ${config.port}`);
+        }).on('error', (error) => {
+            logger.error('Could not start server', {error: error});
+            process.exit(1);
+        })
+    })
+    .catch(error => {
+        logger.error('Could not connect to database', {error: error});
+        process.exit(1);
+    });

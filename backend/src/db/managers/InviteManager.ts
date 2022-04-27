@@ -28,14 +28,14 @@ export default class InviteManager {
                     throw new CodeError('invite-not-found', 'Invite not found');
                 }
 
-                const userCountResult: any[] = await this.db.execute('select count(*) cnt from users where username=:username', {username: username}, connection);
+                const userCountResult: any[] = await this.db.query('select count(*) cnt from users where username=:username', {username: username}, connection);
                 if (!userCountResult || userCountResult[0].cnt > 0) {
                     console.error('Username exists');
                     throw new CodeError('username-exists', 'Username exists');
                 }
 
-                await this.db.execute('update invites set left_count=left_count-1 where code=:code', {code: code}, connection);
-                let userInsertResult: OkPacket = await this.db.execute('insert into users (username, password, gender, name, email) values(:username, :password, :gender, :name, :email)', {
+                await this.db.query('update invites set left_count=left_count-1 where code=:code', {code: code}, connection);
+                let userInsertResult: OkPacket = await this.db.query('insert into users (username, password, gender, name, email) values(:username, :password, :gender, :name, :email)', {
                     username: username,
                     password: passwordHash,
                     gender: gender,
@@ -48,7 +48,7 @@ export default class InviteManager {
                     throw new CodeError('unknown', 'Could not insert user');
                 }
 
-                await this.db.execute('insert into user_invites (parent_id, child_id, invited, invite_id) values(:parent_id, :child_id, now(), :invite_id)', {
+                await this.db.query('insert into user_invites (parent_id, child_id, invited, invite_id) values(:parent_id, :child_id, now(), :invite_id)', {
                     parent_id: inviteRow.issued_by,
                     invite_id: inviteRow.invite_id,
                     child_id: userInsertId

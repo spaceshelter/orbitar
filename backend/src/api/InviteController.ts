@@ -1,9 +1,12 @@
-import express from 'express';
+import {Router} from 'express';
 import InviteManager from '../db/managers/InviteManager';
 import {User, UserGender} from '../types/User';
 import bcrypt from 'bcryptjs';
 import CodeError from '../CodeError';
 import rateLimit from 'express-rate-limit';
+import {Logger} from 'winston';
+import {APIRequest, APIResponse, validate} from './ApiMiddleware';
+import Joi from 'joi';
 
 interface CheckRequest {
     code: string;
@@ -31,11 +34,13 @@ interface UseResponse {
 // }
 
 export default class InviteController {
-    public router = express.Router();
+    public router = Router();
     private inviteManager: InviteManager
+    private logger: Logger;
 
-    constructor(inviteManager: InviteManager) {
+    constructor(inviteManager: InviteManager, logger: Logger) {
         this.inviteManager = inviteManager;
+        this.logger = logger;
 
         // 10 requests per hour
         let limiter = rateLimit({
@@ -46,75 +51,61 @@ export default class InviteController {
             legacyHeaders: false
         });
 
-        this.router.post('/invite/check', limiter, (req, res) => this.checkInvite(req, res))
-        this.router.post('/invite/use', limiter, (req, res) => this.useInvite(req, res))
+        const checkSchema = Joi.object<CheckRequest>({
+            code: Joi.string().alphanum().required()
+        });
+        const useSchema = Joi.object<UseRequest>({
+            code: Joi.string().alphanum().required(),
+            username: Joi.string().regex(/^[a-zа-я0-9_-]{2,30}$/i).required(),
+            name: Joi.string().required(),
+            email: Joi.string().email().required(),
+            gender: Joi.number().valid(0, 1, 2).default(0),
+            password: Joi.string().required()
+        });
+
+        this.router.post('/invite/check', limiter, validate(checkSchema), (req, res) => this.checkInvite(req, res))
+        this.router.post('/invite/use', limiter, validate(useSchema), (req, res) => this.useInvite(req, res))
         // this.router.post('/invite/lepra', limiter, (req, res) => this.lepra(req, res))
     }
 
-    async checkInvite(request: express.Request, response: express.Response) {
+    async checkInvite(request: APIRequest<CheckRequest>, response: APIResponse<CheckResponse>) {
         if (request.session.data.userId) {
             return response.error('signed-in', 'Already signed in');
         }
 
-        try {
-            let body = <CheckRequest> request.body;
-            if (!body.code) {
-                return response.error('code-required', 'Invite code required');
-            }
+        const {code} = request.body;
 
-            let invite = await this.inviteManager.get(body.code);
+        try {
+            let invite = await this.inviteManager.get(code);
             if (!invite || invite.left_count < 1) {
+                this.logger.warn(`Invalid or expired invite checked: ${code}`, { invite: code });
                 return response.error('invalid-code', 'Invite code not found or already used');
             }
 
             return response.success({
                 code: invite.code,
                 inviter: invite.issuer
-            } as CheckResponse);
+            });
         }
-        catch (e) {
+        catch (err) {
+            this.logger.error(`Check invite failed`, { error: err, invite: code });
             return response.error('unknown', 'Unknown error', 500);
         }
     }
 
-    private async hashPassword(password: string) {
-        return new Promise<string>((resolve, reject) => {
-            bcrypt.hash(password, 10, (err, hash) => {
-                if (err) {
-                    reject(err);
-                    return;
-                }
-
-                resolve(hash);
-            });
-        });
-    }
-
-    async useInvite(request: express.Request, response: express.Response) {
+    async useInvite(request: APIRequest<UseRequest>, response: APIResponse<UseResponse>) {
         if (request.session.data.userId) {
             return response.error('signed-in', 'Already signed in');
         }
 
+        const {code, username, email, name, password, gender} = request.body;
+
         try {
-            let body = <UseRequest> request.body;
-            if (!body.code || !body.username || !body.email || !body.name || !body.password) {
-                response.status(400).send({result: 'error', code: 'invalid-payload', message: 'Invalid payload'});
-                return;
-            }
+            let passwordHash = await bcrypt.hash(password, 10);
 
-            if (!body.username.match(/^[a-zа-я0-9_-]{2,30}$/i)) {
-                response.status(400).send({result: 'error', code: 'invalid-username', message: 'Invalid username'});
-                return;
-            }
+            let user = await this.inviteManager.use(code, username, name, email, passwordHash, gender);
 
-            if (!body.email.match(/(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/)) {
-                response.status(400).send({result: 'error', code: 'invalid-email', message: 'Invalid email'});
-                return;
-            }
-
-            let passwordHash = await this.hashPassword(body.password)
-
-            let user = await this.inviteManager.use(body.code, body.username, body.name, body.email, passwordHash, body.gender);
+            this.logger.info(`Invite ${code} used by #${user.user_id} @${user.username}`, { invite: code, username });
 
             let sessionId = await request.session.init();
 
@@ -132,21 +123,22 @@ export default class InviteController {
             response.success({
                 user: resUser,
                 session: sessionId
-            } as UseResponse);
+            });
         }
         catch (err) {
             if (err instanceof CodeError) {
                 if (err.code === 'username-exists') {
-                    response.status(400).send({result: 'error', code: 'username-exists', message: 'Username already exists'});
-                    return;
+                    this.logger.warn(`Trying to register with existing username: ${username}`, { invite: code, username });
+                    return response.error('username-exists', 'Username already exists');
                 }
                 if (err.code === 'invite-not-found') {
-                    response.status(404).send({result: 'error', code: 'invalid-invite', message: 'Invite not found or used'});
-                    return;
+                    this.logger.warn(`Trying to register with invalid invite: ${code}`, { invite: code, username });
+                    return response.error('invalid-invite', 'Invite not found or used');
                 }
             }
 
-            response.status(500).send({result: 'error', code: 'unknown', message: 'Unknown error'});
+            this.logger.error(`Invite use failed`, {error: err});
+            return response.error('unknown', 'Unknown error', 500);
         }
     }
 
