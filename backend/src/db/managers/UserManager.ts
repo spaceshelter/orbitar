@@ -1,6 +1,6 @@
 import DB from '../DB';
 import {UserRaw} from '../types/UserRaw';
-import {User, UserGender} from '../../types/User';
+import {User} from '../../types/User';
 
 export default class UserManager {
     private db: DB;

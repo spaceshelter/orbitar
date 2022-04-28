@@ -112,66 +112,63 @@ export default class PostManager {
     }
 
     async createComment(userId: number, postId: number, parentCommentId: number | undefined, source: string, html: string): Promise<CommentRaw> {
-        let rawPost = await this.getRaw(postId);
-        if (!rawPost) {
-            throw new CodeError('no-post', 'Post not found');
-        }
+        return await this.db.inTransaction(async conn => {
+            const siteResult = await conn.fetchOne<{site_id: number}>('select site_id from posts where post_id=:post_id', { post_id: postId });
 
-        let commentInsertResult: OkPacket = await this.db.query(`
-            insert into comments
-                (site_id, post_id, parent_comment_id, author_id, source, html)
-                values(:site_id, :post_id, :parent_comment_id, :author_id, :source, :html)
-        `, {
-            site_id: rawPost.site_id,
-            post_id: postId,
-            parent_comment_id: parentCommentId,
-            author_id: userId,
-            source: source,
-            html: html
+            if (!siteResult) {
+                throw new CodeError('no-post', 'Post not found');
+            }
+
+            let commentInsertResult: OkPacket = await conn.query(`
+                insert into comments
+                    (site_id, post_id, parent_comment_id, author_id, source, html)
+                    values(:site_id, :post_id, :parent_comment_id, :author_id, :source, :html)
+            `, {
+                site_id: siteResult.site_id,
+                post_id: postId,
+                parent_comment_id: parentCommentId,
+                author_id: userId,
+                source: source,
+                html: html
+            });
+
+            let commentInsertId = commentInsertResult.insertId;
+            if (!commentInsertId) {
+                throw new CodeError('unknown', 'Could not insert comment');
+            }
+
+            await conn.query(`update posts p set comments=(select count(*) from comments c where c.post_id = p.post_id), last_comment_id=:last_comment_id, commented_at=now() where p.post_id=:post_id`, {
+                post_id: postId,
+                last_comment_id: commentInsertId
+            });
+
+            let commentResult:CommentRaw[] = await conn.query(`select * from comments where comment_id = :comment_id`, { comment_id: commentInsertId });
+            return commentResult[0];
         });
-
-        let commentInsertId = commentInsertResult.insertId;
-        if (!commentInsertId) {
-            throw new CodeError('unknown', 'Could not insert comment');
-        }
-
-        await this.db.query(`update posts p set comments=(select count(*) from comments c where c.post_id = p.post_id), last_comment_id=:last_comment_id, commented_at=now() where p.post_id=:post_id`, {
-            post_id: postId,
-            last_comment_id: commentInsertId
-        });
-
-        let commentResult:CommentRaw[] = await this.db.query(`select * from comments where comment_id = :comment_id`, { comment_id: commentInsertId });
-        return commentResult[0];
     }
 
     async setRead(postId: number, userId: number, readComments: number, lastCommentId?: number) {
-        await this.db.beginTransaction(async conn => {
-            try {
-                const bookmark = await this.db.fetchOne<BookmarkRaw>(`select * from user_bookmarks where post_id=:post_id and user_id=:user_id`, {
+        // TODO: add unique key (post_id, user_id) and change to 'insert ... on duplicate update ...'
+        await this.db.inTransaction(async conn => {
+            const bookmark = await conn.fetchOne<BookmarkRaw>(`select * from user_bookmarks where post_id=:post_id and user_id=:user_id`, {
+                post_id: postId,
+                user_id: userId
+            });
+
+            if (!bookmark) {
+                await conn.query('insert into user_bookmarks (post_id, user_id, read_comments, last_comment_id) values(:post_id, :user_id, :read_comments, :last_comment_id)', {
                     post_id: postId,
-                    user_id: userId
-                }, conn);
-
-                if (!bookmark) {
-                    await this.db.query('insert into user_bookmarks (post_id, user_id, read_comments, last_comment_id) values(:post_id, :user_id, :read_comments, :last_comment_id)', {
-                        post_id: postId,
-                        user_id: userId,
-                        read_comments: readComments,
-                        last_comment_id: lastCommentId
-                    }, conn);
-                }
-                else {
-                    await this.db.query('update user_bookmarks set read_comments=:read_comments, last_comment_id=:last_comment_id where bookmark_id=:bookmark_id', {
-                        read_comments: readComments,
-                        last_comment_id: lastCommentId ?? bookmark.last_comment_id,
-                        bookmark_id: bookmark.bookmark_id
-                    }, conn);
-                }
-
-                await conn.commit();
+                    user_id: userId,
+                    read_comments: readComments,
+                    last_comment_id: lastCommentId
+                });
             }
-            catch {
-                await conn.rollback();
+            else {
+                await conn.query('update user_bookmarks set read_comments=:read_comments, last_comment_id=:last_comment_id where bookmark_id=:bookmark_id', {
+                    read_comments: readComments,
+                    last_comment_id: lastCommentId ?? bookmark.last_comment_id,
+                    bookmark_id: bookmark.bookmark_id
+                });
             }
         });
     }
@@ -184,31 +181,25 @@ export default class PostManager {
     }
 
     async setBookmark(postId: number, userId: number, bookmarked: boolean) {
-        await this.db.beginTransaction(async conn => {
-            try {
-                const bookmark = await this.db.fetchOne<BookmarkRaw>(`select * from user_bookmarks where post_id=:post_id and user_id=:user_id`, {
+        // TODO: add unique key (post_id, user_id) and change to 'insert ... on duplicate update ...'
+        await this.db.inTransaction(async conn => {
+            const bookmark = await conn.fetchOne<BookmarkRaw>(`select * from user_bookmarks where post_id=:post_id and user_id=:user_id`, {
+                post_id: postId,
+                user_id: userId
+            });
+
+            if (!bookmark) {
+                await conn.query('insert into user_bookmarks (post_id, user_id, bookmark) values(:post_id, :user_id, :bookmark)', {
                     post_id: postId,
-                    user_id: userId
-                }, conn);
-
-                if (!bookmark) {
-                    await this.db.query('insert into user_bookmarks (post_id, user_id, bookmark) values(:post_id, :user_id, :bookmark)', {
-                        post_id: postId,
-                        user_id: userId,
-                        bookmark: bookmarked ? 1 : 0
-                    }, conn);
-                }
-                else {
-                    await this.db.query('update user_bookmarks set read_comments=:read_comments where bookmark=:bookmark', {
-                        bookmark: bookmarked ? 1 : 0,
-                        bookmark_id: bookmark.bookmark_id
-                    }, conn);
-                }
-
-                await conn.commit();
+                    user_id: userId,
+                    bookmark: bookmarked ? 1 : 0
+                });
             }
-            catch {
-                await conn.rollback();
+            else {
+                await conn.query('update user_bookmarks set read_comments=:read_comments where bookmark=:bookmark', {
+                    bookmark: bookmarked ? 1 : 0,
+                    bookmark_id: bookmark.bookmark_id
+                });
             }
         });
     }

@@ -10,30 +10,67 @@ interface DBOptions {
     password: string;
 }
 
-export default class DB {
-    private readonly pool: Pool
-    private readonly logger: Logger;
+export class DBConnection {
+    protected connection: PoolConnection | Pool;
+    protected logger: Logger;
 
-    constructor(options: DBOptions, logger: Logger) {
+    constructor(connection: PoolConnection | Pool, logger: Logger) {
+        this.connection = connection;
         this.logger = logger;
+    }
+
+    async query<T = RowDataPacket[][] | RowDataPacket[] | OkPacket | OkPacket[] | ResultSetHeader>(
+        query: string, params: string[] | Object): Promise<T> {
+        this.logger.verbose('Query', { query: query, params: params });
 
         try {
-            this.logger.verbose('Creating connection pool');
-            this.pool = createPool({
-                connectionLimit: 50,
-                host: options.host,
-                port: options.port,
-                user: options.user,
-                password: options.password,
-                database: options.database,
-                namedPlaceholders: true
-            }).promise();
-            this.logger.info('Created connection pool');
+            return (await this.connection.query(query, params))[0] as undefined as T
         }
         catch (e) {
-            this.logger.error('Failed to initialize connection pool', { error: e });
+            this.logger.error(e);
             throw e;
         }
+    }
+
+    async fetchOne<T = any>(query: string, params: string[] | Object): Promise<T | undefined> {
+        return (await this.query<T[]>(query, params))[0];
+    }
+
+    async inTransaction<T>(transactionFunc: (connection: DBConnection) => Promise<T>): Promise<T> {
+        if (!('beginTransaction' in this.connection)) {
+            throw new Error('Could not start transaction');
+        }
+
+        await this.connection.beginTransaction();
+
+        try {
+            const result = await transactionFunc(this);
+            await this.connection.commit();
+            return result;
+        }
+        catch (err) {
+            await this.connection.rollback();
+            throw err;
+        }
+    }
+}
+
+export default class DB extends DBConnection {
+    private pool: Pool;
+
+    constructor(options: DBOptions, logger: Logger) {
+        const pool = createPool({
+            connectionLimit: 50,
+            host: options.host,
+            port: options.port,
+            user: options.user,
+            password: options.password,
+            database: options.database,
+            namedPlaceholders: true
+        }).promise();
+
+        super(pool, logger);
+        this.pool = pool;
     }
 
     async ping() {
@@ -45,43 +82,31 @@ export default class DB {
         return diff;
     }
 
-    async query<T = RowDataPacket[][] | RowDataPacket[] | OkPacket | OkPacket[] | ResultSetHeader>(
-        query: string, params: string[] | Object, connection?: PoolConnection): Promise<T> {
-        this.logger.verbose('Query', { query: query, params: params });
-
-        const conn: Pool | PoolConnection = connection || this.pool
-
-        try {
-            return (await conn.query(query, params))[0] as undefined as T
-        }
-        catch (e) {
-            this.logger.error(e);
-            throw e;
-        }
-    }
-
-    async fetchOne<T = any>(query: string, params: string[] | Object, connection?: PoolConnection): Promise<T | undefined> {
-        return (await this.query<T[]>(query, params, connection))[0];
-    }
-
     /**
      * Usage:
-     * await beginTransaction(async (conn) => {
+     * await inTransaction(async (conn) => {
      *   await conn.query('...')
      *   await conn.query('...')
+     *   if (error) {
+     *     throw new Error('Throw error to rollback');
+     *   }
+     *   await conn.inTransaction(async (conn) => {
+     *       // nested transaction
+     *   })
      * })
      * //connection will be released automatically
      * @param transactionFunc
      *
      *  Note: never hold onto the connection fetched from the pool
      */
-    async beginTransaction<T>(transactionFunc: (conn: PoolConnection) => Promise<T>): Promise<T> {
-        const conn = await this.pool.getConnection()
+    async inTransaction<T>(transactionFunc: (connection: DBConnection) => Promise<T>): Promise<T> {
+        const conn = await this.pool.getConnection();
+        const db = new DBConnection(conn, this.logger);
         try {
-            return await transactionFunc(conn)
+            return await db.inTransaction(transactionFunc);
         }
         finally {
-            conn.release()
+            conn.release();
         }
     }
 }

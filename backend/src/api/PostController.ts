@@ -343,16 +343,6 @@ export default class PostController {
         const { post_id: postId, comment_id: parentCommentId, format, content } = request.body;
 
         try {
-            const rawPost = <PostRawWithUserData>await this.postManager.getRaw(postId, userId);
-            if (!rawPost) {
-                return response.error('no-post', 'Post not found');
-            }
-
-            const site = await this.siteManager.getSiteById(rawPost.site_id);
-            if (!site) {
-                return response.error('error', 'Unknown error', 500);
-            }
-
             const html = this.parser.parse(content);
 
             let users: Record<number, User> = {};
