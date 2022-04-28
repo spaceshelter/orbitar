@@ -63,7 +63,8 @@ export function apiMiddleware(): RequestHandler {
 export function validate<TSchema>(schema: ObjectSchema<TSchema>): RequestHandler {
     return (req: APIRequest<TSchema>, res, next) => {
         schema.validateAsync(req.body)
-            .then(() => {
+            .then(result => {
+                req.body = result;
                 next();
             })
             .catch(err => {
