@@ -4,10 +4,15 @@ export enum UserGender {
     she,
 }
 
-export interface UserInfo {
+export type UserInfo = {
     id: number;
     username: string;
     gender: UserGender;
     name: string;
     karma: number;
+    vote?: number;
+}
+
+export type UserProfileInfo = UserInfo & {
+    registered: Date;
 }

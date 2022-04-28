@@ -1,0 +1,39 @@
+.container {
+    background: var(--item-bg);
+    margin: 20px;
+    border-radius: 6px;
+}
+
+.header {
+    padding: 10px 20px;
+}
+
+.karma {
+    display: inline-block;
+    float: right;
+}
+
+.controls {
+    padding: 10px 20px;
+    background: var(--controls-bg);
+}
+
+.control {
+    margin-right: 20px;
+}
+.control.active {
+    color: var(--fg);
+    font-weight: bold;
+}
+
+
+.userinfo {
+    padding: 10px 20px;
+}
+
+.username {
+    font-size: 40px;
+}
+.name {
+    font-size: 25px;
+}

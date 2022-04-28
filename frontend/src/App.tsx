@@ -1,15 +1,21 @@
 import React from 'react';
 import {Outlet, ReactLocation, Router,} from "react-location";
+import {ToastContainer} from 'react-toastify';
+
+import {AppState, useAppState} from './AppState/AppState';
+import {CreatePostPage} from './Pages/CreatePostPage';
+
 import PostPage from './Pages/PostPage';
 import Topbar from './Components/Topbar';
-import './index.css';
 import InvitePage from './Pages/InvitePage';
 import LoadingPage from './Pages/LoadingPage';
 import SignInPage from './Pages/SignInPage';
-import {AppState, useAppState} from './AppState/AppState';
+import UserPage from './Pages/UserPage';
 import IndexPage from './Pages/IndexPage';
+
 import styles from './App.module.css';
-import {CreatePostPage} from './Pages/CreatePostPage';
+import './index.css';
+import 'react-toastify/dist/ReactToastify.css';
 
 const location = new ReactLocation();
 
@@ -17,7 +23,12 @@ function App() {
     const {appState} = useAppState();
 
     if (appState === AppState.loading) {
-        return <LoadingPage />
+        return (
+            <>
+                <LoadingPage />
+                <ToastContainer theme="dark" />
+            </>
+        );
     }
 
     if (appState === AppState.unauthorized) {
@@ -32,6 +43,7 @@ function App() {
                     },
                 ]}>
                     <Outlet />
+                    <ToastContainer theme="dark" />
                 </Router>
         );
     }
@@ -48,7 +60,7 @@ function App() {
         },
         {
             path: '/user/:username',
-            element: <div>User</div>
+            element: <UserPage />
         },
         {
             path: '/create',
@@ -59,6 +71,7 @@ function App() {
         <div className={styles.container}>
             <Outlet />
         </div>
+        <ToastContainer theme="dark" />
     </Router>
   );
 }

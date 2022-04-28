@@ -59,6 +59,6 @@
 
 .controls {
     height: 24px;
-    background: #0b070f;
+    background: var(--controls-bg);
     padding: 4px 20px;
 }

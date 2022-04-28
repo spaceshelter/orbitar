@@ -66,7 +66,8 @@ export default class VoteController {
         let {id, type, vote} = request.body;
 
         try {
-            vote = Math.max(Math.min(vote, 1), -1);
+            const max = type === 'user' ? 2 : 1;
+            vote = Math.max(Math.min(vote, max), -max);
 
             let rating;
             switch (type) {

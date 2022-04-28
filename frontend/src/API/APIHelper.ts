@@ -7,6 +7,8 @@ import PostAPI from './PostAPI';
 import PostAPIHelper from './PostAPIHelper';
 import APICache from './APICache';
 import VoteAPI from './VoteAPI';
+import UserAPIHelper from './UserAPIHelper';
+import UserAPI from './UserAPI';
 
 export default class APIHelper {
     auth: AuthAPIHelper;
@@ -16,6 +18,8 @@ export default class APIHelper {
     post: PostAPIHelper;
     cache: APICache;
     voteAPI: VoteAPI;
+    user: UserAPIHelper;
+    userAPI: UserAPI;
     private baseAPI: APIBase;
     private setters: AppStateSetters;
 
@@ -26,8 +30,10 @@ export default class APIHelper {
         this.inviteAPI = new InviteAPI(api);
         this.postAPI = new PostAPI(api);
         this.voteAPI = new VoteAPI(api);
+        this.userAPI = new UserAPI(api)
         this.post = new PostAPIHelper(this.postAPI, this.cache);
         this.auth = new AuthAPIHelper(this.authAPI, setters);
+        this.user = new UserAPIHelper(this.userAPI, this.cache);
         this.setters = setters;
 
         console.log('NEW API HELPER', Math.random());

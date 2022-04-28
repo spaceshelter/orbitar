@@ -1,5 +1,6 @@
 import express, {RequestHandler} from 'express';
-import {ObjectSchema} from 'joi';
+import Joi, {ObjectSchema} from 'joi';
+import * as core from 'express-serve-static-core';
 
 type ResponseSuccess<T> = {
     result: 'success';
@@ -14,11 +15,11 @@ type ResponseError = {
 }
 type ResponseBody<T> = ResponseSuccess<T> | ResponseError;
 
-export interface APIRequest<T> extends express.Request<any, any, T> {
+export interface APIRequest<ReqBody, P = core.ParamsDictionary, ResBody = any> extends express.Request<P, ResBody, ReqBody> {
 
 }
-export interface APIResponse<T> extends express.Response<ResponseBody<T>> {
-    success(payload: T): void;
+export interface APIResponse<ResBody> extends express.Response<ResponseBody<ResBody>> {
+    success(payload: ResBody): void;
 }
 
 function success<T>(payload: T) {
@@ -60,8 +61,8 @@ export function apiMiddleware(): RequestHandler {
     }
 }
 
-export function validate<TSchema>(schema: ObjectSchema<TSchema>): RequestHandler {
-    return (req: APIRequest<TSchema>, res, next) => {
+export function validate<ReqBody, ResBody, P = core.ParamsDictionary>(schema: ObjectSchema<ReqBody>): RequestHandler<P, ResBody, ReqBody> {
+    return (req, res, next) => {
         schema.validateAsync(req.body)
             .then(result => {
                 req.body = result;
@@ -74,3 +75,6 @@ export function validate<TSchema>(schema: ObjectSchema<TSchema>): RequestHandler
             });
     }
 }
+
+export const joiUsername = Joi.string().regex(/^[a-zа-я0-9_-]{2,30}$/i);
+export const joiFormat = Joi.valid('html', 'source').default('html');

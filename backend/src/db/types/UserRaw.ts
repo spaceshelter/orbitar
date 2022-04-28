@@ -8,4 +8,5 @@ export interface UserRaw {
     gender: UserGender;
     karma: number;
     name: string;
+    registered_at: Date;
 }

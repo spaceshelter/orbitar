@@ -1,12 +1,13 @@
 import styles from './PostComponent.module.css';
 import RatingSwitch from './RatingSwitch';
 import Username from './Username';
-import React, {useEffect, useRef} from 'react';
+import React from 'react';
 import {PostInfo} from '../Types/PostInfo';
 import {UserGender} from '../Types/UserInfo';
 import {Link} from "react-location";
 import {pluralize} from '../Utils/utils';
 import DateComponent from './DateComponent';
+import ContentComponent from './ContentComponent';
 
 interface PostComponentProps {
     post: PostInfo;
@@ -14,42 +15,6 @@ interface PostComponentProps {
 }
 
 export default function PostComponent(props: PostComponentProps) {
-    const contentDiv = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        let content = contentDiv.current;
-        if (!content) {
-            return;
-        }
-
-        content.querySelectorAll('img').forEach(img => {
-            console.log('IMG', img, img.width, img.height);
-            img.onload = () => {
-                let el: HTMLElement | null = img;
-                while (el) {
-                    if (el.tagName.toUpperCase() === 'A') {
-                        return;
-                    }
-                    el = el.parentElement;
-                }
-
-                let imageLarge = false;
-                img.classList.add('image-scalable');
-                if (img.naturalWidth > 500 || img.naturalHeight > 500) {
-                    img.onclick = () => {
-                        if (imageLarge) {
-                            imageLarge = false;
-                            img.classList.remove('image-preview');
-                            return;
-                        }
-                        imageLarge = true;
-                        img.classList.add('image-preview');
-                    }
-                }
-            };
-        });
-    }, [contentDiv]);
-
     return (
         <div className={styles.post}>
             <div className={styles.header}>
@@ -57,9 +22,7 @@ export default function PostComponent(props: PostComponentProps) {
                     {props.post.title && <div className={styles.title}>
                         {props.post.title}
                     </div>}
-                    <div className={styles.content} dangerouslySetInnerHTML={{__html: props.post.content}} ref={contentDiv}>
-                    </div>
-
+                    <ContentComponent className={styles.content} content={props.post.content} />
                 </div>
             </div>
             <div className={styles.controls}>

@@ -7,13 +7,14 @@ import {Site} from '../types/Site';
 import TheParser from '../parser/TheParser';
 import {Logger} from 'winston';
 import Joi from 'joi';
-import {APIRequest, APIResponse, validate} from './ApiMiddleware';
+import {APIRequest, APIResponse, joiFormat, validate} from './ApiMiddleware';
+import {ContentFormat} from '../types/common';
 
 interface FeedRequest {
     site: string;
     page?: number;
     perpage?: number;
-    format?: 'html' | 'source';
+    format?: ContentFormat;
 }
 interface PostItem {
     id: number;
@@ -37,7 +38,7 @@ interface FeedResponse {
 
 interface PostGetRequest {
     id: number;
-    format?: 'html' | 'source';
+    format?: ContentFormat;
 }
 interface PostGetResponse {
     post: PostItem;
@@ -51,7 +52,7 @@ interface CreateRequest {
     site: string;
     title: string;
     content: string;
-    format?: 'html' | 'source';
+    format?: ContentFormat;
 }
 interface CreateResponse {
     post: PostItem;
@@ -61,7 +62,7 @@ interface CommentRequest {
     comment_id?: number;
     post_id: number;
     content: string;
-    format?: 'html' | 'source';
+    format?: ContentFormat;
 }
 interface CommentResponse {
     comment: CommentItem;
@@ -112,13 +113,13 @@ export default class PostController {
 
         const getSchema = Joi.object<PostGetRequest>({
             id: Joi.number().required(),
-            format: Joi.valid('html', 'source').default('html')
+            format: joiFormat
         });
         const feedSchema = Joi.object<FeedRequest>({
             site: Joi.string().required(),
             page: Joi.number().default(1),
             perpage: Joi.number().min(1).max(50).default(10),
-            format: Joi.valid('html', 'source').default('html')
+            format: joiFormat
         });
         const readSchema = Joi.object<ReadRequest>({
             post_id: Joi.number().required(),
@@ -133,13 +134,13 @@ export default class PostController {
             site: Joi.string().required(),
             title: Joi.alternatives(Joi.string().max(50), Joi.valid('').optional()),
             content: Joi.string().min(1).max(50000).required(),
-            format: Joi.valid('html', 'source').default('html')
+            format: joiFormat
         });
         const commentSchema = Joi.object<CommentRequest>({
             comment_id: Joi.number().optional(),
             post_id: Joi.number().required(),
             content: Joi.string().min(1).max(50000).required(),
-            format: Joi.valid('html', 'source').default('html')
+            format: joiFormat
         });
 
         this.router.post('/post/get', validate(getSchema), (req, res) => this.postGet(req, res));
@@ -201,7 +202,7 @@ export default class PostController {
                     content: format === 'html' ? rawComment.html : rawComment.source,
                     rating: rawComment.rating,
                     vote: rawComment.vote,
-                    isNew: rawComment.comment_id > lastReadCommentId
+                    isNew: rawComment.author_id !== userId && rawComment.comment_id > lastReadCommentId
                 };
 
                 if (!users[rawComment.author_id]) {
@@ -363,7 +364,8 @@ export default class PostController {
                     author: commentRaw.author_id,
                     content: format === 'html' ? commentRaw.html : commentRaw.source,
                     rating: commentRaw.rating,
-                    parentComment: commentRaw.parent_comment_id
+                    parentComment: commentRaw.parent_comment_id,
+                    isNew: true
                 },
                 users: users
             });

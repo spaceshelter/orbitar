@@ -21,6 +21,7 @@ import VoteManager from './db/managers/VoteManager';
 import TheParser from './parser/TheParser';
 import colors from '@colors/colors/safe';
 import jsonStringify from 'safe-stable-stringify';
+import UserController from './api/UserController';
 
 const app = express();
 
@@ -75,7 +76,8 @@ const requests = [
     new InviteController(inviteManager, logger.child({ service: 'INVITE' })),
     new PostController(postManager, siteManager, userManager, theParser, logger.child({ service: 'POST' })),
     new MeController(userManager),
-    new VoteController(voteManager, logger.child({ service: 'VOTE' }))
+    new VoteController(voteManager, logger.child({ service: 'VOTE' })),
+    new UserController(userManager, logger.child({ service: 'USER' })),
 ];
 
 const filterLog = winston.format((info) => {

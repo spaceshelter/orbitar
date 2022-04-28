@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 import CodeError from '../CodeError';
 import rateLimit from 'express-rate-limit';
 import {Logger} from 'winston';
-import {APIRequest, APIResponse, validate} from './ApiMiddleware';
+import {APIRequest, APIResponse, joiUsername, validate} from './ApiMiddleware';
 import Joi from 'joi';
 
 interface CheckRequest {
@@ -56,7 +56,7 @@ export default class InviteController {
         });
         const useSchema = Joi.object<UseRequest>({
             code: Joi.string().alphanum().required(),
-            username: Joi.string().regex(/^[a-zа-я0-9_-]{2,30}$/i).required(),
+            username: joiUsername,
             name: Joi.string().required(),
             email: Joi.string().email().required(),
             gender: Joi.number().valid(0, 1, 2).default(0),

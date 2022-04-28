@@ -14,10 +14,12 @@ type APIResponse = APIResponseError | APIResponseSuccess;
 
 export class APIError extends Error {
     public code: string;
+    public statusCode?: number;
 
-    constructor(code: string, message: string) {
+    constructor(code: string, message: string, statusCode?: number) {
         super(message);
         this.code = code;
+        this.statusCode = statusCode;
     }
 }
 
@@ -31,7 +33,7 @@ export default class APIBase {
         this.endpoint = '//api.' + process.env.REACT_APP_ROOT_DOMAIN + '/api/v1';
     }
 
-    async request(url: string, payload: object) {
+    async request<T>(url: string, payload: object): Promise<T> {
         let headers: any = {
             'Content-Type': 'application/json',
         };
@@ -50,7 +52,7 @@ export default class APIBase {
         );
 
         if (response.status === 429) {
-            throw new APIError('rate-limit', 'Rate limit exceeded');
+            throw new APIError('rate-limit', 'Rate limit exceeded', response.status);
         }
 
         let sessionId = response.headers.get('x-session-id');
@@ -64,11 +66,11 @@ export default class APIBase {
         console.log('RESPONSE', url, await responseJson);
 
         if (responseJson.result === 'error') {
-            throw new APIError(responseJson.code, responseJson.message);
+            throw new APIError(responseJson.code, responseJson.message, response.status);
         }
 
         if (!responseJson.payload) {
-            throw new APIError('no-payload', 'Payload required');
+            throw new APIError('no-payload', 'Payload required', response.status);
         }
 
         if (responseJson.sync) {
@@ -77,7 +79,7 @@ export default class APIBase {
             this.sync = Math.round((cTime.getTime() - rTime.getTime()) / 1000 / 900) / 4 * 3600 * 1000;
         }
 
-        return responseJson.payload;
+        return responseJson.payload as T;
     }
 
     fixDate(date: Date) {

@@ -32,7 +32,7 @@ export default class InviteManager {
             }
 
             await conn.query('update invites set left_count=left_count-1 where code=:code', {code: code});
-            let userInsertResult: OkPacket = await this.db.query('insert into users (username, password, gender, name, email) values(:username, :password, :gender, :name, :email)', {
+            let userInsertResult: OkPacket = await conn.query('insert into users (username, password, gender, name, email) values(:username, :password, :gender, :name, :email)', {
                 username: username,
                 password: passwordHash,
                 gender: gender,

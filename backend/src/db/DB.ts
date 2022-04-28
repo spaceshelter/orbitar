@@ -26,9 +26,9 @@ export class DBConnection {
         try {
             return (await this.connection.query(query, params))[0] as undefined as T
         }
-        catch (e) {
-            this.logger.error(e);
-            throw e;
+        catch (error) {
+            this.logger.error('Query failed', error);
+            throw error;
         }
     }
 
@@ -66,7 +66,8 @@ export default class DB extends DBConnection {
             user: options.user,
             password: options.password,
             database: options.database,
-            namedPlaceholders: true
+            namedPlaceholders: true,
+            timezone: '+00:00'
         }).promise();
 
         super(pool, logger);

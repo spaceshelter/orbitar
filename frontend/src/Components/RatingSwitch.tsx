@@ -1,6 +1,8 @@
 import styles from './RatingSwitch.module.css';
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {useAPI} from '../AppState/AppState';
+import { toast } from 'react-toastify';
+
 
 interface RatingSwitchProps {
     rating: {
@@ -9,23 +11,36 @@ interface RatingSwitchProps {
     };
     type: 'post' | 'comment' | 'user';
     id: number;
+    double?: boolean;
 }
 
 export default function RatingSwitch(props: RatingSwitchProps) {
     const api = useAPI();
     const [state, setState] = useState({rating: props.rating.value, vote: props.rating.vote});
 
+    useEffect(() => {
+        setState({rating: props.rating.value, vote: props.rating.vote})
+    }, [props]);
+
+    console.log('SWITCH', props.rating);
+
     const handleVote = (vote: number) => {
+        const prevState = { ...state };
+        if (state.vote === vote) {
+            vote = 0;
+        }
+
+        setState({ vote: vote, rating: state.rating - (state.vote || 0) + vote });
         api.voteAPI.vote(props.type, props.id, vote)
             .then(result => {
-                console.log('VOTE RESULT', result);
                 setState({
                     rating: result.rating,
                     vote: result.vote
                 })
             })
             .catch(error => {
-                console.log('VOTE ERROR', error);
+                setState(prevState);
+                toast.warn('Голос не учтён 🤬', { position: 'bottom-right' });
             });
     };
 
@@ -36,10 +51,11 @@ export default function RatingSwitch(props: RatingSwitchProps) {
     return (
         <div className={styles.container}>
             <div className={styles.rating}>
+                {props.double && <button className={state.vote && state.vote < -1 ? styles.votedMinus : undefined} onClick={() => handleVote(-2)}>－</button>}
                 <button className={state.vote && state.vote < 0 ? styles.votedMinus : undefined} onClick={() => handleVote(-1)}>－</button>
                 <div className={styles.value} onClick={handleVoteList}>{state.rating}</div>
                 <button className={state.vote && state.vote > 0 ? styles.votedPlus : undefined} onClick={() => handleVote(1)}>＋</button>
-
+                {props.double && <button className={state.vote && state.vote > 1 ? styles.votedPlus : undefined} onClick={() => handleVote(2)}>＋</button>}
             </div>
         </div>
     )
