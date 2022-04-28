@@ -29,11 +29,12 @@ services:
   frontend:
     build:
       context: frontend
+      args:
+        NODE_ENV: production
+        SERVER_DOMAIN: ${SERVER_DOMAIN}
     restart: "no"
-    environment:
-      REACT_APP_ROOT_DOMAIN: ${SERVER_DOMAIN}
     volumes:
-      - frontend_build:/frontend/build
+      - frontend_build:/frontend
 
   backend:
     build:

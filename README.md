@@ -7,7 +7,7 @@
 ## Разработка
 В hosts добавить:
 ```
-127.0.0.1 orbitar.local api.orbitar.local mysql
+127.0.0.1 orbitar.local api.orbitar.local
 
 # Можно дополнить списком подсайтов по вкусу (опционально)
 127.0.0.1 idiod.orbitar.local
@@ -44,11 +44,11 @@
        ```  
    * Выполнить миграции БД
       ```
-      node node_modules/db-migrate/bin/db-migrate up
+      npm run migrations:dev up
       ```
    * Запустить node:
        ```
-       npm run start
+       npm run start:dev
        ```
 
 После первого запуска можно открыть приглашение http://orbitar.local/invite/initial и зарегистрировать первый юзернейм.

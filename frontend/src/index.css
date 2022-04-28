@@ -5,6 +5,7 @@
   --fg: #cfc5dc;
 
   --item-bg: #100917;
+  --controls-bg: #0b070f;
 
   --input-bg: #2a162f;
   --input-fg: #cfc5dc;
@@ -79,6 +80,8 @@ a {
 
 img.image-scalable {
   cursor: zoom-in;
+  max-width: 500px;
+  max-height: 500px;
 }
 img.image-preview {
   max-width: 100%;

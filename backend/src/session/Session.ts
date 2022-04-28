@@ -1,31 +1,63 @@
 import {Request, RequestHandler, Response} from 'express';
 import * as crypto from 'crypto';
+import DB from '../db/DB';
+import {Logger} from 'winston';
 
 const sessionStorage: Record<string, SessionData> = {};
 
 export default class Session {
-    public id?: string;
-    public data: SessionData;
     private request: Request;
     private response: Response;
+    private db: DB;
+    private logger: Logger;
     private static SESSION_HEADER = 'X-Session-Id';
+    public id?: string;
+    public data?: SessionData;
 
-    constructor(request: Request, response: Response) {
+    constructor(db: DB, logger: Logger, request: Request, response: Response) {
         this.request = request;
         this.response = response;
+        this.db = db;
+        this.logger = logger;
 
-        let sessionId = request.header(Session.SESSION_HEADER);
-        let data = sessionStorage[sessionId];
+        this.id = request.header(Session.SESSION_HEADER);
+    }
 
-        if (data) {
-            this.id = sessionId;
-            this.data = data;
-
-            this.response.setHeader(Session.SESSION_HEADER, this.id);
-        }
-        else {
+    async restore() {
+        if (!this.id || this.id === '-') {
             this.data = new SessionData('');
+            return;
         }
+
+        let data = sessionStorage[this.id];
+        if (data) {
+            this.data = data;
+            this.response.setHeader(Session.SESSION_HEADER, this.id);
+            return;
+        }
+
+        let storedData = await this.db.fetchOne('select data from sessions where id=:id', {
+            id: this.id
+        });
+        if (storedData) {
+            this.logger.verbose(`Session ${this.id} restored from DB`, { session: this.id, data: storedData.data });
+            try {
+                const parsedData = JSON.parse(storedData.data);
+                if (parsedData.userId) {
+                    this.data = new SessionData(this.id, parsedData.userId);
+                    sessionStorage[this.id] = this.data;
+                    this.response.setHeader(Session.SESSION_HEADER, this.id);
+                    return;
+                }
+            }
+            catch {
+            }
+        }
+
+        this.logger.verbose(`Session ${this.id} not found in DB`, { session: this.id });
+
+        this.response.setHeader(Session.SESSION_HEADER, '-');
+        this.data = new SessionData('');
     }
 
     private async generate(): Promise<string> {
@@ -61,22 +93,40 @@ export default class Session {
         this.data = new SessionData('');
         delete sessionStorage[this.id];
 
-        // TODO: write to storage
+        this.logger.verbose(`Session ${this.id} removed from DB`, { session: this.id });
+
+        await this.db.query('delete from sessions where id=:id', {
+            id: this.id
+        });
 
         this.id = undefined;
+        this.response.setHeader(Session.SESSION_HEADER, '-');
     }
 
     async store() {
-        // TODO: clear storage
+        if (!this.id) return;
+
+        const data = {
+            userId: this.data.userId
+        };
+        const stringData = JSON.stringify(data);
+
+        await this.db.query('insert into sessions (id, data) values (:id, :data) on duplicate key update data=:data', {
+            id: this.id,
+            data: stringData
+        });
+
+        this.logger.verbose(`Session ${this.id} stored to DB`, { session: this.id, data: data });
     }
 }
 
 export class SessionData {
     private sessionId: string;
-    public userId?: number;
+    public userId: number = 0;
 
-    constructor(id) {
+    constructor(id, userId?: number) {
         this.sessionId = id;
+        this.userId = userId;
     }
 
     clear() {
@@ -84,10 +134,17 @@ export class SessionData {
     }
 }
 
-export function session(): RequestHandler {
+export function session(db: DB, logger: Logger): RequestHandler {
     return (req, res, next) => {
-        req.session = new Session(req, res);
-        next();
+        req.session = new Session(db, logger, req, res);
+        req.session.restore()
+            .then(() => {
+                next();
+            })
+            .catch(error => {
+                logger.error('Could not restore session', { error: error });
+                res.error('error', 'Unknown error', 500);
+            });
     }
 }
 

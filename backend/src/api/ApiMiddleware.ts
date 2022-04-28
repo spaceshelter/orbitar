@@ -1,4 +1,26 @@
-import {RequestHandler} from 'express';
+import express, {RequestHandler} from 'express';
+import Joi, {ObjectSchema} from 'joi';
+import * as core from 'express-serve-static-core';
+
+type ResponseSuccess<T> = {
+    result: 'success';
+    payload: T;
+    sync: Date;
+}
+type ResponseError = {
+    result: 'error';
+    code: string;
+    message: string;
+    meta?: any;
+}
+type ResponseBody<T> = ResponseSuccess<T> | ResponseError;
+
+export interface APIRequest<ReqBody, P = core.ParamsDictionary, ResBody = any> extends express.Request<P, ResBody, ReqBody> {
+
+}
+export interface APIResponse<ResBody> extends express.Response<ResponseBody<ResBody>> {
+    success(payload: ResBody): void;
+}
 
 function success<T>(payload: T) {
     return this.send({
@@ -8,16 +30,22 @@ function success<T>(payload: T) {
     });
 }
 
-function error(code: string, message: string, status?: number) {
+function error(code: string, message: string, status?: number, meta?: any) {
     if (status) {
         this.status(status);
     }
 
-    return this.send({
+    const body: ResponseError = {
         result: 'error',
         code: code,
         message: message
-    });
+    };
+
+    if (meta) {
+        body.meta = meta;
+    }
+
+    return this.send(body);
 }
 
 function authRequired() {
@@ -32,3 +60,21 @@ export function apiMiddleware(): RequestHandler {
         next();
     }
 }
+
+export function validate<ReqBody, ResBody, P = core.ParamsDictionary>(schema: ObjectSchema<ReqBody>): RequestHandler<P, ResBody, ReqBody> {
+    return (req, res, next) => {
+        schema.validateAsync(req.body)
+            .then(result => {
+                req.body = result;
+                next();
+            })
+            .catch(err => {
+                res.error('invalid-payload', err.message, 401, {
+                    details: err.details?.map(detail => { return { path: detail.path.join('.'), type: detail.type, error: detail.message } })
+                });
+            });
+    }
+}
+
+export const joiUsername = Joi.string().regex(/^[a-zа-я0-9_-]{2,30}$/i);
+export const joiFormat = Joi.valid('html', 'source').default('html');

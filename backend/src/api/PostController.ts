@@ -1,16 +1,20 @@
-import express from 'express';
+import {Router} from 'express';
 import PostManager, {PostRawWithUserData} from '../db/managers/PostManager';
 import {User} from '../types/User';
 import UserManager from '../db/managers/UserManager';
 import SiteManager from '../db/managers/SiteManager';
 import {Site} from '../types/Site';
 import TheParser from '../parser/TheParser';
+import {Logger} from 'winston';
+import Joi from 'joi';
+import {APIRequest, APIResponse, joiFormat, validate} from './ApiMiddleware';
+import {ContentFormat} from '../types/common';
 
 interface FeedRequest {
     site: string;
     page?: number;
     perpage?: number;
-    format?: 'html' | 'source';
+    format?: ContentFormat;
 }
 interface PostItem {
     id: number;
@@ -34,7 +38,7 @@ interface FeedResponse {
 
 interface PostGetRequest {
     id: number;
-    format?: 'html' | 'source';
+    format?: ContentFormat;
 }
 interface PostGetResponse {
     post: PostItem;
@@ -48,7 +52,7 @@ interface CreateRequest {
     site: string;
     title: string;
     content: string;
-    format?: 'html' | 'source';
+    format?: ContentFormat;
 }
 interface CreateResponse {
     post: PostItem;
@@ -58,7 +62,7 @@ interface CommentRequest {
     comment_id?: number;
     post_id: number;
     content: string;
-    format?: 'html' | 'source';
+    format?: ContentFormat;
 }
 interface CommentResponse {
     comment: CommentItem;
@@ -88,318 +92,323 @@ interface BookmarkRequest {
     post_id: number;
     bookmark: boolean;
 }
+interface BookmarkResponse {
+    bookmark: boolean;
+}
 
 export default class PostController {
-    public router = express.Router();
+    public router = Router();
     private postManager: PostManager;
     private userManager: UserManager;
     private siteManager: SiteManager;
     private parser: TheParser;
+    private logger: Logger;
 
-    constructor(postManager: PostManager, siteManager: SiteManager, userManager: UserManager, parser: TheParser) {
+    constructor(postManager: PostManager, siteManager: SiteManager, userManager: UserManager, parser: TheParser, logger: Logger) {
         this.postManager = postManager;
         this.userManager = userManager;
         this.siteManager = siteManager;
         this.parser = parser;
+        this.logger = logger;
 
-        this.router.post('/post/get', (req, res) => this.postGet(req, res));
-        this.router.post('/post/feed', (req, res) => this.feed(req, res));
-        this.router.post('/post/create', (req, res) => this.create(req, res));
-        this.router.post('/post/comment', (req, res) => this.comment(req, res));
-        this.router.post('/post/read', (req, res) => this.read(req, res));
-        this.router.post('/post/bookmark', (req, res) => this.bookmark(req, res));
+        const getSchema = Joi.object<PostGetRequest>({
+            id: Joi.number().required(),
+            format: joiFormat
+        });
+        const feedSchema = Joi.object<FeedRequest>({
+            site: Joi.string().required(),
+            page: Joi.number().default(1),
+            perpage: Joi.number().min(1).max(50).default(10),
+            format: joiFormat
+        });
+        const readSchema = Joi.object<ReadRequest>({
+            post_id: Joi.number().required(),
+            comments: Joi.number().required(),
+            last_comment_id: Joi.number().optional()
+        });
+        const bookmarkSchema = Joi.object<BookmarkRequest>({
+            post_id: Joi.number().required(),
+            bookmark: Joi.boolean().required()
+        });
+        const postCreateSchema = Joi.object<CreateRequest>({
+            site: Joi.string().required(),
+            title: Joi.alternatives(Joi.string().max(50), Joi.valid('').optional()),
+            content: Joi.string().min(1).max(50000).required(),
+            format: joiFormat
+        });
+        const commentSchema = Joi.object<CommentRequest>({
+            comment_id: Joi.number().optional(),
+            post_id: Joi.number().required(),
+            content: Joi.string().min(1).max(50000).required(),
+            format: joiFormat
+        });
+
+        this.router.post('/post/get', validate(getSchema), (req, res) => this.postGet(req, res));
+        this.router.post('/post/feed', validate(feedSchema), (req, res) => this.feed(req, res));
+        this.router.post('/post/create', validate(postCreateSchema), (req, res) => this.create(req, res));
+        this.router.post('/post/comment', validate(commentSchema), (req, res) => this.comment(req, res));
+        this.router.post('/post/read', validate(readSchema), (req, res) => this.read(req, res));
+        this.router.post('/post/bookmark', validate(bookmarkSchema), (req, res) => this.bookmark(req, res));
     }
 
-    async postGet(request: express.Request, response: express.Response) {
+    async postGet(request: APIRequest<PostGetRequest>, response: APIResponse<PostGetResponse>) {
         if (!request.session.data.userId) {
             return response.authRequired();
         }
 
-        let userId = request.session.data.userId;
+        const userId = request.session.data.userId;
+        const { id: postId, format } = request.body;
 
-        let body = <PostGetRequest> request.body;
-        let postId = body.id;
-        let format = body.format || 'html';
+        try {
+            const rawPost = <PostRawWithUserData>await this.postManager.getRaw(postId, userId);
+            if (!rawPost) {
+                return response.error('no-post', 'Post not found');
+            }
 
-        if (!postId) {
-            return response.error('id-required', 'Post id required');
-        }
+            const site = await this.siteManager.getSiteById(rawPost.site_id);
+            if (!site) {
+                return response.error('error', 'Unknown error', 500);
+            }
 
-        let rawPost = <PostRawWithUserData> await this.postManager.getRaw(postId, userId);
-        if (!rawPost) {
-            return response.error('no-post', 'Post not found');
-        }
+            const rawBookmark = await this.postManager.getBookmark(postId, userId);
+            const lastReadCommentId = rawBookmark?.last_comment_id ?? 0;
 
-        let site = await this.siteManager.getSiteById(rawPost.site_id);
-        if (!site) {
-            return response.error('error', 'Unknown error', 500);
-        }
+            const rawComments = await this.postManager.getAllCommentsRaw(postId, userId);
 
-        let rawBookmark = await this.postManager.getBookmark(postId, userId);
-        let lastReadCommentId = rawBookmark?.last_comment_id ?? 0;
-
-        let rawComments = await this.postManager.getAllCommentsRaw(postId, userId);
-
-        let post = {
-            id: rawPost.post_id,
-            site: site.site,
-            author: rawPost.author_id,
-            created: rawPost.created_at,
-            title: rawPost.title,
-            content: format === 'html' ? rawPost.html : rawPost.source,
-            rating: rawPost.rating,
-            comments: rawPost.comments,
-            newComments: 0,
-            vote: rawPost.vote
-        };
-
-        let users: Record<number, User> = {};
-        users[rawPost.author_id] = await this.userManager.get(rawPost.author_id);
-
-        let comments: CommentItem[] = [];
-        let tmpComments: Record<number, CommentItem> = {};
-        for (let rawComment of rawComments) {
-            let comment: CommentItem = {
-                id: rawComment.comment_id,
-                created: rawComment.created_at,
-                author: rawComment.author_id,
-                content: format === 'html' ? rawComment.html : rawComment.source,
-                rating: rawComment.rating,
-                vote: rawComment.vote,
-                isNew: rawComment.comment_id > lastReadCommentId
+            const post: PostItem = {
+                id: rawPost.post_id,
+                site: site.site,
+                author: rawPost.author_id,
+                created: rawPost.created_at,
+                title: rawPost.title,
+                content: format === 'html' ? rawPost.html : rawPost.source,
+                rating: rawPost.rating,
+                comments: rawPost.comments,
+                newComments: 0,
+                vote: rawPost.vote,
+                bookmark: false
             };
 
-            if (!users[rawComment.author_id]) {
-                users[rawComment.author_id] = await this.userManager.get(rawComment.author_id);
-            }
-            tmpComments[rawComment.comment_id] = comment;
+            const users: Record<number, User> = {};
+            users[rawPost.author_id] = await this.userManager.get(rawPost.author_id);
 
-            if (!rawComment.parent_comment_id) {
-                comments.push(comment);
-            }
-            else {
-                let parentComment = tmpComments[rawComment.parent_comment_id];
-                if (parentComment) {
-                    if (!parentComment.answers) {
-                        parentComment.answers = [];
+            const comments: CommentItem[] = [];
+            const tmpComments: Record<number, CommentItem> = {};
+            for (const rawComment of rawComments) {
+                const comment: CommentItem = {
+                    id: rawComment.comment_id,
+                    created: rawComment.created_at,
+                    author: rawComment.author_id,
+                    content: format === 'html' ? rawComment.html : rawComment.source,
+                    rating: rawComment.rating,
+                    vote: rawComment.vote,
+                    isNew: rawComment.author_id !== userId && rawComment.comment_id > lastReadCommentId
+                };
+
+                if (!users[rawComment.author_id]) {
+                    users[rawComment.author_id] = await this.userManager.get(rawComment.author_id);
+                }
+                tmpComments[rawComment.comment_id] = comment;
+
+                if (!rawComment.parent_comment_id) {
+                    comments.push(comment);
+                }
+                else {
+                    let parentComment = tmpComments[rawComment.parent_comment_id];
+                    if (parentComment) {
+                        if (!parentComment.answers) {
+                            parentComment.answers = [];
+                        }
+
+                        parentComment.answers.push(comment);
                     }
-
-                    parentComment.answers.push(comment);
                 }
             }
-        }
 
-        response.success({
-            post: post,
-            site: site,
-            comments: comments,
-            users: users
-        } as PostGetResponse);
-    }
-
-    async create(request: express.Request, response: express.Response) {
-        if (!request.session.data.userId) {
-            return response.authRequired();
-        }
-
-        let userId = request.session.data.userId;
-        let body = <CreateRequest> request.body;
-        let format = body.format || 'html';
-
-        if (!body.content) {
-            return response.error('content-required', 'Content required');
-        }
-
-        let subdomain = body.site;
-        let site = await this.siteManager.getSiteByName(subdomain);
-
-        if (!site) {
-            return response.error('no-site', 'Site not found');
-        }
-
-        let html = this.parseContent(body.content);
-
-        let post = await this.postManager.createPost(site.id, userId, body.title, body.content, html);
-
-        response.success({
-            post: {
-                id: post.post_id,
-                site: site.site,
-                author: post.author_id,
-                created: post.created_at,
-                title: post.title,
-                content: format === 'html' ? post.html : post.source,
-                rating: post.rating,
-                comments: post.comments,
-                newComments: 0,
-                vote: 0
-            }
-        } as CreateResponse);
-    }
-
-    async feed(request: express.Request, response: express.Response) {
-        if (!request.session.data.userId) {
-            return response.authRequired();
-        }
-
-        let userId = request.session.data.userId;
-
-        let body = <FeedRequest> request.body;
-
-        let subdomain = body.site;
-
-        let site = await this.siteManager.getSiteByName(subdomain);
-        if (!site) {
-            return response.error('no-site', 'Site not found');
-        }
-
-        let siteId = site.id;
-        let page = body.page || 1;
-        let format = body.format || 'html';
-        let perPage = Math.min(Math.max(body.perpage || 10, 1), 50);
-
-        let total = await this.postManager.getTotal(siteId);
-
-        let rawPosts = await this.postManager.getAllRaw(siteId, userId, page, perPage);
-
-        let users: Record<number, User> = {};
-        let posts: PostItem[] = [];
-        for (let post of rawPosts) {
-            if (!users[post.author_id]) {
-                users[post.author_id] = await this.userManager.get(post.author_id);
-            }
-
-            posts.push({
-                id: post.post_id,
-                site: site.site,
-                author: post.author_id,
-                created: post.created_at,
-                title: post.title,
-                content: format === 'html' ? post.html : post.source,
-                rating: post.rating,
-                comments: post.comments,
-                newComments: post.read_comments ? Math.max(0, post.comments - post.read_comments) : post.comments,
-                bookmark: post.bookmark > 1,
-                vote: post.vote
+            response.success({
+                post: post,
+                site: site,
+                comments: comments,
+                users: users
             });
         }
-
-        response.success({
-            posts: posts,
-            total: total,
-            users: users,
-            site: site
-        } as FeedResponse);
-    }
-
-    async comment(request: express.Request, response: express.Response) {
-        if (!request.session.data.userId) {
-            return response.authRequired();
-        }
-
-        let userId = request.session.data.userId;
-        let body = <CommentRequest> request.body;
-        let postId = body.post_id;
-        let parentCommentId = body.comment_id;
-        let format = body.format || 'html';
-
-        if (!body.content) {
-            return response.error('content-required', 'Content required');
-        }
-
-        if (!postId) {
-            return response.error('id-required', 'Post id required');
-        }
-
-        let rawPost = <PostRawWithUserData> await this.postManager.getRaw(postId, userId);
-        if (!rawPost) {
-            return response.error('no-post', 'Post not found');
-        }
-
-        let site = await this.siteManager.getSiteById(rawPost.site_id);
-        if (!site) {
+        catch (err) {
+            this.logger.error('Post get error', { error: err, post_id: postId });
             return response.error('error', 'Unknown error', 500);
         }
-
-        let html = this.parseContent(body.content);
-
-        let users: Record<number, User> = {};
-        users[userId] = await this.userManager.get(userId);
-
-        let commentRaw = await this.postManager.createComment(userId, postId, parentCommentId, body.content, html);
-
-        response.success({
-            comment: {
-                id: commentRaw.comment_id,
-                created: commentRaw.created_at,
-                author: commentRaw.author_id,
-                content: format === 'html' ? commentRaw.html : commentRaw.source,
-                rating: commentRaw.rating,
-                parentComment: commentRaw.parent_comment_id
-            },
-            users: users
-        } as CommentResponse);
     }
 
-    private parseContent(content: string) {
-        return this.parser.parse(content);
-        // content = content.replace(/(\r\n|\n|\r)/gm, '<br/>');
-        //
-        // let html = sanitizeHtml(content, {
-        //     allowedTags: ['b', 'i', 'u', 'strike', 'irony', 'a', 'span', 'br', 'img'],
-        //     allowedAttributes: {
-        //         'a': ['href'],
-        //         'img': ['src'],
-        //     },
-        //     disallowedTagsMode: 'escape',
-        //     transformTags: {
-        //         'irony': () => {return { tagName: 'span', attribs: { 'class': 'irony' } }}
-        //     },
-        //     allowedClasses: {
-        //         'span': ['irony']
-        //     }
-        // });
-        //
-        // return html;
-    }
-
-    async read(request: express.Request, response: express.Response) {
+    async create(request: APIRequest<CreateRequest>, response: APIResponse<CreateResponse>) {
         if (!request.session.data.userId) {
             return response.authRequired();
         }
 
-        let userId = request.session.data.userId;
-        let body = <ReadRequest> request.body;
-        let postId = body.post_id;
-        let comments = body.comments;
-        let lastCommentId = body.last_comment_id;
+        const userId = request.session.data.userId;
+        const { site: subdomain, format, content, title } = request.body;
 
-        if (!postId || comments === undefined) {
-            return response.error('required', 'Post id and comments count required')
+        try {
+            const site = await this.siteManager.getSiteByName(subdomain);
+
+            if (!site) {
+                return response.error('no-site', 'Site not found');
+            }
+
+            const html = this.parser.parse(content);
+
+            const post = await this.postManager.createPost(site.id, userId, title, content, html);
+
+            this.logger.info(`Post created by #${userId}`, { user_id: userId, site: subdomain, format, content, title });
+
+            response.success({
+                post: {
+                    id: post.post_id,
+                    site: site.site,
+                    author: post.author_id,
+                    created: post.created_at,
+                    title: post.title,
+                    content: format === 'html' ? post.html : post.source,
+                    rating: post.rating,
+                    comments: post.comments,
+                    newComments: 0,
+                    vote: 0,
+                    bookmark: true
+                }
+            });
         }
+        catch (err) {
+            this.logger.error('Post create failed', { error: err, user_id: userId, site: subdomain, format, content, title });
+            return response.error('error', 'Unknown error', 500);
+        }
+    }
+
+    async feed(request: APIRequest<FeedRequest>, response: APIResponse<FeedResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+
+        const userId = request.session.data.userId;
+        const { site: subdomain, format, page, perpage: perPage } = request.body;
+
+        try {
+            const site = await this.siteManager.getSiteByName(subdomain);
+            if (!site) {
+                return response.error('no-site', 'Site not found');
+            }
+
+            const siteId = site.id;
+            const total = await this.postManager.getTotal(siteId);
+
+            const rawPosts = await this.postManager.getAllRaw(siteId, userId, page, perPage);
+
+            const users: Record<number, User> = {};
+            const posts: PostItem[] = [];
+            for (const post of rawPosts) {
+                if (!users[post.author_id]) {
+                    users[post.author_id] = await this.userManager.get(post.author_id);
+                }
+
+                posts.push({
+                    id: post.post_id,
+                    site: site.site,
+                    author: post.author_id,
+                    created: post.created_at,
+                    title: post.title,
+                    content: format === 'html' ? post.html : post.source,
+                    rating: post.rating,
+                    comments: post.comments,
+                    newComments: post.read_comments ? Math.max(0, post.comments - post.read_comments) : post.comments,
+                    bookmark: post.bookmark > 1,
+                    vote: post.vote
+                });
+            }
+
+            response.success({
+                posts: posts,
+                total: total,
+                users: users,
+                site: site
+            });
+        }
+        catch (err) {
+            this.logger.error('Feed failed', { error: err, user_id: userId, site: subdomain, format });
+            return response.error('error', 'Unknown error', 500);
+        }
+    }
+
+    async comment(request: APIRequest<CommentRequest>, response: APIResponse<CommentResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+
+        const userId = request.session.data.userId;
+        const { post_id: postId, comment_id: parentCommentId, format, content } = request.body;
+
+        try {
+            const html = this.parser.parse(content);
+
+            let users: Record<number, User> = {};
+            users[userId] = await this.userManager.get(userId);
+
+            let commentRaw = await this.postManager.createComment(userId, postId, parentCommentId, content, html);
+
+            this.logger.info(`Comment created by #${userId} @${users[userId].username}`, {
+                comment: content,
+                username: users[userId].username,
+                user_id: userId
+            });
+
+            response.success({
+                comment: {
+                    id: commentRaw.comment_id,
+                    created: commentRaw.created_at,
+                    author: commentRaw.author_id,
+                    content: format === 'html' ? commentRaw.html : commentRaw.source,
+                    rating: commentRaw.rating,
+                    parentComment: commentRaw.parent_comment_id,
+                    isNew: true
+                },
+                users: users
+            });
+        }
+        catch (err) {
+            this.logger.error('Comment create failed', { error: err, user_id: userId, format, content, post_id: postId });
+            return response.error('error', 'Unknown error', 500);
+        }
+    }
+
+    async read(request: APIRequest<ReadRequest>, response: APIResponse<{}>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+
+        const userId = request.session.data.userId;
+        const { post_id: postId, comments, last_comment_id: lastCommentId } = request.body;
 
         // update in background
         this.postManager.setRead(postId, userId, comments, lastCommentId)
-            .then();
+            .then()
+            .catch(err => {
+                this.logger.error(`Read update failed`, { error: err, user_id: userId, post_id: postId, comments: comments, last_comment_id: lastCommentId });
+            })
 
         response.success({});
     }
 
-    async bookmark(request: express.Request, response: express.Response) {
+    async bookmark(request: APIRequest<BookmarkRequest>, response: APIResponse<BookmarkResponse>) {
         if (!request.session.data.userId) {
             return response.authRequired();
         }
 
-        let userId = request.session.data.userId;
-        let body = <BookmarkRequest> request.body;
-        let postId = body.post_id;
-        let bookmark = body.bookmark;
+        const userId = request.session.data.userId;
+        const { post_id: postId, bookmark } = request.body;
 
-        if (!postId || !bookmark) {
-            return response.error('required', 'Post id and bookmark required')
+        try {
+            await this.postManager.setBookmark(postId, userId, bookmark);
+            response.success({bookmark: bookmark});
         }
-
-        await this.postManager.setBookmark(postId, userId, bookmark);
-        response.success({ bookmark: bookmark });
+        catch (err) {
+            this.logger.error('Bookmark failed', { error: err, user_id: userId, post_id: postId, bookmark });
+            return response.error('error', 'Unknown error', 500);
+        }
     }
 }

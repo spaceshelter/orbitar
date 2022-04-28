@@ -74,22 +74,27 @@ export default function PostPage() {
 
         const needShow = (comment: CommentInfo) => {
             if (comment.isNew) {
-                return true;
+                return comment;
             }
             if (comment.answers) {
+                const answers: CommentInfo[] = [];
                 for (let answer of comment.answers) {
                     let need = needShow(answer);
                     if (need) {
-                        return true;
+                        answers.push(need);
                     }
+                }
+                if (answers.length > 0) {
+                    return { ...comment, answers: answers };
                 }
             }
             return false;
         }
 
         for (let comment of comments) {
-            if (needShow(comment)) {
-                newComments.push(comment);
+            let need = needShow(comment);
+            if (need) {
+                newComments.push(need);
             }
         }
 
@@ -102,24 +107,38 @@ export default function PostPage() {
         return new Promise<CommentInfo>((resolve, reject) => {
             api.post.comment(text, post.id, comment?.id)
                 .then(result => {
+                    let newComments;
                     if (comment) {
                         if (!comment.answers) {
                             comment.answers = [];
                         }
                         comment.answers.push(result.comment);
-                        let newComments = [...comments!];
-                        setComments(newComments);
-
-                        api.post.read(postId, post.comments + 1)
-                            .then(res => {
-                                console.log('READ', res);
-                            });
+                        newComments = [...comments!];
                     }
                     else {
-                        let newComments = [...comments!];
+                        newComments = [...comments!];
                         newComments.push(result.comment);
-                        setComments(newComments);
                     }
+
+                    if (newComments) {
+                        setComments(newComments);
+
+                        const commentsCounter: ((comments: CommentInfo[]) => number) = (comments: CommentInfo[]) => {
+                            return comments.reduce<number>((p, c) => {
+                                return p + (c.answers ? commentsCounter(c.answers) : 0);
+                            }, comments.length);
+                        }
+
+                        const totalComments = commentsCounter(newComments);
+                        if (totalComments) {
+                            api.post.read(postId, totalComments)
+                                .then(res => {
+                                    console.log('READ', res);
+                                });
+                        }
+                    }
+
+
 
                     resolve(result.comment);
                 })

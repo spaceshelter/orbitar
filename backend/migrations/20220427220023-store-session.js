@@ -15,12 +15,17 @@ exports.setup = function(options, seedLink) {
 };
 
 exports.up = function(db, callback) {
-  db.addColumn('user_bookmarks', 'read_comments', { type: 'int' }, callback);
+  db.createTable('sessions', {
+    id: { type: 'string', length: 64, primaryKey: true },
+    data: { type: 'text', notNull: true },
+    used: { type: 'datetime', notNull: true, defaultValue: new String('CURRENT_TIMESTAMP') },
+  }, callback);
+  db.runSql(`grant delete on ${process.env.MYSQL_DATABASE}.* to '${process.env.MYSQL_USER}'@'%';`, callback);
   return null;
 };
 
 exports.down = function(db, callback) {
-  db.removeColumn('user_bookmarks', 'read_comments', callback);
+  db.dropTable('sessions', callback);
   return null;
 };
 
