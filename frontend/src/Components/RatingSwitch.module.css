@@ -2,9 +2,10 @@
     display: inline-block;
     text-align: center;
     border-radius: 6px;
-    box-shadow: 0 0 0 1px #312647 inset;
-    height: 22px;
-    padding: 0 1px;
+    background: var(--rating-bg);
+    border-top: 1px solid var(--rating-border);
+    border-bottom: 1px solid var(--rating-border);
+    height: 20px;
     overflow: hidden;
     vertical-align: middle;
     font-size: 12px;
@@ -12,13 +13,13 @@
 
 .rating button {
     outline: 0;
-    width: 20px;
+    width: 22px;
     height: 20px;
     display: inline-block;
-    border-radius: 5px;
+    border-radius: 0;
     border: none;
-    color: #cccccc;
-    background: #1b142a;
+    color: var(--rating-button-fg);
+    background: var(--rating-button-bg);
     font-size: 12px;
     padding: 0;
     margin: 0;
@@ -26,13 +27,14 @@
 
 .rating button.votedPlus {
     font-weight: bold;
-    color: #8aff74;
-    background: #1b3f2a;
+    color: var(--rating-plus-fg);
+    background: var(--rating-plus-bg);
+
 }
 .rating button.votedMinus {
     font-weight: bold;
-    color: #ff74ba;
-    background: #67303e;
+    color: var(--rating-minus-fg);
+    background: var(--rating-minus-bg);
 }
 
 
@@ -44,9 +46,12 @@
 .value {
     display: inline-block;
     font-size: 12px;
-    line-height: 20px;
-    height: 20px;
-    margin: 0 4px;
+    /*line-height: 20px;*/
+    /*height: 20px;*/
+    /*border-top: 1px solid var(--rating-button-bg);*/
+    /*border-bottom: 1px solid var(--rating-button-bg);*/
+    /*height: 19px;*/
+    padding: 0 4px;
     min-width: 20px;
     position: relative;
 }

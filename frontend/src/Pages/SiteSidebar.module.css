@@ -1,16 +1,24 @@
-.site {
+.container {
     flex: 1;
     max-width: 200px;
+
     padding: 20px;
-    background: var(--item-bg);
-    height: 100%;
+    background: var(--sidebar-bg);
+}
+
+.fixed {
+
 }
 
 .siteName {
     display: block;
     text-decoration: none;
-    color: var(--fg);
+    color: var(--sidebar-fg);
     margin-bottom: 20px;
     font-size: 20px;
     font-weight: bold;
+}
+
+.podsites {
+    margin-top: 40px;
 }

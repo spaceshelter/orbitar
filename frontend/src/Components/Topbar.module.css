@@ -1,71 +1,92 @@
 .container {
-    display: block;
-    height: 40px;
+    display: flex;
+    align-items: center;
+    height: 50px;
     border-bottom: 1px solid #41244e;
-    background: #0f0a17;
-}
-
-.topbar {
-    /*display: flex;*/
-    /*width: 100%;*/
+    background: var(--topbar-bg);
 }
 
 .logo {
-    display: inline-block;
-
-    line-height: 40px;
-    margin-left: 10px;
-    font-weight: bold;
-    color: #8b4977;
-    font-size: 24px;
-    vertical-align: middle;
+    height: 40px;
+    margin: auto 0 auto 10px;
     text-decoration: none;
+}
+
+.logo a {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    line-height: 40px;
+    height: 40px;
 }
 
 .logo img {
     height: 40px;
-    vertical-align: top;
+    margin-right: 5px;
 }
 
-
-.user {
-    float: right;
-    height: 40px;
-    line-height: 40px;
-    display: flex;
-    justify-content: flex-end;
-    vertical-align: middle;
-}
-
-.username a {
-    display: inline-block;
-    color: #ee7285;
+.logo .text {
     font-weight: bold;
-    margin: 0 5px;
+    font-size: 24px;
+    color: var(--topbar-logo-fg);
+}
+
+.spacer {
+    flex: 1;
+}
+
+.controls {
+    display: flex;
+    align-items: center;
+    margin-right: 10px;
+}
+
+.username {
+    display: inline-block;
+    color: var(--topbar-button-fg);
+    font-weight: bold;
     text-decoration: none;
+    height: 32px;
+    line-height: 32px;
+    border-radius: 4px;
+    padding: 0 5px;
+}
+
+.controls>* {
+    margin: auto 0 auto 5px;
+}
+
+.toggleTheme {
+    margin: auto 0;
 }
 
 .karma {
     display: inline-block;
     font-size: 12px;
+    background: var(--topbar-karma-bg);
+    color: var(--topbar-karma-fg);
+    min-width: 20px;
+    text-align: center;
+    padding: 0 3px;
+    border-radius: 5px;
 }
 
-.logout, .notify {
-    display: inline-block;
-    width: 32px;
+.button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     text-align: center;
-    vertical-align: middle;
+    width: 32px;
     height: 32px;
     line-height: 32px;
     border-radius: 4px;
     font-size: 15px;
-    color: #bc5880;
+    color: var(--topbar-button-fg);
     position: relative;
-    margin: 4px 2px;
 }
-.logout:hover, .notify:hover {
-    background: #5f3e68;
-    color: #ed7285;
+.button:hover, .username:hover {
+    background: var(--topbar-button-hover-bg);
+    color: var(--topbar-button-hover-fg);
 }
 
 .notifyCount {
@@ -76,9 +97,9 @@
     border-radius: 8px;
     line-height: 14px;
     font-size: 10px;
-    color: white;
+    color: var(--topbar-notify-fg);
     right: 0;
     top: 0;
-    background: #ea3434;
+    background: var(--topbar-notify-bg);
 
 }

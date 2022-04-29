@@ -103,6 +103,12 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             });
     };
 
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.ctrlKey && e.code === 'Enter') {
+            handleAnswer();
+        }
+    }
+
     if (!props.open) {
         return <></>;
     }
@@ -118,8 +124,8 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 <button onClick={() => applyTag('img')} className={styles.image}>Image</button>
                 <button onClick={() => applyTag('a')} className={styles.link}>Link</button>
             </div>
-            <div><textarea ref={answerRef} disabled={isPosting} value={answerText} onChange={handleAnswerChange} /></div>
-            <div><button disabled={isPosting} onClick={handleAnswer}>Ответить</button></div>
+            <div><textarea ref={answerRef} disabled={isPosting} value={answerText} onChange={handleAnswerChange} onKeyDown={handleKeyDown} /></div>
+            <div><button disabled={isPosting || !answerText} onClick={handleAnswer}>Ответить</button></div>
         </div>
     );
 }

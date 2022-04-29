@@ -27,5 +27,5 @@
 }
 
 .isNew {
-    border: 1px solid #732a53;
+    border: 1px solid var(--comment-new-border);
 }
