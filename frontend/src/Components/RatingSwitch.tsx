@@ -22,8 +22,6 @@ export default function RatingSwitch(props: RatingSwitchProps) {
         setState({rating: props.rating.value, vote: props.rating.vote})
     }, [props]);
 
-    console.log('SWITCH', props.rating);
-
     const handleVote = (vote: number) => {
         const prevState = { ...state };
         if (state.vote === vote) {

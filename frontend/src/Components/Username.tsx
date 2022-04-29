@@ -5,12 +5,12 @@ import {
 } from "react-location";
 import {UserInfo} from '../Types/UserInfo';
 
-interface UsernameProps {
+interface UsernameProps extends React.ComponentPropsWithRef<"a"> {
     user: UserInfo;
 }
 
 export default function Username(props: UsernameProps) {
     return (
-        <Link to={"/user/" + props.user.username}  className={styles.username}>{props.user.username}</Link>
+        <Link to={"/user/" + props.user.username}  className={styles.username + (props.className ? ' ' + props.className : '')}>{props.user.username}</Link>
     )
 }

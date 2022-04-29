@@ -24,6 +24,9 @@
 
   --link-fg: #d98ec5;
   --irony-fg: #fa8e8e;
+
+  --topbar-bg: #100917;
+  --topbar-fg: #8b4977;
 }
 
 html,body {
@@ -58,6 +61,7 @@ input[type="submit"], button {
   border-radius: 4px;
   color: var(--button-fg);
   cursor: pointer;
+  padding: 4px 10px;
 }
 input[type="submit"]:disabled, button:disabled {
   background: var(--button-dis-bg);

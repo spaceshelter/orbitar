@@ -18,6 +18,7 @@
 
 .buttons button {
     margin: 0 3px;
+    padding: 2px 6px;
     color: var(--fg);
     background: none;
     border: none;
@@ -25,7 +26,8 @@
 }
 
 .buttons button:hover {
-    background: #2b193f;
+    background: var(--button-bg);
+    color: var(--button-fg);
 }
 
 button.bold {
