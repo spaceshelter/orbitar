@@ -81,14 +81,22 @@ export function ThemeProvider(props: ThemeProviderProps) {
         };
 
         return { setTheme, setCurrentStyles };
-    }, []);
+    }, [props.defaultTransitionTime, props.themeCollection]);
+
+    useEffect(() => {
+        if (theme) {
+            if (props.themeCollection[theme]) {
+                storeTheme(theme);
+            }
+            else if (currentStyles) {
+                storeTheme(theme, currentStyles.styles);
+            }
+        }
+    }, [props.themeCollection, theme, currentStyles])
 
     useEffect(() => {
         if (!currentStyles) {
             return;
-        }
-        if (theme) {
-            storeTheme(theme, props.themeCollection[theme] ? undefined : currentStyles.styles);
         }
 
         // gather colors transition information

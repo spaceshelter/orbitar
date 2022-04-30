@@ -56,7 +56,7 @@ export default function SignInPage() {
                 })} />
                 {errors.password && <p className={styles.error}>{errors.password.message}</p>}
 
-                <div><input type="submit" disabled={!isValid} value="Войти" /></div>
+                <div><input type="submit" disabled={!isValid || isSigningIn} value="Войти" /></div>
                 {error && <p className={styles.error}>{error}</p>}
             </form>
         </div>

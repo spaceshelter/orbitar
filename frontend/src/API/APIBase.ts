@@ -63,8 +63,6 @@ export default class APIBase {
 
         let responseJson = await response.json() as APIResponse;
 
-        console.log('RESPONSE', url, await responseJson);
-
         if (responseJson.result === 'error') {
             throw new APIError(responseJson.code, responseJson.message, response.status);
         }
