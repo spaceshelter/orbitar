@@ -44,7 +44,7 @@
        ```  
    * Выполнить миграции БД
       ```
-      npm run migrations:dev up
+      npm run migration:dev up
       ```
    * Запустить node:
        ```
