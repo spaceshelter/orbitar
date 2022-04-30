@@ -21,7 +21,7 @@ export default function IndexPage() {
         if (search.page !== pageState.page) {
             setPageState({ ...pageState, page: search.page || 1 });
         }
-    }, [search.page, pageState]);
+    }, [search.page]);
 
     useEffect(() => {
         setFeedLoading(true);
@@ -51,8 +51,6 @@ export default function IndexPage() {
                 console.log('FEED ERROR', error);
             });
     }, [api, pageState.page]);
-
-
 
     return (
         <div className={styles.container}>
