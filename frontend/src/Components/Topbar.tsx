@@ -46,7 +46,7 @@ export default function Topbar() {
             </div>
             <div className={styles.spacer} />
             <div className={styles.controls}>
-                <Link className={styles.button} to="/settings/theme" onClick={toggleTheme}>{theme == 'dark' ? <FiMoon /> : <FiSun />}</Link>
+                <Link className={styles.button} to="/settings/theme" onClick={toggleTheme}>{theme === 'dark' ? <FiMoon /> : <FiSun />}</Link>
                 <Link className={styles.button} to="/my"><FiBookmark /><div className={styles.notifyCount}>∞</div></Link>
                 <Link className={styles.button} to="/notifications"><FiBell /><div className={styles.notifyCount}>∞</div></Link>
                 <div className={styles.karma}>{userInfo.karma}</div>

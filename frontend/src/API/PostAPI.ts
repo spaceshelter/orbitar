@@ -71,12 +71,9 @@ export default class PostAPI {
 
     async get(postId: number): Promise<PostResponse> {
         try {
-            let result = await this.api.request('/post/get', { id: postId }) as PostResponse;
-            console.log('POST', result);
-            return result;
+            return await this.api.request('/post/get', { id: postId }) as PostResponse;
         }
         catch (err) {
-            console.log('POST ERR', err);
             throw err;
         }
     }
@@ -95,12 +92,9 @@ export default class PostAPI {
 
     async read(postId: number, comments: number, lastCommentId?: number) {
         try {
-            let result = await this.api.request('/post/read', { post_id: postId, comments: comments, last_comment_id: lastCommentId });
-            console.log('READ', result);
-            return result;
+            return await this.api.request('/post/read', { post_id: postId, comments: comments, last_comment_id: lastCommentId });
         }
         catch (err) {
-            console.log('READ ERROR', err);
             throw err;
         }
     }

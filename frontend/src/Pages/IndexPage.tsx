@@ -21,7 +21,7 @@ export default function IndexPage() {
         if (search.page !== pageState.page) {
             setPageState({ ...pageState, page: search.page || 1 });
         }
-    }, [search.page]);
+    }, [search.page, pageState]);
 
     useEffect(() => {
         setFeedLoading(true);

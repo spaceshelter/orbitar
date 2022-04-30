@@ -4,7 +4,7 @@ import RatingSwitch from './RatingSwitch';
 import {UserGender} from '../Types/UserInfo';
 import Username from './Username';
 import {Link} from 'react-location';
-import React, {useState} from 'react';
+import React, {useMemo, useState} from 'react';
 import CreateCommentComponent from './CreateCommentComponent';
 import DateComponent from './DateComponent';
 import ContentComponent from './ContentComponent';
@@ -37,12 +37,19 @@ export default function CommentComponent(props: CommentProps) {
         });
     };
 
+    const handleVote = useMemo(() => {
+        return (value: number, vote?: number) => {
+            props.comment.rating = value;
+            props.comment.vote = vote;
+        }
+    }, [props.comment]);
+
     return (
-        <div className={styles.container}>
+        <div className={styles.container} data-comment-id={props.comment.id}>
             <div className={styles.comment + (props.comment.isNew ? ' ' + styles.isNew : '')}>
                 <ContentComponent className={styles.commentContent} content={props.comment.content} />
                 <div className={styles.controls}>
-                    <RatingSwitch type="comment" id={props.comment.id} rating={{ vote: props.comment.vote, value: props.comment.rating }} />
+                    <RatingSwitch type="comment" id={props.comment.id} rating={{ vote: props.comment.vote, value: props.comment.rating }} onVote={handleVote} />
                     <div className={styles.signature}>
                         {props.comment.author.gender === UserGender.she ? 'Написала' : 'Написал'} <Username user={props.comment.author} />, <DateComponent date={props.comment.created} />, <Link to={'/post/' + props.post.id + '#' + props.comment.id } onClick={handleAnswerSwitch}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</Link>
                     </div>

@@ -4,7 +4,7 @@ import {useAPI} from '../AppState/AppState';
 import { toast } from 'react-toastify';
 
 
-interface RatingSwitchProps {
+type RatingSwitchProps = {
     rating: {
         vote?: number;
         value: number;
@@ -12,6 +12,7 @@ interface RatingSwitchProps {
     type: 'post' | 'comment' | 'user';
     id: number;
     double?: boolean;
+    onVote?: (value: number, vote?: number) => void;
 }
 
 export default function RatingSwitch(props: RatingSwitchProps) {
@@ -28,15 +29,25 @@ export default function RatingSwitch(props: RatingSwitchProps) {
             vote = 0;
         }
 
-        setState({ vote: vote, rating: state.rating - (state.vote || 0) + vote });
+        let newRating = state.rating - (state.vote || 0) + vote;
+
+        setState({ vote: vote, rating: newRating});
+        if (props.onVote) {
+            props.onVote(newRating, vote);
+        }
+
         api.voteAPI.vote(props.type, props.id, vote)
             .then(result => {
                 setState({
                     rating: result.rating,
                     vote: result.vote
-                })
+                });
+
+                if (props.onVote) {
+                    props.onVote(result.rating, result.vote);
+                }
             })
-            .catch(error => {
+            .catch(() => {
                 setState(prevState);
                 toast.warn('Голос не учтён 🤬', { position: 'bottom-right' });
             });

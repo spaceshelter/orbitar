@@ -1,74 +1,14 @@
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 import styles from './UserPage.module.css';
 import {Link, useMatch, useMatchRoute} from 'react-location';
-import {useAPI} from '../AppState/AppState';
-import {UserInfo, UserProfileInfo} from '../Types/UserInfo';
-import {APIError} from '../API/APIBase';
 import Username from '../Components/Username';
 import RatingSwitch from '../Components/RatingSwitch';
 import DateComponent from '../Components/DateComponent';
-
-type ProfileStateBase = {
-    status: 'loading' | 'not-found';
-}
-type ProfileStateError = {
-    status: 'error';
-    message: string;
-}
-type ProfileStateReady = {
-    status: 'ready';
-    profile: {
-        profile: UserProfileInfo;
-        invitedBy: UserInfo;
-        invites: UserInfo[];
-    };
-}
-type ProfileState = ProfileStateBase | ProfileStateError | ProfileStateReady;
-
-function useProfile(username: string): ProfileState {
-    const api = useAPI();
-    const [state, setState] = useState<ProfileState>({ status: 'loading' });
-
-    useEffect(() => {
-        let reject = false;
-
-        api.user.userProfile(username)
-            .then(profile => {
-                if (reject) {
-                    return;
-                }
-                setState({
-                    status: 'ready',
-                    profile
-                });
-            })
-            .catch(error => {
-                if (reject) {
-                    return;
-                }
-                console.log('ERROR', error);
-                if (error instanceof APIError) {
-                    if (error.statusCode === 404) {
-                        setState({status: 'not-found'});
-                        return;
-                    }
-
-                    setState({ status: 'error', message: error.message });
-                    return;
-                }
-
-                setState( { status: 'error', message: 'Неизвестная ошибка' });
-            });
-
-        return () => { reject = true; }
-    }, [username]);
-
-    return state;
-}
+import {useUserProfile} from '../API/use/useUserProfile';
 
 export default function UserPage() {
     const match = useMatch();
-    const state = useProfile(match.params.username)
+    const state = useUserProfile(match.params.username)
     const router = useMatchRoute();
 
     const isPosts = router({to: 'posts'});
