@@ -33,7 +33,7 @@ type ThemeProviderProps = {
 }
 
 export function ThemeProvider(props: ThemeProviderProps) {
-    let [theme, setThemeActual] = useState<string>();
+    const [theme, setThemeActual] = useState<string>();
     const [currentStyles, setCurrentStylesActual] = useState<{ styles: ThemeStyles, transitionTime: number }>();
 
     useEffect(() => {
@@ -159,18 +159,24 @@ function gatherColorsTransition(toStyle: ThemeStyles): ColorsTransition {
             return;
         }
         for (const name in color) {
+            if (!color.hasOwnProperty(name)) {
+                continue;
+            }
             colorFlattener(`${key}-${name}`, color[name]);
         }
     }
     colorFlattener('-', toStyle.colors);
 
-    for (const color in colors) {
-        const to = colors[color];
-        const from = window.getComputedStyle(document.documentElement).getPropertyValue(color).trim() || '#ffffff';
+    for (const name in colors) {
+        if (!colors.hasOwnProperty(name)) {
+            continue;
+        }
+        const to = colors[name];
+        const from = window.getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#ffffff';
         const toRGB = rgba(to);
         const fromRGB = rgba(from);
 
-        transition[color] = { from, fromRGB, to, toRGB };
+        transition[name] = { from, fromRGB, to, toRGB };
     }
 
     return transition;
@@ -179,7 +185,10 @@ function gatherColorsTransition(toStyle: ThemeStyles): ColorsTransition {
 function applyColorsTransition(stylesheet: HTMLStyleElement, transition: ColorsTransition, transitionTime: number, transitionStepInterval: number) {
     const applyColors = (step: number) => {
         let css = ':root {\n';
-        for (let color in transition) {
+        for (const color in transition) {
+            if (!transition.hasOwnProperty(color)) {
+                continue;
+            }
             let value;
 
             if (step >= 1) {
@@ -188,7 +197,7 @@ function applyColorsTransition(stylesheet: HTMLStyleElement, transition: ColorsT
             }
             else {
                 // calculate blended rgb value
-                let blended = blendValues(transition[color].fromRGB, transition[color].toRGB, step);
+                const blended = blendValues(transition[color].fromRGB, transition[color].toRGB, step);
                 value = `rgba(${Math.floor(blended[0] * 255)}, ${Math.floor(blended[1] * 255)}, ${Math.floor(blended[2] * 255)}, ${blended[3]})`;
             }
 
@@ -206,9 +215,9 @@ function applyColorsTransition(stylesheet: HTMLStyleElement, transition: ColorsT
         return () => {};
     }
 
-    let transitionStep = transitionStepInterval / transitionTime;
+    const transitionStep = transitionStepInterval / transitionTime;
     let step = 0;
-    let updateInterval = setInterval(() => {
+    const updateInterval = setInterval(() => {
         if (step >= 1) {
             clearInterval(updateInterval);
             step = 1;

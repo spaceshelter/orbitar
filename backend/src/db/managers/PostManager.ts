@@ -39,7 +39,7 @@ export default class PostManager {
             result = await this.db.query('select * from posts where post_id=:post_id', {post_id: postId});
         }
 
-        let row = (<PostRaw> result)[0];
+        const row = (<PostRaw> result)[0];
         if (!row) {
             return;
         }
@@ -48,7 +48,7 @@ export default class PostManager {
     }
 
     async getTotal(siteId: number): Promise<number> {
-        let result = await this.db.query(`select count(*) cnt from posts where site_id=:site_id`, {site_id: siteId});
+        const result = await this.db.query(`select count(*) cnt from posts where site_id=:site_id`, {site_id: siteId});
         if (!result || !result[0]) {
             return 0;
         }
@@ -57,7 +57,7 @@ export default class PostManager {
     }
 
     async getAllRaw(siteId: number, forUserId: number, page: number, perPage: number): Promise<PostRawWithUserData[]> {
-        let limitFrom = (page - 1) * perPage;
+        const limitFrom = (page - 1) * perPage;
 
         return await this.db.query(`
                 select p.*, v.vote, b.read_comments, b.bookmark
@@ -95,15 +95,15 @@ export default class PostManager {
     }
 
     async createPost(siteId: number, userId: number, title: string, source: string, html: string): Promise<PostRaw> {
-        let postInsertResult: OkPacket =
+        const postInsertResult: OkPacket =
             await this.db.query('insert into posts (site_id, author_id, title, source, html) values(:siteId, :userId, :title, :source, :html)',
                 {siteId, userId, title, source, html})
-        let postInsertId = postInsertResult.insertId
+        const postInsertId = postInsertResult.insertId
         if (!postInsertId) {
             throw new CodeError('unknown', 'Could not insert post');
         }
 
-        let post = this.getRaw(postInsertId);
+        const post = this.getRaw(postInsertId);
         if (!post) {
             throw new CodeError('unknown', 'Could not select post');
         }
@@ -119,7 +119,7 @@ export default class PostManager {
                 throw new CodeError('no-post', 'Post not found');
             }
 
-            let commentInsertResult: OkPacket = await conn.query(`
+            const commentInsertResult: OkPacket = await conn.query(`
                 insert into comments
                     (site_id, post_id, parent_comment_id, author_id, source, html)
                     values(:site_id, :post_id, :parent_comment_id, :author_id, :source, :html)
@@ -132,7 +132,7 @@ export default class PostManager {
                 html: html
             });
 
-            let commentInsertId = commentInsertResult.insertId;
+            const commentInsertId = commentInsertResult.insertId;
             if (!commentInsertId) {
                 throw new CodeError('unknown', 'Could not insert comment');
             }
@@ -142,7 +142,7 @@ export default class PostManager {
                 last_comment_id: commentInsertId
             });
 
-            let commentResult:CommentRaw[] = await conn.query(`select * from comments where comment_id = :comment_id`, { comment_id: commentInsertId });
+            const commentResult:CommentRaw[] = await conn.query(`select * from comments where comment_id = :comment_id`, { comment_id: commentInsertId });
             return commentResult[0];
         });
     }

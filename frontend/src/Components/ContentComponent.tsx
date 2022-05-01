@@ -45,7 +45,7 @@ export default function ContentComponent(props: ContentComponentProps) {
     const contentDiv = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        let content = contentDiv.current;
+        const content = contentDiv.current;
         if (!content) {
             return;
         }

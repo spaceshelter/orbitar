@@ -125,13 +125,13 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
 
         if (prev?.siteName !== siteName) {
             // load site from cache
-            let siteInfo = api.cache.getSite(siteName);
+            const siteInfo = api.cache.getSite(siteName);
             setSite(siteInfo);
         }
 
         if (prev?.postId !== postId) {
             // load post from cache
-            let postInfo = api.cache.getPost(postId);
+            const postInfo = api.cache.getPost(postId);
             setPost(postInfo);
             // reset comments
             setRawComments(undefined);
@@ -158,7 +158,7 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
 }
 
 function findComment(comments: CommentInfo[], commentId: number): CommentInfo | undefined {
-    for (let comment of comments) {
+    for (const comment of comments) {
         if (comment.id === commentId) {
             return comment;
         }
@@ -177,7 +177,7 @@ function filterComments(comments: CommentInfo[], unreadOnly: boolean): CommentIn
         return comments;
     }
 
-    let newComments: CommentInfo[] = [];
+    const newComments: CommentInfo[] = [];
 
     const needShow = (comment: CommentInfo) => {
         if (comment.isNew) {
@@ -185,8 +185,8 @@ function filterComments(comments: CommentInfo[], unreadOnly: boolean): CommentIn
         }
         if (comment.answers) {
             const answers: CommentInfo[] = [];
-            for (let answer of comment.answers) {
-                let need = needShow(answer);
+            for (const answer of comment.answers) {
+                const need = needShow(answer);
                 if (need) {
                     answers.push(need);
                 }
@@ -198,8 +198,8 @@ function filterComments(comments: CommentInfo[], unreadOnly: boolean): CommentIn
         return false;
     }
 
-    for (let comment of comments) {
-        let need = needShow(comment);
+    for (const comment of comments) {
+        const need = needShow(comment);
         if (need) {
             newComments.push(need);
         }
@@ -210,7 +210,7 @@ function filterComments(comments: CommentInfo[], unreadOnly: boolean): CommentIn
 
 function countComments(comments: CommentInfo[]) {
     let result = comments.length;
-    for (let comment of comments) {
+    for (const comment of comments) {
         if (comment.answers) {
             result += countComments(comment.answers);
         }

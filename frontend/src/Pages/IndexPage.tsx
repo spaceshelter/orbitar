@@ -31,7 +31,7 @@ export default function IndexPage() {
             site = window.location.hostname.split('.')[0];
         }
 
-        let siteInfo = api.cache.getSite(site);
+        const siteInfo = api.cache.getSite(site);
         if (siteInfo) {
             setSite(siteInfo);
         }
@@ -43,7 +43,7 @@ export default function IndexPage() {
                 setFeedLoading(false);
                 setPosts(result.posts);
                 setSite(result.site);
-                let pages = Math.floor((result.total - 1) / perPage) + 1;
+                const pages = Math.floor((result.total - 1) / perPage) + 1;
                 setPageState({page: pageState.page, pages: pages});
                 window.scrollTo(0, 0);
             })

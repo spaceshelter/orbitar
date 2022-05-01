@@ -1,5 +1,12 @@
 import UserAPI from './UserAPI';
 import APICache from './APICache';
+import {UserInfo, UserProfileInfo} from '../Types/UserInfo';
+
+export type UserProfileResult = {
+    profile: UserProfileInfo;
+    invitedBy: UserInfo;
+    invites: UserInfo[];
+}
 
 export default class UserAPIHelper {
     private api: UserAPI;
@@ -10,10 +17,17 @@ export default class UserAPIHelper {
         this.cache = cache;
     }
 
-    async userProfile(username: string) {
-        let profile = await this.api.userProfile(username);
-        profile.profile.registered = this.api.api.fixDate(new Date(profile.profile.registered));
-        this.cache.setUser(profile.profile);
-        return profile;
+    async userProfile(username: string): Promise<UserProfileResult> {
+        const {profile, invitedBy, invites} = await this.api.userProfile(username);
+
+        const profileInfo: UserProfileInfo = { ...profile } as any;
+
+        profileInfo.registered = this.api.api.fixDate(new Date(profile.registered));
+        this.cache.setUser(profileInfo);
+        return {
+            profile: profileInfo,
+            invitedBy,
+            invites
+        };
     }
 }

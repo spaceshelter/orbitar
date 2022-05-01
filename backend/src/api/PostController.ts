@@ -83,11 +83,13 @@ interface CommentItem {
     answers?: CommentItem[];
 }
 
-interface ReadRequest {
+type PostReadRequest = {
     post_id: number;
     comments: number;
     last_comment_id?: number;
-}
+};
+type PostReadResponse = Record<string, unknown>;
+
 interface BookmarkRequest {
     post_id: number;
     bookmark: boolean;
@@ -121,7 +123,7 @@ export default class PostController {
             perpage: Joi.number().min(1).max(50).default(10),
             format: joiFormat
         });
-        const readSchema = Joi.object<ReadRequest>({
+        const readSchema = Joi.object<PostReadRequest>({
             post_id: Joi.number().required(),
             comments: Joi.number().required(),
             last_comment_id: Joi.number().optional()
@@ -214,7 +216,7 @@ export default class PostController {
                     comments.push(comment);
                 }
                 else {
-                    let parentComment = tmpComments[rawComment.parent_comment_id];
+                    const parentComment = tmpComments[rawComment.parent_comment_id];
                     if (parentComment) {
                         if (!parentComment.answers) {
                             parentComment.answers = [];
@@ -346,10 +348,10 @@ export default class PostController {
         try {
             const html = this.parser.parse(content);
 
-            let users: Record<number, User> = {};
+            const users: Record<number, User> = {};
             users[userId] = await this.userManager.get(userId);
 
-            let commentRaw = await this.postManager.createComment(userId, postId, parentCommentId, content, html);
+            const commentRaw = await this.postManager.createComment(userId, postId, parentCommentId, content, html);
 
             this.logger.info(`Comment created by #${userId} @${users[userId].username}`, {
                 comment: content,
@@ -376,7 +378,7 @@ export default class PostController {
         }
     }
 
-    async read(request: APIRequest<ReadRequest>, response: APIResponse<{}>) {
+    async read(request: APIRequest<PostReadRequest>, response: APIResponse<PostReadResponse>) {
         if (!request.session.data.userId) {
             return response.authRequired();
         }

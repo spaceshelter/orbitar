@@ -9,9 +9,9 @@ interface PaginatorProps {
 }
 
 export default function Paginator(props: PaginatorProps) {
-    let pages = [];
+    const pages = [];
     for (let i = 1; i <= props.pages; i++) {
-        let classes = [styles.page];
+        const classes = [styles.page];
         if (i === props.page) {
             classes.push(styles.current);
         }

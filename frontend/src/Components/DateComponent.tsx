@@ -14,16 +14,22 @@ interface DateComponentProps {
 }
 
 export default function DateComponent(props: DateComponentProps) {
-    const mdate = moment(props.date);
+    const mDate = moment(props.date);
 
-    let date = mdate.utc(true).calendar({
-        sameDay: '[сегодня в] HH:mm',
-        lastDay: '[вчера в] HH:mm',
+    const date = mDate.utc(true).calendar({
+        sameDay: () => {
+            const today = moment().startOf('day');
+            if (mDate.isBefore(today)) {
+                return '[вчера в] HH:mm';
+            }
+            return '[сегодня в] HH:mm';
+        },
+        lastDay: 'DD MMMM [в] HH:mm',
         nextDay: 'DD.MM.YYYY HH:mm',
         nextWeek: 'DD.MM.YYYY HH:mm',
-        lastWeek: 'DD.MM.YYYY HH:mm',
-        sameElse: function (now) {
-            if (mdate.isBefore(startYear)) {
+        lastWeek: 'DD MMMM [в] HH:mm',
+        sameElse: () => {
+            if (mDate.isBefore(startYear)) {
                 return 'DD.MM.YYYY HH:mm'
             }
             else {

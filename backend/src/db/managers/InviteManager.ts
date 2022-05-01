@@ -25,14 +25,14 @@ export default class InviteManager {
                 throw new CodeError('invite-not-found', 'Invite not found');
             }
 
-            const userCountResult: any[] = await conn.query('select count(*) cnt from users where username=:username', {username: username});
+            const userCountResult = await conn.query<{cnt: string}>('select count(*) cnt from users where username=:username', {username: username});
             if (!userCountResult || userCountResult[0].cnt > 0) {
                 console.error('Username exists', username);
                 throw new CodeError('username-exists', 'Username exists');
             }
 
             await conn.query('update invites set left_count=left_count-1 where code=:code', {code: code});
-            let userInsertResult: OkPacket = await conn.query('insert into users (username, password, gender, name, email) values(:username, :password, :gender, :name, :email)', {
+            const userInsertResult: OkPacket = await conn.query('insert into users (username, password, gender, name, email) values(:username, :password, :gender, :name, :email)', {
                 username: username,
                 password: passwordHash,
                 gender: gender,

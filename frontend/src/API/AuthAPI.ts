@@ -1,10 +1,19 @@
 import APIBase from './APIBase';
 import {UserInfo} from '../Types/UserInfo';
 
-type AuthResponse = {
+type StatusRequest = {};
+type StatusResponse = {
+    user: UserInfo;
+};
+
+type SignInRequest = {};
+type SignInResponse = {
     session: string;
     user: UserInfo;
-}
+};
+
+type SignOutRequest = {};
+type SignOutResponse = {};
 
 export default class AuthAPI {
     private api: APIBase;
@@ -13,23 +22,18 @@ export default class AuthAPI {
         this.api = api;
     }
 
-    async me(): Promise<AuthResponse> {
-        let response = await this.api.request('/me', {}) as AuthResponse;
-
-        return response;
+    async status(): Promise<StatusResponse> {
+        return await this.api.request<StatusRequest, StatusResponse>('/status', {});
     }
 
-    async signIn(username: string, password: string): Promise<AuthResponse> {
-        let response = await this.api.request('/auth/signin', { username: username, password: password });
-
-        console.log('RESPONSE SIGNIN', response);
-        return response as AuthResponse;
+    async signIn(username: string, password: string): Promise<SignInResponse> {
+        return await this.api.request<SignInRequest, SignInResponse>('/auth/signin', {
+            username,
+            password
+        });
     }
 
     async signOut() {
-        let response = await this.api.request('/auth/signout', {  });
-
-        console.log('RESPONSE SIGNOUT', response);
-        return response;
+        return await this.api.request<SignOutRequest, SignOutResponse>('/auth/signout', { });
     }
 }

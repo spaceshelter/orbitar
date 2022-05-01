@@ -1,14 +1,26 @@
 import APIBase from './APIBase';
 import {UserGender, UserInfo} from '../Types/UserInfo';
 
-type CheckResponse = {
+interface InviteCheckRequest {
+    code: string;
+}
+interface InviteCheckResponse {
     code: string;
     inviter: string;
-};
+}
 
-type UseResponse = {
+interface InviteUseRequest {
+    code: string;
+    username: string;
+    name: string;
+    email: string;
+    gender: UserGender;
+    password: string;
+}
+interface InviteUseResponse {
     user: UserInfo;
-};
+    session: string;
+}
 
 export default class InviteAPI {
     private api: APIBase;
@@ -17,21 +29,20 @@ export default class InviteAPI {
         this.api = api;
     }
 
-    async check(code: string): Promise<CheckResponse> {
-        let response = await this.api.request('/invite/check', {code: code}) as CheckResponse;
-        return response;
+    async check(code: string): Promise<InviteCheckResponse> {
+        return await this.api.request<InviteCheckRequest, InviteCheckResponse>('/invite/check', {
+            code
+        });
     }
 
-    async use(code: string, username: string, name: string, email: string, password: string, gender: UserGender): Promise<UseResponse> {
-        let response = await this.api.request('/invite/use', {
-            code: code,
+    async use(code: string, username: string, name: string, email: string, password: string, gender: UserGender): Promise<InviteUseResponse> {
+        return await this.api.request<InviteUseRequest, InviteUseResponse>('/invite/use', {
+            code,
             username,
             name,
             email,
             password,
             gender
-        }) as UseResponse;
-        console.log('USE', response);
-        return response;
+        });
     }
 }

@@ -1,6 +1,7 @@
 import express, {RequestHandler} from 'express';
 import Joi, {ObjectSchema} from 'joi';
 import * as core from 'express-serve-static-core';
+import Session from '../session/Session';
 
 type ResponseSuccess<T> = {
     result: 'success';
@@ -11,15 +12,17 @@ type ResponseError = {
     result: 'error';
     code: string;
     message: string;
-    meta?: any;
+    meta?: object;
 }
 type ResponseBody<T> = ResponseSuccess<T> | ResponseError;
 
-export interface APIRequest<ReqBody, P = core.ParamsDictionary, ResBody = any> extends express.Request<P, ResBody, ReqBody> {
-
+export interface APIRequest<ReqBody, P = core.ParamsDictionary, ResBody = object> extends express.Request<P, ResBody, ReqBody> {
+    session: Session;
 }
 export interface APIResponse<ResBody> extends express.Response<ResponseBody<ResBody>> {
-    success(payload: ResBody): void;
+    success<T = ResBody>(payload: T): void;
+    error(code: string, message: string, status?: number, meta?: object): void;
+    authRequired(): void;
 }
 
 function success<T>(payload: T) {
@@ -30,7 +33,7 @@ function success<T>(payload: T) {
     });
 }
 
-function error(code: string, message: string, status?: number, meta?: any) {
+function error(code: string, message: string, status?: number, meta?: object) {
     if (status) {
         this.status(status);
     }

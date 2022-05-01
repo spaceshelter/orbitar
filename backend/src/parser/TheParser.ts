@@ -25,7 +25,7 @@ export default class TheParser {
     }
 
     parse(text: string) {
-        let doc = parseDocument(text, {
+        const doc = parseDocument(text, {
             decodeEntities: false
         });
 
@@ -44,7 +44,7 @@ export default class TheParser {
         }
 
         if (node.type === 'tag') {
-            let allowed = this.allowedTags[node.tagName];
+            const allowed = this.allowedTags[node.tagName];
             if (allowed === true) {
                 return this.parseAllowedTag(node);
             }
@@ -72,14 +72,14 @@ export default class TheParser {
     }
 
     private parseText(text: string) {
-        let regex = /https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b[-a-zA-Z0-9()@:%_+.~#?&/=]*/g;
-        let tokens: { type: string; data: string }[] = [];
+        const regex = /https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b[-a-zA-Z0-9()@:%_+.~#?&/=]*/g;
+        const tokens: { type: string; data: string }[] = [];
 
         let sText = text;
         let match = regex.exec(sText);
         while (match) {
-            let url = match[0];
-            let pText = sText.substring(0, match.index);
+            const url = match[0];
+            const pText = sText.substring(0, match.index);
             tokens.push({ type: 'text', data: pText });
             sText = sText.substring(match.index + url.length);
             tokens.push({ type: 'url', data: url });
@@ -104,9 +104,9 @@ export default class TheParser {
     }
 
     processUrl(url: string) {
-        let pUrl = new Url(url);
+        const pUrl = new Url(url);
 
-        let res =
+        const res =
             this.processYoutube(pUrl) ||
             this.processImage(pUrl) ||
             this.processVideo(pUrl);
@@ -138,13 +138,13 @@ export default class TheParser {
         let startTime = 0;
 
         const parseTime = (time: string) => {
-            let groups = time.match(/^(\d+h)?(\d+m)?(\d+s?)?$/);
+            const groups = time.match(/^(\d+h)?(\d+m)?(\d+s?)?$/);
             if (!groups) {
                 return 0;
             }
-            let h = parseInt(groups[1], 10) || 0;
-            let m = parseInt(groups[2], 10) || 0;
-            let s = parseInt(groups[3], 10) || 0;
+            const h = parseInt(groups[1], 10) || 0;
+            const m = parseInt(groups[2], 10) || 0;
+            const s = parseInt(groups[3], 10) || 0;
             return h * 3600 + m * 60 + s;
         };
 
@@ -153,7 +153,7 @@ export default class TheParser {
             url.query &&
             url.pathname === '/watch'
         ) {
-            let q = qs.parse(url.query.substring(1));
+            const q = qs.parse(url.query.substring(1));
             if (typeof q.v === 'string') {
                 videoId = q.v;
             }
@@ -164,7 +164,7 @@ export default class TheParser {
         else if (url.host === 'youtu.be') {
             videoId = url.pathname.substring(1);
             if (url.query) {
-                let q = qs.parse(url.query.substring(1));
+                const q = qs.parse(url.query.substring(1));
                 if (typeof q.t === 'string') {
                     startTime = parseTime(q.t);
                 }
@@ -187,7 +187,7 @@ export default class TheParser {
     }
 
     parseAllowedTag(node: Element) {
-        let haveChild = node.children.length > 0;
+        const haveChild = node.children.length > 0;
         let s = `<${node.name}${haveChild ? "" : "/"}>`;
         s += this.parseChildNodes(node.children);
         s += `</${node.name}>`;
@@ -195,9 +195,9 @@ export default class TheParser {
     }
 
     parseDisallowedTag(node: Element) {
-        let haveChild = node.children.length > 0;
+        const haveChild = node.children.length > 0;
         let s = `<${node.name}`;
-        for (let a in node.attribs) {
+        for (const a in node.attribs) {
             s += ` ${a}="${node.attribs[a]}"`;
         }
         s += haveChild ? '>' : '/>';
@@ -208,8 +208,8 @@ export default class TheParser {
     }
 
     parseA(node: Element) {
-        let url = node.attribs['href'] || '';
-        let regex = /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b[-a-zA-Z0-9()@:%_+.~#?&/=]*$/;
+        const url = node.attribs['href'] || '';
+        const regex = /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b[-a-zA-Z0-9()@:%_+.~#?&/=]*$/;
         if (!url.match(regex)) {
             return this.parseDisallowedTag(node);
         }
@@ -218,8 +218,8 @@ export default class TheParser {
     }
 
     parseImg(node: Element) {
-        let url = node.attribs['src'] || '';
-        let regex = /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b[-a-zA-Z0-9()@:%_+.~#?&/=]*$/;
+        const url = node.attribs['src'] || '';
+        const regex = /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b[-a-zA-Z0-9()@:%_+.~#?&/=]*$/;
         if (!url.match(regex)) {
             return this.parseDisallowedTag(node);
         }

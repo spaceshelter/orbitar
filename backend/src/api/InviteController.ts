@@ -43,7 +43,7 @@ export default class InviteController {
         this.logger = logger;
 
         // 10 requests per hour
-        let limiter = rateLimit({
+        const limiter = rateLimit({
             windowMs: 60 * 60 * 1000,
             max: 10,
             skipSuccessfulRequests: true,
@@ -76,7 +76,7 @@ export default class InviteController {
         const {code} = request.body;
 
         try {
-            let invite = await this.inviteManager.get(code);
+            const invite = await this.inviteManager.get(code);
             if (!invite || invite.left_count < 1) {
                 this.logger.warn(`Invalid or expired invite checked: ${code}`, { invite: code });
                 return response.error('invalid-code', 'Invite code not found or already used');
@@ -101,15 +101,15 @@ export default class InviteController {
         const {code, username, email, name, password, gender} = request.body;
 
         try {
-            let passwordHash = await bcrypt.hash(password, 10);
+            const passwordHash = await bcrypt.hash(password, 10);
 
-            let user = await this.inviteManager.use(code, username, name, email, passwordHash, gender);
+            const user = await this.inviteManager.use(code, username, name, email, passwordHash, gender);
 
             this.logger.info(`Invite ${code} used by #${user.user_id} @${user.username}`, { invite: code, username });
 
-            let sessionId = await request.session.init();
+            const sessionId = await request.session.init();
 
-            let resUser = {
+            const resUser = {
                 id: user.user_id,
                 gender: user.gender,
                 username: user.username,

@@ -48,9 +48,9 @@ export default class APIHelper {
         try {
             this.setters.setAppState(AppState.loading);
 
-            let me = await this.authAPI.me();
+            const status = await this.authAPI.status();
 
-            this.setters.setUserInfo(me.user);
+            this.setters.setUserInfo(status.user);
             this.setters.setAppState(AppState.authorized);
         }
         catch (error) {

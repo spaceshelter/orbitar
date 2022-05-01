@@ -24,19 +24,19 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             return;
         }
 
-        let answer = answerRef.current!;
+        const answer = answerRef.current!;
         if (!answer) {
             return;
         }
         answer.focus();
 
-        let start = answer.selectionStart;
-        let end = answer.selectionEnd;
+        const start = answer.selectionStart;
+        const end = answer.selectionEnd;
 
-        let text1 = answer.value.substring(0, start);
+        const text1 = answer.value.substring(0, start);
         let text2 = end > start ? answer.value.substring(start, end) : '';
-        let text3 = answer.value.substring(end);
-        let isEmpty = text2.length < 1;
+        const text3 = answer.value.substring(end);
+        const isEmpty = text2.length < 1;
 
         switch (tag) {
             case 'img': {
@@ -46,11 +46,11 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                     text2 = '';
                 }
 
-                let url = window.prompt('Адрес картинки:', def);
+                const url = window.prompt('Адрес картинки:', def);
                 if (!url) {
                     return;
                 }
-                text2 = `${text2}<img src="${url}">`;
+                text2 = `${text2}<img src="${url}" alt="">`;
                 break;
             }
             case 'a': {
@@ -59,7 +59,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                     def = text2;
                     text2 = '';
                 }
-                let url = window.prompt('Ссылка:', def);
+                const url = window.prompt('Ссылка:', def);
                 if (!url) {
                     return;
                 }
@@ -72,7 +72,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         }
 
         console.log('sel', start, end, {text1, text2, text3});
-        let newValue = `${text1}${text2}${text3}`;
+        const newValue = `${text1}${text2}${text3}`;
 
         answer.value = newValue;
         answer.selectionStart = !isEmpty ? text1.length + text2.length : text1.length + tag.length + 2;
@@ -82,7 +82,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     };
 
     useEffect(() => {
-        let answer = answerRef.current!;
+        const answer = answerRef.current!;
         if (props.comment && props.open && answer) {
             answer.focus();
             answer.selectionStart = answer.value.length;

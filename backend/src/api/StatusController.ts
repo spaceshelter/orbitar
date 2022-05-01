@@ -3,34 +3,32 @@ import UserManager from '../db/managers/UserManager';
 import {User} from '../types/User';
 import {APIRequest, APIResponse} from './ApiMiddleware';
 
-interface MeRequest {
-
-}
-interface MeResponse {
+type StatusRequest = Record<string, unknown>;
+type StatusResponse = {
     user: User;
     bookmarks: {
         posts: number;
         comments: number;
     };
     notifications: number;
-}
+};
 
-export default class MeController {
+export default class StatusController {
     public router = Router();
     private userManager: UserManager
 
     constructor(userManager: UserManager) {
         this.userManager = userManager;
-        this.router.post('/me', (req, res) => this.me(req, res))
+        this.router.post('/status', (req, res) => this.status(req, res))
     }
 
-    async me(request: APIRequest<MeRequest>, response: APIResponse<MeResponse>) {
+    async status(request: APIRequest<StatusRequest>, response: APIResponse<StatusResponse>) {
         if (!request.session.data.userId) {
             return response.authRequired();
         }
         try {
-            let userId = request.session.data.userId;
-            let user = await this.userManager.get(userId);
+            const userId = request.session.data.userId;
+            const user = await this.userManager.get(userId);
 
             if (!user) {
                 // Something wrong, user should exist!

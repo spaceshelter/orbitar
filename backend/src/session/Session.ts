@@ -29,14 +29,14 @@ export default class Session {
             return;
         }
 
-        let data = sessionStorage[this.id];
+        const data = sessionStorage[this.id];
         if (data) {
             this.data = data;
             this.response.setHeader(Session.SESSION_HEADER, this.id);
             return;
         }
 
-        let storedData = await this.db.fetchOne('select data from sessions where id=:id', {
+        const storedData = await this.db.fetchOne<{ data: string }>('select data from sessions where id=:id', {
             id: this.id
         });
         if (storedData) {
@@ -51,6 +51,7 @@ export default class Session {
                 }
             }
             catch {
+                // could not parse session, continue to reset
             }
         }
 
@@ -122,7 +123,7 @@ export default class Session {
 
 export class SessionData {
     private sessionId: string;
-    public userId: number = 0;
+    public userId = 0;
 
     constructor(id, userId?: number) {
         this.sessionId = id;
