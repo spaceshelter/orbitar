@@ -12,9 +12,7 @@ export default class AuthAPIHelper {
 
     async signIn(username: string, password: string) {
         try {
-            let auth = await this.api.signIn(username, password)
-
-            console.log('SIGN IN', auth);
+            const auth = await this.api.signIn(username, password)
 
             this.setters.setUserInfo(auth.user);
             this.setters.setAppState(AppState.authorized);

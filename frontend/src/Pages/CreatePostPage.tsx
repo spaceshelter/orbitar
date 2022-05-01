@@ -26,7 +26,7 @@ export function CreatePostPage() {
             site = window.location.hostname.split('.')[0];
         }
 
-        let siteInfo = api.cache.getSite(site);
+        const siteInfo = api.cache.getSite(site);
         if (siteInfo) {
             setSite(siteInfo);
         }

@@ -1,8 +1,15 @@
 import APIBase from './APIBase';
-import {UserInfo, UserProfileInfo} from '../Types/UserInfo';
+import {UserInfo} from '../Types/UserInfo';
 
-type UserResponse = {
-    profile: UserProfileInfo;
+export type UserProfileEntity = UserInfo & {
+    registered: string;
+}
+
+type UseProfileRequest = {
+    username: string;
+}
+type UserProfileResponse = {
+    profile: UserProfileEntity;
     invitedBy: UserInfo;
     invites: UserInfo[];
 }
@@ -14,8 +21,8 @@ export default class UserAPI {
         this.api = api;
     }
 
-    async userProfile(username: string): Promise<UserResponse> {
-        return await this.api.request<UserResponse>('/user/profile', {
+    async userProfile(username: string): Promise<UserProfileResponse> {
+        return await this.api.request<UseProfileRequest, UserProfileResponse>('/user/profile', {
             username
         });
     }

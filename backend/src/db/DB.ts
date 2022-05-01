@@ -20,7 +20,7 @@ export class DBConnection {
     }
 
     async query<T = RowDataPacket[][] | RowDataPacket[] | OkPacket | OkPacket[] | ResultSetHeader>(
-        query: string, params: string[] | Object): Promise<T> {
+        query: string, params: string[] | object): Promise<T> {
         this.logger.verbose('Query', { query: query, params: params });
 
         try {
@@ -32,7 +32,7 @@ export class DBConnection {
         }
     }
 
-    async fetchOne<T = any>(query: string, params: string[] | Object): Promise<T | undefined> {
+    async fetchOne<T = object>(query: string, params: string[] | object): Promise<T | undefined> {
         return (await this.query<T[]>(query, params))[0];
     }
 
@@ -76,9 +76,9 @@ export default class DB extends DBConnection {
 
     async ping() {
         this.logger.verbose('Ping database');
-        let start = new Date().getTime();
+        const start = new Date().getTime();
         await this.pool.execute('select 1');
-        let diff = new Date().getTime() - start;
+        const diff = new Date().getTime() - start;
         this.logger.verbose(`Database alive: ${diff}ms`, { pong: diff });
         return diff;
     }

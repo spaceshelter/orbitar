@@ -57,7 +57,7 @@ function CommentsCount(props: {count: number, bold: boolean}) {
 }
 
 function NewCount(props: {count: number, bold: boolean}) {
-    let text = pluralize(props.count, ['новый', 'новых', 'новых']);
+    const text = pluralize(props.count, ['новый', 'новых', 'новых']);
     if (props.bold) {
         return <b>{text}</b>
     }

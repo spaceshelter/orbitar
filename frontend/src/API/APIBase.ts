@@ -5,12 +5,12 @@ type APIResponseError = {
     code: string;
     message: string;
 };
-type APIResponseSuccess = {
+type APIResponseSuccess<Response> = {
     result: 'success';
-    payload: Object;
+    payload: Response;
     sync: string;
 };
-type APIResponse = APIResponseError | APIResponseSuccess;
+type APIResponse<Response> = APIResponseError | APIResponseSuccess<Response>;
 
 export class APIError extends Error {
     public code: string;
@@ -33,21 +33,21 @@ export default class APIBase {
         this.endpoint = '//api.' + process.env.REACT_APP_ROOT_DOMAIN + '/api/v1';
     }
 
-    async request<T>(url: string, payload: object): Promise<T> {
-        let headers: any = {
+    async request<Req, Res>(url: string, payload: Req): Promise<Res> {
+        const headers: any = {
             'Content-Type': 'application/json',
         };
         if (this.sessionId) {
             headers['X-Session-Id'] = this.sessionId;
         }
-        let response = await fetch(
+        const response = await fetch(
             this.endpoint + url,
             {
                 method: 'POST',
                 body: JSON.stringify(payload),
                 // mode: 'cors',
                 // credentials: 'include',
-                headers: headers
+                headers
             }
         );
 
@@ -55,13 +55,13 @@ export default class APIBase {
             throw new APIError('rate-limit', 'Rate limit exceeded', response.status);
         }
 
-        let sessionId = response.headers.get('x-session-id');
+        const sessionId = response.headers.get('x-session-id');
         if (sessionId) {
             this.sessionId = sessionId;
             Cookies.set('session', sessionId, { domain: '.' + process.env.REACT_APP_ROOT_DOMAIN, expires: 365 })
         }
 
-        let responseJson = await response.json() as APIResponse;
+        const responseJson = await response.json() as APIResponse<Res>;
 
         if (responseJson.result === 'error') {
             throw new APIError(responseJson.code, responseJson.message, response.status);
@@ -72,12 +72,12 @@ export default class APIBase {
         }
 
         if (responseJson.sync) {
-            let cTime = new Date();
-            let rTime = new Date(responseJson.sync);
+            const cTime = new Date();
+            const rTime = new Date(responseJson.sync);
             this.sync = Math.round((cTime.getTime() - rTime.getTime()) / 1000 / 900) / 4 * 3600 * 1000;
         }
 
-        return responseJson.payload as T;
+        return responseJson.payload;
     }
 
     fixDate(date: Date) {

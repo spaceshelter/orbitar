@@ -29,7 +29,7 @@ export default function RatingSwitch(props: RatingSwitchProps) {
             vote = 0;
         }
 
-        let newRating = state.rating - (state.vote || 0) + vote;
+        const newRating = state.rating - (state.vote || 0) + vote;
 
         setState({ vote: vote, rating: newRating});
         if (props.onVote) {

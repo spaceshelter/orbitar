@@ -1,7 +1,15 @@
 import APIBase from './APIBase';
 
+type VoteType = 'post' | 'comment' | 'user';
 
-type VoteResponse = {
+type VoteSetRequest = {
+    type: VoteType;
+    id: number;
+    vote: number;
+}
+type VoteSetResponse = {
+    type: VoteType;
+    id: number;
     rating: number;
     vote?: number;
 }
@@ -13,15 +21,11 @@ export default class VoteAPI {
         this.api = api;
     }
 
-    async vote(type: 'post' | 'comment' | 'user', id: number, vote: number): Promise<VoteResponse> {
-        let response = await this.api.request('/vote/set', {
+    async vote(type: 'post' | 'comment' | 'user', id: number, vote: number): Promise<VoteSetResponse> {
+        return await this.api.request<VoteSetRequest, VoteSetResponse>('/vote/set', {
             id: id,
             type: type,
             vote: vote
-        }) as VoteResponse;
-
-        return response;
+        });
     }
-
-
 }

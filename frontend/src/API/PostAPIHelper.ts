@@ -1,4 +1,4 @@
-import PostAPI from './PostAPI';
+import PostAPI, {CommentEntity} from './PostAPI';
 import {CommentInfo, PostInfo} from '../Types/PostInfo';
 import {SiteInfo} from '../Types/SiteInfo';
 import APICache from './APICache';
@@ -34,33 +34,33 @@ export default class PostAPIHelper {
     }
 
     async get(postId: number): Promise<PostResponse> {
-        let response = await this.postAPI.get(postId);
-        let siteInfo = this.cache.setSite(response.site);
+        const response = await this.postAPI.get(postId);
+        const siteInfo = this.cache.setSite(response.site);
 
-        let post: any = { ...response.post };
+        const post: PostInfo = { ...response.post } as any;
         // fix fields
-        post.author = this.cache.setUser(response.users[post.author]);
-        post.created = this.postAPI.api.fixDate(new Date(post.created));
+        post.author = this.cache.setUser(response.users[response.post.author]);
+        post.created = this.postAPI.api.fixDate(new Date(response.post.created));
 
         let lastCommentId = 0;
 
-        const fixComments = (comments: CommentInfo[]) => {
-            return comments.map(comment => {
+        const fixComments = (fix: CommentEntity[]) => {
+            return fix.map(comment => {
                 lastCommentId = Math.max(lastCommentId, comment.id);
-                let c: any = { ...comment };
+                const c: CommentInfo = { ...comment } as any;
                 // fix fields
-                c.author = this.cache.setUser(response.users[c.author]);
+                c.author = this.cache.setUser(response.users[comment.author]);
                 c.created = this.postAPI.api.fixDate(new Date(comment.created));
 
-                if (c.answers) {
-                    c.answers = fixComments(c.answers);
+                if (comment.answers) {
+                    c.answers = fixComments(comment.answers);
                 }
 
                 return c;
             });
         }
 
-        let comments = fixComments(response.comments);
+        const comments = fixComments(response.comments);
 
         return {
             post: post,
@@ -71,11 +71,11 @@ export default class PostAPIHelper {
     }
 
     async feed(site: string, page: number, perPage: number): Promise<FeedResponse> {
-        let response = await this.postAPI.feed(site, page, perPage);
-        let siteInfo = this.cache.setSite(response.site);
+        const response = await this.postAPI.feed(site, page, perPage);
+        const siteInfo = this.cache.setSite(response.site);
 
-        let posts: PostInfo[] = response.posts.map(post => {
-            let p: any = { ...post };
+        const posts: PostInfo[] = response.posts.map(post => {
+            const p: PostInfo = { ...post } as any;
             // fix fields
             p.author = this.cache.setUser(response.users[post.author]);
             p.created = this.postAPI.api.fixDate(new Date(post.created));
@@ -94,9 +94,9 @@ export default class PostAPIHelper {
     }
 
     async comment(content: string, postId: number, commentId?: number): Promise<CommentResponse> {
-        let response = await this.postAPI.comment(content, postId, commentId);
+        const response = await this.postAPI.comment(content, postId, commentId);
 
-        let c: any = { ...response.comment }
+        const c: any = { ...response.comment }
         c.author = this.cache.setUser(response.users[c.author]);
         c.created = this.postAPI.api.fixDate(new Date(c.created));
 

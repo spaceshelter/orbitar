@@ -12,7 +12,7 @@ import {usePost} from '../API/use/usePost';
 export default function PostPage() {
     const match = useMatch();
     const search = useSearch<{Search: {'new': string | undefined}}>();
-    const postId = parseInt(match.params.postId);
+    const postId = parseInt(match.params.postId, 10);
 
     let subdomain = 'main';
     if (window.location.hostname !== process.env.REACT_APP_ROOT_DOMAIN) {

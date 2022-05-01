@@ -32,7 +32,7 @@ export default function UserPage() {
                     <Link className={`${styles.control} ${isPosts ? styles.active : ''}`} to={'/user/' + user.username + '/posts'}>Посты</Link>
                     <Link className={`${styles.control} ${isComments ? styles.active : ''}`} to={'/user/' + user.username + '/comments'}>Комментарии</Link>
                     <div className={styles.karma}>
-                        <RatingSwitch rating={rating} type='user' id={user.id} double />
+                        <RatingSwitch rating={rating} type='user' id={user.id} double={true} />
                     </div>
                 </div>
                 <div className={styles.userinfo}>

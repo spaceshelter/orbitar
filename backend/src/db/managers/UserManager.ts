@@ -18,7 +18,7 @@ export default class UserManager {
     }
 
     async get(userId: number): Promise<User | undefined> {
-        let rawUser = await this.getRawById(userId);
+        const rawUser = await this.getRawById(userId);
 
         return {
             id: rawUser.user_id,
@@ -30,7 +30,7 @@ export default class UserManager {
     }
 
     async getByUsername(username: string): Promise<User | undefined> {
-        let rawUser = await this.getRaw(username);
+        const rawUser = await this.getRaw(username);
         if (!rawUser) {
             return;
         }

@@ -7,14 +7,17 @@ import {Logger} from 'winston';
 import {APIRequest, APIResponse, validate} from './ApiMiddleware';
 import Joi from 'joi';
 
-interface SignInRequest {
+type SignInRequest = {
     username: string;
     password: string;
-}
-interface SignInResponse {
+};
+type SignInResponse = {
     user: User;
     session: string;
-}
+};
+
+type SignOutRequest = Record<string, unknown>;
+type SignOutResponse = Record<string, unknown>;
 
 export default class AuthController {
     public router = Router();
@@ -26,7 +29,7 @@ export default class AuthController {
         this.logger = logger;
 
         // 5 failed requests per hour
-        let signInLimiter = rateLimit({
+        const signInLimiter = rateLimit({
             windowMs: 60 * 60 * 1000,
             max: 5,
             skipSuccessfulRequests: true,
@@ -51,7 +54,7 @@ export default class AuthController {
         const {username, password} = request.body;
 
         try {
-            let userRow = await this.userManager.getRaw(username);
+            const userRow = await this.userManager.getRaw(username);
             if (!userRow) {
                 this.logger.warn(`Wrong username: @${username}`, { username: username });
                 return response.error('wrong-credentials', 'Wrong username or password');
@@ -62,9 +65,9 @@ export default class AuthController {
                 return response.error('wrong-credentials', 'Wrong username or password');
             }
 
-            let sessionId = await request.session.init();
+            const sessionId = await request.session.init();
 
-            let user = {
+            const user = {
                 id: userRow.user_id,
                 gender: userRow.gender,
                 username: userRow.username,
@@ -88,7 +91,7 @@ export default class AuthController {
         }
     }
 
-    async signout(request: APIRequest<{}>, response: APIResponse<{}>) {
+    async signout(request: APIRequest<SignOutRequest>, response: APIResponse<SignOutResponse>) {
         if (!request.session.data.userId) {
             return response.authRequired();
         }

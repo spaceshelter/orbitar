@@ -63,22 +63,22 @@ export default class VoteController {
         }
 
         const userId = request.session.data.userId;
-        let {id, type, vote} = request.body;
+        const {id, type, vote} = request.body;
 
         try {
             const max = type === 'user' ? 2 : 1;
-            vote = Math.max(Math.min(vote, max), -max);
+            const rangedVote = Math.max(Math.min(vote, max), -max);
 
             let rating;
             switch (type) {
                 case 'post':
-                    rating = await this.voteManager.postVote(id, vote, userId);
+                    rating = await this.voteManager.postVote(id, rangedVote, userId);
                     break;
                 case 'comment':
-                    rating = await this.voteManager.commentVote(id, vote, userId);
+                    rating = await this.voteManager.commentVote(id, rangedVote, userId);
                     break;
                 case 'user':
-                    rating = await this.voteManager.userVote(id, vote, userId);
+                    rating = await this.voteManager.userVote(id, rangedVote, userId);
                     break;
                 default:
                     return response.error('wrong-type', 'Wrong type', 401);

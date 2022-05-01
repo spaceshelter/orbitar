@@ -10,7 +10,7 @@ import cors from 'cors';
 import {session} from './session/Session';
 import PostController from './api/PostController';
 import PostManager from './db/managers/PostManager';
-import MeController from './api/MeController';
+import StatusController from './api/StatusController';
 import SiteManager from './db/managers/SiteManager';
 import {apiMiddleware} from './api/ApiMiddleware';
 import VoteController from './api/VoteController';
@@ -49,7 +49,7 @@ const consoleTransport = new winston.transports.Console({
             }
 
             let service = (info.service || '').padEnd(8);
-            let color = info.service && loggerColors[info.service] ? loggerColors[info.service] : 'cyan';
+            const color = info.service && loggerColors[info.service] ? loggerColors[info.service] : 'cyan';
             service = colors[color](service);
             return `${info.level} ${service} ${info.message} ${colors.gray(rest)}`;
         }),
@@ -75,7 +75,7 @@ const requests = [
     new AuthController(userManager, logger.child({ service: 'AUTH' })),
     new InviteController(inviteManager, logger.child({ service: 'INVITE' })),
     new PostController(postManager, siteManager, userManager, theParser, logger.child({ service: 'POST' })),
-    new MeController(userManager),
+    new StatusController(userManager),
     new VoteController(voteManager, logger.child({ service: 'VOTE' })),
     new UserController(userManager, logger.child({ service: 'USER' })),
 ];
@@ -116,7 +116,7 @@ app.use(apiMiddleware());
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
-for (let request of requests) {
+for (const request of requests) {
     app.use('/api/v1/', request.router);
 }
 

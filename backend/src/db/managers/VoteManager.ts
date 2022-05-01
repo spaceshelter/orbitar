@@ -18,10 +18,10 @@ export default class VoteManager {
                 vote: vote
             });
 
-            let ratingResult = await conn.fetchOne<{ rating: number }>('select sum(vote) rating from post_votes where post_id=:post_id', {
+            const ratingResult = await conn.fetchOne<{ rating: number }>('select sum(vote) rating from post_votes where post_id=:post_id', {
                 post_id: postId
             });
-            let rating = Number(ratingResult.rating || 0);
+            const rating = Number(ratingResult.rating || 0);
 
             await conn.query('update posts set rating=:rating where post_id=:post_id', {
                 rating: rating,
@@ -40,10 +40,10 @@ export default class VoteManager {
                 vote: vote
             });
 
-            let ratingResult = await conn.fetchOne<{ rating: number }>('select sum(vote) rating from comment_votes where comment_id=:comment_id', {
+            const ratingResult = await conn.fetchOne<{ rating: number }>('select sum(vote) rating from comment_votes where comment_id=:comment_id', {
                 comment_id: commentId
             });
-            let rating = Number(ratingResult.rating || 0);
+            const rating = Number(ratingResult.rating || 0);
 
             await conn.query('update comments set rating=:rating where comment_id=:comment_id', {
                 rating: rating,
@@ -62,10 +62,10 @@ export default class VoteManager {
                 vote: vote
             });
 
-            let ratingResult = await conn.fetchOne<{ rating: number }>('select sum(vote) rating from user_karma where user_id=:user_id', {
+            const ratingResult = await conn.fetchOne<{ rating: number }>('select sum(vote) rating from user_karma where user_id=:user_id', {
                 user_id: toUserId
             });
-            let rating = Number(ratingResult.rating || 0);
+            const rating = Number(ratingResult.rating || 0);
 
             await conn.query('update users set karma=:karma where user_id=:user_id', {
                 karma: rating,

@@ -2,11 +2,6 @@ import React from 'react';
 // import styles from './MyThings.module.css';
 import {
     Link,
-    MakeGenerics,
-    Outlet,
-    ReactLocation,
-    Router,
-    useMatch,
 } from "react-location";
 
 interface MyThingsProps {

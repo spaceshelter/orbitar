@@ -28,9 +28,9 @@ export default class SiteManager {
             return site;
         }
 
-        let siteRaw = await this.getSiteByNameRaw(subdomain);
+        const siteRaw = await this.getSiteByNameRaw(subdomain);
         if (siteRaw) {
-            let owner = await this.userManager.get(siteRaw.owner_id);
+            const owner = await this.userManager.get(siteRaw.owner_id);
 
             site = {
                 id: siteRaw.site_id,
@@ -51,9 +51,9 @@ export default class SiteManager {
             return site;
         }
 
-        let siteRaw = await this.getSiteRaw(siteId);
+        const siteRaw = await this.getSiteRaw(siteId);
         if (siteRaw) {
-            let owner = await this.userManager.get(siteRaw.owner_id);
+            const owner = await this.userManager.get(siteRaw.owner_id);
 
             site = {
                 id: siteRaw.site_id,

@@ -8,7 +8,8 @@
     "build": "npx tsc",
     "start:production": "NODE_ENV=production node build/app.js",
     "migration:dev": "NODE_ENV=development node migrations.js",
-    "migration:production": "NODE_ENV=production node migrations.js"
+    "migration:production": "NODE_ENV=production node migrations.js",
+    "lint": "npx eslint src"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +21,8 @@
     "@types/joi": "^17.2.3",
     "@types/mysql": "^2.15.21",
     "@types/url-parse": "^1.4.8",
+    "@typescript-eslint/eslint-plugin": "^5.21.0",
+    "eslint": "^8.14.0",
     "typescript": "^4.6.3"
   },
   "dependencies": {
