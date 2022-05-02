@@ -29,13 +29,14 @@ export default function SiteSidebar(props: SiteSidebarProps) {
         <div className={styles.fixed}>
             <Link className={styles.siteName} to={'/'}> {props.site.name}</Link>
             <Link className={styles.newPost} to={'/create'}>Новый пост</Link>
+            {props.site.site !== 'main' &&
             <div className={styles.subscribe}>
                 {props.site.subscribe?.main ?
                     <button className={styles.subscribed} disabled={subsDisabled} onClick={() => handleSubscribe(false)}>Отписаться</button>
                     :
                     <button className={styles.notSubscribed} disabled={subsDisabled} onClick={() => handleSubscribe(true)}>Подписаться</button>
                 }
-            </div>
+            </div>}
             <div className={styles.podsites}>
                 {props.site.site !== 'main' && <div><a href="https://orbitar.space/">Главная</a></div>}
                 {props.site.site !== 'idiod' && <div><a href="https://idiod.orbitar.space/">idiod</a></div>}
