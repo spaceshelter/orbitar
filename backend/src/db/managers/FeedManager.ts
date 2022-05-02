@@ -3,6 +3,7 @@ import PostRepository from '../repositories/PostRepository';
 import {PostRawWithUserData} from '../types/PostRaw';
 import UserRepository from '../repositories/UserRepository';
 import CodeError from '../../CodeError';
+import ExclusiveTask, {TaskState} from '../../utils/ExclusiveTask';
 
 export default class FeedManager {
     private redis: RedisClientType;
@@ -62,18 +63,41 @@ export default class FeedManager {
         }
     }
 
+    private postFanOutTasks: Record<number, ExclusiveTask<boolean, never>> = {};
     async postFanOut(postId: number) {
+        let task = this.postFanOutTasks[postId];
+        if (task) {
+            await task.run();
+            return;
+        }
+
+        task = new ExclusiveTask<boolean, never>(async (state) => {
+            await this.postFanOutRun(postId, state);
+            return true;
+        });
+        this.postFanOutTasks[postId] = task;
+        await task.run();
+        delete this.postFanOutTasks[postId];
+    }
+
+    private async postFanOutRun(postId: number, state: TaskState) {
         // get post data
         const post = await this.postRepository.getPost(postId);
         if (!post) {
             throw new CodeError('fanout-no-post', `Could not load post ${postId}`);
         }
 
+        if (state.cancelled) throw new Error('Fanout cancelled');
+
         // get all subscribed users
         const strPostId = `${postId}`;
         const users = await this.userRepository.getMainSubscriptionsUsers(post.site_id);
 
         for (const {user_id} of users) {
+            if (state.cancelled) {
+                throw new Error('Fanout cancelled');
+            }
+
             const result = await this.redis.exists(`subscriptions:${user_id}:fanned`);
             if (!result) {
                 // skip not fanned-out users
@@ -85,13 +109,33 @@ export default class FeedManager {
         }
     }
 
+    private siteFanOutTasks: Record<string, ExclusiveTask<boolean, never>> = {};
     async siteFanOut(forUserId: number, siteId: number, remove = false) {
-        // TODO: check for simultaneous fanouts
+        const fanOutId = `${siteId}:${forUserId}`;
+        let task = this.siteFanOutTasks[fanOutId];
+        if (task) {
+            task.cancel().then();
+        }
+
+        task = new ExclusiveTask<boolean, never>(async (state) => {
+            await this.siteFanOutRun(forUserId, siteId, remove, state);
+            return true;
+        });
+        this.siteFanOutTasks[fanOutId] = task;
+        await task.run();
+        delete this.siteFanOutTasks[fanOutId];
+    }
+
+    async siteFanOutRun(forUserId: number, siteId: number, remove, state: TaskState) {
         console.log('Fanout site', siteId);
         let posts: { post_id: number, commented_at: Date }[];
         let last_post_id = 0;
         do {
             posts = await this.postRepository.getSitePostUpdateDates(forUserId, siteId, last_post_id, 100);
+
+            if (state.cancelled) {
+                throw new Error('Fanout cancelled');
+            }
 
             if (posts.length < 1) {
                 break;
