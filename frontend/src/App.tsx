@@ -11,7 +11,7 @@ import InvitePage from './Pages/InvitePage';
 import LoadingPage from './Pages/LoadingPage';
 import SignInPage from './Pages/SignInPage';
 import UserPage from './Pages/UserPage';
-import IndexPage from './Pages/IndexPage';
+import FeedPage from './Pages/FeedPage';
 
 import styles from './App.module.css';
 import './index.css';
@@ -52,7 +52,11 @@ function App() {
     <Router location={location} routes={[
         {
             path: '/',
-            element: <IndexPage />
+            element: <FeedPage />
+        },
+        {
+            path: '/posts',
+            element: <FeedPage />
         },
         {
             path: '/post/:postId',

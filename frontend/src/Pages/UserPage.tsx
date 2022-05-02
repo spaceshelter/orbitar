@@ -8,7 +8,7 @@ import {useUserProfile} from '../API/use/useUserProfile';
 
 export default function UserPage() {
     const match = useMatch();
-    const state = useUserProfile(match.params.username)
+    const state = useUserProfile(decodeURI(match.params.username));
     const router = useMatchRoute();
 
     const isPosts = router({to: 'posts'});

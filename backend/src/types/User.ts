@@ -11,8 +11,9 @@ export type User = {
     karma: number;
     name: string;
     vote?: number;
-}
+};
 
 export type UserProfile = User & {
     registered: Date;
-}
+};
+

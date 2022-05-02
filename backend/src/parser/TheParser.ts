@@ -1,13 +1,13 @@
-import { parseDocument } from "htmlparser2";
-import { Element, ChildNode } from "domhandler";
-import { escape as htmlEscape } from "html-escaper";
-import escapeHTML from "escape-html";
-import Url from "url-parse";
-import qs from "qs";
+import { parseDocument } from 'htmlparser2';
+import { Element, ChildNode } from 'domhandler';
+import { escape as htmlEscape } from 'html-escaper';
+import escapeHTML from 'escape-html';
+import Url from 'url-parse';
+import qs from 'qs';
 
 export type TheParserOptions = {
     tags: Record<string, ((node: Element) => string) | boolean>;
-}
+};
 
 export default class TheParser {
     private readonly allowedTags: Record<string, ((node: Element) => string) | boolean>;
@@ -188,7 +188,7 @@ export default class TheParser {
 
     parseAllowedTag(node: Element) {
         const haveChild = node.children.length > 0;
-        let s = `<${node.name}${haveChild ? "" : "/"}>`;
+        let s = `<${node.name}${haveChild ? '' : '/'}>`;
         s += this.parseChildNodes(node.children);
         s += `</${node.name}>`;
         return s;

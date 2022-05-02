@@ -1,7 +1,8 @@
-import {createContext, ReactNode, useContext, useEffect, useMemo, useState} from 'react';
+import {createContext, Dispatch, ReactNode, SetStateAction, useContext, useEffect, useMemo, useState} from 'react';
 import APIBase from '../API/APIBase';
 import APIHelper from '../API/APIHelper';
 import {UserInfo} from '../Types/UserInfo';
+import {SiteInfo, SiteWithUserInfo} from '../Types/SiteInfo';
 
 export enum AppState {
     loading,
@@ -10,12 +11,14 @@ export enum AppState {
 }
 
 type AppStateContextState = {
-    userInfo: UserInfo | undefined;
+    userInfo?: UserInfo;
     appState: AppState;
     api: APIHelper;
+    site?: SiteWithUserInfo;
 };
 
 export type AppStateSetters = {
+    setSite: Dispatch<SetStateAction<SiteWithUserInfo | undefined>>;
     setUserInfo: (user: UserInfo | undefined) => void;
     setAppState: (state: AppState) => void;
 }
@@ -27,14 +30,15 @@ const apiBase = new APIBase();
 export const AppStateProvider = (props: {children: ReactNode}) => {
     const [userInfo, setUserInfo] = useState<UserInfo | undefined>(undefined);
     const [appState, setAppState] = useState<AppState>(AppState.loading);
-    const api = useMemo(() => new APIHelper(apiBase, {setUserInfo, setAppState}), []);
-    api.updateSetters({setUserInfo, setAppState});
+    const [site, setSite] = useState<SiteInfo>();
+    const api = useMemo(() => new APIHelper(apiBase, {setUserInfo, setAppState, setSite}), []);
+    api.updateSetters({setUserInfo, setAppState, setSite});
 
     useEffect(() => {
         api.init().then();
     }, [api]);
 
-    return <AppStateContext.Provider value={{ userInfo, appState, api: api }}>
+    return <AppStateContext.Provider value={{ userInfo, appState, api: api, site: site }}>
         {props.children}
     </AppStateContext.Provider>
 }

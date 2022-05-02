@@ -14,13 +14,13 @@ exports.setup = function(options, seedLink) {
   seed = seedLink;
 };
 
-exports.up = function(db, callback) {
-  db.createTable('sessions', {
+exports.up = async function(db) {
+  await db.createTable('sessions', {
     id: { type: 'string', length: 64, primaryKey: true },
     data: { type: 'text', notNull: true },
     used: { type: 'datetime', notNull: true, defaultValue: new String('CURRENT_TIMESTAMP') },
-  }, callback);
-  db.runSql(`grant delete on ${process.env.MYSQL_DATABASE}.* to '${process.env.MYSQL_USER}'@'%';`, callback);
+  });
+  await db.runSql(`grant delete on ${process.env.MYSQL_DATABASE}.* to '${process.env.MYSQL_USER}'@'%';`);
   return null;
 };
 

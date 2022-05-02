@@ -1,49 +1,25 @@
 import {Router} from 'express';
-import PostManager, {PostRawWithUserData} from '../db/managers/PostManager';
+import PostManager from '../db/managers/PostManager';
 import {User} from '../types/User';
 import UserManager from '../db/managers/UserManager';
 import SiteManager from '../db/managers/SiteManager';
 import {Site} from '../types/Site';
-import TheParser from '../parser/TheParser';
 import {Logger} from 'winston';
 import Joi from 'joi';
 import {APIRequest, APIResponse, joiFormat, validate} from './ApiMiddleware';
 import {ContentFormat} from '../types/common';
-
-interface FeedRequest {
-    site: string;
-    page?: number;
-    perpage?: number;
-    format?: ContentFormat;
-}
-interface PostItem {
-    id: number;
-    site: string;
-    author: number;
-    created: Date;
-    title?: string;
-    content?: string;
-    rating: number;
-    comments: number;
-    newComments: number;
-    bookmark: boolean;
-    vote?: number;
-}
-interface FeedResponse {
-    posts: PostItem[];
-    total: number;
-    users: Record<number, User>;
-    site: Site;
-}
+import FeedManager from '../db/managers/FeedManager';
+import {PostEntity} from './entities/PostEntity';
+import {CommentEntity} from './entities/CommentEntity';
 
 interface PostGetRequest {
     id: number;
     format?: ContentFormat;
 }
 interface PostGetResponse {
-    post: PostItem;
+    post: PostEntity;
     site: Site;
-    comments: CommentItem[];
+    comments: CommentEntity[];
     users: Record<number, User>;
 }
 
@@ -55,7 +31,7 @@ interface CreateRequest {
     format?: ContentFormat;
 }
 interface CreateResponse {
-    post: PostItem;
+    post: PostEntity;
 }
 
 interface CommentRequest {
@@ -65,22 +41,8 @@ interface CommentRequest {
     format?: ContentFormat;
 }
 interface CommentResponse {
-    comment: CommentItem;
+    comment: CommentEntity;
     users: Record<number, User>;
-}
-
-interface CommentItem {
-    id: number;
-    created: Date;
-    author: number;
-    deleted?: boolean;
-    content: string;
-    rating: number;
-    parentComment?: number;
-
-    isNew?: boolean;
-    vote?: number;
-    answers?: CommentItem[];
 }
 
 type PostReadRequest = {
@@ -101,26 +63,20 @@ interface BookmarkResponse {
 export default class PostController {
     public router = Router();
     private postManager: PostManager;
+    private feedManager: FeedManager;
     private userManager: UserManager;
     private siteManager: SiteManager;
-    private parser: TheParser;
     private logger: Logger;
 
-    constructor(postManager: PostManager, siteManager: SiteManager, userManager: UserManager, parser: TheParser, logger: Logger) {
+    constructor(postManager: PostManager, feedManager: FeedManager, siteManager: SiteManager, userManager: UserManager, logger: Logger) {
         this.postManager = postManager;
         this.userManager = userManager;
         this.siteManager = siteManager;
-        this.parser = parser;
+        this.feedManager = feedManager;
         this.logger = logger;
 
         const getSchema = Joi.object<PostGetRequest>({
             id: Joi.number().required(),
-            format: joiFormat
-        });
-        const feedSchema = Joi.object<FeedRequest>({
-            site: Joi.string().required(),
-            page: Joi.number().default(1),
-            perpage: Joi.number().min(1).max(50).default(10),
             format: joiFormat
         });
         const readSchema = Joi.object<PostReadRequest>({
@@ -146,7 +102,6 @@ export default class PostController {
         });
 
         this.router.post('/post/get', validate(getSchema), (req, res) => this.postGet(req, res));
-        this.router.post('/post/feed', validate(feedSchema), (req, res) => this.feed(req, res));
         this.router.post('/post/create', validate(postCreateSchema), (req, res) => this.create(req, res));
         this.router.post('/post/comment', validate(commentSchema), (req, res) => this.comment(req, res));
         this.router.post('/post/read', validate(readSchema), (req, res) => this.read(req, res));
@@ -162,7 +117,7 @@ export default class PostController {
         const { id: postId, format } = request.body;
 
         try {
-            const rawPost = <PostRawWithUserData>await this.postManager.getRaw(postId, userId);
+            const rawPost = await this.postManager.getPost(postId, userId);
             if (!rawPost) {
                 return response.error('no-post', 'Post not found');
             }
@@ -175,9 +130,9 @@ export default class PostController {
             const rawBookmark = await this.postManager.getBookmark(postId, userId);
             const lastReadCommentId = rawBookmark?.last_comment_id ?? 0;
 
-            const rawComments = await this.postManager.getAllCommentsRaw(postId, userId);
+            const rawComments = await this.postManager.getPostComments(postId, userId);
 
-            const post: PostItem = {
+            const post: PostEntity = {
                 id: rawPost.post_id,
                 site: site.site,
                 author: rawPost.author_id,
@@ -192,12 +147,12 @@ export default class PostController {
             };
 
             const users: Record<number, User> = {};
-            users[rawPost.author_id] = await this.userManager.get(rawPost.author_id);
+            users[rawPost.author_id] = await this.userManager.getById(rawPost.author_id);
 
-            const comments: CommentItem[] = [];
-            const tmpComments: Record<number, CommentItem> = {};
+            const comments: CommentEntity[] = [];
+            const tmpComments: Record<number, CommentEntity> = {};
             for (const rawComment of rawComments) {
-                const comment: CommentItem = {
+                const comment: CommentEntity = {
                     id: rawComment.comment_id,
                     created: rawComment.created_at,
                     author: rawComment.author_id,
@@ -208,7 +163,7 @@ export default class PostController {
                 };
 
                 if (!users[rawComment.author_id]) {
-                    users[rawComment.author_id] = await this.userManager.get(rawComment.author_id);
+                    users[rawComment.author_id] = await this.userManager.getById(rawComment.author_id);
                 }
                 tmpComments[rawComment.comment_id] = comment;
 
@@ -246,93 +201,15 @@ export default class PostController {
         }
 
         const userId = request.session.data.userId;
-        const { site: subdomain, format, content, title } = request.body;
+        const { site, format, content, title } = request.body;
 
         try {
-            const site = await this.siteManager.getSiteByName(subdomain);
-
-            if (!site) {
-                return response.error('no-site', 'Site not found');
-            }
-
-            const html = this.parser.parse(content);
-
-            const post = await this.postManager.createPost(site.id, userId, title, content, html);
-
-            this.logger.info(`Post created by #${userId}`, { user_id: userId, site: subdomain, format, content, title });
-
-            response.success({
-                post: {
-                    id: post.post_id,
-                    site: site.site,
-                    author: post.author_id,
-                    created: post.created_at,
-                    title: post.title,
-                    content: format === 'html' ? post.html : post.source,
-                    rating: post.rating,
-                    comments: post.comments,
-                    newComments: 0,
-                    vote: 0,
-                    bookmark: true
-                }
-            });
+            const post = await this.postManager.createPost(site, userId, title, content, format);
+            this.logger.info(`Post created by #${userId}`, { user_id: userId, site, format, content, title });
+            response.success({ post });
         }
         catch (err) {
-            this.logger.error('Post create failed', { error: err, user_id: userId, site: subdomain, format, content, title });
-            return response.error('error', 'Unknown error', 500);
-        }
-    }
-
-    async feed(request: APIRequest<FeedRequest>, response: APIResponse<FeedResponse>) {
-        if (!request.session.data.userId) {
-            return response.authRequired();
-        }
-
-        const userId = request.session.data.userId;
-        const { site: subdomain, format, page, perpage: perPage } = request.body;
-
-        try {
-            const site = await this.siteManager.getSiteByName(subdomain);
-            if (!site) {
-                return response.error('no-site', 'Site not found');
-            }
-
-            const siteId = site.id;
-            const total = await this.postManager.getTotal(siteId);
-
-            const rawPosts = await this.postManager.getAllRaw(siteId, userId, page, perPage);
-
-            const users: Record<number, User> = {};
-            const posts: PostItem[] = [];
-            for (const post of rawPosts) {
-                if (!users[post.author_id]) {
-                    users[post.author_id] = await this.userManager.get(post.author_id);
-                }
-
-                posts.push({
-                    id: post.post_id,
-                    site: site.site,
-                    author: post.author_id,
-                    created: post.created_at,
-                    title: post.title,
-                    content: format === 'html' ? post.html : post.source,
-                    rating: post.rating,
-                    comments: post.comments,
-                    newComments: post.read_comments ? Math.max(0, post.comments - post.read_comments) : post.comments,
-                    bookmark: post.bookmark > 1,
-                    vote: post.vote
-                });
-            }
-
-            response.success({
-                posts: posts,
-                total: total,
-                users: users,
-                site: site
-            });
-        }
-        catch (err) {
-            this.logger.error('Feed failed', { error: err, user_id: userId, site: subdomain, format });
+            this.logger.error('Post create failed', { error: err, user_id: userId, site, format, content, title });
             return response.error('error', 'Unknown error', 500);
         }
     }
@@ -346,12 +223,10 @@ export default class PostController {
         const { post_id: postId, comment_id: parentCommentId, format, content } = request.body;
 
         try {
-            const html = this.parser.parse(content);
-
             const users: Record<number, User> = {};
-            users[userId] = await this.userManager.get(userId);
+            users[userId] = await this.userManager.getById(userId);
 
-            const commentRaw = await this.postManager.createComment(userId, postId, parentCommentId, content, html);
+            const comment = await this.postManager.createComment(userId, postId, parentCommentId, content, format);
 
             this.logger.info(`Comment created by #${userId} @${users[userId].username}`, {
                 comment: content,
@@ -360,16 +235,8 @@ export default class PostController {
             });
 
             response.success({
-                comment: {
-                    id: commentRaw.comment_id,
-                    created: commentRaw.created_at,
-                    author: commentRaw.author_id,
-                    content: format === 'html' ? commentRaw.html : commentRaw.source,
-                    rating: commentRaw.rating,
-                    parentComment: commentRaw.parent_comment_id,
-                    isNew: true
-                },
-                users: users
+                comment,
+                users
             });
         }
         catch (err) {
@@ -391,7 +258,7 @@ export default class PostController {
             .then()
             .catch(err => {
                 this.logger.error(`Read update failed`, { error: err, user_id: userId, post_id: postId, comments: comments, last_comment_id: lastCommentId });
-            })
+            });
 
         response.success({});
     }

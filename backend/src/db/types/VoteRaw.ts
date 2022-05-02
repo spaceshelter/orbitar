@@ -7,12 +7,12 @@ type VoteRaw = {
 
 export type PostVoteRaw = VoteRaw & {
     post_id: number;
-}
+};
 
 export type CommentVoteRaw = VoteRaw & {
     comment_id: number;
-}
+};
 
 export type UserVoteRaw = VoteRaw & {
     user_id: number;
-}
+};

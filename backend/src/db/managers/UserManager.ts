@@ -1,54 +1,64 @@
-import DB from '../DB';
 import {UserRaw} from '../types/UserRaw';
-import {User, UserProfile} from '../../types/User';
+import {User, UserGender, UserProfile} from '../../types/User';
+import UserRepository from '../repositories/UserRepository';
+import VoteRepository from '../repositories/VoteRepository';
+import bcrypt from 'bcryptjs';
 
 export default class UserManager {
-    private db: DB;
+    private userRepository: UserRepository;
+    private voteRepository: VoteRepository;
+    private cacheId: Record<number, User> = {};
+    private cacheUsername: Record<string, User> = {};
 
-    constructor(db: DB) {
-        this.db = db;
+    constructor(voteRepository: VoteRepository, userRepository: UserRepository) {
+        this.userRepository = userRepository;
+        this.voteRepository = voteRepository;
     }
 
-    async getRaw(username: string): Promise<UserRaw | undefined> {
-        return await this.db.fetchOne('select * from users where username=:username', {username: username});
+    async getById(userId: number): Promise<User | undefined> {
+        if (this.cacheId[userId]) {
+            return this.cacheId[userId];
+        }
+
+        const rawUser = await this.userRepository.getUserById(userId);
+
+        if (!rawUser) {
+            return;
+        }
+
+        const user = this.mapUserRaw(rawUser);
+        this.cache(user);
+        return user;
     }
 
-    async getRawById(userId: number): Promise<UserRaw | undefined> {
-        return await this.db.fetchOne('select * from users where user_id=:user_id', {user_id: userId});
-    }
-
-    async get(userId: number): Promise<User | undefined> {
-        const rawUser = await this.getRawById(userId);
-
-        return {
-            id: rawUser.user_id,
-            username: rawUser.username,
-            gender: rawUser.gender,
-            karma: rawUser.karma,
-            name: rawUser.name
-        };
+    private cache(user: User) {
+        this.cacheId[user.id] = user;
+        this.cacheUsername[user.username] = user;
     }
 
     async getByUsername(username: string): Promise<User | undefined> {
-        const rawUser = await this.getRaw(username);
+        if (this.cacheUsername[username]) {
+            return this.cacheUsername[username];
+        }
+
+        const rawUser = await this.userRepository.getUserByUsername(username);
+
         if (!rawUser) {
             return;
         }
 
-        return this.mapUserRaw(rawUser);
+        const user = this.mapUserRaw(rawUser);
+        this.cache(user);
+        return user;
     }
 
     async getFullProfile(username: string, forUserId: number): Promise<UserProfile | undefined> {
-        const rawUser = await this.getRaw(username);
+        const rawUser = await this.userRepository.getUserByUsername(username);
         if (!rawUser) {
             return;
         }
 
-        const voteResult = await this.db.fetchOne<{vote: number}>('select vote from user_karma where user_id=:user_id and voter_id=:voter_id', {
-            user_id: rawUser.user_id,
-            voter_id: forUserId
-        })
-        const vote = voteResult?.vote;
+        const vote = await this.voteRepository.getUserVote(rawUser.user_id, forUserId);
 
         return {
             id: rawUser.user_id,
@@ -61,6 +71,38 @@ export default class UserManager {
         };
     }
 
+    async getInvitedBy(userId: number): Promise<User | undefined> {
+        const invitedByRaw = await this.userRepository.getUserParent(userId);
+
+        if (!invitedByRaw) {
+            return;
+        }
+
+        return this.mapUserRaw(invitedByRaw);
+    }
+
+    async getInvites(userId: number): Promise<User[]> {
+        const invitesRaw = await this.userRepository.getUserChildren(userId);
+
+        return invitesRaw.map(raw => this.mapUserRaw(raw));
+    }
+
+    async checkPassword(username: string, password: string): Promise<User | false> {
+        const userRaw = await this.userRepository.getUserByUsername(username);
+
+        if (!await bcrypt.compare(password, userRaw.password)) {
+            return false;
+        }
+
+        return this.mapUserRaw(userRaw);
+    }
+
+    async registerByInvite(inviteCde: string, username: string, name: string, email: string, passwordHash: string, gender: UserGender): Promise<User> {
+        const userRaw = await this.userRepository.userRegister(inviteCde, username, name, email, passwordHash, gender);
+
+        return this.mapUserRaw(userRaw);
+    }
+
     private mapUserRaw(rawUser: UserRaw): User {
         return {
             id: rawUser.user_id,
@@ -68,26 +110,6 @@ export default class UserManager {
             gender: rawUser.gender,
             karma: rawUser.karma,
             name: rawUser.name
-        }
-    }
-
-    async getInvitedBy(userId: number): Promise<User | undefined> {
-        const invitedBy = await this.db.fetchOne<UserRaw>('select u.* from user_invites i join users u on (i.parent_id = u.user_id) where i.child_id=:user_id', {
-            user_id: userId
-        })
-
-        if (!invitedBy) {
-            return;
-        }
-
-        return this.mapUserRaw(invitedBy);
-    }
-
-    async getInvites(userId: number): Promise<User[]> {
-        const invites = await this.db.query<UserRaw[]>('select u.* from user_invites i join users u on (i.child_id = u.user_id) where i.parent_id=:user_id order by i.invited', {
-            user_id: userId
-        })
-
-        return invites.map(raw => this.mapUserRaw(raw));
+        };
     }
 }

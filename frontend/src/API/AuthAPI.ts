@@ -1,9 +1,18 @@
 import APIBase from './APIBase';
 import {UserInfo} from '../Types/UserInfo';
+import {SiteWithUserInfo} from '../Types/SiteInfo';
 
-type StatusRequest = {};
+type StatusRequest = {
+    site: string;
+};
 type StatusResponse = {
+    site: SiteWithUserInfo;
     user: UserInfo;
+    bookmarks: {
+        posts: number;
+        comments: number;
+    };
+    notifications: number;
 };
 
 type SignInRequest = {};
@@ -22,8 +31,8 @@ export default class AuthAPI {
         this.api = api;
     }
 
-    async status(): Promise<StatusResponse> {
-        return await this.api.request<StatusRequest, StatusResponse>('/status', {});
+    async status(site: string): Promise<StatusResponse> {
+        return await this.api.request<StatusRequest, StatusResponse>('/status', { site: site });
     }
 
     async signIn(username: string, password: string): Promise<SignInResponse> {

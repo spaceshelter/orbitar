@@ -24,7 +24,7 @@ interface ProfilePostsOrCommentsRequest {
 
 export default class UserController {
     public router = Router();
-    private userManager: UserManager
+    private userManager: UserManager;
     private logger: Logger;
 
     constructor(userManager: UserManager, logger: Logger) {
@@ -71,7 +71,7 @@ export default class UserController {
             });
         }
         catch (error) {
-            this.logger.error('Could not get user profile', { username, error })
+            this.logger.error('Could not get user profile', { username, error });
             return response.error('error', 'Unknown error', 500);
         }
     }

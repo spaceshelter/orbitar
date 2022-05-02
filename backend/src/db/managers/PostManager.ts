@@ -1,206 +1,97 @@
-import DB from '../DB';
-import {CommentRaw, PostRaw} from '../types/PostRaw';
-import {OkPacket} from 'mysql2';
-import CodeError from '../../CodeError';
+import PostRepository from '../repositories/PostRepository';
+import CommentRepository from '../repositories/CommentRepository';
+import BookmarkRepository from '../repositories/BookmarkRepository';
+import {CommentRawWithUserData, PostRawWithUserData} from '../types/PostRaw';
 import {BookmarkRaw} from '../types/BookmarkRaw';
+import {PostEntity} from '../../api/entities/PostEntity';
+import SiteManager from './SiteManager';
+import CodeError from '../../CodeError';
+import TheParser from '../../parser/TheParser';
+import {ContentFormat} from '../../types/common';
+import {CommentEntity} from '../../api/entities/CommentEntity';
+import FeedManager from './FeedManager';
 
-export type PostRawWithUserData = PostRaw & {
-    vote?: number;
-    bookmark?: number;
-    read_comments?: number;
-};
-export type CommentRawWithUserData = CommentRaw & {
-    vote?: number;
-    is_new?: boolean;
-};
 
 export default class PostManager {
-    private db: DB;
+    private bookmarkRepository: BookmarkRepository;
+    private commentRepository: CommentRepository;
+    private postRepository: PostRepository;
+    private feedManager: FeedManager;
+    private siteManager: SiteManager;
+    private parser: TheParser;
 
-    constructor(db: DB) {
-        this.db = db;
+    constructor(bookmarkRepository: BookmarkRepository, commentRepository: CommentRepository, postRepository: PostRepository, feedManager: FeedManager, siteManager: SiteManager, parser: TheParser) {
+        this.bookmarkRepository = bookmarkRepository;
+        this.commentRepository = commentRepository;
+        this.postRepository = postRepository;
+        this.feedManager = feedManager;
+        this.siteManager = siteManager;
+        this.parser = parser;
     }
 
-    async getRaw(postId: number, forUserId?: number): Promise<PostRaw | PostRawWithUserData | undefined> {
-        let result;
-        if (forUserId) {
-            result = await this.db.query(`
-                select p.*, v.vote, b.read_comments, b.bookmark
-                from posts p
-                    left join post_votes v on (v.post_id = p.post_id and v.voter_id=:user_id)
-                    left join user_bookmarks b on (b.post_id = p.post_id and b.user_id=:user_id)
-                where p.post_id=:post_id
-            `, {
-                post_id: postId,
-                user_id: forUserId
-            });
-        }
-        else {
-            result = await this.db.query('select * from posts where post_id=:post_id', {post_id: postId});
-        }
-
-        const row = (<PostRaw> result)[0];
-        if (!row) {
-            return;
-        }
-
-        return row;
+    async getPost(postId: number, forUserId: number): Promise<PostRawWithUserData | undefined> {
+        return await this.postRepository.getPostWithUserData(postId, forUserId);
     }
 
-    async getTotal(siteId: number): Promise<number> {
-        const result = await this.db.query(`select count(*) cnt from posts where site_id=:site_id`, {site_id: siteId});
-        if (!result || !result[0]) {
-            return 0;
+    async createPost(siteName: string, userId: number, title: string, content: string, format: ContentFormat): Promise<PostEntity> {
+        const site = await this.siteManager.getSiteByName(siteName);
+        if (!site) {
+            throw new CodeError('no-site', 'Site not found');
         }
 
-        return result[0].cnt;
+        const html = this.parser.parse(content);
+        const postRaw = await this.postRepository.createPost(site.id, userId, title, content, html);
+
+        // fan out in background
+        this.feedManager.postFanOut(postRaw.post_id).then().catch();
+
+        return {
+            id: postRaw.post_id,
+            site: site.site,
+            author: postRaw.author_id,
+            created: postRaw.created_at,
+            title: postRaw.title,
+            content: format === 'html' ? postRaw.html : postRaw.source,
+            rating: 0,
+            comments: 0,
+            newComments: 0,
+            vote: 0,
+            bookmark: true
+        };
     }
 
-    async getAllRaw(siteId: number, forUserId: number, page: number, perPage: number): Promise<PostRawWithUserData[]> {
-        const limitFrom = (page - 1) * perPage;
-
-        return await this.db.query(`
-                select p.*, v.vote, b.read_comments, b.bookmark
-                from posts p 
-                    left join post_votes v on (v.post_id = p.post_id and v.voter_id=:user_id)
-                    left join user_bookmarks b on (b.post_id = p.post_id and b.user_id=:user_id)
-                where
-                    site_id=:site_id
-                order by
-                    commented_at desc
-                limit :limit_from,:limit_count
-            `,
-            {
-                site_id: siteId,
-                user_id: forUserId,
-                limit_from: limitFrom,
-                limit_count: perPage
-            });
+    async getPostComments(postId: number, forUserId: number): Promise<CommentRawWithUserData[]> {
+        return await this.commentRepository.getPostComments(postId, forUserId);
     }
 
-    async getAllCommentsRaw(postId: number, forUserId: number): Promise<CommentRawWithUserData[]> {
-         return await this.db.query(`
-                select c.*, v.vote
-                    from comments c
-                      left join comment_votes v on (v.comment_id = c.comment_id and v.voter_id = :user_id)
-                    where
-                      c.post_id = :post_id
-                    order by
-                      c.parent_comment_id, c.comment_id
-            `,
-            {
-                post_id: postId,
-                user_id: forUserId
-            });
-    }
+    async createComment(userId: number, postId: number, parentCommentId: number | undefined, content: string, format: ContentFormat): Promise<CommentEntity> {
+        const html = this.parser.parse(content);
 
-    async createPost(siteId: number, userId: number, title: string, source: string, html: string): Promise<PostRaw> {
-        const postInsertResult: OkPacket =
-            await this.db.query('insert into posts (site_id, author_id, title, source, html) values(:siteId, :userId, :title, :source, :html)',
-                {siteId, userId, title, source, html})
-        const postInsertId = postInsertResult.insertId
-        if (!postInsertId) {
-            throw new CodeError('unknown', 'Could not insert post');
-        }
+        const commentRaw = await this.commentRepository.createComment(userId, postId, parentCommentId, content, html);
 
-        const post = this.getRaw(postInsertId);
-        if (!post) {
-            throw new CodeError('unknown', 'Could not select post');
-        }
+        // fan out in background
+        this.feedManager.postFanOut(commentRaw.post_id).then().catch();
 
-        return post;
-    }
-
-    async createComment(userId: number, postId: number, parentCommentId: number | undefined, source: string, html: string): Promise<CommentRaw> {
-        return await this.db.inTransaction(async conn => {
-            const siteResult = await conn.fetchOne<{site_id: number}>('select site_id from posts where post_id=:post_id', { post_id: postId });
-
-            if (!siteResult) {
-                throw new CodeError('no-post', 'Post not found');
-            }
-
-            const commentInsertResult: OkPacket = await conn.query(`
-                insert into comments
-                    (site_id, post_id, parent_comment_id, author_id, source, html)
-                    values(:site_id, :post_id, :parent_comment_id, :author_id, :source, :html)
-            `, {
-                site_id: siteResult.site_id,
-                post_id: postId,
-                parent_comment_id: parentCommentId,
-                author_id: userId,
-                source: source,
-                html: html
-            });
-
-            const commentInsertId = commentInsertResult.insertId;
-            if (!commentInsertId) {
-                throw new CodeError('unknown', 'Could not insert comment');
-            }
-
-            await conn.query(`update posts p set comments=(select count(*) from comments c where c.post_id = p.post_id), last_comment_id=:last_comment_id, commented_at=now() where p.post_id=:post_id`, {
-                post_id: postId,
-                last_comment_id: commentInsertId
-            });
-
-            const commentResult:CommentRaw[] = await conn.query(`select * from comments where comment_id = :comment_id`, { comment_id: commentInsertId });
-            return commentResult[0];
-        });
+        return {
+            id: commentRaw.comment_id,
+            created: commentRaw.created_at,
+            author: commentRaw.author_id,
+            content: format === 'html' ? commentRaw.html : commentRaw.source,
+            rating: commentRaw.rating,
+            parentComment: commentRaw.parent_comment_id,
+            isNew: true
+        };
     }
 
     async setRead(postId: number, userId: number, readComments: number, lastCommentId?: number) {
-        // TODO: add unique key (post_id, user_id) and change to 'insert ... on duplicate update ...'
-        await this.db.inTransaction(async conn => {
-            const bookmark = await conn.fetchOne<BookmarkRaw>(`select * from user_bookmarks where post_id=:post_id and user_id=:user_id`, {
-                post_id: postId,
-                user_id: userId
-            });
-
-            if (!bookmark) {
-                await conn.query('insert into user_bookmarks (post_id, user_id, read_comments, last_comment_id) values(:post_id, :user_id, :read_comments, :last_comment_id)', {
-                    post_id: postId,
-                    user_id: userId,
-                    read_comments: readComments,
-                    last_comment_id: lastCommentId
-                });
-            }
-            else {
-                await conn.query('update user_bookmarks set read_comments=:read_comments, last_comment_id=:last_comment_id where bookmark_id=:bookmark_id', {
-                    read_comments: readComments,
-                    last_comment_id: lastCommentId ?? bookmark.last_comment_id,
-                    bookmark_id: bookmark.bookmark_id
-                });
-            }
-        });
+        return await this.bookmarkRepository.setRead(postId, userId, readComments, lastCommentId);
     }
 
     async getBookmark(postId: number, userId: number): Promise<BookmarkRaw | undefined> {
-        return await this.db.fetchOne<BookmarkRaw>(`select * from user_bookmarks where post_id=:post_id and user_id=:user_id`, {
-            post_id: postId,
-            user_id: userId
-        });
+        return await this.bookmarkRepository.getBookmark(postId, userId);
     }
 
     async setBookmark(postId: number, userId: number, bookmarked: boolean) {
-        // TODO: add unique key (post_id, user_id) and change to 'insert ... on duplicate update ...'
-        await this.db.inTransaction(async conn => {
-            const bookmark = await conn.fetchOne<BookmarkRaw>(`select * from user_bookmarks where post_id=:post_id and user_id=:user_id`, {
-                post_id: postId,
-                user_id: userId
-            });
-
-            if (!bookmark) {
-                await conn.query('insert into user_bookmarks (post_id, user_id, bookmark) values(:post_id, :user_id, :bookmark)', {
-                    post_id: postId,
-                    user_id: userId,
-                    bookmark: bookmarked ? 1 : 0
-                });
-            }
-            else {
-                await conn.query('update user_bookmarks set read_comments=:read_comments where bookmark=:bookmark', {
-                    bookmark: bookmarked ? 1 : 0,
-                    bookmark_id: bookmark.bookmark_id
-                });
-            }
-        });
+        return await this.bookmarkRepository.setBookmark(postId, userId, bookmarked);
     }
 }

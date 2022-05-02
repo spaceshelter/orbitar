@@ -1,11 +1,11 @@
 import {Router} from 'express';
 import UserManager from '../db/managers/UserManager';
-import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
 import {User} from '../types/User';
 import {Logger} from 'winston';
 import {APIRequest, APIResponse, validate} from './ApiMiddleware';
 import Joi from 'joi';
+import {UserEntity} from './entities/UserEntity';
 
 type SignInRequest = {
     username: string;
@@ -42,8 +42,8 @@ export default class AuthController {
             password: Joi.string().required(),
         });
 
-        this.router.post('/auth/signin', signInLimiter, validate(signInSchema), (req, res) => this.signin(req, res))
-        this.router.post('/auth/signout', (req, res) => this.signout(req, res))
+        this.router.post('/auth/signin', signInLimiter, validate(signInSchema), (req, res) => this.signin(req, res));
+        this.router.post('/auth/signout', (req, res) => this.signout(req, res));
     }
 
     async signin(request: APIRequest<SignInRequest>, response: APIResponse<SignInResponse>) {
@@ -54,28 +54,23 @@ export default class AuthController {
         const {username, password} = request.body;
 
         try {
-            const userRow = await this.userManager.getRaw(username);
-            if (!userRow) {
+            const userInfo = await this.userManager.checkPassword(username, password);
+            if (!userInfo) {
                 this.logger.warn(`Wrong username: @${username}`, { username: username });
-                return response.error('wrong-credentials', 'Wrong username or password');
-            }
-
-            if (!await bcrypt.compare(password, userRow.password)) {
-                this.logger.warn(`Wrong password for username: @${username}`, { username: username });
                 return response.error('wrong-credentials', 'Wrong username or password');
             }
 
             const sessionId = await request.session.init();
 
-            const user = {
-                id: userRow.user_id,
-                gender: userRow.gender,
-                username: userRow.username,
-                name: userRow.name,
-                karma: userRow.karma
+            const user: UserEntity = {
+                id: userInfo.id,
+                gender: userInfo.gender,
+                username: userInfo.username,
+                name: userInfo.name,
+                karma: userInfo.karma
             };
 
-            request.session.data.userId = userRow.user_id;
+            request.session.data.userId = userInfo.id;
             await request.session.store();
 
             response.success({
@@ -83,7 +78,7 @@ export default class AuthController {
                 session: sessionId
             });
 
-            this.logger.info(`User @${userRow.username} signed in`, { username: userRow.username, user_id: userRow.user_id });
+            this.logger.info(`User @${userInfo.username} signed in`, { username: userInfo.username, user_id: userInfo.id });
         }
         catch (err) {
             this.logger.error('Sign in failed', { error: err, username: username });

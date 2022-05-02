@@ -19,6 +19,26 @@
     font-weight: bold;
 }
 
+.subscribe {
+    margin: 20px 0;
+}
+
+.subscribe button {
+    padding: 6px 10px;
+}
+
+.subscribed {
+    background: var(--subscribe-bg);
+    color: var(--subscribe-fg);
+    border: none;
+}
+
+.notSubscribed {
+    background: var(--subscribe-un-bg);
+    color: var(--subscribe-un-fg);
+    border: none;
+}
+
 .podsites {
     margin-top: 40px;
 }

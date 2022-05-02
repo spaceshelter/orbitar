@@ -3,7 +3,7 @@ import React, {useEffect, useState} from 'react';
 import styles from './CreatePostPage.module.css';
 import {SiteInfo} from '../Types/SiteInfo';
 import {useAPI} from '../AppState/AppState';
-import SiteSidebar from './SiteSidebar';
+import SiteSidebar from '../Components/SiteSidebar';
 import {useNavigate} from 'react-location';
 
 type CreatePostValues = {

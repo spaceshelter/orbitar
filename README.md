@@ -20,7 +20,7 @@
     ```
     docker-compose -p orbitar-dev -f docker-compose.dev.yml up
     ```
-    mysql повиснет на стандартном 3306 порту
+    mysql повиснет на стандартном 3306 порту, redis на 6379.
     
     Веб-роутер на 80 порту - будет перенаправлять запросы с `*.orbitar.local` на `localhost:5000` (фронт), а `api.orbitar.local` на `localhost:5001` (бэк).
 
@@ -52,6 +52,15 @@
        ```
 
 После первого запуска можно открыть приглашение http://orbitar.local/invite/initial и зарегистрировать первый юзернейм.
+
+❗️ В конфигах `docker-compose.*.yml` раньше была опечатка в названии образа `mysql_data`. Чтобы скопировать старую базу в новый образ необходимо остановить mysql и выполнить:
+```
+docker run --rm \
+  --volume orbitar-dev_myqsl_db:/olddb \
+  --volume orbitar-dev_mysql_db:/newdb \
+  ubuntu cp -rpv /olddb/. /newdb/
+```
+
 
 ### Запуск полностью в контейнере (локально)
 ```
