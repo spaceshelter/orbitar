@@ -37,9 +37,9 @@ export default function SiteSidebar(props: SiteSidebarProps) {
                 }
             </div>
             <div className={styles.podsites}>
-                {props.site.site !== 'main' && <div><a href="src/Components/SiteSidebar">Главная</a></div>}
-                {props.site.site !== 'idiod' && <div><a href="src/Components/SiteSidebar">idiod</a></div>}
-                {props.site.site !== 'dev' && <div><a href="src/Components/SiteSidebar">Баги и фичи</a></div>}
+                {props.site.site !== 'main' && <div><a href="https://orbitar.space/">Главная</a></div>}
+                {props.site.site !== 'idiod' && <div><a href="https://idiod.orbitar.space/">idiod</a></div>}
+                {props.site.site !== 'dev' && <div><a href="https://dev.orbitar.space/">Баги и фичи</a></div>}
             </div>
         </div>
     </div>)
