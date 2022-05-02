@@ -55,6 +55,9 @@ export default class APIHelper {
         if (window.location.hostname !== process.env.REACT_APP_ROOT_DOMAIN) {
             site = window.location.hostname.split('.')[0];
         }
+        if (site === 'design-test') {
+            site = 'main';
+        }
 
         try {
             this.setters.setAppState(AppState.loading);

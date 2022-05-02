@@ -16,6 +16,10 @@ export default function FeedPage() {
     const { site } = useAppState();
     const search = useSearch<{Search: {page: number}}>();
     const matchRoute = useMatchRoute();
+    // temporary replacement
+    if (siteName === 'design-test') {
+        siteName = 'main';
+    }
     const isPosts = siteName !== 'main' || !!matchRoute({ to: '/posts' });
     const perpage = 20;
     const page = search.page || 1;

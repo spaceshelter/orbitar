@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useRef} from 'react';
 import {Outlet, ReactLocation, Router,} from "react-location";
 import {ToastContainer} from 'react-toastify';
 
@@ -16,6 +16,7 @@ import FeedPage from './Pages/FeedPage';
 import styles from './App.module.css';
 import './index.css';
 import 'react-toastify/dist/ReactToastify.css';
+import {ReactComponent as MonsterIcon} from './Assets/monster_large.svg';
 
 const location = new ReactLocation();
 
@@ -75,6 +76,7 @@ function App() {
         <div className={styles.container}>
             <Outlet />
         </div>
+        <div className={styles.monster}><MonsterIcon /></div>
         <ToastContainer theme="dark" />
     </Router>
   );

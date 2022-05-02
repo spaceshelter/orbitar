@@ -1,13 +1,13 @@
 .container {
-    flex: 1;
+    position: fixed;
     max-width: 200px;
-
-    padding: 20px;
-    background: var(--sidebar-bg);
+    width: 200px;
+    left: 0;
+    height: 100vw;
 }
 
 .fixed {
-
+    margin: 20px;
 }
 
 .siteName {

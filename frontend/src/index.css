@@ -37,6 +37,7 @@ html,body {
   -moz-osx-font-smoothing: grayscale;
   background: var(--bg);
   color: var(--fg);
+
 }
 
 #root {

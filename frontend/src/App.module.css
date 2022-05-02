@@ -2,5 +2,17 @@
   width: 100%;
   top: 40px;
   bottom: 0;
+  padding-top: 60px;
+}
 
+.monster {
+  position: fixed;
+  left: 20px;
+  bottom: 0;
+  height: 50px;
+  width: 50px
+}
+.monster svg {
+  height: 100%;
+  width: 100%;
 }

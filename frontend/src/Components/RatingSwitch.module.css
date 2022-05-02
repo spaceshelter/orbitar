@@ -1,92 +1,42 @@
 .rating {
-    display: inline-block;
-    text-align: center;
-    border-radius: 6px;
-    background: var(--rating-bg);
-    border-top: 1px solid var(--rating-border);
-    border-bottom: 1px solid var(--rating-border);
-    height: 20px;
-    overflow: hidden;
-    vertical-align: middle;
+    display: flex;
+    align-items: center;
     font-size: 12px;
+    font-weight: bold;
+    color: var(--inactive);
+    min-width: 80px;
+}
+
+.rating .value.minus {
+    color: var(--negative-fg);
+}
+.rating .value.plus {
+    color: var(--active-fg);
+}
+
+.rating .value {
+    flex: 1;
+    text-align: center;
 }
 
 .rating button {
-    outline: 0;
-    width: 22px;
-    height: 20px;
-    display: inline-block;
-    border-radius: 0;
-    border: none;
-    color: var(--rating-button-fg);
-    background: var(--rating-button-bg);
-    font-size: 12px;
-    padding: 0;
+    height: 24px;
+    width: 24px;
+    background: none;
     margin: 0;
+    padding: 0;
+    border: none;
+    fill: var(--inactive-fg);
 }
 
-.rating button.votedPlus {
-    font-weight: bold;
-    color: var(--rating-plus-fg);
-    background: var(--rating-plus-bg);
-
-}
-.rating button.votedMinus {
-    font-weight: bold;
-    color: var(--rating-minus-fg);
-    background: var(--rating-minus-bg);
+.rating button.plus {
+    fill: var(--active-fg);
 }
 
-
-
-.rating:hover button, .rating button.voted {
-
+.rating button.minus {
+    fill: var(--negative-fg);
 }
 
-.value {
-    display: inline-block;
-    font-size: 12px;
-    /*line-height: 20px;*/
-    /*height: 20px;*/
-    /*border-top: 1px solid var(--rating-button-bg);*/
-    /*border-bottom: 1px solid var(--rating-button-bg);*/
-    /*height: 19px;*/
-    padding: 0 4px;
-    min-width: 20px;
-    position: relative;
-}
-
-.container {
-    position: relative;
-    display: inline-block;
-}
-
-.list {
-    position: absolute;
-    top: 20px;
-    left: 0;
-}
-.list .container {
-    background: #1b142a;
-    border-radius: 6px;
-    border: 1px solid #2b193f;
-}
-.listHeader {
-    padding: 10px;
-}
-
-.listColumns {
-    display: flex;
-}
-.listLeft, .listRight {
-    flex: 1;
-    max-width: 20px;
-}
-.listColumnPlus, .listColumnMinus {
-    flex: 1;
-    padding: 0 10px;
-    min-width: 100px;
-}
-.listColumnPlus {
-    border-right: 1px solid #41244e;
+.rating button.dis {
+    fill: var(--disabled-fg);
 }

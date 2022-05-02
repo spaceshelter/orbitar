@@ -3,13 +3,23 @@ import {ThemeCollection} from './Theme/ThemeProvider';
 const theme: ThemeCollection = {
     light: {
         colors: {
-            bg: '#d7d7de',
+            bg: '#ffffff',
             fg: '#000000',
+
+            'active-fg': '#3992E4',
+            'negative-fg': '#ED6158',
+            'inactive-fg': 'rgba(0, 0, 0, 0.4)',
+            'disabled-fg': 'rgba(0, 0, 0, 0.2)',
+
             topbar: {
-                bg: '#3c363f',
+                fg: '#3992E4',
+                bg: 'rgba(255, 255, 255, 0.5)',
                 'logo-fg': '#dcb5d1',
                 button: {
-                    fg: '#9b9295',
+                    fg: 'rgba(0, 0, 0, 0.6)',
+                    active: {
+                        fg: '#3992E4'
+                    },
                     hover: {
                         bg: '#4f4552',
                         fg: '#ebd7da',
@@ -17,7 +27,7 @@ const theme: ThemeCollection = {
                 },
                 notify: {
                     bg: '#ea3434',
-                    fg: '#ffffff'
+                    fg: '#000000'
                 },
                 karma: {
                     bg: '#9b9295',
@@ -25,7 +35,7 @@ const theme: ThemeCollection = {
                 }
             },
             sidebar: {
-                bg: '#cacad2',
+                bg: '#ffffff',
                 fg: '#000000',
             },
             rating: {
@@ -45,10 +55,10 @@ const theme: ThemeCollection = {
                 },
             },
             item: {
-                bg: '#ffffff',
+                bg: 'transparent',
             },
             controls: {
-                bg: '#f1eff4',
+                bg: 'transparent',
             },
             link: {
                 fg: '#bd308b',
@@ -90,15 +100,25 @@ const theme: ThemeCollection = {
     },
     dark: {
         colors: {
-            bg: '#1a142a',
+            bg: '#2B2A2A',
             fg: '#cfc5dc',
+
+            'active-fg': '#58A8BA',
+            'negative-fg': '#BA5E58',
+            'inactive-fg': 'rgba(255, 255, 255, 0.6)',
+            'disabled-fg': 'rgba(255, 255, 255, 0.2)',
+
             topbar: {
-                bg: '#100917',
+                fg: '#58A8BA',
+                bg: 'rgba(43, 42, 42, 0.6)',
                 logo: {
                     fg: '#8b4977',
                 },
                 button: {
-                    fg: '#bc5880',
+                    fg: 'rgba(255, 255, 255, 0.6)',
+                    active: {
+                        fg: '#58A8BA'
+                    },
                     hover: {
                         bg: '#5f3e68',
                         fg: '#ed7285',
@@ -118,26 +138,22 @@ const theme: ThemeCollection = {
                 fg: '#cfc5dc',
             },
             rating: {
-                border: '#1b142a',
-                bg: '#0b070f',
-                button: {
-                    fg: '#7b7b7b',
-                    bg: '#1b142a',
-                },
+                fg: 'rgba(255, 255, 255, 0.6)',
                 plus: {
-                    fg: '#8aff74',
-                    bg: '#1b3f2a',
+                    fg: '#58A8BA',
                 },
                 minus: {
-                    fg: '#ff74ba',
-                    bg: '#67303e',
+                    fg: '#BA5E58',
                 },
+                dis: {
+                    fg: 'rgba(255, 255, 255, 0.2)',
+                }
             },
             item: {
-                bg: '#100917',
+                bg: 'transparent',
             },
             controls: {
-                bg: '#0b070f',
+                bg: 'transparent',
             },
             link: {
                 fg: '#d98ec5',

@@ -2,15 +2,15 @@
     margin: 20px;
     border-radius: 6px;
     background: var(--item-bg);
+    margin-bottom: 65px;
 }
 
 .header {
-    padding: 10px;
+
 }
 
 .contentContainer {
     display: inline-block;
-    padding-left: 10px;
 }
 
 .buttons {
@@ -38,12 +38,13 @@
 }
 
 .title {
-    font-size: 22px;
-    font-weight: 700;
+    font-size: 21px;
+    font-weight: bold;
+    margin-bottom: 10px;
 }
 
 .content {
-
+    font-size: 16px;
 }
 
 .content img {
@@ -53,12 +54,43 @@
 
 .signature {
     font-size: 12px;
-    display: inline-block;
-    margin: 0 10px;
+    margin-bottom: 10px;
+}
+.signature a {
+    text-decoration: none;
+    color: var(--fg);
 }
 
 .controls {
-    height: 24px;
+    display: flex;
+    margin-top: 10px;
     background: var(--controls-bg);
-    padding: 4px 20px;
+    align-items: center;
+}
+
+.controls .control {
+    margin-right: 30px;
+    color: var(--inactive-fg);
+}
+
+.controls button {
+    height: 24px;
+    background: none;
+    margin: 0;
+    padding: 0;
+    border: none;
+    fill: var(--inactive-fg);
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--inactive-fg);
+}
+
+.controls button.active {
+    fill: var(--active-fg);
+}
+
+.controls button .label {
+    margin-left: 5px;
 }
