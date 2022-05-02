@@ -1,6 +1,6 @@
 import {UserGender} from '../../types/User';
 
-export interface UserRaw {
+export type UserRaw = {
     user_id: number;
     username: string;
     password: string;
@@ -9,4 +9,12 @@ export interface UserRaw {
     karma: number;
     name: string;
     registered_at: Date;
-}
+};
+
+export type UserSiteRaw = {
+    user_id: number;
+    site_id: number;
+    subscribed: Date;
+    feed_main: number;
+    feed_bookmarks: number;
+};

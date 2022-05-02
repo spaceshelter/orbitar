@@ -22,12 +22,24 @@ import TheParser from './parser/TheParser';
 import colors from '@colors/colors/safe';
 import jsonStringify from 'safe-stable-stringify';
 import UserController from './api/UserController';
+import Redis from './db/Redis';
+import FeedManager from './db/managers/FeedManager';
+import FeedController from './api/FeedController';
+import InviteRepository from './db/repositories/InviteRepository';
+import VoteRepository from './db/repositories/VoteRepository';
+import UserRepository from './db/repositories/UserRepository';
+import BookmarkRepository from './db/repositories/BookmarkRepository';
+import CommentRepository from './db/repositories/CommentRepository';
+import PostRepository from './db/repositories/PostRepository';
+import SiteRepository from './db/repositories/SiteRepository';
+import SiteController from './api/SiteController';
 
 const app = express();
 
 const loggerColors = {
     'DB': 'blue',
-    'HTTP': 'yellow'
+    'HTTP': 'yellow',
+    'REDIS': 'magenta'
 };
 
 const consoleTransport = new winston.transports.Console({
@@ -62,22 +74,38 @@ const logger = winston.createLogger({
         consoleTransport
     ]
 });
+
+const redis = new Redis(config.redis, logger.child({ service: 'REDIS' }));
+
 const db = new DB(config.mysql, logger.child({ service: 'DB' }));
-const inviteManager = new InviteManager(db);
-const userManager = new UserManager(db);
-const postManager = new PostManager(db);
-const siteManager = new SiteManager(db, userManager);
-const voteManager = new VoteManager(db, postManager);
 
 const theParser = new TheParser();
 
+const bookmarkRepository = new BookmarkRepository(db);
+const commentRepository = new CommentRepository(db);
+const inviteRepository = new InviteRepository(db);
+const postRepository = new PostRepository(db);
+const siteRepository = new SiteRepository(db);
+const voteRepository = new VoteRepository(db);
+const userRepository = new UserRepository(db);
+
+const inviteManager = new InviteManager(inviteRepository);
+const userManager = new UserManager(voteRepository, userRepository);
+const feedManager = new FeedManager(postRepository, userRepository, redis.client);
+const siteManager = new SiteManager(siteRepository, userManager, feedManager);
+const postManager = new PostManager(bookmarkRepository, commentRepository, postRepository, feedManager, siteManager, theParser);
+const voteManager = new VoteManager(voteRepository, postManager);
+
+
 const requests = [
     new AuthController(userManager, logger.child({ service: 'AUTH' })),
-    new InviteController(inviteManager, logger.child({ service: 'INVITE' })),
-    new PostController(postManager, siteManager, userManager, theParser, logger.child({ service: 'POST' })),
-    new StatusController(userManager),
+    new InviteController(inviteManager, userManager, logger.child({ service: 'INVITE' })),
+    new PostController(postManager, feedManager, siteManager, userManager, logger.child({ service: 'POST' })),
+    new StatusController(siteManager, userManager, logger.child({ service: 'STATUS' })),
     new VoteController(voteManager, logger.child({ service: 'VOTE' })),
     new UserController(userManager, logger.child({ service: 'USER' })),
+    new FeedController(feedManager, siteManager, userManager, logger.child({ service: 'FEED' })),
+    new SiteController(siteManager, logger.child( { service: 'SITE' }))
 ];
 
 const filterLog = winston.format((info) => {
@@ -96,11 +124,11 @@ app.use(expressWinston.logger({
         filterLog(),
     ),
     requestWhitelist: ['body'],
-    meta: true, // optional: control whether you want to log the meta data about the request (default to true)
-    msg: "{{res.statusCode}} {{req.method}} {{req.ip}} {{req.url}}", // optional: customize the default logging message. E.g. "{{res.statusCode}} {{req.method}} {{res.responseTime}}ms {{req.url}}"
+    meta: true, // optional: control whether you want to log the metadata about the request (default to true)
+    msg: '{{res.statusCode}} {{req.method}} {{req.ip}} {{req.url}}', // optional: customize the default logging message. E.g. "{{res.statusCode}} {{req.method}} {{res.responseTime}}ms {{req.url}}"
     expressFormat: false, // Use the default Express/morgan request formatting. Enabling this will override any msg if true. Will only output colors with colorize set to true
     colorize: false, // Color the text and status code, using the Express/morgan color palette (text: gray, status: default green, 3XX cyan, 4XX yellow, 5XX red).
-}))
+}));
 
 app.set('trust proxy', 'loopback, uniquelocal');
 
@@ -124,16 +152,24 @@ app.all('*', (req, res) => {
     res.status(404).json({ result: 'error', code: '404', message: 'Unknown endpoint' });
 });
 
-db.ping()
-    .then(() => {
+(async () => {
+    await db.ping();
+    await redis.connect();
+
+    await (new Promise<void>((resolve, reject) => {
         app.listen(config.port, () => {
-            logger.info(`Server is listening on ${config.port}`);
+            logger.info(`HTTP server is listening on ${config.port}`);
+            resolve();
         }).on('error', (error) => {
-            logger.error('Could not start server', {error: error});
-            process.exit(1);
-        })
+            logger.error('Could not start http server', {error: error});
+            reject(error);
+        });
+    }));
+})()
+    .then(() => {
+        logger.info('Backend ready');
     })
     .catch(error => {
-        logger.error('Could not connect to database', {error: error});
+        logger.error(`Failed to start: ${error.message}`, { error: error });
         process.exit(1);
     });

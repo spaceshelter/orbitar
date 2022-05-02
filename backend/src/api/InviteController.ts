@@ -7,6 +7,8 @@ import rateLimit from 'express-rate-limit';
 import {Logger} from 'winston';
 import {APIRequest, APIResponse, joiUsername, validate} from './ApiMiddleware';
 import Joi from 'joi';
+import UserManager from '../db/managers/UserManager';
+import {UserEntity} from './entities/UserEntity';
 
 interface CheckRequest {
     code: string;
@@ -35,11 +37,14 @@ interface UseResponse {
 
 export default class InviteController {
     public router = Router();
-    private inviteManager: InviteManager
+    private inviteManager: InviteManager;
+    private userManager: UserManager;
     private logger: Logger;
 
-    constructor(inviteManager: InviteManager, logger: Logger) {
+    constructor(inviteManager: InviteManager, userManager: UserManager, logger: Logger) {
         this.inviteManager = inviteManager;
+        this.userManager = userManager;
+
         this.logger = logger;
 
         // 10 requests per hour
@@ -63,8 +68,8 @@ export default class InviteController {
             password: Joi.string().required()
         });
 
-        this.router.post('/invite/check', limiter, validate(checkSchema), (req, res) => this.checkInvite(req, res))
-        this.router.post('/invite/use', limiter, validate(useSchema), (req, res) => this.useInvite(req, res))
+        this.router.post('/invite/check', limiter, validate(checkSchema), (req, res) => this.checkInvite(req, res));
+        this.router.post('/invite/use', limiter, validate(useSchema), (req, res) => this.useInvite(req, res));
         // this.router.post('/invite/lepra', limiter, (req, res) => this.lepra(req, res))
     }
 
@@ -103,21 +108,21 @@ export default class InviteController {
         try {
             const passwordHash = await bcrypt.hash(password, 10);
 
-            const user = await this.inviteManager.use(code, username, name, email, passwordHash, gender);
+            const user = await this.userManager.registerByInvite(code, username, name, email, passwordHash, gender);
 
-            this.logger.info(`Invite ${code} used by #${user.user_id} @${user.username}`, { invite: code, username });
+            this.logger.info(`Invite ${code} used by #${user.id} @${user.username}`, { invite: code, username });
 
             const sessionId = await request.session.init();
 
-            const resUser = {
-                id: user.user_id,
+            const resUser: UserEntity = {
+                id: user.id,
                 gender: user.gender,
                 username: user.username,
                 name: user.name,
                 karma: user.karma
             };
 
-            request.session.data.userId = user.user_id;
+            request.session.data.userId = user.id;
             await request.session.store();
 
             response.success({

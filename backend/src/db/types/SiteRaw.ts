@@ -5,3 +5,8 @@ export interface SiteRaw {
     owner_id: number;
     created_at: Date;
 }
+
+export type SiteWithUserInfoRaw = SiteRaw & {
+    feed_main: number;
+    feed_bookmarks: number;
+};

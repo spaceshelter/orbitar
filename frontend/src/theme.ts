@@ -77,6 +77,14 @@ const theme: ThemeCollection = {
             },
             comment: {
                 'new-border': '#7692ff',
+            },
+            subscribe: {
+                bg: '#9fbdcb',
+                fg: '#474e6a',
+                un: {
+                    bg: '#279db9',
+                    fg: '#000000',
+                }
             }
         },
     },
@@ -104,6 +112,10 @@ const theme: ThemeCollection = {
                     bg: '#bc5880',
                     fg: '#100917'
                 }
+            },
+            sidebar: {
+                bg: '#1e162f',
+                fg: '#cfc5dc',
             },
             rating: {
                 border: '#1b142a',
@@ -155,6 +167,14 @@ const theme: ThemeCollection = {
             comment: {
                 'new-border': '#732a53',
             },
+            subscribe: {
+                bg: '#3c1681',
+                fg: '#8894c8',
+                un: {
+                    bg: '#ffeeff',
+                    fg: '#000000',
+                }
+            }
         },
     },
 };

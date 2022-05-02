@@ -1,4 +1,4 @@
-export interface PostRaw {
+export type PostRaw = {
     post_id: number;
     site_id: number;
     author_id: number;
@@ -9,9 +9,15 @@ export interface PostRaw {
     created_at: Date;
     commented_at: Date;
     comments: number;
-}
+};
 
-export interface CommentRaw {
+export type PostRawWithUserData = PostRaw & {
+    vote?: number;
+    bookmark?: number;
+    read_comments?: number;
+};
+
+export type CommentRaw = {
     comment_id: number;
     site_id: number;
     post_id: number;
@@ -22,4 +28,9 @@ export interface CommentRaw {
     source: string;
     html: string;
     rating: number;
-}
+};
+
+export type CommentRawWithUserData = CommentRaw & {
+    vote?: number;
+    is_new?: boolean;
+};

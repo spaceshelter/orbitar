@@ -1,0 +1,23 @@
+.container {
+    display: flex;
+    height: 100%;
+}
+
+.feed {
+    flex: 1;
+}
+
+.feedControls {
+    margin: 20px;
+}
+
+.feedControls a {
+}
+
+.feedControls a.active {
+    font-weight: bold;
+}
+
+.loading {
+    margin: 20px;
+}

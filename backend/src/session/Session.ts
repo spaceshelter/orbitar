@@ -69,7 +69,7 @@ export default class Session {
                     return;
                 }
                 resolve(buffer.toString('hex'));
-            })
+            });
         });
 
     }
@@ -146,6 +146,6 @@ export function session(db: DB, logger: Logger): RequestHandler {
                 logger.error('Could not restore session', { error: error });
                 res.error('error', 'Unknown error', 500);
             });
-    }
+    };
 }
 

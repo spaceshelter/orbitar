@@ -40,19 +40,29 @@ type PostCreateResponse = {
     post: PostEntity;
 };
 
-type FeedRequest = {
+type FeedPostsRequest = {
     site: string;
     page?: number;
     perpage?: number;
     format?: ContentFormat;
 };
-type FeedResponse = {
+type FeedPostsResponse = {
     posts: PostEntity[];
     users: Record<number, UserInfo>;
     total: number;
     site: SiteInfo;
 };
-
+type FeedSubscriptionsRequest = {
+    page?: number;
+    perpage?: number;
+    format?: ContentFormat;
+};
+type FeedSubscriptionsResponse = {
+    posts: PostEntity[];
+    users: Record<number, UserInfo>;
+    total: number;
+    sites: Record<string, SiteInfo>;
+};
 
 type PostGetRequest = {
     id: number;
@@ -97,9 +107,17 @@ export default class PostAPI {
         });
     }
 
-    async feed(site: string, page: number, perpage: number): Promise<FeedResponse> {
-        return await this.api.request<FeedRequest, FeedResponse>('/post/feed', {
+    async feedPosts(site: string, page: number, perpage: number): Promise<FeedPostsResponse> {
+        return await this.api.request<FeedPostsRequest, FeedPostsResponse>('/feed/posts', {
             site,
+            page,
+            perpage,
+            format: 'html'
+        });
+    }
+
+    async feedSubscriptions(page: number, perpage: number): Promise<FeedSubscriptionsResponse> {
+        return await this.api.request<FeedSubscriptionsRequest, FeedSubscriptionsResponse>('/feed/subscriptions', {
             page,
             perpage,
             format: 'html'

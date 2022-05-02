@@ -11,6 +11,7 @@ import ContentComponent from './ContentComponent';
 
 interface PostComponentProps {
     post: PostInfo;
+    showSite?: boolean;
     buttons?: React.ReactNode;
 }
 
@@ -35,7 +36,7 @@ export default function PostComponent(props: PostComponentProps) {
             <div className={styles.controls}>
                 <RatingSwitch type='post' id={props.post.id} rating={{ vote: props.post.vote, value: props.post.rating }} onVote={handleVote} />
                 <div className={styles.signature}>
-                    {props.post.author.gender === UserGender.she ? 'Написала' : 'Написал'} <Username user={props.post.author} />, <DateComponent date={props.post.created} />, <Link to={'/post/' + props.post.id}><CommentsCount count={props.post.comments} bold={props.post.comments > 0 && props.post.comments === props.post.newComments} /></Link>{props.post.newComments && props.post.newComments < props.post.comments ? <> / <Link to={'/post/' + props.post.id + '?new'}><NewCount count={props.post.newComments} bold={true} /></Link></> : ''}
+                    {props.showSite ? <><a href={`//${props.post.site}.${process.env.REACT_APP_ROOT_DOMAIN}/`}>{props.post.site}</a> </> : ''}{props.post.author.gender === UserGender.she ? 'Написала' : 'Написал'} <Username user={props.post.author} />, <DateComponent date={props.post.created} />, <Link to={'/post/' + props.post.id}><CommentsCount count={props.post.comments} bold={props.post.comments > 0 && props.post.comments === props.post.newComments} /></Link>{props.post.newComments && props.post.newComments < props.post.comments ? <> / <Link to={'/post/' + props.post.id + '?new'}><NewCount count={props.post.newComments} bold={true} /></Link></> : ''}
                 </div>
             </div>
             {props.buttons}

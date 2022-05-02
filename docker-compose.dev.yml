@@ -21,11 +21,21 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
-      - myqsl_db:/var/lib/mysql
+      - mysql_db:/var/lib/mysql
     ports:
       - "3306:3306"
+
+  redis:
+    image: redis:7
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --save 20 1 --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
 
 volumes:
   caddy_data:
   caddy_config:
-  myqsl_db:
+  mysql_db:
+  redis_data:

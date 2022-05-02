@@ -1,5 +1,5 @@
-import {createPool, OkPacket, ResultSetHeader, RowDataPacket} from 'mysql2'
-import {Pool, PoolConnection} from 'mysql2/promise'
+import {createPool, OkPacket, ResultSetHeader, RowDataPacket} from 'mysql2';
+import {Pool, PoolConnection} from 'mysql2/promise';
 import {Logger} from 'winston';
 
 interface DBOptions {
@@ -24,12 +24,16 @@ export class DBConnection {
         this.logger.verbose('Query', { query: query, params: params });
 
         try {
-            return (await this.connection.query(query, params))[0] as undefined as T
+            return (await this.connection.query(query, params))[0] as undefined as T;
         }
         catch (error) {
             this.logger.error('Query failed', error);
             throw error;
         }
+    }
+
+    async fetchAll<T = object>(query: string, params: string[] | object): Promise<T[]> {
+        return (await this.query<T[]>(query, params));
     }
 
     async fetchOne<T = object>(query: string, params: string[] | object): Promise<T | undefined> {

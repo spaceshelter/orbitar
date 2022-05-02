@@ -2,14 +2,17 @@ import React from 'react';
 import styles from './PostPage.module.css';
 import {useMatch, useSearch} from 'react-location';
 import {CommentInfo, PostInfo} from '../Types/PostInfo';
-import SiteSidebar from './SiteSidebar';
+import SiteSidebar from '../Components/SiteSidebar';
 import PostComponent from '../Components/PostComponent';
 import CommentComponent from '../Components/CommentComponent';
 import CreateCommentComponent from '../Components/CreateCommentComponent';
 import {Link} from 'react-location';
 import {usePost} from '../API/use/usePost';
+import {useAppState} from '../AppState/AppState';
 
 export default function PostPage() {
+    const {site} = useAppState();
+
     const match = useMatch();
     const search = useSearch<{Search: {'new': string | undefined}}>();
     const postId = parseInt(match.params.postId, 10);
@@ -20,7 +23,7 @@ export default function PostPage() {
     }
 
     const unreadOnly = search.new !== undefined;
-    const {site, post, comments, postComment, error, reload} = usePost(subdomain, postId, unreadOnly);
+    const {post, comments, postComment, error, reload} = usePost(subdomain, postId, unreadOnly);
 
     const handleAnswer = (text: string, post: PostInfo, comment?: CommentInfo) => {
         return new Promise<CommentInfo>((resolve, reject) => {

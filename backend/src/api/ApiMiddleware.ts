@@ -7,13 +7,13 @@ type ResponseSuccess<T> = {
     result: 'success';
     payload: T;
     sync: Date;
-}
+};
 type ResponseError = {
     result: 'error';
     code: string;
     message: string;
     meta?: object;
-}
+};
 type ResponseBody<T> = ResponseSuccess<T> | ResponseError;
 
 export interface APIRequest<ReqBody, P = core.ParamsDictionary, ResBody = object> extends express.Request<P, ResBody, ReqBody> {
@@ -61,7 +61,7 @@ export function apiMiddleware(): RequestHandler {
         res.error = error;
         res.authRequired = authRequired;
         next();
-    }
+    };
 }
 
 export function validate<ReqBody, ResBody, P = core.ParamsDictionary>(schema: ObjectSchema<ReqBody>): RequestHandler<P, ResBody, ReqBody> {
@@ -72,11 +72,11 @@ export function validate<ReqBody, ResBody, P = core.ParamsDictionary>(schema: Ob
                 next();
             })
             .catch(err => {
-                res.error('invalid-payload', err.message, 401, {
-                    details: err.details?.map(detail => { return { path: detail.path.join('.'), type: detail.type, error: detail.message } })
+                res.error('invalid-payload', err.message, 400, {
+                    details: err.details?.map(detail => { return { path: detail.path.join('.'), type: detail.type, error: detail.message }; })
                 });
             });
-    }
+    };
 }
 
 export const joiUsername = Joi.string().regex(/^[a-zа-я0-9_-]{2,30}$/i);
