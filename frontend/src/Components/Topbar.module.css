@@ -49,17 +49,23 @@
     margin-left: 16px;
 }
 
-.topbar button svg, .topbar a svg {
-    height: 100%;
+.topbar button, .topbar a {
     fill: var(--topbar-button-fg);
 }
 
-.topbar button:hover svg, .topbar a:hover svg {
+.topbar button svg, .topbar a svg {
+    height: 100%;
+}
+
+.topbar button.active {
     fill: var(--active-fg);
 }
 
-.topbar button.active svg {
-    height: 100%;
+.topbar button.menuClosed {
+    fill: var(--disabled-fg);
+}
+
+.topbar button:hover, .topbar a:hover {
     fill: var(--active-fg);
 }
 

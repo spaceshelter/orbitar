@@ -67,6 +67,7 @@ export default class APIHelper {
             this.setters.setUserInfo(status.user);
             this.setters.setSite(status.site);
             this.setters.setAppState(AppState.authorized);
+            this.setters.setUserStats({ bookmarks: status.bookmarks, notifications: status.notifications });
         }
         catch (error) {
             if (error instanceof APIError) {

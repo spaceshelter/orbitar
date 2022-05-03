@@ -12,6 +12,15 @@ const theme: ThemeCollection = {
             'inactive-fg': 'rgba(0, 0, 0, 0.4)',
             'disabled-fg': 'rgba(0, 0, 0, 0.2)',
 
+            'answer-line-fg': 'rgba(0, 0, 0, 0.1)',
+
+            'input-bg': 'rgba(0, 0, 0, 0.1)',
+
+            'button-bg': 'rgba(0, 0, 0, 0.4)',
+            'button-fg': 'rgba(0, 0, 0, 0.6)',
+            'button-dis-bg': 'rgba(0, 0, 0, 0.2)',
+            'button-dis-fg': 'rgba(255, 255, 255, 0.3)',
+
             topbar: {
                 fg: '#3992E4',
                 bg: 'rgba(255, 255, 255, 0.5)',
@@ -66,22 +75,6 @@ const theme: ThemeCollection = {
             username: {
                 fg: '#841515',
             },
-            input: {
-                bg: '#ebe6ef',
-                fg: '#000000',
-                border: '#d7cadd',
-                'focus-outline': '#af9db7',
-            },
-            button: {
-                bg: '#625767',
-                border: '#625767',
-                fg: '#ffffff',
-                dis: {
-                    bg: '#baacba',
-                    border: '#baacba',
-                    fg: '#796b79',
-                }
-            },
             comment: {
                 'new-border': '#7692ff',
             },
@@ -105,6 +98,15 @@ const theme: ThemeCollection = {
             'negative-fg': '#BA5E58',
             'inactive-fg': 'rgba(255, 255, 255, 0.6)',
             'disabled-fg': 'rgba(255, 255, 255, 0.2)',
+
+            'answer-line-fg': 'rgba(255, 255, 255, 0.1)',
+
+            'input-bg': 'rgba(0, 0, 0, 0.2)',
+
+            'button-bg': 'rgba(255, 255, 255, 0.1)',
+            'button-fg': 'rgba(255, 255, 255, 0.6)',
+            'button-dis-bg': 'rgba(0, 0, 0, 0.1)',
+            'button-dis-fg': 'rgba(255, 255, 255, 0.2)',
 
             topbar: {
                 fg: '#58A8BA',
@@ -157,22 +159,6 @@ const theme: ThemeCollection = {
             },
             username: {
                 fg: '#ee7285',
-            },
-            input: {
-                bg: '#2a162f',
-                fg: '#cfc5dc',
-                border: '#422450',
-                'focus-outline': '#9d65b7',
-            },
-            button: {
-                bg: '#4d204d',
-                border: '#4c1952',
-                fg: '#ccb5c7',
-                dis: {
-                    bg: '#3f283f',
-                    border: '#36213a',
-                    fg: '#5e4957',
-                }
             },
             comment: {
                 'new-border': '#732a53',

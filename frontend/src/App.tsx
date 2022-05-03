@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import { Routes, Route, Outlet } from "react-router-dom";
 import {Theme, ToastContainer} from 'react-toastify';
 
@@ -6,7 +6,7 @@ import {AppState, useAppState} from './AppState/AppState';
 import {CreatePostPage} from './Pages/CreatePostPage';
 
 import PostPage from './Pages/PostPage';
-import Topbar from './Components/Topbar';
+import Topbar, {TopbarMenuState} from './Components/Topbar';
 import InvitePage from './Pages/InvitePage';
 import LoadingPage from './Pages/LoadingPage';
 import SignInPage from './Pages/SignInPage';
@@ -47,22 +47,39 @@ function Unauthorized() {
     const {theme} = useTheme();
 
     return (
-        <Routes>
-            <Route path="/" element={<SignInPage />} />
-            <Route path="/invite/:code" element={<InvitePage />} />
+        <>
+            <Routes>
+                <Route path="*" element={<SignInPage />} />
+                <Route path="/invite/:code" element={<InvitePage />} />
+            </Routes>
             <ToastContainer theme={theme as Theme} />
-        </Routes>
+        </>
     )
 }
 
 function ReadyContainer() {
     const {theme} = useTheme();
     const {site} = useAppState();
+    const [menuState, setMenuState] = useState<TopbarMenuState>(localStorage.getItem('menuState') === 'close' ? 'close' : 'open');
+
+    const handleMenuToggle = () => {
+        if (menuState === 'disabled') {
+            return;
+        }
+        if (menuState === 'open') {
+            setMenuState('close');
+            localStorage.setItem('menuState', 'close');
+        }
+        else {
+            setMenuState('open');
+            localStorage.setItem('menuState', 'open');
+        }
+    };
 
     return (
         <>
-            <Topbar />
-            {site && <SiteSidebar site={site} />}
+            <Topbar menuState={menuState} onMenuToggle={handleMenuToggle} />
+            {site && menuState === 'open' && <SiteSidebar site={site} />}
             <div className={styles.container}>
                 <div className={styles.innerContainer}>
                     <Outlet />

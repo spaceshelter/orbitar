@@ -1,5 +1,6 @@
 import React from 'react';
 import styles from './PostPage.module.css';
+import commentStyles from '../Components/CommentComponent.module.css';
 import {useParams, Link, useSearchParams} from 'react-router-dom';
 import {CommentInfo, PostInfo} from '../Types/PostInfo';
 import PostComponent from '../Components/PostComponent';
@@ -20,7 +21,7 @@ export default function PostPage() {
         subdomain = window.location.hostname.split('.')[0];
     }
 
-    const unreadOnly = !!search.get('new');
+    const unreadOnly = search.get('new') !== null;
     const {post, comments, postComment, error, reload} = usePost(subdomain, postId, unreadOnly);
 
     const handleAnswer = (text: string, post: PostInfo, comment?: CommentInfo) => {
@@ -46,11 +47,9 @@ export default function PostPage() {
         <div className={styles.container}>
             <div className={styles.feed}>
                 {post ? <div>
-                        <PostComponent key={post.id} post={post} buttons={
-                            <div className={styles.postButtons}><Link to={`/post/${post.id}`} className={unreadOnly ? '' : 'bold'}>Все комментарии</Link> / <Link to={`/post/${post.id}?new`} className={unreadOnly ? 'bold' : ''}>новые</Link></div>
-                        } />
-
-                        <div className={styles.comments}>
+                        <PostComponent key={post.id} post={post} />
+                        <div className={styles.postButtons}><Link to={`/post/${post.id}`} className={unreadOnly ? '' : 'bold'}>все комментарии</Link> • <Link to={`/post/${post.id}?new`} className={unreadOnly ? 'bold' : ''}>только новые</Link></div>
+                        <div className={styles.comments + (unreadOnly ? ' ' + commentStyles.unreadOnly : '')}>
                             {comments ?
                                 comments.map(comment => <CommentComponent key={comment.id} comment={comment} post={post} onAnswer={handleAnswer} />)
                                 :

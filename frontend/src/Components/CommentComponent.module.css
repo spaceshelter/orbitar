@@ -1,31 +1,102 @@
 .comment {
-    background: var(--item-bg);
-    padding: 10px;
-    border-radius: 6px;
-    margin-bottom: 10px;
+    margin: 20px 0;
 }
 
-.commentContent {
-    margin-bottom: 5px;
+.content {
+    font-size: 16px;
+    line-height: 1.4em;
+    color: var(--text-fg);
 }
 
-
+.content img {
+    max-width: 720px;
+    max-height: 500px;
+}
 
 .signature {
     font-size: 12px;
-    display: inline-block;
-    margin: 0 10px;
+    margin-bottom: 10px;
+}
+.signature a {
+    text-decoration: none;
+    color: var(--fg);
 }
 
 .controls {
+    display: flex;
+    margin-top: 10px;
+    background: var(--controls-bg);
+    align-items: center;
+}
+
+.controls .control {
+    margin-right: 30px;
+    color: var(--inactive-fg);
+    display: flex;
+    align-items: center;
+}
+
+.controls button, .controls a {
     height: 24px;
+    background: none;
+    margin: 0;
+    padding: 0;
+    border: none;
+
+    fill: var(--inactive-fg);
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+
+    color: var(--inactive-fg);
+    text-decoration: none;
+}
+
+.controls a {
+    margin: 0 2px;
+}
+
+.controls button.active, .controls a.active {
+    fill: var(--active-fg);
+    font-weight: bold;
+}
+
+.controls .label {
+    margin-left: 5px;
+}
+
+.controls a.active {
+    color: var(--active-fg);
+}
+
+.controls button:disabled {
+    fill: var(--disabled-fg);
 }
 
 .answers {
-    margin-top: 10px;
-    margin-left: 20px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    padding-left: 7px;
+    border-left: 1px solid var(--answer-line-fg);
+}
+
+.unreadOnly .comment:not(.isNew) > .body {
+    opacity: 0.4;
+    transition: opacity 500ms;
+}
+
+.unreadOnly .comment:not(.isNew) > .body:hover {
+    opacity: inherit;
+    transition: opacity 500ms;
 }
 
 .isNew {
-    border: 1px solid var(--comment-new-border);
+    border-left: 1px solid var(--active-fg);
+    margin-left: -8px;
+    padding-left: 8px;
+}
+
+.newComment {
+    color: var(--active-fg);
+    font-style: italic;
 }

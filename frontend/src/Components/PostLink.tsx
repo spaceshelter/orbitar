@@ -33,8 +33,6 @@ export default function PostLink(props: PostLinkProps) {
         link += '?new';
     }
 
-    console.log(props.post.id, siteName, fullPostSiteName, link);
-
     return (
         <Link to={link} className={props.className}>{props.children}</Link>
     )
