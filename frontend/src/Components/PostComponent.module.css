@@ -44,7 +44,7 @@
 
 .content {
     font-size: 16px;
-    line-height: 1.3em;
+    line-height: 1.4em;
     color: var(--text-fg);
 }
 
@@ -82,6 +82,7 @@
     margin: 0;
     padding: 0;
     border: none;
+
     fill: var(--inactive-fg);
     display: flex;
     align-items: center;

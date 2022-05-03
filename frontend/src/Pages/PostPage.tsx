@@ -1,28 +1,26 @@
 import React from 'react';
 import styles from './PostPage.module.css';
-import {useMatch, useSearch} from 'react-location';
+import {useParams, Link, useSearchParams} from 'react-router-dom';
 import {CommentInfo, PostInfo} from '../Types/PostInfo';
-import SiteSidebar from '../Components/SiteSidebar';
 import PostComponent from '../Components/PostComponent';
 import CommentComponent from '../Components/CommentComponent';
 import CreateCommentComponent from '../Components/CreateCommentComponent';
-import {Link} from 'react-location';
 import {usePost} from '../API/use/usePost';
 import {useAppState} from '../AppState/AppState';
 
 export default function PostPage() {
     const {site} = useAppState();
 
-    const match = useMatch();
-    const search = useSearch<{Search: {'new': string | undefined}}>();
-    const postId = parseInt(match.params.postId, 10);
+    const params = useParams<{postId: string}>();
+    const [search, setSearch] = useSearchParams();
+    const postId = params.postId ? parseInt(params.postId, 10) : 0;
 
     let subdomain = 'main';
     if (window.location.hostname !== process.env.REACT_APP_ROOT_DOMAIN) {
         subdomain = window.location.hostname.split('.')[0];
     }
 
-    const unreadOnly = search.new !== undefined;
+    const unreadOnly = search.get('new') !== undefined;
     const {post, comments, postComment, error, reload} = usePost(subdomain, postId, unreadOnly);
 
     const handleAnswer = (text: string, post: PostInfo, comment?: CommentInfo) => {
@@ -46,8 +44,6 @@ export default function PostPage() {
 
     return (
         <div className={styles.container}>
-            {site && <SiteSidebar site={site} />}
-
             <div className={styles.feed}>
                 {post ? <div>
                         <PostComponent key={post.id} post={post} buttons={

@@ -3,7 +3,7 @@ import styles from './CommentComponent.module.css';
 import RatingSwitch from './RatingSwitch';
 import {UserGender} from '../Types/UserInfo';
 import Username from './Username';
-import {Link} from 'react-location';
+import {Link} from 'react-router-dom';
 import React, {useMemo, useState} from 'react';
 import CreateCommentComponent from './CreateCommentComponent';
 import DateComponent from './DateComponent';

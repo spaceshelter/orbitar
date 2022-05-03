@@ -1,11 +1,8 @@
 import React from 'react';
 import styles from './Topbar.module.css';
-import { FiLogOut, FiBell, FiBookmark, FiMoon, FiSun } from "react-icons/fi";
-
 import {
     Link, useLocation, useNavigate,
-} from "react-location";
-import  Username from './Username';
+} from "react-router-dom";
 import {useAppState} from '../AppState/AppState';
 import {useTheme} from '../Theme/ThemeProvider';
 import {ReactComponent as MenuIcon} from '../Assets/menu.svg';
@@ -27,7 +24,8 @@ export default function Topbar() {
     const handleLogout = (e: React.MouseEvent) => {
         e.preventDefault();
         api.auth.signOut().then(() => {
-            navigate({to: location.current.href, replace: true});
+            //navigate({to: location.current.href, replace: true});
+            navigate(location.pathname, { replace: true });
         });
     };
 
@@ -45,7 +43,7 @@ export default function Topbar() {
         <div className={styles.topbar}>
             <div className={styles.left}>
                 <button><MenuIcon /></button>
-                <a href={`//${process.env.REACT_APP_ROOT_DOMAIN}/`}><MonsterIcon /></a>
+                <Link to={`//${process.env.REACT_APP_ROOT_DOMAIN}/`}><MonsterIcon /></Link>
             </div>
             <div className={styles.menu}>
                 <Link className={styles.button} to="/create">Новый пост</Link>
@@ -57,26 +55,4 @@ export default function Topbar() {
             </div>
         </div>
     )
-
-    // return (
-    //     <div className={styles.container}>
-    //
-    //
-    //         <div className={styles.logo}>
-    //             <a href={'//' + process.env.REACT_APP_ROOT_DOMAIN + '/'}>
-    //                 <img src="/logo.png" alt="Orbitar" />
-    //                 <span className={styles.text}>Orbitar</span>
-    //             </a>
-    //         </div>
-    //         <div className={styles.spacer} />
-    //         <div className={styles.controls}>
-    //             <Link className={styles.button} to="/settings/theme" onClick={toggleTheme}>{theme === 'dark' ? <FiMoon /> : <FiSun />}</Link>
-    //             <Link className={styles.button} to="/my"><FiBookmark /><div className={styles.notifyCount}>∞</div></Link>
-    //             <Link className={styles.button} to="/notifications"><FiBell /><div className={styles.notifyCount}>∞</div></Link>
-    //             <div className={styles.karma}>{userInfo.karma}</div>
-    //             <Username user={userInfo} className={styles.username} />
-    //             <Link className={styles.button} to="/logout" onClick={handleLogout}><FiLogOut /></Link>
-    //         </div>
-    //     </div>
-    // )
 }

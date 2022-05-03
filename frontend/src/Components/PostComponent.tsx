@@ -3,7 +3,7 @@ import RatingSwitch from './RatingSwitch';
 import Username from './Username';
 import React, {useMemo} from 'react';
 import {PostInfo} from '../Types/PostInfo';
-import {Link} from "react-location";
+import {Link} from "react-router-dom";
 import DateComponent from './DateComponent';
 import ContentComponent from './ContentComponent';
 import {ReactComponent as CommentsIcon} from '../Assets/comments.svg';

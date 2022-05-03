@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {useAppState} from '../AppState/AppState';
 import SignUpForm, {SignUpFormErrors} from '../Components/SignUpForm';
-import {useMatch, useNavigate} from 'react-location';
+import {useNavigate, useParams} from 'react-router-dom';
 import {APIError} from '../API/APIBase';
 import {UserGender} from '../Types/UserInfo';
 
@@ -18,10 +18,14 @@ export default function InvitePage() {
     const [formDisabled, setFormDisabled] = useState(false);
     const [formErrors, setFormErrors] = useState<SignUpFormErrors>({});
     const {api} = useAppState();
-    const {params: {code}} = useMatch();
+    const {code} = useParams<{code: string}>();
     const navigate = useNavigate();
 
     useEffect(() => {
+        if (!code) {
+            return;
+        }
+
         api.inviteAPI.check(code)
             .then(result => {
                 setInviteStatus({ state: InviteState.active, username: result.inviter, code: result.code });
@@ -42,12 +46,15 @@ export default function InvitePage() {
     }, [code, api]);
 
     const handleSignUp = (username: string, name: string, email: string, password: string, gender: UserGender) => {
+        if (!code) {
+            return;
+        }
         setFormDisabled(true);
         api.inviteAPI.use(code, username, name, email, password, gender)
             .then(result => {
                 setFormDisabled(false);
                 console.log('USE SUCCESS', result);
-                navigate({to: '/'});
+                navigate('/');
                 api.init().then(() => {
 
                 });

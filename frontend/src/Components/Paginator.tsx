@@ -1,4 +1,4 @@
-import {Link} from 'react-location';
+import {Link} from 'react-router-dom';
 import React from 'react';
 import styles from './Paginator.module.css';
 
@@ -15,12 +15,12 @@ export default function Paginator(props: PaginatorProps) {
         if (i === props.page) {
             classes.push(styles.current);
         }
-        let search = {};
+        let search = '';
         if (i > 1) {
-            search = { page: i };
+            search = 'page=' + i;
         }
 
-        pages.push(<Link key={i} className={classes.join(' ')} to={props.base} search={search}>{i}</Link>)
+        pages.push(<Link key={i} className={classes.join(' ')} to={{pathname: props.base, search}}>{i}</Link>)
     }
 
     return (

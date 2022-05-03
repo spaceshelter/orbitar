@@ -1,6 +1,6 @@
 import { SiteWithUserInfo} from '../Types/SiteInfo';
 import styles from './SiteSidebar.module.css';
-import {Link} from 'react-location';
+import {Link} from 'react-router-dom';
 import React, {useState} from 'react';
 import {useAPI} from '../AppState/AppState';
 import {toast} from 'react-toastify';

@@ -1,5 +1,5 @@
-import React, {useRef} from 'react';
-import {Outlet, ReactLocation, Router,} from "react-location";
+import React from 'react';
+import { Routes, Route, Outlet } from "react-router-dom";
 import {Theme, ToastContainer} from 'react-toastify';
 
 import {AppState, useAppState} from './AppState/AppState';
@@ -18,70 +18,77 @@ import './index.css';
 import 'react-toastify/dist/ReactToastify.css';
 import {ReactComponent as MonsterIcon} from './Assets/monster_large.svg';
 import {useTheme} from './Theme/ThemeProvider';
+import SiteSidebar from './Components/SiteSidebar';
 
-const location = new ReactLocation();
-
-function App() {
-    const {appState} = useAppState();
-    const {theme} = useTheme();
+export default function App() {
+    const {appState, site} = useAppState();
 
     if (appState === AppState.loading) {
-        return (
-            <>
-                <LoadingPage />
-                <ToastContainer theme="dark" />
-            </>
-        );
+        return <Loading />
     }
 
     if (appState === AppState.unauthorized) {
-        return (
-                <Router location={location} routes={[
-                    {
-                        path: '/invite/:code',
-                        element: <InvitePage />
-                    },
-                    {
-                        element: <SignInPage />
-                    },
-                ]}>
-                    <Outlet />
-                    <ToastContainer theme={theme as Theme} />
-                </Router>
-        );
+        return <Unauthorized />;
     }
 
-  return (
-    <Router location={location} routes={[
-        {
-            path: '/',
-            element: <FeedPage />
-        },
-        {
-            path: '/posts',
-            element: <FeedPage />
-        },
-        {
-            path: '/post/:postId',
-            element: <PostPage />
-        },
-        {
-            path: '/user/:username',
-            element: <UserPage />
-        },
-        {
-            path: '/create',
-            element: <CreatePostPage />
-        }
-    ]}>
-        <Topbar />
-        <div className={styles.container}>
-            <Outlet />
-        </div>
-        <div className={styles.monster}><MonsterIcon /></div>
-        <ToastContainer theme={theme as Theme} />
-    </Router>
-  );
+    return <Ready />
 }
 
-export default App;
+function Loading() {
+    return (
+        <>
+            <LoadingPage />
+            <ToastContainer theme="dark" />
+        </>
+    );
+}
+
+function Unauthorized() {
+    const {theme} = useTheme();
+
+    return (
+        <Routes>
+            <Route path="/" element={<SignInPage />} />
+            <Route path="/invite/:code" element={<InvitePage />} />
+            <ToastContainer theme={theme as Theme} />
+        </Routes>
+    )
+}
+
+function ReadyContainer() {
+    const {theme} = useTheme();
+    const {appState, site} = useAppState();
+
+    return (
+        <>
+            <Topbar />
+            {site && <SiteSidebar site={site} />}
+            <div className={styles.container}>
+                <Outlet />
+                <div className={styles.monster}><MonsterIcon /></div>
+                <ToastContainer theme={theme as Theme} />
+            </div>
+        </>
+    )
+}
+
+function Ready() {
+
+
+    return (
+        <>
+
+            <Routes>
+                <Route path="/" element={<ReadyContainer />}>
+                    <Route path="" element={<FeedPage />} />
+                    <Route path="posts" element={<FeedPage />} />
+                    <Route path="post/:postId" element={<PostPage />} />
+                    <Route path="user/:username" element={<UserPage />} />
+                    <Route path="create" element={<CreatePostPage />} />
+                </Route>
+            </Routes>
+
+
+        </>
+    )
+}
