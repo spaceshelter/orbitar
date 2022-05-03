@@ -1,7 +1,7 @@
 .rating {
     display: flex;
     align-items: center;
-    font-size: 12px;
+    font-size: 13px;
     color: var(--inactive);
     min-width: 80px;
 }

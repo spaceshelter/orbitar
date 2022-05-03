@@ -112,8 +112,8 @@
 }
 
 .controls button:hover, .controls a:hover {
-    color: var(--active-fg);
-    fill: var(--active-fg);
+    color: inherit;
+    /*fill: inherit;*/
 }
 
 .controls .label {

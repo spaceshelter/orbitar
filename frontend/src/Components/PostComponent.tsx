@@ -49,7 +49,7 @@ export default function PostComponent(props: PostComponentProps) {
                     <RatingSwitch type='post' id={props.post.id} rating={{ vote: props.post.vote, value: props.post.rating }} onVote={handleVote} />
                 </div>
                 <div className={styles.control}><CommentsCount post={props.post} /></div>
-                <div className={styles.control}><button disabled={true}><BookmarkIcon /><span className={styles.label}>0</span></button></div>
+                <div className={styles.control}><button disabled={true}><BookmarkIcon /><span className={styles.label}></span></button></div>
                 <div className={styles.control}><button disabled={true}><EditIcon /></button></div>
                 <div className={styles.control}><button disabled={true}><OptionsIcon /></button></div>
             </div>

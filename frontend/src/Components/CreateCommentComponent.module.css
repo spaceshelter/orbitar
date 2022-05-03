@@ -98,6 +98,7 @@ button.irony {
     border: none;
     color: var(--button-fg);
     border-radius: 4px;
+    font-weight: bold;
 }
 
 .final button:hover {
