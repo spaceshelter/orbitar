@@ -34,7 +34,7 @@
 
 .subscribed {
     background: var(--button-dis-bg);
-    color: var(--button-fg);
+    color: var(--fg);
     border: none;
 }
 

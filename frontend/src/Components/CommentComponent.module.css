@@ -25,6 +25,12 @@
 .signature a:hover {
     color: var(--inactive-fg);
 }
+.signature .username {
+    color: var(--text-fg);
+}
+.signature .username:hover {
+    color: var(--fg);
+}
 
 .controls {
     display: flex;
