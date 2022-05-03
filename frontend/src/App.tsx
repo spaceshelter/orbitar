@@ -1,6 +1,6 @@
 import React, {useRef} from 'react';
 import {Outlet, ReactLocation, Router,} from "react-location";
-import {ToastContainer} from 'react-toastify';
+import {Theme, ToastContainer} from 'react-toastify';
 
 import {AppState, useAppState} from './AppState/AppState';
 import {CreatePostPage} from './Pages/CreatePostPage';
@@ -17,11 +17,13 @@ import styles from './App.module.css';
 import './index.css';
 import 'react-toastify/dist/ReactToastify.css';
 import {ReactComponent as MonsterIcon} from './Assets/monster_large.svg';
+import {useTheme} from './Theme/ThemeProvider';
 
 const location = new ReactLocation();
 
 function App() {
     const {appState} = useAppState();
+    const {theme} = useTheme();
 
     if (appState === AppState.loading) {
         return (
@@ -44,7 +46,7 @@ function App() {
                     },
                 ]}>
                     <Outlet />
-                    <ToastContainer theme="dark" />
+                    <ToastContainer theme={theme as Theme} />
                 </Router>
         );
     }
@@ -77,7 +79,7 @@ function App() {
             <Outlet />
         </div>
         <div className={styles.monster}><MonsterIcon /></div>
-        <ToastContainer theme="dark" />
+        <ToastContainer theme={theme as Theme} />
     </Router>
   );
 }

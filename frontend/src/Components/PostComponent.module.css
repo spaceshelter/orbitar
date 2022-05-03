@@ -1,7 +1,5 @@
 .post {
-    margin: 20px;
     border-radius: 6px;
-    background: var(--item-bg);
     margin-bottom: 65px;
 }
 
@@ -45,10 +43,12 @@
 
 .content {
     font-size: 16px;
+    line-height: 1.3em;
+    color: var(--text-fg);
 }
 
 .content img {
-    max-width: 500px;
+    max-width: 720px;
     max-height: 500px;
 }
 
@@ -71,9 +71,11 @@
 .controls .control {
     margin-right: 30px;
     color: var(--inactive-fg);
+    display: flex;
+    align-items: center;
 }
 
-.controls button {
+.controls button, .controls a {
     height: 24px;
     background: none;
     margin: 0;
@@ -83,14 +85,28 @@
     display: flex;
     align-items: center;
     font-size: 12px;
-    font-weight: bold;
+
     color: var(--inactive-fg);
+    text-decoration: none;
 }
 
-.controls button.active {
+.controls a {
+    margin: 0 2px;
+}
+
+.controls button.active, .controls a.active {
     fill: var(--active-fg);
+    font-weight: bold;
 }
 
-.controls button .label {
+.controls .label {
     margin-left: 5px;
+}
+
+.controls a.active {
+    color: var(--active-fg);
+}
+
+.controls button:disabled {
+    fill: var(--disabled-fg);
 }

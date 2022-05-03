@@ -28,7 +28,6 @@ export default function SiteSidebar(props: SiteSidebarProps) {
     return (<div className={styles.container}>
         <div className={styles.fixed}>
             <Link className={styles.siteName} to={'/'}> {props.site.name}</Link>
-            <Link className={styles.newPost} to={'/create'}>Новый пост</Link>
             {props.site.site !== 'main' &&
             <div className={styles.subscribe}>
                 {props.site.subscribe?.main ?

@@ -3,7 +3,8 @@
     max-width: 200px;
     width: 200px;
     left: 0;
-    height: 100vw;
+    top: 60px;
+    bottom: 0;
 }
 
 .fixed {

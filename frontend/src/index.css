@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 
 :root {
   --bg: #1a142a;
@@ -52,26 +52,27 @@ input[type="text"], input[type="password"], input[type="email"], textarea {
   font-family: 'Roboto', sans-serif;
 }
 
-input:focus, textarea:focus {
-  outline: 1px solid var(--input-focus-outline);
-}
+/*input:focus, textarea:focus {*/
+/*  outline: 1px solid var(--input-focus-outline);*/
+/*}*/
 
 input[type="submit"], button {
-  background: var(--button-bg);
-  border: 1px solid var(--button-border);
-  border-radius: 4px;
-  color: var(--button-fg);
+  /*background: var(--button-bg);*/
+  /*border: 1px solid var(--button-border);*/
+  /*border-radius: 4px;*/
+  /*color: var(--button-fg);*/
   cursor: pointer;
-  padding: 4px 10px;
+  /*padding: 4px 10px;*/
 }
-input[type="submit"]:disabled, button:disabled {
-  background: var(--button-dis-bg);
-  border: 1px solid var(--button-dis-border);
-  color: var(--button-dis-fg);
-}
+/*input[type="submit"]:disabled, button:disabled {*/
+/*  background: var(--button-dis-bg);*/
+/*  border: 1px solid var(--button-dis-border);*/
+/*  color: var(--button-dis-fg);*/
+/*}*/
 
 a {
-  color: var(--link-fg);
+  color: var(--active-fg);
+  text-decoration: none;
 }
 
 .irony {

@@ -45,7 +45,7 @@ export default function Topbar() {
         <div className={styles.topbar}>
             <div className={styles.left}>
                 <button><MenuIcon /></button>
-                <button><MonsterIcon /></button>
+                <a href={`//${process.env.REACT_APP_ROOT_DOMAIN}/`}><MonsterIcon /></a>
             </div>
             <div className={styles.menu}>
                 <Link className={styles.button} to="/create">Новый пост</Link>

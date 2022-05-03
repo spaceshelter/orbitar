@@ -5,6 +5,7 @@ const theme: ThemeCollection = {
         colors: {
             bg: '#ffffff',
             fg: '#000000',
+            'text-fg': 'rgba(0, 0, 0, 0.8)',
 
             'active-fg': '#3992E4',
             'negative-fg': '#ED6158',
@@ -101,7 +102,8 @@ const theme: ThemeCollection = {
     dark: {
         colors: {
             bg: '#2B2A2A',
-            fg: '#cfc5dc',
+            fg: '#ffffff',
+            'text-fg': 'rgba(255, 255, 255, 0.8)',
 
             'active-fg': '#58A8BA',
             'negative-fg': '#BA5E58',
