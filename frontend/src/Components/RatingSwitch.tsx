@@ -62,15 +62,25 @@ export default function RatingSwitch(props: RatingSwitchProps) {
     const valueStyles = [styles.value];
     const plusStyles = [];
     const minusStyles = [];
+    const plus2Styles = [];
+    const minus2Styles = [];
     if (state.vote && state.vote < 0) {
         valueStyles.push(styles.minus);
         minusStyles.push(styles.minus);
         plusStyles.push(styles.dis);
+        plus2Styles.push(styles.dis);
+        if (state.vote < -1) {
+            minus2Styles.push(styles.minus);
+        }
     }
     else if (state.vote && state.vote > 0) {
         valueStyles.push(styles.plus)
         plusStyles.push(styles.plus);
         minusStyles.push(styles.dis);
+        minus2Styles.push(styles.dis);
+        if (state.vote > 1) {
+            plus2Styles.push(styles.plus);
+        }
     }
     else {
 
@@ -78,9 +88,11 @@ export default function RatingSwitch(props: RatingSwitchProps) {
 
     return (
         <div className={styles.rating}>
+            {props.double && <button className={minus2Styles.join(' ')} onClick={() => handleVote(-2)}><MinusIcon /></button>}
             <button className={minusStyles.join(' ')} onClick={() => handleVote(-1)}><MinusIcon /></button>
             <span className={valueStyles.join(' ')}>{state.rating}</span>
             <button className={plusStyles.join(' ')} onClick={() => handleVote(1)}><PlusIcon /></button>
+            {props.double && <button className={plus2Styles.join(' ')} onClick={() => handleVote(2)}><PlusIcon /></button>}
         </div>
     );
 

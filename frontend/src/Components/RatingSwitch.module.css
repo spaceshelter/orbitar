@@ -3,7 +3,6 @@
     align-items: center;
     font-size: 13px;
     color: var(--inactive);
-    min-width: 80px;
 }
 
 .rating .value.minus {
@@ -14,6 +13,7 @@
 }
 
 .rating .value {
+    min-width: 32px;
     flex: 1;
     text-align: center;
     font-weight: bold;

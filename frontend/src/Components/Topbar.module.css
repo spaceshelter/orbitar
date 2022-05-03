@@ -45,7 +45,7 @@
     margin-right: 16px;
 }
 
-.topbar .right button {
+.topbar .right button, .topbar .right a {
     margin-left: 16px;
 }
 

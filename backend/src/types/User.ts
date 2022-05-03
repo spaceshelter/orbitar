@@ -17,3 +17,10 @@ export type UserProfile = User & {
     registered: Date;
 };
 
+export type UserStats = {
+    notifications: number;
+    bookmarks: {
+        posts: number;
+        comments: number;
+    }
+};
