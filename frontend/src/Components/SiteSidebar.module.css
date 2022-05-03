@@ -14,7 +14,7 @@
 .siteName {
     display: block;
     text-decoration: none;
-    color: var(--sidebar-fg);
+    color: var(--fg);
     margin-bottom: 20px;
     font-size: 20px;
     font-weight: bold;

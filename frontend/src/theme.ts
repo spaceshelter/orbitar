@@ -35,10 +35,6 @@ const theme: ThemeCollection = {
                     fg: '#3c363f'
                 }
             },
-            sidebar: {
-                bg: '#ffffff',
-                fg: '#000000',
-            },
             rating: {
                 border: '#c1c1c1',
                 bg: '#f1eff4',
@@ -134,10 +130,6 @@ const theme: ThemeCollection = {
                     bg: '#bc5880',
                     fg: '#100917'
                 }
-            },
-            sidebar: {
-                bg: '#1e162f',
-                fg: '#cfc5dc',
             },
             rating: {
                 fg: 'rgba(255, 255, 255, 0.6)',

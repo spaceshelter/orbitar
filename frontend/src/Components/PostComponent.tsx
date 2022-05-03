@@ -39,7 +39,7 @@ export default function PostComponent(props: PostComponentProps) {
                     <Username user={author} /> • <Link to={'/post/' + id}><DateComponent date={created} /></Link>
                 </div>
                 <div className={styles.contentContainer}>
-                    {title && <div className={styles.title}>{title}</div>}
+                    {title && <div className={styles.title}><Link to={'/post/' + id}>{title}</Link></div>}
                     <ContentComponent className={styles.content} content={props.post.content} />
                 </div>
             </div>
