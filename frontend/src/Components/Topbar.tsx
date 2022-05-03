@@ -12,6 +12,7 @@ import {ReactComponent as NotificationIcon} from '../Assets/notification.svg';
 import {ReactComponent as ProfileIcon} from '../Assets/profile.svg';
 import {ReactComponent as DarkIcon} from '../Assets/theme_dark.svg';
 import {ReactComponent as LightIcon} from '../Assets/theme_light.svg';
+import {ReactComponent as LogoutIcon} from '../Assets/logout.svg';
 
 export type TopbarMenuState = 'disabled' | 'open' | 'close';
 
@@ -68,9 +69,10 @@ export default function Topbar(props: TopbarProps) {
             </div>
             <div className={styles.right}>
                 <button onClick={toggleTheme}>{theme === 'dark' ? <LightIcon /> : <DarkIcon />}</button>
-                <button className={userStats.bookmarks.comments > 0 ? styles.active : ''}><HotIcon /><span className={styles.label}>{userStats.bookmarks.comments > 0 ? userStats.bookmarks.comments : ''}</span></button>
-                <button className={userStats.notifications > 0 ? styles.active : ''}><NotificationIcon /><span className={styles.label}>{userStats.notifications > 0 ? userStats.notifications : ''}</span></button>
-                <button onClick={handleLogout}><ProfileIcon /></button>
+                <button disabled={true} className={userStats.bookmarks.comments > 0 ? styles.active : ''}><HotIcon /><span className={styles.label}>{userStats.bookmarks.comments > 0 ? userStats.bookmarks.comments : ''}</span></button>
+                <button disabled={true} className={userStats.notifications > 0 ? styles.active : ''}><NotificationIcon /><span className={styles.label}>{userStats.notifications > 0 ? userStats.notifications : ''}</span></button>
+                <button disabled={true}><ProfileIcon /></button>
+                <button onClick={handleLogout}><LogoutIcon /></button>
             </div>
         </div>
     )

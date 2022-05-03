@@ -69,6 +69,11 @@
     fill: var(--active-fg);
 }
 
+.topbar button:disabled {
+    fill: var(--disabled-fg);
+    cursor: default;
+}
+
 .topbar button .label {
     margin-left: 5px;
     color: var(--topbar-notify-fg)

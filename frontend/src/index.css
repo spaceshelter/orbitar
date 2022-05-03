@@ -74,3 +74,12 @@ img.image-preview {
   max-height: none;
   cursor: zoom-out;
 }
+
+br {
+  content: "";
+  padding: 2em;
+  margin: -2em;
+  display: block;
+  font-size: 25%;
+}
+

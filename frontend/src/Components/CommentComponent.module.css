@@ -15,22 +15,28 @@
 
 .signature {
     font-size: 12px;
-    margin-bottom: 10px;
+    margin-bottom: 4px;
+    color: var(--inactive-fg);
 }
 .signature a {
     text-decoration: none;
-    color: var(--text-fg);
+    color: var(--inactive-fg);
+}
+.signature a:hover {
+    color: var(--inactive-fg);
 }
 
 .controls {
     display: flex;
-    margin-top: 10px;
+    margin-top: 4px;
+    margin-left: -3px;
     background: var(--controls-bg);
     align-items: center;
+
 }
 
 .controls .control {
-    margin-right: 30px;
+    margin-right: 15px;
     color: var(--inactive-fg);
     display: flex;
     align-items: center;
@@ -46,10 +52,12 @@
     fill: var(--inactive-fg);
     display: flex;
     align-items: center;
-    font-size: 12px;
+    font-size: 13px;
 
     color: var(--inactive-fg);
     text-decoration: none;
+
+    font-weight: bold;
 }
 
 .controls a {
@@ -74,9 +82,9 @@
 }
 
 .answers {
-    margin-top: 20px;
-    margin-bottom: 20px;
-    padding-left: 32px;
+    margin-top: 32px;
+    margin-bottom: 32px;
+    padding-left: 16px;
     border-left: 1px solid var(--answer-line-fg);
 }
 @media only screen and (min-width: 600px) {
@@ -86,7 +94,8 @@
 }
 @media only screen and (min-width: 990px) {
     .answers {
-        padding-left: 32px;
+        padding-left: 20px;
+        margin-left: 8px;
     }
 }
 
@@ -114,8 +123,8 @@
 }
 @media only screen and (min-width: 990px) {
     .isNew {
-        margin-left: -33px;
-        padding-left: 33px;
+        margin-left: -21px;
+        padding-left: 21px;
     }
 }
 

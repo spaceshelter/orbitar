@@ -41,6 +41,10 @@
     margin-bottom: 10px;
 }
 
+.title a:hover {
+    color: var(--fg);
+}
+
 .content {
     font-size: 16px;
     line-height: 1.4em;
@@ -55,10 +59,14 @@
 .signature {
     font-size: 12px;
     margin-bottom: 10px;
+    color: var(--inactive-fg);
 }
 .signature a {
     text-decoration: none;
-    color: var(--text-fg);
+    color: var(--inactive-fg);
+}
+.signature a:hover {
+    color: var(--inactive-fg);
 }
 
 .controls {
@@ -85,10 +93,12 @@
     fill: var(--inactive-fg);
     display: flex;
     align-items: center;
-    font-size: 12px;
+    font-size: 13px;
 
     color: var(--inactive-fg);
     text-decoration: none;
+
+    font-weight: bold;
 }
 
 .controls a {
@@ -97,17 +107,20 @@
 
 .controls button.active, .controls a.active {
     fill: var(--active-fg);
+    color: var(--active-fg);
     font-weight: bold;
+}
+
+.controls button:hover, .controls a:hover {
+    color: var(--active-fg);
+    fill: var(--active-fg);
 }
 
 .controls .label {
     margin-left: 5px;
 }
 
-.controls a.active {
-    color: var(--active-fg);
-}
-
 .controls button:disabled {
+    color: var(--disabled-fg);
     fill: var(--disabled-fg);
 }

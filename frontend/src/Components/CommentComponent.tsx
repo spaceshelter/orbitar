@@ -56,7 +56,6 @@ export default function CommentComponent(props: CommentProps) {
                 <div className={styles.signature}>
                     {showSite ? <><Link to={`//${site}.${process.env.REACT_APP_ROOT_DOMAIN}/`}>{site}</Link> • </> : ''}
                     <Username user={author} /> • <PostLink post={props.post}><DateComponent date={created} /></PostLink>
-                    { props.comment.isNew && <> • <span className={styles.newComment}>новый</span></>}
                 </div>
                 <div className={styles.content}>
                     <ContentComponent className={styles.commentContent} content={props.comment.content} />
@@ -65,7 +64,7 @@ export default function CommentComponent(props: CommentProps) {
                     <div className={styles.control}>
                         <RatingSwitch type="comment" id={props.comment.id} rating={{ vote: props.comment.vote, value: props.comment.rating }} onVote={handleVote} />
                     </div>
-                    <div className={styles.control}><button disabled={true}><EditIcon /></button></div>
+                    {/*<div className={styles.control}><button disabled={true}><EditIcon /></button></div>*/}
                     <div className={styles.control}><button onClick={handleAnswerSwitch}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</button></div>
                 </div>
             </div>
