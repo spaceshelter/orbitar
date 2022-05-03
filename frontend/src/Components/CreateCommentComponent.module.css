@@ -100,6 +100,10 @@ button.irony {
     border-radius: 4px;
 }
 
+.final button:hover {
+    background: var(--button-hover-bg);
+}
+
 .final button:disabled {
     background: var(--button-dis-bg);
     color: var(--button-dis-fg);

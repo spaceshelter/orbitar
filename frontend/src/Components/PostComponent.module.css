@@ -37,8 +37,7 @@
 
 .title, .title a {
     color: var(--fg);
-    font-size: 21px;
-    font-weight: bold;
+    font-size: 24px;
     margin-bottom: 10px;
 }
 
@@ -59,7 +58,7 @@
 }
 .signature a {
     text-decoration: none;
-    color: var(--fg);
+    color: var(--text-fg);
 }
 
 .controls {

@@ -128,7 +128,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 <div className={styles.control}><button onClick={() => applyTag('a')}><LinkIcon /></button></div>
             </div>
             <div className={styles.editor}><textarea ref={answerRef} disabled={isPosting} value={answerText} onChange={handleAnswerChange} onKeyDown={handleKeyDown} /></div>
-            <div className={styles.final}><button disabled={isPosting || !answerText} onClick={handleAnswer}>Ответить</button></div>
+            <div className={styles.final}><button disabled={isPosting || !answerText} onClick={handleAnswer}>Пыщь</button></div>
         </div>
     );
 }

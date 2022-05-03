@@ -3,8 +3,11 @@
     max-width: 200px;
     width: 200px;
     left: 0;
-    top: 60px;
+    top: 59px;
     bottom: 0;
+    background: var(--sidebar-bg);
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(1px);
 }
 
 .fixed {

@@ -22,6 +22,7 @@ input[type="text"], input[type="password"], input[type="email"], textarea {
   color: var(--input-fg);
   font-family: 'Roboto', sans-serif;
   outline: none;
+  resize: vertical;
 }
 
 input[type="submit"], button {
@@ -36,14 +37,22 @@ input[type="submit"], .button {
   border-radius: 4px;
 }
 
+input[type="submit"]:hover, .button:hover {
+  background: var(--button-hover-bg);
+}
+
 input[type="submit"]:disabled, .button:disabled {
   background: var(--button-dis-bg);
   color: var(--button-dis-fg);
 }
 
 a {
-  color: var(--active-fg);
+  color: var(--link-fg);
   text-decoration: none;
+}
+
+a:hover {
+  color: var(--link-hover-fg);
 }
 
 .irony {

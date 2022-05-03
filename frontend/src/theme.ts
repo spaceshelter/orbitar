@@ -5,6 +5,9 @@ const theme: ThemeCollection = {
         colors: {
             bg: '#ffffff',
             fg: '#000000',
+
+            'sidebar-bg': 'rgb(255, 255, 255, 0.7)',
+
             'text-fg': 'rgba(0, 0, 0, 0.8)',
 
             'active-fg': '#3992E4',
@@ -12,14 +15,18 @@ const theme: ThemeCollection = {
             'inactive-fg': 'rgba(0, 0, 0, 0.4)',
             'disabled-fg': 'rgba(0, 0, 0, 0.2)',
 
+            'link-fg': '#3992E4',
+            'link-hover-fg': '#3384CE',
+
             'answer-line-fg': 'rgba(0, 0, 0, 0.1)',
 
             'input-bg': 'rgba(0, 0, 0, 0.1)',
 
-            'button-bg': 'rgba(0, 0, 0, 0.4)',
-            'button-fg': 'rgba(0, 0, 0, 0.6)',
-            'button-dis-bg': 'rgba(0, 0, 0, 0.2)',
-            'button-dis-fg': 'rgba(255, 255, 255, 0.3)',
+            'button-bg': 'rgba(57, 146, 228, 1)',
+            'button-fg': '#ffffff',
+            'button-dis-bg': 'rgba(0, 0, 0, 0.1)',
+            'button-dis-fg': 'rgba(0, 0, 0, 0.38)',
+            'button-hover-bg': '#3384CE',
 
             topbar: {
                 fg: '#3992E4',
@@ -66,9 +73,6 @@ const theme: ThemeCollection = {
             controls: {
                 bg: 'transparent',
             },
-            link: {
-                fg: '#bd308b',
-            },
             irony: {
                 fg: '#ff0000',
             },
@@ -92,6 +96,9 @@ const theme: ThemeCollection = {
         colors: {
             bg: '#2B2A2A',
             fg: '#ffffff',
+
+            'sidebar-bg': 'rgb(43, 42, 42, 0.7)',
+
             'text-fg': 'rgba(255, 255, 255, 0.8)',
 
             'active-fg': '#58A8BA',
@@ -99,14 +106,18 @@ const theme: ThemeCollection = {
             'inactive-fg': 'rgba(255, 255, 255, 0.6)',
             'disabled-fg': 'rgba(255, 255, 255, 0.2)',
 
+            'link-fg': '#58A8BA',
+            'link-hover-fg': '#68B1C1',
+
             'answer-line-fg': 'rgba(255, 255, 255, 0.1)',
 
             'input-bg': 'rgba(0, 0, 0, 0.2)',
 
-            'button-bg': 'rgba(255, 255, 255, 0.1)',
-            'button-fg': 'rgba(255, 255, 255, 0.6)',
-            'button-dis-bg': 'rgba(0, 0, 0, 0.1)',
-            'button-dis-fg': 'rgba(255, 255, 255, 0.2)',
+            'button-bg': 'rgba(88, 168, 186, 1)',
+            'button-fg': '#ffffff',
+            'button-dis-bg': 'rgba(255, 255, 255, 0.1)',
+            'button-dis-fg': 'rgba(255, 255, 255, 0.38)',
+            'button-hover-bg': '#68B1C1',
 
             topbar: {
                 fg: '#58A8BA',
@@ -150,9 +161,6 @@ const theme: ThemeCollection = {
             },
             controls: {
                 bg: 'transparent',
-            },
-            link: {
-                fg: '#d98ec5',
             },
             irony: {
                 fg: '#fa8e8e',

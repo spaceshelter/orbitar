@@ -10,6 +10,8 @@ import {ReactComponent as MonsterIcon} from '../Assets/monster.svg';
 import {ReactComponent as HotIcon} from '../Assets/hot.svg';
 import {ReactComponent as NotificationIcon} from '../Assets/notification.svg';
 import {ReactComponent as ProfileIcon} from '../Assets/profile.svg';
+import {ReactComponent as DarkIcon} from '../Assets/theme_dark.svg';
+import {ReactComponent as LightIcon} from '../Assets/theme_light.svg';
 
 export type TopbarMenuState = 'disabled' | 'open' | 'close';
 
@@ -65,7 +67,8 @@ export default function Topbar(props: TopbarProps) {
                 <Link className={styles.button} to="/create">Новый пост</Link>
             </div>
             <div className={styles.right}>
-                <button className={userStats.bookmarks.comments > 0 ? styles.active : ''} onClick={toggleTheme}><HotIcon /><span className={styles.label}>{userStats.bookmarks.comments > 0 ? userStats.bookmarks.comments : ''}</span></button>
+                <button onClick={toggleTheme}>{theme === 'dark' ? <LightIcon /> : <DarkIcon />}</button>
+                <button className={userStats.bookmarks.comments > 0 ? styles.active : ''}><HotIcon /><span className={styles.label}>{userStats.bookmarks.comments > 0 ? userStats.bookmarks.comments : ''}</span></button>
                 <button className={userStats.notifications > 0 ? styles.active : ''}><NotificationIcon /><span className={styles.label}>{userStats.notifications > 0 ? userStats.notifications : ''}</span></button>
                 <button onClick={handleLogout}><ProfileIcon /></button>
             </div>

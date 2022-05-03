@@ -19,7 +19,7 @@
 }
 .signature a {
     text-decoration: none;
-    color: var(--fg);
+    color: var(--text-fg);
 }
 
 .controls {
@@ -76,8 +76,18 @@
 .answers {
     margin-top: 20px;
     margin-bottom: 20px;
-    padding-left: 7px;
+    padding-left: 32px;
     border-left: 1px solid var(--answer-line-fg);
+}
+@media only screen and (min-width: 600px) {
+    .answers {
+        padding-left: 7px;
+    }
+}
+@media only screen and (min-width: 990px) {
+    .answers {
+        padding-left: 32px;
+    }
 }
 
 .unreadOnly .comment:not(.isNew) > .body {
@@ -91,9 +101,22 @@
 }
 
 .isNew {
-    border-left: 1px solid var(--active-fg);
+    border-left: 2px solid var(--active-fg);
     margin-left: -8px;
     padding-left: 8px;
+}
+
+@media only screen and (min-width: 600px) {
+    .isNew {
+        margin-left: -8px;
+        padding-left: 8px;
+    }
+}
+@media only screen and (min-width: 990px) {
+    .isNew {
+        margin-left: -33px;
+        padding-left: 33px;
+    }
 }
 
 .newComment {
