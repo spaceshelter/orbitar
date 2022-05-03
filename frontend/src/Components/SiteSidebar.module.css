@@ -29,17 +29,18 @@
 
 .subscribe button {
     padding: 6px 10px;
+    border-radius: 4px;
 }
 
 .subscribed {
-    background: var(--subscribe-bg);
-    color: var(--subscribe-fg);
+    background: var(--button-dis-bg);
+    color: var(--button-fg);
     border: none;
 }
 
 .notSubscribed {
-    background: var(--subscribe-un-bg);
-    color: var(--subscribe-un-fg);
+    background: var(--button-bg);
+    color: var(--button-fg);
     border: none;
 }
 
