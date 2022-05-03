@@ -123,4 +123,5 @@
 .controls button:disabled {
     color: var(--disabled-fg);
     fill: var(--disabled-fg);
+    cursor: default;
 }

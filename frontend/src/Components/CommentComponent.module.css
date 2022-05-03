@@ -79,6 +79,7 @@
 
 .controls button:disabled {
     fill: var(--disabled-fg);
+    cursor: default;
 }
 
 .answers {

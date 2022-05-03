@@ -108,4 +108,5 @@ button.irony {
 .final button:disabled {
     background: var(--button-dis-bg);
     color: var(--button-dis-fg);
+    cursor: default;
 }
