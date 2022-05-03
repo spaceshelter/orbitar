@@ -1,10 +1,11 @@
 .container {
-    display: flex;
-    height: 100%;
+    min-width: 720px;
+    max-width: 1024px;
+    margin: 0 auto;
 }
 
 .feed {
-    flex: 1;
+
 }
 
 .comments {

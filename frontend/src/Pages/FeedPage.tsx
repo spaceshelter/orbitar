@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {useAppState} from '../AppState/AppState';
 import styles from './FeedPage.module.css';
 import PostComponent from '../Components/PostComponent';
@@ -24,6 +24,9 @@ export default function FeedPage() {
     const page = parseInt(search.get('page') || '1');
 
     const { posts, loading, pages, error } = useFeed(siteName, isPosts, page, perpage);
+    useEffect(() => {
+        window.scrollTo({ top: 0 });
+    }, [page]);
 
     return (
         <div className={styles.container}>

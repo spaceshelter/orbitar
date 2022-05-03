@@ -1,10 +1,13 @@
 import {useAPI} from '../../AppState/AppState';
 import {useEffect, useState} from 'react';
 import {PostInfo} from '../../Types/PostInfo';
+import {useCache} from './useCache';
 
 export function useFeed(site: string, isPosts: boolean, page: number, perpage: number) {
     const api = useAPI();
-    const [posts, setPosts] = useState<PostInfo[]>();
+    const [cachedPosts, setCachedPosts] = useCache<PostInfo[]>('feed', [site, isPosts, page, perpage]);
+
+    const [posts, setPosts] = useState<PostInfo[] | undefined>(cachedPosts);
     const [loading, setLoading] = useState(true);
     const [pages, setPages] = useState(0);
     const [error, setError] = useState<string>();
@@ -15,6 +18,8 @@ export function useFeed(site: string, isPosts: boolean, page: number, perpage: n
         if (isPosts) {
             api.post.feedPosts(site, page, perpage)
                 .then(result => {
+                    setCachedPosts(result.posts);
+
                     setError(undefined);
                     setLoading(false);
                     setPosts(result.posts);
@@ -29,6 +34,8 @@ export function useFeed(site: string, isPosts: boolean, page: number, perpage: n
         else {
             api.post.feedSubscriptions(page, perpage)
                 .then(result => {
+                    setCachedPosts(result.posts);
+
                     setError(undefined);
                     setLoading(false);
                     setPosts(result.posts);

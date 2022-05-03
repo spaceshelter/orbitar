@@ -50,3 +50,35 @@ export function useAppState() {
 export function useAPI() {
     return useContext(AppStateContext).api;
 }
+
+let siteName: string | undefined;
+let fullSiteName: string | undefined;
+
+export function useSiteName(site?: string): { siteName: string, fullSiteName: string } {
+    if (!site && siteName && fullSiteName) {
+        return { siteName, fullSiteName };
+    }
+
+    if (!site) {
+        siteName = site || 'main';
+        fullSiteName = process.env.REACT_APP_ROOT_DOMAIN || '';
+
+        if (window.location.hostname !== process.env.REACT_APP_ROOT_DOMAIN) {
+            siteName = window.location.hostname.split('.')[0];
+        }
+
+        if (siteName !== 'main') {
+            fullSiteName = siteName + '.' + process.env.REACT_APP_ROOT_DOMAIN;
+        }
+
+        // fix site
+        if (siteName === 'design-test') {
+            siteName = 'main';
+        }
+
+        return { siteName, fullSiteName };
+    }
+    else {
+        return { siteName: site, fullSiteName: site + '.' + process.env.REACT_APP_ROOT_DOMAIN };
+    }
+}

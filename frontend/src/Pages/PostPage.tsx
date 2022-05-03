@@ -20,7 +20,7 @@ export default function PostPage() {
         subdomain = window.location.hostname.split('.')[0];
     }
 
-    const unreadOnly = search.get('new') !== undefined;
+    const unreadOnly = !!search.get('new');
     const {post, comments, postComment, error, reload} = usePost(subdomain, postId, unreadOnly);
 
     const handleAnswer = (text: string, post: PostInfo, comment?: CommentInfo) => {

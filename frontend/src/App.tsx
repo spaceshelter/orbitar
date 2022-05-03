@@ -21,7 +21,7 @@ import {useTheme} from './Theme/ThemeProvider';
 import SiteSidebar from './Components/SiteSidebar';
 
 export default function App() {
-    const {appState, site} = useAppState();
+    const {appState} = useAppState();
 
     if (appState === AppState.loading) {
         return <Loading />
@@ -57,27 +57,26 @@ function Unauthorized() {
 
 function ReadyContainer() {
     const {theme} = useTheme();
-    const {appState, site} = useAppState();
+    const {site} = useAppState();
 
     return (
         <>
             <Topbar />
             {site && <SiteSidebar site={site} />}
             <div className={styles.container}>
-                <Outlet />
-                <div className={styles.monster}><MonsterIcon /></div>
-                <ToastContainer theme={theme as Theme} />
+                <div className={styles.innerContainer}>
+                    <Outlet />
+                </div>
             </div>
+            <div className={styles.monster}><MonsterIcon /></div>
+            <ToastContainer theme={theme as Theme} />
         </>
     )
 }
 
 function Ready() {
-
-
     return (
         <>
-
             <Routes>
                 <Route path="/" element={<ReadyContainer />}>
                     <Route path="" element={<FeedPage />} />
@@ -87,8 +86,6 @@ function Ready() {
                     <Route path="create" element={<CreatePostPage />} />
                 </Route>
             </Routes>
-
-
         </>
     )
 }

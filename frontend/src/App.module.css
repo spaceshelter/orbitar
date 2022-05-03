@@ -1,8 +1,11 @@
 .container {
   width: 100%;
-  top: 40px;
   bottom: 0;
   padding-top: 60px;
+}
+
+.innerContainer {
+  padding: 0 200px;
 }
 
 .monster {
