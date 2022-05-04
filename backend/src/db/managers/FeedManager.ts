@@ -116,7 +116,7 @@ export default class FeedManager {
                 continue;
             }
 
-            console.log(`update subscription for ${user_id}`);
+            // console.log(`update subscription for ${user_id}`);
             await this.redis.zAdd(`subscriptions:${user_id}`, [{ score: post.commented_at.getTime(), value: strPostId }]);
 
             // TODO: use redis for update bookmarks
@@ -142,7 +142,7 @@ export default class FeedManager {
     }
 
     async siteFanOutRun(forUserId: number, siteId: number, remove, state: TaskState) {
-        console.log('Fanout site', siteId);
+        // console.log('Fanout site', siteId);
         let posts: { post_id: number, commented_at: Date }[];
         let last_post_id = 0;
         do {
@@ -173,6 +173,6 @@ export default class FeedManager {
             }
         } while (posts.length > 0);
 
-        console.log('Fanout complete', siteId);
+        // console.log('Fanout complete', siteId);
     }
 }

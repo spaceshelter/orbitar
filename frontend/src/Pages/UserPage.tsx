@@ -9,8 +9,8 @@ import {useUserProfile} from '../API/use/useUserProfile';
 export default function UserPage() {
     const params = useParams<{username: string}>();
     const state = useUserProfile(decodeURI(params?.username || ''));
-    const isPosts = useMatch('posts');
-    const isComments = useMatch('comments');
+    const isPosts = useMatch('user/:username/posts');
+    const isComments = useMatch('user/:username/comments');
 
     const isProfile = !isPosts && !isComments;
 
@@ -47,7 +47,7 @@ export default function UserPage() {
                         </div>}
                         {profile.invites.length > 0 && <div>
                             По его приглашениям зарегистрированы: {profile.invites.map((user, idx) => {
-                                return <><Username key={idx} user={user}/>{idx < profile.invites.length - 1 ? ', ' : ''}</>;
+                                return <span key={idx}><Username  user={user}/>{idx < profile.invites.length - 1 ? ', ' : ''}</span>;
                             })}
                         </div>}
                     </>}

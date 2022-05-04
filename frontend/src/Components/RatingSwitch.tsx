@@ -42,9 +42,9 @@ export default function RatingSwitch(props: RatingSwitchProps) {
         }
 
         if (!votes) {
+            console.log('LOAD VOTES')
             api.voteAPI.list(props.type, props.id)
                 .then(result => {
-                    console.log('votes', result.votes);
                     setVotes(result.votes);
                 })
                 .catch(() => {
@@ -52,8 +52,6 @@ export default function RatingSwitch(props: RatingSwitchProps) {
                     setShowPopup(false);
                 });
         }
-
-        console.log('qwe')
 
         let {x, y} = ratingEl.getBoundingClientRect();
         y += document.documentElement.scrollTop || 0;
@@ -69,8 +67,6 @@ export default function RatingSwitch(props: RatingSwitchProps) {
             nx = x + w - pw;
         }
 
-        console.log(x, y, w, h, pw, ph, (y + h + ph + 8), document.documentElement.scrollHeight);
-
         popupEl.style.left = (nx) + 'px';
         popupEl.style.top = (ny) + 'px';
 
@@ -78,6 +74,7 @@ export default function RatingSwitch(props: RatingSwitchProps) {
             e.stopPropagation();
             e.preventDefault();
             setShowPopup(false);
+            setVotes(undefined);
             return false;
         };
         document.addEventListener('mousedown', clickHandler);
@@ -85,7 +82,7 @@ export default function RatingSwitch(props: RatingSwitchProps) {
             document.removeEventListener('mousedown', clickHandler);
         };
 
-    }, [showPopup, ratingRef, popupRef, votes, state.vote]);
+    }, [showPopup, ratingRef, popupRef, votes, state.vote, props.id, props.type]);
 
     const handleVote = (vote: number) => {
         const prevState = { ...state };
@@ -192,7 +189,6 @@ const RatingList = React.forwardRef((props: RatingListProps, ref: ForwardedRef<H
         }
 
         setVoteList({votes, counters});
-        console.log('updat vol', votes, counters);
     }, [props.rating, props.votes, props.vote]);
 
     let listStyles = [styles.listValue];
