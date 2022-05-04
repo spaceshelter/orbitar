@@ -57,7 +57,7 @@
     height: 100%;
 }
 
-.topbar button.active {
+.topbar button.active, .topbar a.active {
     fill: var(--active-fg);
 }
 
@@ -74,7 +74,7 @@
     cursor: default;
 }
 
-.topbar button .label {
+.topbar button .label, .topbar a .label {
     margin-left: 5px;
     color: var(--topbar-notify-fg)
 }

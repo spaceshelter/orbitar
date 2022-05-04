@@ -13,7 +13,7 @@ type StatusRequest = {
 type StatusResponse = {
     user: User;
     site: SiteWithUserInfo;
-    bookmarks: {
+    watch: {
         posts: number;
         comments: number;
     };
@@ -47,6 +47,7 @@ export default class StatusController {
             const userId = request.session.data.userId;
             const user = await this.userManager.getById(userId);
             const site = await this.siteManager.getSiteByNameWithUserInfo(userId, siteName);
+            const stats = await this.userManager.getUserStats(userId);
 
             if (!site) {
                 return response.error('no-site', 'Site not found', 404);
@@ -60,11 +61,7 @@ export default class StatusController {
             return response.success({
                 user,
                 site,
-                bookmarks: {
-                    posts: 0,
-                    comments: 0,
-                },
-                notifications: 0
+                ...stats
             });
         }
         catch (err) {

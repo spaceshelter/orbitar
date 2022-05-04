@@ -22,7 +22,7 @@ export default function PostLink(props: PostLinkProps) {
     if (siteName === props.post.site) {
         // do nothing
     }
-    else if (siteName === 'main' && props.post.site !== 'main') {
+    else if (siteName !== 'main' && props.post.site === 'main') {
         link = '//' + fullMainSiteName + link;
     }
     else {

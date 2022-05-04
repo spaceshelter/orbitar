@@ -26,6 +26,8 @@ export default class APIHelper {
     site: SiteAPIHelper;
     private baseAPI: APIBase;
     private setters: AppStateSetters;
+    private readonly siteName: string;
+    private initRetryCount = 0;
 
     constructor(api: APIBase, setters: AppStateSetters) {
         this.baseAPI = api;
@@ -36,11 +38,20 @@ export default class APIHelper {
         this.voteAPI = new VoteAPI(api);
         this.userAPI = new UserAPI(api)
         this.siteAPI = new SiteAPI(api);
-        this.post = new PostAPIHelper(this.postAPI, this.cache);
+        this.post = new PostAPIHelper(this.postAPI, setters, this.cache);
         this.auth = new AuthAPIHelper(this.authAPI, setters);
         this.user = new UserAPIHelper(this.userAPI, this.cache);
         this.site = new SiteAPIHelper(this.siteAPI, setters);
         this.setters = setters;
+
+        let siteName = 'main';
+        if (window.location.hostname !== process.env.REACT_APP_ROOT_DOMAIN) {
+            siteName = window.location.hostname.split('.')[0];
+        }
+        if (siteName === 'design-test') {
+            siteName = 'main';
+        }
+        this.siteName = siteName;
 
         console.log('NEW API HELPER', Math.random());
     }
@@ -51,23 +62,20 @@ export default class APIHelper {
     }
 
     async init() {
-        let site = 'main';
-        if (window.location.hostname !== process.env.REACT_APP_ROOT_DOMAIN) {
-            site = window.location.hostname.split('.')[0];
-        }
-        if (site === 'design-test') {
-            site = 'main';
-        }
-
         try {
             this.setters.setAppState(AppState.loading);
 
-            const status = await this.authAPI.status(site);
+            const status = await this.authAPI.status(this.siteName);
 
             this.setters.setUserInfo(status.user);
             this.setters.setSite(status.site);
             this.setters.setAppState(AppState.authorized);
-            this.setters.setUserStats({ bookmarks: status.bookmarks, notifications: status.notifications });
+            this.setters.setUserStats({ watch: status.watch, notifications: status.notifications });
+
+            // start fetch status update
+            setTimeout(() => {
+                this.fetchStatusUpdate().then().catch();
+            }, 60 * 1000);
         }
         catch (error) {
             if (error instanceof APIError) {
@@ -78,7 +86,39 @@ export default class APIHelper {
             }
             else {
                 console.error('ERROR', error);
+                this.initRetryCount++;
+                let retryIn = 60 * 1000;
+                if (this.initRetryCount === 1) {
+                    // first retry in 3 seconds
+                    retryIn = 3 * 1000;
+                }
+                else if (this.initRetryCount < 5) {
+                    retryIn = 3 * Math.pow(1.8, 5);
+                }
+                else if (this.initRetryCount > 10) {
+                    // don't try anymore
+                    return;
+                }
+                setTimeout(() => {
+                    this.init().then().catch();
+                }, retryIn * 1000);
             }
+        }
+    }
+
+    async fetchStatusUpdate() {
+        try {
+            const status = await this.authAPI.status(this.siteName);
+
+            this.setters.setUserInfo(status.user);
+            this.setters.setSite(status.site);
+            this.setters.setAppState(AppState.authorized);
+            this.setters.setUserStats({watch: status.watch, notifications: status.notifications});
+        }
+        finally {
+            setTimeout(() => {
+                this.fetchStatusUpdate().then().catch();
+            }, 60 * 1000);
         }
     }
 

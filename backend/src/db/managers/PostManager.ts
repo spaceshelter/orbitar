@@ -42,6 +42,8 @@ export default class PostManager {
         const html = this.parser.parse(content);
         const postRaw = await this.postRepository.createPost(site.id, userId, title, content, html);
 
+        await this.bookmarkRepository.setWatch(postRaw.post_id, userId, true);
+
         // fan out in background
         this.feedManager.postFanOut(postRaw.post_id).then().catch();
 
@@ -69,6 +71,8 @@ export default class PostManager {
 
         const commentRaw = await this.commentRepository.createComment(userId, postId, parentCommentId, content, html);
 
+        await this.bookmarkRepository.setWatch(postId, userId, true);
+
         // fan out in background
         this.feedManager.postFanOut(commentRaw.post_id).then().catch();
 
@@ -83,7 +87,7 @@ export default class PostManager {
         };
     }
 
-    async setRead(postId: number, userId: number, readComments: number, lastCommentId?: number) {
+    async setRead(postId: number, userId: number, readComments: number, lastCommentId?: number): Promise<boolean> {
         return await this.bookmarkRepository.setRead(postId, userId, readComments, lastCommentId);
     }
 

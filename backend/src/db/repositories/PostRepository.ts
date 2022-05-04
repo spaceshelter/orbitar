@@ -58,6 +58,52 @@ export default class PostRepository {
             });
     }
 
+    async getWatchPostsTotal(forUserId: number, all = false): Promise<number> {
+        const result = await this.db.fetchOne<{ cnt: string }>(`
+            select count(*) cnt from (
+                select p.comments,b.read_comments
+                from
+                    user_bookmarks b
+                    join posts p on (p.post_id = b.post_id) 
+                where
+                    b.user_id = :user_id
+                    and watch = 1
+                ${all ? '' : 'having (p.comments - b.read_comments) > 0'}
+            ) t
+        `, {
+            user_id: forUserId
+        });
+        if (!result) {
+            return 0;
+        }
+        return parseInt(result.cnt || '');
+    }
+
+    async getWatchPosts(forUserId: number, page: number, perPage: number, all = false): Promise<PostRawWithUserData[]> {
+        const limitFrom = (page - 1) * perPage;
+
+        return await this.db.query(`
+            select p.*, v.vote, b.read_comments, b.bookmark, (p.comments - b.read_comments) cnt
+            from
+                user_bookmarks b
+                join posts p on (p.post_id = b.post_id) 
+                left join post_votes v on (v.post_id = p.post_id and v.voter_id=:user_id)
+            where
+                b.user_id = :user_id
+                and watch = 1
+            ${all ? '' : 'having cnt > 0'}
+            order by
+                b.post_updated_at desc
+            limit
+                :limit_from,:limit_count
+            `,
+            {
+                user_id: forUserId,
+                limit_from: limitFrom,
+                limit_count: perPage
+            });
+    }
+
     async createPost(siteId: number, userId: number, title: string, source: string, html: string): Promise<PostRaw> {
         const postInsertResult: OkPacket =
             await this.db.query('insert into posts (site_id, author_id, title, source, html) values(:siteId, :userId, :title, :source, :html)',

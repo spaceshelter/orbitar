@@ -50,7 +50,12 @@ type PostReadRequest = {
     comments: number;
     last_comment_id?: number;
 };
-type PostReadResponse = Record<string, unknown>;
+type PostReadResponse = {
+    watch?: {
+        posts: number;
+        comments: number;
+    };
+};
 
 interface BookmarkRequest {
     post_id: number;
@@ -128,7 +133,7 @@ export default class PostController {
             }
 
             const rawBookmark = await this.postManager.getBookmark(postId, userId);
-            const lastReadCommentId = rawBookmark?.last_comment_id ?? 0;
+            const lastReadCommentId = rawBookmark?.last_read_comment_id ?? 0;
 
             const rawComments = await this.postManager.getPostComments(postId, userId);
 
@@ -253,12 +258,19 @@ export default class PostController {
         const userId = request.session.data.userId;
         const { post_id: postId, comments, last_comment_id: lastCommentId } = request.body;
 
-        // update in background
-        this.postManager.setRead(postId, userId, comments, lastCommentId)
-            .then()
-            .catch(err => {
-                this.logger.error(`Read update failed`, { error: err, user_id: userId, post_id: postId, comments: comments, last_comment_id: lastCommentId });
+        const readUpdated = await this.postManager.setRead(postId, userId, comments, lastCommentId);
+            // update in background
+            // .then()
+            // .catch(err => {
+            //     this.logger.error(`Read update failed`, { error: err, user_id: userId, post_id: postId, comments: comments, last_comment_id: lastCommentId });
+            // });
+
+        if (readUpdated) {
+            const status = await this.userManager.getUserStats(userId);
+            return response.success({
+                watch: status.watch
             });
+        }
 
         response.success({});
     }

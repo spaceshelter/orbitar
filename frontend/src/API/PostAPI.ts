@@ -63,6 +63,18 @@ type FeedSubscriptionsResponse = {
     total: number;
     sites: Record<string, SiteInfo>;
 };
+type FeedWatchRequest = {
+    filter?: 'all' | 'new';
+    page?: number;
+    perpage?: number;
+    format?: ContentFormat;
+};
+type FeedWatchResponse = {
+    posts: PostEntity[];
+    users: Record<number, UserInfo>;
+    total: number;
+    sites: Record<string, SiteInfo>;
+};
 
 type PostGetRequest = {
     id: number;
@@ -91,7 +103,12 @@ type PostReadRequest = {
     comments: number;
     last_comment_id?: number;
 };
-type PostReadResponse = {};
+type PostReadResponse = {
+    watch?: {
+        comments: number;
+        posts: number;
+    }
+};
 
 export default class PostAPI {
     api: APIBase;
@@ -118,6 +135,15 @@ export default class PostAPI {
 
     async feedSubscriptions(page: number, perpage: number): Promise<FeedSubscriptionsResponse> {
         return await this.api.request<FeedSubscriptionsRequest, FeedSubscriptionsResponse>('/feed/subscriptions', {
+            page,
+            perpage,
+            format: 'html'
+        });
+    }
+
+    async feedWatch(all: boolean, page: number, perpage: number): Promise<FeedWatchResponse> {
+        return await this.api.request<FeedWatchRequest, FeedWatchResponse>('/feed/watch', {
+            filter: all ? 'all' : 'new',
             page,
             perpage,
             format: 'html'

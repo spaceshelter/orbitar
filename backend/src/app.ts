@@ -91,7 +91,7 @@ const userRepository = new UserRepository(db);
 
 const inviteManager = new InviteManager(inviteRepository);
 const userManager = new UserManager(voteRepository, userRepository);
-const feedManager = new FeedManager(postRepository, userRepository, redis.client);
+const feedManager = new FeedManager(bookmarkRepository, postRepository, userRepository, redis.client);
 const siteManager = new SiteManager(siteRepository, userManager, feedManager);
 const postManager = new PostManager(bookmarkRepository, commentRepository, postRepository, feedManager, siteManager, theParser);
 const voteManager = new VoteManager(voteRepository, postManager);

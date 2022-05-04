@@ -11,7 +11,7 @@ export enum AppState {
 }
 
 export type UserStats = {
-    bookmarks: {
+    watch: {
         posts: number;
         comments: number;
     };
@@ -30,7 +30,7 @@ export type AppStateSetters = {
     setSite: Dispatch<SetStateAction<SiteWithUserInfo | undefined>>;
     setUserInfo: (user: UserInfo | undefined) => void;
     setAppState: (state: AppState) => void;
-    setUserStats: (stats: UserStats) => void;
+    setUserStats: Dispatch<SetStateAction<UserStats>>;
 }
 
 const AppStateContext = createContext<AppStateContextState>({} as AppStateContextState);
@@ -40,7 +40,7 @@ const apiBase = new APIBase();
 export const AppStateProvider = (props: {children: ReactNode}) => {
     const [userInfo, setUserInfo] = useState<UserInfo | undefined>(undefined);
     const [appState, setAppState] = useState<AppState>(AppState.loading);
-    const [userStats, setUserStats] = useState<UserStats>({ notifications: 0, bookmarks: { posts: 0, comments: 0 } });
+    const [userStats, setUserStats] = useState<UserStats>({ notifications: 0, watch: { posts: 0, comments: 0 } });
     const [site, setSite] = useState<SiteInfo>();
     const api = useMemo(() => new APIHelper(apiBase, {setUserInfo, setAppState, setSite, setUserStats}), []);
     api.updateSetters({setUserInfo, setAppState, setSite, setUserStats});
@@ -90,6 +90,10 @@ export function useSiteName(site?: string): { siteName: string, fullSiteName: st
         return { siteName, fullSiteName };
     }
     else {
+        if (site === 'main') {
+            return { siteName: site, fullSiteName: process.env.REACT_APP_ROOT_DOMAIN || '' };
+        }
+
         return { siteName: site, fullSiteName: site + '.' + process.env.REACT_APP_ROOT_DOMAIN };
     }
 }

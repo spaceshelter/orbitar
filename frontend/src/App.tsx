@@ -19,6 +19,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import {ReactComponent as MonsterIcon} from './Assets/monster_large.svg';
 import {useTheme} from './Theme/ThemeProvider';
 import SiteSidebar from './Components/SiteSidebar';
+import WatchPage from './Pages/WatchPage';
 
 export default function App() {
     const {appState} = useAppState();
@@ -101,6 +102,8 @@ function Ready() {
                     <Route path="post/:postId" element={<PostPage />} />
                     <Route path="user/:username" element={<UserPage />} />
                     <Route path="create" element={<CreatePostPage />} />
+                    <Route path="watch" element={<WatchPage />} />
+                    <Route path="watch/all" element={<WatchPage />} />
                 </Route>
             </Routes>
         </>

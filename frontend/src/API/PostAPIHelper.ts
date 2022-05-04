@@ -2,6 +2,7 @@ import PostAPI, {CommentEntity} from './PostAPI';
 import {CommentInfo, PostInfo} from '../Types/PostInfo';
 import {SiteInfo} from '../Types/SiteInfo';
 import APICache from './APICache';
+import {AppStateSetters} from '../AppState/AppState';
 
 type FeedPostsResult = {
     posts: PostInfo[];
@@ -28,10 +29,12 @@ interface CommentResponse {
 export default class PostAPIHelper {
     private postAPI: PostAPI;
     private cache: APICache;
+    private setters: AppStateSetters
 
-    constructor(postAPI: PostAPI, cache: APICache) {
+    constructor(postAPI: PostAPI, setters: AppStateSetters, cache: APICache) {
         this.postAPI = postAPI;
         this.cache = cache;
+        this.setters = setters;
     }
 
     async create(site: string, title: string, content: string) {
@@ -116,6 +119,26 @@ export default class PostAPIHelper {
         };
     }
 
+    async feedWatch(all: boolean, page: number, perPage: number): Promise<FeedSubscriptionsResult> {
+        const response = await this.postAPI.feedWatch(all, page, perPage);
+
+        const posts: PostInfo[] = response.posts.map(post => {
+            const p: PostInfo = { ...post } as any;
+            // fix fields
+            p.author = this.cache.setUser(response.users[post.author]);
+            p.created = this.postAPI.api.fixDate(new Date(post.created));
+
+            this.cache.setPost(p);
+            return p;
+        });
+
+        return {
+            posts: posts,
+            sites: response.sites,
+            total: response.total
+        };
+    }
+
     async comment(content: string, postId: number, commentId?: number): Promise<CommentResponse> {
         const response = await this.postAPI.comment(content, postId, commentId);
 
@@ -129,6 +152,12 @@ export default class PostAPIHelper {
     }
 
     async read(postId: number, comments: number, lastCommentId?: number) {
-        return await this.postAPI.read(postId, comments, lastCommentId);
+        const result = await this.postAPI.read(postId, comments, lastCommentId);
+        if (result.watch) {
+            this.setters.setUserStats((old) => {
+                return { ...old, watch: result.watch! };
+            });
+        }
+        return result;
     }
 }

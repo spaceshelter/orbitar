@@ -3,7 +3,7 @@ import {UserRaw, UserSiteRaw} from '../types/UserRaw';
 import {InviteRaw} from '../types/InviteRaw';
 import CodeError from '../../CodeError';
 import {OkPacket} from 'mysql2';
-import {UserGender} from '../../types/User';
+import {UserGender, UserStats} from '../../types/User';
 
 export default class UserRepository {
     private db: DB;
@@ -66,6 +66,10 @@ export default class UserRepository {
                 child_id: userInsertId
             });
 
+            // subscribe to main
+            await conn.query('insert into user_sites (user_id, site_id) values(:user_id, 1)', {
+                user_id: userInsertId
+            });
 
             const userRow = await conn.fetchOne<UserRaw>('select * from users where user_id=:user_id', {user_id: userInsertId});
             if (!userRow) {
@@ -82,5 +86,27 @@ export default class UserRepository {
 
     async getMainSubscriptionsUsers(siteId: number): Promise<{ user_id: number }[]> {
         return await this.db.fetchAll<{ user_id: number }>('select user_id from user_sites where site_id=:site_id and feed_main=1', { site_id: siteId });
+    }
+
+    async getUserStats(forUserId: number): Promise<UserStats> {
+        const res = await this.db.fetchOne<{cnt: string | null}>(`
+            select sum(p.comments - ub.read_comments) cnt
+            from
+              user_bookmarks ub
+              join posts p on (p.post_id = ub.post_id) 
+            where
+              ub.user_id = :user_id
+              and watch = 1
+        `, {
+            user_id: forUserId
+        });
+
+        return {
+            watch: {
+                comments: parseInt(res.cnt),
+                posts: 0
+            },
+            notifications: 0
+        };
     }
 }
