@@ -133,7 +133,7 @@ export default class PostController {
             }
 
             const rawBookmark = await this.postManager.getBookmark(postId, userId);
-            const lastReadCommentId = rawBookmark?.last_comment_id ?? 0;
+            const lastReadCommentId = rawBookmark?.last_read_comment_id ?? 0;
 
             const rawComments = await this.postManager.getPostComments(postId, userId);
 
