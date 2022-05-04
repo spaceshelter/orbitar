@@ -6,7 +6,7 @@ import Paginator from '../Components/Paginator';
 import {Link, useMatch, useSearchParams} from 'react-router-dom';
 import {useFeed} from '../API/use/useFeed';
 
-export default function FeedPage() {
+export default function WatchPage() {
     let siteName = 'main';
     if (window.location.hostname !== process.env.REACT_APP_ROOT_DOMAIN) {
         siteName = window.location.hostname.split('.')[0];
@@ -14,41 +14,36 @@ export default function FeedPage() {
 
     const { site } = useAppState();
     const [search] = useSearchParams();
-    const matchRoutePosts = useMatch('/posts');
+    const matchRouteAll = useMatch('/watch/all');
     // temporary replacement
     if (siteName === 'design-test') {
         siteName = 'main';
     }
-    const isPosts = siteName !== 'main' || !!matchRoutePosts;
+    const isAll = !!matchRouteAll;
     const perpage = 20;
     const page = parseInt(search.get('page') || '1');
 
-    const { posts, loading, pages, error } = useFeed(siteName, isPosts ? 'site' : 'subscriptions', page, perpage);
+    const { posts, loading, pages, error } = useFeed(siteName, isAll ? 'watch-all' : 'watch', page, perpage);
     useEffect(() => {
         window.scrollTo({ top: 0 });
     }, [page]);
 
-    useEffect(() => {
-        let docTitle = site?.name || 'ЪУЪ';
-        if (!isPosts) {
-            docTitle += ' / Подписки';
-        }
-        document.title = docTitle;
-    }, [site, isPosts]);
+    document.title = 'Новые комментарии';
 
     return (
         <div className={styles.container}>
             <div className={styles.feed}>
                 {site?.site === 'main' && <div className={styles.feedControls}>
-                    <Link to='/' className={isPosts ? '' : styles.active} replace={true}>мои подписки</Link> • <Link to='/posts' className={isPosts ? styles.active : ''} replace={true}>только главная</Link>
+                    <Link to='/watch' className={isAll ? '' : styles.active} replace={true}>непрочитанные</Link> • <Link to='/watch/all' className={isAll ? styles.active : ''} replace={true}>все</Link>
                 </div>}
                 {loading && <div className={styles.loading}>Загрузка</div>}
                 {error && <div className={styles.error}>{styles.error}</div> }
                 {posts && <div className={styles.posts}>
+                    {posts.length === 0 && <div>Здесь ничего нет. Вероятно, вы уже всё прочитали!</div>}
                     {posts.map(post => <PostComponent key={post.id} post={post} showSite={site?.site !== post.site} />)}
                 </div>}
 
-                <Paginator page={page} pages={pages} base={isPosts ? '/posts' : '/'} />
+                <Paginator page={page} pages={pages} base={isAll ? '/watch/all' : '/watch'} />
             </div>
         </div>
     );

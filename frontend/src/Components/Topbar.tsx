@@ -69,7 +69,7 @@ export default function Topbar(props: TopbarProps) {
             </div>
             <div className={styles.right}>
                 <button onClick={toggleTheme}>{theme === 'dark' ? <LightIcon /> : <DarkIcon />}</button>
-                <button disabled={true} className={userStats.bookmarks.comments > 0 ? styles.active : ''}><HotIcon /><span className={styles.label}>{userStats.bookmarks.comments > 0 ? userStats.bookmarks.comments : ''}</span></button>
+                <Link to={'/watch'} className={userStats.watch.comments > 0 ? styles.active : ''}><HotIcon /><span className={styles.label}>{userStats.watch.comments > 0 ? userStats.watch.comments : ''}</span></Link>
                 <button disabled={true} className={userStats.notifications > 0 ? styles.active : ''}><NotificationIcon /><span className={styles.label}>{userStats.notifications > 0 ? userStats.notifications : ''}</span></button>
                 <Link to={'/user/' + userInfo.username}><ProfileIcon /></Link>
                 <button onClick={handleLogout}><LogoutIcon /></button>

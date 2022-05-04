@@ -8,7 +8,7 @@ type StatusRequest = {
 type StatusResponse = {
     site: SiteWithUserInfo;
     user: UserInfo;
-    bookmarks: {
+    watch: {
         posts: number;
         comments: number;
     };

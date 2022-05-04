@@ -10,10 +10,8 @@ import {usePost} from '../API/use/usePost';
 import {useAppState} from '../AppState/AppState';
 
 export default function PostPage() {
-    const {site} = useAppState();
-
     const params = useParams<{postId: string}>();
-    const [search, setSearch] = useSearchParams();
+    const [search] = useSearchParams();
     const postId = params.postId ? parseInt(params.postId, 10) : 0;
 
     let subdomain = 'main';
@@ -25,19 +23,16 @@ export default function PostPage() {
     const {post, comments, postComment, error, reload} = usePost(subdomain, postId, unreadOnly);
 
     useEffect(() => {
-        let docTitle = '';
+        let docTitle = `Пост #${postId}`;
         if (post) {
             if (post.title) {
                 docTitle = post.title + ' / ';
             }
             docTitle += post.author.username;
         }
-        else {
-            docTitle = `Пост #${postId}`;
-        }
         document.title = docTitle;
 
-    }, [post]);
+    }, [post, postId]);
 
     const handleAnswer = (text: string, post: PostInfo, comment?: CommentInfo) => {
         return new Promise<CommentInfo>((resolve, reject) => {
