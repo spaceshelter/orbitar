@@ -1,6 +1,33 @@
 .container {
   width: 100%;
-  top: 40px;
   bottom: 0;
+  padding-top: 60px;
+  padding-bottom: 60px;
+}
 
+.innerContainer {
+  padding: 0 200px;
+}
+
+@media only screen and (min-width: 600px) {
+  .innerContainer {
+    padding: 0 40px;
+  }
+}
+@media only screen and (min-width: 990px) {
+  .innerContainer {
+    padding: 0 200px;
+  }
+}
+
+.monster {
+  position: fixed;
+  left: 20px;
+  bottom: 0;
+  height: 50px;
+  width: 50px
+}
+.monster svg {
+  height: 100%;
+  width: 100%;
 }

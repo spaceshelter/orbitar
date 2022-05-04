@@ -3,13 +3,40 @@ import {ThemeCollection} from './Theme/ThemeProvider';
 const theme: ThemeCollection = {
     light: {
         colors: {
-            bg: '#d7d7de',
+            bg: '#ffffff',
             fg: '#000000',
+
+            'sidebar-bg': 'rgb(255, 255, 255, 0.7)',
+
+            'text-fg': 'rgba(0, 0, 0, 0.8)',
+
+            'active-fg': '#3992E4',
+            'negative-fg': '#ED6158',
+            'inactive-fg': 'rgba(0, 0, 0, 0.3)',
+            'disabled-fg': 'rgba(0, 0, 0, 0.15)',
+
+            'link-fg': '#3992E4',
+            'link-hover-fg': '#3384CE',
+
+            'answer-line-fg': 'rgba(0, 0, 0, 0.1)',
+
+            'input-bg': 'rgba(0, 0, 0, 0.1)',
+
+            'button-bg': 'rgba(57, 146, 228, 1)',
+            'button-fg': '#ffffff',
+            'button-dis-bg': 'rgba(0, 0, 0, 0.1)',
+            'button-dis-fg': 'rgba(0, 0, 0, 0.38)',
+            'button-hover-bg': '#3384CE',
+
             topbar: {
-                bg: '#3c363f',
+                fg: '#3992E4',
+                bg: 'rgba(255, 255, 255, 0.5)',
                 'logo-fg': '#dcb5d1',
                 button: {
-                    fg: '#9b9295',
+                    fg: 'rgba(0, 0, 0, 0.6)',
+                    active: {
+                        fg: '#3992E4'
+                    },
                     hover: {
                         bg: '#4f4552',
                         fg: '#ebd7da',
@@ -17,16 +44,12 @@ const theme: ThemeCollection = {
                 },
                 notify: {
                     bg: '#ea3434',
-                    fg: '#ffffff'
+                    fg: '#000000'
                 },
                 karma: {
                     bg: '#9b9295',
                     fg: '#3c363f'
                 }
-            },
-            sidebar: {
-                bg: '#cacad2',
-                fg: '#000000',
             },
             rating: {
                 border: '#c1c1c1',
@@ -45,35 +68,16 @@ const theme: ThemeCollection = {
                 },
             },
             item: {
-                bg: '#ffffff',
+                bg: 'transparent',
             },
             controls: {
-                bg: '#f1eff4',
-            },
-            link: {
-                fg: '#bd308b',
+                bg: 'transparent',
             },
             irony: {
                 fg: '#ff0000',
             },
             username: {
                 fg: '#841515',
-            },
-            input: {
-                bg: '#ebe6ef',
-                fg: '#000000',
-                border: '#d7cadd',
-                'focus-outline': '#af9db7',
-            },
-            button: {
-                bg: '#625767',
-                border: '#625767',
-                fg: '#ffffff',
-                dis: {
-                    bg: '#baacba',
-                    border: '#baacba',
-                    fg: '#796b79',
-                }
             },
             comment: {
                 'new-border': '#7692ff',
@@ -90,15 +94,42 @@ const theme: ThemeCollection = {
     },
     dark: {
         colors: {
-            bg: '#1a142a',
-            fg: '#cfc5dc',
+            bg: '#2B2A2A',
+            fg: '#ffffff',
+
+            'sidebar-bg': 'rgb(43, 42, 42, 0.7)',
+
+            'text-fg': 'rgba(255, 255, 255, 0.8)',
+
+            'active-fg': '#58A8BA',
+            'negative-fg': '#BA5E58',
+            'inactive-fg': 'rgba(255, 255, 255, 0.3)',
+            'disabled-fg': 'rgba(255, 255, 255, 0.1)',
+
+            'link-fg': '#58A8BA',
+            'link-hover-fg': '#68B1C1',
+
+            'answer-line-fg': 'rgba(255, 255, 255, 0.1)',
+
+            'input-bg': 'rgba(0, 0, 0, 0.2)',
+
+            'button-bg': 'rgba(88, 168, 186, 1)',
+            'button-fg': '#ffffff',
+            'button-dis-bg': 'rgba(255, 255, 255, 0.1)',
+            'button-dis-fg': 'rgba(255, 255, 255, 0.38)',
+            'button-hover-bg': '#68B1C1',
+
             topbar: {
-                bg: '#100917',
+                fg: '#58A8BA',
+                bg: 'rgba(43, 42, 42, 0.6)',
                 logo: {
                     fg: '#8b4977',
                 },
                 button: {
-                    fg: '#bc5880',
+                    fg: 'rgba(255, 255, 255, 0.6)',
+                    active: {
+                        fg: '#58A8BA'
+                    },
                     hover: {
                         bg: '#5f3e68',
                         fg: '#ed7285',
@@ -113,56 +144,29 @@ const theme: ThemeCollection = {
                     fg: '#100917'
                 }
             },
-            sidebar: {
-                bg: '#1e162f',
-                fg: '#cfc5dc',
-            },
             rating: {
-                border: '#1b142a',
-                bg: '#0b070f',
-                button: {
-                    fg: '#7b7b7b',
-                    bg: '#1b142a',
-                },
+                fg: 'rgba(255, 255, 255, 0.6)',
                 plus: {
-                    fg: '#8aff74',
-                    bg: '#1b3f2a',
+                    fg: '#58A8BA',
                 },
                 minus: {
-                    fg: '#ff74ba',
-                    bg: '#67303e',
+                    fg: '#BA5E58',
                 },
+                dis: {
+                    fg: 'rgba(255, 255, 255, 0.2)',
+                }
             },
             item: {
-                bg: '#100917',
+                bg: 'transparent',
             },
             controls: {
-                bg: '#0b070f',
-            },
-            link: {
-                fg: '#d98ec5',
+                bg: 'transparent',
             },
             irony: {
                 fg: '#fa8e8e',
             },
             username: {
                 fg: '#ee7285',
-            },
-            input: {
-                bg: '#2a162f',
-                fg: '#cfc5dc',
-                border: '#422450',
-                'focus-outline': '#9d65b7',
-            },
-            button: {
-                bg: '#4d204d',
-                border: '#4c1952',
-                fg: '#ccb5c7',
-                dis: {
-                    bg: '#3f283f',
-                    border: '#36213a',
-                    fg: '#5e4957',
-                }
             },
             comment: {
                 'new-border': '#732a53',

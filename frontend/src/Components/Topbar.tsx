@@ -1,19 +1,32 @@
 import React from 'react';
 import styles from './Topbar.module.css';
-import { FiLogOut, FiBell, FiBookmark, FiMoon, FiSun } from "react-icons/fi";
-
 import {
     Link, useLocation, useNavigate,
-} from "react-location";
-import Username from './Username';
+} from "react-router-dom";
 import {useAppState} from '../AppState/AppState';
 import {useTheme} from '../Theme/ThemeProvider';
+import {ReactComponent as MenuIcon} from '../Assets/menu.svg';
+import {ReactComponent as MonsterIcon} from '../Assets/monster.svg';
+import {ReactComponent as HotIcon} from '../Assets/hot.svg';
+import {ReactComponent as NotificationIcon} from '../Assets/notification.svg';
+import {ReactComponent as ProfileIcon} from '../Assets/profile.svg';
+import {ReactComponent as DarkIcon} from '../Assets/theme_dark.svg';
+import {ReactComponent as LightIcon} from '../Assets/theme_light.svg';
+import {ReactComponent as LogoutIcon} from '../Assets/logout.svg';
 
-export default function Topbar() {
-    const {userInfo, api} = useAppState();
+export type TopbarMenuState = 'disabled' | 'open' | 'close';
+
+type TopbarProps = {
+    menuState: TopbarMenuState;
+    onMenuToggle: () => void;
+}
+
+export default function Topbar(props: TopbarProps) {
+    const {userInfo, api, userStats} = useAppState();
     const {theme, setTheme} = useTheme();
     const navigate = useNavigate();
     const location = useLocation();
+
 
     if (!userInfo) {
         return <></>
@@ -22,11 +35,11 @@ export default function Topbar() {
     const handleLogout = (e: React.MouseEvent) => {
         e.preventDefault();
         api.auth.signOut().then(() => {
-            navigate({to: location.current.href, replace: true});
+            navigate(location.pathname);
         });
     };
 
-    const toggleTheme = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const toggleTheme = (e: React.MouseEvent) => {
         e.preventDefault();
         if (theme === 'dark') {
             setTheme('light');
@@ -36,22 +49,30 @@ export default function Topbar() {
         }
     }
 
+    const menuToggle = () => {
+        props.onMenuToggle();
+    }
+
+    let menuClasses = [];
+    if (props.menuState === 'close') {
+        menuClasses.push(styles.menuClosed);
+    }
+
     return (
-        <div className={styles.container}>
-            <div className={styles.logo}>
-                <a href={'//' + process.env.REACT_APP_ROOT_DOMAIN + '/'}>
-                    <img src="/logo.png" alt="Orbitar" />
-                    <span className={styles.text}>Orbitar</span>
-                </a>
+        <div className={styles.topbar}>
+            <div className={styles.left}>
+                <button className={menuClasses.join(' ')} onClick={menuToggle}><MenuIcon /></button>
+                <Link to={`//${process.env.REACT_APP_ROOT_DOMAIN}/`}><MonsterIcon /></Link>
             </div>
-            <div className={styles.spacer} />
-            <div className={styles.controls}>
-                <Link className={styles.button} to="/settings/theme" onClick={toggleTheme}>{theme === 'dark' ? <FiMoon /> : <FiSun />}</Link>
-                <Link className={styles.button} to="/my"><FiBookmark /><div className={styles.notifyCount}>∞</div></Link>
-                <Link className={styles.button} to="/notifications"><FiBell /><div className={styles.notifyCount}>∞</div></Link>
-                <div className={styles.karma}>{userInfo.karma}</div>
-                <Username user={userInfo} className={styles.username} />
-                <Link className={styles.button} to="/logout" onClick={handleLogout}><FiLogOut /></Link>
+            <div className={styles.menu}>
+                <Link className={styles.button} to="/create">Новый пост</Link>
+            </div>
+            <div className={styles.right}>
+                <button onClick={toggleTheme}>{theme === 'dark' ? <LightIcon /> : <DarkIcon />}</button>
+                <button disabled={true} className={userStats.bookmarks.comments > 0 ? styles.active : ''}><HotIcon /><span className={styles.label}>{userStats.bookmarks.comments > 0 ? userStats.bookmarks.comments : ''}</span></button>
+                <button disabled={true} className={userStats.notifications > 0 ? styles.active : ''}><NotificationIcon /><span className={styles.label}>{userStats.notifications > 0 ? userStats.notifications : ''}</span></button>
+                <Link to={'/user/' + userInfo.username}><ProfileIcon /></Link>
+                <button onClick={handleLogout}><LogoutIcon /></button>
             </div>
         </div>
     )

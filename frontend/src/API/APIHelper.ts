@@ -55,6 +55,9 @@ export default class APIHelper {
         if (window.location.hostname !== process.env.REACT_APP_ROOT_DOMAIN) {
             site = window.location.hostname.split('.')[0];
         }
+        if (site === 'design-test') {
+            site = 'main';
+        }
 
         try {
             this.setters.setAppState(AppState.loading);
@@ -64,6 +67,7 @@ export default class APIHelper {
             this.setters.setUserInfo(status.user);
             this.setters.setSite(status.site);
             this.setters.setAppState(AppState.authorized);
+            this.setters.setUserStats({ bookmarks: status.bookmarks, notifications: status.notifications });
         }
         catch (error) {
             if (error instanceof APIError) {

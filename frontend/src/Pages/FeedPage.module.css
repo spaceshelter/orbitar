@@ -1,14 +1,18 @@
 .container {
-    display: flex;
-    height: 100%;
+
 }
 
 .feed {
-    flex: 1;
+    min-width: 720px;
+    max-width: 1024px;
+    margin: 0 auto;
+    /*margin-left: auto;*/
+    /*margin-left: clamp(-200px, auto,200px);*/
+    /*margin-right: clamp(-200px, auto,200px);*/
 }
 
 .feedControls {
-    margin: 20px;
+    margin: 20px 0;
 }
 
 .feedControls a {
@@ -19,5 +23,5 @@
 }
 
 .loading {
-    margin: 20px;
+
 }

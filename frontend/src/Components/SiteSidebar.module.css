@@ -1,19 +1,23 @@
 .container {
-    flex: 1;
+    position: fixed;
     max-width: 200px;
-
-    padding: 20px;
+    width: 200px;
+    left: 0;
+    top: 59px;
+    bottom: 0;
     background: var(--sidebar-bg);
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(1px);
 }
 
 .fixed {
-
+    margin: 20px;
 }
 
 .siteName {
     display: block;
     text-decoration: none;
-    color: var(--sidebar-fg);
+    color: var(--fg);
     margin-bottom: 20px;
     font-size: 20px;
     font-weight: bold;
@@ -25,17 +29,18 @@
 
 .subscribe button {
     padding: 6px 10px;
+    border-radius: 4px;
 }
 
 .subscribed {
-    background: var(--subscribe-bg);
-    color: var(--subscribe-fg);
+    background: var(--button-dis-bg);
+    color: var(--fg);
     border: none;
 }
 
 .notSubscribed {
-    background: var(--subscribe-un-bg);
-    color: var(--subscribe-un-fg);
+    background: var(--button-bg);
+    color: var(--button-fg);
     border: none;
 }
 

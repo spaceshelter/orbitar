@@ -1,33 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
-
-:root {
-  --bg: #1a142a;
-  --fg: #cfc5dc;
-
-  --item-bg: #100917;
-  --controls-bg: #0b070f;
-
-  --input-bg: #2a162f;
-  --input-fg: #cfc5dc;
-  --input-border: #422450;
-  --input-focus-outline: #9d65b7;
-
-  --button-bg: #4d204d;
-  --button-border: #4c1952;
-  --button-fg: #ccb5c7;
-
-  --button-dis-bg: #3f283f;
-  --button-dis-border: #36213a;
-  --button-dis-fg: #5e4957;
-
-  --username-fg: #ee7285;
-
-  --link-fg: #d98ec5;
-  --irony-fg: #fa8e8e;
-
-  --topbar-bg: #100917;
-  --topbar-fg: #8b4977;
-}
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 
 html,body {
   height: 100%;
@@ -37,6 +8,7 @@ html,body {
   -moz-osx-font-smoothing: grayscale;
   background: var(--bg);
   color: var(--fg);
+
 }
 
 #root {
@@ -45,32 +17,43 @@ html,body {
 
 input[type="text"], input[type="password"], input[type="email"], textarea {
   background: var(--input-bg);
-  border: 1px solid var(--input-border);
+  border: none;
   border-radius: 4px;
-  color: var(--input-fg);
+  color: var(--text-fg);
   font-family: 'Roboto', sans-serif;
-}
-
-input:focus, textarea:focus {
-  outline: 1px solid var(--input-focus-outline);
+  outline: none;
+  resize: vertical;
 }
 
 input[type="submit"], button {
-  background: var(--button-bg);
-  border: 1px solid var(--button-border);
-  border-radius: 4px;
-  color: var(--button-fg);
   cursor: pointer;
-  padding: 4px 10px;
 }
-input[type="submit"]:disabled, button:disabled {
+
+input[type="submit"], .button {
+  padding: 8px 16px;
+  background: var(--button-bg);
+  border: none;
+  color: var(--button-fg);
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+input[type="submit"]:hover, .button:hover {
+  background: var(--button-hover-bg);
+}
+
+input[type="submit"]:disabled, .button:disabled {
   background: var(--button-dis-bg);
-  border: 1px solid var(--button-dis-border);
   color: var(--button-dis-fg);
 }
 
 a {
   color: var(--link-fg);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--link-hover-fg);
 }
 
 .irony {
@@ -92,3 +75,12 @@ img.image-preview {
   max-height: none;
   cursor: zoom-out;
 }
+
+/*br {*/
+/*  content: "";*/
+/*  padding: 2em;*/
+/*  margin: -2em;*/
+/*  display: block;*/
+/*  font-size: 25%;*/
+/*}*/
+

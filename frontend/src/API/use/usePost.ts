@@ -2,6 +2,7 @@ import {CommentInfo, PostInfo} from '../../Types/PostInfo';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {useAPI} from '../../AppState/AppState';
 import {SiteInfo} from '../../Types/SiteInfo';
+import {useCache} from './useCache';
 
 type UsePost = {
     site?: SiteInfo;
@@ -27,8 +28,10 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
     const api = useAPI();
     const [post, setPost] = useState<PostInfo>();
     const [site, setSite] = useState<SiteInfo>();
-    const [comments, setComments] = useState<CommentInfo[]>();
-    const [rawComments, setRawComments] = useState<CommentInfo[]>();
+    const [cachedComments, setCachedComments] = useCache<CommentInfo[]>('post', [siteName, postId, !!showUnreadOnly]);
+    const [rawComments, setRawComments] = useState<CommentInfo[] | undefined>(cachedComments);
+    const filteredComments: CommentInfo[] | undefined = cachedComments ? filterComments(cachedComments, !!showUnreadOnly) : undefined;
+    const [comments, setComments] = useState<CommentInfo[] | undefined>(filteredComments);
     const [error, setError] = useState<string>();
 
     const prev = usePrevious({ siteName, postId, showUnreadOnly });
@@ -68,7 +71,9 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
                 if (rawComments) {
                     // in normal situation rawComments should contain new comment already
                     // so we only update ref here
-                    setRawComments([...rawComments]);
+                    const updateComments = [...rawComments]
+                    setRawComments(updateComments);
+                    setCachedComments(updateComments);
                 }
 
                 return comment;
@@ -100,6 +105,7 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
 
                     setPost(result.post);
                     setSite(result.site);
+                    setCachedComments(result.comments);
                     setRawComments(result.comments);
 
                     setComments(filterComments(result.comments, unreadOnly || false));
@@ -121,7 +127,7 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
             return;
         }
 
-        console.log('Load post', postId);
+        // console.log('Load post', postId, showUnreadOnly);
 
         if (prev?.siteName !== siteName) {
             // load site from cache

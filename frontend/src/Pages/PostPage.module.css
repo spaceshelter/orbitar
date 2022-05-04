@@ -1,27 +1,26 @@
 .container {
-    display: flex;
-    height: 100%;
+    min-width: 720px;
+    max-width: 1024px;
+    margin: 0 auto;
 }
 
 .feed {
-    flex: 1;
+
 }
 
 .comments {
-    padding: 0 20px;
     border-radius: 6px;
 }
 
 .postButtons {
     background: var(--item-bg);
-    padding: 10px;
+    margin: 30px 0;
     border-radius: 6px;
     font-size: 14px;
-    margin-left: 10px;
 }
 
 .postButtons a {
-    color: var(--fg);
+
 }
 
 .loading {

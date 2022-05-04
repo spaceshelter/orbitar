@@ -1,19 +1,24 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import styles from './UserPage.module.css';
-import {Link, useMatch, useMatchRoute} from 'react-location';
+import {Link, useMatch, useParams} from 'react-router-dom';
 import Username from '../Components/Username';
 import RatingSwitch from '../Components/RatingSwitch';
 import DateComponent from '../Components/DateComponent';
 import {useUserProfile} from '../API/use/useUserProfile';
 
 export default function UserPage() {
-    const match = useMatch();
-    const state = useUserProfile(decodeURI(match.params.username));
-    const router = useMatchRoute();
+    const params = useParams<{username: string}>();
+    const state = useUserProfile(decodeURI(params?.username || ''));
+    const isPosts = useMatch('posts');
+    const isComments = useMatch('comments');
 
-    const isPosts = router({to: 'posts'});
-    const isComments = router({to: 'comments'});
     const isProfile = !isPosts && !isComments;
+
+    useEffect(() => {
+        if (state.status === 'ready') {
+            document.title = state.profile.profile.username;
+        }
+    }, [state]);
 
     if (state.status === 'ready') {
         const profile = state.profile;

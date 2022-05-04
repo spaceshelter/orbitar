@@ -1,29 +1,43 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import styles from './PostPage.module.css';
-import {useMatch, useSearch} from 'react-location';
+import commentStyles from '../Components/CommentComponent.module.css';
+import {useParams, Link, useSearchParams} from 'react-router-dom';
 import {CommentInfo, PostInfo} from '../Types/PostInfo';
-import SiteSidebar from '../Components/SiteSidebar';
 import PostComponent from '../Components/PostComponent';
 import CommentComponent from '../Components/CommentComponent';
 import CreateCommentComponent from '../Components/CreateCommentComponent';
-import {Link} from 'react-location';
 import {usePost} from '../API/use/usePost';
 import {useAppState} from '../AppState/AppState';
 
 export default function PostPage() {
     const {site} = useAppState();
 
-    const match = useMatch();
-    const search = useSearch<{Search: {'new': string | undefined}}>();
-    const postId = parseInt(match.params.postId, 10);
+    const params = useParams<{postId: string}>();
+    const [search, setSearch] = useSearchParams();
+    const postId = params.postId ? parseInt(params.postId, 10) : 0;
 
     let subdomain = 'main';
     if (window.location.hostname !== process.env.REACT_APP_ROOT_DOMAIN) {
         subdomain = window.location.hostname.split('.')[0];
     }
 
-    const unreadOnly = search.new !== undefined;
+    const unreadOnly = search.get('new') !== null;
     const {post, comments, postComment, error, reload} = usePost(subdomain, postId, unreadOnly);
+
+    useEffect(() => {
+        let docTitle = '';
+        if (post) {
+            if (post.title) {
+                docTitle = post.title + ' / ';
+            }
+            docTitle += post.author.username;
+        }
+        else {
+            docTitle = `Пост #${postId}`;
+        }
+        document.title = docTitle;
+
+    }, [post]);
 
     const handleAnswer = (text: string, post: PostInfo, comment?: CommentInfo) => {
         return new Promise<CommentInfo>((resolve, reject) => {
@@ -46,15 +60,11 @@ export default function PostPage() {
 
     return (
         <div className={styles.container}>
-            {site && <SiteSidebar site={site} />}
-
             <div className={styles.feed}>
                 {post ? <div>
-                        <PostComponent key={post.id} post={post} buttons={
-                            <div className={styles.postButtons}><Link to={`/post/${post.id}`} className={unreadOnly ? '' : 'bold'}>Все комментарии</Link> / <Link to={`/post/${post.id}?new`} className={unreadOnly ? 'bold' : ''}>новые</Link></div>
-                        } />
-
-                        <div className={styles.comments}>
+                        <PostComponent key={post.id} post={post} />
+                        <div className={styles.postButtons}><Link to={`/post/${post.id}`} className={unreadOnly ? '' : 'bold'}>все комментарии</Link> • <Link to={`/post/${post.id}?new`} className={unreadOnly ? 'bold' : ''}>только новые</Link></div>
+                        <div className={styles.comments + (unreadOnly ? ' ' + commentStyles.unreadOnly : '')}>
                             {comments ?
                                 comments.map(comment => <CommentComponent key={comment.id} comment={comment} post={post} onAnswer={handleAnswer} />)
                                 :

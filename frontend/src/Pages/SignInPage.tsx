@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import styles from './SignInPage.module.css'
 import {useForm, SubmitHandler} from 'react-hook-form';
 import {useAppState} from '../AppState/AppState';
-import {useLocation, useNavigate} from 'react-location';
+import {useLocation, useNavigate} from 'react-router-dom';
 import {APIError} from '../API/APIBase';
 
 type SignInForm = {
@@ -17,6 +17,8 @@ export default function SignInPage() {
     const [isSigningIn, setSigningIn] = useState(false);
     const [error, setError] = useState<string>();
 
+    document.title = 'Вход';
+
     const { register, handleSubmit, formState: { errors, isValid } } = useForm<SignInForm>({
         mode: "onChange"
     });
@@ -25,7 +27,7 @@ export default function SignInPage() {
         setSigningIn(true);
         api.auth.signIn(data.username, data.password)
             .then(() => {
-                navigate({to: location.current.href, replace: true});
+                navigate(location.pathname, {replace: true});
             })
             .catch(error => {
                 setSigningIn(false);

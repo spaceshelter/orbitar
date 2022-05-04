@@ -4,7 +4,7 @@ import styles from './CreatePostPage.module.css';
 import {SiteInfo} from '../Types/SiteInfo';
 import {useAPI} from '../AppState/AppState';
 import SiteSidebar from '../Components/SiteSidebar';
-import {useNavigate} from 'react-location';
+import {useNavigate} from 'react-router-dom';
 
 type CreatePostValues = {
     title: string;
@@ -42,7 +42,7 @@ export function CreatePostPage() {
         api.postAPI.create(site, data.title, data.content)
             .then(result => {
                 console.log('CREATE', result);
-                navigate({to: '/post/' + result.post.id})
+                navigate('/post/' + result.post.id)
             })
             .catch(error => {
                 console.log('CREATE ERR', error);

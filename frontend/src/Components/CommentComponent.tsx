@@ -1,13 +1,15 @@
 import {CommentInfo, PostInfo} from '../Types/PostInfo';
 import styles from './CommentComponent.module.css';
 import RatingSwitch from './RatingSwitch';
-import {UserGender} from '../Types/UserInfo';
 import Username from './Username';
-import {Link} from 'react-location';
+import {Link} from 'react-router-dom';
 import React, {useMemo, useState} from 'react';
 import CreateCommentComponent from './CreateCommentComponent';
 import DateComponent from './DateComponent';
 import ContentComponent from './ContentComponent';
+import PostLink from './PostLink';
+import {useAppState} from '../AppState/AppState';
+import {ReactComponent as EditIcon} from '../Assets/edit.svg';
 
 interface CommentProps {
     post: PostInfo;
@@ -18,6 +20,7 @@ interface CommentProps {
 
 export default function CommentComponent(props: CommentProps) {
     const [answerOpen, setAnswerOpen] = useState(false);
+    const {site} = useAppState();
 
     const handleAnswerSwitch = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -44,23 +47,34 @@ export default function CommentComponent(props: CommentProps) {
         }
     }, [props.comment]);
 
+    const showSite = false;
+    const {author, created} = props.comment;
+
     return (
-        <div className={styles.container} data-comment-id={props.comment.id}>
-            <div className={styles.comment + (props.comment.isNew ? ' ' + styles.isNew : '')}>
-                <ContentComponent className={styles.commentContent} content={props.comment.content} />
+        <div className={styles.comment + (props.comment.isNew ? ' ' + styles.isNew : '')} data-comment-id={props.comment.id}>
+            <div className={styles.body}>
+                <div className={styles.signature}>
+                    {showSite ? <><Link to={`//${site}.${process.env.REACT_APP_ROOT_DOMAIN}/`}>{site}</Link> • </> : ''}
+                    <Username className={styles.username} user={author} /> • <PostLink post={props.post}><DateComponent date={created} /></PostLink>
+                </div>
+                <div className={styles.content}>
+                    <ContentComponent className={styles.commentContent} content={props.comment.content} />
+                </div>
                 <div className={styles.controls}>
-                    <RatingSwitch type="comment" id={props.comment.id} rating={{ vote: props.comment.vote, value: props.comment.rating }} onVote={handleVote} />
-                    <div className={styles.signature}>
-                        {props.comment.author.gender === UserGender.she ? 'Написала' : 'Написал'} <Username user={props.comment.author} />, <DateComponent date={props.comment.created} />, <Link to={'/post/' + props.post.id + '#' + props.comment.id } onClick={handleAnswerSwitch}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</Link>
+                    <div className={styles.control}>
+                        <RatingSwitch type="comment" id={props.comment.id} rating={{ vote: props.comment.vote, value: props.comment.rating }} onVote={handleVote} />
                     </div>
+                    {/*<div className={styles.control}><button disabled={true}><EditIcon /></button></div>*/}
+                    <div className={styles.control}><button onClick={handleAnswerSwitch}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</button></div>
                 </div>
             </div>
-            <CreateCommentComponent open={answerOpen} comment={props.comment} post={props.post} onAnswer={handleAnswer} />
-            {props.comment.answers ?
+            {(props.comment.answers || answerOpen) ?
                 <div className={styles.answers}>
-                    {props.comment.answers.map(comment => <CommentComponent key={comment.id} comment={comment} post={props.post} onAnswer={props.onAnswer} />)}
+                    <CreateCommentComponent open={answerOpen} comment={props.comment} post={props.post} onAnswer={handleAnswer} />
+                    {props.comment.answers ? props.comment.answers.map(comment => <CommentComponent key={comment.id} comment={comment} post={props.post} onAnswer={props.onAnswer} />) : <></>}
                 </div>
-            : <></>}
+                : <></>}
+
         </div>
     )
 }
