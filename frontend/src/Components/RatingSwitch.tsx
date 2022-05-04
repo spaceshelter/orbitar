@@ -1,9 +1,10 @@
 import styles from './RatingSwitch.module.css';
-import React, {useEffect, useState} from 'react';
+import React, {ForwardedRef, useEffect, useRef, useState} from 'react';
 import {useAPI} from '../AppState/AppState';
 import { toast } from 'react-toastify';
 import {ReactComponent as MinusIcon} from '../Assets/rating_minus.svg';
 import {ReactComponent as PlusIcon} from '../Assets/rating_plus.svg';
+import {pluralize} from '../Utils/utils';
 
 
 type RatingSwitchProps = {
@@ -17,13 +18,74 @@ type RatingSwitchProps = {
     onVote?: (value: number, vote?: number) => void;
 }
 
+type VoteType = { vote: number, username: string };
+
 export default function RatingSwitch(props: RatingSwitchProps) {
     const api = useAPI();
     const [state, setState] = useState({rating: props.rating.value, vote: props.rating.vote});
+    const [showPopup, setShowPopup] = useState(false);
+    const ratingRef = useRef<HTMLDivElement>(null);
+    const popupRef = useRef<HTMLDivElement>(null);
+    const [votes, setVotes] = useState<VoteType[]>();
 
     useEffect(() => {
         setState({rating: props.rating.value, vote: props.rating.vote})
     }, [props]);
+
+    useEffect(() => {
+        if (!ratingRef.current || !popupRef.current) {
+            return;
+        }
+        const [popupEl, ratingEl] = [popupRef.current, ratingRef.current];
+        if (!showPopup) {
+            return;
+        }
+
+        if (!votes) {
+            api.voteAPI.list(props.type, props.id)
+                .then(result => {
+                    console.log('votes', result.votes);
+                    setVotes(result.votes);
+                })
+                .catch(() => {
+                    toast.error('Не удалось загрузить голоса!');
+                    setShowPopup(false);
+                });
+        }
+
+        console.log('qwe')
+
+        let {x, y} = ratingEl.getBoundingClientRect();
+        y += document.documentElement.scrollTop || 0;
+        let [w, h] = [ratingEl.clientWidth, ratingEl.clientHeight];
+        let [pw, ph] = [popupEl.clientWidth, popupEl.clientHeight];
+
+        let ny = y + h + 8;
+        if (ny + ph > document.documentElement.scrollHeight) {
+            ny = y - 8 - ph;
+        }
+        let nx = x;
+        if (nx + pw > document.documentElement.scrollWidth / 2) {
+            nx = x + w - pw;
+        }
+
+        console.log(x, y, w, h, pw, ph, (y + h + ph + 8), document.documentElement.scrollHeight);
+
+        popupEl.style.left = (nx) + 'px';
+        popupEl.style.top = (ny) + 'px';
+
+        let clickHandler = (e: MouseEvent) => {
+            e.stopPropagation();
+            e.preventDefault();
+            setShowPopup(false);
+            return false;
+        };
+        document.addEventListener('mousedown', clickHandler);
+        return () => {
+            document.removeEventListener('mousedown', clickHandler);
+        };
+
+    }, [showPopup, ratingRef, popupRef, votes, state.vote]);
 
     const handleVote = (vote: number) => {
         const prevState = { ...state };
@@ -55,8 +117,10 @@ export default function RatingSwitch(props: RatingSwitchProps) {
             });
     };
 
-    const handleVoteList = () => {
-
+    const handleVoteList = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setShowPopup(!showPopup);
     };
 
     const valueStyles = [styles.value];
@@ -87,48 +151,82 @@ export default function RatingSwitch(props: RatingSwitchProps) {
     }
 
     return (
-        <div className={styles.rating}>
-            {props.double && <button className={minus2Styles.join(' ')} onClick={() => handleVote(-2)}><MinusIcon /></button>}
-            <button className={minusStyles.join(' ')} onClick={() => handleVote(-1)}><MinusIcon /></button>
-            <span className={valueStyles.join(' ')}>{state.rating}</span>
-            <button className={plusStyles.join(' ')} onClick={() => handleVote(1)}><PlusIcon /></button>
-            {props.double && <button className={plus2Styles.join(' ')} onClick={() => handleVote(2)}><PlusIcon /></button>}
-        </div>
+        <>
+            <div ref={ratingRef} className={styles.rating}>
+                {props.double && <button className={minus2Styles.join(' ')} onClick={() => handleVote(-2)}><MinusIcon /></button>}
+                <button className={minusStyles.join(' ')} onClick={() => handleVote(-1)}><MinusIcon /></button>
+                <div onClick={handleVoteList} className={valueStyles.join(' ')}>{state.rating}</div>
+                <button className={plusStyles.join(' ')} onClick={() => handleVote(1)}><PlusIcon /></button>
+                {props.double && <button className={plus2Styles.join(' ')} onClick={() => handleVote(2)}><PlusIcon /></button>}
+            </div>
+            {showPopup && <RatingList ref={popupRef} vote={state.vote || 0} rating={state.rating} votes={votes}></RatingList>}
+        </>
     );
-
-    // return (
-    //     <div className={styles.container}>
-    //         <div className={styles.rating}>
-    //             {props.double && <button className={state.vote && state.vote < -1 ? styles.votedMinus : undefined} onClick={() => handleVote(-2)}>－</button>}
-    //             <button className={state.vote && state.vote < 0 ? styles.votedMinus : undefined} onClick={() => handleVote(-1)}>－</button>
-    //             <div className={styles.value} onClick={handleVoteList}>{state.rating}</div>
-    //             <button className={state.vote && state.vote > 0 ? styles.votedPlus : undefined} onClick={() => handleVote(1)}>＋</button>
-    //             {props.double && <button className={state.vote && state.vote > 1 ? styles.votedPlus : undefined} onClick={() => handleVote(2)}>＋</button>}
-    //         </div>
-    //     </div>
-    // )
 }
 
-function RatingList(props: RatingSwitchProps) {
+type RatingListProps = {
+    rating: number;
+    vote: number;
+    votes?: VoteType[];
+}
+
+const RatingList = React.forwardRef((props: RatingListProps, ref: ForwardedRef<HTMLDivElement>) => {
+    const [voteList, setVoteList] = useState<{votes: VoteType[][], counters: {users: number, value: number}[]} | undefined>();
+
+    useEffect(() => {
+        if (!props.votes) {
+            return;
+        }
+
+        const votes: VoteType[][] = [[], []];
+        const counters: {users: number, value: number}[] = [{users: 0, value: 0}, {users: 0, value: 0}];
+
+        for (let vote of props.votes) {
+            if (vote.vote === 0) {
+                continue;
+            }
+            let cnt = vote.vote > 0 ? 1 : 0;
+            votes[cnt].push(vote);
+            counters[cnt].users++;
+            counters[cnt].value += vote.vote;
+        }
+
+        setVoteList({votes, counters});
+        console.log('updat vol', votes, counters);
+    }, [props.rating, props.votes, props.vote]);
+
+    let listStyles = [styles.listValue];
+    if (props.vote > 0) {
+        listStyles.push(styles.listValuePlus);
+    }
+    else if (props.vote < 0) {
+        listStyles.push(styles.listValueMinus);
+    }
+
     return (
-        <div className={styles.list}>
-            <span className={styles.arrow}>^</span>
-            <div className={styles.container}>
-                <div className={styles.listHeader}> Рейтинг: {props.rating}</div>
-                <div className={styles.listColumns}>
-                    <button className={styles.listLeft}>&lt;</button>
-                    <div className={styles.listColumnPlus}>
-                        <div>плюсов: 0</div>
-                        ...<br />...<br />...
-                    </div>
-                    <div className={styles.listColumnMinus}>
-                        <div>минусов: 0</div>
-                        ...
-                    </div>
-                    <button className={styles.listRight}>&gt;</button>
+        <div ref={ref} className={styles.list}>
+            <div className={styles.listUp}>
+                <div className={listStyles.join(' ')}>{props.rating}</div>
+                <div className={styles.listDetails}>
+                    {voteList ? <>
+                        <div>{voteList.counters[1].users > 0 ? pluralize(voteList.counters[1].value, ['плюс', 'плюса', 'плюсов']) + ' от ' + pluralize(voteList.counters[1].users, ['юзера', 'юзеров', 'юзеров']) : 'нет плюсов'}</div>
+                        <div>{voteList.counters[0].users > 0 ? pluralize(voteList.counters[0].value, ['минус', 'минуса', 'минусов']) + ' от ' + pluralize(voteList.counters[0].users, ['юзера', 'юзеров', 'юзеров']) : 'нет минусов'}</div>
+                    </> : <div>...</div>}
                 </div>
-                <div className={styles.listPages}>. . . .</div>
+            </div>
+            <div className={styles.listDown}>
+                <div className={styles.listScrollContainer}>
+                    {voteList ? <>
+                        <div className={styles.listMinus}>
+                            {voteList.votes[0].length > 0 ? voteList.votes[0].map((v) => <div key={v.username}>{v.username} {v.vote}</div>) : 'пусто'}
+                        </div>
+                        <div className={styles.listPlus}>
+                            {voteList.votes[1].length > 0 ? voteList.votes[1].map((v) => <div key={v.username}>{v.username} +{v.vote}</div>) : 'пусто'}
+                        </div>
+                    </>
+                    : <>...</>}
+                </div>
             </div>
         </div>
     )
-}
+});

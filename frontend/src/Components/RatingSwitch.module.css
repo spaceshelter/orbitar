@@ -17,6 +17,7 @@
     flex: 1;
     text-align: center;
     font-weight: bold;
+    cursor: pointer;
 }
 
 .rating button {
@@ -39,4 +40,70 @@
 
 .rating button.dis {
     fill: var(--disabled-fg);
+}
+
+
+.list {
+    background: red;
+    position: absolute;
+    display: flex;
+    width: 312px;
+    height: 257px;
+    background: var(--bg);
+    box-shadow: 0 0 2px var(--rating-list-border);
+    border-radius: 8px;
+    flex-direction: column;
+}
+
+.listUp {
+    height: 92px;
+    display: flex;
+    align-items: center;
+}
+.listValue {
+    font-size: 25px;
+    font-weight: bold;
+    color: var(--inactive-fg);
+    margin-left: 20px;
+    margin-right: 20px;
+}
+.listValuePlus {
+    color: var(--active-fg);
+}
+.listValueMinus {
+    color: var(--negative-fg);
+}
+
+.listDetails {
+    flex: 1;
+    border-left: 1px solid var(--disabled-fg);
+    color: var(--text-fg);
+    padding: 5px 0 5px 18px;
+    font-size: 13px;
+}
+
+.listDown {
+    flex: 1;
+    overflow: auto;
+
+}
+.listScrollContainer {
+    display: flex;
+    align-items: stretch;
+    background: var(--rating-list-votes-bg);
+    gap: 4px;
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.listMinus, .listPlus {
+    flex: 1;
+    min-height: 100%;
+    font-size: 13px;
+    padding: 12px;
+    line-height: 1.5em;
+}
+.listMinus {
+    border-right: 1px solid var(--bg);
 }

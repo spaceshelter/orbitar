@@ -28,6 +28,9 @@ const theme: ThemeCollection = {
             'button-dis-fg': 'rgba(0, 0, 0, 0.38)',
             'button-hover-bg': '#3384CE',
 
+            'rating-list-border': 'rgba(0, 0, 0, 0.2)',
+            'rating-list-votes-bg': 'rgba(0, 0, 0, 0.03)',
+
             topbar: {
                 fg: '#3992E4',
                 bg: 'rgba(255, 255, 255, 0.5)',
@@ -118,6 +121,9 @@ const theme: ThemeCollection = {
             'button-dis-bg': 'rgba(255, 255, 255, 0.1)',
             'button-dis-fg': 'rgba(255, 255, 255, 0.38)',
             'button-hover-bg': '#68B1C1',
+
+            'rating-list-border': 'rgba(255, 255, 255, 0.2)',
+            'rating-list-votes-bg': 'rgba(255, 255, 255, 0.03)',
 
             topbar: {
                 fg: '#58A8BA',
