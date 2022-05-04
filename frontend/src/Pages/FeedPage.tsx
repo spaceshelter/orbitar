@@ -28,6 +28,14 @@ export default function FeedPage() {
         window.scrollTo({ top: 0 });
     }, [page]);
 
+    useEffect(() => {
+        let docTitle = site?.name || 'ЪУЪ';
+        if (!isPosts) {
+            docTitle += ' / Подписки';
+        }
+        document.title = docTitle;
+    }, [site]);
+
     return (
         <div className={styles.container}>
             <div className={styles.feed}>

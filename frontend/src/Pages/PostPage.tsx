@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import styles from './PostPage.module.css';
 import commentStyles from '../Components/CommentComponent.module.css';
 import {useParams, Link, useSearchParams} from 'react-router-dom';
@@ -23,6 +23,21 @@ export default function PostPage() {
 
     const unreadOnly = search.get('new') !== null;
     const {post, comments, postComment, error, reload} = usePost(subdomain, postId, unreadOnly);
+
+    useEffect(() => {
+        let docTitle = '';
+        if (post) {
+            if (post.title) {
+                docTitle = post.title + ' / ';
+            }
+            docTitle += post.author.username;
+        }
+        else {
+            docTitle = `Пост #${postId}`;
+        }
+        document.title = docTitle;
+
+    }, [post]);
 
     const handleAnswer = (text: string, post: PostInfo, comment?: CommentInfo) => {
         return new Promise<CommentInfo>((resolve, reject) => {

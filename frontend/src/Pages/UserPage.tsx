@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import styles from './UserPage.module.css';
 import {Link, useMatch, useParams} from 'react-router-dom';
 import Username from '../Components/Username';
@@ -13,6 +13,12 @@ export default function UserPage() {
     const isComments = useMatch('comments');
 
     const isProfile = !isPosts && !isComments;
+
+    useEffect(() => {
+        if (state.status === 'ready') {
+            document.title = state.profile.profile.username;
+        }
+    }, [state]);
 
     if (state.status === 'ready') {
         const profile = state.profile;

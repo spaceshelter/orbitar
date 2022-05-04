@@ -17,6 +17,8 @@ export default function SignInPage() {
     const [isSigningIn, setSigningIn] = useState(false);
     const [error, setError] = useState<string>();
 
+    document.title = 'Вход';
+
     const { register, handleSubmit, formState: { errors, isValid } } = useForm<SignInForm>({
         mode: "onChange"
     });

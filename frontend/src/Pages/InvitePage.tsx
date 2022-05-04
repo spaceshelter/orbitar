@@ -21,6 +21,8 @@ export default function InvitePage() {
     const {code} = useParams<{code: string}>();
     const navigate = useNavigate();
 
+    document.title = 'Вы — гений!';
+
     useEffect(() => {
         if (!code) {
             return;
