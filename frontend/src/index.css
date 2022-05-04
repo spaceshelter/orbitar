@@ -61,6 +61,12 @@ a:hover {
   color: var(--irony-fg);
 }
 
+blockquote {
+  border-left: 4px solid var(--blockquote-border);
+  padding: 0.5em 0.5em 0.5em 1em;
+  margin: 0.5em 0;
+}
+
 .bold {
   font-weight: bold;
 }

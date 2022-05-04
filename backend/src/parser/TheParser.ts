@@ -17,6 +17,7 @@ export default class TheParser {
             a: (node) => this.parseA(node),
             img: (node) => this.parseImg(node),
             irony: (node) => this.parseIrony(node),
+            blockquote: true,
             b: true,
             i: true,
             u: true,

@@ -4,6 +4,7 @@ import styles from './CreateCommentComponent.module.css';
 import {ReactComponent as IronyIcon} from '../Assets/irony.svg';
 import {ReactComponent as ImageIcon} from '../Assets/image.svg';
 import {ReactComponent as LinkIcon} from '../Assets/link.svg';
+import {ReactComponent as QuoteIcon} from '../Assets/quote.svg';
 
 interface CreateCommentProps {
     open: boolean;
@@ -124,6 +125,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 <div className={styles.control}><button onClick={() => applyTag('u')} className={styles.underline}>U</button></div>
                 <div className={styles.control}><button onClick={() => applyTag('strike')} className={styles.strike}>S</button></div>
                 <div className={styles.control}><button onClick={() => applyTag('irony')}><IronyIcon /></button></div>
+                <div className={styles.control}><button onClick={() => applyTag('blockquote')}><QuoteIcon /></button></div>
                 <div className={styles.control}><button onClick={() => applyTag('img')}><ImageIcon /></button></div>
                 <div className={styles.control}><button onClick={() => applyTag('a')}><LinkIcon /></button></div>
             </div>
