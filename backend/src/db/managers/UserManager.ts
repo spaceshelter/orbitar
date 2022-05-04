@@ -1,5 +1,5 @@
 import {UserRaw} from '../types/UserRaw';
-import {User, UserGender, UserProfile} from '../../types/User';
+import {User, UserGender, UserProfile, UserStats} from '../../types/User';
 import UserRepository from '../repositories/UserRepository';
 import VoteRepository from '../repositories/VoteRepository';
 import bcrypt from 'bcryptjs';
@@ -101,6 +101,10 @@ export default class UserManager {
         const userRaw = await this.userRepository.userRegister(inviteCde, username, name, email, passwordHash, gender);
 
         return this.mapUserRaw(userRaw);
+    }
+
+    async getUserStats(forUserId: number): Promise<UserStats> {
+        return await this.userRepository.getUserStats(forUserId);
     }
 
     private mapUserRaw(rawUser: UserRaw): User {

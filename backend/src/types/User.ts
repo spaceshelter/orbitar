@@ -19,7 +19,7 @@ export type UserProfile = User & {
 
 export type UserStats = {
     notifications: number;
-    bookmarks: {
+    watch: {
         posts: number;
         comments: number;
     }

@@ -4,13 +4,16 @@ import {PostRawWithUserData} from '../types/PostRaw';
 import UserRepository from '../repositories/UserRepository';
 import CodeError from '../../CodeError';
 import ExclusiveTask, {TaskState} from '../../utils/ExclusiveTask';
+import BookmarkRepository from '../repositories/BookmarkRepository';
 
 export default class FeedManager {
-    private redis: RedisClientType;
-    private postRepository: PostRepository;
-    private userRepository: UserRepository;
+    private readonly redis: RedisClientType;
+    private readonly postRepository: PostRepository;
+    private readonly userRepository: UserRepository;
+    private readonly bookmarkRepository: BookmarkRepository;
 
-    constructor(postRepository: PostRepository, userRepository: UserRepository, redis: RedisClientType) {
+    constructor(bookmarkRepository: BookmarkRepository, postRepository: PostRepository, userRepository: UserRepository, redis: RedisClientType) {
+        this.bookmarkRepository = bookmarkRepository;
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.redis = redis;
@@ -41,6 +44,15 @@ export default class FeedManager {
     async getSubscriptionsTotal(forUserId: number): Promise<number> {
         return await this.redis.zCount(`subscriptions:${forUserId}`, 0, '+inf');
     }
+
+    async getWatchFeed(forUserId: number, page: number, perpage: number, all = false): Promise<PostRawWithUserData[]> {
+        return await this.postRepository.getWatchPosts(forUserId, page, perpage, all);
+    }
+
+    async getWatchTotal(forUserId: number, all = false): Promise<number> {
+        return await this.postRepository.getWatchPostsTotal(forUserId, all);
+    }
+
 
     async getSiteFeed(forUserId: number, siteId: number, page: number, perpage: number): Promise<PostRawWithUserData[]> {
         return await this.postRepository.getPosts(siteId, forUserId, page, perpage);
@@ -106,6 +118,9 @@ export default class FeedManager {
 
             console.log(`update subscription for ${user_id}`);
             await this.redis.zAdd(`subscriptions:${user_id}`, [{ score: post.commented_at.getTime(), value: strPostId }]);
+
+            // TODO: use redis for update bookmarks
+            await this.bookmarkRepository.setUpdated(postId, user_id, post.commented_at);
         }
     }
 
