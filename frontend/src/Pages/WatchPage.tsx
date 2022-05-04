@@ -33,9 +33,9 @@ export default function WatchPage() {
     return (
         <div className={styles.container}>
             <div className={styles.feed}>
-                {site?.site === 'main' && <div className={styles.feedControls}>
+                <div className={styles.feedControls}>
                     <Link to='/watch' className={isAll ? '' : styles.active} replace={true}>непрочитанные</Link> • <Link to='/watch/all' className={isAll ? styles.active : ''} replace={true}>все</Link>
-                </div>}
+                </div>
                 {loading && <div className={styles.loading}>Загрузка</div>}
                 {error && <div className={styles.error}>{styles.error}</div> }
                 {posts && <div className={styles.posts}>

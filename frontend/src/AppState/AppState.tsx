@@ -90,6 +90,10 @@ export function useSiteName(site?: string): { siteName: string, fullSiteName: st
         return { siteName, fullSiteName };
     }
     else {
+        if (site === 'main') {
+            return { siteName: site, fullSiteName: process.env.REACT_APP_ROOT_DOMAIN || '' };
+        }
+
         return { siteName: site, fullSiteName: site + '.' + process.env.REACT_APP_ROOT_DOMAIN };
     }
 }
