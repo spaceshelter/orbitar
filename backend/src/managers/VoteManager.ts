@@ -1,5 +1,5 @@
 import PostManager from './PostManager';
-import VoteRepository, {VoteWithUsername} from '../repositories/VoteRepository';
+import VoteRepository, {VoteWithUsername} from '../db/repositories/VoteRepository';
 
 export default class VoteManager {
     private voteRepository: VoteRepository;

@@ -1,13 +1,13 @@
-import {SiteBase, Site, SiteWithUserInfo} from '../../types/Site';
+import {SiteBaseInfo, SiteInfo, SiteWithUserInfo} from './types/SiteInfo';
 import UserManager from './UserManager';
-import SiteRepository from '../repositories/SiteRepository';
-import CodeError from '../../CodeError';
+import SiteRepository from '../db/repositories/SiteRepository';
+import CodeError from '../CodeError';
 import FeedManager from './FeedManager';
 
 export default class SiteManager {
     private siteRepository: SiteRepository;
-    private cache: Record<string, Site | undefined> = {};
-    private cacheId: Record<number, Site | undefined> = {};
+    private cache: Record<string, SiteInfo | undefined> = {};
+    private cacheId: Record<number, SiteInfo | undefined> = {};
     private userManager: UserManager;
     private feedManager: FeedManager;
 
@@ -17,7 +17,7 @@ export default class SiteManager {
         this.userManager = userManager;
     }
 
-    async getSiteByName(siteName: string): Promise<Site | undefined> {
+    async getSiteByName(siteName: string): Promise<SiteInfo | undefined> {
         let site = this.cache[siteName];
         if (site !== undefined) {
             return site;
@@ -65,7 +65,7 @@ export default class SiteManager {
         return site;
     }
 
-    async getSiteWithoutOwner(siteName: string): Promise<SiteBase | undefined> {
+    async getSiteWithoutOwner(siteName: string): Promise<SiteBaseInfo | undefined> {
         const site = await this.getSiteByName(siteName);
         if (!site) {
             return;
@@ -78,7 +78,7 @@ export default class SiteManager {
         };
     }
 
-    async getSiteById(siteId: number): Promise<Site | undefined> {
+    async getSiteById(siteId: number): Promise<SiteInfo | undefined> {
         let site = this.cacheId[siteId];
         if (site !== undefined) {
             return site;

@@ -1,39 +1,15 @@
 import {Router} from 'express';
-import InviteManager from '../db/managers/InviteManager';
-import {User, UserGender} from '../types/User';
+import InviteManager from '../managers/InviteManager';
 import bcrypt from 'bcryptjs';
 import CodeError from '../CodeError';
 import rateLimit from 'express-rate-limit';
 import {Logger} from 'winston';
 import {APIRequest, APIResponse, joiUsername, validate} from './ApiMiddleware';
 import Joi from 'joi';
-import UserManager from '../db/managers/UserManager';
-import {UserEntity} from './entities/UserEntity';
-
-interface CheckRequest {
-    code: string;
-}
-interface CheckResponse {
-    code: string;
-    inviter: string;
-}
-
-interface UseRequest {
-    code: string;
-    username: string;
-    name: string;
-    email: string;
-    gender: UserGender;
-    password: string;
-}
-interface UseResponse {
-    user: User;
-    session: string;
-}
-
-// interface LepraRequest {
-//     code: string;
-// }
+import UserManager from '../managers/UserManager';
+import {UserEntity} from './types/entities/UserEntity';
+import {InviteCheckRequest, InviteCheckResponse} from './types/requests/InviteCheck';
+import {InviteUseRequest, InviteUseResponse} from './types/requests/InviteUse';
 
 export default class InviteController {
     public router = Router();
@@ -56,10 +32,10 @@ export default class InviteController {
             legacyHeaders: false
         });
 
-        const checkSchema = Joi.object<CheckRequest>({
+        const checkSchema = Joi.object<InviteCheckRequest>({
             code: Joi.string().alphanum().required()
         });
-        const useSchema = Joi.object<UseRequest>({
+        const useSchema = Joi.object<InviteUseRequest>({
             code: Joi.string().alphanum().required(),
             username: joiUsername,
             name: Joi.string().required(),
@@ -73,7 +49,7 @@ export default class InviteController {
         // this.router.post('/invite/lepra', limiter, (req, res) => this.lepra(req, res))
     }
 
-    async checkInvite(request: APIRequest<CheckRequest>, response: APIResponse<CheckResponse>) {
+    async checkInvite(request: APIRequest<InviteCheckRequest>, response: APIResponse<InviteCheckResponse>) {
         if (request.session.data.userId) {
             return response.error('signed-in', 'Already signed in');
         }
@@ -98,7 +74,7 @@ export default class InviteController {
         }
     }
 
-    async useInvite(request: APIRequest<UseRequest>, response: APIResponse<UseResponse>) {
+    async useInvite(request: APIRequest<InviteUseRequest>, response: APIResponse<InviteUseResponse>) {
         if (request.session.data.userId) {
             return response.error('signed-in', 'Already signed in');
         }

@@ -3,7 +3,7 @@ import {UserRaw, UserSiteRaw} from '../types/UserRaw';
 import {InviteRaw} from '../types/InviteRaw';
 import CodeError from '../../CodeError';
 import {OkPacket} from 'mysql2';
-import {UserGender, UserStats} from '../../types/User';
+import {UserGender} from '../../managers/types/UserInfo';
 
 export default class UserRepository {
     private db: DB;
@@ -88,8 +88,8 @@ export default class UserRepository {
         return await this.db.fetchAll<{ user_id: number }>('select user_id from user_sites where site_id=:site_id and feed_main=1', { site_id: siteId });
     }
 
-    async getUserStats(forUserId: number): Promise<UserStats> {
-        const res = await this.db.fetchOne<{cnt: string | null}>(`
+    async getUserUnreadComments(forUserId: number): Promise<number> {
+        const res = await this.db.fetchOne<{ cnt: string | null }>(`
             select sum(p.comments - ub.read_comments) cnt
             from
               user_bookmarks ub
@@ -101,12 +101,6 @@ export default class UserRepository {
             user_id: forUserId
         });
 
-        return {
-            watch: {
-                comments: parseInt(res.cnt),
-                posts: 0
-            },
-            notifications: 0
-        };
+        return parseInt(res.cnt);
     }
 }

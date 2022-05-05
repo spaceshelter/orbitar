@@ -1,9 +1,12 @@
-export type PostEntity = {
+export type PostBaseInfo = {
     id: number;
     site: string;
+    title?: string;
+};
+
+export type PostInfo = PostBaseInfo & {
     author: number;
     created: Date;
-    title?: string;
     content?: string;
     rating: number;
     comments: number;

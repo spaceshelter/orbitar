@@ -1,9 +1,12 @@
-export type CommentEntity = {
+export type CommentBaseEntity = {
     id: number;
-    created: Date;
     author: number;
-    deleted?: boolean;
     content: string;
+};
+
+export type CommentEntity = CommentBaseEntity & {
+    created: string;
+    deleted?: boolean;
     rating: number;
     parentComment?: number;
 

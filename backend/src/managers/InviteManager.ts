@@ -1,5 +1,5 @@
-import {InviteRawWithIssuer} from '../types/InviteRaw';
-import InviteRepository from '../repositories/InviteRepository';
+import {InviteRawWithIssuer} from '../db/types/InviteRaw';
+import InviteRepository from '../db/repositories/InviteRepository';
 
 export default class InviteManager {
     private inviteRepository: InviteRepository;

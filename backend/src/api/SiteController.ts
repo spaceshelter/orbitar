@@ -1,18 +1,8 @@
 import {Logger} from 'winston';
 import {Router} from 'express';
 import {APIRequest, APIResponse} from './ApiMiddleware';
-import SiteManager from '../db/managers/SiteManager';
-
-type SiteSubscribeRequest = {
-    site: string;
-    main?: boolean;
-    bookmarks?: boolean;
-};
-
-type SiteSubscribeResponse = {
-    main: boolean;
-    bookmarks: boolean;
-};
+import SiteManager from '../managers/SiteManager';
+import {SiteSubscribeRequest, SiteSubscribeResponse} from './types/requests/SiteSubscribe';
 
 export default class SiteController {
     public router = Router();

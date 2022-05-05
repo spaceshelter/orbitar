@@ -1,35 +1,11 @@
 import {Router} from 'express';
-import VoteManager from '../db/managers/VoteManager';
+import VoteManager from '../managers/VoteManager';
 import {Logger} from 'winston';
 import {APIRequest, APIResponse, validate} from './ApiMiddleware';
 import Joi from 'joi';
-import {VoteWithUsername} from '../db/repositories/VoteRepository';
-
-type VoteType = 'post' | 'comment' | 'user';
-
-interface VoteRequest {
-    type: VoteType;
-    id: number;
-    vote: number;
-}
-interface VoteResponse {
-    type: VoteType;
-    id: number;
-    rating: number;
-    vote?: number;
-}
-
-interface ListRequest {
-    type: VoteType;
-    id: number;
-}
-interface ListResponse {
-    votes: {
-        vote: number;
-        username: string;
-    }[]
-}
-
+import {VoteSetRequest, VoteSetResponse} from './types/requests/VoteSet';
+import {VoteListRequest, VoteListResponse} from './types/requests/VoteList';
+import {VoteListItemEntity} from './types/entities/VoteEntity';
 
 export default class VoteController {
     public router = Router();
@@ -40,12 +16,12 @@ export default class VoteController {
         this.voteManager = voteManager;
         this.logger = logger;
 
-        const voteSchema = Joi.object<VoteRequest>({
+        const voteSchema = Joi.object<VoteSetRequest>({
             type: Joi.valid('post', 'comment', 'user').required(),
             id: Joi.number().required(),
             vote: Joi.number().required()
         });
-        const listSchema = Joi.object<ListRequest>({
+        const listSchema = Joi.object<VoteListRequest>({
             type: Joi.valid('post', 'comment', 'user').required(),
             id: Joi.number().required()
         });
@@ -54,7 +30,7 @@ export default class VoteController {
         this.router.post('/vote/list', validate(listSchema), (req, res) => this.list(req, res));
     }
 
-    async setVote(request: APIRequest<VoteRequest>, response: APIResponse<VoteResponse>) {
+    async setVote(request: APIRequest<VoteSetRequest>, response: APIResponse<VoteSetResponse>) {
         if (!request.session.data.userId) {
             return response.authRequired();
         }
@@ -97,7 +73,7 @@ export default class VoteController {
         }
     }
 
-    async list(request: APIRequest<ListRequest>, response: APIResponse<ListResponse>) {
+    async list(request: APIRequest<VoteListRequest>, response: APIResponse<VoteListResponse>) {
         if (!request.session.data.userId) {
             return response.authRequired();
         }
@@ -105,7 +81,7 @@ export default class VoteController {
         const {id, type} = request.body;
 
         try {
-            let votes: VoteWithUsername[];
+            let votes: VoteListItemEntity[];
             switch (type) {
                 case 'post':
                     votes = await this.voteManager.getPostVotes(id);

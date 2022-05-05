@@ -1,4 +1,8 @@
-import {UserGender} from '../../types/User';
+export enum UserGender {
+    fluid,
+    he,
+    she,
+}
 
 export type UserBaseEntity = {
     id: number;
