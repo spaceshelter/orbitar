@@ -33,6 +33,9 @@ import CommentRepository from './db/repositories/CommentRepository';
 import PostRepository from './db/repositories/PostRepository';
 import SiteRepository from './db/repositories/SiteRepository';
 import SiteController from './api/SiteController';
+import NotificationsRepository from './db/repositories/NotificationsRepository';
+import UserKVRRepository from './db/repositories/UserKVRRepository';
+import NotificationManager from './managers/NotificationManager';
 
 const app = express();
 
@@ -84,13 +87,16 @@ const theParser = new TheParser();
 const bookmarkRepository = new BookmarkRepository(db);
 const commentRepository = new CommentRepository(db);
 const inviteRepository = new InviteRepository(db);
+const notificationsRepository = new NotificationsRepository(db);
 const postRepository = new PostRepository(db);
 const siteRepository = new SiteRepository(db);
 const voteRepository = new VoteRepository(db);
 const userRepository = new UserRepository(db);
+const userKVRepository = new UserKVRRepository(db);
 
 const inviteManager = new InviteManager(inviteRepository);
-const userManager = new UserManager(voteRepository, userRepository);
+const notificationManager = new NotificationManager(notificationsRepository, userKVRepository);
+const userManager = new UserManager(voteRepository, userRepository, notificationManager);
 const feedManager = new FeedManager(bookmarkRepository, postRepository, userRepository, redis.client);
 const siteManager = new SiteManager(siteRepository, userManager, feedManager);
 const postManager = new PostManager(bookmarkRepository, commentRepository, postRepository, feedManager, siteManager, theParser);

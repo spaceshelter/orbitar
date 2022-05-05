@@ -1,7 +1,9 @@
 import {UserInfo} from './UserInfo';
 import {PostBaseInfo} from './PostInfo';
 
-export type UserNotification = UserNotificationMention | UserNotificationAnswer;
+export type UserNotification = UserNotificationMention | UserNotificationAnswer | {
+    type: string;
+};
 
 export type UserNotificationMention = {
     type: 'mention';

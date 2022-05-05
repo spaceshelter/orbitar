@@ -3,16 +3,20 @@ import {UserInfo, UserGender, UserProfile, UserStats} from './types/UserInfo';
 import UserRepository from '../db/repositories/UserRepository';
 import VoteRepository from '../db/repositories/VoteRepository';
 import bcrypt from 'bcryptjs';
+import NotificationManager from './NotificationManager';
 
 export default class UserManager {
     private userRepository: UserRepository;
     private voteRepository: VoteRepository;
+    private notificationManager: NotificationManager;
+
     private cacheId: Record<number, UserInfo> = {};
     private cacheUsername: Record<string, UserInfo> = {};
 
-    constructor(voteRepository: VoteRepository, userRepository: UserRepository) {
+    constructor(voteRepository: VoteRepository, userRepository: UserRepository, notificationManager: NotificationManager) {
         this.userRepository = userRepository;
         this.voteRepository = voteRepository;
+        this.notificationManager = notificationManager;
     }
 
     async getById(userId: number): Promise<UserInfo | undefined> {
@@ -105,8 +109,10 @@ export default class UserManager {
 
     async getUserStats(forUserId: number): Promise<UserStats> {
         const unreadComments = await this.userRepository.getUserUnreadComments(forUserId);
+        const notifications = await this.notificationManager.getNotificationsCount(forUserId);
+
         return {
-            notifications: 0,
+            notifications,
             watch: {
                 comments: unreadComments,
                 posts: 0
