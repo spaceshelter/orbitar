@@ -79,6 +79,9 @@ const theme: ThemeCollection = {
             irony: {
                 fg: '#ff0000',
             },
+            blockquote : {
+                bg: 'rgba(0,0,0,0.03)',
+            },
             username: {
                 fg: '#841515',
             },
@@ -170,6 +173,9 @@ const theme: ThemeCollection = {
             },
             irony: {
                 fg: '#fa8e8e',
+            },
+            blockquote : {
+                bg: 'rgba(255,255,255,0.03)',
             },
             username: {
                 fg: '#ee7285',
