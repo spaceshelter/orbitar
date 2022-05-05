@@ -9,5 +9,6 @@ export type PostEntity = {
     comments: number;
     newComments: number;
     bookmark: boolean;
+    watch: boolean;
     vote?: number;
 };

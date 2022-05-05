@@ -58,7 +58,8 @@ export default class PostManager {
             comments: 0,
             newComments: 0,
             vote: 0,
-            bookmark: true
+            bookmark: false,
+            watch: true
         };
     }
 
@@ -97,5 +98,9 @@ export default class PostManager {
 
     async setBookmark(postId: number, userId: number, bookmarked: boolean) {
         return await this.bookmarkRepository.setBookmark(postId, userId, bookmarked);
+    }
+
+    async setWatch(postId: number, userId: number, bookmarked: boolean) {
+        return await this.bookmarkRepository.setWatch(postId, userId, bookmarked);
     }
 }

@@ -23,7 +23,7 @@ export default function WatchPage() {
     const perpage = 20;
     const page = parseInt(search.get('page') || '1');
 
-    const { posts, loading, pages, error } = useFeed(siteName, isAll ? 'watch-all' : 'watch', page, perpage);
+    const { posts, loading, pages, error, updatePost } = useFeed(siteName, isAll ? 'watch-all' : 'watch', page, perpage);
     useEffect(() => {
         window.scrollTo({ top: 0 });
     }, [page]);
@@ -40,7 +40,7 @@ export default function WatchPage() {
                 {error && <div className={styles.error}>{styles.error}</div> }
                 {posts && <div className={styles.posts}>
                     {posts.length === 0 && <div>Здесь ничего нет. Вероятно, вы уже всё прочитали!</div>}
-                    {posts.map(post => <PostComponent key={post.id} post={post} showSite={site?.site !== post.site} />)}
+                    {posts.map(post => <PostComponent key={post.id} post={post} showSite={site?.site !== post.site} onChange={updatePost} />)}
                 </div>}
 
                 <Paginator page={page} pages={pages} base={isAll ? '/watch/all' : '/watch'} />

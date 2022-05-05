@@ -14,6 +14,7 @@ type UsePost = {
     setVote(value: number): void;
     setCommentVote(commentId: number, vote: number): void;
     reload(showUnreadOnly?: boolean): void;
+    updatePost(partial: Partial<PostInfo>): void;
 }
 
 function usePrevious<T>(value: T): T | undefined {
@@ -35,6 +36,16 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
     const [error, setError] = useState<string>();
 
     const prev = usePrevious({ siteName, postId, showUnreadOnly });
+
+    const updatePost = useMemo(() => {
+        return (partial: Partial<PostInfo>) => {
+            if (!post) {
+                return;
+            }
+            const newPost = {...post, ...partial};
+            setPost(newPost);
+        };
+    }, [post]);
 
     const { postComment, setVote, setCommentVote, reload } = useMemo(() => {
         const postComment = async (text: string, answerToCommentId?: number) => {
@@ -119,7 +130,7 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
                 });
         };
 
-        return { postComment, setVote, setCommentVote, reload };
+        return { postComment, setVote, setCommentVote, reload, updatePost };
     }, [postId, comments, rawComments, api.post]);
 
     useEffect(() => {
@@ -160,7 +171,7 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
         reload(showUnreadOnly || false);
     }, [siteName, postId, showUnreadOnly, api, rawComments, prev, reload]);
 
-    return { site, post, comments, error, postComment, setVote, setCommentVote, reload };
+    return { site, post, comments, error, postComment, setVote, setCommentVote, reload, updatePost };
 }
 
 function findComment(comments: CommentInfo[], commentId: number): CommentInfo | undefined {
