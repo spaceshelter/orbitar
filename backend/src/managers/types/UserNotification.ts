@@ -1,24 +1,19 @@
-import {UserInfo} from './UserInfo';
-import {PostBaseInfo} from './PostInfo';
-
 export type UserNotification = UserNotificationMention | UserNotificationAnswer | {
     type: string;
 };
 
-export type UserNotificationMention = {
-    type: 'mention';
-    mention: {
+type UserNotificationSource = {
+    source: {
         byUserId: number;
         postId: number;
         commentId?: number;
     };
 };
 
-export type UserNotificationAnswer = {
+export type UserNotificationMention = UserNotificationSource & {
+    type: 'mention';
+};
+
+export type UserNotificationAnswer = UserNotificationSource & {
     type: 'answer';
-    answer: {
-        user: UserInfo;
-        post: PostBaseInfo;
-        commentId: number;
-    }
 };

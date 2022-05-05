@@ -51,7 +51,7 @@ export default class PostManager {
         await this.bookmarkRepository.setWatch(postRaw.post_id, userId, true);
 
         for (const mention of parseResult.mentions) {
-            await this.notificationManager.tryMention(mention, userId, postRaw.post_id);
+            await this.notificationManager.sendMentionNotify(mention, userId, postRaw.post_id);
         }
 
         // fan out in background
@@ -82,7 +82,11 @@ export default class PostManager {
         const commentRaw = await this.commentRepository.createComment(userId, postId, parentCommentId, content, parseResult.text);
 
         for (const mention of parseResult.mentions) {
-            await this.notificationManager.tryMention(mention, userId, postId, commentRaw.comment_id);
+            await this.notificationManager.sendMentionNotify(mention, userId, postId, commentRaw.comment_id);
+        }
+
+        if (parentCommentId) {
+            await this.notificationManager.sendAnswerNotify(parentCommentId, userId, postId, commentRaw.comment_id);
         }
 
         await this.bookmarkRepository.setWatch(postId, userId, true);

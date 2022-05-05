@@ -1,14 +1,20 @@
-import {UserNotification, UserNotificationMention} from './types/UserNotification';
+import {UserNotification, UserNotificationAnswer, UserNotificationMention} from './types/UserNotification';
 import NotificationsRepository from '../db/repositories/NotificationsRepository';
 import UserKVRRepository from '../db/repositories/UserKVRRepository';
 import UserRepository from '../db/repositories/UserRepository';
+import CommentRepository from '../db/repositories/CommentRepository';
 
 export default class NotificationManager {
+    private commentRepository: CommentRepository;
     private notificationsRepository: NotificationsRepository;
     private userKVRepository: UserKVRRepository;
     private userRepository: UserRepository;
 
-    constructor(notificationsRepository: NotificationsRepository, userRepository: UserRepository, userKVRepository: UserKVRRepository) {
+    constructor(
+        commentRepository: CommentRepository, notificationsRepository: NotificationsRepository,
+        userRepository: UserRepository, userKVRepository: UserKVRRepository
+    ) {
+        this.commentRepository = commentRepository;
         this.notificationsRepository = notificationsRepository;
         this.userKVRepository = userKVRepository;
         this.userRepository = userRepository;
@@ -50,7 +56,29 @@ export default class NotificationManager {
         await this.notificationsRepository.addNotification(forUserId, notification.type, json);
     }
 
-    async tryMention(mention: string, byUserId: number, postId: number, commentId?: number) {
+    async sendAnswerNotify(parentCommentId: number, byUserId: number, postId: number, commentId?: number) {
+        const commentRaw = await this.commentRepository.getComment(parentCommentId);
+        if (!commentRaw) {
+            return false;
+        }
+
+        // if (commentRaw.author_id === byUserId) {
+        //     return false;
+        // }
+
+        const notification: UserNotificationAnswer = {
+            type: 'answer',
+            source: {
+                byUserId,
+                postId,
+                commentId
+            }
+        };
+
+        await this.sendNotification(commentRaw.author_id, notification);
+    }
+
+    async sendMentionNotify(mention: string, byUserId: number, postId: number, commentId?: number) {
         let username;
         if (mention.substring(0, 1) === '@') {
             username = mention.substring(1);
@@ -74,7 +102,7 @@ export default class NotificationManager {
 
         const notification: UserNotificationMention = {
             type: 'mention',
-            mention: {
+            source: {
                 byUserId,
                 postId,
                 commentId
