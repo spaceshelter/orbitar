@@ -2,28 +2,28 @@ import 'dotenv-flow/config';
 import express from 'express';
 import DB from './db/DB';
 import InviteController from './api/InviteController';
-import InviteManager from './db/managers/InviteManager';
+import InviteManager from './managers/InviteManager';
 import AuthController from './api/AuthController';
-import UserManager from './db/managers/UserManager';
+import UserManager from './managers/UserManager';
 import helmet from 'helmet';
 import cors from 'cors';
 import {session} from './session/Session';
 import PostController from './api/PostController';
-import PostManager from './db/managers/PostManager';
+import PostManager from './managers/PostManager';
 import StatusController from './api/StatusController';
-import SiteManager from './db/managers/SiteManager';
+import SiteManager from './managers/SiteManager';
 import {apiMiddleware} from './api/ApiMiddleware';
 import VoteController from './api/VoteController';
 import {config} from './config';
 import expressWinston from 'express-winston';
 import winston from 'winston';
-import VoteManager from './db/managers/VoteManager';
+import VoteManager from './managers/VoteManager';
 import TheParser from './parser/TheParser';
 import colors from '@colors/colors/safe';
 import jsonStringify from 'safe-stable-stringify';
 import UserController from './api/UserController';
 import Redis from './db/Redis';
-import FeedManager from './db/managers/FeedManager';
+import FeedManager from './managers/FeedManager';
 import FeedController from './api/FeedController';
 import InviteRepository from './db/repositories/InviteRepository';
 import VoteRepository from './db/repositories/VoteRepository';
@@ -33,6 +33,10 @@ import CommentRepository from './db/repositories/CommentRepository';
 import PostRepository from './db/repositories/PostRepository';
 import SiteRepository from './db/repositories/SiteRepository';
 import SiteController from './api/SiteController';
+import NotificationsRepository from './db/repositories/NotificationsRepository';
+import UserKVRRepository from './db/repositories/UserKVRRepository';
+import NotificationManager from './managers/NotificationManager';
+import NotificationsController from './api/NotificationsController';
 
 const app = express();
 
@@ -84,16 +88,19 @@ const theParser = new TheParser();
 const bookmarkRepository = new BookmarkRepository(db);
 const commentRepository = new CommentRepository(db);
 const inviteRepository = new InviteRepository(db);
+const notificationsRepository = new NotificationsRepository(db);
 const postRepository = new PostRepository(db);
 const siteRepository = new SiteRepository(db);
 const voteRepository = new VoteRepository(db);
 const userRepository = new UserRepository(db);
+const userKVRepository = new UserKVRRepository(db);
 
 const inviteManager = new InviteManager(inviteRepository);
-const userManager = new UserManager(voteRepository, userRepository);
+const notificationManager = new NotificationManager(commentRepository, notificationsRepository, postRepository, siteRepository, userRepository, userKVRepository);
+const userManager = new UserManager(voteRepository, userRepository, notificationManager);
 const feedManager = new FeedManager(bookmarkRepository, postRepository, userRepository, redis.client);
 const siteManager = new SiteManager(siteRepository, userManager, feedManager);
-const postManager = new PostManager(bookmarkRepository, commentRepository, postRepository, feedManager, siteManager, theParser);
+const postManager = new PostManager(bookmarkRepository, commentRepository, postRepository, feedManager, notificationManager, siteManager, theParser);
 const voteManager = new VoteManager(voteRepository, postManager);
 
 
@@ -105,7 +112,8 @@ const requests = [
     new VoteController(voteManager, logger.child({ service: 'VOTE' })),
     new UserController(userManager, logger.child({ service: 'USER' })),
     new FeedController(feedManager, siteManager, userManager, logger.child({ service: 'FEED' })),
-    new SiteController(siteManager, logger.child( { service: 'SITE' }))
+    new SiteController(siteManager, logger.child( { service: 'SITE' })),
+    new NotificationsController(notificationManager, logger.child({ service: 'NOTIFY' })),
 ];
 
 const filterLog = winston.format((info) => {

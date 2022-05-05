@@ -10,6 +10,12 @@ export default class CommentRepository {
         this.db = db;
     }
 
+    async getComment(commentId: number): Promise<CommentRaw | undefined> {
+        return await this.db.fetchOne<CommentRaw>('select * from comments where comment_id=:comment_id', {
+            comment_id: commentId
+        });
+    }
+
     async getPostComments(postId: number, forUserId: number): Promise<CommentRawWithUserData[]> {
         return await this.db.query(`
                 select c.*, v.vote

@@ -1,24 +1,9 @@
 import {Router} from 'express';
-import UserManager from '../db/managers/UserManager';
-import {User} from '../types/User';
+import UserManager from '../managers/UserManager';
 import {APIRequest, APIResponse} from './ApiMiddleware';
 import {Logger} from 'winston';
-import {SiteWithUserInfo} from '../types/Site';
-import SiteManager from '../db/managers/SiteManager';
-
-type StatusRequest = {
-    site: string;
-};
-
-type StatusResponse = {
-    user: User;
-    site: SiteWithUserInfo;
-    watch: {
-        posts: number;
-        comments: number;
-    };
-    notifications: number;
-};
+import SiteManager from '../managers/SiteManager';
+import {StatusRequest, StatusResponse} from './types/requests/Status';
 
 export default class StatusController {
     public router = Router();

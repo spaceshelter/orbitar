@@ -1,4 +1,4 @@
-import {UserGender} from '../../types/User';
+import {UserGender} from '../../managers/types/UserInfo';
 
 export type UserRaw = {
     user_id: number;

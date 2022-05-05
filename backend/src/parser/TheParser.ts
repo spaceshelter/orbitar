@@ -9,8 +9,15 @@ export type TheParserOptions = {
     tags: Record<string, ((node: Element) => string) | boolean>;
 };
 
+export type ParseResult = {
+    text: string;
+    mentions: string[];
+    urls: string[];
+    images: string[];
+};
+
 export default class TheParser {
-    private readonly allowedTags: Record<string, ((node: Element) => string) | boolean>;
+    private readonly allowedTags: Record<string, ((node: Element) => ParseResult) | boolean>;
 
     constructor(options?: TheParserOptions) {
         this.allowedTags = {
@@ -25,7 +32,7 @@ export default class TheParser {
         };
     }
 
-    parse(text: string) {
+    parse(text: string): ParseResult {
         const doc = parseDocument(text, {
             decodeEntities: false
         });
@@ -33,13 +40,18 @@ export default class TheParser {
         return this.parseChildNodes(doc.childNodes);
     }
 
-    private parseChildNodes(doc: ChildNode[]) {
+    private parseChildNodes(doc: ChildNode[]): ParseResult {
         return doc.reduce((p, c) => {
-            return p + this.parseNode(c);
-        }, '');
+            const res = this.parseNode(c);
+            p.text += res.text;
+            p.mentions.push(...res.mentions);
+            p.images.push(...res.images);
+            p.urls.push(...res.urls);
+            return p;
+        }, { text: '', mentions: [], urls: [], images: [] });
     }
 
-    private parseNode(node: ChildNode) {
+    private parseNode(node: ChildNode): ParseResult {
         if (node.type === 'text') {
             return this.parseText(node.data);
         }
@@ -69,10 +81,10 @@ export default class TheParser {
             return escapeHTML(`<!-- ${node.data} -->`);
         }
 
-        return '';
+        return { text: '', mentions: [], urls: [], images: [] };
     }
 
-    private parseText(text: string) {
+    private parseText(text: string): ParseResult {
         const regex = /https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b[-a-zA-Z0-9()@:%_+.~#?&/=]*/g;
         const tokens: { type: string; data: string }[] = [];
 
@@ -90,18 +102,27 @@ export default class TheParser {
         }
         tokens.push({ type: 'text', data: sText });
 
+        const mentions = [];
+        const urls = [];
+
         let escaped = tokens
             .map((token) => {
                 if (token.type === 'text') {
+                    // check for mentions
+                    const mentionRes = token.data.match(/\B(?:@|\/u\/)([a-zа-яе0-9_-]+)/gi);
+                    if (mentionRes) {
+                        mentions.push(...mentionRes);
+                    }
                     return htmlEscape(token.data);
                 } else if (token.type === 'url') {
+                    urls.push(token.data);
                     return this.processUrl(token.data);
                 }
             })
             .join('');
 
         escaped = escaped.replace(/\r\n|\r|\n/g, '<br />\n');
-        return escaped;
+        return { text: escaped, mentions, urls, images: [] };
     }
 
     processUrl(url: string) {
@@ -187,48 +208,55 @@ export default class TheParser {
         return `<iframe width="500" height="282" src="${encodeURI(embed)}" allowfullscreen frameborder="0"></iframe>`;
     }
 
-    parseAllowedTag(node: Element) {
+    parseAllowedTag(node: Element): ParseResult {
         const haveChild = node.children.length > 0;
-        let s = `<${node.name}${haveChild ? '' : '/'}>`;
-        s += this.parseChildNodes(node.children);
-        s += `</${node.name}>`;
-        return s;
+        let text = `<${node.name}${haveChild ? '' : '/'}>`;
+        const res = this.parseChildNodes(node.children);
+        text += res.text;
+        text += `</${node.name}>`;
+        return { ...res, text };
     }
 
-    parseDisallowedTag(node: Element) {
+    parseDisallowedTag(node: Element): ParseResult {
         const haveChild = node.children.length > 0;
-        let s = `<${node.name}`;
+        let text = `<${node.name}`;
         for (const a in node.attribs) {
-            s += ` ${a}="${node.attribs[a]}"`;
+            text += ` ${a}="${node.attribs[a]}"`;
         }
-        s += haveChild ? '>' : '/>';
-        s = htmlEscape(s);
-        s += this.parseChildNodes(node.children);
-        s += htmlEscape(`</${node.name}>`);
-        return s;
+        text += haveChild ? '>' : '/>';
+        text = htmlEscape(text);
+        const result = this.parseChildNodes(node.children);
+        text += result.text;
+        text += htmlEscape(`</${node.name}>`);
+        return { ...result, text };
     }
 
-    parseA(node: Element) {
+    parseA(node: Element): ParseResult {
         const url = node.attribs['href'] || '';
         const regex = /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b[-a-zA-Z0-9()@:%_+.~#?&/=]*$/;
         if (!url.match(regex)) {
             return this.parseDisallowedTag(node);
         }
 
-        return `<a href="${encodeURI(url)}" target="_blank">${this.parseChildNodes(node.children)}</a>`;
+        const result = this.parseChildNodes(node.children);
+        const text = `<a href="${encodeURI(url)}" target="_blank">${result.text}</a>`;
+
+        return { ...result, text, urls: [ ...result.urls, url ] } ;
     }
 
-    parseImg(node: Element) {
+    parseImg(node: Element): ParseResult {
         const url = node.attribs['src'] || '';
         const regex = /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b[-a-zA-Z0-9()@:%_+.~#?&/=]*$/;
         if (!url.match(regex)) {
             return this.parseDisallowedTag(node);
         }
 
-        return `<img src="${encodeURI(url)}" alt=""/>`;
+        return { text: `<img src="${encodeURI(url)}" alt=""/>`, mentions: [], urls: [], images: [url] };
     }
 
-    parseIrony(node: Element) {
-        return `<span class="irony">${this.parseChildNodes(node.children)}</span>`;
+    parseIrony(node: Element): ParseResult {
+        const result = this.parseChildNodes(node.children);
+        const text = `<span class="irony">${result.text}</span>`;
+        return { ...result, text };
     }
 }

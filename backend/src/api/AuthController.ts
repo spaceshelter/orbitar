@@ -1,20 +1,11 @@
 import {Router} from 'express';
-import UserManager from '../db/managers/UserManager';
+import UserManager from '../managers/UserManager';
 import rateLimit from 'express-rate-limit';
-import {User} from '../types/User';
 import {Logger} from 'winston';
 import {APIRequest, APIResponse, validate} from './ApiMiddleware';
 import Joi from 'joi';
-import {UserEntity} from './entities/UserEntity';
-
-type SignInRequest = {
-    username: string;
-    password: string;
-};
-type SignInResponse = {
-    user: User;
-    session: string;
-};
+import {UserEntity} from './types/entities/UserEntity';
+import {AuthSignInRequest, AuthSignInResponse} from './types/requests/AuthSignIn';
 
 type SignOutRequest = Record<string, unknown>;
 type SignOutResponse = Record<string, unknown>;
@@ -37,7 +28,7 @@ export default class AuthController {
             legacyHeaders: false
         });
 
-        const signInSchema = Joi.object<SignInRequest>({
+        const signInSchema = Joi.object<AuthSignInRequest>({
             username: Joi.string().required(),
             password: Joi.string().required(),
         });
@@ -46,7 +37,7 @@ export default class AuthController {
         this.router.post('/auth/signout', (req, res) => this.signout(req, res));
     }
 
-    async signin(request: APIRequest<SignInRequest>, response: APIResponse<SignInResponse>) {
+    async signin(request: APIRequest<AuthSignInRequest>, response: APIResponse<AuthSignInResponse>) {
         if (request.session.data.userId) {
             return response.error('signed-in', 'Already signed in');
         }

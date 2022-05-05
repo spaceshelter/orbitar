@@ -4,16 +4,19 @@ export enum UserGender {
     she,
 }
 
-export type User = {
+export type UserBaseInfo = {
     id: number;
     username: string;
+};
+
+export type UserInfo = UserBaseInfo & {
     gender: UserGender;
     karma: number;
     name: string;
     vote?: number;
 };
 
-export type UserProfile = User & {
+export type UserProfile = UserInfo & {
     registered: Date;
 };
 

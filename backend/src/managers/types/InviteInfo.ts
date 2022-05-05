@@ -1,4 +1,4 @@
-export interface Invite {
+export interface InviteInfo {
     id: number;
     code: string;
     issuedBy: number;

@@ -1,30 +1,36 @@
-import PostRepository from '../repositories/PostRepository';
-import CommentRepository from '../repositories/CommentRepository';
-import BookmarkRepository from '../repositories/BookmarkRepository';
-import {CommentRawWithUserData, PostRawWithUserData} from '../types/PostRaw';
-import {BookmarkRaw} from '../types/BookmarkRaw';
-import {PostEntity} from '../../api/entities/PostEntity';
+import PostRepository from '../db/repositories/PostRepository';
+import CommentRepository from '../db/repositories/CommentRepository';
+import BookmarkRepository from '../db/repositories/BookmarkRepository';
+import {CommentRawWithUserData, PostRawWithUserData} from '../db/types/PostRaw';
+import {BookmarkRaw} from '../db/types/BookmarkRaw';
 import SiteManager from './SiteManager';
-import CodeError from '../../CodeError';
-import TheParser from '../../parser/TheParser';
-import {ContentFormat} from '../../types/common';
-import {CommentEntity} from '../../api/entities/CommentEntity';
+import CodeError from '../CodeError';
+import TheParser from '../parser/TheParser';
+import {ContentFormat} from './types/common';
 import FeedManager from './FeedManager';
-
+import {PostInfo} from './types/PostInfo';
+import {CommentInfo} from './types/CommentInfo';
+import NotificationManager from './NotificationManager';
 
 export default class PostManager {
     private bookmarkRepository: BookmarkRepository;
     private commentRepository: CommentRepository;
     private postRepository: PostRepository;
     private feedManager: FeedManager;
+    private notificationManager: NotificationManager;
     private siteManager: SiteManager;
     private parser: TheParser;
 
-    constructor(bookmarkRepository: BookmarkRepository, commentRepository: CommentRepository, postRepository: PostRepository, feedManager: FeedManager, siteManager: SiteManager, parser: TheParser) {
+    constructor(
+        bookmarkRepository: BookmarkRepository, commentRepository: CommentRepository, postRepository: PostRepository,
+        feedManager: FeedManager, notificationManager: NotificationManager, siteManager: SiteManager,
+        parser: TheParser
+    ) {
         this.bookmarkRepository = bookmarkRepository;
         this.commentRepository = commentRepository;
         this.postRepository = postRepository;
         this.feedManager = feedManager;
+        this.notificationManager = notificationManager;
         this.siteManager = siteManager;
         this.parser = parser;
     }
@@ -33,16 +39,20 @@ export default class PostManager {
         return await this.postRepository.getPostWithUserData(postId, forUserId);
     }
 
-    async createPost(siteName: string, userId: number, title: string, content: string, format: ContentFormat): Promise<PostEntity> {
+    async createPost(siteName: string, userId: number, title: string, content: string, format: ContentFormat): Promise<PostInfo> {
         const site = await this.siteManager.getSiteByName(siteName);
         if (!site) {
             throw new CodeError('no-site', 'Site not found');
         }
 
-        const html = this.parser.parse(content);
-        const postRaw = await this.postRepository.createPost(site.id, userId, title, content, html);
+        const parseResult = this.parser.parse(content);
+        const postRaw = await this.postRepository.createPost(site.id, userId, title, content, parseResult.text);
 
         await this.bookmarkRepository.setWatch(postRaw.post_id, userId, true);
+
+        for (const mention of parseResult.mentions) {
+            await this.notificationManager.sendMentionNotify(mention, userId, postRaw.post_id);
+        }
 
         // fan out in background
         this.feedManager.postFanOut(postRaw.post_id).then().catch();
@@ -67,10 +77,18 @@ export default class PostManager {
         return await this.commentRepository.getPostComments(postId, forUserId);
     }
 
-    async createComment(userId: number, postId: number, parentCommentId: number | undefined, content: string, format: ContentFormat): Promise<CommentEntity> {
-        const html = this.parser.parse(content);
+    async createComment(userId: number, postId: number, parentCommentId: number | undefined, content: string, format: ContentFormat): Promise<CommentInfo> {
+        const parseResult = this.parser.parse(content);
 
-        const commentRaw = await this.commentRepository.createComment(userId, postId, parentCommentId, content, html);
+        const commentRaw = await this.commentRepository.createComment(userId, postId, parentCommentId, content, parseResult.text);
+
+        for (const mention of parseResult.mentions) {
+            await this.notificationManager.sendMentionNotify(mention, userId, postId, commentRaw.comment_id);
+        }
+
+        if (parentCommentId) {
+            await this.notificationManager.sendAnswerNotify(parentCommentId, userId, postId, commentRaw.comment_id);
+        }
 
         await this.bookmarkRepository.setWatch(postId, userId, true);
 

@@ -1,52 +1,16 @@
-import FeedManager from '../db/managers/FeedManager';
+import FeedManager from '../managers/FeedManager';
 import {Logger} from 'winston';
 import {Router} from 'express';
 import {APIRequest, APIResponse, joiFormat, validate} from './ApiMiddleware';
 import Joi from 'joi';
-import {ContentFormat} from '../types/common';
-import {User} from '../types/User';
-import {Site} from '../types/Site';
-import {PostEntity} from './entities/PostEntity';
-import UserManager from '../db/managers/UserManager';
-import SiteManager from '../db/managers/SiteManager';
-
-type FeedSubscriptionsRequest = {
-    page?: number;
-    perpage?: number;
-    format?: ContentFormat;
-};
-type FeedSubscriptionsResponse = {
-    posts: PostEntity[];
-    total: number;
-    users: Record<number, User>;
-    sites: Record<string, Site>;
-};
-
-type FeedPostsRequest = {
-    site: string;
-    page?: number;
-    perpage?: number;
-    format?: ContentFormat;
-};
-type FeedPostsResponse = {
-    posts: PostEntity[];
-    total: number;
-    users: Record<number, User>;
-    site: Site;
-};
-
-type FeedWatchRequest = {
-    filter?: 'all' | 'new';
-    page?: number;
-    perpage?: number;
-    format?: ContentFormat;
-};
-type FeedWatchResponse = {
-    posts: PostEntity[];
-    total: number;
-    users: Record<number, User>;
-    sites: Record<string, Site>;
-};
+import {PostEntity} from './types/entities/PostEntity';
+import UserManager from '../managers/UserManager';
+import SiteManager from '../managers/SiteManager';
+import {FeedSubscriptionsRequest, FeedSubscriptionsResponse} from './types/requests/FeedSubscriptions';
+import {FeedPostsRequest, FeedPostsResponse} from './types/requests/FeedPosts';
+import {FeedWatchRequest, FeedWatchResponse} from './types/requests/FeedWatch';
+import {SiteBaseEntity} from './types/entities/SiteEntity';
+import {UserEntity} from './types/entities/UserEntity';
 
 export default class FeedController {
     public router = Router();
@@ -96,8 +60,8 @@ export default class FeedController {
             const total = await this.feedManager.getSubscriptionsTotal(userId);
             const rawPosts = await this.feedManager.getSubscriptionFeed(userId, page, perPage);
 
-            const sitesN: Record<number, Site> = {};
-            const users: Record<number, User> = {};
+            const sitesN: Record<number, SiteBaseEntity> = {};
+            const users: Record<number, UserEntity> = {};
             const posts: PostEntity[] = [];
             for (const post of rawPosts) {
                 if (!users[post.author_id]) {
@@ -118,7 +82,7 @@ export default class FeedController {
                     id: post.post_id,
                     site: siteName,
                     author: post.author_id,
-                    created: post.created_at,
+                    created: post.created_at.toISOString(),
                     title: post.title,
                     content: format === 'html' ? post.html : post.source,
                     rating: post.rating,
@@ -131,7 +95,7 @@ export default class FeedController {
             }
 
             // reformat sites
-            const sites: Record<string, Site> = Object.fromEntries(Object.entries(sitesN).map(([_, site]) => { return [ site.site, site ]; }));
+            const sites: Record<string, SiteBaseEntity> = Object.fromEntries(Object.entries(sitesN).map(([_, site]) => { return [ site.site, site ]; }));
 
             response.success({
                 posts: posts,
@@ -165,7 +129,7 @@ export default class FeedController {
 
             const rawPosts = await this.feedManager.getSiteFeed(userId, siteId, page, perPage);
 
-            const users: Record<number, User> = {};
+            const users: Record<number, UserEntity> = {};
             const posts: PostEntity[] = [];
             for (const post of rawPosts) {
                 if (!users[post.author_id]) {
@@ -176,7 +140,7 @@ export default class FeedController {
                     id: post.post_id,
                     site: site.site,
                     author: post.author_id,
-                    created: post.created_at,
+                    created: post.created_at.toISOString(),
                     title: post.title,
                     content: format === 'html' ? post.html : post.source,
                     rating: post.rating,
@@ -213,8 +177,8 @@ export default class FeedController {
             const total = await this.feedManager.getWatchTotal(userId, filter === 'all');
             const rawPosts = await this.feedManager.getWatchFeed(userId, page, perPage, filter === 'all');
 
-            const sitesN: Record<number, Site> = {};
-            const users: Record<number, User> = {};
+            const sitesN: Record<number, SiteBaseEntity> = {};
+            const users: Record<number, UserEntity> = {};
             const posts: PostEntity[] = [];
             for (const post of rawPosts) {
                 if (!users[post.author_id]) {
@@ -235,7 +199,7 @@ export default class FeedController {
                     id: post.post_id,
                     site: siteName,
                     author: post.author_id,
-                    created: post.created_at,
+                    created: post.created_at.toISOString(),
                     title: post.title,
                     content: format === 'html' ? post.html : post.source,
                     rating: post.rating,
@@ -248,7 +212,7 @@ export default class FeedController {
             }
 
             // reformat sites
-            const sites: Record<string, Site> = Object.fromEntries(Object.entries(sitesN).map(([_, site]) => { return [ site.site, site ]; }));
+            const sites: Record<string, SiteBaseEntity> = Object.fromEntries(Object.entries(sitesN).map(([_, site]) => { return [ site.site, site ]; }));
 
             response.success({
                 posts: posts,

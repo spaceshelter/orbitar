@@ -40,6 +40,21 @@ export class DBConnection {
         return (await this.query<T[]>(query, params))[0];
     }
 
+    async insert(table: string, values: Record<string, unknown>): Promise<number> {
+        const {keys, valueKeys} = Object.entries(values).reduce((p, [k]) => {
+            p.keys.push('`' + k + '`');
+            p.valueKeys.push(':' + k);
+            return p;
+        }, { keys: [], valueKeys: [] });
+        const query = 'insert into `' + table + '` (' + keys.join(',') + ') values (' + valueKeys.join(',') + ')';
+        const insertResult: ResultSetHeader = await this.query(query, values);
+        if (insertResult.affectedRows < 1) {
+            this.logger.error('Could not insert record', { table, values, insertResult });
+            throw new Error('Could not insert record');
+        }
+        return insertResult.insertId;
+    }
+
     async inTransaction<T>(transactionFunc: (connection: DBConnection) => Promise<T>): Promise<T> {
         if (!('beginTransaction' in this.connection)) {
             throw new Error('Could not start transaction');

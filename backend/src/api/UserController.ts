@@ -1,26 +1,10 @@
 import {Router} from 'express';
-import UserManager from '../db/managers/UserManager';
-import {User, UserProfile} from '../types/User';
+import UserManager from '../managers/UserManager';
 import {APIRequest, APIResponse, joiFormat, joiUsername, validate} from './ApiMiddleware';
-import {ContentFormat} from '../types/common';
 import Joi from 'joi';
 import {Logger} from 'winston';
-
-interface ProfileRequest {
-    username: string;
-}
-interface ProfileResponse {
-    profile: UserProfile;
-    invitedBy?: User;
-    invites: User[];
-}
-
-interface ProfilePostsOrCommentsRequest {
-    username: string;
-    format: ContentFormat;
-    page?: number;
-    perpage?: number;
-}
+import {UserProfileRequest, UserProfileResponse} from './types/requests/UserProfile';
+import {UserPostsRequest} from './types/requests/UserPosts';
 
 export default class UserController {
     public router = Router();
@@ -31,10 +15,10 @@ export default class UserController {
         this.userManager = userManager;
         this.logger = logger;
 
-        const profileSchema = Joi.object<ProfileRequest>({
+        const profileSchema = Joi.object<UserProfileRequest>({
             username: joiUsername.required(),
         });
-        const postsOrCommentsSchema = Joi.object<ProfilePostsOrCommentsRequest>({
+        const postsOrCommentsSchema = Joi.object<UserPostsRequest>({
             username: joiUsername.required(),
             format: joiFormat,
             page: Joi.number().default(1),
@@ -46,7 +30,7 @@ export default class UserController {
         this.router.post('/user/comments', validate(postsOrCommentsSchema), (req, res) => this.comments(req, res));
     }
 
-    async profile(request: APIRequest<ProfileRequest>, response: APIResponse<ProfileResponse>) {
+    async profile(request: APIRequest<UserProfileRequest>, response: APIResponse<UserProfileResponse>) {
         if (!request.session.data.userId) {
             return response.authRequired();
         }
@@ -76,11 +60,11 @@ export default class UserController {
         }
     }
 
-    async posts(request: APIRequest<ProfileRequest>, response: APIResponse<ProfileResponse>) {
+    async posts(request: APIRequest<UserProfileRequest>, response: APIResponse<UserProfileResponse>) {
 
     }
 
-    async comments(request: APIRequest<ProfileRequest>, response: APIResponse<ProfileResponse>) {
+    async comments(request: APIRequest<UserProfileRequest>, response: APIResponse<UserProfileResponse>) {
 
     }
 }

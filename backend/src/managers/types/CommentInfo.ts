@@ -1,14 +1,17 @@
-export type CommentEntity = {
+export type CommentBaseInfo = {
     id: number;
-    created: Date;
-    author: number;
-    deleted?: boolean;
     content: string;
+};
+
+export type CommentInfo = CommentBaseInfo & {
+    author: number;
+    created: Date;
+    deleted?: boolean;
     rating: number;
     parentComment?: number;
 
     isNew?: boolean;
     vote?: number;
-    answers?: CommentEntity[];
+    answers?: CommentInfo[];
 };
 

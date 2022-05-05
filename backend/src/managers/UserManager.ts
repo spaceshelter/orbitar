@@ -1,21 +1,25 @@
-import {UserRaw} from '../types/UserRaw';
-import {User, UserGender, UserProfile, UserStats} from '../../types/User';
-import UserRepository from '../repositories/UserRepository';
-import VoteRepository from '../repositories/VoteRepository';
+import {UserRaw} from '../db/types/UserRaw';
+import {UserInfo, UserGender, UserProfile, UserStats} from './types/UserInfo';
+import UserRepository from '../db/repositories/UserRepository';
+import VoteRepository from '../db/repositories/VoteRepository';
 import bcrypt from 'bcryptjs';
+import NotificationManager from './NotificationManager';
 
 export default class UserManager {
     private userRepository: UserRepository;
     private voteRepository: VoteRepository;
-    private cacheId: Record<number, User> = {};
-    private cacheUsername: Record<string, User> = {};
+    private notificationManager: NotificationManager;
 
-    constructor(voteRepository: VoteRepository, userRepository: UserRepository) {
+    private cacheId: Record<number, UserInfo> = {};
+    private cacheUsername: Record<string, UserInfo> = {};
+
+    constructor(voteRepository: VoteRepository, userRepository: UserRepository, notificationManager: NotificationManager) {
         this.userRepository = userRepository;
         this.voteRepository = voteRepository;
+        this.notificationManager = notificationManager;
     }
 
-    async getById(userId: number): Promise<User | undefined> {
+    async getById(userId: number): Promise<UserInfo | undefined> {
         if (this.cacheId[userId]) {
             return this.cacheId[userId];
         }
@@ -31,12 +35,12 @@ export default class UserManager {
         return user;
     }
 
-    private cache(user: User) {
+    private cache(user: UserInfo) {
         this.cacheId[user.id] = user;
         this.cacheUsername[user.username] = user;
     }
 
-    async getByUsername(username: string): Promise<User | undefined> {
+    async getByUsername(username: string): Promise<UserInfo | undefined> {
         if (this.cacheUsername[username]) {
             return this.cacheUsername[username];
         }
@@ -71,7 +75,7 @@ export default class UserManager {
         };
     }
 
-    async getInvitedBy(userId: number): Promise<User | undefined> {
+    async getInvitedBy(userId: number): Promise<UserInfo | undefined> {
         const invitedByRaw = await this.userRepository.getUserParent(userId);
 
         if (!invitedByRaw) {
@@ -81,13 +85,13 @@ export default class UserManager {
         return this.mapUserRaw(invitedByRaw);
     }
 
-    async getInvites(userId: number): Promise<User[]> {
+    async getInvites(userId: number): Promise<UserInfo[]> {
         const invitesRaw = await this.userRepository.getUserChildren(userId);
 
         return invitesRaw.map(raw => this.mapUserRaw(raw));
     }
 
-    async checkPassword(username: string, password: string): Promise<User | false> {
+    async checkPassword(username: string, password: string): Promise<UserInfo | false> {
         const userRaw = await this.userRepository.getUserByUsername(username);
 
         if (!await bcrypt.compare(password, userRaw.password)) {
@@ -97,17 +101,26 @@ export default class UserManager {
         return this.mapUserRaw(userRaw);
     }
 
-    async registerByInvite(inviteCde: string, username: string, name: string, email: string, passwordHash: string, gender: UserGender): Promise<User> {
+    async registerByInvite(inviteCde: string, username: string, name: string, email: string, passwordHash: string, gender: UserGender): Promise<UserInfo> {
         const userRaw = await this.userRepository.userRegister(inviteCde, username, name, email, passwordHash, gender);
 
         return this.mapUserRaw(userRaw);
     }
 
     async getUserStats(forUserId: number): Promise<UserStats> {
-        return await this.userRepository.getUserStats(forUserId);
+        const unreadComments = await this.userRepository.getUserUnreadComments(forUserId);
+        const notifications = await this.notificationManager.getNotificationsCount(forUserId);
+
+        return {
+            notifications,
+            watch: {
+                comments: unreadComments,
+                posts: 0
+            }
+        };
     }
 
-    private mapUserRaw(rawUser: UserRaw): User {
+    private mapUserRaw(rawUser: UserRaw): UserInfo {
         return {
             id: rawUser.user_id,
             username: rawUser.username,

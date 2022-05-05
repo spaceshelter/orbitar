@@ -1,76 +1,20 @@
 import {Router} from 'express';
-import PostManager from '../db/managers/PostManager';
-import {User} from '../types/User';
-import UserManager from '../db/managers/UserManager';
-import SiteManager from '../db/managers/SiteManager';
-import {Site} from '../types/Site';
+import PostManager from '../managers/PostManager';
+import UserManager from '../managers/UserManager';
+import SiteManager from '../managers/SiteManager';
 import {Logger} from 'winston';
 import Joi from 'joi';
 import {APIRequest, APIResponse, joiFormat, validate} from './ApiMiddleware';
-import {ContentFormat} from '../types/common';
-import FeedManager from '../db/managers/FeedManager';
-import {PostEntity} from './entities/PostEntity';
-import {CommentEntity} from './entities/CommentEntity';
-
-interface PostGetRequest {
-    id: number;
-    format?: ContentFormat;
-}
-interface PostGetResponse {
-    post: PostEntity;
-    site: Site;
-    comments: CommentEntity[];
-    users: Record<number, User>;
-}
-
-
-interface CreateRequest {
-    site: string;
-    title: string;
-    content: string;
-    format?: ContentFormat;
-}
-interface CreateResponse {
-    post: PostEntity;
-}
-
-interface CommentRequest {
-    comment_id?: number;
-    post_id: number;
-    content: string;
-    format?: ContentFormat;
-}
-interface CommentResponse {
-    comment: CommentEntity;
-    users: Record<number, User>;
-}
-
-type PostReadRequest = {
-    post_id: number;
-    comments: number;
-    last_comment_id?: number;
-};
-type PostReadResponse = {
-    watch?: {
-        posts: number;
-        comments: number;
-    };
-};
-
-interface BookmarkRequest {
-    post_id: number;
-    bookmark: boolean;
-}
-interface BookmarkResponse {
-    bookmark: boolean;
-}
-interface WatchRequest {
-    post_id: number;
-    watch: boolean;
-}
-interface WatchResponse {
-    watch: boolean;
-}
+import FeedManager from '../managers/FeedManager';
+import {PostEntity} from './types/entities/PostEntity';
+import {CommentEntity} from './types/entities/CommentEntity';
+import {PostGetRequest, PostGetResponse} from './types/requests/PostGet';
+import {PostCreateRequest, PostCreateResponse} from './types/requests/PostCreate';
+import {PostReadRequest, PostReadResponse} from './types/requests/PostRead';
+import {PostBookmarkRequest, PostBookmarkResponse} from './types/requests/PostBookmark';
+import {PostCommentRequest, PostCommentResponse} from './types/requests/PostComment';
+import {UserEntity} from './types/entities/UserEntity';
+import {PostWatchRequest, PostWatchResponse} from './types/requests/PostWatch';
 
 export default class PostController {
     public router = Router();
@@ -96,23 +40,23 @@ export default class PostController {
             comments: Joi.number().required(),
             last_comment_id: Joi.number().optional()
         });
-        const postCreateSchema = Joi.object<CreateRequest>({
+        const postCreateSchema = Joi.object<PostCreateRequest>({
             site: Joi.string().required(),
             title: Joi.alternatives(Joi.string().max(50), Joi.valid('').optional()),
             content: Joi.string().min(1).max(50000).required(),
             format: joiFormat
         });
-        const commentSchema = Joi.object<CommentRequest>({
+        const commentSchema = Joi.object<PostCommentRequest>({
             comment_id: Joi.number().optional(),
             post_id: Joi.number().required(),
             content: Joi.string().min(1).max(50000).required(),
             format: joiFormat
         });
-        const bookmarkSchema = Joi.object<BookmarkRequest>({
+        const bookmarkSchema = Joi.object<PostBookmarkRequest>({
             post_id: Joi.number().required(),
             bookmark: Joi.boolean().required()
         });
-        const watchingSchema = Joi.object<WatchRequest>({
+        const watchingSchema = Joi.object<PostWatchRequest>({
             post_id: Joi.number().required(),
             watch: Joi.boolean().required()
         });
@@ -150,7 +94,7 @@ export default class PostController {
                 id: rawPost.post_id,
                 site: site.site,
                 author: rawPost.author_id,
-                created: rawPost.created_at,
+                created: rawPost.created_at.toISOString(),
                 title: rawPost.title,
                 content: format === 'html' ? rawPost.html : rawPost.source,
                 rating: rawPost.rating,
@@ -161,7 +105,7 @@ export default class PostController {
                 watch: !!rawPost.watch
             };
 
-            const users: Record<number, User> = {};
+            const users: Record<number, UserEntity> = {};
             users[rawPost.author_id] = await this.userManager.getById(rawPost.author_id);
 
             const comments: CommentEntity[] = [];
@@ -169,7 +113,7 @@ export default class PostController {
             for (const rawComment of rawComments) {
                 const comment: CommentEntity = {
                     id: rawComment.comment_id,
-                    created: rawComment.created_at,
+                    created: rawComment.created_at.toISOString(),
                     author: rawComment.author_id,
                     content: format === 'html' ? rawComment.html : rawComment.source,
                     rating: rawComment.rating,
@@ -210,7 +154,7 @@ export default class PostController {
         }
     }
 
-    async create(request: APIRequest<CreateRequest>, response: APIResponse<CreateResponse>) {
+    async create(request: APIRequest<PostCreateRequest>, response: APIResponse<PostCreateResponse>) {
         if (!request.session.data.userId) {
             return response.authRequired();
         }
@@ -229,7 +173,7 @@ export default class PostController {
         }
     }
 
-    async comment(request: APIRequest<CommentRequest>, response: APIResponse<CommentResponse>) {
+    async comment(request: APIRequest<PostCommentRequest>, response: APIResponse<PostCommentResponse>) {
         if (!request.session.data.userId) {
             return response.authRequired();
         }
@@ -238,7 +182,7 @@ export default class PostController {
         const { post_id: postId, comment_id: parentCommentId, format, content } = request.body;
 
         try {
-            const users: Record<number, User> = {};
+            const users: Record<number, UserEntity> = {};
             users[userId] = await this.userManager.getById(userId);
 
             const comment = await this.postManager.createComment(userId, postId, parentCommentId, content, format);
@@ -285,7 +229,7 @@ export default class PostController {
         response.success({});
     }
 
-    async bookmark(request: APIRequest<BookmarkRequest>, response: APIResponse<BookmarkResponse>) {
+    async bookmark(request: APIRequest<PostBookmarkRequest>, response: APIResponse<PostBookmarkResponse>) {
         if (!request.session.data.userId) {
             return response.authRequired();
         }
@@ -303,7 +247,7 @@ export default class PostController {
         }
     }
 
-    async watch(request: APIRequest<WatchRequest>, response: APIResponse<WatchResponse>) {
+    async watch(request: APIRequest<PostWatchRequest>, response: APIResponse<PostWatchResponse>) {
         if (!request.session.data.userId) {
             return response.authRequired();
         }

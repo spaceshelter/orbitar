@@ -1,10 +1,10 @@
 import {RedisClientType} from 'redis';
-import PostRepository from '../repositories/PostRepository';
-import {PostRawWithUserData} from '../types/PostRaw';
-import UserRepository from '../repositories/UserRepository';
-import CodeError from '../../CodeError';
-import ExclusiveTask, {TaskState} from '../../utils/ExclusiveTask';
-import BookmarkRepository from '../repositories/BookmarkRepository';
+import PostRepository from '../db/repositories/PostRepository';
+import {PostRawWithUserData} from '../db/types/PostRaw';
+import UserRepository from '../db/repositories/UserRepository';
+import CodeError from '../CodeError';
+import ExclusiveTask, {TaskState} from '../utils/ExclusiveTask';
+import BookmarkRepository from '../db/repositories/BookmarkRepository';
 
 export default class FeedManager {
     private readonly redis: RedisClientType;
