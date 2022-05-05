@@ -184,29 +184,31 @@ function gatherColorsTransition(toStyle: ThemeStyles): ColorsTransition {
 
 function applyColorsTransition(stylesheet: HTMLStyleElement, transition: ColorsTransition, transitionTime: number, transitionStepInterval: number) {
     const applyColors = (step: number) => {
-        let css = ':root {\n';
-        for (const color in transition) {
-            if (!transition.hasOwnProperty(color)) {
-                continue;
-            }
-            let value;
+        const cssArr = [];
+        for (const pseudoClassName of ['before', 'root']) {
+            let css = `:${pseudoClassName} {\n`;
+            for (const color in transition) {
+                if (!transition.hasOwnProperty(color)) {
+                    continue;
+                }
+                let value;
 
-            if (step >= 1) {
-                // use raw color on final step
-                value = transition[color].to;
-            }
-            else {
-                // calculate blended rgb value
-                const blended = blendValues(transition[color].fromRGB, transition[color].toRGB, step);
-                value = `rgba(${Math.floor(blended[0] * 255)}, ${Math.floor(blended[1] * 255)}, ${Math.floor(blended[2] * 255)}, ${blended[3]})`;
-            }
+                if (step >= 1) {
+                    // use raw color on final step
+                    value = transition[color].to;
+                } else {
+                    // calculate blended rgb value
+                    const blended = blendValues(transition[color].fromRGB, transition[color].toRGB, step);
+                    value = `rgba(${Math.floor(blended[0] * 255)}, ${Math.floor(blended[1] * 255)}, ${Math.floor(blended[2] * 255)}, ${blended[3]})`;
+                }
 
-            // document.documentElement.style.setProperty('--' + color, value);
-            css += `  ${color}: ${value};\n`;
+                // document.documentElement.style.setProperty('--' + color, value);
+                css += `  ${color}: ${value};\n`;
+            }
+            css += '}\n';
+            cssArr.push(css);
         }
-        css += '}\n';
-
-        stylesheet.innerHTML = css;
+        stylesheet.innerHTML = cssArr.join('\n');
     }
 
     if (!transitionTime) {

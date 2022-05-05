@@ -77,7 +77,7 @@ const theme: ThemeCollection = {
                 fg: '#ff0000',
             },
             blockquote : {
-                border: '#9d65b7',
+                bg: 'rgba(0,0,0,0.05)',
             },
             username: {
                 fg: '#841515',
@@ -169,7 +169,7 @@ const theme: ThemeCollection = {
                 fg: '#fa8e8e',
             },
             blockquote : {
-                border: '#9d65b7',
+                bg: 'rgba(0,0,0,0.2)',
             },
             username: {
                 fg: '#ee7285',
