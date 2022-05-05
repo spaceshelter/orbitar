@@ -85,7 +85,6 @@
 .control {
     margin-right: 30px;
     color: var(--inactive-fg);
-    position: relative;
     display: flex;
     align-items: center;
 }
@@ -142,6 +141,10 @@
     border-radius: 4px;
     padding: 4px;
     width: max-content;
+}
+
+.options {
+    position: relative;
 }
 
 .optionsList .label {
