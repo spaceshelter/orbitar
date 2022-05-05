@@ -1,5 +1,10 @@
 import DB from '../DB';
 
+export type VoteWithUsername = {
+    vote: number;
+    username: string;
+};
+
 export default class VoteRepository {
     private db: DB;
 
@@ -79,6 +84,24 @@ export default class VoteRepository {
             });
 
             return rating;
+        });
+    }
+
+    async getPostVotes(postId: number): Promise<VoteWithUsername[]> {
+        return await this.db.fetchAll('select u.username, v.vote from post_votes v join users u on (v.voter_id = u.user_id) where v.post_id=:post_id', {
+            post_id: postId
+        });
+    }
+
+    async getCommentVotes(commentId: number): Promise<VoteWithUsername[]> {
+        return await this.db.fetchAll('select u.username, v.vote from comment_votes v join users u on (v.voter_id = u.user_id) where v.comment_id=:comment_id', {
+            comment_id: commentId
+        });
+    }
+
+    async getUserVotes(userId: number): Promise<VoteWithUsername[]> {
+        return await this.db.fetchAll('select u.username, v.vote from user_karma v join users u on (v.voter_id = u.user_id) where v.user_id=:user_id', {
+            user_id: userId
         });
     }
 }

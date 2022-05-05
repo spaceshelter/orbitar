@@ -1,5 +1,5 @@
 import PostManager from './PostManager';
-import VoteRepository from '../repositories/VoteRepository';
+import VoteRepository, {VoteWithUsername} from '../repositories/VoteRepository';
 
 export default class VoteManager {
     private voteRepository: VoteRepository;
@@ -20,5 +20,17 @@ export default class VoteManager {
 
     async userVote(toUserId: number, vote: number, voterId: number): Promise<number> {
         return await this.voteRepository.userSetVote(toUserId, vote, voterId);
+    }
+
+    async getPostVotes(postId: number): Promise<VoteWithUsername[]> {
+        return await this.voteRepository.getPostVotes(postId);
+    }
+
+    async getCommentVotes(commentId: number): Promise<VoteWithUsername[]> {
+        return await this.voteRepository.getCommentVotes(commentId);
+    }
+
+    async getUserVotes(userId: number): Promise<VoteWithUsername[]> {
+        return await this.voteRepository.getUserVotes(userId);
     }
 }
