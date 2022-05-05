@@ -1,10 +1,10 @@
 export type CommentBaseInfo = {
     id: number;
-    author: number;
     content: string;
 };
 
 export type CommentInfo = CommentBaseInfo & {
+    author: number;
     created: Date;
     deleted?: boolean;
     rating: number;

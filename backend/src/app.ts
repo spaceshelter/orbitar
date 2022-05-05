@@ -36,6 +36,7 @@ import SiteController from './api/SiteController';
 import NotificationsRepository from './db/repositories/NotificationsRepository';
 import UserKVRRepository from './db/repositories/UserKVRRepository';
 import NotificationManager from './managers/NotificationManager';
+import NotificationsController from './api/NotificationsController';
 
 const app = express();
 
@@ -95,7 +96,7 @@ const userRepository = new UserRepository(db);
 const userKVRepository = new UserKVRRepository(db);
 
 const inviteManager = new InviteManager(inviteRepository);
-const notificationManager = new NotificationManager(commentRepository, notificationsRepository, userRepository, userKVRepository);
+const notificationManager = new NotificationManager(commentRepository, notificationsRepository, postRepository, siteRepository, userRepository, userKVRepository);
 const userManager = new UserManager(voteRepository, userRepository, notificationManager);
 const feedManager = new FeedManager(bookmarkRepository, postRepository, userRepository, redis.client);
 const siteManager = new SiteManager(siteRepository, userManager, feedManager);
@@ -111,7 +112,8 @@ const requests = [
     new VoteController(voteManager, logger.child({ service: 'VOTE' })),
     new UserController(userManager, logger.child({ service: 'USER' })),
     new FeedController(feedManager, siteManager, userManager, logger.child({ service: 'FEED' })),
-    new SiteController(siteManager, logger.child( { service: 'SITE' }))
+    new SiteController(siteManager, logger.child( { service: 'SITE' })),
+    new NotificationsController(notificationManager, logger.child({ service: 'NOTIFY' })),
 ];
 
 const filterLog = winston.format((info) => {
