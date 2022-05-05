@@ -14,6 +14,7 @@ import {PostReadRequest, PostReadResponse} from './types/requests/PostRead';
 import {PostBookmarkRequest, PostBookmarkResponse} from './types/requests/PostBookmark';
 import {PostCommentRequest, PostCommentResponse} from './types/requests/PostComment';
 import {UserEntity} from './types/entities/UserEntity';
+import {PostWatchRequest, PostWatchResponse} from './types/requests/PostWatch';
 
 export default class PostController {
     public router = Router();
@@ -39,10 +40,6 @@ export default class PostController {
             comments: Joi.number().required(),
             last_comment_id: Joi.number().optional()
         });
-        const bookmarkSchema = Joi.object<PostBookmarkRequest>({
-            post_id: Joi.number().required(),
-            bookmark: Joi.boolean().required()
-        });
         const postCreateSchema = Joi.object<PostCreateRequest>({
             site: Joi.string().required(),
             title: Joi.alternatives(Joi.string().max(50), Joi.valid('').optional()),
@@ -55,11 +52,11 @@ export default class PostController {
             content: Joi.string().min(1).max(50000).required(),
             format: joiFormat
         });
-        const bookmarkSchema = Joi.object<BookmarkRequest>({
+        const bookmarkSchema = Joi.object<PostBookmarkRequest>({
             post_id: Joi.number().required(),
             bookmark: Joi.boolean().required()
         });
-        const watchingSchema = Joi.object<WatchRequest>({
+        const watchingSchema = Joi.object<PostWatchRequest>({
             post_id: Joi.number().required(),
             watch: Joi.boolean().required()
         });
@@ -250,7 +247,7 @@ export default class PostController {
         }
     }
 
-    async watch(request: APIRequest<WatchRequest>, response: APIResponse<WatchResponse>) {
+    async watch(request: APIRequest<PostWatchRequest>, response: APIResponse<PostWatchResponse>) {
         if (!request.session.data.userId) {
             return response.authRequired();
         }

@@ -12,5 +12,6 @@ export type PostEntity = PostBaseEntity & {
     comments: number;
     newComments: number;
     bookmark: boolean;
+    watch: boolean;
     vote?: number;
 };
