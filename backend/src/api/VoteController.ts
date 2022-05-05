@@ -1,9 +1,9 @@
 import {Router} from 'express';
 import VoteManager from '../db/managers/VoteManager';
-import {User} from '../types/User';
 import {Logger} from 'winston';
 import {APIRequest, APIResponse, validate} from './ApiMiddleware';
 import Joi from 'joi';
+import {VoteWithUsername} from '../db/repositories/VoteRepository';
 
 type VoteType = 'post' | 'comment' | 'user';
 
@@ -24,12 +24,9 @@ interface ListRequest {
     id: number;
 }
 interface ListResponse {
-    type: VoteType;
-    id: number;
-    rating: number;
     votes: {
         vote: number;
-        user: User;
+        username: string;
     }[]
 }
 
@@ -105,6 +102,29 @@ export default class VoteController {
             return response.authRequired();
         }
 
-        response.error('not-implemented','Not implemented', 404);
+        const {id, type} = request.body;
+
+        try {
+            let votes: VoteWithUsername[];
+            switch (type) {
+                case 'post':
+                    votes = await this.voteManager.getPostVotes(id);
+                    break;
+                case 'comment':
+                    votes = await this.voteManager.getCommentVotes(id);
+                    break;
+                case 'user':
+                    votes = await this.voteManager.getUserVotes(id);
+                    break;
+                default:
+                    return response.error('wrong-type', 'Wrong type', 401);
+            }
+
+            response.success({votes});
+        }
+        catch (err) {
+            this.logger.error('Vote list error', { error: err, type: type, item_id: id });
+            return response.error('error', 'Unknown error', 500);
+        }
     }
 }
