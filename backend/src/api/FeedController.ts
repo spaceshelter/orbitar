@@ -88,7 +88,8 @@ export default class FeedController {
                     rating: post.rating,
                     comments: post.comments,
                     newComments: post.read_comments ? Math.max(0, post.comments - post.read_comments) : post.comments,
-                    bookmark: post.bookmark > 1,
+                    bookmark: !!post.bookmark,
+                    watch: !!post.watch,
                     vote: post.vote
                 });
             }
@@ -145,7 +146,8 @@ export default class FeedController {
                     rating: post.rating,
                     comments: post.comments,
                     newComments: post.read_comments ? Math.max(0, post.comments - post.read_comments) : post.comments,
-                    bookmark: post.bookmark > 1,
+                    bookmark: !!post.bookmark,
+                    watch: !!post.watch,
                     vote: post.vote
                 });
             }
@@ -203,7 +205,8 @@ export default class FeedController {
                     rating: post.rating,
                     comments: post.comments,
                     newComments: post.read_comments ? Math.max(0, post.comments - post.read_comments) : post.comments,
-                    bookmark: post.bookmark > 1,
+                    bookmark: !!post.bookmark,
+                    watch: !!post.watch,
                     vote: post.vote
                 });
             }

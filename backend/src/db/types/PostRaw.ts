@@ -14,7 +14,9 @@ export type PostRaw = {
 export type PostRawWithUserData = PostRaw & {
     vote?: number;
     bookmark?: number;
+    watch?: number;
     read_comments?: number;
+    last_read_comment_id?: number;
 };
 
 export type CommentRaw = {

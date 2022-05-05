@@ -12,7 +12,7 @@ export default class PostRepository {
 
     async getPostWithUserData(postId: number, forUserId: number): Promise<PostRawWithUserData | undefined> {
         return await this.db.fetchOne<PostRawWithUserData>(`
-            select p.*, v.vote, b.read_comments, b.bookmark
+            select p.*, v.vote, b.read_comments, b.bookmark, b.last_read_comment_id, b.watch
             from posts p
                 left join post_votes v on (v.post_id = p.post_id and v.voter_id=:user_id)
                 left join user_bookmarks b on (b.post_id = p.post_id and b.user_id=:user_id)
@@ -40,7 +40,7 @@ export default class PostRepository {
         const limitFrom = (page - 1) * perPage;
 
         return await this.db.query(`
-                select p.*, v.vote, b.read_comments, b.bookmark
+                select p.*, v.vote, b.read_comments, b.bookmark, b.last_read_comment_id, b.watch
                 from posts p 
                     left join post_votes v on (v.post_id = p.post_id and v.voter_id=:user_id)
                     left join user_bookmarks b on (b.post_id = p.post_id and b.user_id=:user_id)
@@ -83,7 +83,7 @@ export default class PostRepository {
         const limitFrom = (page - 1) * perPage;
 
         return await this.db.query(`
-            select p.*, v.vote, b.read_comments, b.bookmark, (p.comments - b.read_comments) cnt
+            select p.*, v.vote, b.read_comments, b.bookmark, b.last_read_comment_id, b.watch, (p.comments - b.read_comments) cnt
             from
                 user_bookmarks b
                 join posts p on (p.post_id = b.post_id) 

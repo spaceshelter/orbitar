@@ -1,5 +1,5 @@
 import {useAPI} from '../../AppState/AppState';
-import {useEffect, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {PostInfo} from '../../Types/PostInfo';
 import {useCache} from './useCache';
 
@@ -13,6 +13,21 @@ export function useFeed(site: string, feedType: FeedType, page: number, perpage:
     const [loading, setLoading] = useState(true);
     const [pages, setPages] = useState(0);
     const [error, setError] = useState<string>();
+
+    const updatePost = useMemo(() => {
+        return (id: number, partial: Partial<PostInfo>) => {
+            if (!posts) {
+                return;
+            }
+            let postIndex = posts.findIndex(p => p.id === id);
+            if (postIndex !== -1) {
+                const newPost = {...posts[postIndex], ...partial};
+                const newPosts = [...posts];
+                newPosts[postIndex] = newPost;
+                setPosts(newPosts);
+            }
+        };
+    }, [posts]);
 
     useEffect(() => {
         console.log('feed request');
@@ -67,5 +82,5 @@ export function useFeed(site: string, feedType: FeedType, page: number, perpage:
         }
     }, [site, feedType, page, api.post, perpage]);
 
-    return { posts, loading, pages, error };
+    return { posts, loading, pages, error, updatePost };
 }

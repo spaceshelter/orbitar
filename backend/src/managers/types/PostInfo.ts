@@ -12,5 +12,6 @@ export type PostInfo = PostBaseInfo & {
     comments: number;
     newComments: number;
     bookmark: boolean;
+    watch: boolean;
     vote?: number;
 };

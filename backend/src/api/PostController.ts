@@ -55,12 +55,21 @@ export default class PostController {
             content: Joi.string().min(1).max(50000).required(),
             format: joiFormat
         });
+        const bookmarkSchema = Joi.object<BookmarkRequest>({
+            post_id: Joi.number().required(),
+            bookmark: Joi.boolean().required()
+        });
+        const watchingSchema = Joi.object<WatchRequest>({
+            post_id: Joi.number().required(),
+            watch: Joi.boolean().required()
+        });
 
         this.router.post('/post/get', validate(getSchema), (req, res) => this.postGet(req, res));
         this.router.post('/post/create', validate(postCreateSchema), (req, res) => this.create(req, res));
         this.router.post('/post/comment', validate(commentSchema), (req, res) => this.comment(req, res));
         this.router.post('/post/read', validate(readSchema), (req, res) => this.read(req, res));
         this.router.post('/post/bookmark', validate(bookmarkSchema), (req, res) => this.bookmark(req, res));
+        this.router.post('/post/watch', validate(watchingSchema), (req, res) => this.watch(req, res));
     }
 
     async postGet(request: APIRequest<PostGetRequest>, response: APIResponse<PostGetResponse>) {
@@ -82,9 +91,6 @@ export default class PostController {
                 return response.error('error', 'Unknown error', 500);
             }
 
-            const rawBookmark = await this.postManager.getBookmark(postId, userId);
-            const lastReadCommentId = rawBookmark?.last_read_comment_id ?? 0;
-
             const rawComments = await this.postManager.getPostComments(postId, userId);
 
             const post: PostEntity = {
@@ -98,7 +104,8 @@ export default class PostController {
                 comments: rawPost.comments,
                 newComments: 0,
                 vote: rawPost.vote,
-                bookmark: false
+                bookmark: !!rawPost.bookmark,
+                watch: !!rawPost.watch
             };
 
             const users: Record<number, UserEntity> = {};
@@ -114,7 +121,7 @@ export default class PostController {
                     content: format === 'html' ? rawComment.html : rawComment.source,
                     rating: rawComment.rating,
                     vote: rawComment.vote,
-                    isNew: rawComment.author_id !== userId && rawComment.comment_id > lastReadCommentId
+                    isNew: rawComment.author_id !== userId && rawComment.comment_id > rawPost.last_read_comment_id
                 };
 
                 if (!users[rawComment.author_id]) {
@@ -239,6 +246,24 @@ export default class PostController {
         }
         catch (err) {
             this.logger.error('Bookmark failed', { error: err, user_id: userId, post_id: postId, bookmark });
+            return response.error('error', 'Unknown error', 500);
+        }
+    }
+
+    async watch(request: APIRequest<WatchRequest>, response: APIResponse<WatchResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+
+        const userId = request.session.data.userId;
+        const { post_id: postId, watch } = request.body;
+
+        try {
+            await this.postManager.setWatch(postId, userId, watch);
+            response.success({watch});
+        }
+        catch (err) {
+            this.logger.error('Watch failed', { error: err, user_id: userId, post_id: postId, watch });
             return response.error('error', 'Unknown error', 500);
         }
     }

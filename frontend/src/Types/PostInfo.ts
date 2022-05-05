@@ -11,6 +11,8 @@ export interface PostInfo {
     comments: number;
     newComments: number;
     vote?: number;
+    watch?: boolean;
+    bookmark?: boolean;
 }
 
 export interface CommentInfo {
