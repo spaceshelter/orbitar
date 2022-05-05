@@ -1,9 +1,19 @@
 http://{$SERVER_DOMAIN}, http://*.{$SERVER_DOMAIN} {
-	root * /srv
-	file_server
-	try_files {path} /index.html
+  # CORS headers for *.svg
+  @cors {
+    path_regexp \.svg$
+    header Origin *.{$SERVER_DOMAIN}
+  }
+  header @cors {
+    Access-Control-Allow-Origin "{header.Origin}"
+    Vary Origin
+  }
+
+  root * /srv
+  file_server
+  try_files {path} /index.html
 }
 
 http://api.{$SERVER_DOMAIN} {
-	reverse_proxy http://backend:5001
+  reverse_proxy http://backend:5001
 }
