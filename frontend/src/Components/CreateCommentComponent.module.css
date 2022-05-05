@@ -82,6 +82,8 @@ button.irony {
     font-style: italic;
     color: var(--irony-fg);
 }
+button.quote {
+}
 
 .editor {
     display: flex;
