@@ -10,21 +10,27 @@ import {ContentFormat} from './types/common';
 import FeedManager from './FeedManager';
 import {PostInfo} from './types/PostInfo';
 import {CommentInfo} from './types/CommentInfo';
-
+import NotificationManager from './NotificationManager';
 
 export default class PostManager {
     private bookmarkRepository: BookmarkRepository;
     private commentRepository: CommentRepository;
     private postRepository: PostRepository;
     private feedManager: FeedManager;
+    private notificationManager: NotificationManager;
     private siteManager: SiteManager;
     private parser: TheParser;
 
-    constructor(bookmarkRepository: BookmarkRepository, commentRepository: CommentRepository, postRepository: PostRepository, feedManager: FeedManager, siteManager: SiteManager, parser: TheParser) {
+    constructor(
+        bookmarkRepository: BookmarkRepository, commentRepository: CommentRepository, postRepository: PostRepository,
+        feedManager: FeedManager, notificationManager: NotificationManager, siteManager: SiteManager,
+        parser: TheParser
+    ) {
         this.bookmarkRepository = bookmarkRepository;
         this.commentRepository = commentRepository;
         this.postRepository = postRepository;
         this.feedManager = feedManager;
+        this.notificationManager = notificationManager;
         this.siteManager = siteManager;
         this.parser = parser;
     }
@@ -39,10 +45,14 @@ export default class PostManager {
             throw new CodeError('no-site', 'Site not found');
         }
 
-        const html = this.parser.parse(content);
-        const postRaw = await this.postRepository.createPost(site.id, userId, title, content, html);
+        const parseResult = this.parser.parse(content);
+        const postRaw = await this.postRepository.createPost(site.id, userId, title, content, parseResult.text);
 
         await this.bookmarkRepository.setWatch(postRaw.post_id, userId, true);
+
+        for (const mention of parseResult.mentions) {
+            await this.notificationManager.tryMention(mention, userId, postRaw.post_id);
+        }
 
         // fan out in background
         this.feedManager.postFanOut(postRaw.post_id).then().catch();
@@ -67,9 +77,13 @@ export default class PostManager {
     }
 
     async createComment(userId: number, postId: number, parentCommentId: number | undefined, content: string, format: ContentFormat): Promise<CommentInfo> {
-        const html = this.parser.parse(content);
+        const parseResult = this.parser.parse(content);
 
-        const commentRaw = await this.commentRepository.createComment(userId, postId, parentCommentId, content, html);
+        const commentRaw = await this.commentRepository.createComment(userId, postId, parentCommentId, content, parseResult.text);
+
+        for (const mention of parseResult.mentions) {
+            await this.notificationManager.tryMention(mention, userId, postId, commentRaw.comment_id);
+        }
 
         await this.bookmarkRepository.setWatch(postId, userId, true);
 

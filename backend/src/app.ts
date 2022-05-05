@@ -95,11 +95,11 @@ const userRepository = new UserRepository(db);
 const userKVRepository = new UserKVRRepository(db);
 
 const inviteManager = new InviteManager(inviteRepository);
-const notificationManager = new NotificationManager(notificationsRepository, userKVRepository);
+const notificationManager = new NotificationManager(notificationsRepository, userRepository, userKVRepository);
 const userManager = new UserManager(voteRepository, userRepository, notificationManager);
 const feedManager = new FeedManager(bookmarkRepository, postRepository, userRepository, redis.client);
 const siteManager = new SiteManager(siteRepository, userManager, feedManager);
-const postManager = new PostManager(bookmarkRepository, commentRepository, postRepository, feedManager, siteManager, theParser);
+const postManager = new PostManager(bookmarkRepository, commentRepository, postRepository, feedManager, notificationManager, siteManager, theParser);
 const voteManager = new VoteManager(voteRepository, postManager);
 
 

@@ -8,9 +8,9 @@ export type UserNotification = UserNotificationMention | UserNotificationAnswer 
 export type UserNotificationMention = {
     type: 'mention';
     mention: {
-        user: UserInfo;
-        post: PostBaseInfo;
-        commentId: number;
+        byUserId: number;
+        postId: number;
+        commentId?: number;
     };
 };
 
