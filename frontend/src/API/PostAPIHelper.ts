@@ -160,4 +160,12 @@ export default class PostAPIHelper {
         }
         return result;
     }
+
+    async bookmark(postId: number, bookmark: boolean) {
+        return await this.postAPI.bookmark(postId, bookmark);
+    }
+
+    async watch(postId: number, watch: boolean) {
+        return await this.postAPI.watch(postId, watch);
+    }
 }

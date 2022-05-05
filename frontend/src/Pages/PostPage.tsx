@@ -7,7 +7,6 @@ import PostComponent from '../Components/PostComponent';
 import CommentComponent from '../Components/CommentComponent';
 import CreateCommentComponent from '../Components/CreateCommentComponent';
 import {usePost} from '../API/use/usePost';
-import {useAppState} from '../AppState/AppState';
 
 export default function PostPage() {
     const params = useParams<{postId: string}>();
@@ -20,7 +19,7 @@ export default function PostPage() {
     }
 
     const unreadOnly = search.get('new') !== null;
-    const {post, comments, postComment, error, reload} = usePost(subdomain, postId, unreadOnly);
+    const {post, comments, postComment, error, reload, updatePost} = usePost(subdomain, postId, unreadOnly);
 
     useEffect(() => {
         let docTitle = `Пост #${postId}`;
@@ -57,7 +56,7 @@ export default function PostPage() {
         <div className={styles.container}>
             <div className={styles.feed}>
                 {post ? <div>
-                        <PostComponent key={post.id} post={post} />
+                        <PostComponent key={post.id} post={post} onChange={(_, partial) => updatePost(partial)} />
                         <div className={styles.postButtons}><Link to={`/post/${post.id}`} className={unreadOnly ? '' : 'bold'}>все комментарии</Link> • <Link to={`/post/${post.id}?new`} className={unreadOnly ? 'bold' : ''}>только новые</Link></div>
                         <div className={styles.comments + (unreadOnly ? ' ' + commentStyles.unreadOnly : '')}>
                             {comments ?

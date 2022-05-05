@@ -124,13 +124,14 @@ export default class FeedController {
                     rating: post.rating,
                     comments: post.comments,
                     newComments: post.read_comments ? Math.max(0, post.comments - post.read_comments) : post.comments,
-                    bookmark: post.bookmark > 1,
+                    bookmark: !!post.bookmark,
+                    watch: !!post.watch,
                     vote: post.vote
                 });
             }
 
             // reformat sites
-            const sites: Record<string, Site> = Object.fromEntries(Object.entries(sitesN).map(([k, site]) => { return [ site.site, site ]; }));
+            const sites: Record<string, Site> = Object.fromEntries(Object.entries(sitesN).map(([_, site]) => { return [ site.site, site ]; }));
 
             response.success({
                 posts: posts,
@@ -181,7 +182,8 @@ export default class FeedController {
                     rating: post.rating,
                     comments: post.comments,
                     newComments: post.read_comments ? Math.max(0, post.comments - post.read_comments) : post.comments,
-                    bookmark: post.bookmark > 1,
+                    bookmark: !!post.bookmark,
+                    watch: !!post.watch,
                     vote: post.vote
                 });
             }
@@ -239,13 +241,14 @@ export default class FeedController {
                     rating: post.rating,
                     comments: post.comments,
                     newComments: post.read_comments ? Math.max(0, post.comments - post.read_comments) : post.comments,
-                    bookmark: post.bookmark > 1,
+                    bookmark: !!post.bookmark,
+                    watch: !!post.watch,
                     vote: post.vote
                 });
             }
 
             // reformat sites
-            const sites: Record<string, Site> = Object.fromEntries(Object.entries(sitesN).map(([k, site]) => { return [ site.site, site ]; }));
+            const sites: Record<string, Site> = Object.fromEntries(Object.entries(sitesN).map(([_, site]) => { return [ site.site, site ]; }));
 
             response.success({
                 posts: posts,

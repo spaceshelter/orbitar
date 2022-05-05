@@ -82,15 +82,17 @@
     align-items: center;
 }
 
-.controls .control {
+.control {
     margin-right: 30px;
     color: var(--inactive-fg);
+    position: relative;
     display: flex;
     align-items: center;
 }
 
-.controls button, .controls a {
+.control button, .control a {
     height: 24px;
+    min-width: 24px;
     background: none;
     margin: 0;
     padding: 0;
@@ -107,27 +109,41 @@
     font-weight: bold;
 }
 
-.controls a {
+.control a {
     margin: 0 2px;
 }
 
-.controls button.active, .controls a.active {
+.control button.active, .control a.active {
     fill: var(--active-fg);
     color: var(--active-fg);
     font-weight: bold;
 }
 
-.controls button:hover, .controls a:hover {
-    color: inherit;
-    /*fill: inherit;*/
+.control button:hover, .control a:hover {
+    color: var(--active-fg);
+    fill: var(--active-fg);
 }
 
-.controls .label {
+.control .label {
     margin-left: 5px;
 }
 
-.controls button:disabled {
+.control button:disabled {
     color: var(--disabled-fg);
     fill: var(--disabled-fg);
     cursor: default;
+}
+
+.optionsList {
+    position: absolute;
+    left: 30px;
+    top: -4px;
+    border: 1px solid var(--disabled-fg);
+    border-radius: 4px;
+    padding: 4px;
+    width: max-content;
+}
+
+.optionsList .label {
+    margin-right: 4px;
 }

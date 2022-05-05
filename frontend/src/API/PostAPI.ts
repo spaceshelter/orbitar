@@ -110,6 +110,22 @@ type PostReadResponse = {
     }
 };
 
+type PostBookmarkRequest = {
+    post_id: number;
+    bookmark: boolean;
+};
+type PostBookmarkResponse = {
+    bookmark: boolean;
+};
+
+type PostWatchRequest = {
+    post_id: number;
+    watch: boolean;
+};
+type PostWatchResponse = {
+    watch: boolean;
+};
+
 export default class PostAPI {
     api: APIBase;
     constructor(api: APIBase) {
@@ -169,6 +185,20 @@ export default class PostAPI {
             post_id: postId,
             comments: comments,
             last_comment_id: lastCommentId
+        });
+    }
+
+    async bookmark(postId: number, bookmark: boolean) {
+        return await this.api.request<PostBookmarkRequest, PostBookmarkResponse>('/post/bookmark', {
+            post_id: postId,
+            bookmark: bookmark
+        });
+    }
+
+    async watch(postId: number, watch: boolean) {
+        return await this.api.request<PostWatchRequest, PostWatchResponse>('/post/watch', {
+            post_id: postId,
+            watch: watch
         });
     }
 }
