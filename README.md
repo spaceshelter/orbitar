@@ -69,3 +69,18 @@ docker-compose -p orbitar -f docker-compose.local.yml build --no-cache
 # Запуск
 docker-compose -p orbitar -f docker-compose.local.yml up
 ```
+
+## Утилиты
+
+### Генератор рандомного контента для тестов
+
+Использование:
+
+(в папке `backend`, перед первым запуском выполнить `npm install`)
+
+    npm run generate-dummy-content -- --help
+   
+Например:
+   
+    npm run generate-dummy-content -- -u 10 -s 8 -p 20 -c 100
+   
