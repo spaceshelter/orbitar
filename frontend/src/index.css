@@ -109,3 +109,22 @@ img.image-preview {
 /*  font-size: 25%;*/
 /*}*/
 
+body.no-scroll {
+  overflow: hidden;
+  margin-right: 14px;
+}
+
+::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+::-webkit-scrollbar-thumb {
+  box-shadow: inset 0 0 12px 12px var(--scrollbar-track-bg);
+  border-radius: 10px;
+  border: solid 3px transparent;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}

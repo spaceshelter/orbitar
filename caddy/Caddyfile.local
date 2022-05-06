@@ -9,6 +9,23 @@ http://{$SERVER_DOMAIN}, http://*.{$SERVER_DOMAIN} {
     Vary Origin
   }
 
+  # imgur proxy
+  handle_path /upload {
+    rewrite * /3/upload
+    reverse_proxy https://api.imgur.com {
+      header_up Host api.imgur.com
+      header_up +authorization "Client-ID {$IMGUR_CLIENT_ID}"
+      header_up -origin
+      header_up -referer
+      header_up -sec-ch-ua
+      header_up -sec-ch-ua-mobile
+      header_up -sec-ch-ua-platform
+      header_up -sec-fetch-dest
+      header_up -sec-fetch-mode
+      header_up -sec-fetch-site
+    }
+  }
+
   root * /srv
   file_server
   try_files {path} /index.html

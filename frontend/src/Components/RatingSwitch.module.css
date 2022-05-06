@@ -53,6 +53,7 @@
     box-shadow: 0 0 2px var(--rating-list-border);
     border-radius: 8px;
     flex-direction: column;
+    z-index: 100;
 }
 
 .listUp {

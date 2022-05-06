@@ -5,6 +5,7 @@ import {ReactComponent as IronyIcon} from '../Assets/irony.svg';
 import {ReactComponent as ImageIcon} from '../Assets/image.svg';
 import {ReactComponent as LinkIcon} from '../Assets/link.svg';
 import {ReactComponent as QuoteIcon} from '../Assets/quote.svg';
+import MediaUploader from './MediaUploader';
 
 interface CreateCommentProps {
     open: boolean;
@@ -18,9 +19,32 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     const answerRef = useRef<HTMLTextAreaElement>(null);
     const [answerText, setAnswerText] = useState<string>(props.comment ? props.comment.author.username + ', ' : '');
     const [isPosting, setPosting] = useState(false);
+    const [mediaUploaderOpen, setMediaUploaderOpen] = useState(false);
 
     const handleAnswerChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setAnswerText(e.target.value);
+    };
+
+    const replaceText = (text: string, cursor: number) => {
+        console.log('repl', text, cursor);
+        const answer = answerRef.current!;
+        if (!answer) {
+            return;
+        }
+        answer.focus();
+        const start = answer.selectionStart;
+        const end = answer.selectionEnd;
+
+        const text1 = answer.value.substring(0, start);
+        const text2 = answer.value.substring(end);
+
+        const newValue = text1 + text + text2;
+        answer.value = newValue;
+
+        answer.selectionStart = start + cursor;
+        answer.selectionEnd = answer.selectionStart;
+
+        setAnswerText(newValue);
     };
 
     const applyTag = (tag: string) => {
@@ -37,52 +61,54 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         const start = answer.selectionStart;
         const end = answer.selectionEnd;
 
-        const text1 = answer.value.substring(0, start);
-        let text2 = end > start ? answer.value.substring(start, end) : '';
-        const text3 = answer.value.substring(end);
-        const isEmpty = text2.length < 1;
+        const oldValue = end > start ? answer.value.substring(start, end) : '';
+        let newValue = oldValue;
+        let newPos = 0;
 
         switch (tag) {
             case 'img': {
-                let def = '';
-                if (/^https?:/.test(text2)) {
-                    def = text2;
-                    text2 = '';
+                if (/^https?:/.test(oldValue)) {
+                    // noinspection HtmlRequiredAltAttribute
+                    newValue = `<img src="${oldValue}"/>`;
+                    newPos = newValue.length;
                 }
-
-                const url = window.prompt('Адрес картинки:', def);
-                if (!url) {
+                else {
+                    setMediaUploaderOpen(true);
                     return;
                 }
-                text2 = `${text2}<img src="${url}" alt="">`;
+
                 break;
             }
             case 'a': {
-                let def = '';
-                if (/^https?:/.test(text2)) {
-                    def = text2;
-                    text2 = '';
+                let defaultValue = '';
+                let textValue = oldValue;
+                if (/^https?:/.test(oldValue)) {
+                    defaultValue = oldValue;
+                    textValue = '';
                 }
-                const url = window.prompt('Ссылка:', def);
+                const url = window.prompt('Ссылка:', defaultValue);
                 if (!url) {
                     return;
                 }
-                text2 = `<a href="${url}">${text2}</a>`;
+                newValue = `<a href="${url}">`;
+                if (textValue) {
+                    newValue += `${textValue}</a>`;
+                    newPos = newValue.length;
+                }
+                else {
+                    newPos = newValue.length;
+                    newValue += '</a>';
+                }
                 break;
             }
-            default:
-                text2 = `<${tag}>${text2}</${tag}>`;
+            default: {
+                newValue = `<${tag}>${oldValue}</${tag}>`;
+                newPos = newValue.length;
+            }
 
         }
 
-        console.log('sel', start, end, {text1, text2, text3});
-        const newValue = `${text1}${text2}${text3}`;
-
-        answer.value = newValue;
-        answer.selectionStart = !isEmpty ? text1.length + text2.length : text1.length + tag.length + 2;
-        answer.selectionEnd = answer.selectionStart;
-
-        setAnswerText(newValue);
+        replaceText(newValue, newPos);
     };
 
     useEffect(() => {
@@ -111,7 +137,24 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         if (e.ctrlKey && e.code === 'Enter') {
             handleAnswer();
         }
-    }
+    };
+
+    const handleMediaUpload = (uri: string, type: 'video' | 'image') => {
+        setMediaUploaderOpen(false);
+        if (type === 'image') {
+            // noinspection HtmlRequiredAltAttribute
+            const text = `<img src="${uri}"/>`
+            replaceText(text, text.length);
+        }
+        else {
+            const text = `<video src="${uri}"/>`
+            replaceText(text, text.length);
+        }
+    };
+
+    const handleMediaUploadCancel = () => {
+        setMediaUploaderOpen(false);
+    };
 
     if (!props.open) {
         return <></>;
@@ -131,6 +174,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             </div>
             <div className={styles.editor}><textarea ref={answerRef} disabled={isPosting} value={answerText} onChange={handleAnswerChange} onKeyDown={handleKeyDown} /></div>
             <div className={styles.final}><button disabled={isPosting || !answerText} onClick={handleAnswer}>Пыщь</button></div>
+            {mediaUploaderOpen && <MediaUploader onSuccess={handleMediaUpload} onCancel={handleMediaUploadCancel} />}
         </div>
     );
 }

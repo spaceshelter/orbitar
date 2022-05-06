@@ -1,0 +1,109 @@
+.container {
+    position: fixed;
+    z-index: 1000;
+    background: var(--bg);
+    width: 400px;
+    /*height: 200px;*/
+    border: 1px solid var(--inactive-fg);
+    border-radius: 5px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.overlay {
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.5);
+    display: block;
+    position: fixed;
+    z-index: 999;
+    content: "";
+    left: 0;
+    top: 0;
+}
+
+.controls {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
+.upload {
+    display: flex;
+    flex: 1;
+    /*height: 40px;*/
+    background: var(--input-bg);
+    justify-content: center;
+    align-items: stretch;
+    border-radius: 4px;
+    overflow: hidden;
+    font-size: 14px;
+}
+
+.url {
+    flex: 1;
+    background: transparent !important;
+    border: none;
+    padding: 4px 10px;
+}
+
+.selector {
+    display: flex;
+}
+
+.selector input {
+    display: none;
+}
+
+.choose {
+    border: none;
+    background: var(--inactive-fg);
+    color: var(--button-fg);
+    padding: 8px;
+    cursor: pointer;
+}
+.choose:hover {
+    background: var(--button-hover-bg);
+}
+
+.done {
+
+}
+
+.dropbox {
+    /*flex: 1;*/
+    border: 1px dashed var(--inactive-fg);
+    border-radius: 3px;
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: center;
+    width: 380px;
+    height: 280px;
+    padding: 10px;
+}
+
+.dropbox.active {
+    border: 1px dashed var(--active-fg);
+}
+
+.preview {
+    display: flex;
+}
+
+.preview img, .preview video {
+    max-width: 380px;
+    max-height: 280px;
+    object-fit: contain;
+}
+
+.disclaimer {
+    font-size: 11px;
+    color: var(--inactive-fg);
+}

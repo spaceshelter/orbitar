@@ -5,10 +5,6 @@ import escapeHTML from 'escape-html';
 import Url from 'url-parse';
 import qs from 'qs';
 
-export type TheParserOptions = {
-    tags: Record<string, ((node: Element) => string) | boolean>;
-};
-
 export type ParseResult = {
     text: string;
     mentions: string[];
@@ -19,11 +15,12 @@ export type ParseResult = {
 export default class TheParser {
     private readonly allowedTags: Record<string, ((node: Element) => ParseResult) | boolean>;
 
-    constructor(options?: TheParserOptions) {
+    constructor() {
         this.allowedTags = {
             a: (node) => this.parseA(node),
             img: (node) => this.parseImg(node),
             irony: (node) => this.parseIrony(node),
+            video: (node) => this.parseVideo(node),
             blockquote: true,
             b: true,
             i: true,
@@ -205,6 +202,7 @@ export default class TheParser {
             embed += '?start=' + startTime;
         }
 
+        // noinspection HtmlDeprecatedAttribute
         return `<iframe width="500" height="282" src="${encodeURI(embed)}" allowfullscreen frameborder="0"></iframe>`;
     }
 
@@ -252,6 +250,18 @@ export default class TheParser {
         }
 
         return { text: `<img src="${encodeURI(url)}" alt=""/>`, mentions: [], urls: [], images: [url] };
+    }
+
+    parseVideo(node: Element): ParseResult {
+        const url = node.attribs['src'] || '';
+        const regex = /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b[-a-zA-Z0-9()@:%_+.~#?&/=]*$/;
+        if (!url.match(regex)) {
+            return this.parseDisallowedTag(node);
+        }
+
+        const text = `<video loop="" preload="metadata" controls="" width="500"><source src="${encodeURI(url)}" type="video/mp4"></video>`;
+
+        return { text, mentions: [], urls: [], images: [url] };
     }
 
     parseIrony(node: Element): ParseResult {
