@@ -11,6 +11,7 @@ type UsePost = {
     error?: string;
 
     postComment(comment: string, answerToCommentId?: number): Promise<CommentInfo>;
+    preview(text: string): Promise<string>;
     setVote(value: number): void;
     setCommentVote(commentId: number, vote: number): void;
     reload(showUnreadOnly?: boolean): void;
@@ -47,7 +48,7 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
         };
     }, [post]);
 
-    const { postComment, setVote, setCommentVote, reload } = useMemo(() => {
+    const { postComment, setVote, setCommentVote, reload, preview } = useMemo(() => {
         const postComment = async (text: string, answerToCommentId?: number) => {
             const {comment} = await api.post.comment(text, postId, answerToCommentId);
 
@@ -128,7 +129,11 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
                 });
         };
 
-        return { postComment, setVote, setCommentVote, reload, updatePost };
+        const preview = async (text: string) => {
+            return (await api.postAPI.preview(text)).content;
+        }
+
+        return { postComment, setVote, setCommentVote, reload, updatePost, preview };
     }, [postId, comments, rawComments, api.post]);
 
     useEffect(() => {
@@ -165,7 +170,7 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
         reload(showUnreadOnly || false);
     }, [siteName, postId, showUnreadOnly, api, rawComments, prev, reload]);
 
-    return { site, post, comments, error, postComment, setVote, setCommentVote, reload, updatePost };
+    return { site, post, comments, error, postComment, preview, setVote, setCommentVote, reload, updatePost };
 }
 
 function findComment(comments: CommentInfo[], commentId: number): CommentInfo | undefined {

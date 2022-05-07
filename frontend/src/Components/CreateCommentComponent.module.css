@@ -2,11 +2,18 @@
     margin-bottom: 25px;
 }
 
-.answer textarea {
+.answer textarea, .answer .preview {
     width: 100%;
     min-height: 100px;
     font-size: 16px;
     padding: 10px;
+}
+
+.answer .preview {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    overflow: visible;
 }
 
 .controls {
@@ -63,6 +70,7 @@
 }
 
 .controls button:disabled {
+    color: var(--disabled-fg);
     fill: var(--disabled-fg);
 }
 
@@ -87,6 +95,13 @@ button.quote {
 
 .editor {
     display: flex;
+}
+
+.leftspace {
+    margin-right: 5px;
+}
+.largeEmoji {
+    font-size: 1.5em;
 }
 
 .final {

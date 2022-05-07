@@ -15,6 +15,7 @@ import {PostBookmarkRequest, PostBookmarkResponse} from './types/requests/PostBo
 import {PostCommentRequest, PostCommentResponse} from './types/requests/PostComment';
 import {UserEntity} from './types/entities/UserEntity';
 import {PostWatchRequest, PostWatchResponse} from './types/requests/PostWatch';
+import {PreviewRequest, PreviewResponse} from "./types/requests/Preview"
 
 export default class PostController {
     public router = Router();
@@ -52,6 +53,9 @@ export default class PostController {
             content: Joi.string().min(1).max(50000).required(),
             format: joiFormat
         });
+        const previewSchema = Joi.object<PreviewRequest>({
+            content: Joi.string().min(1).max(50000).required(),
+        });
         const bookmarkSchema = Joi.object<PostBookmarkRequest>({
             post_id: Joi.number().required(),
             bookmark: Joi.boolean().required()
@@ -64,6 +68,7 @@ export default class PostController {
         this.router.post('/post/get', validate(getSchema), (req, res) => this.postGet(req, res));
         this.router.post('/post/create', validate(postCreateSchema), (req, res) => this.create(req, res));
         this.router.post('/post/comment', validate(commentSchema), (req, res) => this.comment(req, res));
+        this.router.post('/post/preview', validate(previewSchema), (req, res) => this.preview(req, res));
         this.router.post('/post/read', validate(readSchema), (req, res) => this.read(req, res));
         this.router.post('/post/bookmark', validate(bookmarkSchema), (req, res) => this.bookmark(req, res));
         this.router.post('/post/watch', validate(watchingSchema), (req, res) => this.watch(req, res));
@@ -169,6 +174,21 @@ export default class PostController {
         }
         catch (err) {
             this.logger.error('Post create failed', { error: err, user_id: userId, site, format, content, title });
+            return response.error('error', 'Unknown error', 500);
+        }
+    }
+
+    preview(request: APIRequest<PreviewRequest>, response: APIResponse<PreviewResponse>) {
+        const userId = request.session.data.userId;
+        if (!userId) {
+            return response.authRequired();
+        }
+        const content = request.body.content;
+        try {
+            const result =  this.postManager.preview(content);
+            response.success({ content : result });
+        } catch (err) {
+            this.logger.error('Comment create failed', { error: err, user_id: userId, content });
             return response.error('error', 'Unknown error', 500);
         }
     }
