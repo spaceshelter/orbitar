@@ -93,15 +93,15 @@ button.irony {
 button.quote {
 }
 
-.editor {
-    display: flex;
-}
-
-.leftspace {
+.final button.buttonPreview, .final button.buttonPreview:hover, .final button.buttonPreview:disabled {
+    background: none;
+    border: none;
+    opacity: 0.8;
     margin-right: 5px;
 }
-.largeEmoji {
-    font-size: 1.5em;
+
+.editor {
+    display: flex;
 }
 
 .final {

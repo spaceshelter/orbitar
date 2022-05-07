@@ -202,9 +202,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                     :
                 <div className={styles.body}><ContentComponent className={classNames(styles.commentContent, styles.preview, postStyles.preview)} content={previewing} /></div>}
             <div className={styles.final}>
-                <button disabled={isPosting || !answerText} className={styles.leftspace} onClick={handlePreview} title={previewing === null ? "Предпросмотр" : "Редактировать дальше"}>{
-                    (previewing === null) ? "👀" : "🙈"
-                }</button>
+                <button disabled={isPosting || !answerText} className={styles.buttonPreview} onClick={handlePreview}>{(previewing === null) ? "Превью" : "Редактор"}</button>
                 <button disabled={isPosting || !answerText} onClick={handleAnswer}>Пыщь</button>
                 {mediaUploaderOpen && <MediaUploader onSuccess={handleMediaUpload} onCancel={handleMediaUploadCancel} />}
             </div>
