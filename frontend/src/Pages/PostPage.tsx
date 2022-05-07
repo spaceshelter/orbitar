@@ -57,14 +57,18 @@ export default function PostPage() {
     };
 
     useEffect(() => {
-        if (location.hash && comments) {
+        if (!comments) {
+            return;
+        }
+
+        if (location.hash) {
             const commentId = parseInt(location.hash.substring(1));
 
-            if (scrolledToComment && scrolledToComment.postId === postId && scrolledToComment.commentId) {
+            if (scrolledToComment && scrolledToComment.postId === postId && scrolledToComment.commentId === commentId) {
                 return;
             }
 
-            const el = document.querySelector(`div[data-comment-id="${commentId}"]`);
+            const el = document.querySelector(`[data-comment-id="${commentId}"] .${commentStyles.body}`);
             if (el) {
                 setTimeout(() => {
                     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -86,7 +90,7 @@ export default function PostPage() {
                     return;
                 }
 
-                if (scrolledToComment && scrolledToComment.postId === postId && scrolledToComment.commentId) {
+                if (scrolledToComment && scrolledToComment.postId === postId && scrolledToComment.commentId === commentId) {
                     return;
                 }
 
