@@ -5,6 +5,7 @@ import {
 } from "react-router-dom";
 import {useAppState} from '../AppState/AppState';
 import {useTheme} from '../Theme/ThemeProvider';
+import {ReactComponent as PostIcon} from '../Assets/post.svg';
 import {ReactComponent as MenuIcon} from '../Assets/menu.svg';
 import {ReactComponent as MonsterIcon} from '../Assets/monster.svg';
 import {ReactComponent as HotIcon} from '../Assets/hot.svg';
@@ -76,14 +77,14 @@ export default function Topbar(props: TopbarProps) {
                     <Link to={`//${process.env.REACT_APP_ROOT_DOMAIN}/`}><MonsterIcon /></Link>
                 </div>
                 <div className={styles.menu}>
-                    <Link className={styles.button} to="/create">Новый пост</Link>
+                    <Link className={[styles.button, styles.newPost].join(' ')} to="/create"><PostIcon /> <span>Новый пост</span> </Link>
                 </div>
                 <div className={styles.right}>
                     <button onClick={toggleTheme}>{theme === 'dark' ? <LightIcon /> : <DarkIcon />}</button>
                     <Link to={'/watch'} className={userStats.watch.comments > 0 ? styles.active : ''}><HotIcon /><span className={styles.label}>{userStats.watch.comments > 0 ? userStats.watch.comments : ''}</span></Link>
                     <button disabled={userStats.notifications === 0} className={userStats.notifications > 0 ? styles.active : ''} onClick={handleNotificationsToggle}><NotificationIcon /><span className={styles.label}>{userStats.notifications > 0 ? userStats.notifications : ''}</span></button>
                     <Link to={'/user/' + userInfo.username}><ProfileIcon /></Link>
-                    <button onClick={handleLogout}><LogoutIcon /></button>
+                    <button className={styles.logout} onClick={handleLogout}><LogoutIcon /></button>
                 </div>
             </div>
             {showNotifications && <NotificationsPopup onClose={handleNotificationsClose} />}
