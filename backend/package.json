@@ -9,6 +9,7 @@
     "start:production": "NODE_ENV=production node build/app.js",
     "migration:dev": "NODE_ENV=development node migrations.js",
     "migration:production": "NODE_ENV=production node migrations.js",
+    "generate-dummy-content": "NODE_ENV=development node dummy_content_generator.js",
     "lint": "npx eslint src"
   },
   "keywords": [],
@@ -23,7 +24,8 @@
     "@types/url-parse": "^1.4.8",
     "@typescript-eslint/eslint-plugin": "^5.21.0",
     "eslint": "^8.14.0",
-    "typescript": "^4.6.3"
+    "typescript": "^4.6.3",
+    "argparse": "^2.0.1"
   },
   "dependencies": {
     "@types/redis": "^4.0.11",
