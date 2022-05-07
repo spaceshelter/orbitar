@@ -33,6 +33,18 @@
 
     display: flex;
 }
+.topbar .newPost{
+    width: fit-content;
+}
+.topbar .newPost svg {
+    fill: var(--active-fg);
+}
+.topbar .newPost span{
+    margin-left: 4px;
+}
+@media only screen and (max-width: 480px) {
+    .topbar .newPost span{ display: none; }
+}
 
 .topbar .left {
     display: flex;
@@ -40,6 +52,12 @@
 .topbar .right {
     display: flex;
 }
+@media only screen and (max-width: 420px) {
+    button.logout {
+        display: none;
+    }
+}
+
 
 .topbar .left button, .topbar .left a {
     margin-right: 16px;

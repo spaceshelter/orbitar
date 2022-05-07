@@ -6,15 +6,15 @@
 }
 
 .innerContainer {
-  padding: 0 200px;
+  padding: 0 16px;
 }
 
 @media only screen and (min-width: 600px) {
   .innerContainer {
-    padding: 0 40px;
+    padding: 0 88px;
   }
 }
-@media only screen and (min-width: 990px) {
+@media only screen and (min-width: 1024px) {
   .innerContainer {
     padding: 0 200px;
   }
@@ -26,6 +26,9 @@
   bottom: 0;
   height: 50px;
   width: 50px
+}
+@media only screen and (max-width: 600px) {
+  .monster {  display: none; }
 }
 .monster svg {
   height: 100%;

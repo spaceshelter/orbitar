@@ -47,8 +47,12 @@
 
 .content {
     font-size: 16px;
-    line-height: 1.4em;
+    line-height: 1.5em;
     color: var(--text-fg);
+    overflow-wrap: break-word;
+}
+@media only screen and (max-width: 600px) {
+    .content {  font-size: 14px; }
 }
 
 .content img {
@@ -80,6 +84,7 @@
     margin-top: 10px;
     background: var(--controls-bg);
     align-items: center;
+    overflow-x: hidden;
 }
 
 .control {
@@ -126,7 +131,11 @@
 .control .label {
     margin-left: 5px;
 }
-
+@media only screen and (max-width: 420px) {
+    .control .noComments{
+        display: none;
+    }
+}
 .control button:disabled {
     color: var(--disabled-fg);
     fill: var(--disabled-fg);
