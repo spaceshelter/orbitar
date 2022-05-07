@@ -24,16 +24,16 @@ export default function DateComponent(props: DateComponentProps) {
             }
             return '[сегодня в] HH:mm';
         },
-        lastDay: 'DD MMMM [в] HH:mm',
-        nextDay: 'DD.MM.YYYY HH:mm',
+        lastDay: 'D MMMM [в] HH:mm',
+        nextDay: 'D.MM.YYYY HH:mm',
         nextWeek: 'DD.MM.YYYY HH:mm',
-        lastWeek: 'DD MMMM [в] HH:mm',
+        lastWeek: 'D MMMM [в] HH:mm',
         sameElse: () => {
             if (mDate.isBefore(startYear)) {
                 return 'DD.MM.YYYY HH:mm'
             }
             else {
-                return 'DD MMMM [в] HH:mm'
+                return 'D MMMM [в] HH:mm'
             }
         }
     });

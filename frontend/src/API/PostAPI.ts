@@ -104,7 +104,8 @@ type PostReadRequest = {
     last_comment_id?: number;
 };
 type PostReadResponse = {
-    watch?: {
+    notifications: number;
+    watch: {
         comments: number;
         posts: number;
     }

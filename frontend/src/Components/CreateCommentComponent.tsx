@@ -122,8 +122,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     const handleAnswer = () => {
         setPosting(true);
         props.onAnswer(answerText, props.post, props.comment)
-            .then(result => {
-                console.log('ANSWER', result);
+            .then(() => {
                 setPosting(false);
                 setAnswerText(props.comment ? props.comment.author.username + ', ' : '');
             })

@@ -5,6 +5,7 @@ import {CommentBaseInfo} from './CommentInfo';
 export type UserNotification = UserNotificationMention | UserNotificationAnswer;
 
 type UserNotificationSource = {
+    date: Date;
     source: {
         byUserId: number;
         postId: number;
@@ -23,6 +24,8 @@ export type UserNotificationAnswer = UserNotificationSource & {
 export type UserNotificationExpanded = UserNotificationMentionExpanded | UserNotificationAnswerExpanded;
 
 export type UserNotificationSourceExpanded = {
+    id: number;
+    date: Date;
     source: {
         byUser: UserBaseInfo;
         post: PostBaseInfo;

@@ -107,7 +107,9 @@ export default class PostManager {
     }
 
     async setRead(postId: number, userId: number, readComments: number, lastCommentId?: number): Promise<boolean> {
-        return await this.bookmarkRepository.setRead(postId, userId, readComments, lastCommentId);
+        const changedNotifications = await this.notificationManager.setReadForPost(userId, postId);
+        const changedBookmarks = await this.bookmarkRepository.setRead(postId, userId, readComments, lastCommentId);
+        return changedNotifications || changedBookmarks;
     }
 
     async getBookmark(postId: number, userId: number): Promise<BookmarkRaw | undefined> {

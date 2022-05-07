@@ -155,7 +155,7 @@ export default class PostAPIHelper {
         const result = await this.postAPI.read(postId, comments, lastCommentId);
         if (result.watch) {
             this.setters.setUserStats((old) => {
-                return { ...old, watch: result.watch! };
+                return { ...old, watch: result.watch, notifications: result.notifications };
             });
         }
         return result;

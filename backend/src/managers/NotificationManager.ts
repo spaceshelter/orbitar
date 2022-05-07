@@ -35,23 +35,11 @@ export default class NotificationManager {
     }
 
     async getNotificationsCount(forUserId: number) {
-        let sinceId = 0;
-        const lastRead = await this.userKVRepository.getValue(forUserId, 'last-read-notification');
-        if (lastRead) {
-            sinceId = parseInt(lastRead);
-        }
-
-        return await this.notificationsRepository.getUnreadNotificationsCount(forUserId, sinceId);
+        return await this.notificationsRepository.getUnreadNotificationsCount(forUserId);
     }
 
     async getNotifications(forUserId: number): Promise<UserNotificationExpanded[]> {
-        let sinceId = 0;
-        const lastRead = await this.userKVRepository.getValue(forUserId, 'last-read-notification');
-        if (lastRead) {
-            sinceId = parseInt(lastRead);
-        }
-
-        const rawNotifications = await this.notificationsRepository.getNotifications(forUserId, sinceId);
+        const rawNotifications = await this.notificationsRepository.getNotifications(forUserId);
 
         const notifications: UserNotificationExpanded[] = [];
         for (const rawNotification of rawNotifications) {
@@ -103,7 +91,9 @@ export default class NotificationManager {
                     }
 
                     return {
+                        id: notification.notification_id,
                         type: data.type,
+                        date: notification.created_at,
                         source: {
                             byUser,
                             post,
@@ -123,7 +113,7 @@ export default class NotificationManager {
 
     async sendNotification(forUserId: number, notification: UserNotification) {
         const json = JSON.stringify(notification);
-        await this.notificationsRepository.addNotification(forUserId, notification.type, json);
+        await this.notificationsRepository.addNotification(forUserId, notification.type, notification.source.byUserId, notification.source.postId, notification.source.commentId, json);
     }
 
     async sendAnswerNotify(parentCommentId: number, byUserId: number, postId: number, commentId?: number) {
@@ -138,6 +128,7 @@ export default class NotificationManager {
 
         const notification: UserNotificationAnswer = {
             type: 'answer',
+            date: new Date(),
             source: {
                 byUserId,
                 postId,
@@ -172,6 +163,7 @@ export default class NotificationManager {
 
         const notification: UserNotificationMention = {
             type: 'mention',
+            date: new Date(),
             source: {
                 byUserId,
                 postId,
@@ -184,7 +176,16 @@ export default class NotificationManager {
         return true;
     }
 
-    async setLastReadNotification(forUserId: number, notificationId: number) {
-        await this.userKVRepository.setValue(forUserId, 'last-read-notification', ''+notificationId);
+    async setRead(forUserId: number, notificationId: number) {
+        await this.notificationsRepository.setRead(forUserId, notificationId);
+        // await this.userKVRepository.setValue(forUserId, 'last-read-notification', ''+notificationId);
+    }
+
+    async setReadForPost(forUserId: number, postId: number) {
+        return await this.notificationsRepository.setReadForPost(forUserId, postId);
+    }
+
+    async setReadAll(forUserId: number) {
+        await this.notificationsRepository.setReadAll(forUserId);
     }
 }

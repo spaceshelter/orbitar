@@ -1,7 +1,7 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import styles from './PostPage.module.css';
 import commentStyles from '../Components/CommentComponent.module.css';
-import {useParams, Link, useSearchParams} from 'react-router-dom';
+import {useParams, Link, useSearchParams, useLocation} from 'react-router-dom';
 import {CommentInfo, PostInfo} from '../Types/PostInfo';
 import PostComponent from '../Components/PostComponent';
 import CommentComponent from '../Components/CommentComponent';
@@ -12,6 +12,8 @@ export default function PostPage() {
     const params = useParams<{postId: string}>();
     const [search] = useSearchParams();
     const postId = params.postId ? parseInt(params.postId, 10) : 0;
+    const location = useLocation();
+    const [scrolledToHash, setScrolledToHash] = useState(false);
 
     let subdomain = 'main';
     if (window.location.hostname !== process.env.REACT_APP_ROOT_DOMAIN) {
@@ -25,9 +27,9 @@ export default function PostPage() {
         let docTitle = `Пост #${postId}`;
         if (post) {
             if (post.title) {
-                docTitle = post.title + ' / ';
+                docTitle = post.title;
             }
-            docTitle += post.author.username;
+            docTitle += ' / ' + post.author.username;
         }
         document.title = docTitle;
 
@@ -44,7 +46,6 @@ export default function PostPage() {
                     setTimeout(() => {
                         const el = document.querySelector(`div[data-comment-id="${comment.id}"]`);
                         el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                        console.log('ELEMENT', el);
                     }, 100);
 
                     resolve(comment);
@@ -54,6 +55,42 @@ export default function PostPage() {
                 });
         });
     };
+
+    useEffect(() => {
+        if (scrolledToHash) {
+            return;
+        }
+
+        if (location.hash && comments) {
+            const commentId = location.hash.substring(1);
+            const el = document.querySelector(`div[data-comment-id="${commentId}"]`);
+            if (el) {
+                setTimeout(() => {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    el.classList.add('highlight');
+
+                    setTimeout(() => {
+                        el.classList.remove('highlight');
+                        setScrolledToHash(true);
+                    }, 5000);
+                }, 100);
+            }
+        }
+        else if (unreadOnly) {
+            // find new comment
+            const el = document.querySelector(`.${commentStyles.isNew}`);
+            if (el) {
+                setTimeout(() => {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                    setTimeout(() => {
+                        setScrolledToHash(true);
+                    }, 5000);
+                }, 100);
+            }
+
+        }
+    }, [location.hash, comments, scrolledToHash, unreadOnly]);
 
     return (
         <div className={styles.container}>

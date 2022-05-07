@@ -30,7 +30,6 @@ export function useFeed(site: string, feedType: FeedType, page: number, perpage:
     }, [posts]);
 
     useEffect(() => {
-        console.log('feed request');
         setLoading(true);
         if (feedType === 'site') {
             api.post.feedPosts(site, page, perpage)
