@@ -31,6 +31,8 @@ const theme: ThemeCollection = {
             'rating-list-border': 'rgba(0, 0, 0, 0.2)',
             'rating-list-votes-bg': 'rgba(0, 0, 0, 0.03)',
 
+            'scrollbar-track-bg': '#d9d9d9',
+
             topbar: {
                 fg: '#3992E4',
                 bg: 'rgba(255, 255, 255, 0.5)',
@@ -127,6 +129,8 @@ const theme: ThemeCollection = {
 
             'rating-list-border': 'rgba(255, 255, 255, 0.2)',
             'rating-list-votes-bg': 'rgba(255, 255, 255, 0.03)',
+
+            'scrollbar-track-bg': '#535353',
 
             topbar: {
                 fg: '#58A8BA',

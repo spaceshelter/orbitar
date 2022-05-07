@@ -8,6 +8,7 @@ services:
       - "80:80"
     environment:
       SERVER_DOMAIN: ${SERVER_DOMAIN}
+      IMGUR_CLIENT_ID: ${IMGUR_CLIENT_ID}
     volumes:
       - $PWD/caddy/Caddyfile.local:/etc/caddy/Caddyfile
       - frontend_build:/srv

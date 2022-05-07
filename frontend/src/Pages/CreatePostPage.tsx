@@ -1,76 +1,44 @@
-import {SubmitHandler, useForm} from 'react-hook-form';
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import styles from './CreatePostPage.module.css';
-import {SiteInfo} from '../Types/SiteInfo';
-import {useAPI} from '../AppState/AppState';
-import SiteSidebar from '../Components/SiteSidebar';
+import {useAPI, useSiteName} from '../AppState/AppState';
 import {useNavigate} from 'react-router-dom';
-
-type CreatePostValues = {
-    title: string;
-    content: string;
-};
+import CreateCommentComponent from '../Components/CreateCommentComponent';
+import {CommentInfo} from '../Types/PostInfo';
+import {toast} from 'react-toastify';
 
 export function CreatePostPage() {
     const api = useAPI();
-    const [site, setSite] = useState<SiteInfo>();
+    const {siteName} = useSiteName();
+    const [title, setTitle] = useState('');
     const navigate = useNavigate();
 
-    const { register, handleSubmit, formState: { errors, isValid } } = useForm<CreatePostValues>({
-        mode: "onChange"
-    });
+    const handleAnswer = async (text: string): Promise<CommentInfo | undefined> => {
+        console.log('post', title, text);
 
-    useEffect(() => {
-        let site = 'main';
-        if (window.location.hostname !== process.env.REACT_APP_ROOT_DOMAIN) {
-            site = window.location.hostname.split('.')[0];
+        try {
+            const result = await api.postAPI.create(siteName, title, text);
+            console.log('CREATE', result);
+            navigate('/post/' + result.post.id);
+        }
+        catch (error) {
+            console.log('CREATE ERR', error);
+            toast.error('Пост хороший, но создать его не удалось 🤐');
         }
 
-        const siteInfo = api.cache.getSite(site);
-        if (siteInfo) {
-            setSite(siteInfo);
-        }
-    }, [api]);
+        return;
+    };
 
-    const onSubmit: SubmitHandler<CreatePostValues> = data => {
-        let site = 'main';
-        if (window.location.hostname !== process.env.REACT_APP_ROOT_DOMAIN) {
-            site = window.location.hostname.split('.')[0];
-        }
-
-        console.log(data);
-        api.postAPI.create(site, data.title, data.content)
-            .then(result => {
-                console.log('CREATE', result);
-                navigate('/post/' + result.post.id)
-            })
-            .catch(error => {
-                console.log('CREATE ERR', error);
-            })
-    }
+    const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setTitle(e.target.value);
+    };
 
     return (
         <div className={styles.container}>
-            {site && <SiteSidebar site={site} />}
-
             <div className={styles.createpost}>
-                <form onSubmit={handleSubmit(onSubmit)}>
-                    <label>Название</label>
-                    <input type="text" placeholder="Без названия" {...register("title", {
-
-                    })} />
-                    {errors.title && <p className={styles.error}>{errors.title.message}</p>}
-
-                    <label>Текст</label>
-                    <textarea {...register("content", {
-                        required: "Пост не может быть пустым",
-
-                    })} />
-                    {errors.content && <p className={styles.error}>{errors.content.message}</p>}
-
-                    <div><input type="submit" disabled={!isValid} value="Создать пост" /></div>
-
-                </form>
+                <div className={styles.form}>
+                    <input className={styles.title} type="text" placeholder="Без названия" value={title} onChange={handleTitleChange} />
+                    <CreateCommentComponent open={true} onAnswer={handleAnswer} />
+                </div>
             </div>
         </div>
     )
