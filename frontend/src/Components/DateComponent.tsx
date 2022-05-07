@@ -25,7 +25,7 @@ export default function DateComponent(props: DateComponentProps) {
             return '[сегодня в] HH:mm';
         },
         lastDay: 'D MMMM [в] HH:mm',
-        nextDay: 'D.MM.YYYY HH:mm',
+        nextDay: '[сегодня в] HH:mm',
         nextWeek: 'DD.MM.YYYY HH:mm',
         lastWeek: 'D MMMM [в] HH:mm',
         sameElse: () => {
