@@ -13,7 +13,7 @@ export default function PostPage() {
     const [search] = useSearchParams();
     const postId = params.postId ? parseInt(params.postId, 10) : 0;
     const location = useLocation();
-    const [scrolledToHash, setScrolledToHash] = useState(false);
+    const [scrolledToComment, setScrolledToComment] = useState<{postId: number, commentId: number}>();
 
     let subdomain = 'main';
     if (window.location.hostname !== process.env.REACT_APP_ROOT_DOMAIN) {
@@ -57,12 +57,13 @@ export default function PostPage() {
     };
 
     useEffect(() => {
-        if (scrolledToHash) {
-            return;
-        }
-
         if (location.hash && comments) {
-            const commentId = location.hash.substring(1);
+            const commentId = parseInt(location.hash.substring(1));
+
+            if (scrolledToComment && scrolledToComment.postId === postId && scrolledToComment.commentId) {
+                return;
+            }
+
             const el = document.querySelector(`div[data-comment-id="${commentId}"]`);
             if (el) {
                 setTimeout(() => {
@@ -71,7 +72,7 @@ export default function PostPage() {
 
                     setTimeout(() => {
                         el.classList.remove('highlight');
-                        setScrolledToHash(true);
+                        setScrolledToComment({postId, commentId});
                     }, 5000);
                 }, 100);
             }
@@ -80,17 +81,26 @@ export default function PostPage() {
             // find new comment
             const el = document.querySelector(`.${commentStyles.isNew}`);
             if (el) {
+                const commentId = parseInt(el.getAttribute('data-comment-id') || '');
+                if (!commentId) {
+                    return;
+                }
+
+                if (scrolledToComment && scrolledToComment.postId === postId && scrolledToComment.commentId) {
+                    return;
+                }
+
                 setTimeout(() => {
                     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
                     setTimeout(() => {
-                        setScrolledToHash(true);
+                        setScrolledToComment({postId, commentId});
                     }, 5000);
                 }, 100);
             }
 
         }
-    }, [location.hash, comments, scrolledToHash, unreadOnly]);
+    }, [location.hash, comments, scrolledToComment, unreadOnly]);
 
     return (
         <div className={styles.container}>
