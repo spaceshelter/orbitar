@@ -10,9 +10,9 @@ import MediaUploader from './MediaUploader';
 interface CreateCommentProps {
     open: boolean;
     comment?: CommentInfo;
-    post: PostInfo;
+    post?: PostInfo;
 
-    onAnswer: (text: string, post: PostInfo, comment?: CommentInfo) => Promise<CommentInfo>;
+    onAnswer: (text: string, post?: PostInfo, comment?: CommentInfo) => Promise<CommentInfo | undefined>;
 }
 
 export default function CreateCommentComponent(props: CreateCommentProps) {

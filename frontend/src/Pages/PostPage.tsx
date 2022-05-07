@@ -33,7 +33,10 @@ export default function PostPage() {
 
     }, [post, postId]);
 
-    const handleAnswer = (text: string, post: PostInfo, comment?: CommentInfo) => {
+    const handleAnswer = (text: string, post?: PostInfo, comment?: CommentInfo) => {
+        if (!post) {
+            return Promise.resolve(undefined);
+        }
         return new Promise<CommentInfo>((resolve, reject) => {
             postComment(text, comment?.id)
                 .then(comment => {

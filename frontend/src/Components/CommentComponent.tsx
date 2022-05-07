@@ -15,7 +15,7 @@ interface CommentProps {
     post: PostInfo;
     comment: CommentInfo;
 
-    onAnswer: (text: string, post: PostInfo, comment?: CommentInfo) => Promise<CommentInfo>;
+    onAnswer: (text: string, post?: PostInfo, comment?: CommentInfo) => Promise<CommentInfo | undefined>;
 }
 
 export default function CommentComponent(props: CommentProps) {
@@ -27,8 +27,11 @@ export default function CommentComponent(props: CommentProps) {
         setAnswerOpen(!answerOpen);
     };
 
-    const handleAnswer = (text: string, post: PostInfo, comment?: CommentInfo) => {
-        return new Promise<CommentInfo>((resolve, reject) => {
+    const handleAnswer = (text: string, post?: PostInfo, comment?: CommentInfo) => {
+        if (!post) {
+            return Promise.resolve(undefined);
+        }
+        return new Promise<CommentInfo | undefined>((resolve, reject) => {
             props.onAnswer(text, post, comment)
                 .then(result => {
                     setAnswerOpen(false);
