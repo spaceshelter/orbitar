@@ -99,8 +99,8 @@ export default function PostComponent(props: PostComponentProps) {
                     <RatingSwitch type='post' id={id} rating={{ vote, value: rating }} onVote={handleVote} />
                 </div>
                 <div className={styles.control}><CommentsCount post={props.post} /></div>
-                <div className={styles.control}><button disabled={true} onClick={toggleBookmark} className={bookmark ? styles.active : ''}><BookmarkIcon /><span className={styles.label}></span></button></div>
-                {/*<div className={styles.control}><button disabled={true}><EditIcon /></button></div>*/}
+                {/*<div className={styles.control}><button disabled={true} onClick={toggleBookmark} className={bookmark ? styles.active : ''}><BookmarkIcon /><span className={styles.label}></span></button></div>*/}
+                {/*/!*<div className={styles.control}><button disabled={true}><EditIcon /></button></div>*!/*/}
                 <div className={styles.control + ' ' + styles.options}>
                     <button onClick={toggleOptions} className={showOptions ? styles.active : ''}><OptionsIcon /></button>
                     {showOptions &&
@@ -119,7 +119,7 @@ function CommentsCount(props: {post: PostInfo}) {
     const {comments, newComments} = props.post;
 
     if (!comments) {
-        return <PostLink post={props.post}><CommentsIcon /><span className={styles.label}>Комментировать</span></PostLink>;
+        return <PostLink post={props.post}><CommentsIcon /><span className={[styles.label, styles.noComments].join(' ') }>Комментировать</span></PostLink>;
     }
 
     if (!newComments) {
