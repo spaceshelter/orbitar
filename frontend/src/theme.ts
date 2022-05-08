@@ -12,7 +12,7 @@ const theme: ThemeCollection = {
 
             'active-fg': '#3992E4',
             'negative-fg': '#ED6158',
-            'inactive-fg': 'rgba(0, 0, 0, 0.3)',
+            'inactive-fg': 'rgba(0, 0, 0, 0.5)',
             'disabled-fg': 'rgba(0, 0, 0, 0.15)',
 
             'link-fg': '#3992E4',
@@ -35,7 +35,8 @@ const theme: ThemeCollection = {
 
             topbar: {
                 fg: '#3992E4',
-                bg: 'rgba(255, 255, 255, 0.5)',
+                bg: 'rgba(255, 255, 255, 0.8)',
+                border: 'rgba(0, 0, 0, 0.1)',
                 'logo-fg': '#dcb5d1',
                 button: {
                     fg: 'rgba(0, 0, 0, 0.6)',
@@ -134,7 +135,8 @@ const theme: ThemeCollection = {
 
             topbar: {
                 fg: '#58A8BA',
-                bg: 'rgba(43, 42, 42, 0.6)',
+                bg: 'rgba(36, 36, 36, 0.8)',
+                border: 'rgba(0, 0, 0, 0.1)',
                 logo: {
                     fg: '#8b4977',
                 },

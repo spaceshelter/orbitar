@@ -4,8 +4,8 @@
 
 .feed {
     width: 100%;
-    max-width: 1024px;
-    margin: 0 auto;
+    max-width: 880px;
+    margin: 56px auto 0;
     /*margin-left: auto;*/
     /*margin-left: clamp(-200px, auto,200px);*/
     /*margin-right: clamp(-200px, auto,200px);*/

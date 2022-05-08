@@ -11,12 +11,12 @@
 
 @media only screen and (min-width: 600px) {
   .innerContainer {
-    padding: 0 88px;
+    padding: 0 102px;
   }
 }
-@media only screen and (min-width: 1024px) {
+@media only screen and (min-width: 1180px) {
   .innerContainer {
-    padding: 0 200px;
+    padding: 0 240px;
   }
 }
 
