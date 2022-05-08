@@ -117,7 +117,7 @@ const theme: ThemeCollection = {
             'link-fg': '#58A8BA',
             'link-hover-fg': '#68B1C1',
 
-            'answer-line-fg': 'rgba(255, 255, 255, 0.1)',
+            'answer-line-fg': 'rgba(255, 255, 255, 0.05)',
 
             'input-bg': 'rgba(0, 0, 0, 0.2)',
 
