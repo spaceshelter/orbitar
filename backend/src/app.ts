@@ -34,9 +34,10 @@ import PostRepository from './db/repositories/PostRepository';
 import SiteRepository from './db/repositories/SiteRepository';
 import SiteController from './api/SiteController';
 import NotificationsRepository from './db/repositories/NotificationsRepository';
-import UserKVRRepository from './db/repositories/UserKVRRepository';
 import NotificationManager from './managers/NotificationManager';
 import NotificationsController from './api/NotificationsController';
+import WebPushController from './api/WebPushController';
+import UserCredentials from './db/repositories/UserCredentials';
 
 const app = express();
 
@@ -93,16 +94,15 @@ const postRepository = new PostRepository(db);
 const siteRepository = new SiteRepository(db);
 const voteRepository = new VoteRepository(db);
 const userRepository = new UserRepository(db);
-const userKVRepository = new UserKVRRepository(db);
+const userCredentials = new UserCredentials(db);
 
 const inviteManager = new InviteManager(inviteRepository);
-const notificationManager = new NotificationManager(commentRepository, notificationsRepository, postRepository, siteRepository, userRepository, userKVRepository);
-const userManager = new UserManager(voteRepository, userRepository, notificationManager);
+const notificationManager = new NotificationManager(commentRepository, notificationsRepository, postRepository, siteRepository, userCredentials, userRepository, config.vapid, config.site);
+const userManager = new UserManager(voteRepository, userCredentials, userRepository, notificationManager);
 const feedManager = new FeedManager(bookmarkRepository, postRepository, userRepository, redis.client);
 const siteManager = new SiteManager(siteRepository, userManager, feedManager);
 const postManager = new PostManager(bookmarkRepository, commentRepository, postRepository, feedManager, notificationManager, siteManager, theParser);
 const voteManager = new VoteManager(voteRepository, postManager);
-
 
 const requests = [
     new AuthController(userManager, logger.child({ service: 'AUTH' })),
@@ -113,7 +113,8 @@ const requests = [
     new UserController(userManager, logger.child({ service: 'USER' })),
     new FeedController(feedManager, siteManager, userManager, logger.child({ service: 'FEED' })),
     new SiteController(siteManager, logger.child( { service: 'SITE' })),
-    new NotificationsController(notificationManager, logger.child({ service: 'NOTIFY' })),
+    new NotificationsController(notificationManager, userManager, logger.child({ service: 'NOTIFY' })),
+    new WebPushController(userManager, logger.child({ service: 'PUSH' })),
 ];
 
 const filterLog = winston.format((info) => {

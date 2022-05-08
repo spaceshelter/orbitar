@@ -4,8 +4,10 @@ import UserRepository from '../db/repositories/UserRepository';
 import VoteRepository from '../db/repositories/VoteRepository';
 import bcrypt from 'bcryptjs';
 import NotificationManager from './NotificationManager';
+import UserCredentials from '../db/repositories/UserCredentials';
 
 export default class UserManager {
+    private userCredentials: UserCredentials;
     private userRepository: UserRepository;
     private voteRepository: VoteRepository;
     private notificationManager: NotificationManager;
@@ -13,7 +15,8 @@ export default class UserManager {
     private cacheId: Record<number, UserInfo> = {};
     private cacheUsername: Record<string, UserInfo> = {};
 
-    constructor(voteRepository: VoteRepository, userRepository: UserRepository, notificationManager: NotificationManager) {
+    constructor(voteRepository: VoteRepository, userCredentials: UserCredentials, userRepository: UserRepository, notificationManager: NotificationManager) {
+        this.userCredentials = userCredentials;
         this.userRepository = userRepository;
         this.voteRepository = voteRepository;
         this.notificationManager = notificationManager;
@@ -118,6 +121,14 @@ export default class UserManager {
                 posts: 0
             }
         };
+    }
+
+    async setCredentials<T>(forUserId: number, type: string, value: T) {
+        return await this.userCredentials.setCredential(forUserId, type, value);
+    }
+
+    async getCredentials<T>(forUserId: number, type: string): Promise<T | undefined> {
+        return await this.userCredentials.getCredential<T>(forUserId, type);
     }
 
     private mapUserRaw(rawUser: UserRaw): UserInfo {

@@ -1,8 +1,8 @@
 import styles from './NotificationsPopup.module.css';
 import {ReactComponent as CommentIcon} from '../Assets/notifications/comment.svg';
 import {ReactComponent as MentionIcon} from '../Assets/notifications/mention.svg';
-import {useAPI} from '../AppState/AppState';
-import React, {useEffect, useState} from 'react';
+import {useAPI, useSiteName} from '../AppState/AppState';
+import React, {useEffect, useMemo, useState} from 'react';
 import {NotificationInfo} from '../API/NotificationsAPIHelper';
 import PostLink from './PostLink';
 import DateComponent from './DateComponent';
@@ -13,15 +13,57 @@ type NotificationsPopupProps = {
 
 export default function NotificationsPopup(props: NotificationsPopupProps) {
     const api = useAPI();
+    const {siteName} = useSiteName();
     const [notifications, setNotifications] = useState<NotificationInfo[]>();
     const [error, setError] = useState('');
 
+    const registerWebPush = useMemo(() => {
+        return async () => {
+            if (siteName !== 'main') {
+                // register service only on main domain
+                return;
+            }
+            // unregister old workers
+            // (await navigator.serviceWorker.getRegistrations()).forEach(r => {console.log(r); r.unregister().then();});
+
+            let registration = await navigator.serviceWorker.getRegistration('/service.js');
+            if (!registration) {
+                registration = await navigator.serviceWorker.register('/service.js', {scope: '/'});
+            }
+
+            await navigator.serviceWorker.ready;
+            const subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: process.env.REACT_APP_VAPID_PUBLIC_KEY
+            });
+            await api.webpushAPI.subscribe(subscription);
+        }
+    }, [api]);
+
     useEffect(() => {
         api.notifications.list()
-            .then(list => {
-                console.log('notifications', list);
+            .then(result => {
+                setNotifications(result.notifications);
 
-                setNotifications(list);
+                if (siteName !== 'main') {
+                    // ask for permissions only on main domain
+                    return;
+                }
+                if (!('serviceWorker' in navigator) || !('Notification' in window)) {
+                    return;
+                }
+                if (Notification.permission === 'default') {
+                     Notification.requestPermission().then(result => {
+                         if (result === 'granted') {
+                             registerWebPush().then().catch();
+                         }
+                     })
+                }
+                else if (Notification.permission === 'granted' && !result.webPushRegistered) {
+                    registerWebPush().then().catch();
+                }
+
+
             })
             .catch(err => {
                 setError('Не удалось загрузить уведомления');
@@ -74,3 +116,5 @@ export default function NotificationsPopup(props: NotificationsPopupProps) {
         </div>
     )
 }
+
+

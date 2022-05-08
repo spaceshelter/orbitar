@@ -5,14 +5,17 @@ import {APIRequest, APIResponse} from './ApiMiddleware';
 import {NotificationsListRequest, NotificationsListResponse} from './types/requests/NotificationsList';
 import {NotificationsReadRequest, NotificationsReadResponse} from './types/requests/NotificationsRead';
 import {NotificationsReadAllRequest, NotificationsReadAllResponse} from './types/requests/NotificationsReadAll';
+import UserManager from '../managers/UserManager';
 
 export default class NotificationsController {
     router = Router();
     private readonly notificationManager: NotificationManager;
-    private logger: Logger;
+    private readonly userManager: UserManager;
+    private readonly logger: Logger;
 
-    constructor(notificationManager: NotificationManager, logger) {
+    constructor(notificationManager: NotificationManager, userManager: UserManager, logger) {
         this.notificationManager = notificationManager;
+        this.userManager = userManager;
 
         this.logger = logger;
         this.router.post('/notifications/list', (req, res) => this.list(req, res));
@@ -28,8 +31,8 @@ export default class NotificationsController {
         const userId = request.session.data.userId;
         try {
             const notifications = await this.notificationManager.getNotifications(userId);
-
-            response.success({ notifications });
+            const haveWebPushCredentials = !!(await this.userManager.getCredentials(userId, 'web-push'));
+            response.success({ notifications, webPushRegistered: haveWebPushCredentials });
         }
         catch (err) {
             this.logger.error('Notifications list error', { error: err });

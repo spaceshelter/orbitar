@@ -54,19 +54,40 @@
 
 После первого запуска можно открыть приглашение http://orbitar.local/invite/initial и зарегистрировать первый юзернейм.
 
-❗️ В конфигах `docker-compose.*.yml` раньше была опечатка в названии образа `mysql_data`. Чтобы скопировать старую базу в новый образ необходимо остановить mysql и выполнить:
-```
-docker run --rm \
-  --volume orbitar-dev_myqsl_db:/olddb \
-  --volume orbitar-dev_mysql_db:/newdb \
-  ubuntu cp -rpv /olddb/. /newdb/
-```
+### Настройка загрузки изображений на imgur (опционально)
+1. Сгенерировать client_id на странице https://api.imgur.com/oauth2/addclient.
+    
+    В `Authorization type` выбрать `Anonymous usage`, в `Authorization callback URL` - любой валидный URL (он требуется для регистрации, но не используется). 
+2. В корневом `.env` файле прописать полученный `client_id`
+   ```
+    IMGUR_CLIENT_ID=<client_id>
+   ```
+3. Перезапустить caddy
+   ```
+   docker-compose -p orbitar-dev -f docker-compose.dev.yml up -d caddy
+   ```
 
+### Настройка web-push (опционально)
+1. В директории `backend` выполнить генерацию VAPID-ключей:
+    ```
+    npx web-push generate-vapid-keys
+    ```
+2. Сгенерированные ключи прописать в `backend/.env.local` и указать ваш контактный адрес (email или url):
+    ```
+    VAPID_PUBLIC_KEY=<Public Key>
+    VAPID_PRIVATE_KEY=<Private Key>
+    VAPID_CONTACT=<email@email.com>
+    ```
+3. Публичный ключ так же прописать в `frontend/.env.local`:
+   ```
+   REACT_APP_VAPID_PUBLIC_KEY=<Public Key>
+   ```
+4. Для локальной отладки в Chrome открыть `chrome://flags/#unsafely-treat-insecure-origin-as-secure`, включить опцию и добавить в разрешённые адреса `http://orbitar.local`. 
 
-### Запуск полностью в контейнере (локально)
+### Запуск production-сборки полностью в контейнере
 ```
-# Пересборка фронта и бэка
-docker-compose -p orbitar -f docker-compose.local.yml build --no-cache
+# Пересборка фронта и бэка (если необходимо)
+docker-compose -p orbitar -f docker-compose.local.yml build --no-cache frontend backend
 # Запуск
 docker-compose -p orbitar -f docker-compose.local.yml up
 ```
