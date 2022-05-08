@@ -33,13 +33,6 @@ export default function Topbar(props: TopbarProps) {
         return <></>
     }
 
-    const handleLogout = (e: React.MouseEvent) => {
-        e.preventDefault();
-        api.auth.signOut().then(() => {
-            navigate(location.pathname);
-        });
-    };
-
     const toggleTheme = (e: React.MouseEvent) => {
         e.preventDefault();
         if (theme === 'dark') {
@@ -73,7 +66,6 @@ export default function Topbar(props: TopbarProps) {
                 <Link to={'/watch'} className={userStats.watch.comments > 0 ? styles.active : ''}><HotIcon /><span className={styles.label}>{userStats.watch.comments > 0 ? userStats.watch.comments : ''}</span></Link>
                 <button disabled={true} className={userStats.notifications > 0 ? styles.active : ''}><NotificationIcon /><span className={styles.label}>{userStats.notifications > 0 ? userStats.notifications : ''}</span></button>
                 <Link to={'/user/' + userInfo.username}><ProfileIcon /></Link>
-                <button className={styles.logout} onClick={handleLogout}><LogoutIcon /></button>
             </div>
         </div>
     )
