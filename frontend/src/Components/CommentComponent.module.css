@@ -6,7 +6,7 @@
     font-size: 16px;
     line-height: 1.5em;
     color: var(--text-fg);
-    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
 }
 @media only screen and (max-width: 600px) {
     .content {  font-size: 14px; }
@@ -95,14 +95,10 @@
 .answers {
     margin-top: 32px;
     margin-bottom: 32px;
-    padding-left: 16px;
+    padding-left: 8px;
     border-left: 1px solid var(--answer-line-fg);
 }
-@media only screen and (min-width: 600px) {
-    .answers {
-        padding-left: 7px;
-    }
-}
+
 @media only screen and (min-width: 990px) {
     .answers {
         padding-left: 20px;
@@ -125,19 +121,19 @@
     margin-left: -8px;
     padding-left: 8px;
 }
-
-@media only screen and (min-width: 600px) {
-    .isNew {
-        margin-left: -8px;
-        padding-left: 8px;
-    }
-}
 @media only screen and (min-width: 990px) {
     .isNew {
         margin-left: -21px;
         padding-left: 21px;
     }
 }
+
+/* highlight only top level of unread comments */
+.isNew .isNew {
+    border-left: 1px solid var(--answer-line-fg);
+}
+
+
 
 .newComment {
     color: var(--active-fg);
