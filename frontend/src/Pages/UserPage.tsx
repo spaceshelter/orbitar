@@ -38,6 +38,7 @@ export default function UserPage() {
         const profile = state.profile;
         const user = profile.profile;
         const rating = {value: user.karma, vote: user.vote};
+        const isMyProfile = userInfo && userInfo.id == user.id;
 
         return (
             <div className={styles.container}>
@@ -64,7 +65,7 @@ export default function UserPage() {
                                 return <span key={idx}><Username  user={user}/>{idx < profile.invites.length - 1 ? ', ' : ''}</span>;
                             })}
                         </div>}
-                        <button className={styles.logout} onClick={handleLogout}><LogoutIcon /> Эвакуация. A-A-A-A! </button>
+                        { isMyProfile && <button className={styles.logout} onClick={handleLogout}><LogoutIcon /> Эвакуация. A-A-A-A! </button> }
                     </>}
                     {isPosts && <>
                         Попозже покажем
