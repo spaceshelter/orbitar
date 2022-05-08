@@ -2,7 +2,7 @@ import APIBase from './APIBase';
 import {UserInfo} from '../Types/UserInfo';
 import {SiteInfo} from '../Types/SiteInfo';
 
-type ContentFormat = 'html' | 'source';
+export type ContentFormat = 'html' | 'source';
 
 export type PostEntity = {
     id: number;

@@ -11,6 +11,16 @@ import FeedManager from './FeedManager';
 import {PostInfo} from './types/PostInfo';
 import {CommentInfo} from './types/CommentInfo';
 import NotificationManager from './NotificationManager';
+import {PostEntity} from '../api/types/entities/PostEntity';
+import {UserEntity} from '../api/types/entities/UserEntity';
+import {SiteBaseEntity} from '../api/types/entities/SiteEntity';
+import UserManager from './UserManager';
+
+export interface EnrichedPosts {
+    posts: PostEntity[]
+    users: Record<number, UserEntity>
+    sites: Record<number, SiteBaseEntity>
+}
 
 export default class PostManager {
     private bookmarkRepository: BookmarkRepository;
@@ -19,11 +29,12 @@ export default class PostManager {
     private feedManager: FeedManager;
     private notificationManager: NotificationManager;
     private siteManager: SiteManager;
+    private userManager: UserManager;
     private parser: TheParser;
 
     constructor(
         bookmarkRepository: BookmarkRepository, commentRepository: CommentRepository, postRepository: PostRepository,
-        feedManager: FeedManager, notificationManager: NotificationManager, siteManager: SiteManager,
+        feedManager: FeedManager, notificationManager: NotificationManager, siteManager: SiteManager, userManager: UserManager,
         parser: TheParser
     ) {
         this.bookmarkRepository = bookmarkRepository;
@@ -32,11 +43,20 @@ export default class PostManager {
         this.feedManager = feedManager;
         this.notificationManager = notificationManager;
         this.siteManager = siteManager;
+        this.userManager = userManager;
         this.parser = parser;
     }
 
     getPost(postId: number, forUserId: number): Promise<PostRawWithUserData | undefined> {
         return this.postRepository.getPostWithUserData(postId, forUserId);
+    }
+
+    getPostsByUser(userId: number, forUserId: number, page: number, perpage: number): Promise<PostRawWithUserData[]> {
+        return this.postRepository.getPostsByUser(userId, forUserId, page, perpage);
+    }
+
+    getPostsByUserTotal(userId: number): Promise<number> {
+        return this.postRepository.getPostsByUserTotal(userId);
     }
 
     async createPost(siteName: string, userId: number, title: string, content: string, format: ContentFormat): Promise<PostInfo> {
@@ -126,5 +146,47 @@ export default class PostManager {
 
     setWatch(postId: number, userId: number, bookmarked: boolean) {
         return this.bookmarkRepository.setWatch(postId, userId, bookmarked);
+    }
+
+    async enrichRawPosts(rawPosts: PostRawWithUserData[], format: string): Promise<EnrichedPosts> {
+        const sites: Record<number, SiteBaseEntity> = {};
+        const users: Record<number, UserEntity> = {};
+        const posts: PostEntity[] = [];
+        for (const post of rawPosts) {
+            if (!users[post.author_id]) {
+                users[post.author_id] = await this.userManager.getById(post.author_id);
+            }
+
+            let siteName = '';
+            if (!sites[post.site_id]) {
+                const site = await this.siteManager.getSiteById(post.site_id);
+                siteName = site?.site || '';
+            }
+            else {
+                siteName = sites[post.site_id].site;
+            }
+
+
+            posts.push({
+                    id: post.post_id,
+                    site: siteName,
+                    author: post.author_id,
+                    created: post.created_at.toISOString(),
+                    title: post.title,
+                    content: format === 'html' ? post.html : post.source,
+                    rating: post.rating,
+                    comments: post.comments,
+                    newComments: post.read_comments ? Math.max(0, post.comments - post.read_comments) : post.comments,
+                    bookmark: !!post.bookmark,
+                    watch: !!post.watch,
+                    vote: post.vote
+                });
+        }
+
+        return {
+            posts,
+            users,
+            sites
+        };
     }
 }

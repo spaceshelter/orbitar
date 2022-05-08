@@ -1,8 +1,9 @@
-import PostAPI, {CommentEntity} from './PostAPI';
+import PostAPI, {CommentEntity, PostEntity} from './PostAPI'
 import {CommentInfo, PostInfo} from '../Types/PostInfo';
 import {SiteInfo} from '../Types/SiteInfo';
 import APICache from './APICache';
 import {AppStateSetters} from '../AppState/AppState';
+import {UserInfo} from "../Types/UserInfo"
 
 type FeedPostsResult = {
     posts: PostInfo[];
@@ -81,19 +82,8 @@ export default class PostAPIHelper {
     async feedPosts(site: string, page: number, perPage: number): Promise<FeedPostsResult> {
         const response = await this.postAPI.feedPosts(site, page, perPage);
         const siteInfo = this.cache.setSite(response.site);
-
-        const posts: PostInfo[] = response.posts.map(post => {
-            const p: PostInfo = { ...post } as any;
-            // fix fields
-            p.author = this.cache.setUser(response.users[post.author]);
-            p.created = this.postAPI.api.fixDate(new Date(post.created));
-
-            this.cache.setPost(p);
-            return p;
-        });
-
         return {
-            posts: posts,
+            posts: this.fixPosts(response.posts, response.users),
             site: siteInfo,
             total: response.total
         };
@@ -101,19 +91,8 @@ export default class PostAPIHelper {
 
     async feedSubscriptions(page: number, perPage: number): Promise<FeedSubscriptionsResult> {
         const response = await this.postAPI.feedSubscriptions(page, perPage);
-
-        const posts: PostInfo[] = response.posts.map(post => {
-            const p: PostInfo = { ...post } as any;
-            // fix fields
-            p.author = this.cache.setUser(response.users[post.author]);
-            p.created = this.postAPI.api.fixDate(new Date(post.created));
-
-            this.cache.setPost(p);
-            return p;
-        });
-
         return {
-            posts: posts,
+            posts: this.fixPosts(response.posts, response.users),
             sites: response.sites,
             total: response.total
         };
@@ -121,22 +100,23 @@ export default class PostAPIHelper {
 
     async feedWatch(all: boolean, page: number, perPage: number): Promise<FeedSubscriptionsResult> {
         const response = await this.postAPI.feedWatch(all, page, perPage);
+        return {
+            posts: this.fixPosts(response.posts, response.users),
+            sites: response.sites,
+            total: response.total
+        };
+    }
 
-        const posts: PostInfo[] = response.posts.map(post => {
+    fixPosts(posts: PostEntity[], users: Record<number, UserInfo>): PostInfo[] {
+        return posts.map(post => {
             const p: PostInfo = { ...post } as any;
             // fix fields
-            p.author = this.cache.setUser(response.users[post.author]);
+            p.author = this.cache.setUser(users[post.author]);
             p.created = this.postAPI.api.fixDate(new Date(post.created));
 
             this.cache.setPost(p);
             return p;
         });
-
-        return {
-            posts: posts,
-            sites: response.sites,
-            total: response.total
-        };
     }
 
     async comment(content: string, postId: number, commentId?: number): Promise<CommentResponse> {

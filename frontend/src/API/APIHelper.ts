@@ -40,10 +40,10 @@ export default class APIHelper {
         this.inviteAPI = new InviteAPI(api);
         this.postAPI = new PostAPI(api);
         this.voteAPI = new VoteAPI(api);
-        this.userAPI = new UserAPI(api)
         this.siteAPI = new SiteAPI(api);
         this.notificationsAPI = new NotificationsAPI(api);
         this.post = new PostAPIHelper(this.postAPI, setters, this.cache);
+        this.userAPI = new UserAPI(api, this.post)
         this.auth = new AuthAPIHelper(this.authAPI, setters);
         this.user = new UserAPIHelper(this.userAPI, this.cache);
         this.site = new SiteAPIHelper(this.siteAPI, setters);

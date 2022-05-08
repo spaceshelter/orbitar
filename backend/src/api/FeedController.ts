@@ -3,26 +3,27 @@ import {Logger} from 'winston';
 import {Router} from 'express';
 import {APIRequest, APIResponse, joiFormat, validate} from './ApiMiddleware';
 import Joi from 'joi';
-import {PostEntity} from './types/entities/PostEntity';
 import UserManager from '../managers/UserManager';
 import SiteManager from '../managers/SiteManager';
 import {FeedSubscriptionsRequest, FeedSubscriptionsResponse} from './types/requests/FeedSubscriptions';
 import {FeedPostsRequest, FeedPostsResponse} from './types/requests/FeedPosts';
 import {FeedWatchRequest, FeedWatchResponse} from './types/requests/FeedWatch';
 import {SiteBaseEntity} from './types/entities/SiteEntity';
-import {UserEntity} from './types/entities/UserEntity';
+import PostManager from '../managers/PostManager';
 
 export default class FeedController {
     public router = Router();
     private feedManager: FeedManager;
     private siteManager: SiteManager;
     private userManager: UserManager;
+    private postManager: PostManager;
     private logger: Logger;
 
-    constructor(feedManager: FeedManager, siteManager: SiteManager, userManager: UserManager, logger: Logger) {
+    constructor(feedManager: FeedManager, siteManager: SiteManager, userManager: UserManager, postManager: PostManager, logger: Logger) {
         this.feedManager = feedManager;
         this.siteManager = siteManager;
         this.userManager = userManager;
+        this.postManager = postManager;
         this.logger = logger;
 
         const feedSubscriptionsSchema = Joi.object<FeedSubscriptionsRequest>({
@@ -59,49 +60,16 @@ export default class FeedController {
         try {
             const total = await this.feedManager.getSubscriptionsTotal(userId);
             const rawPosts = await this.feedManager.getSubscriptionFeed(userId, page, perPage);
-
-            const sitesN: Record<number, SiteBaseEntity> = {};
-            const users: Record<number, UserEntity> = {};
-            const posts: PostEntity[] = [];
-            for (const post of rawPosts) {
-                if (!users[post.author_id]) {
-                    users[post.author_id] = await this.userManager.getById(post.author_id);
-                }
-
-                let siteName = '';
-                if (!sitesN[post.site_id]) {
-                    const site = await this.siteManager.getSiteById(post.site_id);
-                    siteName = site?.site || '';
-                }
-                else {
-                    siteName = sitesN[post.site_id].site;
-                }
-
-
-                posts.push({
-                    id: post.post_id,
-                    site: siteName,
-                    author: post.author_id,
-                    created: post.created_at.toISOString(),
-                    title: post.title,
-                    content: format === 'html' ? post.html : post.source,
-                    rating: post.rating,
-                    comments: post.comments,
-                    newComments: post.read_comments ? Math.max(0, post.comments - post.read_comments) : post.comments,
-                    bookmark: !!post.bookmark,
-                    watch: !!post.watch,
-                    vote: post.vote
-                });
-            }
-
+            const { posts, users, sites } = await this.postManager.enrichRawPosts(rawPosts, format);
             // reformat sites
-            const sites: Record<string, SiteBaseEntity> = Object.fromEntries(Object.entries(sitesN).map(([_, site]) => { return [ site.site, site ]; }));
+            const sitesByName: Record<string, SiteBaseEntity> =
+                Object.fromEntries(Object.entries(sites).map(([_, site]) => { return [ site.site, site ]; }));
 
             response.success({
                 posts: posts,
                 total: total,
                 users: users,
-                sites: sites
+                sites: sitesByName
             });
         }
         catch (err) {
@@ -126,31 +94,8 @@ export default class FeedController {
 
             const siteId = site.id;
             const total = await this.feedManager.getSiteTotal(siteId);
-
             const rawPosts = await this.feedManager.getSiteFeed(userId, siteId, page, perPage);
-
-            const users: Record<number, UserEntity> = {};
-            const posts: PostEntity[] = [];
-            for (const post of rawPosts) {
-                if (!users[post.author_id]) {
-                    users[post.author_id] = await this.userManager.getById(post.author_id);
-                }
-
-                posts.push({
-                    id: post.post_id,
-                    site: site.site,
-                    author: post.author_id,
-                    created: post.created_at.toISOString(),
-                    title: post.title,
-                    content: format === 'html' ? post.html : post.source,
-                    rating: post.rating,
-                    comments: post.comments,
-                    newComments: post.read_comments ? Math.max(0, post.comments - post.read_comments) : post.comments,
-                    bookmark: !!post.bookmark,
-                    watch: !!post.watch,
-                    vote: post.vote
-                });
-            }
+            const { posts, users } = await this.postManager.enrichRawPosts(rawPosts, format);
 
             response.success({
                 posts: posts,
@@ -176,49 +121,16 @@ export default class FeedController {
         try {
             const total = await this.feedManager.getWatchTotal(userId, filter === 'all');
             const rawPosts = await this.feedManager.getWatchFeed(userId, page, perPage, filter === 'all');
-
-            const sitesN: Record<number, SiteBaseEntity> = {};
-            const users: Record<number, UserEntity> = {};
-            const posts: PostEntity[] = [];
-            for (const post of rawPosts) {
-                if (!users[post.author_id]) {
-                    users[post.author_id] = await this.userManager.getById(post.author_id);
-                }
-
-                let siteName = '';
-                if (!sitesN[post.site_id]) {
-                    const site = await this.siteManager.getSiteById(post.site_id);
-                    siteName = site?.site || '';
-                }
-                else {
-                    siteName = sitesN[post.site_id].site;
-                }
-
-
-                posts.push({
-                    id: post.post_id,
-                    site: siteName,
-                    author: post.author_id,
-                    created: post.created_at.toISOString(),
-                    title: post.title,
-                    content: format === 'html' ? post.html : post.source,
-                    rating: post.rating,
-                    comments: post.comments,
-                    newComments: post.read_comments ? Math.max(0, post.comments - post.read_comments) : post.comments,
-                    bookmark: !!post.bookmark,
-                    watch: !!post.watch,
-                    vote: post.vote
-                });
-            }
-
+            const { posts, users, sites } = await this.postManager.enrichRawPosts(rawPosts, format);
             // reformat sites
-            const sites: Record<string, SiteBaseEntity> = Object.fromEntries(Object.entries(sitesN).map(([_, site]) => { return [ site.site, site ]; }));
+            const sitesByName: Record<string, SiteBaseEntity> =
+                Object.fromEntries(Object.entries(sites).map(([_, site]) => { return [ site.site, site ]; }));
 
             response.success({
                 posts: posts,
                 total: total,
                 users: users,
-                sites: sites
+                sites: sitesByName
             });
         }
         catch (err) {

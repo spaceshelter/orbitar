@@ -7,6 +7,7 @@ import DateComponent from '../Components/DateComponent';
 import {useUserProfile} from '../API/use/useUserProfile';
 import {ReactComponent as LogoutIcon} from "../Assets/logout.svg";
 import {useAppState} from "../AppState/AppState";
+import UserProfilePosts from "../Components/UserProfilePosts"
 
 export default function UserPage() {
 
@@ -67,9 +68,7 @@ export default function UserPage() {
                         </div>}
                         { isMyProfile && <button className={styles.logout} onClick={handleLogout}><LogoutIcon /> Эвакуация. A-A-A-A! </button> }
                     </>}
-                    {isPosts && <>
-                        Попозже покажем
-                    </>}
+                    {isPosts && <UserProfilePosts username={user.username} />}
                     {isComments && <>
                         И так сойдёт!
                     </>}
