@@ -67,22 +67,37 @@
    docker-compose -p orbitar-dev -f docker-compose.dev.yml up -d caddy
    ```
 
-### Настройка web-push (опционально)
-1. В директории `backend` выполнить генерацию VAPID-ключей:
+### Настройка локального https (опционально)
+1. В `frontend/.env.local` добавить `WDS_SOCKET_PORT=0`
+2. Сгенерировать самоподписанный сертификат для https:
+   ```
+   cd caddy
+   openssl req -x509 -sha256 -nodes -newkey rsa:2048 -days 365 \
+     -config openssl.cnf -extensions req_ext \
+     -keyout certs/orbitar.key -out certs/orbitar.crt
+   ```
+   Сгенерированный `certs/orbitar.crt` добавить в систему/браузер как доверенный.
+
+3. Для запуска контейнеров использовать конфиг `docker-compose.ssl.dev.yml`
+
+
+### Настройка Web Push Notifications (опционально)
+1. Настроить https, либо разрешить в браузере работу Service Workers по http.
+
+2. В директории `backend` выполнить генерацию VAPID-ключей:
     ```
     npx web-push generate-vapid-keys
     ```
-2. Сгенерированные ключи прописать в `backend/.env.local` и указать ваш контактный адрес (email или url):
+3. Сгенерированные ключи прописать в `backend/.env.local` и указать ваш контактный адрес (email или url):
     ```
     VAPID_PUBLIC_KEY=<Public Key>
     VAPID_PRIVATE_KEY=<Private Key>
     VAPID_CONTACT=<email@email.com>
     ```
-3. Публичный ключ так же прописать в `frontend/.env.local`:
+4. В `frontend/.env.local` добавить публичный ключ и `WDS_SOCKET_PORT=0`:
    ```
    REACT_APP_VAPID_PUBLIC_KEY=<Public Key>
    ```
-4. Для локальной отладки в Chrome открыть `chrome://flags/#unsafely-treat-insecure-origin-as-secure`, включить опцию и добавить в разрешённые адреса `http://orbitar.local`. 
 
 ### Запуск production-сборки полностью в контейнере
 ```
