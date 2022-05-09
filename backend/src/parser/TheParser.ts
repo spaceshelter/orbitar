@@ -1,5 +1,5 @@
-import { parseDocument } from 'htmlparser2';
-import { Element, ChildNode } from 'domhandler';
+import {DomHandler, DomHandlerOptions, Parser, ParserOptions} from 'htmlparser2';
+import { Document, Element, ChildNode } from 'domhandler';
 import { escape as htmlEscape } from 'html-escaper';
 import escapeHTML from 'escape-html';
 import Url from 'url-parse';
@@ -11,6 +11,15 @@ export type ParseResult = {
     urls: string[];
     images: string[];
 };
+
+class ParserExtended extends Parser {
+    override isVoidElement(name: string): boolean {
+        if (name === 'video') {
+            return true;
+        }
+        return super.isVoidElement(name);
+    }
+}
 
 export default class TheParser {
     private readonly allowedTags: Record<string, ((node: Element) => ParseResult) | boolean>;
@@ -29,8 +38,14 @@ export default class TheParser {
         };
     }
 
+    private parseDocument(data: string, options?: ParserOptions & DomHandlerOptions): Document {
+        const handler = new DomHandler(undefined, options);
+        new ParserExtended(handler, options).end(data);
+        return handler.root;
+    }
+
     parse(text: string): ParseResult {
-        const doc = parseDocument(text, {
+        const doc = this.parseDocument(text, {
             decodeEntities: false
         });
 
