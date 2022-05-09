@@ -15,7 +15,7 @@ import {PostBookmarkRequest, PostBookmarkResponse} from './types/requests/PostBo
 import {PostCommentRequest, PostCommentResponse} from './types/requests/PostComment';
 import {UserEntity} from './types/entities/UserEntity';
 import {PostWatchRequest, PostWatchResponse} from './types/requests/PostWatch';
-import {PreviewRequest, PreviewResponse} from "./types/requests/Preview"
+import {PreviewRequest, PreviewResponse} from './types/requests/Preview';
 
 export default class PostController {
     public router = Router();
