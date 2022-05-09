@@ -98,6 +98,7 @@ button.quote {
     border: none;
     opacity: 0.8;
     margin-right: 5px;
+    color: var(--fg);
 }
 
 .editor {
