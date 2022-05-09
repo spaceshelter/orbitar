@@ -1,11 +1,11 @@
 .container {
-    background: var(--item-bg);
-    margin: 40px -20px 0;
-    border-radius: 6px;
+    width: 100%;
+    max-width: 880px;
+    margin: 56px auto 0;
 }
 
 .header {
-    padding: 10px 20px;
+    padding: 10px 0;
 }
 
 .karma {
@@ -14,7 +14,7 @@
 }
 
 .controls {
-    padding: 10px 20px;
+    padding: 10px 0;
     background: var(--controls-bg);
 }
 
@@ -26,9 +26,8 @@
     font-weight: bold;
 }
 
-
 .userinfo {
-    padding: 10px 20px;
+    padding: 10px 0;
 }
 
 .username {
