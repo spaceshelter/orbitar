@@ -5,53 +5,57 @@ import {
     UserNotificationMention
 } from './types/UserNotification';
 import NotificationsRepository from '../db/repositories/NotificationsRepository';
-import UserKVRRepository from '../db/repositories/UserKVRRepository';
 import UserRepository from '../db/repositories/UserRepository';
 import CommentRepository from '../db/repositories/CommentRepository';
 import {NotificationRaw} from '../db/types/NotificationRaw';
 import PostRepository from '../db/repositories/PostRepository';
 import SiteRepository from '../db/repositories/SiteRepository';
 import {CommentBaseInfo} from './types/CommentInfo';
+import webpush from 'web-push';
+import {SiteConfig, VapidConfig} from '../config';
+import WebPushRepository from '../db/repositories/WebPushRepository';
+
+
 
 export default class NotificationManager {
-    private commentRepository: CommentRepository;
-    private notificationsRepository: NotificationsRepository;
-    private postRepository: PostRepository;
-    private siteRepository: SiteRepository;
-    private userKVRepository: UserKVRRepository;
-    private userRepository: UserRepository;
+    private readonly commentRepository: CommentRepository;
+    private readonly notificationsRepository: NotificationsRepository;
+    private readonly postRepository: PostRepository;
+    private readonly siteRepository: SiteRepository;
+    private readonly userRepository: UserRepository;
+    private readonly webPushRepository: WebPushRepository;
+    private couldSendWebPush = false;
+    private siteConfig: SiteConfig;
 
     constructor(
         commentRepository: CommentRepository, notificationsRepository: NotificationsRepository,
         postRepository: PostRepository, siteRepository: SiteRepository,
-        userRepository: UserRepository, userKVRepository: UserKVRRepository
+        userRepository: UserRepository, webPushRepository: WebPushRepository,
+        vapidConfig: VapidConfig,
+        siteConfig: SiteConfig
     ) {
         this.commentRepository = commentRepository;
         this.notificationsRepository = notificationsRepository;
         this.postRepository = postRepository;
         this.siteRepository = siteRepository;
-        this.userKVRepository = userKVRepository;
         this.userRepository = userRepository;
+        this.webPushRepository = webPushRepository;
+        this.siteConfig = siteConfig;
+
+        console.log('VAPID', vapidConfig);
+
+        if (vapidConfig.publicKey && vapidConfig.privateKey && vapidConfig.contact) {
+            webpush.setVapidDetails(vapidConfig.contact, vapidConfig.publicKey, vapidConfig.privateKey);
+            this.couldSendWebPush = true;
+        }
     }
 
     async getNotificationsCount(forUserId: number) {
-        let sinceId = 0;
-        const lastRead = await this.userKVRepository.getValue(forUserId, 'last-read-notification');
-        if (lastRead) {
-            sinceId = parseInt(lastRead);
-        }
-
-        return await this.notificationsRepository.getUnreadNotificationsCount(forUserId, sinceId);
+        return await this.notificationsRepository.getUnreadNotificationsCount(forUserId);
     }
 
     async getNotifications(forUserId: number): Promise<UserNotificationExpanded[]> {
-        let sinceId = 0;
-        const lastRead = await this.userKVRepository.getValue(forUserId, 'last-read-notification');
-        if (lastRead) {
-            sinceId = parseInt(lastRead);
-        }
-
-        const rawNotifications = await this.notificationsRepository.getNotifications(forUserId, sinceId);
+        const rawNotifications = await this.notificationsRepository.getNotifications(forUserId);
 
         const notifications: UserNotificationExpanded[] = [];
         for (const rawNotification of rawNotifications) {
@@ -103,7 +107,9 @@ export default class NotificationManager {
                     }
 
                     return {
+                        id: notification.notification_id,
                         type: data.type,
+                        date: notification.created_at,
                         source: {
                             byUser,
                             post,
@@ -123,7 +129,10 @@ export default class NotificationManager {
 
     async sendNotification(forUserId: number, notification: UserNotification) {
         const json = JSON.stringify(notification);
-        await this.notificationsRepository.addNotification(forUserId, notification.type, json);
+        await this.notificationsRepository.addNotification(forUserId, notification.type, notification.source.byUserId, notification.source.postId, notification.source.commentId, json);
+
+        // send push in background
+        this.sendWebPush(forUserId, notification).then().catch();
     }
 
     async sendAnswerNotify(parentCommentId: number, byUserId: number, postId: number, commentId?: number) {
@@ -132,12 +141,13 @@ export default class NotificationManager {
             return false;
         }
 
-        // if (commentRaw.author_id === byUserId) {
-        //     return false;
-        // }
+        if (commentRaw.author_id === byUserId) {
+            return false;
+        }
 
         const notification: UserNotificationAnswer = {
             type: 'answer',
+            date: new Date(),
             source: {
                 byUserId,
                 postId,
@@ -172,6 +182,7 @@ export default class NotificationManager {
 
         const notification: UserNotificationMention = {
             type: 'mention',
+            date: new Date(),
             source: {
                 byUserId,
                 postId,
@@ -184,7 +195,74 @@ export default class NotificationManager {
         return true;
     }
 
-    async setLastReadNotification(forUserId: number, notificationId: number) {
-        await this.userKVRepository.setValue(forUserId, 'last-read-notification', ''+notificationId);
+    async setRead(forUserId: number, notificationId: number) {
+        await this.notificationsRepository.setRead(forUserId, notificationId);
+    }
+
+    async setReadForPost(forUserId: number, postId: number) {
+        return await this.notificationsRepository.setReadForPost(forUserId, postId);
+    }
+
+    async setReadAll(forUserId: number) {
+        await this.notificationsRepository.setReadAll(forUserId);
+    }
+
+    private async sendWebPush(forUserId: number, notification: UserNotification) {
+        if (!this.couldSendWebPush) {
+            return;
+        }
+
+        if (!notification.source.byUserId || !notification.source.commentId) {
+            return;
+        }
+
+        const subscriptions = await this.webPushRepository.getSubscriptions(forUserId);
+        if (!subscriptions.length) {
+            return;
+        }
+
+        const sender = await this.userRepository.getUserById(notification.source.byUserId);
+        const comment = await this.commentRepository.getComment(notification.source.commentId);
+        const site = await this.siteRepository.getSiteById(comment.site_id);
+
+        if (!sender || !comment || !site) {
+            return;
+        }
+
+        const baseUrl = (this.siteConfig.http ? 'http://' : 'https://') + (site.subdomain === 'main' ? '' : site.subdomain + '.') + this.siteConfig.domain;
+
+        let commentText = comment.source;
+        if (commentText.length > 30) {
+            commentText = commentText.substring(0, 30) + '...';
+        }
+
+        const url = `${baseUrl}/post/${notification.source.postId}#${notification.source.commentId}`;
+        const icon = `${baseUrl}/favicon.ico`;
+
+        let title = '';
+        switch (notification.type) {
+            case 'answer': {
+                title = `${sender.username} вам ответил`;
+                break;
+            }
+            case 'mention': {
+                title = `${sender.username} ваc упомянул`;
+                break;
+            }
+            default: {
+                return;
+            }
+        }
+
+        for (const subscription of subscriptions) {
+            try {
+                await webpush.sendNotification(subscription, JSON.stringify({title, body: commentText, icon, url}));
+            }
+            catch (err) {
+                if (err.statusCode === 410) {
+                    await this.webPushRepository.resetSubscription(forUserId, subscription.keys.auth);
+                }
+            }
+        }
     }
 }

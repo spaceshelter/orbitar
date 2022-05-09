@@ -11,6 +11,8 @@ import UserAPIHelper from './UserAPIHelper';
 import UserAPI from './UserAPI';
 import SiteAPI from './SiteAPI';
 import SiteAPIHelper from './SiteAPIHelper';
+import NotificationsAPI from './NotificationsAPI';
+import NotificationsAPIHelper from './NotificationsAPIHelper';
 
 export default class APIHelper {
     auth: AuthAPIHelper;
@@ -24,6 +26,8 @@ export default class APIHelper {
     userAPI: UserAPI;
     siteAPI: SiteAPI;
     site: SiteAPIHelper;
+    notificationsAPI: NotificationsAPI;
+    notifications: NotificationsAPIHelper;
     private baseAPI: APIBase;
     private setters: AppStateSetters;
     private readonly siteName: string;
@@ -38,10 +42,12 @@ export default class APIHelper {
         this.voteAPI = new VoteAPI(api);
         this.userAPI = new UserAPI(api)
         this.siteAPI = new SiteAPI(api);
+        this.notificationsAPI = new NotificationsAPI(api);
         this.post = new PostAPIHelper(this.postAPI, setters, this.cache);
         this.auth = new AuthAPIHelper(this.authAPI, setters);
         this.user = new UserAPIHelper(this.userAPI, this.cache);
         this.site = new SiteAPIHelper(this.siteAPI, setters);
+        this.notifications = new NotificationsAPIHelper(this.notificationsAPI, setters);
         this.setters = setters;
 
         let siteName = 'main';
@@ -52,8 +58,6 @@ export default class APIHelper {
             siteName = 'main';
         }
         this.siteName = siteName;
-
-        console.log('NEW API HELPER', Math.random());
     }
 
     updateSetters(setters: AppStateSetters) {

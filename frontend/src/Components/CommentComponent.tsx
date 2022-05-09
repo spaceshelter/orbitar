@@ -58,7 +58,7 @@ export default function CommentComponent(props: CommentProps) {
             <div className={styles.body}>
                 <div className={styles.signature}>
                     {showSite ? <><Link to={`//${site}.${process.env.REACT_APP_ROOT_DOMAIN}/`}>{site}</Link> • </> : ''}
-                    <Username className={styles.username} user={author} /> • <PostLink post={props.post}><DateComponent date={created} /></PostLink>
+                    <Username className={styles.username} user={author} /> • <PostLink post={props.post} commentId={props.comment.id}><DateComponent date={created} /></PostLink>
                 </div>
                 <div className={styles.content}>
                     <ContentComponent className={styles.commentContent} content={props.comment.content} />

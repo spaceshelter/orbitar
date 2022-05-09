@@ -1,0 +1,27 @@
+# openssl req -x509 -sha256 -nodes -newkey rsa:2048 -days 365 -config openssl.cnf -extensions req_ext -keyout orbitar.key -out orbitar.crt
+
+[ req ]
+distinguished_name = req_distinguished_name
+attributes = req_attributes
+req_extensions = req_ext
+
+[ req_distinguished_name ]
+countryName = Country Name
+countryName_default = US
+commonName = Common Name
+commonName_default = orbitar.local
+
+[ req_attributes ]
+challengePassword = orbitar
+
+[ req_ext ]
+subjectAltName = @alt_names
+
+#[ v3_req ]
+#basicConstraints = CA:FALSE
+#keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+#subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1 = orbitar.local
+DNS.2 = *.orbitar.local
