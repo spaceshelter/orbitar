@@ -1,7 +1,7 @@
-export type PreviewRequest = {
+export type PostPreviewRequest = {
     content: string;
 };
 
-export type PreviewResponse = {
+export type PostPreviewResponse = {
     content: string;
 };

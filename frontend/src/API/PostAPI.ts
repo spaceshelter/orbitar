@@ -111,7 +111,7 @@ type PostReadResponse = {
     }
 };
 
-type PreviewRequestResponse = {
+type PostPreviewRequestResponse = {
     content: string;
 }
 
@@ -185,8 +185,8 @@ export default class PostAPI {
         });
     }
 
-    preview(text: string): Promise<PreviewRequestResponse> {
-        return this.api.request<PreviewRequestResponse, PreviewRequestResponse>('/post/preview', {
+    preview(text: string): Promise<PostPreviewRequestResponse> {
+        return this.api.request<PostPreviewRequestResponse, PostPreviewRequestResponse>('/post/preview', {
             content: text
         })
     }

@@ -15,7 +15,7 @@ import {PostBookmarkRequest, PostBookmarkResponse} from './types/requests/PostBo
 import {PostCommentRequest, PostCommentResponse} from './types/requests/PostComment';
 import {UserEntity} from './types/entities/UserEntity';
 import {PostWatchRequest, PostWatchResponse} from './types/requests/PostWatch';
-import {PreviewRequest, PreviewResponse} from './types/requests/Preview';
+import {PostPreviewRequest, PostPreviewResponse} from './types/requests/Preview';
 
 export default class PostController {
     public router = Router();
@@ -53,7 +53,7 @@ export default class PostController {
             content: Joi.string().min(1).max(50000).required(),
             format: joiFormat
         });
-        const previewSchema = Joi.object<PreviewRequest>({
+        const previewSchema = Joi.object<PostPreviewRequest>({
             content: Joi.string().min(1).max(50000).required(),
         });
         const bookmarkSchema = Joi.object<PostBookmarkRequest>({
@@ -178,7 +178,7 @@ export default class PostController {
         }
     }
 
-    preview(request: APIRequest<PreviewRequest>, response: APIResponse<PreviewResponse>) {
+    preview(request: APIRequest<PostPreviewRequest>, response: APIResponse<PostPreviewResponse>) {
         const userId = request.session.data.userId;
         if (!userId) {
             return response.authRequired();
