@@ -16,6 +16,7 @@ interface CommentProps {
     comment: CommentInfo;
 
     onAnswer: (text: string, post?: PostInfo, comment?: CommentInfo) => Promise<CommentInfo | undefined>;
+    onPreview: (text: string) => Promise<string>;
 }
 
 export default function CommentComponent(props: CommentProps) {
@@ -27,20 +28,13 @@ export default function CommentComponent(props: CommentProps) {
         setAnswerOpen(!answerOpen);
     };
 
-    const handleAnswer = (text: string, post?: PostInfo, comment?: CommentInfo) => {
+    const handleAnswer = async (text: string, post?: PostInfo, comment?: CommentInfo) => {
         if (!post) {
-            return Promise.resolve(undefined);
+            return undefined;
         }
-        return new Promise<CommentInfo | undefined>((resolve, reject) => {
-            props.onAnswer(text, post, comment)
-                .then(result => {
-                    setAnswerOpen(false);
-                    resolve(result);
-                })
-                .catch(error => {
-                    reject(error);
-                });
-        });
+        const res = await props.onAnswer(text, post, comment)
+        setAnswerOpen(false);
+        return res;
     };
 
     const handleVote = useMemo(() => {
@@ -73,8 +67,9 @@ export default function CommentComponent(props: CommentProps) {
             </div>
             {(props.comment.answers || answerOpen) ?
                 <div className={styles.answers}>
-                    <CreateCommentComponent open={answerOpen} comment={props.comment} post={props.post} onAnswer={handleAnswer} />
-                    {props.comment.answers ? props.comment.answers.map(comment => <CommentComponent key={comment.id} comment={comment} post={props.post} onAnswer={props.onAnswer} />) : <></>}
+                    <CreateCommentComponent open={answerOpen} comment={props.comment} post={props.post} onAnswer={handleAnswer} onPreview={props.onPreview} />
+                    {props.comment.answers ? props.comment.answers.map(comment =>
+                        <CommentComponent key={comment.id} comment={comment} post={props.post} onAnswer={props.onAnswer}  onPreview={props.onPreview} />) : <></>}
                 </div>
                 : <></>}
 

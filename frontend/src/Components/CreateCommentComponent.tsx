@@ -1,10 +1,13 @@
 import {CommentInfo, PostInfo} from '../Types/PostInfo';
 import React, {useEffect, useRef, useState} from 'react';
 import styles from './CreateCommentComponent.module.css';
+import postStyles from '../Pages/CreatePostPage.module.css';
 import {ReactComponent as IronyIcon} from '../Assets/irony.svg';
 import {ReactComponent as ImageIcon} from '../Assets/image.svg';
 import {ReactComponent as LinkIcon} from '../Assets/link.svg';
 import {ReactComponent as QuoteIcon} from '../Assets/quote.svg';
+import ContentComponent from "./ContentComponent";
+import classNames from "classnames";
 import MediaUploader from './MediaUploader';
 
 interface CreateCommentProps {
@@ -13,13 +16,17 @@ interface CreateCommentProps {
     post?: PostInfo;
 
     onAnswer: (text: string, post?: PostInfo, comment?: CommentInfo) => Promise<CommentInfo | undefined>;
+    onPreview: (text: string) => Promise<string>;
 }
 
 export default function CreateCommentComponent(props: CreateCommentProps) {
     const answerRef = useRef<HTMLTextAreaElement>(null);
     const [answerText, setAnswerText] = useState<string>(props.comment ? props.comment.author.username + ', ' : '');
     const [isPosting, setPosting] = useState(false);
+    const [previewing, setPreviewing] = useState<string | null>(null);
     const [mediaUploaderOpen, setMediaUploaderOpen] = useState(false);
+
+    const disabledButtons = isPosting || previewing !== null;
 
     const handleAnswerChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setAnswerText(e.target.value);
@@ -119,6 +126,25 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         }
     }, [props.open, props.comment]);
 
+    const handlePreview = async () => {
+        if (isPosting) {
+            return;
+        }
+        if (previewing !== null) {
+            setPreviewing(null);
+            return;
+        }
+        setPosting(true);
+        try {
+            setPreviewing(await props.onPreview(answerText));
+        } catch (e) {
+            console.error(e);
+            setPreviewing(null);
+        } finally {
+            setPosting(false);
+        }
+    }
+
     const handleAnswer = () => {
         setPosting(true);
         props.onAnswer(answerText, props.post, props.comment)
@@ -162,18 +188,24 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     return (
         <div className={styles.answer}>
             <div className={styles.controls}>
-                <div className={styles.control}><button onClick={() => applyTag('b')} className={styles.bold}>B</button></div>
-                <div className={styles.control}><button onClick={() => applyTag('i')} className={styles.italic}>I</button></div>
-                <div className={styles.control}><button onClick={() => applyTag('u')} className={styles.underline}>U</button></div>
-                <div className={styles.control}><button onClick={() => applyTag('strike')} className={styles.strike}>S</button></div>
-                <div className={styles.control}><button onClick={() => applyTag('irony')}><IronyIcon /></button></div>
-                <div className={styles.control}><button onClick={() => applyTag('blockquote')}><QuoteIcon /></button></div>
-                <div className={styles.control}><button onClick={() => applyTag('img')}><ImageIcon /></button></div>
-                <div className={styles.control}><button onClick={() => applyTag('a')}><LinkIcon /></button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('b')} className={styles.bold}>B</button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('i')} className={styles.italic}>I</button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('u')} className={styles.underline}>U</button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('strike')} className={styles.strike}>S</button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('irony')}><IronyIcon /></button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('blockquote')}><QuoteIcon /></button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('img')}><ImageIcon /></button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('a')}><LinkIcon /></button></div>
             </div>
-            <div className={styles.editor}><textarea ref={answerRef} disabled={isPosting} value={answerText} onChange={handleAnswerChange} onKeyDown={handleKeyDown} /></div>
-            <div className={styles.final}><button disabled={isPosting || !answerText} onClick={handleAnswer}>Пыщь</button></div>
-            {mediaUploaderOpen && <MediaUploader onSuccess={handleMediaUpload} onCancel={handleMediaUploadCancel} />}
+            {(previewing === null ) ?
+                <div className={styles.editor}><textarea ref={answerRef} disabled={isPosting} value={answerText} onChange={handleAnswerChange} onKeyDown={handleKeyDown} /></div>
+                    :
+                <div className={styles.body}><ContentComponent className={classNames(styles.commentContent, styles.preview, postStyles.preview)} content={previewing} /></div>}
+            <div className={styles.final}>
+                <button disabled={isPosting || !answerText} className={styles.buttonPreview} onClick={handlePreview}>{(previewing === null) ? "Превью" : "Редактор"}</button>
+                <button disabled={isPosting || !answerText} onClick={handleAnswer}>Пыщь</button>
+                {mediaUploaderOpen && <MediaUploader onSuccess={handleMediaUpload} onCancel={handleMediaUploadCancel} />}
+            </div>
         </div>
     );
 }

@@ -35,8 +35,8 @@ export default class PostManager {
         this.parser = parser;
     }
 
-    async getPost(postId: number, forUserId: number): Promise<PostRawWithUserData | undefined> {
-        return await this.postRepository.getPostWithUserData(postId, forUserId);
+    getPost(postId: number, forUserId: number): Promise<PostRawWithUserData | undefined> {
+        return this.postRepository.getPostWithUserData(postId, forUserId);
     }
 
     async createPost(siteName: string, userId: number, title: string, content: string, format: ContentFormat): Promise<PostInfo> {
@@ -73,8 +73,8 @@ export default class PostManager {
         };
     }
 
-    async getPostComments(postId: number, forUserId: number): Promise<CommentRawWithUserData[]> {
-        return await this.commentRepository.getPostComments(postId, forUserId);
+    getPostComments(postId: number, forUserId: number): Promise<CommentRawWithUserData[]> {
+        return this.commentRepository.getPostComments(postId, forUserId);
     }
 
     async createComment(userId: number, postId: number, parentCommentId: number | undefined, content: string, format: ContentFormat): Promise<CommentInfo> {
@@ -112,15 +112,19 @@ export default class PostManager {
         return changedNotifications || changedBookmarks;
     }
 
-    async getBookmark(postId: number, userId: number): Promise<BookmarkRaw | undefined> {
-        return await this.bookmarkRepository.getBookmark(postId, userId);
+    preview(content: string): string {
+        return this.parser.parse(content).text;
     }
 
-    async setBookmark(postId: number, userId: number, bookmarked: boolean) {
-        return await this.bookmarkRepository.setBookmark(postId, userId, bookmarked);
+    getBookmark(postId: number, userId: number): Promise<BookmarkRaw | undefined> {
+        return this.bookmarkRepository.getBookmark(postId, userId);
     }
 
-    async setWatch(postId: number, userId: number, bookmarked: boolean) {
-        return await this.bookmarkRepository.setWatch(postId, userId, bookmarked);
+    setBookmark(postId: number, userId: number, bookmarked: boolean) {
+        return this.bookmarkRepository.setBookmark(postId, userId, bookmarked);
+    }
+
+    setWatch(postId: number, userId: number, bookmarked: boolean) {
+        return this.bookmarkRepository.setWatch(postId, userId, bookmarked);
     }
 }

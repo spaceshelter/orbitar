@@ -21,7 +21,7 @@ export default function PostPage() {
     }
 
     const unreadOnly = search.get('new') !== null;
-    const {post, comments, postComment, error, reload, updatePost} = usePost(subdomain, postId, unreadOnly);
+    const {post, comments, postComment, preview, error, reload, updatePost} = usePost(subdomain, postId, unreadOnly);
 
     useEffect(() => {
         let docTitle = `Пост #${postId}`;
@@ -114,7 +114,7 @@ export default function PostPage() {
                         <div className={styles.postButtons}><Link to={`/post/${post.id}`} className={unreadOnly ? '' : 'bold'}>все комментарии</Link> • <Link to={`/post/${post.id}?new`} className={unreadOnly ? 'bold' : ''}>только новые</Link></div>
                         <div className={styles.comments + (unreadOnly ? ' ' + commentStyles.unreadOnly : '')}>
                             {comments ?
-                                comments.map(comment => <CommentComponent key={comment.id} comment={comment} post={post} onAnswer={handleAnswer} />)
+                                comments.map(comment => <CommentComponent key={comment.id} comment={comment} post={post} onAnswer={handleAnswer} onPreview={preview} />)
                                 :
                                 (
                                     error ? <div className={styles.error}>{error}<div><button onClick={() => reload(unreadOnly)}>Повторить</button></div></div>
@@ -122,7 +122,7 @@ export default function PostPage() {
                                 )
                             }
                         </div>
-                        <CreateCommentComponent open={true} post={post} onAnswer={handleAnswer} />
+                        <CreateCommentComponent open={true} post={post} onAnswer={handleAnswer} onPreview={preview} />
                     </div>
                     :
                     (
