@@ -41,9 +41,12 @@ export class DBConnection {
     }
 
     async insert(table: string, values: Record<string, unknown>): Promise<number> {
-        const {keys, valueKeys} = Object.entries(values).reduce((p, [k]) => {
+        const {keys, valueKeys} = Object.entries(values).reduce((p, [k, v]) => {
             p.keys.push('`' + k + '`');
             p.valueKeys.push(':' + k);
+            if (v === undefined) {
+                values[k] = null;
+            }
             return p;
         }, { keys: [], valueKeys: [] });
         const query = 'insert into `' + table + '` (' + keys.join(',') + ') values (' + valueKeys.join(',') + ')';

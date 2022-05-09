@@ -5,6 +5,7 @@ export type PostReadRequest = {
 };
 
 export type PostReadResponse = {
+    notifications?: number;
     watch?: {
         posts: number;
         comments: number;

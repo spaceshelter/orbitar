@@ -222,6 +222,7 @@ export default class PostController {
         if (readUpdated) {
             const status = await this.userManager.getUserStats(userId);
             return response.success({
+                notifications: status.notifications,
                 watch: status.watch
             });
         }

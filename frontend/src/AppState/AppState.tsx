@@ -49,6 +49,19 @@ export const AppStateProvider = (props: {children: ReactNode}) => {
         api.init().then();
     }, [api]);
 
+    useEffect(() => {
+        const link = document.querySelector('link[rel~="icon"]') as HTMLLinkElement;
+        if (!link) {
+            return;
+        }
+        if (userStats && userStats.notifications > 0) {
+            link.href = '//' + process.env.REACT_APP_ROOT_DOMAIN + '/favicon-badge.png';
+        }
+        else {
+            link.href = '//' + process.env.REACT_APP_ROOT_DOMAIN + '/favicon.ico';
+        }
+    }, [userStats]);
+
     return <AppStateContext.Provider value={{ userInfo, appState, api: api, site: site, userStats }}>
         {props.children}
     </AppStateContext.Provider>

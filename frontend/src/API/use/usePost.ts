@@ -112,8 +112,6 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
             // request post
             api.post.get(postId)
                 .then(result => {
-                    console.warn('Post loaded', result);
-
                     setPost(result.post);
                     setSite(result.site);
                     setCachedComments(result.comments);
@@ -138,8 +136,6 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
             return;
         }
 
-        // console.log('Load post', postId, showUnreadOnly);
-
         if (prev?.siteName !== siteName) {
             // load site from cache
             const siteInfo = api.cache.getSite(siteName);
@@ -156,14 +152,12 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
         }
         else if (rawComments) {
             // use raw comments if postId not changed
-            console.log('Use cached comments');
             setComments(filterComments(rawComments, showUnreadOnly || false));
             return;
         }
 
         if (prev?.postId === postId) {
             // TODO: skip only if in loading state
-            console.log('Same post, skip loading');
             return;
         }
 

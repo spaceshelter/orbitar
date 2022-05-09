@@ -33,6 +33,14 @@ const theme: ThemeCollection = {
 
             'scrollbar-track-bg': '#d9d9d9',
 
+            'popup-bg': '#ffffff',
+
+            'notification-date-fg': 'rgba(0, 0, 0, 0.6)',
+            'notification-text-fg': 'rgba(0, 0, 0, 0.8)',
+            'notification-delimiter-fg': 'rgba(0, 0, 0, 0.12)',
+
+            'highlight-bg': 'rgba(0, 0, 0, 0.03)',
+
             topbar: {
                 fg: '#3992E4',
                 bg: 'rgba(255, 255, 255, 0.8)',
@@ -132,6 +140,14 @@ const theme: ThemeCollection = {
             'rating-list-votes-bg': 'rgba(255, 255, 255, 0.03)',
 
             'scrollbar-track-bg': '#535353',
+
+            'popup-bg': '#363636',
+
+            'notification-date-fg': 'rgba(255, 255, 255, 0.6)',
+            'notification-text-fg': 'rgba(255, 255, 255, 0.8)',
+            'notification-delimiter-fg': 'rgba(255, 255, 255, 0.12)',
+
+            'highlight-bg': 'rgba(255, 255, 255, 0.03)',
 
             topbar: {
                 fg: '#58A8BA',

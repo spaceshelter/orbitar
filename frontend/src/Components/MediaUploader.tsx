@@ -230,7 +230,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
                             <div className={styles.choose}>Выбрать</div>
                         </label>
                     </div>
-                    <button disabled={!uploadEnabled || uploading} className={styles.done + ' button'} onClick={handleUpload}>{uploading ? 'Загрузка' : 'Ура!'}</button>
+                    <button disabled={!uploadEnabled || uploading} className={styles.done + ' button'} onClick={handleUpload}>{uploading ? 'Загрузка' : 'Фьють'}</button>
                 </div>
                 <div className={styles.dropbox + (dragActive ? ' ' + styles.active : '')} onDragEnter={handleDragEnter} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
                     <div className={styles.preview}>

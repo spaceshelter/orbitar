@@ -34,9 +34,10 @@ import PostRepository from './db/repositories/PostRepository';
 import SiteRepository from './db/repositories/SiteRepository';
 import SiteController from './api/SiteController';
 import NotificationsRepository from './db/repositories/NotificationsRepository';
-import UserKVRRepository from './db/repositories/UserKVRRepository';
 import NotificationManager from './managers/NotificationManager';
 import NotificationsController from './api/NotificationsController';
+import UserCredentials from './db/repositories/UserCredentials';
+import WebPushRepository from './db/repositories/WebPushRepository';
 
 const app = express();
 
@@ -87,22 +88,22 @@ const theParser = new TheParser();
 
 const bookmarkRepository = new BookmarkRepository(db);
 const commentRepository = new CommentRepository(db);
+const credentialsRepository = new UserCredentials(db);
 const inviteRepository = new InviteRepository(db);
 const notificationsRepository = new NotificationsRepository(db);
 const postRepository = new PostRepository(db);
 const siteRepository = new SiteRepository(db);
 const voteRepository = new VoteRepository(db);
 const userRepository = new UserRepository(db);
-const userKVRepository = new UserKVRRepository(db);
+const webPushRepository = new WebPushRepository(db);
 
 const inviteManager = new InviteManager(inviteRepository);
-const notificationManager = new NotificationManager(commentRepository, notificationsRepository, postRepository, siteRepository, userRepository, userKVRepository);
-const userManager = new UserManager(voteRepository, userRepository, notificationManager);
+const notificationManager = new NotificationManager(commentRepository, notificationsRepository, postRepository, siteRepository, userRepository, webPushRepository, config.vapid, config.site);
+const userManager = new UserManager(credentialsRepository, userRepository, voteRepository, webPushRepository, notificationManager);
 const feedManager = new FeedManager(bookmarkRepository, postRepository, userRepository, redis.client);
 const siteManager = new SiteManager(siteRepository, userManager, feedManager);
 const postManager = new PostManager(bookmarkRepository, commentRepository, postRepository, feedManager, notificationManager, siteManager, theParser);
 const voteManager = new VoteManager(voteRepository, postManager);
-
 
 const requests = [
     new AuthController(userManager, logger.child({ service: 'AUTH' })),
@@ -113,7 +114,7 @@ const requests = [
     new UserController(userManager, logger.child({ service: 'USER' })),
     new FeedController(feedManager, siteManager, userManager, logger.child({ service: 'FEED' })),
     new SiteController(siteManager, logger.child( { service: 'SITE' })),
-    new NotificationsController(notificationManager, logger.child({ service: 'NOTIFY' })),
+    new NotificationsController(notificationManager, userManager, logger.child({ service: 'NOTIFY' })),
 ];
 
 const filterLog = winston.format((info) => {
