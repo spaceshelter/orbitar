@@ -32,8 +32,8 @@ export default class NotificationsAPIHelper {
         return await this.api.readAll();
     }
 
-    async list(): Promise<{ webPushRegistered: boolean, notifications: NotificationInfo[] }> {
-        const result = await this.api.list();
+    async list(auth?: string): Promise<{ webPushRegistered: boolean, notifications: NotificationInfo[] }> {
+        const result = await this.api.list(auth);
 
         const notifications = result.notifications.map(entity => {
             const notification: NotificationInfo = entity as unknown as NotificationInfo;
@@ -42,5 +42,9 @@ export default class NotificationsAPIHelper {
         });
 
         return { webPushRegistered: result.webPushRegistered, notifications };
+    }
+
+    subscribe(subscription: PushSubscription) {
+        return this.api.subscribe(subscription);
     }
 }

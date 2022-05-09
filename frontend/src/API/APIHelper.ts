@@ -13,7 +13,6 @@ import SiteAPI from './SiteAPI';
 import SiteAPIHelper from './SiteAPIHelper';
 import NotificationsAPI from './NotificationsAPI';
 import NotificationsAPIHelper from './NotificationsAPIHelper';
-import WebPushAPI from './WebPushAPI';
 
 export default class APIHelper {
     auth: AuthAPIHelper;
@@ -29,7 +28,6 @@ export default class APIHelper {
     site: SiteAPIHelper;
     notificationsAPI: NotificationsAPI;
     notifications: NotificationsAPIHelper;
-    webpushAPI: WebPushAPI;
     private baseAPI: APIBase;
     private setters: AppStateSetters;
     private readonly siteName: string;
@@ -44,7 +42,6 @@ export default class APIHelper {
         this.voteAPI = new VoteAPI(api);
         this.userAPI = new UserAPI(api)
         this.siteAPI = new SiteAPI(api);
-        this.webpushAPI = new WebPushAPI(api);
         this.notificationsAPI = new NotificationsAPI(api);
         this.post = new PostAPIHelper(this.postAPI, setters, this.cache);
         this.auth = new AuthAPIHelper(this.authAPI, setters);

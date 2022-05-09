@@ -6,6 +6,7 @@ import {NotificationsListRequest, NotificationsListResponse} from './types/reque
 import {NotificationsReadRequest, NotificationsReadResponse} from './types/requests/NotificationsRead';
 import {NotificationsReadAllRequest, NotificationsReadAllResponse} from './types/requests/NotificationsReadAll';
 import UserManager from '../managers/UserManager';
+import {NotificationsSubscribeRequest, NotificationsSubscribeResponse} from './types/requests/NotificationsSubscribe';
 
 export default class NotificationsController {
     router = Router();
@@ -21,6 +22,7 @@ export default class NotificationsController {
         this.router.post('/notifications/list', (req, res) => this.list(req, res));
         this.router.post('/notifications/read', (req, res) => this.read(req, res));
         this.router.post('/notifications/read/all', (req, res) => this.readAll(req, res));
+        this.router.post('/notifications/subscribe', (req, res) => this.subscribe(req, res));
     }
 
     async list(request: APIRequest<NotificationsListRequest>, response: APIResponse<NotificationsListResponse>) {
@@ -29,9 +31,12 @@ export default class NotificationsController {
         }
 
         const userId = request.session.data.userId;
+        const webPushAuth = request.body.webPushAuth;
+
         try {
             const notifications = await this.notificationManager.getNotifications(userId);
-            const haveWebPushCredentials = !!(await this.userManager.getCredentials(userId, 'web-push'));
+            const haveWebPushCredentials = webPushAuth ? !!(await this.userManager.getPushSubscription(userId, webPushAuth)) : false;
+
             response.success({ notifications, webPushRegistered: haveWebPushCredentials });
         }
         catch (err) {
@@ -73,5 +78,19 @@ export default class NotificationsController {
             this.logger.error('Notifications read all error', { error: err });
             return response.error('error', 'Unknown error', 500);
         }
+    }
+
+    async subscribe(request: APIRequest<NotificationsSubscribeRequest>, response: APIResponse<NotificationsSubscribeResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+
+        if (!request.body.subscription) {
+            return response.error('no-subscription', 'Subscription required', 400);
+        }
+
+        await this.userManager.setPushSubscription(request.session.data.userId, request.body.subscription);
+
+        response.status(200).success({});
     }
 }

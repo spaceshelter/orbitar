@@ -36,8 +36,8 @@ import SiteController from './api/SiteController';
 import NotificationsRepository from './db/repositories/NotificationsRepository';
 import NotificationManager from './managers/NotificationManager';
 import NotificationsController from './api/NotificationsController';
-import WebPushController from './api/WebPushController';
 import UserCredentials from './db/repositories/UserCredentials';
+import WebPushRepository from './db/repositories/WebPushRepository';
 
 const app = express();
 
@@ -88,17 +88,18 @@ const theParser = new TheParser();
 
 const bookmarkRepository = new BookmarkRepository(db);
 const commentRepository = new CommentRepository(db);
+const credentialsRepository = new UserCredentials(db);
 const inviteRepository = new InviteRepository(db);
 const notificationsRepository = new NotificationsRepository(db);
 const postRepository = new PostRepository(db);
 const siteRepository = new SiteRepository(db);
 const voteRepository = new VoteRepository(db);
 const userRepository = new UserRepository(db);
-const userCredentials = new UserCredentials(db);
+const webPushRepository = new WebPushRepository(db);
 
 const inviteManager = new InviteManager(inviteRepository);
-const notificationManager = new NotificationManager(commentRepository, notificationsRepository, postRepository, siteRepository, userCredentials, userRepository, config.vapid, config.site);
-const userManager = new UserManager(voteRepository, userCredentials, userRepository, notificationManager);
+const notificationManager = new NotificationManager(commentRepository, notificationsRepository, postRepository, siteRepository, userRepository, webPushRepository, config.vapid, config.site);
+const userManager = new UserManager(credentialsRepository, userRepository, voteRepository, webPushRepository, notificationManager);
 const feedManager = new FeedManager(bookmarkRepository, postRepository, userRepository, redis.client);
 const siteManager = new SiteManager(siteRepository, userManager, feedManager);
 const postManager = new PostManager(bookmarkRepository, commentRepository, postRepository, feedManager, notificationManager, siteManager, theParser);
@@ -114,7 +115,6 @@ const requests = [
     new FeedController(feedManager, siteManager, userManager, logger.child({ service: 'FEED' })),
     new SiteController(siteManager, logger.child( { service: 'SITE' })),
     new NotificationsController(notificationManager, userManager, logger.child({ service: 'NOTIFY' })),
-    new WebPushController(userManager, logger.child({ service: 'PUSH' })),
 ];
 
 const filterLog = winston.format((info) => {

@@ -5,21 +5,25 @@ import VoteRepository from '../db/repositories/VoteRepository';
 import bcrypt from 'bcryptjs';
 import NotificationManager from './NotificationManager';
 import UserCredentials from '../db/repositories/UserCredentials';
+import WebPushRepository from '../db/repositories/WebPushRepository';
+import {PushSubscription} from 'web-push';
 
 export default class UserManager {
-    private userCredentials: UserCredentials;
+    private credentialsRepository: UserCredentials;
     private userRepository: UserRepository;
     private voteRepository: VoteRepository;
     private notificationManager: NotificationManager;
+    private webPushRepository: WebPushRepository;
 
     private cacheId: Record<number, UserInfo> = {};
     private cacheUsername: Record<string, UserInfo> = {};
 
-    constructor(voteRepository: VoteRepository, userCredentials: UserCredentials, userRepository: UserRepository, notificationManager: NotificationManager) {
-        this.userCredentials = userCredentials;
+    constructor(credentialsRepository: UserCredentials, userRepository: UserRepository, voteRepository: VoteRepository, webPushRepository: WebPushRepository, notificationManager: NotificationManager) {
+        this.credentialsRepository = credentialsRepository;
         this.userRepository = userRepository;
         this.voteRepository = voteRepository;
         this.notificationManager = notificationManager;
+        this.webPushRepository = webPushRepository;
     }
 
     async getById(userId: number): Promise<UserInfo | undefined> {
@@ -124,11 +128,26 @@ export default class UserManager {
     }
 
     async setCredentials<T>(forUserId: number, type: string, value: T) {
-        return await this.userCredentials.setCredential(forUserId, type, value);
+        return await this.credentialsRepository.setCredential(forUserId, type, value);
     }
 
     async getCredentials<T>(forUserId: number, type: string): Promise<T | undefined> {
-        return await this.userCredentials.getCredential<T>(forUserId, type);
+        return await this.credentialsRepository.getCredential<T>(forUserId, type);
+    }
+
+    async getPushSubscription(forUserId: number, auth: string) {
+        return await this.webPushRepository.getSubscription(forUserId, auth);
+    }
+
+    async setPushSubscription(forUserId: number, subscription: PushSubscription) {
+        if (!subscription.keys || !subscription.keys.auth) {
+            throw new Error('Auth key required');
+        }
+        return await this.webPushRepository.setSubscription(forUserId, subscription);
+    }
+
+    async resetPushSubscription(forUserId: number, auth: string) {
+        return await this.webPushRepository.resetSubscription(forUserId, auth);
     }
 
     private mapUserRaw(rawUser: UserRaw): UserInfo {

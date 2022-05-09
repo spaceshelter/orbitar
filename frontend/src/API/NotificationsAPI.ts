@@ -27,7 +27,9 @@ export type NotificationEntity = {
         comment?: CommentBaseEntity;
     };
 };
-export type NotificationsListRequest = Record<string, never>;
+export type NotificationsListRequest = {
+    auth?: string;
+};
 export type NotificationsListResponse = {
     webPushRegistered: boolean;
     notifications: NotificationEntity[];
@@ -40,6 +42,10 @@ export type NotificationsReadResponse = Record<string, never>;
 export type NotificationsReadAllRequest = Record<string, never>;
 export type NotificationsReadAllResponse = Record<string, never>;
 
+export type WebPushSubscribeRequest = {
+    subscription: PushSubscriptionJSON;
+};
+export type WebPushSubscribeResponse = Record<string, unknown>;
 
 export default class NotificationsAPI {
     api: APIBase;
@@ -48,19 +54,24 @@ export default class NotificationsAPI {
         this.api = api;
     }
 
-    async read(id: number): Promise<NotificationsReadResponse> {
-        return await this.api.request<NotificationsReadRequest, NotificationsReadResponse>('/notifications/read', {
+    read(id: number): Promise<NotificationsReadResponse> {
+        return this.api.request<NotificationsReadRequest, NotificationsReadResponse>('/notifications/read', {
             id: id
         });
     }
 
-    async readAll(): Promise<NotificationsReadAllResponse> {
-        return await this.api.request<NotificationsReadAllRequest, NotificationsReadAllResponse>('/notifications/read/all', {
+    readAll(): Promise<NotificationsReadAllResponse> {
+        return this.api.request<NotificationsReadAllRequest, NotificationsReadAllResponse>('/notifications/read/all', {
         });
     }
 
-    async list(): Promise<NotificationsListResponse> {
-        return await this.api.request<NotificationsListRequest, NotificationsListResponse>('/notifications/list', {
+    list(auth?: string): Promise<NotificationsListResponse> {
+        return this.api.request<NotificationsListRequest, NotificationsListResponse>('/notifications/list', {
+            auth
         });
+    }
+
+    subscribe(subscription: PushSubscription): Promise<WebPushSubscribeResponse> {
+        return this.api.request<WebPushSubscribeRequest, WebPushSubscribeResponse>('/notifications/subscribe', { subscription: subscription.toJSON() });
     }
 }

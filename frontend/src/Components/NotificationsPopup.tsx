@@ -6,6 +6,7 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {NotificationInfo} from '../API/NotificationsAPIHelper';
 import PostLink from './PostLink';
 import DateComponent from './DateComponent';
+import {usePushService} from '../Services/PushService';
 
 type NotificationsPopupProps = {
     onClose?: () => void;
@@ -16,60 +17,49 @@ export default function NotificationsPopup(props: NotificationsPopupProps) {
     const {siteName} = useSiteName();
     const [notifications, setNotifications] = useState<NotificationInfo[]>();
     const [error, setError] = useState('');
+    const pushService = usePushService();
 
-    const registerWebPush = useMemo(() => {
+    const fetchNotifications = useMemo(() => {
         return async () => {
-            if (siteName !== 'main') {
-                // register service only on main domain
-                return;
-            }
-            // unregister old workers
-            // (await navigator.serviceWorker.getRegistrations()).forEach(r => {console.log(r); r.unregister().then();});
+            const auth = siteName === 'main' ? await pushService.getAuth() : undefined;
+            console.log('have auth:', auth);
+            return await api.notifications.list(auth);
+        };
+    }, [api, pushService, siteName]);
 
-            let registration = await navigator.serviceWorker.getRegistration('/service.js');
-            if (!registration) {
-                registration = await navigator.serviceWorker.register('/service.js', {scope: '/'});
+    const subscribe = useMemo(() => {
+        return async () => {
+            if (Notification.permission === 'denied') {
+                return
             }
 
-            await navigator.serviceWorker.ready;
-            const subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: process.env.REACT_APP_VAPID_PUBLIC_KEY
-            });
-            await api.webpushAPI.subscribe(subscription);
-        }
-    }, [api]);
+            if (Notification.permission === 'default') {
+                if (await Notification.requestPermission() !== 'granted') {
+                    return;
+                }
+            }
+
+            const subscription = await pushService.subscribe();
+            if (subscription) {
+                await api.notifications.subscribe(subscription);
+            }
+        };
+    }, [api, pushService]);
 
     useEffect(() => {
-        api.notifications.list()
+        fetchNotifications()
             .then(result => {
                 setNotifications(result.notifications);
 
-                if (siteName !== 'main') {
-                    // ask for permissions only on main domain
-                    return;
+                if (!result.webPushRegistered) {
+                    subscribe().then().catch();
                 }
-                if (!('serviceWorker' in navigator) || !('Notification' in window)) {
-                    return;
-                }
-                if (Notification.permission === 'default') {
-                     Notification.requestPermission().then(result => {
-                         if (result === 'granted') {
-                             registerWebPush().then().catch();
-                         }
-                     })
-                }
-                else if (Notification.permission === 'granted' && !result.webPushRegistered) {
-                    registerWebPush().then().catch();
-                }
-
-
             })
             .catch(err => {
                 setError('Не удалось загрузить уведомления');
                 console.log('notifications error', err);
-            });
-    }, []);
+            })
+    }, [fetchNotifications, subscribe]);
 
     const handleNotificationClick = (e: React.MouseEvent<HTMLAnchorElement>, notify: NotificationInfo) => {
         api.notifications.read(notify.id)

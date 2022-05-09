@@ -11,9 +11,9 @@ import {NotificationRaw} from '../db/types/NotificationRaw';
 import PostRepository from '../db/repositories/PostRepository';
 import SiteRepository from '../db/repositories/SiteRepository';
 import {CommentBaseInfo} from './types/CommentInfo';
-import webpush, {PushSubscription} from 'web-push';
-import UserCredentials from '../db/repositories/UserCredentials';
+import webpush from 'web-push';
 import {SiteConfig, VapidConfig} from '../config';
+import WebPushRepository from '../db/repositories/WebPushRepository';
 
 
 
@@ -23,14 +23,14 @@ export default class NotificationManager {
     private readonly postRepository: PostRepository;
     private readonly siteRepository: SiteRepository;
     private readonly userRepository: UserRepository;
-    private readonly userCredentials: UserCredentials;
+    private readonly webPushRepository: WebPushRepository;
     private couldSendWebPush = false;
     private siteConfig: SiteConfig;
 
     constructor(
         commentRepository: CommentRepository, notificationsRepository: NotificationsRepository,
         postRepository: PostRepository, siteRepository: SiteRepository,
-        userCredentials: UserCredentials, userRepository: UserRepository,
+        userRepository: UserRepository, webPushRepository: WebPushRepository,
         vapidConfig: VapidConfig,
         siteConfig: SiteConfig
     ) {
@@ -39,7 +39,7 @@ export default class NotificationManager {
         this.postRepository = postRepository;
         this.siteRepository = siteRepository;
         this.userRepository = userRepository;
-        this.userCredentials = userCredentials;
+        this.webPushRepository = webPushRepository;
         this.siteConfig = siteConfig;
 
         console.log('VAPID', vapidConfig);
@@ -216,8 +216,8 @@ export default class NotificationManager {
             return;
         }
 
-        const subscription = await this.userCredentials.getCredential<PushSubscription>(forUserId, 'web-push');
-        if (!subscription) {
+        const subscriptions = await this.webPushRepository.getSubscriptions(forUserId);
+        if (!subscriptions.length) {
             return;
         }
 
@@ -225,11 +225,11 @@ export default class NotificationManager {
         const comment = await this.commentRepository.getComment(notification.source.commentId);
         const site = await this.siteRepository.getSiteById(comment.site_id);
 
-        const baseUrl = (this.siteConfig.http ? 'http://' : 'https://') + (site.subdomain === 'main' ? '' : site.subdomain + '.') + this.siteConfig.domain;
-
-        if (sender === undefined || !comment) {
+        if (!sender || !comment || !site) {
             return;
         }
+
+        const baseUrl = (this.siteConfig.http ? 'http://' : 'https://') + (site.subdomain === 'main' ? '' : site.subdomain + '.') + this.siteConfig.domain;
 
         let commentText = comment.source;
         if (commentText.length > 30) {
@@ -254,13 +254,13 @@ export default class NotificationManager {
             }
         }
 
-        if (sender && comment) {
+        for (const subscription of subscriptions) {
             try {
                 await webpush.sendNotification(subscription, JSON.stringify({title, body: commentText, icon, url}));
             }
             catch (err) {
                 if (err.statusCode === 410) {
-                    await this.userCredentials.resetCredential(forUserId, 'web-push');
+                    await this.webPushRepository.resetSubscription(forUserId, subscription.keys.auth);
                 }
             }
         }
