@@ -1,16 +1,22 @@
 import React, {useEffect} from 'react';
 import styles from './UserPage.module.css';
-import {Link, useMatch, useParams} from 'react-router-dom';
+import {Link, useLocation, useMatch, useNavigate, useParams} from 'react-router-dom';
 import Username from '../Components/Username';
 import RatingSwitch from '../Components/RatingSwitch';
 import DateComponent from '../Components/DateComponent';
 import {useUserProfile} from '../API/use/useUserProfile';
+import {ReactComponent as LogoutIcon} from "../Assets/logout.svg";
+import {useAppState} from "../AppState/AppState";
 
 export default function UserPage() {
+
+    const {userInfo, api, userStats} = useAppState();
     const params = useParams<{username: string}>();
     const state = useUserProfile(decodeURI(params?.username || ''));
     const isPosts = useMatch('user/:username/posts');
     const isComments = useMatch('user/:username/comments');
+    const navigate = useNavigate();
+    const location = useLocation();
 
     const isProfile = !isPosts && !isComments;
 
@@ -20,10 +26,19 @@ export default function UserPage() {
         }
     }, [state]);
 
+    const handleLogout = (e: React.MouseEvent) => {
+        e.preventDefault();
+        api.auth.signOut().then(() => {
+            navigate(location.pathname);
+        });
+    };
+
+
     if (state.status === 'ready') {
         const profile = state.profile;
         const user = profile.profile;
         const rating = {value: user.karma, vote: user.vote};
+        const isMyProfile = userInfo && userInfo.id == user.id;
 
         return (
             <div className={styles.container}>
@@ -50,6 +65,7 @@ export default function UserPage() {
                                 return <span key={idx}><Username  user={user}/>{idx < profile.invites.length - 1 ? ', ' : ''}</span>;
                             })}
                         </div>}
+                        { isMyProfile && <button className={styles.logout} onClick={handleLogout}><LogoutIcon /> Эвакуация. A-A-A-A! </button> }
                     </>}
                     {isPosts && <>
                         Попозже покажем

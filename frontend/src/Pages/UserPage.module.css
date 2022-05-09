@@ -1,6 +1,6 @@
 .container {
     background: var(--item-bg);
-    margin: 20px;
+    margin: 40px -20px 0;
     border-radius: 6px;
 }
 
@@ -37,3 +37,21 @@
 .name {
     font-size: 25px;
 }
+
+.logout{
+    margin-top: 80px;
+    background: var(--answer-line-fg);
+    border: none;
+    display: flex;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-weight: bold;
+    color: var(--button-dis-fg);
+    align-items: center;
+    gap: 8px;
+}
+.logout:hover{
+    background: var(--button-dis-bg);
+}
+
+.logout svg{ fill: var(--button-dis-fg); }
