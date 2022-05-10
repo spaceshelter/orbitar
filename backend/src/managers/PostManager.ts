@@ -14,7 +14,7 @@ import {PostEntity} from '../api/types/entities/PostEntity';
 import {UserEntity} from '../api/types/entities/UserEntity';
 import {SiteBaseEntity} from '../api/types/entities/SiteEntity';
 import UserManager from './UserManager';
-import {CommentEntity} from "../api/types/entities/CommentEntity";
+import {CommentEntity} from '../api/types/entities/CommentEntity';
 
 export interface EnrichedPosts {
     posts: PostEntity[]

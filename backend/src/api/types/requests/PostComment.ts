@@ -1,7 +1,7 @@
 import {CommentEntity} from '../entities/CommentEntity';
 import {UserEntity} from '../entities/UserEntity';
 import {ContentFormat} from '../entities/ContentFormat';
-import {SiteEntity} from "../entities/SiteEntity";
+import {SiteEntity} from '../entities/SiteEntity';
 
 export type PostCommentRequest = {
     comment_id?: number;

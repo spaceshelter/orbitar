@@ -7,7 +7,7 @@ import {UserProfileRequest, UserProfileResponse} from './types/requests/UserProf
 import {UserPostsRequest, UserPostsResponse} from './types/requests/UserPosts';
 import PostManager from '../managers/PostManager';
 import {SiteBaseEntity} from './types/entities/SiteEntity';
-import {UserCommentsRequest, UserCommentsResponse} from "./types/requests/UserComments";
+import {UserCommentsRequest, UserCommentsResponse} from './types/requests/UserComments';
 
 export default class UserController {
     public router = Router();

@@ -14,7 +14,7 @@ import {PostCommentRequest, PostCommentResponse} from './types/requests/PostComm
 import {UserEntity} from './types/entities/UserEntity';
 import {PostWatchRequest, PostWatchResponse} from './types/requests/PostWatch';
 import {PostPreviewRequest, PostPreviewResponse} from './types/requests/Preview';
-import {SiteEntity} from "./types/entities/SiteEntity";
+import {SiteEntity} from './types/entities/SiteEntity';
 
 export default class PostController {
     public router = Router();
