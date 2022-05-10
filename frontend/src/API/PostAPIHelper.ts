@@ -51,25 +51,9 @@ export default class PostAPIHelper {
         post.author = this.cache.setUser(response.users[response.post.author]);
         post.created = this.postAPI.api.fixDate(new Date(response.post.created));
 
-        let lastCommentId = 0;
 
-        const fixComments = (fix: CommentEntity[]) => {
-            return fix.map(comment => {
-                lastCommentId = Math.max(lastCommentId, comment.id);
-                const c: CommentInfo = { ...comment } as any;
-                // fix fields
-                c.author = this.cache.setUser(response.users[comment.author]);
-                c.created = this.postAPI.api.fixDate(new Date(comment.created));
-
-                if (comment.answers) {
-                    c.answers = fixComments(comment.answers);
-                }
-
-                return c;
-            });
-        }
-
-        const comments = fixComments(response.comments);
+        const comments = this.fixComments(response.comments, response.users, {[siteInfo.id]: siteInfo});
+        const lastCommentId = this.getLastCommentId(response.comments) || 0;
 
         return {
             post: post,
@@ -119,15 +103,37 @@ export default class PostAPIHelper {
         });
     }
 
+    fixComments(comments: CommentEntity[], users: Record<number, UserInfo>, sites: Record<number, SiteInfo>): CommentInfo[] {
+        return comments.map(comment => {
+            const c: CommentInfo = { ...comment } as any;
+            // fix fields
+            c.author = this.cache.setUser(users[comment.author]);
+            c.created = this.postAPI.api.fixDate(new Date(comment.created));
+            c.post_link = {
+                id: comment.post_id,
+                site: sites[comment.site_id].site
+            }
+
+            if (comment.answers) {
+                c.answers = this.fixComments(comment.answers, users, sites);
+            }
+            return c;
+        });
+    }
+
+    getLastCommentId(comments: CommentEntity[]): number | undefined {
+        return comments.reduce((lastCommentId: number | undefined, comment) =>
+            Math.max(lastCommentId || comment.id, comment.id,
+                comment.answers && this.getLastCommentId(comment.answers) || comment.id), undefined);
+    }
+
     async comment(content: string, postId: number, commentId?: number): Promise<CommentResponse> {
         const response = await this.postAPI.comment(content, postId, commentId);
 
-        const c: any = { ...response.comment }
-        c.author = this.cache.setUser(response.users[c.author]);
-        c.created = this.postAPI.api.fixDate(new Date(c.created));
+        const [comment] = this.fixComments([response.comment], response.users, response.sites);
 
         return {
-            comment: c
+            comment
         };
     }
 

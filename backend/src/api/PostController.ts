@@ -6,8 +6,6 @@ import {Logger} from 'winston';
 import Joi from 'joi';
 import {APIRequest, APIResponse, joiFormat, validate} from './ApiMiddleware';
 import FeedManager from '../managers/FeedManager';
-import {PostEntity} from './types/entities/PostEntity';
-import {CommentEntity} from './types/entities/CommentEntity';
 import {PostGetRequest, PostGetResponse} from './types/requests/PostGet';
 import {PostCreateRequest, PostCreateResponse} from './types/requests/PostCreate';
 import {PostReadRequest, PostReadResponse} from './types/requests/PostRead';
@@ -16,6 +14,7 @@ import {PostCommentRequest, PostCommentResponse} from './types/requests/PostComm
 import {UserEntity} from './types/entities/UserEntity';
 import {PostWatchRequest, PostWatchResponse} from './types/requests/PostWatch';
 import {PostPreviewRequest, PostPreviewResponse} from './types/requests/Preview';
+import {SiteEntity} from "./types/entities/SiteEntity";
 
 export default class PostController {
     public router = Router();
@@ -93,63 +92,16 @@ export default class PostController {
                 return response.error('error', 'Unknown error', 500);
             }
 
+            const { posts : [post], users  } = await this.postManager.enrichRawPosts([rawPost], format);
             const rawComments = await this.postManager.getPostComments(postId, userId);
-
-            const post: PostEntity = {
-                id: rawPost.post_id,
-                site: site.site,
-                author: rawPost.author_id,
-                created: rawPost.created_at.toISOString(),
-                title: rawPost.title,
-                content: format === 'html' ? rawPost.html : rawPost.source,
-                rating: rawPost.rating,
-                comments: rawPost.comments,
-                newComments: 0,
-                vote: rawPost.vote,
-                bookmark: !!rawPost.bookmark,
-                watch: !!rawPost.watch
-            };
-
-            const users: Record<number, UserEntity> = {};
-            users[rawPost.author_id] = await this.userManager.getById(rawPost.author_id);
-
-            const comments: CommentEntity[] = [];
-            const tmpComments: Record<number, CommentEntity> = {};
-            for (const rawComment of rawComments) {
-                const comment: CommentEntity = {
-                    id: rawComment.comment_id,
-                    created: rawComment.created_at.toISOString(),
-                    author: rawComment.author_id,
-                    content: format === 'html' ? rawComment.html : rawComment.source,
-                    rating: rawComment.rating,
-                    vote: rawComment.vote,
-                    isNew: rawComment.author_id !== userId && rawComment.comment_id > rawPost.last_read_comment_id
-                };
-
-                if (!users[rawComment.author_id]) {
-                    users[rawComment.author_id] = await this.userManager.getById(rawComment.author_id);
-                }
-                tmpComments[rawComment.comment_id] = comment;
-
-                if (!rawComment.parent_comment_id) {
-                    comments.push(comment);
-                }
-                else {
-                    const parentComment = tmpComments[rawComment.parent_comment_id];
-                    if (parentComment) {
-                        if (!parentComment.answers) {
-                            parentComment.answers = [];
-                        }
-
-                        parentComment.answers.push(comment);
-                    }
-                }
-            }
+            const {rootComments} = await this.postManager.enrichRawComments(rawComments, users, format,
+                (comment) => comment.author_id !== userId && comment.comment_id > rawPost.last_read_comment_id
+            );
 
             response.success({
                 post: post,
                 site: site,
-                comments: comments,
+                comments: rootComments,
                 users: users
             });
         }
@@ -202,10 +154,10 @@ export default class PostController {
         const { post_id: postId, comment_id: parentCommentId, format, content } = request.body;
 
         try {
-            const users: Record<number, UserEntity> = {};
-            users[userId] = await this.userManager.getById(userId);
-
+            const users: Record<number, UserEntity> = {[userId]: await this.userManager.getById(userId)};
             const comment = await this.postManager.createComment(userId, postId, parentCommentId, content, format);
+
+            const sites: Record<number, SiteEntity> = {[userId]: await this.siteManager.getSiteById(comment.site_id)};
 
             this.logger.info(`Comment created by #${userId} @${users[userId].username}`, {
                 comment: content,
@@ -215,7 +167,8 @@ export default class PostController {
 
             response.success({
                 comment,
-                users
+                users,
+                sites
             });
         }
         catch (err) {

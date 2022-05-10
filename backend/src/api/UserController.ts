@@ -7,6 +7,7 @@ import {UserProfileRequest, UserProfileResponse} from './types/requests/UserProf
 import {UserPostsRequest, UserPostsResponse} from './types/requests/UserPosts';
 import PostManager from '../managers/PostManager';
 import {SiteBaseEntity} from './types/entities/SiteEntity';
+import {UserCommentsRequest, UserCommentsResponse} from "./types/requests/UserComments";
 
 export default class UserController {
     public router = Router();
@@ -99,7 +100,34 @@ export default class UserController {
         }
     }
 
-    async comments(request: APIRequest<UserProfileRequest>, response: APIResponse<UserProfileResponse>) {
+    async comments(request: APIRequest<UserCommentsRequest>, response: APIResponse<UserCommentsResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
 
+        const userId = request.session.data.userId;
+        const { username, format, page, perpage } = request.body;
+
+        try {
+            const profile = await this.userManager.getFullProfile(username, userId);
+
+            if (!profile) {
+                return response.error('not-found', 'User not found', 404);
+            }
+
+            const total = await this.postManager.getUserCommentsTotal(profile.id);
+            const rawComments = await this.postManager.getUserComments(profile.id, userId, page || 1, perpage || 20);
+            const {allComments, users, sites} = await this.postManager.enrichRawComments(rawComments, {}, format, (_) => false);
+
+            response.success({
+                comments: allComments,
+                total,
+                users,
+                sites
+            });
+        } catch (error) {
+            this.logger.error('Could not get user comments', { username, error });
+            return response.error('error', `Could not get comments for user ${username}`, 500);
+        }
     }
 }
