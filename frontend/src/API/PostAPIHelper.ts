@@ -109,7 +109,7 @@ export default class PostAPIHelper {
             // fix fields
             c.author = this.cache.setUser(users[comment.author]);
             c.created = this.postAPI.api.fixDate(new Date(comment.created));
-            c.post_link = {
+            c.postLink = {
                 id: comment.post,
                 site: comment.site
             }

@@ -29,7 +29,7 @@ export interface CommentInfo {
     rating: number;
     vote?: number;
     isNew?: boolean;
-    post_link: PostLinkInfo;
+    postLink: PostLinkInfo;
     answers?: CommentInfo[];
     post?: number;
     site?: string;

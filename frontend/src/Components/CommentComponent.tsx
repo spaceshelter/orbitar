@@ -20,7 +20,6 @@ interface CommentProps {
 
 export default function CommentComponent(props: CommentProps) {
     const [answerOpen, setAnswerOpen] = useState(false);
-    const {site} = useAppState();
 
     const handleAnswerSwitch = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -50,7 +49,7 @@ export default function CommentComponent(props: CommentProps) {
             <div className={styles.body}>
                 <div className={styles.signature}>
                     {props.showSite ? <><Link to={`//${props.comment.site}.${process.env.REACT_APP_ROOT_DOMAIN}/`}>{props.comment.site}</Link> • </> : ''}
-                    <Username className={styles.username} user={author} /> • <PostLink post={props.comment.post_link} commentId={props.comment.id}><DateComponent date={created} /></PostLink>
+                    <Username className={styles.username} user={author} /> • <PostLink post={props.comment.postLink} commentId={props.comment.id}><DateComponent date={created} /></PostLink>
                 </div>
                 <div className={styles.content}>
                     <ContentComponent className={styles.commentContent} content={props.comment.content} />
@@ -65,7 +64,7 @@ export default function CommentComponent(props: CommentProps) {
             </div>
             {(props.comment.answers || answerOpen) ?
                 <div className={styles.answers}>
-                    {props.onPreview && props.onAnswer && <CreateCommentComponent open={answerOpen} post={props.comment.post_link} comment={props.comment} onAnswer={handleAnswer} onPreview={props.onPreview} />}
+                    {props.onPreview && props.onAnswer && <CreateCommentComponent open={answerOpen} post={props.comment.postLink} comment={props.comment} onAnswer={handleAnswer} onPreview={props.onPreview} />}
                     {props.comment.answers && props.onAnswer ? props.comment.answers.map(comment =>
                         <CommentComponent key={comment.id} comment={comment} onAnswer={props.onAnswer}  onPreview={props.onPreview} />) : <></>}
                 </div>
