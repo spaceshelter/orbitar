@@ -21,7 +21,7 @@ export class DBConnection {
 
     async query<T = RowDataPacket[][] | RowDataPacket[] | OkPacket | OkPacket[] | ResultSetHeader>(
         query: string, params: string[] | object): Promise<T> {
-        this.logger.verbose('Query', { query: query, params: params });
+        this.logger.verbose('Query', { query: query.replace(/[\s\n]+/g, ' '), params: params });
 
         try {
             return (await this.connection.query(query, params))[0] as undefined as T;
@@ -41,9 +41,12 @@ export class DBConnection {
     }
 
     async insert(table: string, values: Record<string, unknown>): Promise<number> {
-        const {keys, valueKeys} = Object.entries(values).reduce((p, [k]) => {
+        const {keys, valueKeys} = Object.entries(values).reduce((p, [k, v]) => {
             p.keys.push('`' + k + '`');
             p.valueKeys.push(':' + k);
+            if (v === undefined) {
+                values[k] = null;
+            }
             return p;
         }, { keys: [], valueKeys: [] });
         const query = 'insert into `' + table + '` (' + keys.join(',') + ') values (' + valueKeys.join(',') + ')';

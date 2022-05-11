@@ -49,7 +49,7 @@ services:
       context: backend
     restart: always
     environment:
-      SERVER_DOMAIN: ${SERVER_DOMAIN}
+      SITE_DOMAIN: ${SERVER_DOMAIN}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     depends_on:
       - mysql

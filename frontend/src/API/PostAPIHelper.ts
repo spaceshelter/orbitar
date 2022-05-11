@@ -1,8 +1,9 @@
-import PostAPI, {CommentEntity} from './PostAPI';
+import PostAPI, {CommentEntity, PostEntity} from './PostAPI'
 import {CommentInfo, PostInfo} from '../Types/PostInfo';
 import {SiteInfo} from '../Types/SiteInfo';
 import APICache from './APICache';
 import {AppStateSetters} from '../AppState/AppState';
+import {UserInfo} from "../Types/UserInfo"
 
 type FeedPostsResult = {
     posts: PostInfo[];
@@ -50,25 +51,9 @@ export default class PostAPIHelper {
         post.author = this.cache.setUser(response.users[response.post.author]);
         post.created = this.postAPI.api.fixDate(new Date(response.post.created));
 
-        let lastCommentId = 0;
 
-        const fixComments = (fix: CommentEntity[]) => {
-            return fix.map(comment => {
-                lastCommentId = Math.max(lastCommentId, comment.id);
-                const c: CommentInfo = { ...comment } as any;
-                // fix fields
-                c.author = this.cache.setUser(response.users[comment.author]);
-                c.created = this.postAPI.api.fixDate(new Date(comment.created));
-
-                if (comment.answers) {
-                    c.answers = fixComments(comment.answers);
-                }
-
-                return c;
-            });
-        }
-
-        const comments = fixComments(response.comments);
+        const comments = this.fixComments(response.comments, response.users);
+        const lastCommentId = this.getLastCommentId(response.comments) || 0;
 
         return {
             post: post,
@@ -81,19 +66,8 @@ export default class PostAPIHelper {
     async feedPosts(site: string, page: number, perPage: number): Promise<FeedPostsResult> {
         const response = await this.postAPI.feedPosts(site, page, perPage);
         const siteInfo = this.cache.setSite(response.site);
-
-        const posts: PostInfo[] = response.posts.map(post => {
-            const p: PostInfo = { ...post } as any;
-            // fix fields
-            p.author = this.cache.setUser(response.users[post.author]);
-            p.created = this.postAPI.api.fixDate(new Date(post.created));
-
-            this.cache.setPost(p);
-            return p;
-        });
-
         return {
-            posts: posts,
+            posts: this.fixPosts(response.posts, response.users),
             site: siteInfo,
             total: response.total
         };
@@ -101,19 +75,8 @@ export default class PostAPIHelper {
 
     async feedSubscriptions(page: number, perPage: number): Promise<FeedSubscriptionsResult> {
         const response = await this.postAPI.feedSubscriptions(page, perPage);
-
-        const posts: PostInfo[] = response.posts.map(post => {
-            const p: PostInfo = { ...post } as any;
-            // fix fields
-            p.author = this.cache.setUser(response.users[post.author]);
-            p.created = this.postAPI.api.fixDate(new Date(post.created));
-
-            this.cache.setPost(p);
-            return p;
-        });
-
         return {
-            posts: posts,
+            posts: this.fixPosts(response.posts, response.users),
             sites: response.sites,
             total: response.total
         };
@@ -121,33 +84,56 @@ export default class PostAPIHelper {
 
     async feedWatch(all: boolean, page: number, perPage: number): Promise<FeedSubscriptionsResult> {
         const response = await this.postAPI.feedWatch(all, page, perPage);
-
-        const posts: PostInfo[] = response.posts.map(post => {
-            const p: PostInfo = { ...post } as any;
-            // fix fields
-            p.author = this.cache.setUser(response.users[post.author]);
-            p.created = this.postAPI.api.fixDate(new Date(post.created));
-
-            this.cache.setPost(p);
-            return p;
-        });
-
         return {
-            posts: posts,
+            posts: this.fixPosts(response.posts, response.users),
             sites: response.sites,
             total: response.total
         };
     }
 
+    fixPosts(posts: PostEntity[], users: Record<number, UserInfo>): PostInfo[] {
+        return posts.map(post => {
+            const p: PostInfo = { ...post } as any;
+            // fix fields
+            p.author = this.cache.setUser(users[post.author]);
+            p.created = this.postAPI.api.fixDate(new Date(post.created));
+
+            this.cache.setPost(p);
+            return p;
+        });
+    }
+
+    fixComments(comments: CommentEntity[], users: Record<number, UserInfo>): CommentInfo[] {
+        return comments.map(comment => {
+            const c: CommentInfo = { ...comment } as any;
+            // fix fields
+            c.author = this.cache.setUser(users[comment.author]);
+            c.created = this.postAPI.api.fixDate(new Date(comment.created));
+            c.postLink = {
+                id: comment.post,
+                site: comment.site
+            }
+
+            if (comment.answers) {
+                c.answers = this.fixComments(comment.answers, users);
+            }
+            return c;
+        });
+    }
+
+    getLastCommentId(comments: CommentEntity[]): number | undefined {
+        return comments.reduce((lastCommentId: number | undefined, comment) =>
+            Math.max(lastCommentId || comment.id, comment.id,
+                comment.answers && this.getLastCommentId(comment.answers) || comment.id), undefined);
+    }
+
     async comment(content: string, postId: number, commentId?: number): Promise<CommentResponse> {
         const response = await this.postAPI.comment(content, postId, commentId);
 
-        const c: any = { ...response.comment }
-        c.author = this.cache.setUser(response.users[c.author]);
-        c.created = this.postAPI.api.fixDate(new Date(c.created));
+        const [comment] = this.fixComments([response.comment], response.users);
 
         return {
-            comment: c
+            comment
         };
     }
 
@@ -155,7 +141,7 @@ export default class PostAPIHelper {
         const result = await this.postAPI.read(postId, comments, lastCommentId);
         if (result.watch) {
             this.setters.setUserStats((old) => {
-                return { ...old, watch: result.watch! };
+                return { ...old, watch: result.watch, notifications: result.notifications };
             });
         }
         return result;

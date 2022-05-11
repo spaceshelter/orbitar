@@ -11,6 +11,7 @@ type UsePost = {
     error?: string;
 
     postComment(comment: string, answerToCommentId?: number): Promise<CommentInfo>;
+    preview(text: string): Promise<string>;
     setVote(value: number): void;
     setCommentVote(commentId: number, vote: number): void;
     reload(showUnreadOnly?: boolean): void;
@@ -47,7 +48,7 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
         };
     }, [post]);
 
-    const { postComment, setVote, setCommentVote, reload } = useMemo(() => {
+    const { postComment, setVote, setCommentVote, reload, preview } = useMemo(() => {
         const postComment = async (text: string, answerToCommentId?: number) => {
             const {comment} = await api.post.comment(text, postId, answerToCommentId);
 
@@ -112,8 +113,6 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
             // request post
             api.post.get(postId)
                 .then(result => {
-                    console.warn('Post loaded', result);
-
                     setPost(result.post);
                     setSite(result.site);
                     setCachedComments(result.comments);
@@ -130,15 +129,17 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
                 });
         };
 
-        return { postComment, setVote, setCommentVote, reload, updatePost };
+        const preview = async (text: string) => {
+            return (await api.postAPI.preview(text)).content;
+        }
+
+        return { postComment, setVote, setCommentVote, reload, updatePost, preview };
     }, [postId, comments, rawComments, api.post]);
 
     useEffect(() => {
         if (prev && (prev.siteName === siteName && prev.postId === postId && prev.showUnreadOnly === showUnreadOnly)) {
             return;
         }
-
-        // console.log('Load post', postId, showUnreadOnly);
 
         if (prev?.siteName !== siteName) {
             // load site from cache
@@ -156,14 +157,12 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
         }
         else if (rawComments) {
             // use raw comments if postId not changed
-            console.log('Use cached comments');
             setComments(filterComments(rawComments, showUnreadOnly || false));
             return;
         }
 
         if (prev?.postId === postId) {
             // TODO: skip only if in loading state
-            console.log('Same post, skip loading');
             return;
         }
 
@@ -171,7 +170,7 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
         reload(showUnreadOnly || false);
     }, [siteName, postId, showUnreadOnly, api, rawComments, prev, reload]);
 
-    return { site, post, comments, error, postComment, setVote, setCommentVote, reload, updatePost };
+    return { site, post, comments, error, postComment, preview, setVote, setCommentVote, reload, updatePost };
 }
 
 function findComment(comments: CommentInfo[], commentId: number): CommentInfo | undefined {

@@ -28,6 +28,10 @@ export function CreatePostPage() {
         return;
     };
 
+    const handlePreview = async (text: string): Promise<string> => {
+        return (await api.postAPI.preview(text)).content;
+    }
+
     const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setTitle(e.target.value);
     };
@@ -37,7 +41,7 @@ export function CreatePostPage() {
             <div className={styles.createpost}>
                 <div className={styles.form}>
                     <input className={styles.title} type="text" placeholder="Без названия" value={title} onChange={handleTitleChange} />
-                    <CreateCommentComponent open={true} onAnswer={handleAnswer} />
+                    <CreateCommentComponent open={true} onAnswer={handleAnswer} onPreview={handlePreview} />
                 </div>
             </div>
         </div>

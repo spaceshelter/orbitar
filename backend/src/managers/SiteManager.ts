@@ -33,9 +33,10 @@ export default class SiteManager {
                 name: siteRaw.name,
                 owner: owner
             };
+
+            this.cacheId[siteRaw.site_id] = site;
         }
         this.cache[siteName] = site;
-        this.cacheId[siteRaw.site_id] = site;
 
         return site;
     }

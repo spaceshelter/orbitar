@@ -34,5 +34,4 @@ export type CommentRaw = {
 
 export type CommentRawWithUserData = CommentRaw & {
     vote?: number;
-    is_new?: boolean;
 };

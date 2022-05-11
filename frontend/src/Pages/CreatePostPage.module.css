@@ -12,9 +12,16 @@
     margin: 0 auto;
 }
 
-.createpost textarea {
-    height: 250px;
+.createpost textarea, .createpost .preview  {
+    min-height: 250px;
     font-size: 16px;
+}
+
+.preview {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    overflow: visible;
 }
 
 .createpost input.title {

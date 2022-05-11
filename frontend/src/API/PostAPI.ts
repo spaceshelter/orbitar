@@ -2,7 +2,7 @@ import APIBase from './APIBase';
 import {UserInfo} from '../Types/UserInfo';
 import {SiteInfo} from '../Types/SiteInfo';
 
-type ContentFormat = 'html' | 'source';
+export type ContentFormat = 'html' | 'source';
 
 export type PostEntity = {
     id: number;
@@ -26,6 +26,9 @@ export type CommentEntity = {
     rating: number;
     vote?: number;
     isNew?: boolean;
+
+    post: number;
+    site: string;
 
     answers?: CommentEntity[];
 }
@@ -94,8 +97,9 @@ type CommentCreateRequest = {
     format?: ContentFormat;
 };
 type CommentCreateResponse = {
-    comment: CommentEntity[];
+    comment: CommentEntity;
     users: Record<number, UserInfo>;
+    sites: Record<number, SiteInfo>;
 };
 
 type PostReadRequest = {
@@ -104,11 +108,16 @@ type PostReadRequest = {
     last_comment_id?: number;
 };
 type PostReadResponse = {
-    watch?: {
+    notifications: number;
+    watch: {
         comments: number;
         posts: number;
     }
 };
+
+type PostPreviewRequestResponse = {
+    content: string;
+}
 
 type PostBookmarkRequest = {
     post_id: number;
@@ -132,16 +141,16 @@ export default class PostAPI {
         this.api = api;
     }
 
-    async create(site: string, title: string | undefined, content: string): Promise<PostCreateResponse> {
-        return await this.api.request<PostCreateRequest, PostCreateResponse>('/post/create', {
+    create(site: string, title: string | undefined, content: string): Promise<PostCreateResponse> {
+        return this.api.request<PostCreateRequest, PostCreateResponse>('/post/create', {
             site,
             title,
             content
         });
     }
 
-    async feedPosts(site: string, page: number, perpage: number): Promise<FeedPostsResponse> {
-        return await this.api.request<FeedPostsRequest, FeedPostsResponse>('/feed/posts', {
+    feedPosts(site: string, page: number, perpage: number): Promise<FeedPostsResponse> {
+        return this.api.request<FeedPostsRequest, FeedPostsResponse>('/feed/posts', {
             site,
             page,
             perpage,
@@ -149,16 +158,16 @@ export default class PostAPI {
         });
     }
 
-    async feedSubscriptions(page: number, perpage: number): Promise<FeedSubscriptionsResponse> {
-        return await this.api.request<FeedSubscriptionsRequest, FeedSubscriptionsResponse>('/feed/subscriptions', {
+    feedSubscriptions(page: number, perpage: number): Promise<FeedSubscriptionsResponse> {
+        return this.api.request<FeedSubscriptionsRequest, FeedSubscriptionsResponse>('/feed/subscriptions', {
             page,
             perpage,
             format: 'html'
         });
     }
 
-    async feedWatch(all: boolean, page: number, perpage: number): Promise<FeedWatchResponse> {
-        return await this.api.request<FeedWatchRequest, FeedWatchResponse>('/feed/watch', {
+    feedWatch(all: boolean, page: number, perpage: number): Promise<FeedWatchResponse> {
+        return this.api.request<FeedWatchRequest, FeedWatchResponse>('/feed/watch', {
             filter: all ? 'all' : 'new',
             page,
             perpage,
@@ -166,37 +175,43 @@ export default class PostAPI {
         });
     }
 
-    async get(postId: number): Promise<PostGetResponse> {
-        return await this.api.request<PostGetRequest, PostGetResponse>('/post/get', {
+    get(postId: number): Promise<PostGetResponse> {
+        return this.api.request<PostGetRequest, PostGetResponse>('/post/get', {
             id: postId
         });
     }
 
-    async comment(content: string, postId: number, commentId?: number): Promise<CommentCreateResponse> {
-        return await this.api.request<CommentCreateRequest, CommentCreateResponse>('/post/comment', {
+    comment(content: string, postId: number, commentId?: number): Promise<CommentCreateResponse> {
+        return this.api.request<CommentCreateRequest, CommentCreateResponse>('/post/comment', {
             post_id: postId,
             comment_id: commentId,
             content
         });
     }
 
-    async read(postId: number, comments: number, lastCommentId?: number) {
-        return await this.api.request<PostReadRequest, PostReadResponse>('/post/read', {
+    preview(text: string): Promise<PostPreviewRequestResponse> {
+        return this.api.request<PostPreviewRequestResponse, PostPreviewRequestResponse>('/post/preview', {
+            content: text
+        })
+    }
+
+    read(postId: number, comments: number, lastCommentId?: number) {
+        return this.api.request<PostReadRequest, PostReadResponse>('/post/read', {
             post_id: postId,
             comments: comments,
             last_comment_id: lastCommentId
         });
     }
 
-    async bookmark(postId: number, bookmark: boolean) {
-        return await this.api.request<PostBookmarkRequest, PostBookmarkResponse>('/post/bookmark', {
+    bookmark(postId: number, bookmark: boolean) {
+        return this.api.request<PostBookmarkRequest, PostBookmarkResponse>('/post/bookmark', {
             post_id: postId,
             bookmark: bookmark
         });
     }
 
-    async watch(postId: number, watch: boolean) {
-        return await this.api.request<PostWatchRequest, PostWatchResponse>('/post/watch', {
+    watch(postId: number, watch: boolean) {
+        return this.api.request<PostWatchRequest, PostWatchResponse>('/post/watch', {
             post_id: postId,
             watch: watch
         });

@@ -4,15 +4,22 @@ import {APIRequest, APIResponse, joiFormat, joiUsername, validate} from './ApiMi
 import Joi from 'joi';
 import {Logger} from 'winston';
 import {UserProfileRequest, UserProfileResponse} from './types/requests/UserProfile';
-import {UserPostsRequest} from './types/requests/UserPosts';
+import {UserPostsRequest, UserPostsResponse} from './types/requests/UserPosts';
+import PostManager from '../managers/PostManager';
+import {Enricher} from './utils/Enricher';
+import {UserCommentsRequest, UserCommentsResponse} from './types/requests/UserComments';
 
 export default class UserController {
-    public router = Router();
-    private userManager: UserManager;
-    private logger: Logger;
+    public readonly router = Router();
+    private readonly userManager: UserManager;
+    private readonly postManager: PostManager;
+    private readonly logger: Logger;
+    private readonly enricher: Enricher;
 
-    constructor(userManager: UserManager, logger: Logger) {
+    constructor(enricher: Enricher, userManager: UserManager, postManager: PostManager, logger: Logger) {
+        this.enricher = enricher;
         this.userManager = userManager;
+        this.postManager = postManager;
         this.logger = logger;
 
         const profileSchema = Joi.object<UserProfileRequest>({
@@ -60,11 +67,66 @@ export default class UserController {
         }
     }
 
-    async posts(request: APIRequest<UserProfileRequest>, response: APIResponse<UserProfileResponse>) {
+    async posts(request: APIRequest<UserPostsRequest>, response: APIResponse<UserPostsResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
 
+        const userId = request.session.data.userId;
+        const { username, format, page, perpage } = request.body;
+
+        try {
+            const profile = await this.userManager.getFullProfile(username, userId);
+
+            if (!profile) {
+                return response.error('not-found', 'User not found', 404);
+            }
+
+            const total = await this.postManager.getPostsByUserTotal(profile.id);
+            const rawPosts = await this.postManager.getPostsByUser(profile.id, userId,  page || 1, perpage || 20);
+            const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts, format);
+
+            response.success({
+                posts,
+                total,
+                users,
+                sites
+            });
+
+        } catch (error) {
+            this.logger.error('Could not get user posts', { username, error });
+            return response.error('error', `Could not get posts for user ${username}`, 500);
+        }
     }
 
-    async comments(request: APIRequest<UserProfileRequest>, response: APIResponse<UserProfileResponse>) {
+    async comments(request: APIRequest<UserCommentsRequest>, response: APIResponse<UserCommentsResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
 
+        const userId = request.session.data.userId;
+        const { username, format, page, perpage } = request.body;
+
+        try {
+            const profile = await this.userManager.getFullProfile(username, userId);
+
+            if (!profile) {
+                return response.error('not-found', 'User not found', 404);
+            }
+
+            const total = await this.postManager.getUserCommentsTotal(profile.id);
+            const rawComments = await this.postManager.getUserComments(profile.id, userId, page || 1, perpage || 20, format);
+            const {allComments, users} = await this.enricher.enrichRawComments(rawComments, {}, format, (_) => false);
+
+            response.success({
+                comments: allComments,
+                total,
+                users
+            });
+        }
+        catch (error) {
+            this.logger.error('Could not get user comments', { username, error });
+            return response.error('error', `Could not get comments for user ${username}`, 500);
+        }
     }
 }

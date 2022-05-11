@@ -32,6 +32,31 @@ export default class CommentRepository {
             });
     }
 
+    async getUserComments(userId: number, forUserId: number, page: number, perPage: number): Promise<CommentRawWithUserData[]> {
+        const limitFrom = (page - 1) * perPage;
+        return await this.db.query(`
+                select c.*, v.vote
+                    from comments c
+                      left join comment_votes v on (v.comment_id = c.comment_id and v.voter_id = :for_user_id)
+                    where
+                      c.author_id = :user_id and c.deleted = 0
+                    order by c.created_at desc
+                    limit :limit_from, :limit_count
+            `,
+            {
+                user_id: userId,
+                for_user_id: forUserId,
+                limit_from: limitFrom,
+                limit_count: perPage
+            });
+    }
+
+    async getUserCommentsTotal(userId: number): Promise<number> {
+        return this.db.fetchOne<any>('select count(*) cnt from comments where author_id = :user_id and deleted = 0', {
+            user_id: userId
+        }).then((res) => parseInt(res.cnt || '0'));
+    }
+
     async createComment(userId: number, postId: number, parentCommentId: number | undefined, source: string, html: string): Promise<CommentRaw> {
         return await this.db.inTransaction(async conn => {
             const siteResult = await conn.fetchOne<{site_id: number}>('select site_id from posts where post_id=:post_id', { post_id: postId });

@@ -3,11 +3,11 @@ import {useEffect, useMemo, useState} from 'react';
 import {PostInfo} from '../../Types/PostInfo';
 import {useCache} from './useCache';
 
-export type FeedType = 'subscriptions' | 'site' | 'watch' | 'watch-all';
+export type FeedType = 'subscriptions' | 'site' | 'watch' | 'watch-all' | 'user-profile';
 
-export function useFeed(site: string, feedType: FeedType, page: number, perpage: number) {
+export function useFeed(id: string, feedType: FeedType, page: number, perpage: number) {
     const api = useAPI();
-    const [cachedPosts, setCachedPosts] = useCache<PostInfo[]>('feed', [site, feedType, page, perpage]);
+    const [cachedPosts, setCachedPosts] = useCache<PostInfo[]>('feed', [id, feedType, page, perpage]);
 
     const [posts, setPosts] = useState<PostInfo[] | undefined>(cachedPosts);
     const [loading, setLoading] = useState(true);
@@ -30,10 +30,9 @@ export function useFeed(site: string, feedType: FeedType, page: number, perpage:
     }, [posts]);
 
     useEffect(() => {
-        console.log('feed request');
         setLoading(true);
         if (feedType === 'site') {
-            api.post.feedPosts(site, page, perpage)
+            api.post.feedPosts(id, page, perpage)
                 .then(result => {
                     setCachedPosts(result.posts);
 
@@ -80,7 +79,21 @@ export function useFeed(site: string, feedType: FeedType, page: number, perpage:
                     setError('Не удалось загрузить ленту постов');
                 });
         }
-    }, [site, feedType, page, api.post, perpage]);
+        else if (feedType === 'user-profile') {
+            api.userAPI.userPosts(id, page, perpage).then( result => {
+                setCachedPosts(result.posts);
+
+                setError(undefined);
+                setLoading(false);
+                setPosts(result.posts);
+                const pages = Math.floor((result.total - 1) / perpage) + 1;
+                setPages(pages);
+            }).catch(error => {
+                console.log('USER PROFILE POSTS ERROR', error);
+                setError('Не удалось загрузить ленту постов пользователя');
+            });
+        }
+    }, [id, feedType, page, api.post, perpage]);
 
     return { posts, loading, pages, error, updatePost };
 }

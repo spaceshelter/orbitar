@@ -107,6 +107,24 @@ img.image-preview {
 /*  font-size: 25%;*/
 /*}*/
 
+@keyframes highlight-flash {
+  from {
+    background-color: transparent;
+  }
+
+  to {
+    background-color: var(--highlight-bg);
+  }
+}
+
+.highlight {
+  /*background: var(--highlight-bg);*/
+  /*transition: background-color 1s;*/
+  animation-duration: 0.5s;
+  animation-name: highlight-flash;
+  animation-iteration-count: 6;
+  animation-direction: alternate;
+}
 
 body.no-scroll {
   overflow: hidden;

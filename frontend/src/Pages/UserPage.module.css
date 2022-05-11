@@ -1,11 +1,11 @@
 .container {
-    background: var(--item-bg);
-    margin: 20px;
-    border-radius: 6px;
+    width: 100%;
+    max-width: 880px;
+    margin: 56px auto 0;
 }
 
 .header {
-    padding: 10px 20px;
+    padding: 10px 0;
 }
 
 .karma {
@@ -14,7 +14,7 @@
 }
 
 .controls {
-    padding: 10px 20px;
+    padding: 10px 0;
     background: var(--controls-bg);
 }
 
@@ -26,9 +26,8 @@
     font-weight: bold;
 }
 
-
 .userinfo {
-    padding: 10px 20px;
+    padding: 10px 0;
 }
 
 .username {
@@ -37,3 +36,21 @@
 .name {
     font-size: 25px;
 }
+
+.logout{
+    margin-top: 80px;
+    background: var(--answer-line-fg);
+    border: none;
+    display: flex;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-weight: bold;
+    color: var(--button-dis-fg);
+    align-items: center;
+    gap: 8px;
+}
+.logout:hover{
+    background: var(--button-dis-bg);
+}
+
+.logout svg{ fill: var(--button-dis-fg); }

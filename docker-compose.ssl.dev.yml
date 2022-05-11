@@ -1,0 +1,43 @@
+version: '3.7'
+
+services:
+  caddy:
+    image: caddy
+    restart: unless-stopped
+    ports:
+      - "443:443"
+    environment:
+      SERVER_DOMAIN: ${SERVER_DOMAIN}
+      IMGUR_CLIENT_ID: ${IMGUR_CLIENT_ID}
+    volumes:
+      - $PWD/caddy/Caddyfile.ssl.dev:/etc/caddy/Caddyfile
+      - $PWD/caddy/certs:/certs
+      - caddy_data:/data
+      - caddy_config:/config
+
+  mysql:
+    platform: linux/amd64
+    build:
+      context: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - mysql_db:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  redis:
+    image: redis:7
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --save 20 1 --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+
+volumes:
+  caddy_data:
+  caddy_config:
+  mysql_db:
+  redis_data:

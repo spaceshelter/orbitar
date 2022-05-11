@@ -2,11 +2,18 @@
     margin-bottom: 25px;
 }
 
-.answer textarea {
+.answer textarea, .answer .preview {
     width: 100%;
     min-height: 100px;
     font-size: 16px;
     padding: 10px;
+}
+
+.answer .preview {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    overflow: visible;
 }
 
 .controls {
@@ -63,6 +70,7 @@
 }
 
 .controls button:disabled {
+    color: var(--disabled-fg);
     fill: var(--disabled-fg);
 }
 
@@ -83,6 +91,14 @@ button.irony {
     color: var(--irony-fg);
 }
 button.quote {
+}
+
+.final button.buttonPreview, .final button.buttonPreview:hover, .final button.buttonPreview:disabled {
+    background: none;
+    border: none;
+    opacity: 0.8;
+    margin-right: 5px;
+    color: var(--fg);
 }
 
 .editor {
