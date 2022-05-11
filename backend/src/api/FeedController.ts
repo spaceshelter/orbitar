@@ -8,18 +8,20 @@ import SiteManager from '../managers/SiteManager';
 import {FeedSubscriptionsRequest, FeedSubscriptionsResponse} from './types/requests/FeedSubscriptions';
 import {FeedPostsRequest, FeedPostsResponse} from './types/requests/FeedPosts';
 import {FeedWatchRequest, FeedWatchResponse} from './types/requests/FeedWatch';
-import {SiteBaseEntity} from './types/entities/SiteEntity';
 import PostManager from '../managers/PostManager';
+import {Enricher} from './utils/Enricher';
 
 export default class FeedController {
-    public router = Router();
-    private feedManager: FeedManager;
-    private siteManager: SiteManager;
-    private userManager: UserManager;
-    private postManager: PostManager;
-    private logger: Logger;
+    public readonly router = Router();
+    private readonly feedManager: FeedManager;
+    private readonly siteManager: SiteManager;
+    private readonly userManager: UserManager;
+    private readonly postManager: PostManager;
+    private readonly logger: Logger;
+    private readonly enricher: Enricher;
 
-    constructor(feedManager: FeedManager, siteManager: SiteManager, userManager: UserManager, postManager: PostManager, logger: Logger) {
+    constructor(enricher: Enricher, feedManager: FeedManager, siteManager: SiteManager, userManager: UserManager, postManager: PostManager, logger: Logger) {
+        this.enricher = enricher;
         this.feedManager = feedManager;
         this.siteManager = siteManager;
         this.userManager = userManager;
@@ -60,16 +62,13 @@ export default class FeedController {
         try {
             const total = await this.feedManager.getSubscriptionsTotal(userId);
             const rawPosts = await this.feedManager.getSubscriptionFeed(userId, page, perPage);
-            const { posts, users, sites } = await this.postManager.enrichRawPosts(rawPosts, format);
-            // reformat sites
-            const sitesByName: Record<string, SiteBaseEntity> =
-                Object.fromEntries(Object.entries(sites).map(([_, site]) => { return [ site.site, site ]; }));
+            const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts, format);
 
             response.success({
-                posts: posts,
-                total: total,
-                users: users,
-                sites: sitesByName
+                posts,
+                total,
+                users,
+                sites
             });
         }
         catch (err) {
@@ -95,13 +94,13 @@ export default class FeedController {
             const siteId = site.id;
             const total = await this.feedManager.getSiteTotal(siteId);
             const rawPosts = await this.feedManager.getSiteFeed(userId, siteId, page, perPage);
-            const { posts, users } = await this.postManager.enrichRawPosts(rawPosts, format);
+            const { posts, users } = await this.enricher.enrichRawPosts(rawPosts, format);
 
             response.success({
-                posts: posts,
-                total: total,
-                users: users,
-                site: site
+                posts,
+                total,
+                users,
+                site
             });
         }
         catch (err) {
@@ -121,16 +120,13 @@ export default class FeedController {
         try {
             const total = await this.feedManager.getWatchTotal(userId, filter === 'all');
             const rawPosts = await this.feedManager.getWatchFeed(userId, page, perPage, filter === 'all');
-            const { posts, users, sites } = await this.postManager.enrichRawPosts(rawPosts, format);
-            // reformat sites
-            const sitesByName: Record<string, SiteBaseEntity> =
-                Object.fromEntries(Object.entries(sites).map(([_, site]) => { return [ site.site, site ]; }));
+            const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts, format);
 
             response.success({
-                posts: posts,
-                total: total,
-                users: users,
-                sites: sitesByName
+                posts,
+                total,
+                users,
+                sites
             });
         }
         catch (err) {

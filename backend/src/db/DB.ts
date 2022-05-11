@@ -21,7 +21,7 @@ export class DBConnection {
 
     async query<T = RowDataPacket[][] | RowDataPacket[] | OkPacket | OkPacket[] | ResultSetHeader>(
         query: string, params: string[] | object): Promise<T> {
-        this.logger.verbose('Query', { query: query, params: params });
+        this.logger.verbose('Query', { query: query.replace(/[\s\n]+/g, ' '), params: params });
 
         try {
             return (await this.connection.query(query, params))[0] as undefined as T;

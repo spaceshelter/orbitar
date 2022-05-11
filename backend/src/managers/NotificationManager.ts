@@ -42,8 +42,6 @@ export default class NotificationManager {
         this.webPushRepository = webPushRepository;
         this.siteConfig = siteConfig;
 
-        console.log('VAPID', vapidConfig);
-
         if (vapidConfig.publicKey && vapidConfig.privateKey && vapidConfig.contact) {
             webpush.setVapidDetails(vapidConfig.contact, vapidConfig.publicKey, vapidConfig.privateKey);
             this.couldSendWebPush = true;

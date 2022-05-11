@@ -6,16 +6,19 @@ import {Logger} from 'winston';
 import {UserProfileRequest, UserProfileResponse} from './types/requests/UserProfile';
 import {UserPostsRequest, UserPostsResponse} from './types/requests/UserPosts';
 import PostManager from '../managers/PostManager';
+import {Enricher} from './utils/Enricher';
 import {SiteBaseEntity} from './types/entities/SiteEntity';
 import {UserCommentsRequest, UserCommentsResponse} from './types/requests/UserComments';
 
 export default class UserController {
-    public router = Router();
-    private userManager: UserManager;
-    private postManager: PostManager;
-    private logger: Logger;
+    public readonly router = Router();
+    private readonly userManager: UserManager;
+    private readonly postManager: PostManager;
+    private readonly logger: Logger;
+    private readonly enricher: Enricher;
 
-    constructor(userManager: UserManager, postManager: PostManager, logger: Logger) {
+    constructor(enricher: Enricher, userManager: UserManager, postManager: PostManager, logger: Logger) {
+        this.enricher = enricher;
         this.userManager = userManager;
         this.postManager = postManager;
         this.logger = logger;
@@ -82,16 +85,13 @@ export default class UserController {
 
             const total = await this.postManager.getPostsByUserTotal(profile.id);
             const rawPosts = await this.postManager.getPostsByUser(profile.id, userId,  page || 1, perpage || 20);
-            const { posts, users, sites } = await this.postManager.enrichRawPosts(rawPosts, format);
-            // reformat sites
-            const sitesByName: Record<string, SiteBaseEntity> =
-                Object.fromEntries(Object.entries(sites).map(([_, site]) => { return [ site.site, site ]; }));
+            const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts, format);
 
             response.success({
-                posts: posts,
-                total: total,
-                users: users,
-                sites: sitesByName
+                posts,
+                total,
+                users,
+                sites
             });
 
         } catch (error) {

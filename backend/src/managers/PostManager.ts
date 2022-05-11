@@ -9,12 +9,9 @@ import TheParser from '../parser/TheParser';
 import {ContentFormat} from './types/common';
 import FeedManager from './FeedManager';
 import {PostInfo} from './types/PostInfo';
+import {CommentInfo} from './types/CommentInfo';
 import NotificationManager from './NotificationManager';
-import {PostEntity} from '../api/types/entities/PostEntity';
-import {UserEntity} from '../api/types/entities/UserEntity';
-import {SiteBaseEntity} from '../api/types/entities/SiteEntity';
 import UserManager from './UserManager';
-import {CommentEntity} from '../api/types/entities/CommentEntity';
 
 export interface EnrichedPosts {
     posts: PostEntity[]
@@ -130,6 +127,16 @@ export default class PostManager {
 
         // fan out in background
         this.feedManager.postFanOut(commentRaw.post_id).then().catch();
+
+        return {
+            id: commentRaw.comment_id,
+            created: commentRaw.created_at,
+            author: commentRaw.author_id,
+            content: format === 'html' ? commentRaw.html : commentRaw.source,
+            rating: commentRaw.rating,
+            parentComment: commentRaw.parent_comment_id,
+            isNew: true
+        };
 
         const { allComments : [comment] } = await this.enrichRawComments([commentRaw], {}, format, () => true);
         return comment;
