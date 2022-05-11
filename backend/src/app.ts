@@ -38,6 +38,7 @@ import NotificationManager from './managers/NotificationManager';
 import NotificationsController from './api/NotificationsController';
 import UserCredentials from './db/repositories/UserCredentials';
 import WebPushRepository from './db/repositories/WebPushRepository';
+import {Enricher} from './api/utils/Enricher';
 
 const app = express();
 
@@ -102,8 +103,10 @@ const notificationManager = new NotificationManager(commentRepository, notificat
 const userManager = new UserManager(credentialsRepository, userRepository, voteRepository, webPushRepository, notificationManager);
 const feedManager = new FeedManager(bookmarkRepository, postRepository, userRepository, redis.client);
 const siteManager = new SiteManager(siteRepository, userManager, feedManager);
-const postManager = new PostManager(bookmarkRepository, commentRepository, postRepository, feedManager, notificationManager, siteManager, theParser);
+const postManager = new PostManager(bookmarkRepository, commentRepository, postRepository, feedManager, notificationManager, siteManager, userManager, theParser);
 const voteManager = new VoteManager(voteRepository, postManager);
+
+const apiEnricher = new Enricher(siteManager, userManager);
 
 const requests = [
     new AuthController(userManager, logger.child({ service: 'AUTH' })),
@@ -111,8 +114,8 @@ const requests = [
     new PostController(postManager, feedManager, siteManager, userManager, logger.child({ service: 'POST' })),
     new StatusController(siteManager, userManager, logger.child({ service: 'STATUS' })),
     new VoteController(voteManager, logger.child({ service: 'VOTE' })),
-    new UserController(userManager, logger.child({ service: 'USER' })),
-    new FeedController(feedManager, siteManager, userManager, logger.child({ service: 'FEED' })),
+    new UserController(apiEnricher, userManager, postManager, logger.child({ service: 'USER' })),
+    new FeedController(apiEnricher, feedManager, siteManager, userManager, postManager, logger.child({ service: 'FEED' })),
     new SiteController(siteManager, logger.child( { service: 'SITE' })),
     new NotificationsController(notificationManager, userManager, logger.child({ service: 'NOTIFY' })),
 ];

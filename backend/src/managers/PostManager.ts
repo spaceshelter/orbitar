@@ -11,6 +11,7 @@ import FeedManager from './FeedManager';
 import {PostInfo} from './types/PostInfo';
 import {CommentInfo} from './types/CommentInfo';
 import NotificationManager from './NotificationManager';
+import UserManager from './UserManager';
 
 export default class PostManager {
     private bookmarkRepository: BookmarkRepository;
@@ -19,11 +20,12 @@ export default class PostManager {
     private feedManager: FeedManager;
     private notificationManager: NotificationManager;
     private siteManager: SiteManager;
+    private userManager: UserManager;
     private parser: TheParser;
 
     constructor(
         bookmarkRepository: BookmarkRepository, commentRepository: CommentRepository, postRepository: PostRepository,
-        feedManager: FeedManager, notificationManager: NotificationManager, siteManager: SiteManager,
+        feedManager: FeedManager, notificationManager: NotificationManager, siteManager: SiteManager, userManager: UserManager,
         parser: TheParser
     ) {
         this.bookmarkRepository = bookmarkRepository;
@@ -32,11 +34,20 @@ export default class PostManager {
         this.feedManager = feedManager;
         this.notificationManager = notificationManager;
         this.siteManager = siteManager;
+        this.userManager = userManager;
         this.parser = parser;
     }
 
     getPost(postId: number, forUserId: number): Promise<PostRawWithUserData | undefined> {
         return this.postRepository.getPostWithUserData(postId, forUserId);
+    }
+
+    getPostsByUser(userId: number, forUserId: number, page: number, perpage: number): Promise<PostRawWithUserData[]> {
+        return this.postRepository.getPostsByUser(userId, forUserId, page, perpage);
+    }
+
+    getPostsByUserTotal(userId: number): Promise<number> {
+        return this.postRepository.getPostsByUserTotal(userId);
     }
 
     async createPost(siteName: string, userId: number, title: string, content: string, format: ContentFormat): Promise<PostInfo> {
