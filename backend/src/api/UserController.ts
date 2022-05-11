@@ -7,7 +7,6 @@ import {UserProfileRequest, UserProfileResponse} from './types/requests/UserProf
 import {UserPostsRequest, UserPostsResponse} from './types/requests/UserPosts';
 import PostManager from '../managers/PostManager';
 import {Enricher} from './utils/Enricher';
-import {SiteBaseEntity} from './types/entities/SiteEntity';
 import {UserCommentsRequest, UserCommentsResponse} from './types/requests/UserComments';
 
 export default class UserController {
@@ -116,16 +115,16 @@ export default class UserController {
             }
 
             const total = await this.postManager.getUserCommentsTotal(profile.id);
-            const rawComments = await this.postManager.getUserComments(profile.id, userId, page || 1, perpage || 20);
-            const {allComments, users, sites} = await this.postManager.enrichRawComments(rawComments, {}, format, (_) => false);
+            const rawComments = await this.postManager.getUserComments(profile.id, userId, page || 1, perpage || 20, format);
+            const {allComments, users} = await this.enricher.enrichRawComments(rawComments, {}, format, (_) => false);
 
             response.success({
                 comments: allComments,
                 total,
-                users,
-                sites
+                users
             });
-        } catch (error) {
+        }
+        catch (error) {
             this.logger.error('Could not get user comments', { username, error });
             return response.error('error', `Could not get comments for user ${username}`, 500);
         }

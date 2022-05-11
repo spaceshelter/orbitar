@@ -9,23 +9,10 @@ import TheParser from '../parser/TheParser';
 import {ContentFormat} from './types/common';
 import FeedManager from './FeedManager';
 import {PostInfo} from './types/PostInfo';
-import {CommentInfo} from './types/CommentInfo';
 import NotificationManager from './NotificationManager';
 import UserManager from './UserManager';
-
-export interface EnrichedPosts {
-    posts: PostEntity[]
-    users: Record<number, UserEntity>
-    sites: Record<number, SiteBaseEntity>
-}
-
-export interface EnrichedComments {
-    rootComments: CommentEntity[]
-    allComments: CommentEntity[]
-    commentsIndex: Record<number, CommentEntity>
-    users: Record<number, UserEntity>
-    sites: Record<number, SiteBaseEntity>
-}
+import {CommentInfoWithPostData} from './types/CommentInfo';
+import {SiteInfo} from './types/SiteInfo';
 
 export default class PostManager {
     private bookmarkRepository: BookmarkRepository;
@@ -98,19 +85,50 @@ export default class PostManager {
         };
     }
 
-    getPostComments(postId: number, forUserId: number): Promise<CommentRawWithUserData[]> {
-        return this.commentRepository.getPostComments(postId, forUserId);
+    async getPostComments(postId: number, forUserId: number, format: ContentFormat): Promise<CommentInfoWithPostData[]> {
+        const rawComments = await this.commentRepository.getPostComments(postId, forUserId);
+        return await this.convertRawCommentsWithPostData(rawComments, format);
     }
 
-    getUserComments(userId: number, forUserId: number, page: number, perpage: number): Promise<CommentRawWithUserData[]> {
-        return this.commentRepository.getUserComments(userId, forUserId, page, perpage);
+    async getUserComments(userId: number, forUserId: number, page: number, perpage: number, format: ContentFormat): Promise<CommentInfoWithPostData[]> {
+        const rawComments = await this.commentRepository.getUserComments(userId, forUserId, page, perpage);
+        return await this.convertRawCommentsWithPostData(rawComments, format);
+    }
+
+    private async convertRawCommentsWithPostData(rawComments: CommentRawWithUserData[], format: ContentFormat): Promise<CommentInfoWithPostData[]> {
+        const siteById: Record<number, SiteInfo> = {};
+        const comments: CommentInfoWithPostData[] = [];
+
+        for (const raw of rawComments) {
+            let site = siteById[raw.site_id];
+            if (!site) {
+                site = await this.siteManager.getSiteById(raw.site_id);
+                siteById[raw.site_id] = site;
+            }
+
+            comments.push({
+                id: raw.comment_id,
+                post: raw.post_id,
+                site: site ? site.site : '',
+                content: format === 'html' ? raw.html : raw.source,
+                author: raw.author_id,
+                created: raw.created_at,
+                deleted: !!raw.deleted,
+                rating: raw.rating,
+                parentComment: raw.parent_comment_id,
+
+                vote: raw.vote,
+            });
+        }
+
+        return comments;
     }
 
     getUserCommentsTotal(userId: number): Promise<number> {
         return this.commentRepository.getUserCommentsTotal(userId);
     }
 
-    async createComment(userId: number, postId: number, parentCommentId: number | undefined, content: string, format: ContentFormat): Promise<CommentEntity> {
+    async createComment(userId: number, postId: number, parentCommentId: number | undefined, content: string, format: ContentFormat): Promise<CommentInfoWithPostData> {
         const parseResult = this.parser.parse(content);
 
         const commentRaw = await this.commentRepository.createComment(userId, postId, parentCommentId, content, parseResult.text);
@@ -128,18 +146,8 @@ export default class PostManager {
         // fan out in background
         this.feedManager.postFanOut(commentRaw.post_id).then().catch();
 
-        return {
-            id: commentRaw.comment_id,
-            created: commentRaw.created_at,
-            author: commentRaw.author_id,
-            content: format === 'html' ? commentRaw.html : commentRaw.source,
-            rating: commentRaw.rating,
-            parentComment: commentRaw.parent_comment_id,
-            isNew: true
-        };
-
-        const { allComments : [comment] } = await this.enrichRawComments([commentRaw], {}, format, () => true);
-        return comment;
+        const comments = await this.convertRawCommentsWithPostData([commentRaw], format);
+        return comments[0];
     }
 
     async setRead(postId: number, userId: number, readComments: number, lastCommentId?: number): Promise<boolean> {
@@ -162,98 +170,5 @@ export default class PostManager {
 
     setWatch(postId: number, userId: number, bookmarked: boolean) {
         return this.bookmarkRepository.setWatch(postId, userId, bookmarked);
-    }
-
-    async enrichRawPosts(rawPosts: PostRawWithUserData[], format: string): Promise<EnrichedPosts> {
-        const sites: Record<number, SiteBaseEntity> = {};
-        const users: Record<number, UserEntity> = {};
-        const posts: PostEntity[] = [];
-        for (const post of rawPosts) {
-            if (!users[post.author_id]) {
-                users[post.author_id] = await this.userManager.getById(post.author_id);
-            }
-
-            let siteName = '';
-            if (!sites[post.site_id]) {
-                const site = await this.siteManager.getSiteById(post.site_id);
-                siteName = site?.site || '';
-            }
-            else {
-                siteName = sites[post.site_id].site;
-            }
-
-
-            posts.push({
-                    id: post.post_id,
-                    site: siteName,
-                    author: post.author_id,
-                    created: post.created_at.toISOString(),
-                    title: post.title,
-                    content: format === 'html' ? post.html : post.source,
-                    rating: post.rating,
-                    comments: post.comments,
-                    newComments: post.read_comments ? Math.max(0, post.comments - post.read_comments) : post.comments,
-                    bookmark: !!post.bookmark,
-                    watch: !!post.watch,
-                    vote: post.vote
-                });
-        }
-
-        return {
-            posts,
-            users,
-            sites
-        };
-    }
-
-    async enrichRawComments(rawComments: CommentRawWithUserData[],
-                            users: Record<number, UserEntity>,
-                            format: string,
-                            isNew: (CommentEntity) => boolean): Promise<EnrichedComments> {
-
-        const commentsIndex: Record<number, CommentEntity> = {};
-        const rootComments: CommentEntity[] = [];
-        const allComments: CommentEntity[] = [];
-        const sites: Record<number, SiteBaseEntity> = {};
-
-        for (const rawComment of rawComments) {
-            const comment: CommentEntity = {
-                id: rawComment.comment_id,
-                created: rawComment.created_at.toISOString(),
-                author: rawComment.author_id,
-                content: format === 'html' ? rawComment.html : rawComment.source,
-                rating: rawComment.rating,
-                site_id: rawComment.site_id,
-                post_id: rawComment.post_id,
-                vote: rawComment.vote,
-                isNew: isNew(rawComment)
-            };
-
-            users[rawComment.author_id] = users[rawComment.author_id] || await this.userManager.getById(rawComment.author_id);
-            sites[rawComment.site_id] = sites[rawComment.site_id] || await this.siteManager.getSiteById(rawComment.site_id);
-            commentsIndex[rawComment.comment_id] = comment;
-
-            if (!rawComment.parent_comment_id) {
-                rootComments.push(comment);
-            }
-            else {
-                const parentComment = commentsIndex[rawComment.parent_comment_id];
-                if (parentComment) {
-                    if (!parentComment.answers) {
-                        parentComment.answers = [];
-                    }
-
-                    parentComment.answers.push(comment);
-                }
-            }
-            allComments.push(comment);
-        }
-        return {
-            allComments,
-            commentsIndex,
-            rootComments,
-            users,
-            sites
-        };
     }
 }

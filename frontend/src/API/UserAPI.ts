@@ -42,7 +42,6 @@ type UserProfileCommentsRequest = {
 type UserProfileCommentsResponse = {
     comments: CommentEntity[];
     users: Record<number, UserInfo>;
-    sites: Record<number, SiteInfo>;
     total: number;
 }
 type UserProfileCommentsResult = {
@@ -68,7 +67,7 @@ export default class UserAPI {
             username, format: 'html', page, perpage
         })
         return {
-            posts: await this.postAPIHelper.fixPosts(result.posts, result.users),
+            posts: this.postAPIHelper.fixPosts(result.posts, result.users),
             total: result.total,
         }
     }
@@ -78,7 +77,7 @@ export default class UserAPI {
             username, format: 'html', page, perpage
         })
         return {
-            comments: this.postAPIHelper.fixComments(result.comments, result.users, result.sites),
+            comments: this.postAPIHelper.fixComments(result.comments, result.users),
             total: result.total,
         }
     }

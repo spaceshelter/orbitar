@@ -14,17 +14,19 @@ import {PostCommentRequest, PostCommentResponse} from './types/requests/PostComm
 import {UserEntity} from './types/entities/UserEntity';
 import {PostWatchRequest, PostWatchResponse} from './types/requests/PostWatch';
 import {PostPreviewRequest, PostPreviewResponse} from './types/requests/Preview';
-import {SiteEntity} from './types/entities/SiteEntity';
+import {Enricher} from './utils/Enricher';
 
 export default class PostController {
-    public router = Router();
-    private postManager: PostManager;
-    private feedManager: FeedManager;
-    private userManager: UserManager;
-    private siteManager: SiteManager;
-    private logger: Logger;
+    public readonly router = Router();
+    private readonly postManager: PostManager;
+    private readonly feedManager: FeedManager;
+    private readonly userManager: UserManager;
+    private readonly siteManager: SiteManager;
+    private readonly logger: Logger;
+    private readonly enricher: Enricher;
 
-    constructor(postManager: PostManager, feedManager: FeedManager, siteManager: SiteManager, userManager: UserManager, logger: Logger) {
+    constructor(enricher: Enricher, postManager: PostManager, feedManager: FeedManager, siteManager: SiteManager, userManager: UserManager, logger: Logger) {
+        this.enricher = enricher;
         this.postManager = postManager;
         this.userManager = userManager;
         this.siteManager = siteManager;
@@ -92,10 +94,10 @@ export default class PostController {
                 return response.error('error', 'Unknown error', 500);
             }
 
-            const { posts : [post], users  } = await this.postManager.enrichRawPosts([rawPost], format);
-            const rawComments = await this.postManager.getPostComments(postId, userId);
-            const {rootComments} = await this.postManager.enrichRawComments(rawComments, users, format,
-                (comment) => comment.author_id !== userId && comment.comment_id > rawPost.last_read_comment_id
+            const { posts : [post], users  } = await this.enricher.enrichRawPosts([rawPost], format);
+            const rawComments = await this.postManager.getPostComments(postId, userId, format);
+            const {rootComments} = await this.enricher.enrichRawComments(rawComments, users, format,
+                (comment) => comment.author !== userId && comment.id > rawPost.last_read_comment_id
             );
 
             response.success({
@@ -155,9 +157,8 @@ export default class PostController {
 
         try {
             const users: Record<number, UserEntity> = {[userId]: await this.userManager.getById(userId)};
-            const comment = await this.postManager.createComment(userId, postId, parentCommentId, content, format);
-
-            const sites: Record<number, SiteEntity> = {[userId]: await this.siteManager.getSiteById(comment.site_id)};
+            const commentInfo = await this.postManager.createComment(userId, postId, parentCommentId, content, format);
+            const { allComments : [comment] } = await this.enricher.enrichRawComments([commentInfo], {}, format, () => true);
 
             this.logger.info(`Comment created by #${userId} @${users[userId].username}`, {
                 comment: content,
@@ -167,8 +168,7 @@ export default class PostController {
 
             response.success({
                 comment,
-                users,
-                sites
+                users
             });
         }
         catch (err) {

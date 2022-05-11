@@ -1,4 +1,4 @@
-import {CommentInfo, PostInfo, PostLinkInfo} from '../Types/PostInfo';
+import {CommentInfo, PostLinkInfo} from '../Types/PostInfo';
 import styles from './CommentComponent.module.css';
 import RatingSwitch from './RatingSwitch';
 import Username from './Username';
@@ -9,10 +9,10 @@ import DateComponent from './DateComponent';
 import ContentComponent from './ContentComponent';
 import PostLink from './PostLink';
 import {useAppState} from '../AppState/AppState';
-import {ReactComponent as EditIcon} from '../Assets/edit.svg';
 
 interface CommentProps {
     comment: CommentInfo;
+    showSite?: boolean;
 
     onAnswer?: (text: string, post?: PostLinkInfo, comment?: CommentInfo) => Promise<CommentInfo | undefined>;
     onPreview?: (text: string) => Promise<string>;
@@ -43,14 +43,13 @@ export default function CommentComponent(props: CommentProps) {
         }
     }, [props.comment]);
 
-    const showSite = false;
     const {author, created} = props.comment;
 
     return (
         <div className={styles.comment + (props.comment.isNew ? ' ' + styles.isNew : '')} data-comment-id={props.comment.id}>
             <div className={styles.body}>
                 <div className={styles.signature}>
-                    {showSite ? <><Link to={`//${site}.${process.env.REACT_APP_ROOT_DOMAIN}/`}>{site}</Link> • </> : ''}
+                    {props.showSite ? <><Link to={`//${props.comment.site}.${process.env.REACT_APP_ROOT_DOMAIN}/`}>{props.comment.site}</Link> • </> : ''}
                     <Username className={styles.username} user={author} /> • <PostLink post={props.comment.post_link} commentId={props.comment.id}><DateComponent date={created} /></PostLink>
                 </div>
                 <div className={styles.content}>

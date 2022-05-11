@@ -27,8 +27,8 @@ export type CommentEntity = {
     vote?: number;
     isNew?: boolean;
 
-    post_id: number;
-    site_id: number;
+    post: number;
+    site: string;
 
     answers?: CommentEntity[];
 }

@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {useAPI, useAppState} from '../AppState/AppState';
+import {useAPI} from '../AppState/AppState';
 import styles from '../Pages/FeedPage.module.css';
 import Paginator from '../Components/Paginator';
 import {useSearchParams} from 'react-router-dom';
@@ -12,7 +12,6 @@ type UserProfileCommentsProps = {
 }
 
 export default function UserProfileComments(props: UserProfileCommentsProps) {
-
     const [search] = useSearchParams();
     const perpage = 20;
     const page = parseInt(search.get('page') || '1');
@@ -54,7 +53,7 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
                  <>
                     {error && <div className={styles.error}>{styles.error}</div> }
                      {comments ?
-                         comments.map(comment => <CommentComponent key={comment.id} comment={comment} />)
+                         comments.map(comment => <CommentComponent key={comment.id} comment={comment} showSite={comment.site !== 'main'} />)
                          :
                          (
                              error ? <div className={styles.error}>{error}<div><button onClick={reload}>Повторить</button></div></div>

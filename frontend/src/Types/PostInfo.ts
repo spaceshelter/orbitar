@@ -31,4 +31,6 @@ export interface CommentInfo {
     isNew?: boolean;
     post_link: PostLinkInfo;
     answers?: CommentInfo[];
+    post?: number;
+    site?: string;
 }

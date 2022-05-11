@@ -52,7 +52,7 @@ export default class PostAPIHelper {
         post.created = this.postAPI.api.fixDate(new Date(response.post.created));
 
 
-        const comments = this.fixComments(response.comments, response.users, {[siteInfo.id]: siteInfo});
+        const comments = this.fixComments(response.comments, response.users);
         const lastCommentId = this.getLastCommentId(response.comments) || 0;
 
         return {
@@ -103,19 +103,19 @@ export default class PostAPIHelper {
         });
     }
 
-    fixComments(comments: CommentEntity[], users: Record<number, UserInfo>, sites: Record<number, SiteInfo>): CommentInfo[] {
+    fixComments(comments: CommentEntity[], users: Record<number, UserInfo>): CommentInfo[] {
         return comments.map(comment => {
             const c: CommentInfo = { ...comment } as any;
             // fix fields
             c.author = this.cache.setUser(users[comment.author]);
             c.created = this.postAPI.api.fixDate(new Date(comment.created));
             c.post_link = {
-                id: comment.post_id,
-                site: sites[comment.site_id].site
+                id: comment.post,
+                site: comment.site
             }
 
             if (comment.answers) {
-                c.answers = this.fixComments(comment.answers, users, sites);
+                c.answers = this.fixComments(comment.answers, users);
             }
             return c;
         });
@@ -130,7 +130,7 @@ export default class PostAPIHelper {
     async comment(content: string, postId: number, commentId?: number): Promise<CommentResponse> {
         const response = await this.postAPI.comment(content, postId, commentId);
 
-        const [comment] = this.fixComments([response.comment], response.users, response.sites);
+        const [comment] = this.fixComments([response.comment], response.users);
 
         return {
             comment
