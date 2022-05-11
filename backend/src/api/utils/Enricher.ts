@@ -4,11 +4,20 @@ import {UserEntity} from '../types/entities/UserEntity';
 import {PostEntity} from '../types/entities/PostEntity';
 import UserManager from '../../managers/UserManager';
 import SiteManager from '../../managers/SiteManager';
+import {CommentEntity} from '../types/entities/CommentEntity';
+import {CommentInfoWithPostData} from '../../managers/types/CommentInfo';
 
 export type EnrichedPosts = {
-    posts: PostEntity[]
-    users: Record<number, UserEntity>
-    sites: Record<number, SiteBaseEntity>
+    posts: PostEntity[];
+    users: Record<number, UserEntity>;
+    sites: Record<string, SiteBaseEntity>;
+};
+
+export type EnrichedComments = {
+    rootComments: CommentEntity[];
+    allComments: CommentEntity[];
+    commentsIndex: Record<number, CommentEntity>;
+    users: Record<number, UserEntity>;
 };
 
 export class Enricher {
@@ -67,6 +76,55 @@ export class Enricher {
             posts,
             users,
             sites
+        };
+    }
+
+    async enrichRawComments(rawComments: CommentInfoWithPostData[],
+                            users: Record<number, UserEntity>,
+                            format: string,
+                            isNew: (c: CommentEntity) => boolean): Promise<EnrichedComments> {
+
+        const commentsIndex: Record<number, CommentEntity> = {};
+        const rootComments: CommentEntity[] = [];
+        const allComments: CommentEntity[] = [];
+
+        for (const rawComment of rawComments) {
+            const comment: CommentEntity = {
+                id: rawComment.id,
+                created: rawComment.created.toISOString(),
+                author: rawComment.author,
+                content: rawComment.content,
+                rating: rawComment.rating,
+                site: rawComment.site,
+                post: rawComment.post,
+                vote: rawComment.vote,
+                isNew: false
+            };
+            comment.isNew = isNew(comment);
+
+            users[rawComment.author] = users[rawComment.author] || await this.userManager.getById(rawComment.author);
+            commentsIndex[rawComment.id] = comment;
+
+            if (!rawComment.parentComment) {
+                rootComments.push(comment);
+            }
+            else {
+                const parentComment = commentsIndex[rawComment.parentComment];
+                if (parentComment) {
+                    if (!parentComment.answers) {
+                        parentComment.answers = [];
+                    }
+
+                    parentComment.answers.push(comment);
+                }
+            }
+            allComments.push(comment);
+        }
+        return {
+            allComments,
+            commentsIndex,
+            rootComments,
+            users
         };
     }
 }

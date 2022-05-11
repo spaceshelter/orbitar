@@ -27,6 +27,9 @@ export type CommentEntity = {
     vote?: number;
     isNew?: boolean;
 
+    post: number;
+    site: string;
+
     answers?: CommentEntity[];
 }
 
@@ -94,8 +97,9 @@ type CommentCreateRequest = {
     format?: ContentFormat;
 };
 type CommentCreateResponse = {
-    comment: CommentEntity[];
+    comment: CommentEntity;
     users: Record<number, UserInfo>;
+    sites: Record<number, SiteInfo>;
 };
 
 type PostReadRequest = {

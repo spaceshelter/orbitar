@@ -15,3 +15,7 @@ export type CommentInfo = CommentBaseInfo & {
     answers?: CommentInfo[];
 };
 
+export type CommentInfoWithPostData = CommentInfo & {
+    post: number;
+    site: string;
+};

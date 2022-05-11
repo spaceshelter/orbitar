@@ -9,9 +9,10 @@ import TheParser from '../parser/TheParser';
 import {ContentFormat} from './types/common';
 import FeedManager from './FeedManager';
 import {PostInfo} from './types/PostInfo';
-import {CommentInfo} from './types/CommentInfo';
 import NotificationManager from './NotificationManager';
 import UserManager from './UserManager';
+import {CommentInfoWithPostData} from './types/CommentInfo';
+import {SiteInfo} from './types/SiteInfo';
 
 export default class PostManager {
     private bookmarkRepository: BookmarkRepository;
@@ -84,11 +85,50 @@ export default class PostManager {
         };
     }
 
-    getPostComments(postId: number, forUserId: number): Promise<CommentRawWithUserData[]> {
-        return this.commentRepository.getPostComments(postId, forUserId);
+    async getPostComments(postId: number, forUserId: number, format: ContentFormat): Promise<CommentInfoWithPostData[]> {
+        const rawComments = await this.commentRepository.getPostComments(postId, forUserId);
+        return await this.convertRawCommentsWithPostData(rawComments, format);
     }
 
-    async createComment(userId: number, postId: number, parentCommentId: number | undefined, content: string, format: ContentFormat): Promise<CommentInfo> {
+    async getUserComments(userId: number, forUserId: number, page: number, perpage: number, format: ContentFormat): Promise<CommentInfoWithPostData[]> {
+        const rawComments = await this.commentRepository.getUserComments(userId, forUserId, page, perpage);
+        return await this.convertRawCommentsWithPostData(rawComments, format);
+    }
+
+    private async convertRawCommentsWithPostData(rawComments: CommentRawWithUserData[], format: ContentFormat): Promise<CommentInfoWithPostData[]> {
+        const siteById: Record<number, SiteInfo> = {};
+        const comments: CommentInfoWithPostData[] = [];
+
+        for (const raw of rawComments) {
+            let site = siteById[raw.site_id];
+            if (!site) {
+                site = await this.siteManager.getSiteById(raw.site_id);
+                siteById[raw.site_id] = site;
+            }
+
+            comments.push({
+                id: raw.comment_id,
+                post: raw.post_id,
+                site: site ? site.site : '',
+                content: format === 'html' ? raw.html : raw.source,
+                author: raw.author_id,
+                created: raw.created_at,
+                deleted: !!raw.deleted,
+                rating: raw.rating,
+                parentComment: raw.parent_comment_id,
+
+                vote: raw.vote,
+            });
+        }
+
+        return comments;
+    }
+
+    getUserCommentsTotal(userId: number): Promise<number> {
+        return this.commentRepository.getUserCommentsTotal(userId);
+    }
+
+    async createComment(userId: number, postId: number, parentCommentId: number | undefined, content: string, format: ContentFormat): Promise<CommentInfoWithPostData> {
         const parseResult = this.parser.parse(content);
 
         const commentRaw = await this.commentRepository.createComment(userId, postId, parentCommentId, content, parseResult.text);
@@ -106,15 +146,8 @@ export default class PostManager {
         // fan out in background
         this.feedManager.postFanOut(commentRaw.post_id).then().catch();
 
-        return {
-            id: commentRaw.comment_id,
-            created: commentRaw.created_at,
-            author: commentRaw.author_id,
-            content: format === 'html' ? commentRaw.html : commentRaw.source,
-            rating: commentRaw.rating,
-            parentComment: commentRaw.parent_comment_id,
-            isNew: true
-        };
+        const comments = await this.convertRawCommentsWithPostData([commentRaw], format);
+        return comments[0];
     }
 
     async setRead(postId: number, userId: number, readComments: number, lastCommentId?: number): Promise<boolean> {

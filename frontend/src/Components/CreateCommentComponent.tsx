@@ -1,4 +1,4 @@
-import {CommentInfo, PostInfo} from '../Types/PostInfo';
+import {CommentInfo, PostInfo, PostLinkInfo} from '../Types/PostInfo';
 import React, {useEffect, useRef, useState} from 'react';
 import styles from './CreateCommentComponent.module.css';
 import postStyles from '../Pages/CreatePostPage.module.css';
@@ -13,9 +13,9 @@ import MediaUploader from './MediaUploader';
 interface CreateCommentProps {
     open: boolean;
     comment?: CommentInfo;
-    post?: PostInfo;
+    post?: PostLinkInfo;
 
-    onAnswer: (text: string, post?: PostInfo, comment?: CommentInfo) => Promise<CommentInfo | undefined>;
+    onAnswer: (text: string, post?: PostLinkInfo, comment?: CommentInfo) => Promise<CommentInfo | undefined>;
     onPreview: (text: string) => Promise<string>;
 }
 

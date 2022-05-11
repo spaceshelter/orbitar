@@ -10,6 +10,9 @@ export type CommentEntity = CommentBaseEntity & {
     rating: number;
     parentComment?: number;
 
+    post: number;
+    site: string;
+
     isNew?: boolean;
     vote?: number;
     answers?: CommentEntity[];

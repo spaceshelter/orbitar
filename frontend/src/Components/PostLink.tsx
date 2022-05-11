@@ -1,15 +1,10 @@
 import React from 'react';
-import { Link } from "react-router-dom";
+import {Link} from "react-router-dom";
 import {useSiteName} from '../AppState/AppState';
-import {PostInfo} from '../Types/PostInfo';
-
-type PostLinkData = {
-    id: number;
-    site: string;
-};
+import {PostLinkInfo} from '../Types/PostInfo';
 
 interface PostLinkProps extends React.ComponentPropsWithRef<"a"> {
-    post: PostInfo | PostLinkData;
+    post: PostLinkInfo;
     commentId?: number;
     children: React.ReactNode;
     onlyNew?: boolean;

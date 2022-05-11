@@ -1,6 +1,11 @@
 import {UserInfo} from './UserInfo';
 
-export interface PostInfo {
+export type PostLinkInfo = {
+    id: number;
+    site: string;
+};
+
+export interface PostInfo extends PostLinkInfo {
     id: number;
     site: string;
     author: UserInfo;
@@ -24,6 +29,8 @@ export interface CommentInfo {
     rating: number;
     vote?: number;
     isNew?: boolean;
-
+    postLink: PostLinkInfo;
     answers?: CommentInfo[];
+    post?: number;
+    site?: string;
 }

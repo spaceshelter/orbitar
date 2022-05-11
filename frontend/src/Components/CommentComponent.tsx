@@ -1,4 +1,4 @@
-import {CommentInfo, PostInfo} from '../Types/PostInfo';
+import {CommentInfo, PostLinkInfo} from '../Types/PostInfo';
 import styles from './CommentComponent.module.css';
 import RatingSwitch from './RatingSwitch';
 import Username from './Username';
@@ -9,30 +9,28 @@ import DateComponent from './DateComponent';
 import ContentComponent from './ContentComponent';
 import PostLink from './PostLink';
 import {useAppState} from '../AppState/AppState';
-import {ReactComponent as EditIcon} from '../Assets/edit.svg';
 
 interface CommentProps {
-    post: PostInfo;
     comment: CommentInfo;
+    showSite?: boolean;
 
-    onAnswer: (text: string, post?: PostInfo, comment?: CommentInfo) => Promise<CommentInfo | undefined>;
-    onPreview: (text: string) => Promise<string>;
+    onAnswer?: (text: string, post?: PostLinkInfo, comment?: CommentInfo) => Promise<CommentInfo | undefined>;
+    onPreview?: (text: string) => Promise<string>;
 }
 
 export default function CommentComponent(props: CommentProps) {
     const [answerOpen, setAnswerOpen] = useState(false);
-    const {site} = useAppState();
 
     const handleAnswerSwitch = (e: React.MouseEvent) => {
         e.preventDefault();
         setAnswerOpen(!answerOpen);
     };
 
-    const handleAnswer = async (text: string, post?: PostInfo, comment?: CommentInfo) => {
+    const handleAnswer = async (text: string, post?: PostLinkInfo, comment?: CommentInfo) => {
         if (!post) {
             return undefined;
         }
-        const res = await props.onAnswer(text, post, comment)
+        const res = await props.onAnswer?.(text, post, comment)
         setAnswerOpen(false);
         return res;
     };
@@ -44,15 +42,14 @@ export default function CommentComponent(props: CommentProps) {
         }
     }, [props.comment]);
 
-    const showSite = false;
     const {author, created} = props.comment;
 
     return (
         <div className={styles.comment + (props.comment.isNew ? ' ' + styles.isNew : '')} data-comment-id={props.comment.id}>
             <div className={styles.body}>
                 <div className={styles.signature}>
-                    {showSite ? <><Link to={`//${site}.${process.env.REACT_APP_ROOT_DOMAIN}/`}>{site}</Link> • </> : ''}
-                    <Username className={styles.username} user={author} /> • <PostLink post={props.post} commentId={props.comment.id}><DateComponent date={created} /></PostLink>
+                    {props.showSite ? <><Link to={`//${props.comment.site}.${process.env.REACT_APP_ROOT_DOMAIN}/`}>{props.comment.site}</Link> • </> : ''}
+                    <Username className={styles.username} user={author} /> • <PostLink post={props.comment.postLink} commentId={props.comment.id}><DateComponent date={created} /></PostLink>
                 </div>
                 <div className={styles.content}>
                     <ContentComponent className={styles.commentContent} content={props.comment.content} />
@@ -62,14 +59,14 @@ export default function CommentComponent(props: CommentProps) {
                         <RatingSwitch type="comment" id={props.comment.id} rating={{ vote: props.comment.vote, value: props.comment.rating }} onVote={handleVote} />
                     </div>
                     {/*<div className={styles.control}><button disabled={true}><EditIcon /></button></div>*/}
-                    <div className={styles.control}><button onClick={handleAnswerSwitch}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</button></div>
+                    {props.onAnswer && <div className={styles.control}><button onClick={handleAnswerSwitch}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</button></div>}
                 </div>
             </div>
             {(props.comment.answers || answerOpen) ?
                 <div className={styles.answers}>
-                    <CreateCommentComponent open={answerOpen} comment={props.comment} post={props.post} onAnswer={handleAnswer} onPreview={props.onPreview} />
-                    {props.comment.answers ? props.comment.answers.map(comment =>
-                        <CommentComponent key={comment.id} comment={comment} post={props.post} onAnswer={props.onAnswer}  onPreview={props.onPreview} />) : <></>}
+                    {props.onPreview && props.onAnswer && <CreateCommentComponent open={answerOpen} post={props.comment.postLink} comment={props.comment} onAnswer={handleAnswer} onPreview={props.onPreview} />}
+                    {props.comment.answers && props.onAnswer ? props.comment.answers.map(comment =>
+                        <CommentComponent key={comment.id} comment={comment} onAnswer={props.onAnswer}  onPreview={props.onPreview} />) : <></>}
                 </div>
                 : <></>}
 
