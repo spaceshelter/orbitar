@@ -300,10 +300,11 @@ const theme: ThemeCollection = {
             fgSofter: 'rgba(255,255,255,0.5)',
             fgSoftest: 'rgba(255,255,255,0.4)',
             fgGhost: 'rgba(255,255,255,0.3)',
+            fgAlmostInvisible: 'rgba(255,255,255,0.1)',
 
             // primary accent
             primary: '#58A8BA',
-            primaryHover: '#45d3f8',
+            primaryHover: '#51b7cb',
             primaryGhost: 'rgba(88,168,186,0.3)',
 
             // accent fo negative/dangerous things
@@ -331,7 +332,7 @@ const theme: ThemeCollection = {
             dim3: 'rgba(255,255,255,0.12)',
 
             // Shadows for elevated elements
-            shadow: 'rgba(0,0,0,0.1)',
+            shadow: 'rgba(0,0,0,0.3)',
 
             // semi-transparent background
             glass: 'rgba(33,33,33,0.7)',
