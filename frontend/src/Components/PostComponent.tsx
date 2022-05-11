@@ -1,4 +1,4 @@
-import styles from './PostComponent.module.css';
+import styles from './PostComponent.module.scss';
 import RatingSwitch from './RatingSwitch';
 import Username from './Username';
 import React, {useMemo, useState} from 'react';

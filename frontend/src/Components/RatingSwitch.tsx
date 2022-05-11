@@ -1,4 +1,4 @@
-import styles from './RatingSwitch.module.css';
+import styles from './RatingSwitch.module.scss';
 import React, {ForwardedRef, useEffect, useRef, useState} from 'react';
 import {useAPI} from '../AppState/AppState';
 import { toast } from 'react-toastify';

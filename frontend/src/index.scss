@@ -1,5 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 
+// TODO add css reset
+
 html,body {
   height: 100%;
   margin: 0;
@@ -8,9 +10,7 @@ html,body {
   -moz-osx-font-smoothing: grayscale;
   background: var(--bg);
   color: var(--fg);
-
 }
-
 #root {
   height: 100%;
 }
@@ -36,54 +36,52 @@ input[type="submit"], .button {
   color: var(--button-fg);
   border-radius: 4px;
   font-weight: bold;
-}
 
-input[type="submit"]:hover, .button:hover {
-  background: var(--button-hover-bg);
-}
-
-input[type="submit"]:disabled, .button:disabled {
-  background: var(--button-dis-bg);
-  color: var(--button-dis-fg);
+  &:hover{
+    background: var(--button-hover-bg);
+  }
+  &:disabled{
+    background: var(--button-dis-bg);
+    color: var(--button-dis-fg);
+  }
 }
 
 a {
-  color: var(--link-fg);
+  color: var(--link);
   text-decoration: none;
-}
-
-a:hover {
-  color: var(--link-hover-fg);
+  &:hover {
+    color: var(--linkHover);
+  }
 }
 
 .irony {
   font-style: italic;
-  color: var(--irony-fg);
+  color: var(--danger);
 }
 
 blockquote {
   border-radius: 4px;
   padding: 0.5em 0.5em 0.5em 2em;
   margin: 0.5em 0;
-  background-color: var(--blockquote-bg);
+  background-color: var(--dim1);
   position: relative;
-}
 
-blockquote::before {
-  /* somewhat hacky implementation for icon color, source: https://stackoverflow.com/a/42317014/1349366 */
-  content: '';
-  -webkit-mask: url('./Assets/quote.svg') no-repeat 50% 50%;
-  mask: url('./Assets/quote.svg') no-repeat 50% 50%;
-  -webkit-mask-size: cover;
-  mask-size: cover;
-  background-color: var(--button-dis-fg);
+  &::before {
+    /* somewhat hacky implementation for icon color, source: https://stackoverflow.com/a/42317014/1349366 */
+    content: '';
+    -webkit-mask: url('./Assets/quote.svg') no-repeat 50% 50%;
+    mask: url('./Assets/quote.svg') no-repeat 50% 50%;
+    -webkit-mask-size: cover;
+    mask-size: cover;
+    background-color: var(--button-dis-fg);
 
-  width: 20px;
-  height: 20px;
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  opacity: 0.5;
+    width: 20px;
+    height: 20px;
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    opacity: 0.5;
+  }
 }
 
 .bold {
@@ -139,9 +137,12 @@ body.no-scroll {
 }
 
 ::-webkit-scrollbar-thumb {
-  box-shadow: inset 0 0 12px 12px var(--scrollbar-track-bg);
+  box-shadow: inset 0 0 12px 12px var(--fgAlmostInvisible);
   border-radius: 10px;
   border: solid 3px transparent;
+  &:hover{
+    box-shadow: inset 0 0 12px 12px var(--fgGhost);
+  }
 }
 
 ::-webkit-scrollbar-track {

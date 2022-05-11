@@ -2,55 +2,43 @@
     display: flex;
     align-items: center;
     font-size: 13px;
-    color: var(--inactive);
+    color: var(--fgSoftest);
+
+    .value {
+        min-width: 32px;
+        flex: 1;
+        text-align: center;
+        font-weight: bold;
+        cursor: pointer;
+        &.minus { color: var(--danger); }
+        &.plus  { color: var(--primary); }
+    }
+    button {
+        fill: var(--fgSoftest);
+        height: 24px;
+        width: 24px;
+        background: none;
+        margin: 0;
+        padding: 0;
+        border: none;
+        &.minus { fill: var(--danger); }
+        &.plus { fill: var(--primary); }
+        &.dis {  fill: var(--fgGhost); }
+    }
 }
 
-.rating .value.minus {
-    color: var(--negative-fg);
-}
-.rating .value.plus {
-    color: var(--active-fg);
-}
 
-.rating .value {
-    min-width: 32px;
-    flex: 1;
-    text-align: center;
-    font-weight: bold;
-    cursor: pointer;
-}
 
-.rating button {
-    height: 24px;
-    width: 24px;
-    background: none;
-    margin: 0;
-    padding: 0;
-    border: none;
-    fill: var(--inactive-fg);
-}
 
-.rating button.plus {
-    fill: var(--active-fg);
-}
-
-.rating button.minus {
-    fill: var(--negative-fg);
-}
-
-.rating button.dis {
-    fill: var(--disabled-fg);
-}
 
 
 .list {
-    background: red;
     position: absolute;
     display: flex;
     width: 312px;
     height: 257px;
     background: var(--bg);
-    box-shadow: 0 0 2px var(--rating-list-border);
+    box-shadow: 0 0 4px var(--shadow);
     border-radius: 8px;
     flex-direction: column;
     z-index: 100;
@@ -60,25 +48,28 @@
     height: 92px;
     display: flex;
     align-items: center;
+    background: var(--dim1);
 }
 .listValue {
+    text-align: center;
+    min-width: 40px;
     font-size: 25px;
     font-weight: bold;
-    color: var(--inactive-fg);
+    color: var(--primary);
     margin-left: 20px;
     margin-right: 20px;
 }
 .listValuePlus {
-    color: var(--active-fg);
+    color: var(--primary);
 }
 .listValueMinus {
-    color: var(--negative-fg);
+    color: var(--fg);
 }
 
 .listDetails {
     flex: 1;
-    border-left: 1px solid var(--disabled-fg);
-    color: var(--text-fg);
+    border-left: 1px solid var(--dim3);
+    color: var(--fg);
     padding: 5px 0 5px 18px;
     font-size: 13px;
 }
@@ -91,7 +82,7 @@
 .listScrollContainer {
     display: flex;
     align-items: stretch;
-    background: var(--rating-list-votes-bg);
+    background: var(--dim2);
     gap: 4px;
     min-height: 100%;
     overflow-x: hidden;

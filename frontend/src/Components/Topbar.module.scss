@@ -1,0 +1,88 @@
+.topbar {
+    height: 59px;
+    position: fixed;
+    right: 0;
+    left: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    font-family: "Roboto", sans-serif;
+    font-size: 16px;
+    padding: 0 14px;
+    z-index: 100;
+
+
+    .left, .right {
+        display: flex;
+        gap: 16px;
+    }
+
+   //:global{ }
+
+    @media only screen and (max-width: 1179px) {
+        background-color:var(--glass);
+        backdrop-filter: blur(4px);
+        border-bottom: 1px solid var(--dim1);
+    }
+
+
+    button, a {
+        box-sizing: content-box;
+        background: none;
+        border: none;
+        height: 20px;
+        padding: 2px;
+        text-align: center;
+        vertical-align: middle;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        font-family: "Roboto", sans-serif;
+
+        fill: var(--fgSoft);
+
+        &:hover {
+            fill: var(--primaryHover);
+        }
+
+        &.active {
+            fill: var(--primary);
+            &:hover {
+                fill: var(--primaryHover);
+            }
+            .label {
+                margin-left: 5px;
+                color: var(--fg)
+            }
+        }
+
+        &.newPost{
+            font-weight: bold;
+            text-decoration: none;
+            color: var(--primary);
+            fill: var(--primary);
+            gap: 4px;
+
+            @media only screen and (max-width: 480px) {
+                span{display: none;}
+            }
+
+            &:hover{
+              color: var(--primaryHover);
+              fill: var(--primaryHover);
+            }
+        }
+
+    }
+
+    //button.menuClosed {
+    //    fill: var(--fgGhost);
+    //}
+    button:disabled, button:disabled:hover{
+        fill: var(--fgGhost);
+        cursor: default;
+    }
+
+}

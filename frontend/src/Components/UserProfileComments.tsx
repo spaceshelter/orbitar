@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {useAPI} from '../AppState/AppState';
-import styles from '../Pages/FeedPage.module.css';
+import styles from '../Pages/FeedPage.module.scss';
 import Paginator from '../Components/Paginator';
 import {useSearchParams} from 'react-router-dom';
 import {useCache} from "../API/use/useCache";

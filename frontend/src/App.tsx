@@ -14,7 +14,7 @@ import UserPage from './Pages/UserPage';
 import FeedPage from './Pages/FeedPage';
 
 import styles from './App.module.css';
-import './index.css';
+import './index.scss';
 import 'react-toastify/dist/ReactToastify.css';
 import {ReactComponent as MonsterIcon} from './Assets/monster_large.svg';
 import {useTheme} from './Theme/ThemeProvider';
