@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useContext, useState} from 'react';
 import { Routes, Route, Outlet } from "react-router-dom";
 import {Theme, ToastContainer} from 'react-toastify';
 
@@ -14,7 +14,9 @@ import UserPage from './Pages/UserPage';
 import FeedPage from './Pages/FeedPage';
 
 import styles from './App.module.css';
-import './index.css';
+//import scss from './App.module.scss';
+import './index.scss';
+//import './app.scss';
 import 'react-toastify/dist/ReactToastify.css';
 import {ReactComponent as MonsterIcon} from './Assets/monster_large.svg';
 import {useTheme} from './Theme/ThemeProvider';
