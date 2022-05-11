@@ -13,7 +13,7 @@ import {ReactComponent as NotificationIcon} from '../Assets/notification.svg';
 import {ReactComponent as ProfileIcon} from '../Assets/profile.svg';
 import {ReactComponent as DarkIcon} from '../Assets/theme_dark.svg';
 import {ReactComponent as LightIcon} from '../Assets/theme_light.svg';
-import {ReactComponent as LogoutIcon} from '../Assets/logout.svg';
+import NotificationsPopup from "./NotificationsPopup";
 
 export type TopbarMenuState = 'disabled' | 'open' | 'close';
 
