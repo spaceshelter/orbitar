@@ -123,3 +123,14 @@ docker-compose -p orbitar -f docker-compose.local.yml up
    
     npm run generate-dummy-content -- -u 10 -s 8 -p 20 -c 100
    
+### Load test
+
+Делает параллельные запросы в mysql (симулируя активность юзеров).
+
+(в папке `backend`, перед первым запуском выполнить `npm install`)
+
+    npm run load-test -- --help
+   
+Например (100 случайных юзеров, оффсет 1-8 страница, ранить 20 секунд):
+
+    npm run load-test -- -u 100 -p 8 -t 20
