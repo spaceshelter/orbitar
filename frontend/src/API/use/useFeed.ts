@@ -3,7 +3,7 @@ import {useEffect, useMemo, useState} from 'react';
 import {PostInfo} from '../../Types/PostInfo';
 import {useCache} from './useCache';
 
-export type FeedType = 'subscriptions' | 'site' | 'watch' | 'watch-all' | 'user-profile';
+export type FeedType = 'all' | 'subscriptions' | 'site' | 'watch' | 'watch-all' | 'user-profile';
 
 export function useFeed(id: string, feedType: FeedType, page: number, perpage: number) {
     const api = useAPI();
@@ -49,6 +49,22 @@ export function useFeed(id: string, feedType: FeedType, page: number, perpage: n
         }
         else if (feedType === 'subscriptions') {
             api.post.feedSubscriptions(page, perpage)
+                .then(result => {
+                    setCachedPosts(result.posts);
+
+                    setError(undefined);
+                    setLoading(false);
+                    setPosts(result.posts);
+                    const pages = Math.floor((result.total - 1) / perpage) + 1;
+                    setPages(pages);
+                })
+                .catch(error => {
+                    console.log('FEED ERROR', error);
+                    setError('Не удалось загрузить ленту постов');
+                });
+        }
+        else if (feedType === 'all') {
+            api.post.feedAll(page, perpage)
                 .then(result => {
                     setCachedPosts(result.posts);
 

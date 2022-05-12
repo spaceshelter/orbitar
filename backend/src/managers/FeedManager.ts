@@ -45,6 +45,14 @@ export default class FeedManager {
         return await this.redis.zCount(`subscriptions:${forUserId}`, 0, '+inf');
     }
 
+    async getAllPosts(forUserId: number, page: number, perpage: number): Promise<PostRawWithUserData[]> {
+        return await this.postRepository.getAllPosts(forUserId, page, perpage);
+    }
+
+    async getAllPostsTotal(): Promise<number> {
+        return await this.postRepository.getAllPostsTotal();
+    }
+
     async getWatchFeed(forUserId: number, page: number, perpage: number, all = false): Promise<PostRawWithUserData[]> {
         return await this.postRepository.getWatchPosts(forUserId, page, perpage, all);
     }
