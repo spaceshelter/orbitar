@@ -8,7 +8,6 @@ import CreateCommentComponent from './CreateCommentComponent';
 import DateComponent from './DateComponent';
 import ContentComponent from './ContentComponent';
 import PostLink from './PostLink';
-import {useAppState} from '../AppState/AppState';
 
 interface CommentProps {
     comment: CommentInfo;

@@ -7,13 +7,7 @@
     min-height: 100px;
     font-size: 16px;
     padding: 10px;
-}
-
-.answer .preview {
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    overflow: visible;
+    line-height: 1.5em;
 }
 
 .controls {

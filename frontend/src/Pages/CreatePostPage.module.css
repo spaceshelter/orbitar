@@ -15,13 +15,7 @@
 .createpost textarea, .createpost .preview  {
     min-height: 250px;
     font-size: 16px;
-}
-
-.preview {
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    overflow: visible;
+    line-height: 1.5em;
 }
 
 .createpost input.title {
