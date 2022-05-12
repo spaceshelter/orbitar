@@ -101,7 +101,7 @@ export default class PostRepository {
             select p.*, v.vote, b.read_comments, b.bookmark, b.last_read_comment_id, b.watch, (p.comments - b.read_comments) cnt
             from
                 posts p
-                left join user_bookmarks b on (p.post_id = b.post_id)
+                left join user_bookmarks b on (p.post_id = b.post_id and b.user_id=:user_id)
                 left join post_votes v on (v.post_id = p.post_id and v.voter_id=:user_id)
             order by
                 b.post_updated_at desc
