@@ -104,7 +104,7 @@ export default class PostRepository {
                 left join user_bookmarks b on (p.post_id = b.post_id and b.user_id=:user_id)
                 left join post_votes v on (v.post_id = p.post_id and v.voter_id=:user_id)
             order by
-                b.post_updated_at desc
+                p.commented_at desc
             limit
                 :limit_from,:limit_count
             `,
