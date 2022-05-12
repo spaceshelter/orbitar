@@ -1,10 +1,12 @@
 import React, {useState} from 'react';
 import styles from './CreatePostPage.module.css';
+import createCommentStyles from '../Components/CommentComponent.module.css';
 import {useAPI, useSiteName} from '../AppState/AppState';
 import {useNavigate} from 'react-router-dom';
 import CreateCommentComponent from '../Components/CreateCommentComponent';
 import {CommentInfo} from '../Types/PostInfo';
 import {toast} from 'react-toastify';
+import classNames from "classnames";
 
 export function CreatePostPage() {
     const api = useAPI();
@@ -38,7 +40,7 @@ export function CreatePostPage() {
 
     return (
         <div className={styles.container}>
-            <div className={styles.createpost}>
+            <div className={classNames(styles.createpost, createCommentStyles.content)}>
                 <div className={styles.form}>
                     <input className={styles.title} type="text" placeholder="Без названия" value={title} onChange={handleTitleChange} />
                     <CreateCommentComponent open={true} onAnswer={handleAnswer} onPreview={handlePreview} />

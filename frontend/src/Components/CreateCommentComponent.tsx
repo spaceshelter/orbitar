@@ -2,6 +2,7 @@ import {CommentInfo, PostInfo, PostLinkInfo} from '../Types/PostInfo';
 import React, {useEffect, useRef, useState} from 'react';
 import styles from './CreateCommentComponent.module.css';
 import postStyles from '../Pages/CreatePostPage.module.css';
+import commentStyles from './CommentComponent.module.css';
 import {ReactComponent as IronyIcon} from '../Assets/irony.svg';
 import {ReactComponent as ImageIcon} from '../Assets/image.svg';
 import {ReactComponent as LinkIcon} from '../Assets/link.svg';
@@ -200,7 +201,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             {(previewing === null ) ?
                 <div className={styles.editor}><textarea ref={answerRef} disabled={isPosting} value={answerText} onChange={handleAnswerChange} onKeyDown={handleKeyDown} /></div>
                     :
-                <div className={styles.body}><ContentComponent className={classNames(styles.commentContent, styles.preview, postStyles.preview)} content={previewing} /></div>}
+                <div className={classNames(commentStyles.content, styles.preview, postStyles.preview)}><ContentComponent content={previewing} /></div>}
             <div className={styles.final}>
                 <button disabled={isPosting || !answerText} className={styles.buttonPreview} onClick={handlePreview}>{(previewing === null) ? "Превью" : "Редактор"}</button>
                 <button disabled={isPosting || !answerText} onClick={handleAnswer}>Пыщь</button>
