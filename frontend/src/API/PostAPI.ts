@@ -166,6 +166,14 @@ export default class PostAPI {
         });
     }
 
+    feedAll(page: number, perpage: number): Promise<FeedSubscriptionsResponse> {
+        return this.api.request<FeedSubscriptionsRequest, FeedSubscriptionsResponse>('/feed/all', {
+            page,
+            perpage,
+            format: 'html'
+        });
+    }
+
     feedWatch(all: boolean, page: number, perpage: number): Promise<FeedWatchResponse> {
         return this.api.request<FeedWatchRequest, FeedWatchResponse>('/feed/watch', {
             filter: all ? 'all' : 'new',
