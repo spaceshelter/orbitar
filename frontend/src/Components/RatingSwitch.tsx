@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import {ReactComponent as MinusIcon} from '../Assets/rating_minus.svg';
 import {ReactComponent as PlusIcon} from '../Assets/rating_plus.svg';
 import {pluralize} from '../Utils/utils';
-import { Link } from 'react-router-dom';
+import Username from './Username';
 
 
 type RatingSwitchProps = {
@@ -217,10 +217,10 @@ const RatingList = React.forwardRef((props: RatingListProps, ref: ForwardedRef<H
                 <div className={styles.listScrollContainer}>
                     {voteList ? <>
                         <div className={styles.listMinus}>
-                            {voteList.votes[0].length > 0 ? voteList.votes[0].map((v) => <div key={v.username}><Link to={"/user/" + v.username} className={styles.username} >{v.username}</Link> {v.vote}</div>) : 'пусто'}
+                            {voteList.votes[0].length > 0 ? voteList.votes[0].map((v) => <div key={v.username}><Username className={styles.username} user={ {username: v.username} } /> {v.vote}</div>) : 'пусто'}
                         </div>
                         <div className={styles.listPlus}>
-                            {voteList.votes[1].length > 0 ? voteList.votes[1].map((v) => <div key={v.username}><Link to={"/user/" + v.username} className={styles.username} >{v.username}</Link> +{v.vote}</div>) : 'пусто'}
+                            {voteList.votes[1].length > 0 ? voteList.votes[1].map((v) => <div key={v.username}><Username className={styles.username} user={ {username: v.username} } /> +{v.vote}</div>) : 'пусто'}
                         </div>
                     </>
                     : <>...</>}

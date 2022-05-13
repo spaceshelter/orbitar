@@ -6,7 +6,9 @@ import {
 import {UserInfo} from '../Types/UserInfo';
 
 interface UsernameProps extends React.ComponentPropsWithRef<"a"> {
-    user: UserInfo;
+    user: {
+        username: string;
+      };
 }
 
 export default function Username(props: UsernameProps) {
