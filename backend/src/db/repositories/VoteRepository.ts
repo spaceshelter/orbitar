@@ -88,19 +88,19 @@ export default class VoteRepository {
     }
 
     async getPostVotes(postId: number): Promise<VoteWithUsername[]> {
-        return await this.db.fetchAll('select u.username, v.vote from post_votes v join users u on (v.voter_id = u.user_id) where v.post_id=:post_id', {
+        return await this.db.fetchAll('select u.username, v.vote from post_votes v join users u on (v.voter_id = u.user_id) where v.post_id=:post_id order by voted_at desc', {
             post_id: postId
         });
     }
 
     async getCommentVotes(commentId: number): Promise<VoteWithUsername[]> {
-        return await this.db.fetchAll('select u.username, v.vote from comment_votes v join users u on (v.voter_id = u.user_id) where v.comment_id=:comment_id', {
+        return await this.db.fetchAll('select u.username, v.vote from comment_votes v join users u on (v.voter_id = u.user_id) where v.comment_id=:comment_id order by voted_at desc', {
             comment_id: commentId
         });
     }
 
     async getUserVotes(userId: number): Promise<VoteWithUsername[]> {
-        return await this.db.fetchAll('select u.username, v.vote from user_karma v join users u on (v.voter_id = u.user_id) where v.user_id=:user_id', {
+        return await this.db.fetchAll('select u.username, v.vote from user_karma v join users u on (v.voter_id = u.user_id) where v.user_id=:user_id order by voted_at desc', {
             user_id: userId
         });
     }

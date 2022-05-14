@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 interface UsernameProps extends React.ComponentPropsWithRef<"a"> {
     user: {
         username: string;
-      };
+    };
 }
 
 export default function Username(props: UsernameProps) {

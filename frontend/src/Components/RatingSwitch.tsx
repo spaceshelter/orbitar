@@ -200,8 +200,12 @@ const RatingList = React.forwardRef((props: RatingListProps, ref: ForwardedRef<H
         listStyles.push(styles.listValueMinus);
     }
 
+    const popupMouseDownHandler = (e: React.MouseEvent<HTMLDivElement>) => {
+        e.stopPropagation();
+    };
+
     return (
-        <div ref={ref} className={styles.list} onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+        <div ref={ref} className={styles.list} onMouseDown={popupMouseDownHandler}>
             <div className={styles.listUp}>
                 <div className={listStyles.join(' ')}>{props.rating}</div>
                 <div className={styles.listDetails}>
