@@ -47,6 +47,7 @@ export default class FeedController {
         });
 
         this.router.post('/feed/subscriptions', validate(feedSubscriptionsSchema), (req, res) => this.feedSubscriptions(req, res));
+        this.router.post('/feed/all', validate(feedSubscriptionsSchema), (req, res) => this.feedAll(req, res));
         this.router.post('/feed/posts', validate(feedPostsSchema), (req, res) => this.feedPosts(req, res));
         this.router.post('/feed/watch', validate(feedWatchSchema), (req, res) => this.feedWatch(req, res));
     }
@@ -62,6 +63,32 @@ export default class FeedController {
         try {
             const total = await this.feedManager.getSubscriptionsTotal(userId);
             const rawPosts = await this.feedManager.getSubscriptionFeed(userId, page, perPage);
+            const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts, format);
+
+            response.success({
+                posts,
+                total,
+                users,
+                sites
+            });
+        }
+        catch (err) {
+            this.logger.error('Subscriptions feed failed', { error: err, user_id: userId, format });
+            return response.error('error', 'Unknown error', 500);
+        }
+    }
+
+    async feedAll(request: APIRequest<FeedSubscriptionsRequest>, response: APIResponse<FeedSubscriptionsResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+
+        const userId = request.session.data.userId;
+        const { format, page, perpage: perPage } = request.body;
+
+        try {
+            const total = await this.feedManager.getAllPostsTotal();
+            const rawPosts = await this.feedManager.getAllPosts(userId, page, perPage);
             const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts, format);
 
             response.success({

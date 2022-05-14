@@ -82,6 +82,15 @@ export default class PostAPIHelper {
         };
     }
 
+    async feedAll(page: number, perPage: number): Promise<FeedSubscriptionsResult> {
+        const response = await this.postAPI.feedAll(page, perPage);
+        return {
+            posts: this.fixPosts(response.posts, response.users),
+            sites: response.sites,
+            total: response.total
+        };
+    }
+
     async feedWatch(all: boolean, page: number, perPage: number): Promise<FeedSubscriptionsResult> {
         const response = await this.postAPI.feedWatch(all, page, perPage);
         return {
@@ -124,7 +133,7 @@ export default class PostAPIHelper {
     getLastCommentId(comments: CommentEntity[]): number | undefined {
         return comments.reduce((lastCommentId: number | undefined, comment) =>
             Math.max(lastCommentId || comment.id, comment.id,
-                comment.answers && this.getLastCommentId(comment.answers) || comment.id), undefined);
+                (comment.answers && this.getLastCommentId(comment.answers)) || comment.id), undefined);
     }
 
     async comment(content: string, postId: number, commentId?: number): Promise<CommentResponse> {

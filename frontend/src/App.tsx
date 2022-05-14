@@ -100,6 +100,7 @@ function Ready() {
                 <Route path="/" element={<ReadyContainer />}>
                     <Route path="" element={<FeedPage />} />
                     <Route path="posts" element={<FeedPage />} />
+                    <Route path="subscriptions" element={<FeedPage />} />
                     <Route path="post/:postId" element={<PostPage />} />
                     <Route path="user/:username" element={<UserPage />} />
                     <Route path="user/:username/posts" element={<UserPage />} />

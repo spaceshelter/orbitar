@@ -24,7 +24,6 @@ preview of all theme colors is available at http://orbitar.local/theme
 
 const themes: ThemeCollection = {
     debugTheme: {
-    //light: {
         colors: {
 
             fg: 'rgba(0,0,0,0.76)',//text color
@@ -163,9 +162,7 @@ const themes: ThemeCollection = {
             'rating-list-border': 'rgba(0, 0, 0, 0.2)',
             'rating-list-votes-bg': 'rgba(0, 0, 0, 0.03)',
             'scrollbar-track-bg': '#d9d9d9',
-
             'popup-bg': '#ffffff',
-
             'notification-date-fg': 'rgba(0, 0, 0, 0.6)',
             'notification-text-fg': 'rgba(0, 0, 0, 0.8)',
             'notification-delimiter-fg': 'rgba(0, 0, 0, 0.12)',
@@ -240,6 +237,7 @@ const themes: ThemeCollection = {
             }
         },
     },
+
     dark: {
         colors: {
             fg: 'rgba(255,255,255,0.8)',
@@ -275,13 +273,10 @@ const themes: ThemeCollection = {
             'rating-list-border': 'rgba(255, 255, 255, 0.2)',
             'rating-list-votes-bg': 'rgba(255, 255, 255, 0.03)',
             'scrollbar-track-bg': '#535353',
-
             'popup-bg': '#363636',
-
             'notification-date-fg': 'rgba(255, 255, 255, 0.6)',
             'notification-text-fg': 'rgba(255, 255, 255, 0.8)',
             'notification-delimiter-fg': 'rgba(255, 255, 255, 0.12)',
-
             'highlight-bg': 'rgba(255, 255, 255, 0.03)',
 
             topbar: {

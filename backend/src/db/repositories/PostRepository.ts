@@ -78,9 +78,41 @@ export default class PostRepository {
             });
     }
 
-    getPostsByUserTotal(userId: number): Promise<number> {
-        return this.db.fetchOne(`select count(*) as cnt from posts where author_id = :user_id`, {user_id: userId})
-            .then((res: any) => parseInt(res.cnt || '0'));
+    async getPostsByUserTotal(userId: number): Promise<number> {
+        const result = await this.db.fetchOne<{ cnt: string }>(`select count(*) as cnt from posts where author_id = :user_id`, {user_id: userId});
+        if (!result) {
+            return 0;
+        }
+        return parseInt(result.cnt || '');
+    }
+
+    async getAllPostsTotal(): Promise<number> {
+        const result = await this.db.fetchOne<{ cnt: string }>(`select count(*) cnt from posts`, {});
+        if (!result) {
+            return 0;
+        }
+        return parseInt(result.cnt || '');
+    }
+
+    async getAllPosts(forUserId: number, page: number, perPage: number): Promise<PostRawWithUserData[]> {
+        const limitFrom = (page - 1) * perPage;
+
+        return await this.db.query(`
+            select p.*, v.vote, b.read_comments, b.bookmark, b.last_read_comment_id, b.watch, (p.comments - b.read_comments) cnt
+            from
+                posts p
+                left join user_bookmarks b on (p.post_id = b.post_id and b.user_id=:user_id)
+                left join post_votes v on (v.post_id = p.post_id and v.voter_id=:user_id)
+            order by
+                p.commented_at desc
+            limit
+                :limit_from,:limit_count
+            `,
+            {
+                user_id: forUserId,
+                limit_from: limitFrom,
+                limit_count: perPage
+            });
     }
 
     async getWatchPostsTotal(forUserId: number, all = false): Promise<number> {
