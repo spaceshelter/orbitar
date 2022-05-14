@@ -28,7 +28,15 @@
 }
 
 
+a.username {
+    display: inline-block;
 
+    color: var(--fgSoftest);
+    font-weight: normal;
+    &:hover {
+        color: var(--fgSofter);
+    }
+}
 
 
 

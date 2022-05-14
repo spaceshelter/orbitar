@@ -78,9 +78,9 @@ export default function RatingSwitch(props: RatingSwitchProps) {
             setVotes(undefined);
             return false;
         };
-        document.addEventListener('click', clickHandler);
+        document.addEventListener('mousedown', clickHandler);
         return () => {
-            document.removeEventListener('click', clickHandler);
+            document.removeEventListener('mousedown', clickHandler);
         };
 
     }, [showPopup, ratingRef, popupRef, votes, state.vote, props.id, props.type]);
