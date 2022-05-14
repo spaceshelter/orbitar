@@ -59,8 +59,10 @@
     padding: 0;
     border: none;
 
+    :not(.username) {
+        display: flex;
+    }
     fill: var(--inactive-fg);
-    display: flex;
     align-items: center;
     font-size: 13px;
 

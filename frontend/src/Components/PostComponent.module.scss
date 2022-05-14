@@ -70,7 +70,9 @@
         padding: 0;
         border: none;
 
-        display: flex;
+        :not(.username) {
+            display: flex;
+        }
         align-items: center;
         font-size: 14px;
 
