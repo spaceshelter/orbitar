@@ -20,6 +20,7 @@ import {ReactComponent as MonsterIcon} from './Assets/monster_large.svg';
 import {useTheme} from './Theme/ThemeProvider';
 import SiteSidebar from './Components/SiteSidebar';
 import WatchPage from './Pages/WatchPage';
+import ThemePreviewPage from "./Pages/ThemePreviewPage";
 
 export default function App() {
     const {appState} = useAppState();
@@ -106,6 +107,7 @@ function Ready() {
                     <Route path="create" element={<CreatePostPage />} />
                     <Route path="watch" element={<WatchPage />} />
                     <Route path="watch/all" element={<WatchPage />} />
+                    <Route path="theme" element={<ThemePreviewPage />} />
                 </Route>
             </Routes>
         </>

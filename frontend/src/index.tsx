@@ -1,9 +1,9 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
-import {AppStateProvider} from './AppState/AppState';
-import {ThemeProvider} from './Theme/ThemeProvider';
-import theme from './theme';
+import { AppStateProvider } from './AppState/AppState';
+import { ThemeProvider } from './Theme/ThemeProvider';
+import { getThemes } from './theme';
 import { BrowserRouter } from "react-router-dom";
 
 (async () => {
@@ -22,7 +22,7 @@ const root = createRoot(container!);
 root.render(
     <BrowserRouter>
         <AppStateProvider>
-            <ThemeProvider themeCollection={theme}>
+            <ThemeProvider themeCollection={ getThemes() }>
                 <App />
             </ThemeProvider>
         </AppStateProvider>
