@@ -72,17 +72,15 @@ export default function RatingSwitch(props: RatingSwitchProps) {
         popupEl.style.top = (ny) + 'px';
 
         let clickHandler = (e: MouseEvent) => {
-            if (e.target instanceof Element && !document.getElementById('ratingWindow')?.contains(e.target as Element)) {
-                e.stopPropagation();
-                e.preventDefault();
-                setShowPopup(false);
-                setVotes(undefined);
-                return false;
-            }
+            e.stopPropagation();
+            e.preventDefault();
+            setShowPopup(false);
+            setVotes(undefined);
+            return false;
         };
-        document.addEventListener('mousedown', clickHandler);
+        document.addEventListener('click', clickHandler);
         return () => {
-            document.removeEventListener('mousedown', clickHandler);
+            document.removeEventListener('click', clickHandler);
         };
 
     }, [showPopup, ratingRef, popupRef, votes, state.vote, props.id, props.type]);

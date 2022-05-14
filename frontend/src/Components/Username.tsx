@@ -3,7 +3,6 @@ import styles from './Username.module.css';
 import {
     Link
 } from "react-router-dom";
-import {UserInfo} from '../Types/UserInfo';
 
 interface UsernameProps extends React.ComponentPropsWithRef<"a"> {
     user: {
