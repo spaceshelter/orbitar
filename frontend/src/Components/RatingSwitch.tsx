@@ -201,7 +201,7 @@ const RatingList = React.forwardRef((props: RatingListProps, ref: ForwardedRef<H
     }
 
     return (
-        <div ref={ref} className={styles.list} id='ratingWindow'>
+        <div ref={ref} className={styles.list}>
             <div className={styles.listUp}>
                 <div className={listStyles.join(' ')}>{props.rating}</div>
                 <div className={styles.listDetails}>
