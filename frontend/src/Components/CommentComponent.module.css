@@ -59,8 +59,8 @@
     padding: 0;
     border: none;
 
-    fill: var(--inactive-fg);
     display: flex;
+    fill: var(--inactive-fg);
     align-items: center;
     font-size: 13px;
 
