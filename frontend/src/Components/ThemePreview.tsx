@@ -45,7 +45,7 @@ export function ThemePreview (){
                             <div className='dimDemo'>
                                     <div className='dim1'>dim1</div>
                                     <div className='dim2'>dim2</div>
-                                    <div className='dim3'>dim2</div>
+                                    <div className='dim3'>dim3</div>
                             </div>
                     </div>
                     <div className='box normal'>
@@ -53,7 +53,7 @@ export function ThemePreview (){
                             <div className='dimDemo'>
                                     <div className='dim1'>dim1</div>
                                     <div className='dim2'>dim2</div>
-                                    <div className='dim3'>dim2</div>
+                                    <div className='dim3'>dim3</div>
                             </div>
                     </div>
                     <div className='box lowered'>
@@ -61,7 +61,7 @@ export function ThemePreview (){
                             <div className='dimDemo'>
                                     <div className='dim1'>dim1</div>
                                     <div className='dim2'>dim2</div>
-                                    <div className='dim3'>dim2</div>
+                                    <div className='dim3'>dim3</div>
                             </div>
                     </div>
 
