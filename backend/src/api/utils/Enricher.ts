@@ -100,7 +100,15 @@ export class Enricher {
                 vote: rawComment.vote,
                 isNew: false
             };
-            comment.isNew = isNew(comment);
+            if (isNew(comment)) {
+                comment.isNew = true;
+            }
+            if (rawComment.deleted) {
+                comment.deleted = true;
+            }
+            if (rawComment.canEdit) {
+                comment.canEdit = true;
+            }
 
             users[rawComment.author] = users[rawComment.author] || await this.userManager.getById(rawComment.author);
             commentsIndex[rawComment.id] = comment;

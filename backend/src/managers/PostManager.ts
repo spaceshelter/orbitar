@@ -87,15 +87,15 @@ export default class PostManager {
 
     async getPostComments(postId: number, forUserId: number, format: ContentFormat): Promise<CommentInfoWithPostData[]> {
         const rawComments = await this.commentRepository.getPostComments(postId, forUserId);
-        return await this.convertRawCommentsWithPostData(rawComments, format);
+        return await this.convertRawCommentsWithPostData(forUserId, rawComments, format);
     }
 
     async getUserComments(userId: number, forUserId: number, page: number, perpage: number, format: ContentFormat): Promise<CommentInfoWithPostData[]> {
         const rawComments = await this.commentRepository.getUserComments(userId, forUserId, page, perpage);
-        return await this.convertRawCommentsWithPostData(rawComments, format);
+        return await this.convertRawCommentsWithPostData(forUserId, rawComments, format);
     }
 
-    private async convertRawCommentsWithPostData(rawComments: CommentRawWithUserData[], format: ContentFormat): Promise<CommentInfoWithPostData[]> {
+    private async convertRawCommentsWithPostData(forUserId: number, rawComments: CommentRawWithUserData[], format: ContentFormat): Promise<CommentInfoWithPostData[]> {
         const siteById: Record<number, SiteInfo> = {};
         const comments: CommentInfoWithPostData[] = [];
 
@@ -106,19 +106,26 @@ export default class PostManager {
                 siteById[raw.site_id] = site;
             }
 
-            comments.push({
+            const comment: CommentInfoWithPostData = {
                 id: raw.comment_id,
                 post: raw.post_id,
                 site: site ? site.site : '',
                 content: format === 'html' ? raw.html : raw.source,
                 author: raw.author_id,
                 created: raw.created_at,
-                deleted: !!raw.deleted,
                 rating: raw.rating,
                 parentComment: raw.parent_comment_id,
 
                 vote: raw.vote,
-            });
+            };
+            if (raw.deleted) {
+                comment.deleted = true;
+            }
+            if (raw.author_id === forUserId) {
+                comment.canEdit = true;
+            }
+
+            comments.push(comment);
         }
 
         return comments;
@@ -146,8 +153,32 @@ export default class PostManager {
         // fan out in background
         this.feedManager.postFanOut(commentRaw.post_id).then().catch();
 
-        const comments = await this.convertRawCommentsWithPostData([commentRaw], format);
+        const comments = await this.convertRawCommentsWithPostData(userId, [commentRaw], format);
         return comments[0];
+    }
+
+    async getComment(forUserId: number, commentId: number, format: ContentFormat): Promise<CommentInfoWithPostData | undefined> {
+        const rawComment = await this.commentRepository.getCommentWithUserData(forUserId, commentId);
+        const [comment] = await this.convertRawCommentsWithPostData(forUserId,[rawComment], format);
+        return comment;
+    }
+
+    async editComment(forUserId: number, commentId: number, content: string, format: ContentFormat): Promise<CommentInfoWithPostData> {
+        let rawComment = await this.commentRepository.getCommentWithUserData(forUserId, commentId);
+        if (rawComment.author_id !== forUserId) {
+            throw new CodeError('access-denied', 'Access denied');
+        }
+
+        const html = (await this.parser.parse(content)).text;
+
+        const updated = await this.commentRepository.updateCommentText(commentId, content, html);
+        if (!updated) {
+            throw new CodeError('unknown', 'Could not edit comment');
+        }
+
+        rawComment = await this.commentRepository.getCommentWithUserData(forUserId, commentId);
+        const [comment] = await this.convertRawCommentsWithPostData(forUserId,[rawComment], format);
+        return comment;
     }
 
     async setRead(postId: number, userId: number, readComments: number, lastCommentId?: number): Promise<boolean> {

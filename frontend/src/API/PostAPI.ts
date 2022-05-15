@@ -90,6 +90,15 @@ type PostGetResponse = {
     users: Record<number, UserInfo>;
 };
 
+type CommentGetRequest = {
+    id: number;
+    format?: ContentFormat;
+};
+type CommentGetResponse = {
+    comment: CommentEntity;
+    users: Record<number, UserInfo>;
+};
+
 type CommentCreateRequest = {
     comment_id?: number;
     post_id: number;
@@ -99,7 +108,16 @@ type CommentCreateRequest = {
 type CommentCreateResponse = {
     comment: CommentEntity;
     users: Record<number, UserInfo>;
-    sites: Record<number, SiteInfo>;
+};
+
+type CommentEditRequest = {
+    id: number;
+    content: string;
+    format?: ContentFormat;
+};
+type CommentEditResponse = {
+    comment: CommentEntity;
+    users: Record<number, UserInfo>;
 };
 
 type PostReadRequest = {
@@ -193,6 +211,20 @@ export default class PostAPI {
         return this.api.request<CommentCreateRequest, CommentCreateResponse>('/post/comment', {
             post_id: postId,
             comment_id: commentId,
+            content
+        });
+    }
+
+    getComment(commentId: number, format: ContentFormat = 'html'): Promise<CommentGetResponse> {
+        return this.api.request<CommentGetRequest, CommentGetResponse>('/post/get-comment', {
+            id: commentId,
+            format
+        });
+    }
+
+    editComment(content: string, commentId: number): Promise<CommentEditResponse> {
+        return this.api.request<CommentEditRequest, CommentEditResponse>('/post/edit-comment', {
+            id: commentId,
             content
         });
     }

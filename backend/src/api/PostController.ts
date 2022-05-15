@@ -15,6 +15,9 @@ import {UserEntity} from './types/entities/UserEntity';
 import {PostWatchRequest, PostWatchResponse} from './types/requests/PostWatch';
 import {PostPreviewRequest, PostPreviewResponse} from './types/requests/Preview';
 import {Enricher} from './utils/Enricher';
+import {PostGetCommentRequest, PostGetCommentResponse} from './types/requests/PostGetComment';
+import {PostCommentEditRequest, PostCommentEditResponse} from './types/requests/PostEditComment';
+import CodeError from '../CodeError';
 
 export default class PostController {
     public readonly router = Router();
@@ -65,6 +68,15 @@ export default class PostController {
             post_id: Joi.number().required(),
             watch: Joi.boolean().required()
         });
+        const getCommentSchema = Joi.object<PostGetCommentRequest>({
+            id: Joi.number().required(),
+            format: joiFormat
+        });
+        const editCommentSchema = Joi.object<PostCommentEditRequest>({
+            id: Joi.number().required(),
+            content: Joi.string().min(1).max(50000).required(),
+            format: joiFormat
+        });
 
         this.router.post('/post/get', validate(getSchema), (req, res) => this.postGet(req, res));
         this.router.post('/post/create', validate(postCreateSchema), (req, res) => this.create(req, res));
@@ -73,6 +85,9 @@ export default class PostController {
         this.router.post('/post/read', validate(readSchema), (req, res) => this.read(req, res));
         this.router.post('/post/bookmark', validate(bookmarkSchema), (req, res) => this.bookmark(req, res));
         this.router.post('/post/watch', validate(watchingSchema), (req, res) => this.watch(req, res));
+        this.router.post('/post/get-comment', validate(getCommentSchema), (req, res) => this.getComment(req, res));
+        this.router.post('/post/edit-comment', validate(editCommentSchema), (req, res) => this.editComment(req, res));
+
     }
 
     async postGet(request: APIRequest<PostGetRequest>, response: APIResponse<PostGetResponse>) {
@@ -235,6 +250,69 @@ export default class PostController {
         }
         catch (err) {
             this.logger.error('Watch failed', { error: err, user_id: userId, post_id: postId, watch });
+            return response.error('error', 'Unknown error', 500);
+        }
+    }
+
+    async getComment(request: APIRequest<PostGetCommentRequest>, response: APIResponse<PostGetCommentResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+
+        const userId = request.session.data.userId;
+        const { id: commentId, format } = request.body;
+
+        try {
+            const commentInfo = await this.postManager.getComment(userId, commentId, format);
+            if (!commentInfo) {
+                return response.error('no-comment', 'Comment not found');
+            }
+
+            const {allComments: [comment], users} = await this.enricher.enrichRawComments([commentInfo], {}, format,
+                () => false
+            );
+
+            response.success({
+                comment: comment,
+                users: users
+            });
+        }
+        catch (err) {
+            this.logger.error('Comment get error', { error: err, comment_id: commentId });
+            return response.error('error', 'Unknown error', 500);
+        }
+    }
+
+    async editComment(request: APIRequest<PostCommentEditRequest>, response: APIResponse<PostCommentEditResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+
+        const userId = request.session.data.userId;
+        const { id: commentId, content, format } = request.body;
+
+        try {
+            const commentInfo = await this.postManager.editComment(userId, commentId, content, format);
+            if (!commentInfo) {
+                return response.error('no-comment', 'Comment not found');
+            }
+
+            const {allComments: [comment], users} = await this.enricher.enrichRawComments([commentInfo], {}, format,
+                () => false
+            );
+
+            response.success({
+                comment: comment,
+                users: users
+            });
+        }
+        catch (err) {
+            this.logger.error('Comment edit error', { error: err, comment_id: commentId });
+
+            if (err instanceof CodeError && err.code === 'access-denied') {
+                return response.error('access-denied', 'Access-denied');
+            }
+
             return response.error('error', 'Unknown error', 500);
         }
     }

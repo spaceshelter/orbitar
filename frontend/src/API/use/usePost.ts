@@ -11,7 +11,7 @@ type UsePost = {
     error?: string;
 
     postComment(comment: string, answerToCommentId?: number): Promise<CommentInfo>;
-    preview(text: string): Promise<string>;
+    editComment(comment: string, commentId: number): Promise<CommentInfo>;
     setVote(value: number): void;
     setCommentVote(commentId: number, vote: number): void;
     reload(showUnreadOnly?: boolean): void;
@@ -48,7 +48,7 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
         };
     }, [post]);
 
-    const { postComment, setVote, setCommentVote, reload, preview } = useMemo(() => {
+    const { postComment, editComment, setVote, setCommentVote, reload } = useMemo(() => {
         const postComment = async (text: string, answerToCommentId?: number) => {
             const {comment} = await api.post.comment(text, postId, answerToCommentId);
 
@@ -99,6 +99,33 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
             return comment;
         };
 
+        const editComment = async (text: string, commentId: number) => {
+            const {comment} = await api.post.editComment(text, commentId);
+
+            if (!comments) {
+                // no comments loaded!
+                return comment;
+            }
+
+            if (comments) {
+                const originalComment = findComment(comments, commentId);
+                if (originalComment) {
+                    Object.assign(originalComment, comment);
+                    setComments([...comments]);
+                }
+            }
+
+            if (rawComments) {
+                const originalComment = findComment(rawComments, commentId);
+                if (originalComment) {
+                    Object.assign(originalComment, comment);
+                    setRawComments([...rawComments]);
+                }
+            }
+
+            return comment;
+        };
+
         const setVote = (vote: number) => {
 
         };
@@ -129,11 +156,7 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
                 });
         };
 
-        const preview = async (text: string) => {
-            return (await api.postAPI.preview(text)).content;
-        };
-
-        return { postComment, setVote, setCommentVote, reload, updatePost, preview };
+        return { postComment, editComment, setVote, setCommentVote, reload, updatePost };
     }, [postId, comments, rawComments, api.post]);
 
     useEffect(() => {
@@ -170,7 +193,7 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
         reload(showUnreadOnly || false);
     }, [siteName, postId, showUnreadOnly, api, rawComments, prev, reload]);
 
-    return { site, post, comments, error, postComment, preview, setVote, setCommentVote, reload, updatePost };
+    return { site, post, comments, error, postComment, editComment, setVote, setCommentVote, reload, updatePost };
 }
 
 function findComment(comments: CommentInfo[], commentId: number): CommentInfo | undefined {

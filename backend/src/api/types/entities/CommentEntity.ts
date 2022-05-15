@@ -13,6 +13,7 @@ export type CommentEntity = CommentBaseEntity & {
     post: number;
     site: string;
 
+    canEdit?: boolean;
     isNew?: boolean;
     vote?: number;
     answers?: CommentEntity[];

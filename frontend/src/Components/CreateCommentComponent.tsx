@@ -10,22 +10,24 @@ import {ReactComponent as QuoteIcon} from '../Assets/quote.svg';
 import ContentComponent from './ContentComponent';
 import classNames from 'classnames';
 import MediaUploader from './MediaUploader';
+import {useAPI} from '../AppState/AppState';
 
 interface CreateCommentProps {
     open: boolean;
     comment?: CommentInfo;
     post?: PostLinkInfo;
+    text?: string;
 
     onAnswer: (text: string, post?: PostLinkInfo, comment?: CommentInfo) => Promise<CommentInfo | undefined>;
-    onPreview: (text: string) => Promise<string>;
 }
 
 export default function CreateCommentComponent(props: CreateCommentProps) {
     const answerRef = useRef<HTMLTextAreaElement>(null);
-    const [answerText, setAnswerText] = useState<string>(props.comment ? props.comment.author.username + ', ' : '');
+    const [answerText, setAnswerText] = useState<string>(props.text ?? (props.comment ? props.comment.author.username + ', ' : ''));
     const [isPosting, setPosting] = useState(false);
     const [previewing, setPreviewing] = useState<string | null>(null);
     const [mediaUploaderOpen, setMediaUploaderOpen] = useState(false);
+    const api = useAPI();
 
     const disabledButtons = isPosting || previewing !== null;
 
@@ -120,7 +122,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
 
     useEffect(() => {
         const answer = answerRef.current;
-        if (props.comment && props.open && answer) {
+        if ((props.text || props.comment) && props.open && answer) {
             answer.focus();
             answer.selectionStart = answer.value.length;
         }
@@ -136,7 +138,8 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         }
         setPosting(true);
         try {
-            setPreviewing(await props.onPreview(answerText));
+            const response = await api.postAPI.preview(answerText);
+            setPreviewing(response.content);
         } catch (e) {
             console.error(e);
             setPreviewing(null);
@@ -153,7 +156,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 setAnswerText(props.comment ? props.comment.author.username + ', ' : '');
             })
             .catch(error => {
-                console.log('ANSWER ERR', error);
+                console.log('onAnswer ERR', error);
                 setPosting(false);
             });
     };

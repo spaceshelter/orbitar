@@ -18,6 +18,7 @@ export interface PostInfo extends PostLinkInfo {
     vote?: number;
     watch?: boolean;
     bookmark?: boolean;
+    canEdit?: boolean;
 }
 
 export interface CommentInfo {
@@ -33,4 +34,5 @@ export interface CommentInfo {
     answers?: CommentInfo[];
     post?: number;
     site?: string;
+    canEdit?: boolean;
 }

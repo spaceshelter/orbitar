@@ -21,7 +21,7 @@ export default function PostPage() {
     }
 
     const unreadOnly = search.get('new') !== null;
-    const {post, comments, postComment, preview, error, reload, updatePost} = usePost(subdomain, postId, unreadOnly);
+    const {post, comments, postComment, editComment, error, reload, updatePost} = usePost(subdomain, postId, unreadOnly);
 
     useEffect(() => {
         let docTitle = `Пост #${postId}`;
@@ -35,25 +35,21 @@ export default function PostPage() {
 
     }, [post, postId]);
 
-    const handleAnswer = (text: string, post?: PostLinkInfo, comment?: CommentInfo) => {
-        if (!post) {
-            return Promise.resolve(undefined);
-        }
-        return new Promise<CommentInfo>((resolve, reject) => {
-            postComment(text, comment?.id)
-                .then(comment => {
-                    // scroll to new comment
-                    setTimeout(() => {
-                        const el = document.querySelector(`div[data-comment-id="${comment.id}"]`);
-                        el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                    }, 100);
+    const handleEdit = async (text: string, comment: CommentInfo) => {
+        return await editComment(text, comment.id);
+    };
 
-                    resolve(comment);
-                })
-                .catch(error => {
-                    reject(error);
-                });
-        });
+    const handleAnswer = async (text: string, post?: PostLinkInfo, comment?: CommentInfo) => {
+        if (!post) {
+            return;
+        }
+
+        const newComment = await postComment(text, comment?.id);
+        setTimeout(() => {
+            const el = document.querySelector(`div[data-comment-id="${newComment.id}"]`);
+            el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+        return comment;
     };
 
     useEffect(() => {
@@ -114,7 +110,7 @@ export default function PostPage() {
                         <div className={styles.postButtons}><Link to={`/post/${post.id}`} className={unreadOnly ? '' : 'bold'}>все комментарии</Link> • <Link to={`/post/${post.id}?new`} className={unreadOnly ? 'bold' : ''}>только новые</Link></div>
                         <div className={styles.comments + (unreadOnly ? ' ' + commentStyles.unreadOnly : '')}>
                             {comments ?
-                                comments.map(comment => <CommentComponent key={comment.id} comment={comment} onAnswer={handleAnswer} onPreview={preview} />)
+                                comments.map(comment => <CommentComponent key={comment.id} comment={comment} onAnswer={handleAnswer} onEdit={handleEdit} />)
                                 :
                                 (
                                     error ? <div className={styles.error}>{error}<div><button onClick={() => reload(unreadOnly)}>Повторить</button></div></div>
@@ -122,7 +118,7 @@ export default function PostPage() {
                                 )
                             }
                         </div>
-                        <CreateCommentComponent open={true} post={post} onAnswer={handleAnswer} onPreview={preview} />
+                        <CreateCommentComponent open={true} post={post} onAnswer={handleAnswer} />
                     </div>
                     :
                     (

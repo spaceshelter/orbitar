@@ -10,6 +10,7 @@ import {ReactComponent as CommentsIcon} from '../Assets/comments.svg';
 import {ReactComponent as OptionsIcon} from '../Assets/options.svg';
 import {ReactComponent as WatchIcon} from '../Assets/watch.svg';
 import {ReactComponent as UnwatchIcon} from '../Assets/unwatch.svg';
+import {ReactComponent as EditIcon} from '../Assets/edit.svg';
 
 import PostLink from './PostLink';
 import {useAPI} from '../AppState/AppState';
@@ -100,7 +101,7 @@ export default function PostComponent(props: PostComponentProps) {
                 </div>
                 <div className={styles.control}><CommentsCount post={props.post} /></div>
                 {/*<div className={styles.control}><button disabled={true} onClick={toggleBookmark} className={bookmark ? styles.active : ''}><BookmarkIcon /><span className={styles.label}></span></button></div>*/}
-                {/*/!*<div className={styles.control}><button disabled={true}><EditIcon /></button></div>*!/*/}
+                <div className={styles.control}><button><EditIcon /></button></div>
                 <div className={styles.control + ' ' + styles.options}>
                     <button onClick={toggleOptions} className={showOptions ? styles.active : ''}><OptionsIcon /></button>
                     {showOptions &&

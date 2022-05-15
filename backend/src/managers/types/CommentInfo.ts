@@ -13,6 +13,7 @@ export type CommentInfo = CommentBaseInfo & {
     isNew?: boolean;
     vote?: number;
     answers?: CommentInfo[];
+    canEdit?: boolean;
 };
 
 export type CommentInfoWithPostData = CommentInfo & {

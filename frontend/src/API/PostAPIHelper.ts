@@ -38,10 +38,6 @@ export default class PostAPIHelper {
         this.setters = setters;
     }
 
-    async create(site: string, title: string, content: string) {
-
-    }
-
     async get(postId: number): Promise<PostResult> {
         const response = await this.postAPI.get(postId);
         const siteInfo = this.cache.setSite(response.site);
@@ -138,6 +134,16 @@ export default class PostAPIHelper {
 
     async comment(content: string, postId: number, commentId?: number): Promise<CommentResponse> {
         const response = await this.postAPI.comment(content, postId, commentId);
+
+        const [comment] = this.fixComments([response.comment], response.users);
+
+        return {
+            comment
+        };
+    }
+
+    async editComment(content: string, commentId: number): Promise<CommentResponse> {
+        const response = await this.postAPI.editComment(content, commentId);
 
         const [comment] = this.fixComments([response.comment], response.users);
 

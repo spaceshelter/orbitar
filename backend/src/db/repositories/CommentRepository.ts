@@ -1,7 +1,7 @@
 import DB from '../DB';
 import {CommentRaw, CommentRawWithUserData} from '../types/PostRaw';
 import CodeError from '../../CodeError';
-import {OkPacket} from 'mysql2';
+import {OkPacket, ResultSetHeader} from 'mysql2';
 
 export default class CommentRepository {
     private db: DB;
@@ -14,6 +14,23 @@ export default class CommentRepository {
         return await this.db.fetchOne<CommentRaw>('select * from comments where comment_id=:comment_id', {
             comment_id: commentId
         });
+    }
+
+    async getCommentWithUserData(forUserId: number, commentId: number): Promise<CommentRawWithUserData | undefined> {
+        return await this.db.fetchOne<CommentRaw>(`select c.*, v.vote from comments c left join comment_votes v on (v.comment_id = c.comment_id and v.voter_id = :forUserId) where c.comment_id=:commentId`, {
+            commentId,
+            forUserId
+        });
+    }
+
+    async updateCommentText(commentId, source: string, html: string): Promise<boolean> {
+        const result = await this.db.query<ResultSetHeader>('update comments set source=:source, html=:html where comment_id=:commentId', {
+            commentId,
+            source,
+            html
+        });
+
+        return result.changedRows > 0;
     }
 
     async getPostComments(postId: number, forUserId: number): Promise<CommentRawWithUserData[]> {
@@ -52,7 +69,7 @@ export default class CommentRepository {
     }
 
     async getUserCommentsTotal(userId: number): Promise<number> {
-        return this.db.fetchOne<any>('select count(*) cnt from comments where author_id = :user_id and deleted = 0', {
+        return this.db.fetchOne<{ cnt: string }>('select count(*) cnt from comments where author_id = :user_id and deleted = 0', {
             user_id: userId
         }).then((res) => parseInt(res.cnt || '0'));
     }
