@@ -1,6 +1,6 @@
 import {ThemeCollection, ThemeStyles} from './Theme/ThemeProvider';
-import rgba from "color-normalize";
-
+import rgba from 'color-normalize';
+import colorspace from 'color-space';
 
 /**
 
@@ -348,18 +348,18 @@ const themes: ThemeCollection = {
 };
 
 
-export const getThemes = () =>{
+export const getThemes = () => {
     Object.values(themes).map( preprocessTheme );
     return themes;
-}
+};
 
 // GENERATE THEME
-const preprocessTheme= (theme:ThemeStyles)=>{
+const preprocessTheme = (theme: ThemeStyles) => {
     const colors = theme.colors;
 
     //detect if this is dark theme or light theme
     const fg = colors.fg as string;
-    const isDark:boolean = hsl(fg).l > 0.5;
+    const isDark: boolean = hsl(fg).l > 0.5;
 
     // generate harder versions of foreground color
     colors.fgHardest ??= isDark ? '#fff':'#000';
@@ -397,23 +397,22 @@ const preprocessTheme= (theme:ThemeStyles)=>{
     colors.dim1 ??= rgbaToString([c,c,c,0.02]);
     colors.dim2 ??= rgbaToString([c,c,c,0.04]);
     colors.dim3 ??= rgbaToString([c,c,c,0.06]);
-}
+};
 
-
-const reduceAlpha = (c:string, r:number):string =>{
+const reduceAlpha = (c: string, r: number): string => {
     const [red,g,b,a] = rgba(c);
     return rgbaToString( [red,g,b, lerp(a,0,r)]);
-}
+};
 
-const increaseSaturation = (c:string, r:number):string =>{
+const increaseSaturation = (c: string, r: number): string => {
     const p = hsl(c);
     p.s = lerp(p.s, 1, r);
     return HSLtoRGBString(p);
-}
+};
 
-const lerp = (a:number,b: number, r: number) =>  a + Math.min(Math.max(r,0),1) * (b-a);
+const lerp = (a: number, b: number, r: number) =>  a + Math.min(Math.max(r,0),1) * (b-a);
 
-const lerpColor = (a:string,b: string, r: number)=> {
+const lerpColor = (a: string, b: string, r: number) => {
     const c1 = rgba( a );
     const c2 = rgba( b );
     const bal = Math.min(Math.max(r,0),1);
@@ -424,59 +423,20 @@ const lerpColor = (a:string,b: string, r: number)=> {
         c1[3] + bal * (c2[3]-c1[3])
     ];
     return rgbaToString(res);
-}
+};
 
-const rgbaToString = (color:number[]):string => {
+const rgbaToString = (color: number[]): string => {
     return `rgba(${Math.floor(color[0] * 255)}, ${Math.floor(color[1] * 255)}, ${Math.floor(color[2] * 255)}, ${color[3].toFixed(2).replace(/\.?0+$/, '')})`;
-}
+};
 
-type HSL ={ h:number, s:number, l:number};
-const hsl = (color:string):HSL => {
-    const [r,g,b] = rgba(color);
-    const min = Math.min(r, g, b);
-    const max = Math.max(r, g, b);
-    const delta = max - min;
-    let h = 0;
-    let s;
+type HSL = { h: number, s: number, l: number };
+const hsl = (color: string): HSL => {
+    const rgb = rgba(color);
+    const hsl = colorspace.rgb.hsl([rgb[0] * 255, rgb[1] * 255, rgb[2] * 255]);
+    return { h: hsl[0] / 360, s: hsl[1] / 100, l: hsl[2] / 100 };
+};
 
-    if (max === min)    h = 0;
-    else if (r === max) h = (g - b) / delta;
-    else if (g === max) h = 2 + (b - r) / delta;
-    else if (b === max) h = 4 + (r - g) / delta;
-
-    h = Math.min(h * 60, 360);
-
-    if (h < 0) h += 360;
-    const l = (min + max) / 2;
-
-    if (max === min)  s = 0;
-    else if (l <= 0.5)  s = delta / (max + min);
-    else s = delta / (2 - delta);
-
-    return {h:h/360, s, l};
-}
-
-const HSLtoRGBString = (c:HSL):string => {
-    const {h,s,l} = c;
-    let t2, t3;
-
-    if (s === 0)  return '#000';
-
-    if (l < 0.5)  t2 = l * (1 + s);
-    else  t2 = l + s - l * s;
-    const t1 = 2 * l - t2;
-
-    const rgb = [0, 0, 0];
-    for (let i = 0; i < 3; i++) {
-        t3 = h + 1 / 3 * -(i - 1);
-        if (t3 < 0)  t3++;
-        if (t3 > 1)  t3--;
-
-        if (6 * t3 < 1)  rgb[i] = t1 + (t2 - t1) * 6 * t3;
-        else if (2 * t3 < 1) rgb[i] = t2;
-        else if (3 * t3 < 2) rgb[i] = t1 + (t2 - t1) * (2 / 3 - t3) * 6;
-        else rgb[i] = t1;
-    }
-
-    return `rgb(${Math.floor(rgb[0] * 255)}, ${Math.floor(rgb[1] * 255)}, ${Math.floor(rgb[2] * 255)})`;
-}
+const HSLtoRGBString = (c: HSL): string => {
+    const rgb = colorspace.hsl.rgb([c.h * 360, c.s * 100, c.l * 100]);
+    return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+};
