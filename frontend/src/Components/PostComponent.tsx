@@ -3,12 +3,10 @@ import RatingSwitch from './RatingSwitch';
 import Username from './Username';
 import React, {useMemo, useState} from 'react';
 import {PostInfo} from '../Types/PostInfo';
-import {Link} from "react-router-dom";
+import {Link} from 'react-router-dom';
 import DateComponent from './DateComponent';
 import ContentComponent from './ContentComponent';
 import {ReactComponent as CommentsIcon} from '../Assets/comments.svg';
-import {ReactComponent as BookmarkIcon} from '../Assets/bookmark.svg';
-import {ReactComponent as EditIcon} from '../Assets/edit.svg';
 import {ReactComponent as OptionsIcon} from '../Assets/options.svg';
 import {ReactComponent as WatchIcon} from '../Assets/watch.svg';
 import {ReactComponent as UnwatchIcon} from '../Assets/unwatch.svg';
@@ -39,10 +37,10 @@ export default function PostComponent(props: PostComponentProps) {
                     vote
                 });
             }
-        }
+        };
     }, [props.post]);
 
-    const { id, created, site, author, title, content, vote, rating, watch, bookmark } = props.post;
+    const { id, created, site, author, title, content, vote, rating, watch } = props.post;
 
     const toggleOptions = () => {
         setShowOptions(!showOptions);
@@ -55,7 +53,7 @@ export default function PostComponent(props: PostComponentProps) {
         api.post.watch(id, newState)
             .then(({watch}) => {
                 if (props.onChange) {
-                    props.onChange(props.post.id, {watch})
+                    props.onChange(props.post.id, {watch});
                 }
             })
             .catch(() => {
@@ -64,7 +62,9 @@ export default function PostComponent(props: PostComponentProps) {
             });
 
         setShowOptions(false);
-    }
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const toggleBookmark = () => {
         const oldState = !!props.post.bookmark;
         const newState = !oldState;
@@ -73,14 +73,14 @@ export default function PostComponent(props: PostComponentProps) {
         api.post.bookmark(id, newState)
             .then(({bookmark}) => {
                 if (props.onChange) {
-                    props.onChange(props.post.id, {bookmark})
+                    props.onChange(props.post.id, {bookmark});
                 }
             })
             .catch(() => {
                 props.post.bookmark = oldState;
                 toast.error('Кладмен мудак - закладка не найдена');
             });
-    }
+    };
 
     return (
         <div className={styles.post}>
@@ -112,7 +112,7 @@ export default function PostComponent(props: PostComponentProps) {
             </div>
             {props.buttons}
         </div>
-    )
+    );
 }
 
 function CommentsCount(props: {post: PostInfo}) {

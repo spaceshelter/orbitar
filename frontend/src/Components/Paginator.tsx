@@ -20,7 +20,7 @@ export default function Paginator(props: PaginatorProps) {
             search = 'page=' + i;
         }
 
-        pages.push(<Link key={i} className={classes.join(' ')} to={{pathname: props.base, search}}>{i}</Link>)
+        pages.push(<Link key={i} className={classes.join(' ')} to={{pathname: props.base, search}}>{i}</Link>);
     }
 
     return (

@@ -29,7 +29,7 @@ export default function CommentComponent(props: CommentProps) {
         if (!post) {
             return undefined;
         }
-        const res = await props.onAnswer?.(text, post, comment)
+        const res = await props.onAnswer?.(text, post, comment);
         setAnswerOpen(false);
         return res;
     };
@@ -38,7 +38,7 @@ export default function CommentComponent(props: CommentProps) {
         return (value: number, vote?: number) => {
             props.comment.rating = value;
             props.comment.vote = vote;
-        }
+        };
     }, [props.comment]);
 
     const {author, created} = props.comment;
@@ -70,6 +70,6 @@ export default function CommentComponent(props: CommentProps) {
                 : <></>}
 
         </div>
-    )
+    );
 }
 

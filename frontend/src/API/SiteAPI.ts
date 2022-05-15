@@ -4,11 +4,11 @@ type SubscribeRequest = {
     site: string;
     main: boolean;
     bookmarks: boolean;
-}
+};
 type SubscribeResponse = {
     main: boolean;
     bookmarks: boolean;
-}
+};
 
 export default class SiteAPI {
     private api: APIBase;

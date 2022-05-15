@@ -42,5 +42,5 @@ export default function SiteSidebar(props: SiteSidebarProps) {
                 {props.site.site !== 'dev' && <div><a href="https://dev.orbitar.space/">Баги и фичи</a></div>}
             </div>
         </div>
-    </div>)
+    </div>);
 }

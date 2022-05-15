@@ -31,7 +31,7 @@ export type AppStateSetters = {
     setUserInfo: (user: UserInfo | undefined) => void;
     setAppState: (state: AppState) => void;
     setUserStats: Dispatch<SetStateAction<UserStats>>;
-}
+};
 
 const AppStateContext = createContext<AppStateContextState>({} as AppStateContextState);
 
@@ -64,8 +64,8 @@ export const AppStateProvider = (props: {children: ReactNode}) => {
 
     return <AppStateContext.Provider value={{ userInfo, appState, api: api, site: site, userStats }}>
         {props.children}
-    </AppStateContext.Provider>
-}
+    </AppStateContext.Provider>;
+};
 
 export function useAppState() {
     return useContext(AppStateContext);

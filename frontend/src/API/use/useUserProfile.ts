@@ -5,11 +5,11 @@ import {APIError} from '../APIBase';
 
 type ProfileStateBase = {
     status: 'loading' | 'not-found';
-}
+};
 type ProfileStateError = {
     status: 'error';
     message: string;
-}
+};
 type ProfileStateReady = {
     status: 'ready';
     profile: {
@@ -17,7 +17,7 @@ type ProfileStateReady = {
         invitedBy: UserInfo;
         invites: UserInfo[];
     };
-}
+};
 type ProfileState = ProfileStateBase | ProfileStateError | ProfileStateReady;
 
 export function useUserProfile(username: string): ProfileState {
@@ -55,7 +55,7 @@ export function useUserProfile(username: string): ProfileState {
                 setState( { status: 'error', message: 'Неизвестная ошибка' });
             });
 
-        return () => { reject = true; }
+        return () => { reject = true; };
     }, [username, api.user]);
 
     return state;

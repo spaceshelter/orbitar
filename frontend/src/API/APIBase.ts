@@ -26,7 +26,7 @@ export class APIError extends Error {
 export default class APIBase {
     private sessionId?: string;
     private readonly endpoint: string;
-    private sync: number = 0;
+    private sync = 0;
 
     constructor() {
         this.sessionId = Cookies.get('session');
@@ -34,7 +34,7 @@ export default class APIBase {
     }
 
     async request<Req, Res>(url: string, payload: Req): Promise<Res> {
-        const headers: any = {
+        const headers: Record<string, string> = {
             'Content-Type': 'application/json',
         };
         if (this.sessionId) {
@@ -58,7 +58,7 @@ export default class APIBase {
         const sessionId = response.headers.get('x-session-id');
         if (sessionId) {
             this.sessionId = sessionId;
-            Cookies.set('session', sessionId, { domain: '.' + process.env.REACT_APP_ROOT_DOMAIN, expires: 365 })
+            Cookies.set('session', sessionId, { domain: '.' + process.env.REACT_APP_ROOT_DOMAIN, expires: 365 });
         }
 
         const responseJson = await response.json() as APIResponse<Res>;

@@ -1,18 +1,18 @@
 
 type CacheRecord = {
-    deps: any[];
-    value: any;
-}
+    deps: unknown[];
+    value: unknown;
+};
 const localCache: Record<string, CacheRecord> = {};
 
-function getCachedValue<T>(name: string, deps: any[]): T | undefined {
+function getCachedValue<T>(name: string, deps: unknown[]): T | undefined {
     let cached: CacheRecord | undefined = localCache[name];
     if (!cached) {
         // try to load from localStorage
-        let value = localStorage.getItem('cache:'+name);
+        const value = localStorage.getItem('cache:'+name);
         if (value) {
             try {
-                let jsonValue = JSON.parse(value) as CacheRecord;
+                const jsonValue = JSON.parse(value) as CacheRecord;
                 if (jsonValue.deps && jsonValue.value) {
                     cached = jsonValue;
                     localCache[name] = cached;
@@ -39,16 +39,16 @@ function getCachedValue<T>(name: string, deps: any[]): T | undefined {
     }
 
     if (cached) {
-        return cached.value;
+        return cached.value as T;
     }
 }
-function setCachedValue<T>(name: string, deps: any[], value: T) {
+function setCachedValue<T>(name: string, deps: unknown[], value: T) {
     const cached: CacheRecord = { deps: [...deps], value };
     localCache[name] = cached;
 
     // check if only simple objects in deps
-    for (let dep of deps) {
-        let typeDep = typeof dep;
+    for (const dep of deps) {
+        const typeDep = typeof dep;
         if (typeDep !== 'boolean' && typeDep !== 'number' && typeDep !== 'string') {
             return;
         }
@@ -57,15 +57,15 @@ function setCachedValue<T>(name: string, deps: any[], value: T) {
     localStorage.setItem('cache:'+name, JSON.stringify(cached));
 }
 
-export function useCache<T>(name: string, deps: any[]): [T | undefined, ((value: T) => void)] {
-    let cached: T | undefined = getCachedValue(name, deps);
+export function useCache<T>(name: string, deps: unknown[]): [T | undefined, ((value: T) => void)] {
+    const cached: T | undefined = getCachedValue(name, deps);
 
     const setCached = (value: T) => {
         setCachedValue(name, deps, value);
-    }
+    };
 
     return [
         cached,
         setCached
-    ]
+    ];
 }
