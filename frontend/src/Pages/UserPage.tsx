@@ -5,14 +5,14 @@ import Username from '../Components/Username';
 import RatingSwitch from '../Components/RatingSwitch';
 import DateComponent from '../Components/DateComponent';
 import {useUserProfile} from '../API/use/useUserProfile';
-import {ReactComponent as LogoutIcon} from "../Assets/logout.svg";
-import {useAppState} from "../AppState/AppState";
-import UserProfilePosts from "../Components/UserProfilePosts"
-import UserProfileComments from "../Components/UserProfileComments";
+import {ReactComponent as LogoutIcon} from '../Assets/logout.svg';
+import {useAppState} from '../AppState/AppState';
+import UserProfilePosts from '../Components/UserProfilePosts';
+import UserProfileComments from '../Components/UserProfileComments';
 
 export default function UserPage() {
 
-    const {userInfo, api, userStats} = useAppState();
+    const {userInfo, api} = useAppState();
     const params = useParams<{username: string}>();
     const state = useUserProfile(decodeURI(params?.username || ''));
     const isPosts = useMatch('user/:username/posts');
@@ -40,7 +40,7 @@ export default function UserPage() {
         const profile = state.profile;
         const user = profile.profile;
         const rating = {value: user.karma, vote: user.vote};
-        const isMyProfile = userInfo && userInfo.id == user.id;
+        const isMyProfile = userInfo && userInfo.id === user.id;
 
         return (
             <div className={styles.container}>
@@ -73,16 +73,16 @@ export default function UserPage() {
                     {isComments && <UserProfileComments username={user.username} />}
                 </div>
             </div>
-        )
+        );
     }
 
     if (state.status === 'not-found') {
         return (
             <div>Нет такого юзера. <Link to={'/profile/invites'}>Пригласить</Link>?</div>
-        )
+        );
     }
 
     return (
         <div>Загрузка...</div>
-    )
+    );
 }

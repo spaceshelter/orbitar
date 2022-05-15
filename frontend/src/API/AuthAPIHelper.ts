@@ -12,7 +12,7 @@ export default class AuthAPIHelper {
 
     async signIn(username: string, password: string) {
         try {
-            const auth = await this.api.signIn(username, password)
+            const auth = await this.api.signIn(username, password);
 
             this.setters.setUserInfo(auth.user);
             this.setters.setAppState(AppState.authorized);
@@ -33,7 +33,7 @@ export default class AuthAPIHelper {
         }
         catch (error) {
             console.log('ERROR SIGN IN', error);
-            throw new Error('Could not sign out')
+            throw new Error('Could not sign out');
         }
     }
 }

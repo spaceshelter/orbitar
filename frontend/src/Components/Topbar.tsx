@@ -1,8 +1,6 @@
 import React, {useState} from 'react';
 import styles from './Topbar.module.scss';
-import {
-    Link, useLocation, useNavigate,
-} from "react-router-dom";
+import {Link} from 'react-router-dom';
 import {useAppState} from '../AppState/AppState';
 import {useTheme} from '../Theme/ThemeProvider';
 import {ReactComponent as PostIcon} from '../Assets/post.svg';
@@ -13,25 +11,23 @@ import {ReactComponent as NotificationIcon} from '../Assets/notification.svg';
 import {ReactComponent as ProfileIcon} from '../Assets/profile.svg';
 import {ReactComponent as DarkIcon} from '../Assets/theme_dark.svg';
 import {ReactComponent as LightIcon} from '../Assets/theme_light.svg';
-import NotificationsPopup from "./NotificationsPopup";
+import NotificationsPopup from './NotificationsPopup';
 
 export type TopbarMenuState = 'disabled' | 'open' | 'close';
 
 type TopbarProps = {
     menuState: TopbarMenuState;
     onMenuToggle: () => void;
-}
+};
 
 export default function Topbar(props: TopbarProps) {
-    const {userInfo, api, userStats} = useAppState();
+    const {userInfo, userStats} = useAppState();
     const {theme, setTheme} = useTheme();
-    const navigate = useNavigate();
-    const location = useLocation();
     const [showNotifications, setShowNotifications] = useState(false);
 
 
     if (!userInfo) {
-        return <></>
+        return <></>;
     }
 
     const toggleTheme = (e: React.MouseEvent) => {
@@ -45,13 +41,13 @@ export default function Topbar(props: TopbarProps) {
             }
             setTheme('dark');
         }
-    }
+    };
 
     const menuToggle = () => {
         props.onMenuToggle();
-    }
+    };
 
-    let menuClasses = [];
+    const menuClasses = [];
     if (props.menuState === 'close') {
         menuClasses.push(styles.menuClosed);
     }
@@ -82,5 +78,5 @@ export default function Topbar(props: TopbarProps) {
             </div>
             {showNotifications && <NotificationsPopup onClose={handleNotificationsClose} />}
         </>
-    )
+    );
 }

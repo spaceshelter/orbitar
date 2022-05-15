@@ -3,13 +3,13 @@ import {useAPI} from '../AppState/AppState';
 import styles from '../Pages/FeedPage.module.scss';
 import Paginator from '../Components/Paginator';
 import {useSearchParams} from 'react-router-dom';
-import {useCache} from "../API/use/useCache";
-import {CommentInfo} from "../Types/PostInfo";
-import CommentComponent from "./CommentComponent";
+import {useCache} from '../API/use/useCache';
+import {CommentInfo} from '../Types/PostInfo';
+import CommentComponent from './CommentComponent';
 
 type UserProfileCommentsProps = {
   username: string;
-}
+};
 
 export default function UserProfileComments(props: UserProfileCommentsProps) {
     const [search] = useSearchParams();
@@ -26,7 +26,7 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
 
     const reload = () => {
         setReloadIdx(reloadIdx + 1);
-    }
+    };
 
     useEffect(() => {
         api.userAPI.userComments(props.username, page, perpage).then(result => {

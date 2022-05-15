@@ -30,7 +30,7 @@ export default function NotificationsPopup(props: NotificationsPopupProps) {
     const subscribe = useMemo(() => {
         return async () => {
             if (Notification.permission === 'denied') {
-                return
+                return;
             }
 
             if (Notification.permission === 'default') {
@@ -58,7 +58,7 @@ export default function NotificationsPopup(props: NotificationsPopupProps) {
             .catch(err => {
                 setError('Не удалось загрузить уведомления');
                 console.log('notifications error', err);
-            })
+            });
     }, [fetchNotifications, subscribe]);
 
     const handleNotificationClick = (e: React.MouseEvent<HTMLAnchorElement>, notify: NotificationInfo) => {
@@ -96,7 +96,7 @@ export default function NotificationsPopup(props: NotificationsPopupProps) {
                             <div className={styles.date}>{notify.source.byUser.username} {notify.type === 'answer' ? 'ответил вам' : 'упомянул вас'} <DateComponent date={notify.date} /></div>
                             <div className={styles.text}>{notify.source.comment?.content}</div>
                         </div>
-                    </PostLink>
+                    </PostLink>;
                 })}
             </div>
             <div className={styles.buttons}>
@@ -104,7 +104,7 @@ export default function NotificationsPopup(props: NotificationsPopupProps) {
                 <button className={styles.buttonAll} disabled={true}>Все чпяки</button>
             </div>
         </div>
-    )
+    );
 }
 
 

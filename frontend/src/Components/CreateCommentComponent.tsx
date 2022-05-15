@@ -1,4 +1,4 @@
-import {CommentInfo, PostInfo, PostLinkInfo} from '../Types/PostInfo';
+import {CommentInfo, PostLinkInfo} from '../Types/PostInfo';
 import React, {useEffect, useRef, useState} from 'react';
 import styles from './CreateCommentComponent.module.scss';
 import postStyles from '../Pages/CreatePostPage.module.css';
@@ -38,8 +38,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     };
 
     const replaceText = (text: string, cursor: number) => {
-        console.log('repl', text, cursor);
-        const answer = answerRef.current!;
+        const answer = answerRef.current;
         if (!answer) {
             return;
         }
@@ -64,7 +63,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             return;
         }
 
-        const answer = answerRef.current!;
+        const answer = answerRef.current;
         if (!answer) {
             return;
         }
@@ -124,7 +123,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     };
 
     useEffect(() => {
-        const answer = answerRef.current!;
+        const answer = answerRef.current;
         if (props.comment && props.open && answer) {
             answer.focus();
             answer.selectionStart = answer.value.length;
@@ -148,7 +147,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         } finally {
             setPosting(false);
         }
-    }
+    };
 
     const handleAnswer = () => {
         setPosting(true);
@@ -173,11 +172,11 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         setMediaUploaderOpen(false);
         if (type === 'image') {
             // noinspection HtmlRequiredAltAttribute
-            const text = `<img src="${uri}"/>`
+            const text = `<img src="${uri}"/>`;
             replaceText(text, text.length);
         }
         else {
-            const text = `<video src="${uri}"/>`
+            const text = `<video src="${uri}"/>`;
             replaceText(text, text.length);
         }
     };

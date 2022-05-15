@@ -11,7 +11,7 @@ export class PushService {
             return;
         }
 
-        const registration = await navigator.serviceWorker.getRegistration('/service.js')
+        const registration = await navigator.serviceWorker.getRegistration('/service.js');
         if (!registration) {
             return;
         }
