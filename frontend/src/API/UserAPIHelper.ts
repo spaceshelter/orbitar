@@ -6,7 +6,7 @@ export type UserProfileResult = {
     profile: UserProfileInfo;
     invitedBy: UserInfo;
     invites: UserInfo[];
-}
+};
 
 export default class UserAPIHelper {
     private api: UserAPI;
@@ -20,7 +20,7 @@ export default class UserAPIHelper {
     async userProfile(username: string): Promise<UserProfileResult> {
         const {profile, invitedBy, invites} = await this.api.userProfile(username);
 
-        const profileInfo: UserProfileInfo = { ...profile } as any;
+        const profileInfo: UserProfileInfo = { ...profile } as unknown as UserProfileInfo;
 
         profileInfo.registered = this.api.api.fixDate(new Date(profile.registered));
         this.cache.setUser(profileInfo);

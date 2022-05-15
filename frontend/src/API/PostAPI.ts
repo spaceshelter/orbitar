@@ -31,7 +31,7 @@ export type CommentEntity = {
     site: string;
 
     answers?: CommentEntity[];
-}
+};
 
 type PostCreateRequest = {
     site: string;
@@ -117,7 +117,7 @@ type PostReadResponse = {
 
 type PostPreviewRequestResponse = {
     content: string;
-}
+};
 
 type PostBookmarkRequest = {
     post_id: number;
@@ -200,7 +200,7 @@ export default class PostAPI {
     preview(text: string): Promise<PostPreviewRequestResponse> {
         return this.api.request<PostPreviewRequestResponse, PostPreviewRequestResponse>('/post/preview', {
             content: text
-        })
+        });
     }
 
     read(postId: number, comments: number, lastCommentId?: number) {

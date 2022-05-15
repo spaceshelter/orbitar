@@ -17,7 +17,7 @@ type RatingSwitchProps = {
     id: number;
     double?: boolean;
     onVote?: (value: number, vote?: number) => void;
-}
+};
 
 type VoteType = { vote: number, username: string };
 
@@ -30,7 +30,7 @@ export default function RatingSwitch(props: RatingSwitchProps) {
     const [votes, setVotes] = useState<VoteType[]>();
 
     useEffect(() => {
-        setState({rating: props.rating.value, vote: props.rating.vote})
+        setState({rating: props.rating.value, vote: props.rating.vote});
     }, [props]);
 
     useEffect(() => {
@@ -43,7 +43,6 @@ export default function RatingSwitch(props: RatingSwitchProps) {
         }
 
         if (!votes) {
-            console.log('LOAD VOTES')
             api.voteAPI.list(props.type, props.id)
                 .then(result => {
                     setVotes(result.votes);
@@ -54,10 +53,11 @@ export default function RatingSwitch(props: RatingSwitchProps) {
                 });
         }
 
-        let {x, y} = ratingEl.getBoundingClientRect();
-        y += document.documentElement.scrollTop || 0;
-        let [w, h] = [ratingEl.clientWidth, ratingEl.clientHeight];
-        let [pw, ph] = [popupEl.clientWidth, popupEl.clientHeight];
+        const rect = ratingEl.getBoundingClientRect();
+        const x = rect.x;
+        const y = rect.y + document.documentElement.scrollTop || 0;
+        const [w, h] = [ratingEl.clientWidth, ratingEl.clientHeight];
+        const [pw, ph] = [popupEl.clientWidth, popupEl.clientHeight];
 
         let ny = y + h + 8;
         if (ny + ph > document.documentElement.scrollHeight) {
@@ -71,7 +71,7 @@ export default function RatingSwitch(props: RatingSwitchProps) {
         popupEl.style.left = (nx) + 'px';
         popupEl.style.top = (ny) + 'px';
 
-        let clickHandler = (e: MouseEvent) => {
+        const clickHandler = (e: MouseEvent) => {
             e.stopPropagation();
             e.preventDefault();
             setShowPopup(false);
@@ -136,16 +136,13 @@ export default function RatingSwitch(props: RatingSwitchProps) {
         }
     }
     else if (state.vote && state.vote > 0) {
-        valueStyles.push(styles.plus)
+        valueStyles.push(styles.plus);
         plusStyles.push(styles.plus);
         minusStyles.push(styles.dis);
         minus2Styles.push(styles.dis);
         if (state.vote > 1) {
             plus2Styles.push(styles.plus);
         }
-    }
-    else {
-
     }
 
     return (
@@ -166,7 +163,7 @@ type RatingListProps = {
     rating: number;
     vote: number;
     votes?: VoteType[];
-}
+};
 
 const RatingList = React.forwardRef((props: RatingListProps, ref: ForwardedRef<HTMLDivElement>) => {
     const [voteList, setVoteList] = useState<{votes: VoteType[][], counters: {users: number, value: number}[]} | undefined>();
@@ -179,11 +176,11 @@ const RatingList = React.forwardRef((props: RatingListProps, ref: ForwardedRef<H
         const votes: VoteType[][] = [[], []];
         const counters: {users: number, value: number}[] = [{users: 0, value: 0}, {users: 0, value: 0}];
 
-        for (let vote of props.votes) {
+        for (const vote of props.votes) {
             if (vote.vote === 0) {
                 continue;
             }
-            let cnt = vote.vote > 0 ? 1 : 0;
+            const cnt = vote.vote > 0 ? 1 : 0;
             votes[cnt].push(vote);
             counters[cnt].users++;
             counters[cnt].value += vote.vote;
@@ -192,7 +189,7 @@ const RatingList = React.forwardRef((props: RatingListProps, ref: ForwardedRef<H
         setVoteList({votes, counters});
     }, [props.rating, props.votes, props.vote]);
 
-    let listStyles = [styles.listValue];
+    const listStyles = [styles.listValue];
     if (props.vote > 0) {
         listStyles.push(styles.listValuePlus);
     }
@@ -229,5 +226,5 @@ const RatingList = React.forwardRef((props: RatingListProps, ref: ForwardedRef<H
                 </div>
             </div>
         </div>
-    )
+    );
 });

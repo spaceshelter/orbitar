@@ -6,7 +6,7 @@ import {useNavigate} from 'react-router-dom';
 import CreateCommentComponent from '../Components/CreateCommentComponent';
 import {CommentInfo} from '../Types/PostInfo';
 import {toast} from 'react-toastify';
-import classNames from "classnames";
+import classNames from 'classnames';
 
 export function CreatePostPage() {
     const api = useAPI();
@@ -32,7 +32,7 @@ export function CreatePostPage() {
 
     const handlePreview = async (text: string): Promise<string> => {
         return (await api.postAPI.preview(text)).content;
-    }
+    };
 
     const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setTitle(e.target.value);
@@ -47,5 +47,5 @@ export function CreatePostPage() {
                 </div>
             </div>
         </div>
-    )
+    );
 }

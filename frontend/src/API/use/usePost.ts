@@ -16,7 +16,7 @@ type UsePost = {
     setCommentVote(commentId: number, vote: number): void;
     reload(showUnreadOnly?: boolean): void;
     updatePost(partial: Partial<PostInfo>): void;
-}
+};
 
 function usePrevious<T>(value: T): T | undefined {
     const ref = useRef<T>();
@@ -83,7 +83,7 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
                 if (rawComments) {
                     // in normal situation rawComments should contain new comment already
                     // so we only update ref here
-                    const updateComments = [...rawComments]
+                    const updateComments = [...rawComments];
                     setRawComments(updateComments);
                     setCachedComments(updateComments);
                 }
@@ -131,7 +131,7 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
 
         const preview = async (text: string) => {
             return (await api.postAPI.preview(text)).content;
-        }
+        };
 
         return { postComment, setVote, setCommentVote, reload, updatePost, preview };
     }, [postId, comments, rawComments, api.post]);
@@ -212,7 +212,7 @@ function filterComments(comments: CommentInfo[], unreadOnly: boolean): CommentIn
             }
         }
         return false;
-    }
+    };
 
     for (const comment of comments) {
         const need = needShow(comment);

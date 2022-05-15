@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import styles from './SignInPage.module.css'
+import styles from './SignInPage.module.css';
 import {useForm, SubmitHandler} from 'react-hook-form';
 import {useAppState} from '../AppState/AppState';
 import {useLocation, useNavigate} from 'react-router-dom';
@@ -8,7 +8,7 @@ import {APIError} from '../API/APIBase';
 type SignInForm = {
     username: string;
     password: string;
-}
+};
 
 export default function SignInPage() {
     const { api } = useAppState();
@@ -20,7 +20,7 @@ export default function SignInPage() {
     document.title = 'Вход';
 
     const { register, handleSubmit, formState: { errors, isValid } } = useForm<SignInForm>({
-        mode: "onChange"
+        mode: 'onChange'
     });
 
     const onSubmit: SubmitHandler<SignInForm> = data => {
@@ -39,7 +39,7 @@ export default function SignInPage() {
                     }
                 }
 
-                setError('Произошла чудовищная ошибка, попробуйте позже.')
+                setError('Произошла чудовищная ошибка, попробуйте позже.');
             });
     };
 
@@ -47,14 +47,14 @@ export default function SignInPage() {
         <div className={styles.signup}>
             <form onSubmit={handleSubmit(onSubmit)}>
                 <label>Юзернейм</label>
-                <input type="text" {...register("username", {
-                    required: "Кто ты без юзернейма?"
+                <input type="text" {...register('username', {
+                    required: 'Кто ты без юзернейма?'
                 })} />
                 {errors.username && <p className={styles.error}>{errors.username.message}</p>}
 
                 <label>Пароль</label>
-                <input type="password" {...register("password", {
-                    required: "Дальше вы не пройдёте, пока не покажете бумаги"
+                <input type="password" {...register('password', {
+                    required: 'Дальше вы не пройдёте, пока не покажете бумаги'
                 })} />
                 {errors.password && <p className={styles.error}>{errors.password.message}</p>}
 
@@ -62,5 +62,5 @@ export default function SignInPage() {
                 {error && <p className={styles.error}>{error}</p>}
             </form>
         </div>
-    )
+    );
 }

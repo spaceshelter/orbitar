@@ -140,7 +140,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
                 readFile(file);
             }
         }
-    }
+    };
 
     const handleLoadVideo = () => {
         setUploadEnabled(true);
@@ -195,7 +195,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
                         .catch(error => {
                             console.error('UPLOAD FAILED', error, file.type);
                             toast.error('Произошла ошибка при загрузке 🥺');
-                        })
+                        });
                 }
                 else {
                     response.text().then(text => {
@@ -216,7 +216,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
 
     const handleOverlayClick = () => {
         props.onCancel();
-    }
+    };
 
     return (
         <>
@@ -241,5 +241,5 @@ export default function MediaUploader(props: MediaUploaderProps) {
                 <div className={styles.disclaimer}>Загрузка картинок и видео в тестовом режиме, если не работает - сорян!</div>
             </div>
         </>
-    )
+    );
 }

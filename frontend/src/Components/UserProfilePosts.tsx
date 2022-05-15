@@ -3,12 +3,12 @@ import {useAppState} from '../AppState/AppState';
 import styles from '../Pages/FeedPage.module.scss';
 import PostComponent from '../Components/PostComponent';
 import Paginator from '../Components/Paginator';
-import {Link, useMatch, useSearchParams} from 'react-router-dom';
+import {useSearchParams} from 'react-router-dom';
 import {useFeed} from '../API/use/useFeed';
 
 type UserProfilePostsProps = {
   username: string;
-}
+};
 
 export default function UserProfilePosts(props: UserProfilePostsProps) {
 
@@ -17,7 +17,7 @@ export default function UserProfilePosts(props: UserProfilePostsProps) {
     const perpage = 20;
     const page = parseInt(search.get('page') || '1');
 
-    const { posts, loading, pages, error, updatePost } = useFeed(props.username, "user-profile", page, perpage);
+    const { posts, loading, pages, error, updatePost } = useFeed(props.username, 'user-profile', page, perpage);
     useEffect(() => {
         window.scrollTo({ top: 0 });
     }, [page]);
