@@ -84,8 +84,7 @@ a.username {
 
 .listDown {
     flex: 1;
-    overflow: auto;
-
+    overflow: overlay;
 }
 .listScrollContainer {
     display: flex;
