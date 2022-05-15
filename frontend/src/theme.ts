@@ -26,15 +26,18 @@ const themes: ThemeCollection = {
     debugTheme: {
         colors: {
 
-            fg: 'rgba(0,0,0,0.76)',//text color
-            bg: '#efefef',// background
-            primary: '#4d94de', // primary accent for important
+            fg: 'rgba(255,255,255,0.8)',//text color
+            primary: '#58A8BA',// primary accent for important
+            primaryHover: '#51b7cb',
             danger: '#BA5E58',// accent fo negative/dangerous things
+            dangerHover: '#ff8980',
             positive: '#74b65e', // accent for positive things
-            link: '#596cd7',// links
-            linkVisited: '#61194f',
+            link: '#58A8BA',// links
+            linkVisited: '#58A8BA',
+            linkHover: '#53c6de',
+            bg: '#2A2A2A',// background
             shadow: 'rgba(0,0,0,0.15)',// shadows for elevated elements
-            glass: 'rgba(255,255,255,0.7)',// semi-transparent background
+            glass: 'rgba(33,33,33,0.7)',// semi-transparent background
 
 
             // ALL COLORS BELOW ARE DEPRECATED
@@ -140,7 +143,7 @@ const themes: ThemeCollection = {
             linkVisited: '#4d94de',
             linkHover: '#2a74bd',
             shadow: 'rgba(0,0,0,0.15)',// shadows for elevated elements
-            glass: 'rgba(255,255,255,0.7)',// semi-transparent background
+            glass: 'rgba(250,250,250,0.7)',// semi-transparent background
 
 
             // ALL COLORS BELOW ARE DEPRECATED
@@ -250,6 +253,7 @@ const themes: ThemeCollection = {
             linkVisited: '#58A8BA',
             linkHover: '#53c6de',
             bg: '#2A2A2A',
+            //lowered: 'rgba(0,0,0,0.2)',
             shadow: 'rgba(0,0,0,0.15)',
             glass: 'rgba(33,33,33,0.7)',
 
@@ -374,6 +378,9 @@ const preprocessTheme = (theme: ThemeStyles) => {
     colors.fgGhost ??= reduceAlpha( fg, .7);
     colors.fgAlmostInvisible ??= reduceAlpha( fg, .9); //-90% alpha
 
+    colors.onAccent ??= '#fff';
+    colors.onAccentGhost ??= 'rgba(255,255,255,0.7)';
+
     // generate primary variants
     colors.primaryHover ??= increaseSaturation( colors.primary as string, 0.75 );  //+75% saturation
     colors.primaryGhost ??= reduceAlpha( colors.primary as string, .7); //-70% alpha
@@ -393,7 +400,7 @@ const preprocessTheme = (theme: ThemeStyles) => {
     // backgrounds
     const c = isDark ? 255 : 0;
     colors.elevated ??= isDark ? lerpColor( colors.bg as string, '#ffffff', 0.03): '#fff';
-    colors.lowered ??= lerpColor( colors.bg as string, '#000000', 0.03);
+    colors.lowered ??= lerpColor( colors.bg as string, '#000000',  isDark ? 0.2 : 0.06);
     colors.dim1 ??= rgbaToString([c,c,c,0.02]);
     colors.dim2 ??= rgbaToString([c,c,c,0.04]);
     colors.dim3 ??= rgbaToString([c,c,c,0.06]);

@@ -5,7 +5,7 @@
 .content {
     font-size: 16px;
     line-height: 1.5em;
-    color: var(--text-fg);
+    color: var(--fg);
     overflow-wrap: anywhere;
 }
 @media only screen and (max-width: 600px) {
@@ -20,17 +20,17 @@
 .signature {
     font-size: 14px;
     margin-bottom: 4px;
-    color: var(--inactive-fg);
+    color: var(--fgSoftest);
 }
 .signature a {
     text-decoration: none;
-    color: var(--inactive-fg);
+    color: var(--fgSoftest);
 }
 .signature a:hover {
-    color: var(--inactive-fg);
+    color: var(--fgSofter);
 }
 .signature .username {
-    color: var(--text-fg);
+    color: var(--fgSoft);
 }
 .signature .username:hover {
     color: var(--fg);
@@ -40,14 +40,13 @@
     display: flex;
     margin-top: 4px;
     margin-left: -3px;
-    background: var(--controls-bg);
     align-items: center;
 
 }
 
 .controls .control {
     margin-right: 15px;
-    color: var(--inactive-fg);
+    color: var(--fgSofter);
     display: flex;
     align-items: center;
 }
@@ -59,12 +58,12 @@
     padding: 0;
     border: none;
 
-    fill: var(--inactive-fg);
+    fill: var(--fgSoftest);
     display: flex;
     align-items: center;
     font-size: 13px;
 
-    color: var(--inactive-fg);
+    color: var(--fgSoftest);
     text-decoration: none;
 
     font-weight: bold;
@@ -75,7 +74,7 @@
 }
 
 .controls button.active, .controls a.active {
-    fill: var(--active-fg);
+    fill: var(--primary);
     font-weight: bold;
 }
 
@@ -84,11 +83,11 @@
 }
 
 .controls a.active {
-    color: var(--active-fg);
+    color: var(--primary);
 }
 
 .controls button:disabled {
-    fill: var(--disabled-fg);
+    fill: var(--fgGhost);
     cursor: default;
 }
 
@@ -96,7 +95,7 @@
     margin-top: 32px;
     margin-bottom: 32px;
     padding-left: 8px;
-    border-left: 1px solid var(--answer-line-fg);
+    border-left: 1px solid var(--fgAlmostInvisible);
 }
 
 @media only screen and (min-width: 990px) {
@@ -117,7 +116,7 @@
 }
 
 .isNew {
-    border-left: 2px solid var(--active-fg);
+    border-left: 2px solid var(--primary);
     margin-left: -8px;
     padding-left: 8px;
 }
@@ -130,12 +129,12 @@
 
 /* highlight only top level of unread comments */
 .isNew .isNew {
-    border-left: 1px solid var(--answer-line-fg);
+    border-left: 1px solid var(--fgAlmostInvisible);
 }
 
 
 
 .newComment {
-    color: var(--active-fg);
+    color: var(--primary);
     font-style: italic;
 }

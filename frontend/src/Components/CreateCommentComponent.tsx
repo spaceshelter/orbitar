@@ -1,12 +1,13 @@
 import {CommentInfo, PostInfo, PostLinkInfo} from '../Types/PostInfo';
 import React, {useEffect, useRef, useState} from 'react';
-import styles from './CreateCommentComponent.module.css';
+import styles from './CreateCommentComponent.module.scss';
 import postStyles from '../Pages/CreatePostPage.module.css';
 import commentStyles from './CommentComponent.module.css';
 import {ReactComponent as IronyIcon} from '../Assets/irony.svg';
 import {ReactComponent as ImageIcon} from '../Assets/image.svg';
 import {ReactComponent as LinkIcon} from '../Assets/link.svg';
 import {ReactComponent as QuoteIcon} from '../Assets/quote.svg';
+import {ReactComponent as SendIcon} from '../Assets/send.svg';
 import ContentComponent from "./ContentComponent";
 import classNames from "classnames";
 import MediaUploader from './MediaUploader';
@@ -22,7 +23,10 @@ interface CreateCommentProps {
 
 export default function CreateCommentComponent(props: CreateCommentProps) {
     const answerRef = useRef<HTMLTextAreaElement>(null);
-    const [answerText, setAnswerText] = useState<string>(props.comment ? props.comment.author.username + ', ' : '');
+
+    const pronoun = props?.comment?.author?.gender == 1 ? 'ему' : props?.comment?.author?.gender==2 ? 'ей' : '';
+    const [placeholderText, setPlaceholderText] = useState<string>(props.comment ? `Ваш ответ ${pronoun}` : '');
+    const [answerText, setAnswerText] = useState<string>( '');
     const [isPosting, setPosting] = useState(false);
     const [previewing, setPreviewing] = useState<string | null>(null);
     const [mediaUploaderOpen, setMediaUploaderOpen] = useState(false);
@@ -198,13 +202,14 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('img')}><ImageIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('a')}><LinkIcon /></button></div>
             </div>
-            {(previewing === null ) ?
-                <div className={styles.editor}><textarea ref={answerRef} disabled={isPosting} value={answerText} onChange={handleAnswerChange} onKeyDown={handleKeyDown} /></div>
-                    :
-                <div className={classNames(commentStyles.content, styles.preview, postStyles.preview)}><ContentComponent content={previewing} /></div>}
+            {
+                (previewing === null )
+                ?  <div className={styles.editor}><textarea ref={answerRef} disabled={isPosting} placeholder={placeholderText} value={answerText} onChange={handleAnswerChange} onKeyDown={handleKeyDown} /></div>
+                :  <div className={classNames(commentStyles.content, styles.preview, postStyles.preview)} onClick={handlePreview}><ContentComponent content={previewing} /></div>
+            }
             <div className={styles.final}>
                 <button disabled={isPosting || !answerText} className={styles.buttonPreview} onClick={handlePreview}>{(previewing === null) ? "Превью" : "Редактор"}</button>
-                <button disabled={isPosting || !answerText} onClick={handleAnswer}>Пыщь</button>
+                <button disabled={isPosting || !answerText} className={styles.buttonSend} onClick={handleAnswer}><SendIcon /></button>
                 {mediaUploaderOpen && <MediaUploader onSuccess={handleMediaUpload} onCancel={handleMediaUploadCancel} />}
             </div>
         </div>

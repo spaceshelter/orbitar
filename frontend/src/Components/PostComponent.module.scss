@@ -90,8 +90,8 @@
             fill: var(--primaryHover);
         }
         &:disabled {
-            color: var(--disabled-fg);
-            fill: var(--disabled-fg);
+            color: var(--fgGhost);
+            fill: var(--fgGhost);
             cursor: default;
         }
     }

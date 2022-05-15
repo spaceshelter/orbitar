@@ -49,17 +49,20 @@
       border: solid 1px var(--dim3);
     }
     &.elevated{
-      box-shadow: 0 0 1px var(--shadow), 0 0 8px var(--shadow);
+      box-shadow: 0 0 1px var(--shadow), 0 0 16px var(--shadow);
     }
     &.lowered{
-      box-shadow: inset 0 0 1px var(--shadow), inset 0 0 8px var(--shadow);
+      box-shadow: inset 0 0 1px var(--shadow), inset 0 0 4px var(--shadow);
     }
   }
 
   .row{
     display: flex;
+    align-items: center;
     gap: 8px;
-    margin-bottom: 8px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-bottom: 2px;
   }
 
   .sample{
@@ -72,7 +75,7 @@
 
   $colors:
     fgHardest, fgHarder, fgHard, fg, fgMedium, fgSoft, fgSofter, fgSoftest, fgGhost, fgAlmostInvisible, bg,
-    primary, primaryHover, primaryGhost,
+    primary, primaryHover, primaryGhost, onAccent,
     danger, dangerHover, dangerGhost,
     positive, positiveHover, positiveGhost,
     link, linkVisited, linkHover, linkGhost;
@@ -85,6 +88,7 @@
   }
 
   .lowered{ background-color: var(--lowered); }
+  .lowered2{ background-color: var(--lowered2); }
   .elevated{ background-color: var(--elevated); }
   .dim1{ background-color: var(--dim1); }
   .dim2{ background-color: var(--dim2); }

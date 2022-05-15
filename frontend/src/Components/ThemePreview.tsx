@@ -18,6 +18,8 @@ export function ThemePreview (){
                     <div className='row'><div className='fgSoftest bgr sample'></div><div className='clr fgSoftest'>fgSoftest</div></div>
                     <div className='row'><div className='fgGhost bgr sample'></div><div className='clr fgGhost'>fgGhost</div></div>
                     <div className='row'><div className='fgAlmostInvisible bgr sample'></div><div className='clr fgAlmostInvisible'>fgAlmostInvisible</div></div>
+                    <hr/>
+                    <div className='row bgr primary'><div className='onAccent bgr sample'></div><div className='onAccent clr'>onAccent</div></div>
             </div>
             <div className='section'>
                     <div className="label">Accents</div>
