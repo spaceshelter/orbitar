@@ -2,26 +2,30 @@
   max-height: fit-content;
 
   &.cut {
-    max-height: 500px;
+    max-height: 650px;
     overflow: hidden;
+    -webkit-mask-image: -webkit-gradient(linear, left 70%, left 90%, from(rgba(0,0,0,1)), to(rgba(0,0,0,0)));
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 70%, rgba(0,0,0,0) 90%);
   }
+
 }
 
 .cutCover {
-  background: linear-gradient(0deg, var(--bg) 0%, var(--bg) 20%, var(--bgTransparent) 90%, var(--bgTransparent) 100%);
-  height: 70px;
-  margin-top: -70px;
   position: relative;
 }
 
 .cutButton {
   position: absolute;
-  bottom: 0;
+  bottom: 8px;
   left: 0;
-  background: var(--bg);
+  background: var(--dim2);
   color: var(--fgMedium);
-  border: 1px solid var(--dim3);
+  border: none;
+  //border: 1px solid var(--dim3);
   padding: 8px;
   border-radius: 4px;
   font-size: 15px;
+  &:hover{
+    background: var(--dim3);
+  }
 }
