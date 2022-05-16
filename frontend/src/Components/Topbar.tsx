@@ -36,6 +36,9 @@ export default function Topbar(props: TopbarProps) {
             setTheme('light');
         }
         else {
+            if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
+                if (theme === 'light') { setTheme('debugTheme'); return;  }
+            }
             setTheme('dark');
         }
     };

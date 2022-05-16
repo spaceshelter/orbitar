@@ -1,5 +1,5 @@
 import {CommentInfo, PostLinkInfo} from '../Types/PostInfo';
-import styles from './CommentComponent.module.css';
+import styles from './CommentComponent.module.scss';
 import RatingSwitch from './RatingSwitch';
 import Username from './Username';
 import {Link} from 'react-router-dom';

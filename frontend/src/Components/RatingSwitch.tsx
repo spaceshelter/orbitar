@@ -64,8 +64,12 @@ export default function RatingSwitch(props: RatingSwitchProps) {
             ny = y - 8 - ph;
         }
         let nx = x;
-        if (nx + pw > document.documentElement.scrollWidth / 2) {
-            nx = x + w - pw;
+        if (nx + 8 + pw > document.documentElement.scrollWidth) {
+            if (x+w+8>pw) {
+                nx = x + w - pw;
+            } else {
+                nx = 8;
+            }
         }
 
         popupEl.style.left = (nx) + 'px';

@@ -1,58 +1,43 @@
-import {ThemeCollection} from './Theme/ThemeProvider';
+import {ThemeCollection, ThemeStyles} from './Theme/ThemeProvider';
+import rgba from 'color-normalize';
+import colorspace from 'color-space';
 
-const theme: ThemeCollection = {
+/**
+
+Each theme is defined using key colors
+
+- fg             body text color
+- bg             main background
+- primary        main accent color
+- danger         accent fo negative/dangerous things
+- positive       accent for positive things
+- link
+- linkVisited
+- shadow         shadows for elevated elements
+- glass          semi-transparent background
+
+All other color variants are generated automatically (if not defined manually)
+preview of all theme colors is available at http://orbitar.local/theme
+
+
+*/
+
+const themes: ThemeCollection = {
     debugTheme: {
         colors: {
-            // foreground (text colors and more)
-            fgHardest: '#ffffff',
-            fgHarder: 'rgba(255,255,255,0.9)',
-            fgHard: 'rgba(255,255,255,0.8)',
-            fg: 'rgba(255,255,255,0.7)',
-            fgMedium: 'rgba(255,255,255,0.65)',
-            fgSoft: 'rgba(255,255,255,0.6)',
-            fgSofter: 'rgba(255,255,255,0.45)',
-            fgSoftest: 'rgba(255,255,255,0.3)',
-            fgGhost: 'rgba(255,255,255,0.2)',
-            fgAlmostInvisible: 'rgba(255,255,255,0.1)',
 
-            // primary accent
-            primary: '#58A8BA',
-            primaryHover: '#45d3f8',
-            primaryGhost: 'rgba(88,168,186,0.3)',
-
-            // accent fo negative/dangerous things
-            danger: '#BA5E58',
+            fg: 'rgba(255,255,255,0.8)',//text color
+            primary: '#7aba58',// primary accent for important
+            primaryHover: '#9bd57d',
+            danger: '#BA5E58',// accent fo negative/dangerous things
             dangerHover: '#ff8980',
-            dangerGhost: 'rgba(186,94,88,0.3)',
-
-            // accent for positive things
-            positive: '#74b65e',
-            positiveHover: '#74b65e',
-            positiveGhost: 'rgba(116,182,94,0.3)',
-
-            // links
-            link: '#e229ac',
-            linkHover: '#e229ac',
-            linkVisited: '#e229ac',
-            linkGhost: 'rgba(68,164,255,0.3)',
-
-            // background
-            bg: '#031c2b',
-
-            //background modification
-            dim1: 'rgba(255,255,255,0.03)',
-            dim2: 'rgba(255,255,255,0.06)',
-            dim3: 'rgba(255,255,255,0.12)',
-
-            // Shadows for elevated elements
-            shadow: 'rgba(0,0,0,0.3)',
-
-            // semi-transparent background
-            glass: 'rgba(3,28,43,0.7)',
-
-            // rise1: 'rgba(0,0,0,0.5)',
-            // brighten1: 'rgba(255,255,255,0.06)',
-            // brighten2: 'rgba(255,255,255,0.12)',
+            positive: '#74b65e', // accent for positive things
+            link: '#7aba58',// links
+            linkVisited: '#7aba58',
+            linkHover: '#9bd57d',
+            bg: '#102f2f',// background
+            shadow: 'rgba(0,0,0,0.15)',// shadows for elevated elements
+            glass: 'rgba(16,42,39,0.7)',// semi-transparent background
 
 
             // ALL COLORS BELOW ARE DEPRECATED
@@ -145,59 +130,20 @@ const theme: ThemeCollection = {
 
         },
     },
-
-
     light: {
         colors: {
-            // foreground (text colors and more)
-
-            fgHardest: '#000000',
-            fgHarder: 'rgba(0,0,0,0.9)',
-            fgHard: 'rgba(0,0,0,0.8)',
-            fg: 'rgba(0,0,0,0.7)',
-            fgMedium: 'rgba(0,0,0,0.65)',
-            fgSoft: 'rgba(0,0,0,0.6)',
-            fgSofter: 'rgba(0,0,0,0.45)',
-            fgSoftest: 'rgba(0,0,0,0.3)',
-            fgGhost: 'rgba(0,0,0,0.2)',
-            fgAlmostInvisible: 'rgba(0,0,0,0.1)',
-
-
-            // primary accent
-            primary: '#3992E4',
-            primaryHover: '#4aabff',
-            primaryGhost: 'rgba(74,171,255,0.3)',
-
-            // accent fo negative/dangerous things
-            danger: '#ED6158',
-            dangerHover: '#ff8980',
-            dangerGhost: 'rgba(255,137,128,0.3)',
-
-            // accent for positive things
-            positive: '#74b65e',
-            positiveHover: '#74b65e',
-            positiveGhost: 'rgba(116,182,94,0.3)',
-
-            // links
-            link: '#44a4ff',
-            linkVisited: '#44a4ff',
+            fg: 'rgba(0,0,0,0.76)',//text color
+            bg: '#efefef',// background
+            primary: '#4d94de', // primary accent for important
+            danger: '#ED6158',// accent fo negative/dangerous things
+            dangerHover: '#ce4c42',
+            positive: '#74b65e', // accent for positive things
+            positiveHover: '#559742',
+            link: '#4d94de',// links
+            linkVisited: '#4d94de',
             linkHover: '#2a74bd',
-            linkGhost: 'rgba(68,164,255,0.3)',
-
-            // background
-            bg: '#ffffff',
-            bgTransparent: 'rgba(255,255,255,0)',
-
-            //background modification
-            dim1: 'rgba(0,0,0,0.03)',
-            dim2: 'rgba(0,0,0,0.06)',
-            dim3: 'rgba(0,0,0,0.12)',
-
-            // Shadows for elevated elements
-            shadow: '#000000',
-
-            // semi-transparent background
-            glass: 'rgba(255,255,255,0.7)',
+            shadow: 'rgba(0,0,0,0.15)',// shadows for elevated elements
+            glass: 'rgba(250,250,250,0.7)',// semi-transparent background
 
 
             // ALL COLORS BELOW ARE DEPRECATED
@@ -219,9 +165,7 @@ const theme: ThemeCollection = {
             'rating-list-border': 'rgba(0, 0, 0, 0.2)',
             'rating-list-votes-bg': 'rgba(0, 0, 0, 0.03)',
             'scrollbar-track-bg': '#d9d9d9',
-
             'popup-bg': '#ffffff',
-
             'notification-date-fg': 'rgba(0, 0, 0, 0.6)',
             'notification-text-fg': 'rgba(0, 0, 0, 0.8)',
             'notification-delimiter-fg': 'rgba(0, 0, 0, 0.12)',
@@ -299,54 +243,19 @@ const theme: ThemeCollection = {
 
     dark: {
         colors: {
-            // foreground (text colors and more)
-            fgHardest: '#ffffff',
-            fgHarder: 'rgba(255,255,255,0.9)',
-            fgHard: 'rgba(255,255,255,0.85)',
             fg: 'rgba(255,255,255,0.8)',
-            fgMedium: 'rgba(255,255,255,0.7)',
-            fgSoft: 'rgba(255,255,255,0.6)',
-            fgSofter: 'rgba(255,255,255,0.5)',
-            fgSoftest: 'rgba(255,255,255,0.4)',
-            fgGhost: 'rgba(255,255,255,0.3)',
-            fgAlmostInvisible: 'rgba(255,255,255,0.1)',
-
-            // primary accent
             primary: '#58A8BA',
             primaryHover: '#51b7cb',
-            primaryGhost: 'rgba(88,168,186,0.3)',
-
-            // accent fo negative/dangerous things
             danger: '#BA5E58',
             dangerHover: '#ff8980',
-            dangerGhost: 'rgba(186,94,88,0.3)',
-
-            // accent for positive things
             positive: '#74b65e',
-            positiveHover: '#74b65e',
-            positiveGhost: 'rgba(116,182,94,0.3)',
-
-            // links
             link: '#58A8BA',
             linkVisited: '#58A8BA',
-            linkHover: '#4fb0c6',
-            linkGhost: 'rgba(68,164,255,0.3)',
-
-            // background
-            bg: 'rgba(42,42,42,1)',
-            bgTransparent: 'rgba(42,42,42,0)',
-
-            //background modification
-            dim1: 'rgba(255,255,255,0.03)',
-            dim2: 'rgba(255,255,255,0.06)',
-            dim3: 'rgba(255,255,255,0.12)',
-
-            // Shadows for elevated elements
-            shadow: 'rgba(0,0,0,0.3)',
-
-            // semi-transparent background
+            linkHover: '#53c6de',
+            bg: '#2A2A2A',
+            //lowered: 'rgba(0,0,0,0.2)',
+            shadow: 'rgba(0,0,0,0.15)',
             glass: 'rgba(33,33,33,0.7)',
-
 
             // ALL COLORS BELOW ARE DEPRECATED
 
@@ -368,13 +277,10 @@ const theme: ThemeCollection = {
             'rating-list-border': 'rgba(255, 255, 255, 0.2)',
             'rating-list-votes-bg': 'rgba(255, 255, 255, 0.03)',
             'scrollbar-track-bg': '#535353',
-
             'popup-bg': '#363636',
-
             'notification-date-fg': 'rgba(255, 255, 255, 0.6)',
             'notification-text-fg': 'rgba(255, 255, 255, 0.8)',
             'notification-delimiter-fg': 'rgba(255, 255, 255, 0.12)',
-
             'highlight-bg': 'rgba(255, 255, 255, 0.03)',
 
             topbar: {
@@ -445,4 +351,99 @@ const theme: ThemeCollection = {
     },
 };
 
-export default theme;
+
+export const getThemes = () => {
+    Object.values(themes).map( preprocessTheme );
+    return themes;
+};
+
+// GENERATE THEME
+const preprocessTheme = (theme: ThemeStyles) => {
+    const colors = theme.colors;
+
+    //detect if this is dark theme or light theme
+    const fg = colors.fg as string;
+    const isDark: boolean = hsl(fg).l > 0.5;
+
+    // generate harder versions of foreground color
+    colors.fgHardest ??= isDark ? '#fff':'#000';
+    colors.fgHard ??= lerpColor(fg, colors.fgHardest as string, .33 );
+    colors.fgHarder ??= lerpColor(fg, colors.fgHardest as string, .66 );
+
+    // generate softer versions of foreground color
+    colors.fgMedium ??= reduceAlpha( fg, .2);  //-10% alpha
+    colors.fgSoft ??= reduceAlpha( fg, .3);
+    colors.fgSofter ??= reduceAlpha( fg, .4);
+    colors.fgSoftest ??= reduceAlpha( fg, .5);
+    colors.fgGhost ??= reduceAlpha( fg, .7);
+    colors.fgAlmostInvisible ??= reduceAlpha( fg, .9); //-90% alpha
+
+    colors.onAccent ??= '#fff';
+    colors.onAccentGhost ??= 'rgba(255,255,255,0.7)';
+
+    // generate primary variants
+    colors.primaryHover ??= increaseSaturation( colors.primary as string, 0.75 );  //+75% saturation
+    colors.primaryGhost ??= reduceAlpha( colors.primary as string, .7); //-70% alpha
+
+    // generate danger variants
+    colors.dangerHover ??= increaseSaturation( colors.danger as string, 0.75 );
+    colors.dangerGhost ??= reduceAlpha( colors.danger as string, .7);
+
+    // generate positive variants
+    colors.positiveHover ??= increaseSaturation( colors.positive as string, 0.75 );
+    colors.positiveGhost ??= reduceAlpha( colors.positive as string, .7);
+
+    // generate link variants
+    colors.linkHover ??= increaseSaturation( colors.link as string, 0.75 );
+    colors.linkGhost ??= reduceAlpha( colors.link as string, .7);
+
+    // backgrounds
+    const c = isDark ? 255 : 0;
+    colors.elevated ??= isDark ? lerpColor( colors.bg as string, '#ffffff', 0.03): '#fff';
+    colors.lowered ??= lerpColor( colors.bg as string, '#000000',  isDark ? 0.2 : 0.03 );
+    colors.dim1 ??= rgbaToString([c,c,c,0.02]);
+    colors.dim2 ??= rgbaToString([c,c,c,0.04]);
+    colors.dim3 ??= rgbaToString([c,c,c,0.06]);
+};
+
+const reduceAlpha = (c: string, r: number): string => {
+    const [red,g,b,a] = rgba(c);
+    return rgbaToString( [red,g,b, lerp(a,0,r)]);
+};
+
+const increaseSaturation = (c: string, r: number): string => {
+    const p = hsl(c);
+    p.s = lerp(p.s, 1, r);
+    return HSLtoRGBString(p);
+};
+
+const lerp = (a: number, b: number, r: number) =>  a + Math.min(Math.max(r,0),1) * (b-a);
+
+const lerpColor = (a: string, b: string, r: number) => {
+    const c1 = rgba( a );
+    const c2 = rgba( b );
+    const bal = Math.min(Math.max(r,0),1);
+    const res = [
+        c1[0] + bal * (c2[0]-c1[0]),
+        c1[1] + bal * (c2[1]-c1[1]),
+        c1[2] + bal * (c2[2]-c1[2]),
+        c1[3] + bal * (c2[3]-c1[3])
+    ];
+    return rgbaToString(res);
+};
+
+const rgbaToString = (color: number[]): string => {
+    return `rgba(${Math.floor(color[0] * 255)}, ${Math.floor(color[1] * 255)}, ${Math.floor(color[2] * 255)}, ${color[3].toFixed(2).replace(/\.?0+$/, '')})`;
+};
+
+type HSL = { h: number, s: number, l: number };
+const hsl = (color: string): HSL => {
+    const [r,g,b] = rgba(color);
+    const hsl = colorspace.rgb.hsl([r * 255, g * 255, b * 255]);
+    return { h: hsl[0] / 360, s: hsl[1] / 100, l: hsl[2] / 100 };
+};
+
+const HSLtoRGBString = (c: HSL): string => {
+    const rgb = colorspace.hsl.rgb([c.h * 360, c.s * 100, c.l * 100]);
+    return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+};

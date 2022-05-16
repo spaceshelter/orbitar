@@ -29,10 +29,13 @@
 
 
 .signature {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     font-size: 14px;
     margin-bottom: 10px;
     color: var(--fgSoftest);
-    a {
+    >a {
         text-decoration: none;
         color: var(--fgSoftest);
         &:hover {
@@ -40,9 +43,11 @@
         }
     }
     .username {
-        color: var(--fgSoft);
+        color: var(--fgMedium);
+        svg{ fill: var(--fgSoftest); }
         &:hover {
-            color: var(--fg);
+            color: var(--primary);
+            svg{  fill: var(--primary); }
         }
     }
 }
@@ -53,16 +58,15 @@
     margin-top: 8px;
     margin-left: -4px;
     align-items: center;
-    overflow-x: hidden;
+    overflow-x: visible;
 }
 
 .control {
     margin-right: 30px;
-    color: var(--fgSofter);
     display: flex;
     align-items: center;
 
-    button, a {
+    button, >a {
         height: 24px;
         min-width: 24px;
         background: none;
@@ -90,13 +94,14 @@
             fill: var(--primaryHover);
         }
         &:disabled {
-            color: var(--disabled-fg);
-            fill: var(--disabled-fg);
+            color: var(--fgGhost);
+            fill: var(--fgGhost);
             cursor: default;
         }
     }
 
     .label {
+        color: var(--fgSofter);
         margin-left: 5px;
     }
 
@@ -109,8 +114,6 @@
 }
 
 
-// TODO fix on mobile
-// TODO should not have scroll
 .optionsList {
     position: absolute;
     left: 30px;

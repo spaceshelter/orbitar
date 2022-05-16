@@ -3,17 +3,17 @@
 }
 
 .page {
-    border-radius: 6px;
+    border-radius: 4px;
     padding: 6px;
     min-width: 20px;
     display: inline-block;
     text-align: center;
     margin: 0 5px;
     text-decoration: none;
-    color: var(--inactive-fg);
+    color: var(--fgSofter);
 }
 
 .current, .page:hover {
-    color: var(--active-fg);
+    color: var(--primary);
     font-weight: bold;
 }

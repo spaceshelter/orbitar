@@ -1,3 +1,8 @@
 .username {
-    color: var(--username-fg);
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+}
+.username svg{
+    fill:  var(--primary);
 }

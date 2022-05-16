@@ -6,6 +6,7 @@
 
 .feed {
 
+    transition-duration: 0s;
 }
 
 .comments {
@@ -13,10 +14,11 @@
 }
 
 .postButtons {
-    background: var(--item-bg);
     margin: 30px 0;
     border-radius: 6px;
     font-size: 14px;
+    transition-duration: 0s;
+    color: var(--fgSoftest);
 }
 
 .postButtons a {
@@ -28,6 +30,6 @@
 }
 
 .error {
-    color: red;
+    color: var(--danger);
     margin: 20px;
 }
