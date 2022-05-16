@@ -27,17 +27,17 @@ const themes: ThemeCollection = {
         colors: {
 
             fg: 'rgba(255,255,255,0.8)',//text color
-            primary: '#58A8BA',// primary accent for important
-            primaryHover: '#51b7cb',
+            primary: '#7aba58',// primary accent for important
+            primaryHover: '#9bd57d',
             danger: '#BA5E58',// accent fo negative/dangerous things
             dangerHover: '#ff8980',
             positive: '#74b65e', // accent for positive things
-            link: '#58A8BA',// links
-            linkVisited: '#58A8BA',
-            linkHover: '#53c6de',
-            bg: '#2A2A2A',// background
+            link: '#7aba58',// links
+            linkVisited: '#7aba58',
+            linkHover: '#9bd57d',
+            bg: '#102f2f',// background
             shadow: 'rgba(0,0,0,0.15)',// shadows for elevated elements
-            glass: 'rgba(33,33,33,0.7)',// semi-transparent background
+            glass: 'rgba(16,42,39,0.7)',// semi-transparent background
 
 
             // ALL COLORS BELOW ARE DEPRECATED
@@ -400,7 +400,7 @@ const preprocessTheme = (theme: ThemeStyles) => {
     // backgrounds
     const c = isDark ? 255 : 0;
     colors.elevated ??= isDark ? lerpColor( colors.bg as string, '#ffffff', 0.03): '#fff';
-    colors.lowered ??= lerpColor( colors.bg as string, '#000000',  isDark ? 0.2 : 0.06);
+    colors.lowered ??= lerpColor( colors.bg as string, '#000000',  isDark ? 0.2 : 0.03 );
     colors.dim1 ??= rgbaToString([c,c,c,0.02]);
     colors.dim2 ??= rgbaToString([c,c,c,0.04]);
     colors.dim3 ??= rgbaToString([c,c,c,0.06]);
@@ -438,8 +438,8 @@ const rgbaToString = (color: number[]): string => {
 
 type HSL = { h: number, s: number, l: number };
 const hsl = (color: string): HSL => {
-    const rgb = rgba(color);
-    const hsl = colorspace.rgb.hsl([rgb[0] * 255, rgb[1] * 255, rgb[2] * 255]);
+    const [r,g,b] = rgba(color);
+    const hsl = colorspace.rgb.hsl([r * 255, g * 255, b * 255]);
     return { h: hsl[0] / 360, s: hsl[1] / 100, l: hsl[2] / 100 };
 };
 

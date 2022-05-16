@@ -20,7 +20,7 @@ import {ReactComponent as MonsterIcon} from './Assets/monster_large.svg';
 import {useTheme} from './Theme/ThemeProvider';
 import SiteSidebar from './Components/SiteSidebar';
 import WatchPage from './Pages/WatchPage';
-import ThemePreviewPage from "./Pages/ThemePreviewPage";
+import ThemePreviewPage from './Pages/ThemePreviewPage';
 
 export default function App() {
     const {appState} = useAppState();

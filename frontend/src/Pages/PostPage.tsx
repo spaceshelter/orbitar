@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import styles from './PostPage.module.css';
-import commentStyles from '../Components/CommentComponent.module.css';
+import commentStyles from '../Components/CommentComponent.module.scss';
 import {Link, useLocation, useParams, useSearchParams} from 'react-router-dom';
 import {CommentInfo, PostLinkInfo} from '../Types/PostInfo';
 import PostComponent from '../Components/PostComponent';

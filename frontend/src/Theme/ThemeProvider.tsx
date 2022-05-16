@@ -75,7 +75,7 @@ export function ThemeProvider(props: ThemeProviderProps) {
 
         const setCurrentStyles = (styles: ThemeStyles, transitionTime?: number) => {
             if (!transitionTime) {
-                transitionTime = props.defaultTransitionTime || 300;
+                transitionTime = props.defaultTransitionTime || 0;
             }
             setCurrentStylesActual({ styles, transitionTime });
         };

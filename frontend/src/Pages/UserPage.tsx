@@ -1,5 +1,5 @@
 import React, {useEffect} from 'react';
-import styles from './UserPage.module.css';
+import styles from './UserPage.module.scss';
 import {Link, useLocation, useMatch, useNavigate, useParams} from 'react-router-dom';
 import Username from '../Components/Username';
 import RatingSwitch from '../Components/RatingSwitch';
@@ -67,7 +67,7 @@ export default function UserPage() {
                                 return <span key={idx}><Username  user={user}/>{idx < profile.invites.length - 1 ? ', ' : ''}</span>;
                             })}
                         </div>}
-                        { isMyProfile && <button className={styles.logout} onClick={handleLogout}><LogoutIcon /> Эвакуация. A-A-A-A! </button> }
+                        { isMyProfile && <button className={styles.logout} onClick={handleLogout}><LogoutIcon /> Выход </button> }
                     </>}
                     {isPosts && <UserProfilePosts username={user.username} />}
                     {isComments && <UserProfileComments username={user.username} />}

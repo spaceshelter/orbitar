@@ -13,6 +13,7 @@
 
 .feedControls {
     margin: 20px 0;
+    color: var(--fgSoftest);
 }
 
 .feedControls a {
@@ -24,4 +25,8 @@
 
 .loading {
 
+}
+
+.posts>div{
+    color: var(--fg);
 }

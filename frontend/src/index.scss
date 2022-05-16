@@ -15,6 +15,22 @@ html,body {
   height: 100%;
 }
 
+svg{
+  transition: fill 300ms ease-out;
+}
+*{
+  //
+  transition-duration: 300ms;
+  transition-timing-function: ease-out;
+  transition-property: color, background-color;
+
+  //transition:
+  //    color 200ms ease-in-out,
+  //    background-color 200ms ease-in-out,
+  //    fill 100ms ease-in-out;
+
+}
+
 input[type="text"], input[type="password"], input[type="email"], textarea {
   background: var(--lowered);
   box-shadow: inset 0 0 2px var(--shadow);
