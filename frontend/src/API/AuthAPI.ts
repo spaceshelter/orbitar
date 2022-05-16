@@ -15,14 +15,14 @@ type StatusResponse = {
     notifications: number;
 };
 
-type SignInRequest = {};
+type SignInRequest = Record<string, unknown>;
 type SignInResponse = {
     session: string;
     user: UserInfo;
 };
 
-type SignOutRequest = {};
-type SignOutResponse = {};
+type SignOutRequest = Record<string, unknown>;
+type SignOutResponse = Record<string, unknown>;
 
 export default class AuthAPI {
     private api: APIBase;

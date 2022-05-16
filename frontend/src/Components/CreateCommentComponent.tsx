@@ -1,4 +1,4 @@
-import {CommentInfo, PostInfo, PostLinkInfo} from '../Types/PostInfo';
+import {CommentInfo, PostLinkInfo} from '../Types/PostInfo';
 import React, {useEffect, useRef, useState} from 'react';
 import styles from './CreateCommentComponent.module.css';
 import postStyles from '../Pages/CreatePostPage.module.css';
@@ -7,8 +7,8 @@ import {ReactComponent as IronyIcon} from '../Assets/irony.svg';
 import {ReactComponent as ImageIcon} from '../Assets/image.svg';
 import {ReactComponent as LinkIcon} from '../Assets/link.svg';
 import {ReactComponent as QuoteIcon} from '../Assets/quote.svg';
-import ContentComponent from "./ContentComponent";
-import classNames from "classnames";
+import ContentComponent from './ContentComponent';
+import classNames from 'classnames';
 import MediaUploader from './MediaUploader';
 
 interface CreateCommentProps {
@@ -34,8 +34,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     };
 
     const replaceText = (text: string, cursor: number) => {
-        console.log('repl', text, cursor);
-        const answer = answerRef.current!;
+        const answer = answerRef.current;
         if (!answer) {
             return;
         }
@@ -60,7 +59,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             return;
         }
 
-        const answer = answerRef.current!;
+        const answer = answerRef.current;
         if (!answer) {
             return;
         }
@@ -120,7 +119,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     };
 
     useEffect(() => {
-        const answer = answerRef.current!;
+        const answer = answerRef.current;
         if (props.comment && props.open && answer) {
             answer.focus();
             answer.selectionStart = answer.value.length;
@@ -144,7 +143,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         } finally {
             setPosting(false);
         }
-    }
+    };
 
     const handleAnswer = () => {
         setPosting(true);
@@ -169,11 +168,11 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         setMediaUploaderOpen(false);
         if (type === 'image') {
             // noinspection HtmlRequiredAltAttribute
-            const text = `<img src="${uri}"/>`
+            const text = `<img src="${uri}"/>`;
             replaceText(text, text.length);
         }
         else {
-            const text = `<video src="${uri}"/>`
+            const text = `<video src="${uri}"/>`;
             replaceText(text, text.length);
         }
     };
@@ -203,7 +202,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                     :
                 <div className={classNames(commentStyles.content, styles.preview, postStyles.preview)}><ContentComponent content={previewing} /></div>}
             <div className={styles.final}>
-                <button disabled={isPosting || !answerText} className={styles.buttonPreview} onClick={handlePreview}>{(previewing === null) ? "Превью" : "Редактор"}</button>
+                <button disabled={isPosting || !answerText} className={styles.buttonPreview} onClick={handlePreview}>{(previewing === null) ? 'Превью' : 'Редактор'}</button>
                 <button disabled={isPosting || !answerText} onClick={handleAnswer}>Пыщь</button>
                 {mediaUploaderOpen && <MediaUploader onSuccess={handleMediaUpload} onCancel={handleMediaUploadCancel} />}
             </div>

@@ -6,17 +6,17 @@ type VoteSetRequest = {
     type: VoteType;
     id: number;
     vote: number;
-}
+};
 type VoteSetResponse = {
     type: VoteType;
     id: number;
     rating: number;
     vote?: number;
-}
+};
 type VoteListRequest = {
     type: VoteType;
     id: number;
-}
+};
 type VoteListResponse = {
     type: VoteType;
     id: number;
@@ -25,7 +25,7 @@ type VoteListResponse = {
         vote: number;
         username: string;
     }[]
-}
+};
 
 export default class VoteAPI {
     private api: APIBase;

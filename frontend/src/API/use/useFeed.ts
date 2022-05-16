@@ -19,7 +19,7 @@ export function useFeed(id: string, feedType: FeedType, page: number, perpage: n
             if (!posts) {
                 return;
             }
-            let postIndex = posts.findIndex(p => p.id === id);
+            const postIndex = posts.findIndex(p => p.id === id);
             if (postIndex !== -1) {
                 const newPost = {...posts[postIndex], ...partial};
                 const newPosts = [...posts];

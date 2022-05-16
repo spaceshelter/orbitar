@@ -30,7 +30,7 @@ type ThemeProviderProps = {
     initialTheme?: string;
     defaultTransitionTime?: number;
     children: ReactNode;
-}
+};
 
 export function ThemeProvider(props: ThemeProviderProps) {
     const [theme, setThemeActual] = useState<string>();
@@ -60,7 +60,7 @@ export function ThemeProvider(props: ThemeProviderProps) {
         const head = document.head || document.getElementsByTagName('head')[0];
         const style = document.createElement('style');
         head.appendChild(style);
-        style.appendChild(document.createTextNode(''))
+        style.appendChild(document.createTextNode(''));
         return style;
     }, []);
 
@@ -92,7 +92,7 @@ export function ThemeProvider(props: ThemeProviderProps) {
                 storeTheme(theme, currentStyles.styles);
             }
         }
-    }, [props.themeCollection, theme, currentStyles])
+    }, [props.themeCollection, theme, currentStyles]);
 
     useEffect(() => {
         if (!currentStyles) {
@@ -111,7 +111,7 @@ export function ThemeProvider(props: ThemeProviderProps) {
         <ThemeContext.Provider value={{ theme, setTheme, currentStyles: currentStyles?.styles, setCurrentStyles }}>
             {props.children}
         </ThemeContext.Provider>
-    )
+    );
 }
 
 export function useTheme() {
@@ -147,7 +147,7 @@ type ColorsTransition = {
         to: string;
         toRGB: number[];
     }
-}
+};
 
 function gatherColorsTransition(toStyle: ThemeStyles): ColorsTransition {
     const transition: ColorsTransition = {};
@@ -159,18 +159,12 @@ function gatherColorsTransition(toStyle: ThemeStyles): ColorsTransition {
             return;
         }
         for (const name in color) {
-            if (!color.hasOwnProperty(name)) {
-                continue;
-            }
             colorFlattener(`${key}-${name}`, color[name]);
         }
-    }
+    };
     colorFlattener('-', toStyle.colors);
 
     for (const name in colors) {
-        if (!colors.hasOwnProperty(name)) {
-            continue;
-        }
         const to = colors[name];
         const from = window.getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#ffffff';
         const toRGB = rgba(to);
@@ -187,9 +181,6 @@ function applyColorsTransition(stylesheet: HTMLStyleElement, transition: ColorsT
         const pseudoClassNames = [':before', ':after', ':root'];
         let css = `${pseudoClassNames.join(', ')} {\n`;
         for (const color in transition) {
-            if (!transition.hasOwnProperty(color)) {
-                continue;
-            }
             let value;
 
             if (step >= 1) {
@@ -206,7 +197,7 @@ function applyColorsTransition(stylesheet: HTMLStyleElement, transition: ColorsT
         }
         css += '}\n';
         stylesheet.innerHTML = css;
-    }
+    };
 
     if (!transitionTime) {
         // apply final colors if transitionTime is zero
@@ -228,7 +219,7 @@ function applyColorsTransition(stylesheet: HTMLStyleElement, transition: ColorsT
 
     return () => {
         clearInterval(updateInterval);
-    }
+    };
 }
 
 function blendValues(c1: number[], c2: number[], balance: number) {

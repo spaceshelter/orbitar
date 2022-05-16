@@ -35,16 +35,16 @@ export default function InvitePage() {
             .catch(error => {
                 if (error instanceof APIError) {
                     if (error.code === 'rate-limit') {
-                        setInviteStatus({state: InviteState.rateLimit})
+                        setInviteStatus({state: InviteState.rateLimit});
                         return;
                     }
                     if (error.code === 'invalid-invite') {
-                        setInviteStatus({state: InviteState.used})
+                        setInviteStatus({state: InviteState.used});
                         return;
                     }
                 }
                 setInviteStatus({ state: InviteState.error });
-            })
+            });
     }, [code, api]);
 
     const handleSignUp = (username: string, name: string, email: string, password: string, gender: UserGender) => {
@@ -66,19 +66,19 @@ export default function InvitePage() {
                 console.log('USE ERROR', error);
                 if (error instanceof APIError) {
                     if (error.code === 'rate-limit') {
-                        setInviteStatus({state: InviteState.rateLimit})
+                        setInviteStatus({state: InviteState.rateLimit});
                         return;
                     }
                     if (error.code === 'invalid-invite') {
-                        setInviteStatus({state: InviteState.used})
+                        setInviteStatus({state: InviteState.used});
                         return;
                     }
                     if (error.code === 'username-exists') {
-                        setFormErrors({username: { message: `Юзернеём ${username} уже занят.` }})
+                        setFormErrors({username: { message: `Юзернейм ${username} уже занят.` }});
                         return;
                     }
                 }
-                setFormErrors({submit: { message: `При регистрации произошла какая-то странная ошибка. Может в другой раз повезёт?` }})
+                setFormErrors({submit: { message: `При регистрации произошла какая-то странная ошибка. Может в другой раз повезёт?` }});
             });
     };
 

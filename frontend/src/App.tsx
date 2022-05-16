@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import { Routes, Route, Outlet } from "react-router-dom";
+import { Routes, Route, Outlet } from 'react-router-dom';
 import {Theme, ToastContainer} from 'react-toastify';
 
 import {AppState, useAppState} from './AppState/AppState';
@@ -25,14 +25,14 @@ export default function App() {
     const {appState} = useAppState();
 
     if (appState === AppState.loading) {
-        return <Loading />
+        return <Loading />;
     }
 
     if (appState === AppState.unauthorized) {
         return <Unauthorized />;
     }
 
-    return <Ready />
+    return <Ready />;
 }
 
 function Loading() {
@@ -55,7 +55,7 @@ function Unauthorized() {
             </Routes>
             <ToastContainer theme={theme as Theme} />
         </>
-    )
+    );
 }
 
 function ReadyContainer({ onReload } : {onReload: any}) {
@@ -89,7 +89,7 @@ function ReadyContainer({ onReload } : {onReload: any}) {
             <div className={styles.monster}><MonsterIcon /></div>
             <ToastContainer theme={theme as Theme} />
         </>
-    )
+    );
 }
 
 function Ready() {
@@ -117,5 +117,5 @@ function Ready() {
                 </Route>
             </Routes>
         </>
-    )
+    );
 }

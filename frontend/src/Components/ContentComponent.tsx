@@ -1,6 +1,6 @@
 import React, {useEffect, useRef} from 'react';
 
-interface ContentComponentProps extends React.ComponentPropsWithRef<"div"> {
+interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
     content: string;
 }
 
@@ -37,7 +37,7 @@ function updateImg(img: HTMLImageElement) {
             }
             imageLarge = true;
             img.classList.add('image-preview');
-        }
+        };
     }
 }
 
@@ -55,5 +55,5 @@ export default function ContentComponent(props: ContentComponentProps) {
 
     return (
         <div className={props.className} dangerouslySetInnerHTML={{__html: props.content}} ref={contentDiv} />
-    )
+    );
 }

@@ -30,13 +30,13 @@ export default function DateComponent(props: DateComponentProps) {
         lastWeek: 'D MMMM [в] HH:mm',
         sameElse: () => {
             if (mDate.isBefore(startYear)) {
-                return 'DD.MM.YYYY HH:mm'
+                return 'DD.MM.YYYY HH:mm';
             }
             else {
-                return 'D MMMM [в] HH:mm'
+                return 'D MMMM [в] HH:mm';
             }
         }
     });
 
-    return <>{date}</>
+    return <>{date}</>;
 }
