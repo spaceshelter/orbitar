@@ -11,7 +11,7 @@ import {ReactComponent as SendIcon} from '../Assets/send.svg';
 import ContentComponent from './ContentComponent';
 import classNames from 'classnames';
 import MediaUploader from './MediaUploader';
-import {UserGender} from "../Types/UserInfo";
+import {UserGender} from '../Types/UserInfo';
 
 interface CreateCommentProps {
     open: boolean;
