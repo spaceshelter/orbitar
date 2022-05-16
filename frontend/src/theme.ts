@@ -186,6 +186,7 @@ const theme: ThemeCollection = {
 
             // background
             bg: '#ffffff',
+            bgTransparent: 'rgba(255,255,255,0)',
 
             //background modification
             dim1: 'rgba(0,0,0,0.03)',
@@ -332,7 +333,8 @@ const theme: ThemeCollection = {
             linkGhost: 'rgba(68,164,255,0.3)',
 
             // background
-            bg: '#2A2A2A',
+            bg: 'rgba(42,42,42,1)',
+            bgTransparent: 'rgba(42,42,42,0)',
 
             //background modification
             dim1: 'rgba(255,255,255,0.03)',
