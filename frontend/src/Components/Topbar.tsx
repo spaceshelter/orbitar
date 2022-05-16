@@ -20,6 +20,7 @@ export type TopbarMenuState = 'disabled' | 'open' | 'close';
 type TopbarProps = {
     menuState: TopbarMenuState;
     onMenuToggle: () => void;
+    onReload: () => void;
 }
 
 export default function Topbar(props: TopbarProps) {
@@ -66,7 +67,7 @@ export default function Topbar(props: TopbarProps) {
             <div className={styles.topbar}>
                 <div className={styles.left}>
                     <button className={menuClasses.join(' ')} onClick={menuToggle}><MenuIcon /></button>
-                    <Link to={`//${process.env.REACT_APP_ROOT_DOMAIN}/`}><MonsterIcon /></Link>
+                    <Link to={`//${process.env.REACT_APP_ROOT_DOMAIN}/`} onClick={ props.onReload} ><MonsterIcon /></Link>
                     <Link className={[styles.button, styles.newPost].join(' ')} to="/create"><PostIcon /> <span>Новый пост</span> </Link>
                 </div>
 

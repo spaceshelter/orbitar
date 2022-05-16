@@ -58,7 +58,7 @@ function Unauthorized() {
     )
 }
 
-function ReadyContainer() {
+function ReadyContainer({ onReload } : {onReload: any}) {
     const {theme} = useTheme();
     const {site} = useAppState();
     const [menuState, setMenuState] = useState<TopbarMenuState>(localStorage.getItem('menuState') === 'close' ? 'close' : 'open');
@@ -79,7 +79,7 @@ function ReadyContainer() {
 
     return (
         <>
-            <Topbar menuState={menuState} onMenuToggle={handleMenuToggle} />
+            <Topbar menuState={menuState} onMenuToggle={handleMenuToggle} onReload={onReload} />
             {site && menuState === 'open' && <SiteSidebar site={site} />}
             <div className={styles.container}>
                 <div className={styles.innerContainer}>
@@ -93,13 +93,20 @@ function ReadyContainer() {
 }
 
 function Ready() {
+
+    const [reloadState, setReloadState] = useState(0);
+    
+    const onReload = () => {
+        setReloadState(Date.now());
+    };
+
     return (
         <>
             <Routes>
-                <Route path="/" element={<ReadyContainer />}>
-                    <Route path="" element={<FeedPage />} />
-                    <Route path="posts" element={<FeedPage />} />
-                    <Route path="subscriptions" element={<FeedPage />} />
+                <Route path="/" element={<ReadyContainer onReload={onReload} />}>
+                    <Route path="" element={<FeedPage reloadState={reloadState}  />} />
+                    <Route path="posts" element={<FeedPage reloadState={reloadState} />} />
+                    <Route path="subscriptions" element={<FeedPage reloadState={reloadState} />} />
                     <Route path="post/:postId" element={<PostPage />} />
                     <Route path="user/:username" element={<UserPage />} />
                     <Route path="user/:username/posts" element={<UserPage />} />

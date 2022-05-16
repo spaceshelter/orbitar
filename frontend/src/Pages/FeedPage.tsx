@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {useAppState} from '../AppState/AppState';
 import styles from './FeedPage.module.scss';
 import PostComponent from '../Components/PostComponent';
@@ -6,7 +6,7 @@ import Paginator from '../Components/Paginator';
 import {Link, useMatch, useSearchParams} from 'react-router-dom';
 import {FeedType, useFeed} from '../API/use/useFeed';
 
-export default function FeedPage() {
+export default function FeedPage({reloadState}: {reloadState: number} ) {
     let siteName = 'main';
     if (window.location.hostname !== process.env.REACT_APP_ROOT_DOMAIN) {
         siteName = window.location.hostname.split('.')[0];
@@ -14,7 +14,6 @@ export default function FeedPage() {
 
     const { site } = useAppState();
     const [search] = useSearchParams();
-
     const matchRoutePosts = !!useMatch('/posts');
     const matchRouteSubscriptions = !!useMatch('/subscriptions');
 
@@ -38,7 +37,7 @@ export default function FeedPage() {
     const perpage = 20;
     const page = parseInt(search.get('page') || '1');
 
-    const { posts, loading, pages, error, updatePost } = useFeed(siteName, feedType, page, perpage);
+    const { posts, loading, pages, error, updatePost } = useFeed(siteName, feedType, page, perpage, reloadState);
     useEffect(() => {
         window.scrollTo({ top: 0 });
     }, [page]);

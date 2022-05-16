@@ -5,9 +5,9 @@ import {useCache} from './useCache';
 
 export type FeedType = 'all' | 'subscriptions' | 'site' | 'watch' | 'watch-all' | 'user-profile';
 
-export function useFeed(id: string, feedType: FeedType, page: number, perpage: number) {
+export function useFeed(id: string, feedType: FeedType, page: number, perpage: number, reloadState: number) {
     const api = useAPI();
-    const [cachedPosts, setCachedPosts] = useCache<PostInfo[]>('feed', [id, feedType, page, perpage]);
+    const [cachedPosts, setCachedPosts] = useCache<PostInfo[]>('feed', [id, feedType, page, perpage, reloadState]);
 
     const [posts, setPosts] = useState<PostInfo[] | undefined>(cachedPosts);
     const [loading, setLoading] = useState(true);
@@ -109,7 +109,7 @@ export function useFeed(id: string, feedType: FeedType, page: number, perpage: n
                 setError('Не удалось загрузить ленту постов пользователя');
             });
         }
-    }, [id, feedType, page, api.post, perpage]);
+    }, [id, feedType, page, api.post, perpage, reloadState]);
 
     return { posts, loading, pages, error, updatePost };
 }
