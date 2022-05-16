@@ -58,7 +58,7 @@ export default function ContentComponent(props: ContentComponentProps) {
 
         if (props.autoCut) {
             const rect = content.getBoundingClientRect();
-            if (rect.height > 300) {
+            if (rect.height > 1000) {
                 setCut(true);
             }
         }
