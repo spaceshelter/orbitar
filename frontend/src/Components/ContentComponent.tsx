@@ -1,7 +1,10 @@
-import React, {useEffect, useRef} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
+import classNames from 'classnames';
+import styles from './ContentComponent.module.scss';
 
 interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
     content: string;
+    autoCut?: boolean;
 }
 
 function updateContent(div: HTMLDivElement) {
@@ -43,6 +46,7 @@ function updateImg(img: HTMLImageElement) {
 
 export default function ContentComponent(props: ContentComponentProps) {
     const contentDiv = useRef<HTMLDivElement>(null);
+    const [cut, setCut] = useState(false);
 
     useEffect(() => {
         const content = contentDiv.current;
@@ -51,9 +55,23 @@ export default function ContentComponent(props: ContentComponentProps) {
         }
 
         updateContent(content);
-    }, [contentDiv]);
+
+        if (props.autoCut) {
+            const rect = content.getBoundingClientRect();
+            if (rect.height > 300) {
+                setCut(true);
+            }
+        }
+    }, [contentDiv, props.autoCut]);
+
+    const handleCut = () => {
+        setCut(false);
+    };
 
     return (
-        <div className={props.className} dangerouslySetInnerHTML={{__html: props.content}} ref={contentDiv} />
+        <>
+            <div className={classNames(styles.content, props.className, cut && styles.cut)} dangerouslySetInnerHTML={{__html: props.content}} ref={contentDiv} />
+            {cut && <div className={styles.cutCover}><button className={styles.cutButton} onClick={handleCut}>Читать дальше</button></div>}
+        </>
     );
 }
