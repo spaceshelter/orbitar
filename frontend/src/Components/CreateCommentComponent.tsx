@@ -30,7 +30,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     const [previewing, setPreviewing] = useState<string | null>(null);
     const [mediaUploaderOpen, setMediaUploaderOpen] = useState(false);
 
-    const pronoun = props?.comment?.author?.gender == UserGender.he ? 'ему' : props?.comment?.author?.gender==UserGender.she ? 'ей' : '';
+    const pronoun = props?.comment?.author?.gender === UserGender.he ? 'ему' : props?.comment?.author?.gender===UserGender.she ? 'ей' : '';
     const placeholderText = props.comment ? `Ваш ответ ${pronoun}` : '';
     const disabledButtons = isPosting || previewing !== null;
 
