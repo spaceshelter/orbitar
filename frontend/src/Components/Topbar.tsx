@@ -19,13 +19,12 @@ type TopbarProps = {
     menuState: TopbarMenuState;
     onMenuToggle: () => void;
     onReload: () => void;
-}
+};
 
 export default function Topbar(props: TopbarProps) {
     const {userInfo, userStats} = useAppState();
     const {theme, setTheme} = useTheme();
     const [showNotifications, setShowNotifications] = useState(false);
-
 
     if (!userInfo) {
         return <></>;

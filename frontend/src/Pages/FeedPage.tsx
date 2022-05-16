@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect} from 'react';
 import {useAppState} from '../AppState/AppState';
 import styles from './FeedPage.module.scss';
 import PostComponent from '../Components/PostComponent';

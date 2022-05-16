@@ -58,7 +58,7 @@ function Unauthorized() {
     );
 }
 
-function ReadyContainer({ onReload } : {onReload: any}) {
+function ReadyContainer({ onReload }: {onReload: () => void}) {
     const {theme} = useTheme();
     const {site} = useAppState();
     const [menuState, setMenuState] = useState<TopbarMenuState>(localStorage.getItem('menuState') === 'close' ? 'close' : 'open');
@@ -93,9 +93,7 @@ function ReadyContainer({ onReload } : {onReload: any}) {
 }
 
 function Ready() {
-
     const [reloadState, setReloadState] = useState(0);
-    
     const onReload = () => {
         setReloadState(Date.now());
     };

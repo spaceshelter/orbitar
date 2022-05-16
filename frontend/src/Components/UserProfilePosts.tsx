@@ -17,7 +17,7 @@ export default function UserProfilePosts(props: UserProfilePostsProps) {
     const perpage = 20;
     const page = parseInt(search.get('page') || '1');
 
-    const { posts, loading, pages, error, updatePost } = useFeed(props.username, "user-profile", page, perpage, 0);
+    const { posts, loading, pages, error, updatePost } = useFeed(props.username, 'user-profile', page, perpage, 0);
     useEffect(() => {
         window.scrollTo({ top: 0 });
     }, [page]);
