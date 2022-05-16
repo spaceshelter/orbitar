@@ -1,6 +1,6 @@
 import React from 'react';
 import './ThemePreview.scss';
-export function ThemePreview (){
+export function ThemePreview() {
     return (
         <div id='themePreview'>
 

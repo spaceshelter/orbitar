@@ -11,6 +11,7 @@ import {ReactComponent as SendIcon} from '../Assets/send.svg';
 import ContentComponent from './ContentComponent';
 import classNames from 'classnames';
 import MediaUploader from './MediaUploader';
+import {UserGender} from "../Types/UserInfo";
 
 interface CreateCommentProps {
     open: boolean;
@@ -24,13 +25,13 @@ interface CreateCommentProps {
 export default function CreateCommentComponent(props: CreateCommentProps) {
     const answerRef = useRef<HTMLTextAreaElement>(null);
 
-    const pronoun = props?.comment?.author?.gender == 1 ? 'ему' : props?.comment?.author?.gender==2 ? 'ей' : '';
-    const [placeholderText] = useState<string>(props.comment ? `Ваш ответ ${pronoun}` : '');
     const [answerText, setAnswerText] = useState<string>( '');
     const [isPosting, setPosting] = useState(false);
     const [previewing, setPreviewing] = useState<string | null>(null);
     const [mediaUploaderOpen, setMediaUploaderOpen] = useState(false);
 
+    const pronoun = props?.comment?.author?.gender == UserGender.he ? 'ему' : props?.comment?.author?.gender==UserGender.she ? 'ей' : '';
+    const placeholderText = props.comment ? `Ваш ответ ${pronoun}` : '';
     const disabledButtons = isPosting || previewing !== null;
 
     const handleAnswerChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {

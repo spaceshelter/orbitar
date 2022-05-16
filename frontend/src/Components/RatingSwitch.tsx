@@ -65,9 +65,9 @@ export default function RatingSwitch(props: RatingSwitchProps) {
         }
         let nx = x;
         if (nx + 8 + pw > document.documentElement.scrollWidth) {
-            if(x+w+8>pw ){
+            if (x+w+8>pw) {
                 nx = x + w - pw;
-            }else{
+            } else {
                 nx = 8;
             }
         }
