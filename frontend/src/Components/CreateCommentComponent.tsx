@@ -8,7 +8,7 @@ import {ReactComponent as ImageIcon} from '../Assets/image.svg';
 import {ReactComponent as LinkIcon} from '../Assets/link.svg';
 import {ReactComponent as QuoteIcon} from '../Assets/quote.svg';
 import {ReactComponent as SendIcon} from '../Assets/send.svg';
-import ContentComponent from "./ContentComponent";
+import ContentComponent from './ContentComponent';
 import classNames from 'classnames';
 import MediaUploader from './MediaUploader';
 

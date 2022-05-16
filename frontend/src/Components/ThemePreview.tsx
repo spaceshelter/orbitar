@@ -69,5 +69,5 @@ export function ThemePreview (){
 
             </div>
         </div>
-    )
+    );
 }

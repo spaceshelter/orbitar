@@ -4,7 +4,7 @@ import App from './App';
 import { AppStateProvider } from './AppState/AppState';
 import { ThemeProvider } from './Theme/ThemeProvider';
 import { getThemes } from './theme';
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter } from 'react-router-dom';
 (async () => {
     if (!('serviceWorker' in navigator)) {
         return;
