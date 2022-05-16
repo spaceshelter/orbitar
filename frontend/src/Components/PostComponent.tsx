@@ -20,6 +20,7 @@ interface PostComponentProps {
     showSite?: boolean;
     buttons?: React.ReactNode;
     onChange?: (id: number, post: Partial<PostInfo>) => void;
+    autoCut?: boolean;
 }
 
 export default function PostComponent(props: PostComponentProps) {
@@ -91,7 +92,7 @@ export default function PostComponent(props: PostComponentProps) {
                 </div>
                 <div className={styles.contentContainer}>
                     {title && <div className={styles.title}><PostLink post={props.post}>{title}</PostLink></div>}
-                    <ContentComponent className={styles.content} content={content} />
+                    <ContentComponent className={styles.content} content={content} autoCut={props.autoCut} />
                 </div>
             </div>
             <div className={styles.controls}>
