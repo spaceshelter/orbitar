@@ -1,6 +1,6 @@
 import React, {useState} from 'react';
 import styles from './CreatePostPage.module.css';
-import createCommentStyles from '../Components/CommentComponent.module.css';
+import createCommentStyles from '../Components/CommentComponent.module.scss';
 import {useAPI, useSiteName} from '../AppState/AppState';
 import {useNavigate} from 'react-router-dom';
 import CreateCommentComponent from '../Components/CreateCommentComponent';

@@ -4,8 +4,14 @@
     margin: 56px auto 0;
 }
 
-.header {
+.header, .userinfo {
     padding: 10px 0;
+    >div{
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        color: var(--fg);
+    }
 }
 
 .karma {
@@ -15,19 +21,14 @@
 
 .controls {
     padding: 10px 0;
-    background: var(--controls-bg);
 }
 
 .control {
     margin-right: 20px;
-}
-.control.active {
-    color: var(--fg);
-    font-weight: bold;
-}
-
-.userinfo {
-    padding: 10px 0;
+    &.active {
+        color: var(--fg);
+        font-weight: bold;
+    }
 }
 
 .username {
@@ -39,18 +40,22 @@
 
 .logout{
     margin-top: 80px;
-    background: var(--answer-line-fg);
+    background: var(--dim1);
+    color: var(--fgSoft);
     border: none;
     display: flex;
     padding: 8px 16px;
     border-radius: 4px;
     font-weight: bold;
-    color: var(--button-dis-fg);
     align-items: center;
     gap: 8px;
-}
-.logout:hover{
-    background: var(--button-dis-bg);
+    fill: var(--fgSoft);
+
+    &:hover{
+       fill: var(--fg);
+       color: var(--fg);
+       background: var(--dim3);
+    }
+
 }
 
-.logout svg{ fill: var(--button-dis-fg); }

@@ -5,9 +5,13 @@
     left: 0;
     top: 59px;
     bottom: 0;
-    background: var(--sidebar-bg);
-    -webkit-backdrop-filter: blur(2px);
-    backdrop-filter: blur(1px);
+    /*-webkit-backdrop-filter: blur(2px);*/
+    /*backdrop-filter: blur(1px);*/
+}
+@media only screen and (max-width: 1179px){
+    .container {
+        background: var(--glass);
+    }
 }
 
 .fixed {
@@ -33,14 +37,14 @@
 }
 
 .subscribed {
-    background: var(--button-dis-bg);
+    background: var(--dim2);
     color: var(--fg);
     border: none;
 }
 
 .notSubscribed {
-    background: var(--button-bg);
-    color: var(--button-fg);
+    background: var(--primary);
+    color: var(--onAccent);
     border: none;
 }
 
