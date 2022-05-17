@@ -4,7 +4,6 @@
     align-items: center;
 }
 .username svg{
-    transition: none;
     fill:  var(--primary);
     opacity: .7;
 
