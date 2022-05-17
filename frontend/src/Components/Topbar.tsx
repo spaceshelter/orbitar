@@ -18,13 +18,13 @@ export type TopbarMenuState = 'disabled' | 'open' | 'close';
 type TopbarProps = {
     menuState: TopbarMenuState;
     onMenuToggle: () => void;
+    onReload: () => void;
 };
 
 export default function Topbar(props: TopbarProps) {
     const {userInfo, userStats} = useAppState();
     const {theme, setTheme} = useTheme();
     const [showNotifications, setShowNotifications] = useState(false);
-
 
     if (!userInfo) {
         return <></>;
@@ -60,12 +60,20 @@ export default function Topbar(props: TopbarProps) {
         setShowNotifications(!showNotifications);
     };
 
+    const onReloadClick = (e: React.MouseEvent) => {
+        if (window.location.pathname ==='/') {
+            props.onReload();
+            e.stopPropagation();
+            e.preventDefault();
+        }
+    };
+
     return (
         <>
             <div className={styles.topbar}>
                 <div className={styles.left}>
                     <button className={menuClasses.join(' ')} onClick={menuToggle}><MenuIcon /></button>
-                    <Link to={`//${process.env.REACT_APP_ROOT_DOMAIN}/`}><MonsterIcon /></Link>
+                    <Link to={`//${process.env.REACT_APP_ROOT_DOMAIN}/`} onClick={ onReloadClick } ><MonsterIcon /></Link>
                     <Link className={[styles.button, styles.newPost].join(' ')} to="/create"><PostIcon /> <span>Новый пост</span> </Link>
                 </div>
 

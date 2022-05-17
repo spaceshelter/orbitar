@@ -42,13 +42,13 @@ a.username {
 .list {
     position: absolute;
     display: flex;
-    width: 312px;
     height: 257px;
     background: var(--elevated);
     box-shadow: 0 0 4px var(--shadow);
     border-radius: 8px;
     flex-direction: column;
     z-index: 100;
+    min-width: 312px;
 }
 
 .listUp {
@@ -82,8 +82,7 @@ a.username {
 
 .listDown {
     flex: 1;
-    overflow: auto;
-
+    overflow: overlay;
 }
 .listScrollContainer {
     display: flex;
@@ -101,6 +100,7 @@ a.username {
     font-size: 13px;
     padding: 12px;
     line-height: 1.5em;
+    white-space: nowrap;
     >div{
         display: flex;
         align-items: center;
