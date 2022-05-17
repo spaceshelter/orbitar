@@ -58,7 +58,11 @@ function Unauthorized() {
     );
 }
 
-function ReadyContainer({ onReload }: {onReload: () => void}) {
+type ReadyContainerProps = {
+    onReload: () => void;
+};
+
+function ReadyContainer(props: ReadyContainerProps) {
     const {theme} = useTheme();
     const {site} = useAppState();
     const [menuState, setMenuState] = useState<TopbarMenuState>(localStorage.getItem('menuState') === 'close' ? 'close' : 'open');
@@ -75,11 +79,11 @@ function ReadyContainer({ onReload }: {onReload: () => void}) {
             setMenuState('open');
             localStorage.setItem('menuState', 'open');
         }
-    };
+    };  
 
     return (
         <>
-            <Topbar menuState={menuState} onMenuToggle={handleMenuToggle} onReload={onReload} />
+            <Topbar menuState={menuState} onMenuToggle={handleMenuToggle} onReload={props.onReload} />
             {site && menuState === 'open' && <SiteSidebar site={site} />}
             <div className={styles.container}>
                 <div className={styles.innerContainer}>
@@ -93,18 +97,18 @@ function ReadyContainer({ onReload }: {onReload: () => void}) {
 }
 
 function Ready() {
-    const [reloadState, setReloadState] = useState(0);
+    const [reloadTimestamp, setReloadTimestamp] = useState(0);
     const onReload = () => {
-        setReloadState(Date.now());
+        setReloadTimestamp(Date.now());
     };
 
     return (
         <>
             <Routes>
                 <Route path="/" element={<ReadyContainer onReload={onReload} />}>
-                    <Route path="" element={<FeedPage reloadState={reloadState}  />} />
-                    <Route path="posts" element={<FeedPage reloadState={reloadState} />} />
-                    <Route path="subscriptions" element={<FeedPage reloadState={reloadState} />} />
+                    <Route path="" element={<FeedPage reloadTimestamp={reloadTimestamp}  />} />
+                    <Route path="posts" element={<FeedPage />} />
+                    <Route path="subscriptions" element={<FeedPage />} />
                     <Route path="post/:postId" element={<PostPage />} />
                     <Route path="user/:username" element={<UserPage />} />
                     <Route path="user/:username/posts" element={<UserPage />} />
