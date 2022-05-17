@@ -99,12 +99,12 @@
 }
 
 :global {
-    .unreadOnly .comment:not(:global(.isNew)) > .commentBody {
+    .unreadOnly :local(.comment):not(.isNew) > .commentBody {
         opacity: 0.4;
         transition: opacity 500ms;
     }
 
-    .unreadOnly .comment:not(:global(.isNew)) > .commentBody:hover {
+    .unreadOnly :local(.comment):not(.isNew) > .commentBody:hover {
         opacity: inherit;
         transition: opacity 500ms;
     }
