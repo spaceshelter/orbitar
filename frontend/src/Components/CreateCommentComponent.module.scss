@@ -1,0 +1,120 @@
+
+.answer {
+    margin-bottom: 24px;
+    textarea, .preview {
+        width: 100%;
+        padding: 10px;
+        min-height: 100px;
+        font-size: 16px;
+        line-height: 1.5em;
+    }
+    .preview{
+        box-sizing: border-box;
+        background: var(--dim1);
+    }
+}
+
+.controls {
+    display: flex;
+    align-items: center;
+
+    .control {
+        color: var(--fgSofter);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    button, a {
+        width: 32px;
+        height: 32px;
+        background: none;
+        margin: 0;
+        padding: 0;
+        border: none;
+        text-align: center;
+
+        fill: var(--fgSofter);
+        display: block;
+        align-items: center;
+        font-size: 12px;
+
+        color: var(--fgSofter);
+        text-decoration: none;
+
+        &:hover{
+            color: var(--primaryHover);
+            fill: var(--primaryHover);
+        }
+
+        &.active {
+            fill: var(--primaryHover);
+            font-weight: bold;
+        }
+
+    }
+    a {
+         margin: 0 2px;
+    }
+    button:disabled {
+         color: var(--fgGhost);
+         fill: var(--fgGhost);
+    }
+
+    .label {
+        margin-left: 5px;
+    }
+
+}
+
+
+button.bold {
+    font-weight: bold;
+}
+button.italic {
+    font-style: italic;
+}
+button.underline {
+    text-decoration: underline;
+}
+button.strike {
+    text-decoration: line-through;
+}
+
+.editor {
+    display: flex;
+}
+
+.final {
+    margin: 4px 0;
+    display: flex;
+    justify-content: flex-end;
+
+    button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        height: 40px;
+        padding: 0 16px;
+        background: none;
+        border: none;
+        color: var(--fg);
+        fill: var(--primary);
+        border-radius: 4px;
+        font-weight: bold;
+
+        &:hover {
+            fill: var(--primaryHover);
+            color: var(--fgHarder);
+        }
+        &:disabled {
+            color: var(--fgSofter);
+            fill: var(--fgGhost);
+            cursor: default;
+        }
+        &.buttonSend{
+           margin-right: -8px;
+        }
+
+    }
+}

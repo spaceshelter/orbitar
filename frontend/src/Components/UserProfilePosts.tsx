@@ -29,7 +29,7 @@ export default function UserProfilePosts(props: UserProfilePostsProps) {
                  <>
                     {error && <div className={styles.error}>{styles.error}</div> }
                     {posts && <div className={styles.posts}>
-                        {posts.map(post => <PostComponent key={post.id} post={post} showSite={site?.site !== post.site} onChange={updatePost} />)}
+                        {posts.map(post => <PostComponent key={post.id} post={post} showSite={site?.site !== post.site} onChange={updatePost} autoCut={true} />)}
                     </div>}
                     <Paginator page={page} pages={pages} base={`/user/${props.username}/posts`} />
                 </>}

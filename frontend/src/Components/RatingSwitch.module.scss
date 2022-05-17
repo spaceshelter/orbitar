@@ -2,7 +2,6 @@
     display: flex;
     align-items: center;
     font-size: 13px;
-    color: var(--fgSoftest);
 
     .value {
         min-width: 32px;
@@ -10,6 +9,7 @@
         text-align: center;
         font-weight: bold;
         cursor: pointer;
+        color: var(--fgSoftest);
         &.minus { color: var(--danger); }
         &.plus  { color: var(--primary); }
     }
@@ -29,12 +29,11 @@
 
 
 a.username {
-    display: inline-block;
-
-    color: var(--fgSoftest);
+    color: var(--fg);
+    svg{display: none;}
     font-weight: normal;
     &:hover {
-        color: var(--fgSofter);
+        color: var(--primary);
     }
 }
 
@@ -44,7 +43,7 @@ a.username {
     position: absolute;
     display: flex;
     height: 257px;
-    background: var(--bg);
+    background: var(--elevated);
     box-shadow: 0 0 4px var(--shadow);
     border-radius: 8px;
     flex-direction: column;
@@ -56,7 +55,6 @@ a.username {
     height: 92px;
     display: flex;
     align-items: center;
-    background: var(--dim1);
 }
 .listValue {
     text-align: center;
@@ -76,7 +74,7 @@ a.username {
 
 .listDetails {
     flex: 1;
-    border-left: 1px solid var(--dim3);
+    border-left: 1px solid var(--fgGhost);
     color: var(--fg);
     padding: 5px 0 5px 18px;
     font-size: 13px;
@@ -89,7 +87,7 @@ a.username {
 .listScrollContainer {
     display: flex;
     align-items: stretch;
-    background: var(--dim2);
+    background: var(--dim1);
     gap: 4px;
     min-height: 100%;
     overflow-x: hidden;
@@ -103,6 +101,11 @@ a.username {
     padding: 12px;
     line-height: 1.5em;
     white-space: nowrap;
+    >div{
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
 }
 .listMinus {
     border-right: 1px solid var(--bg);
