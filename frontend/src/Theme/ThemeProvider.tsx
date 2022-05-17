@@ -150,14 +150,13 @@ function applyTheme(stylesheet: HTMLStyleElement, toStyle: ThemeStyles, withTran
     });
     css += '}\n';
 
-    const transitionCss = `svg{transition: fill 300ms ease-in-out;}\n*{ transition-duration: 300ms; transition-timing-function: ease-in; transition-property: color, background-color; }\n`;
     if(withTransition){
-        css += transitionCss;
+        const transitionCss = `svg{transition: fill 300ms ease-in-out;}\n*{ transition-duration: 300ms; transition-timing-function: ease-in; transition-property: color, background-color; }\n`;
+        stylesheet.innerHTML = css + transitionCss;
+        setTimeout(()=>{  stylesheet.innerHTML =css; }, 350);
     }else{
-        setTimeout(()=>{ stylesheet.innerHTML += transitionCss; }, 100);
+        stylesheet.innerHTML = css;
     }
-
-    stylesheet.innerHTML = css;
 }
 
 

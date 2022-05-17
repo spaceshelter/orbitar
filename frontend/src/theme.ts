@@ -23,9 +23,8 @@ preview of all theme colors is available at http://orbitar.local/theme
 export const themes: ThemeCollection = {
     debugTheme: {
         colors: {
-
             fg: 'rgba(255,255,255,0.8)',//text color
-            primary: '#7aba58',// primary accent for important
+            primary: '#7aba58',// primary accent for important things
             primaryHover: '#9bd57d',
             danger: '#BA5E58',// accent fo negative/dangerous things
             dangerHover: '#ff8980',

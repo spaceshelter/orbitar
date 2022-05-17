@@ -2,7 +2,6 @@
     color: var(--primary);
     display: flex;
     align-items: center;
-    transition: none;
 }
 .username svg{
     transition: none;
