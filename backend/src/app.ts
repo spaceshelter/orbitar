@@ -101,8 +101,8 @@ const webPushRepository = new WebPushRepository(db);
 const inviteManager = new InviteManager(inviteRepository);
 const notificationManager = new NotificationManager(commentRepository, notificationsRepository, postRepository, siteRepository, userRepository, webPushRepository, config.vapid, config.site);
 const userManager = new UserManager(credentialsRepository, userRepository, voteRepository, webPushRepository, notificationManager);
-const feedManager = new FeedManager(bookmarkRepository, postRepository, userRepository, redis.client);
-const siteManager = new SiteManager(siteRepository, userManager, feedManager);
+const siteManager = new SiteManager(siteRepository, userManager);
+const feedManager = new FeedManager(bookmarkRepository, postRepository, userRepository, siteManager, redis.client);
 const postManager = new PostManager(bookmarkRepository, commentRepository, postRepository, feedManager, notificationManager, siteManager, userManager, theParser);
 const voteManager = new VoteManager(voteRepository, postManager);
 
@@ -116,7 +116,7 @@ const requests = [
     new VoteController(voteManager, logger.child({ service: 'VOTE' })),
     new UserController(apiEnricher, userManager, postManager, logger.child({ service: 'USER' })),
     new FeedController(apiEnricher, feedManager, siteManager, userManager, postManager, logger.child({ service: 'FEED' })),
-    new SiteController(siteManager, logger.child( { service: 'SITE' })),
+    new SiteController(feedManager, logger.child( { service: 'SITE' })),
     new NotificationsController(notificationManager, userManager, logger.child({ service: 'NOTIFY' })),
 ];
 

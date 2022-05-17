@@ -23,9 +23,17 @@ type PostResult = {
     lastCommentId: number;
 };
 
-interface CommentResponse {
+type PostCommentResult = {
     comment: CommentInfo;
-}
+};
+
+type PostCommentEditResult = {
+    comment: CommentInfo;
+};
+
+type PostEditResult = {
+    post: PostInfo;
+};
 
 export default class PostAPIHelper {
     private postAPI: PostAPI;
@@ -132,7 +140,7 @@ export default class PostAPIHelper {
                 (comment.answers && this.getLastCommentId(comment.answers)) || comment.id), undefined);
     }
 
-    async comment(content: string, postId: number, commentId?: number): Promise<CommentResponse> {
+    async comment(content: string, postId: number, commentId?: number): Promise<PostCommentResult> {
         const response = await this.postAPI.comment(content, postId, commentId);
 
         const [comment] = this.fixComments([response.comment], response.users);
@@ -142,13 +150,23 @@ export default class PostAPIHelper {
         };
     }
 
-    async editComment(content: string, commentId: number): Promise<CommentResponse> {
+    async editComment(content: string, commentId: number): Promise<PostCommentEditResult> {
         const response = await this.postAPI.editComment(content, commentId);
 
         const [comment] = this.fixComments([response.comment], response.users);
 
         return {
             comment
+        };
+    }
+
+    async editPost(title: string, content: string, postId: number): Promise<PostEditResult> {
+        const response = await this.postAPI.editPost(title, content, postId);
+
+        const [post] = this.fixPosts([response.post], response.users);
+
+        return {
+            post
         };
     }
 

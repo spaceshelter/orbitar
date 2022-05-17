@@ -1,7 +1,7 @@
 import PostRepository from '../db/repositories/PostRepository';
 import CommentRepository from '../db/repositories/CommentRepository';
 import BookmarkRepository from '../db/repositories/BookmarkRepository';
-import {CommentRawWithUserData, PostRawWithUserData} from '../db/types/PostRaw';
+import {CommentRawWithUserData} from '../db/types/PostRaw';
 import {BookmarkRaw} from '../db/types/BookmarkRaw';
 import SiteManager from './SiteManager';
 import CodeError from '../CodeError';
@@ -39,12 +39,14 @@ export default class PostManager {
         this.parser = parser;
     }
 
-    getPost(postId: number, forUserId: number): Promise<PostRawWithUserData | undefined> {
-        return this.postRepository.getPostWithUserData(postId, forUserId);
+    async getPost(postId: number, forUserId: number, format: ContentFormat): Promise<PostInfo | undefined> {
+        const rawPost = await this.postRepository.getPostWithUserData(postId, forUserId);
+        return (await this.feedManager.convertRawPost(forUserId, [rawPost], format))[0];
     }
 
-    getPostsByUser(userId: number, forUserId: number, page: number, perpage: number): Promise<PostRawWithUserData[]> {
-        return this.postRepository.getPostsByUser(userId, forUserId, page, perpage);
+    async getPostsByUser(userId: number, forUserId: number, page: number, perpage: number, format: ContentFormat): Promise<PostInfo[]> {
+        const posts = await this.postRepository.getPostsByUser(userId, forUserId, page, perpage);
+        return await this.feedManager.convertRawPost(forUserId, posts, format);
     }
 
     getPostsByUserTotal(userId: number): Promise<number> {
@@ -83,6 +85,25 @@ export default class PostManager {
             bookmark: false,
             watch: true
         };
+    }
+
+    async editPost(forUserId: number, postId: number, title: string | undefined, content: string, format: ContentFormat): Promise<PostInfo> {
+        let rawPost = await this.postRepository.getPostWithUserData(postId, forUserId);
+        if (rawPost.author_id !== forUserId) {
+            throw new CodeError('access-denied', 'Access denied');
+        }
+
+        const html = (await this.parser.parse(content)).text;
+
+        const updated = await this.postRepository.updatePostText(forUserId, postId, title, content, html);
+        if (!updated) {
+            throw new CodeError('unknown', 'Could not edit comment');
+        }
+
+        rawPost = await this.postRepository.getPostWithUserData(postId, forUserId);
+        const [post] = await this.feedManager.convertRawPost(forUserId, [rawPost], format);
+
+        return post;
     }
 
     async getPostComments(postId: number, forUserId: number, format: ContentFormat): Promise<CommentInfoWithPostData[]> {

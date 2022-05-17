@@ -12,6 +12,7 @@ type UsePost = {
 
     postComment(comment: string, answerToCommentId?: number): Promise<CommentInfo>;
     editComment(comment: string, commentId: number): Promise<CommentInfo>;
+    editPost(title: string, content: string): Promise<PostInfo>;
     setVote(value: number): void;
     setCommentVote(commentId: number, vote: number): void;
     reload(showUnreadOnly?: boolean): void;
@@ -48,7 +49,7 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
         };
     }, [post]);
 
-    const { postComment, editComment, setVote, setCommentVote, reload } = useMemo(() => {
+    const { postComment, editComment, editPost, setVote, setCommentVote, reload } = useMemo(() => {
         const postComment = async (text: string, answerToCommentId?: number) => {
             const {comment} = await api.post.comment(text, postId, answerToCommentId);
 
@@ -126,6 +127,12 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
             return comment;
         };
 
+        const editPost = async (title: string, text: string) => {
+            const {post} = await api.post.editPost(title, text, postId);
+            setPost(post);
+            return post;
+        };
+
         const setVote = (vote: number) => {
 
         };
@@ -156,7 +163,7 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
                 });
         };
 
-        return { postComment, editComment, setVote, setCommentVote, reload, updatePost };
+        return { postComment, editComment, editPost, setVote, setCommentVote, reload, updatePost };
     }, [postId, comments, rawComments, api.post]);
 
     useEffect(() => {
@@ -193,7 +200,7 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
         reload(showUnreadOnly || false);
     }, [siteName, postId, showUnreadOnly, api, rawComments, prev, reload]);
 
-    return { site, post, comments, error, postComment, editComment, setVote, setCommentVote, reload, updatePost };
+    return { site, post, comments, error, postComment, editComment, editPost, setVote, setCommentVote, reload, updatePost };
 }
 
 function findComment(comments: CommentInfo[], commentId: number): CommentInfo | undefined {

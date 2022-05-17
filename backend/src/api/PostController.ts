@@ -18,6 +18,8 @@ import {Enricher} from './utils/Enricher';
 import {PostGetCommentRequest, PostGetCommentResponse} from './types/requests/PostGetComment';
 import {PostCommentEditRequest, PostCommentEditResponse} from './types/requests/PostEditComment';
 import CodeError from '../CodeError';
+import {CommentEntity} from './types/entities/CommentEntity';
+import {PostEditRequest, PostEditResponse} from './types/requests/PostEdit';
 
 export default class PostController {
     public readonly router = Router();
@@ -38,7 +40,8 @@ export default class PostController {
 
         const getSchema = Joi.object<PostGetRequest>({
             id: Joi.number().required(),
-            format: joiFormat
+            format: joiFormat,
+            noComments: Joi.boolean().default(false)
         });
         const readSchema = Joi.object<PostReadRequest>({
             post_id: Joi.number().required(),
@@ -77,9 +80,16 @@ export default class PostController {
             content: Joi.string().min(1).max(50000).required(),
             format: joiFormat
         });
+        const editSchema = Joi.object<PostEditRequest>({
+            id: Joi.number().required(),
+            title: Joi.alternatives(Joi.string().max(50), Joi.valid('').optional()),
+            content: Joi.string().min(1).max(50000).required(),
+            format: joiFormat
+        });
 
         this.router.post('/post/get', validate(getSchema), (req, res) => this.postGet(req, res));
         this.router.post('/post/create', validate(postCreateSchema), (req, res) => this.create(req, res));
+        this.router.post('/post/edit', validate(editSchema), (req, res) => this.postEdit(req, res));
         this.router.post('/post/comment', validate(commentSchema), (req, res) => this.comment(req, res));
         this.router.post('/post/preview', validate(previewSchema), (req, res) => this.preview(req, res));
         this.router.post('/post/read', validate(readSchema), (req, res) => this.read(req, res));
@@ -96,34 +106,69 @@ export default class PostController {
         }
 
         const userId = request.session.data.userId;
-        const { id: postId, format } = request.body;
+        const { id: postId, format, noComments } = request.body;
 
         try {
-            const rawPost = await this.postManager.getPost(postId, userId);
+            const rawPost = await this.postManager.getPost(postId, userId, format);
             if (!rawPost) {
                 return response.error('no-post', 'Post not found');
             }
 
-            const site = await this.siteManager.getSiteById(rawPost.site_id);
+            const site = await this.siteManager.getSiteByName(rawPost.site);
             if (!site) {
                 return response.error('error', 'Unknown error', 500);
             }
 
-            const { posts : [post], users  } = await this.enricher.enrichRawPosts([rawPost], format);
-            const rawComments = await this.postManager.getPostComments(postId, userId, format);
-            const {rootComments} = await this.enricher.enrichRawComments(rawComments, users, format,
-                (comment) => comment.author !== userId && comment.id > rawPost.last_read_comment_id
-            );
+            const {posts: [post], users} = await this.enricher.enrichRawPosts([rawPost]);
+
+            let comments: CommentEntity[] = [];
+            if (!noComments) {
+                const rawComments = await this.postManager.getPostComments(postId, userId, format);
+                const {rootComments} = await this.enricher.enrichRawComments(rawComments, users, format,
+                    (comment) => comment.author !== userId && comment.id > rawPost.lastReadCommentId
+                );
+                comments = rootComments;
+            }
 
             response.success({
                 post: post,
                 site: site,
-                comments: rootComments,
+                comments: comments,
                 users: users
             });
         }
         catch (err) {
             this.logger.error('Post get error', { error: err, post_id: postId });
+            return response.error('error', 'Unknown error', 500);
+        }
+    }
+
+    async postEdit(request: APIRequest<PostEditRequest>, response: APIResponse<PostEditResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+
+        const userId = request.session.data.userId;
+        const { id, title, format, content } = request.body;
+
+        try {
+            const postInfo = await this.postManager.editPost(userId, id, title, content, format);
+            if (!postInfo) {
+                return response.error('no-comment', 'Post not found');
+            }
+
+            const {posts: [post], users} = await this.enricher.enrichRawPosts([postInfo]);
+
+            this.logger.info(`Post edited by #${userId}`, { user_id: userId, post_id: id, format, content, title });
+            response.success({ post, users });
+        }
+        catch (err) {
+            this.logger.error('Post edit error', { error: err, user_id: userId, post_id: id, format, content, title });
+
+            if (err instanceof CodeError && err.code === 'access-denied') {
+                return response.error('access-denied', 'Access-denied');
+            }
+
             return response.error('error', 'Unknown error', 500);
         }
     }

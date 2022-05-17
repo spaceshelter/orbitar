@@ -15,6 +15,7 @@ export interface PostInfo extends PostLinkInfo {
     rating: number;
     comments: number;
     newComments: number;
+    editFlag?: boolean;
     vote?: number;
     watch?: boolean;
     bookmark?: boolean;

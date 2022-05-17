@@ -1,4 +1,3 @@
-import {PostRawWithUserData} from '../../db/types/PostRaw';
 import {SiteBaseEntity} from '../types/entities/SiteEntity';
 import {UserEntity} from '../types/entities/UserEntity';
 import {PostEntity} from '../types/entities/PostEntity';
@@ -6,6 +5,7 @@ import UserManager from '../../managers/UserManager';
 import SiteManager from '../../managers/SiteManager';
 import {CommentEntity} from '../types/entities/CommentEntity';
 import {CommentInfoWithPostData} from '../../managers/types/CommentInfo';
+import {PostInfo} from '../../managers/types/PostInfo';
 
 export type EnrichedPosts = {
     posts: PostEntity[];
@@ -29,49 +29,48 @@ export class Enricher {
         this.userManager = userManager;
     }
 
-    async enrichRawPosts(rawPosts: PostRawWithUserData[], format: string): Promise<EnrichedPosts> {
-        const sitesById: Record<number, SiteBaseEntity> = {};
+    async enrichRawPosts(rawPosts: PostInfo[]): Promise<EnrichedPosts> {
         const sites: Record<string, SiteBaseEntity> = {};
         const users: Record<number, UserEntity> = {};
         const posts: PostEntity[] = [];
         for (const post of rawPosts) {
-            if (!users[post.author_id]) {
-                users[post.author_id] = await this.userManager.getById(post.author_id);
+            if (!users[post.author]) {
+                users[post.author] = await this.userManager.getById(post.author);
             }
 
-            let siteName = '';
-            if (!sitesById[post.site_id]) {
-                const site = await this.siteManager.getSiteById(post.site_id);
-                const baseSite = {
+            if (!sites[post.site]) {
+                const site = await this.siteManager.getSiteByName(post.site);
+                sites[post.site] = {
                     id: site.id,
                     site: site.site,
                     name: site.name
                 };
-                sitesById[post.site_id] = baseSite;
-                sites[site.site] = baseSite;
-
-                siteName = site?.site || '';
-            }
-            else {
-                siteName = sitesById[post.site_id].site;
             }
 
             const postResult: PostEntity = {
-                id: post.post_id,
-                site: siteName,
-                author: post.author_id,
-                created: post.created_at.toISOString(),
+                id: post.id,
+                site: post.site,
+                author: post.author,
+                created: post.created.toISOString(),
                 title: post.title,
-                content: format === 'html' ? post.html : post.source,
+                content: post.content,
                 rating: post.rating,
                 comments: post.comments,
-                newComments: post.read_comments ? Math.max(0, post.comments - post.read_comments) : post.comments,
-                bookmark: !!post.bookmark,
-                watch: !!post.watch,
+                newComments: post.newComments,
                 vote: post.vote
             };
-            if (post.edit_flag) {
-                postResult.editFlag = post.edit_flag;
+
+            if (post.bookmark) {
+                postResult.bookmark = post.bookmark;
+            }
+            if (post.watch) {
+                postResult.watch = post.watch;
+            }
+            if (post.canEdit) {
+                postResult.canEdit = post.canEdit;
+            }
+            if (post.editFlag) {
+                postResult.editFlag = post.editFlag;
             }
 
             posts.push(postResult);

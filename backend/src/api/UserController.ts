@@ -83,8 +83,8 @@ export default class UserController {
             }
 
             const total = await this.postManager.getPostsByUserTotal(profile.id);
-            const rawPosts = await this.postManager.getPostsByUser(profile.id, userId,  page || 1, perpage || 20);
-            const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts, format);
+            const rawPosts = await this.postManager.getPostsByUser(profile.id, userId,  page || 1, perpage || 20, format);
+            const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts);
 
             response.success({
                 posts,

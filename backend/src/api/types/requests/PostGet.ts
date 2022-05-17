@@ -7,6 +7,7 @@ import {UserEntity} from '../entities/UserEntity';
 export type PostGetRequest = {
     id: number;
     format?: ContentFormat;
+    noComments?: boolean;
 };
 
 export type PostGetResponse = {

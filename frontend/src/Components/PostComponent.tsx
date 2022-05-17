@@ -15,6 +15,7 @@ import {ReactComponent as EditIcon} from '../Assets/edit.svg';
 import PostLink from './PostLink';
 import {useAPI} from '../AppState/AppState';
 import {toast} from 'react-toastify';
+import CreateCommentComponent from './CreateCommentComponent';
 
 interface PostComponentProps {
     post: PostInfo;
@@ -22,11 +23,13 @@ interface PostComponentProps {
     buttons?: React.ReactNode;
     onChange?: (id: number, post: Partial<PostInfo>) => void;
     autoCut?: boolean;
+    onEdit?: (text: string, post: PostInfo) => Promise<PostInfo | undefined>;
 }
 
 export default function PostComponent(props: PostComponentProps) {
     const api = useAPI();
     const [showOptions, setShowOptions] = useState(false);
+    const [editingText, setEditingText] = useState<false | string>(false);
 
     const handleVote = useMemo(() => {
         return (value: number, vote?: number) => {
@@ -84,16 +87,48 @@ export default function PostComponent(props: PostComponentProps) {
             });
     };
 
+    const handleEditComplete = async (text: string) => {
+        try {
+            await props.onEdit?.(text, props.post);
+            setEditingText(false);
+            // return res;
+            return undefined;
+        }
+        catch (err) {
+            console.log('Could not edit post', err);
+            toast.error('Не удалось отредактировать пост');
+            throw err;
+        }
+    };
+
+    const handleEdit = async () => {
+        try {
+            const post = await api.postAPI.get(props.post.id, 'source', true);
+            setEditingText(post.post.content);
+        }
+        catch (e) {
+            console.log('Get comment error:', e);
+            toast.error('Не удалось включить редактирование');
+        }
+    };
+
     return (
         <div className={styles.post}>
             <div className={styles.header}>
                 <div className={styles.signature}>
                     {props.showSite ? <><Link to={`//${site}.${process.env.REACT_APP_ROOT_DOMAIN}/`}>{site}</Link> • </> : ''}
                     <Username className={styles.username} user={author} /> • <PostLink post={props.post}><DateComponent date={created} /></PostLink>
+                    {props.post.editFlag && <> • изменён</>}
                 </div>
                 <div className={styles.contentContainer}>
                     {title && <div className={styles.title}><PostLink post={props.post}>{title}</PostLink></div>}
-                    <ContentComponent className={styles.content} content={content} autoCut={props.autoCut} />
+                    {editingText === false ?
+                        <div className={styles.content}>
+                            <ContentComponent className={styles.content} content={content} autoCut={props.autoCut} />
+                        </div>
+                        :
+                        <CreateCommentComponent open={true} text={editingText} onAnswer={handleEditComplete} />
+                    }
                 </div>
             </div>
             <div className={styles.controls}>
@@ -102,7 +137,7 @@ export default function PostComponent(props: PostComponentProps) {
                 </div>
                 <div className={styles.control}><CommentsCount post={props.post} /></div>
                 {/*<div className={styles.control}><button disabled={true} onClick={toggleBookmark} className={bookmark ? styles.active : ''}><BookmarkIcon /><span className={styles.label}></span></button></div>*/}
-                <div className={styles.control}><button><EditIcon /></button></div>
+                {props.post.canEdit && props.onEdit && <div className={styles.control}><button onClick={handleEdit}><EditIcon /></button></div>}
                 <div className={styles.control + ' ' + styles.options}>
                     <button onClick={toggleOptions} className={showOptions ? styles.active : ''}><OptionsIcon /></button>
                     {showOptions &&

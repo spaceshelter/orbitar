@@ -14,7 +14,9 @@ export type PostInfo = PostBaseInfo & {
     rating: number;
     comments: number;
     newComments: number;
-    bookmark: boolean;
-    watch: boolean;
+    canEdit?: boolean;
+    bookmark?: boolean;
+    watch?: boolean;
     vote?: number;
+    lastReadCommentId?: number;
 };

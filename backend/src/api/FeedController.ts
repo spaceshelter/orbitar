@@ -62,8 +62,8 @@ export default class FeedController {
 
         try {
             const total = await this.feedManager.getSubscriptionsTotal(userId);
-            const rawPosts = await this.feedManager.getSubscriptionFeed(userId, page, perPage);
-            const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts, format);
+            const rawPosts = await this.feedManager.getSubscriptionFeed(userId, page, perPage, format);
+            const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts);
 
             response.success({
                 posts,
@@ -88,8 +88,8 @@ export default class FeedController {
 
         try {
             const total = await this.feedManager.getAllPostsTotal();
-            const rawPosts = await this.feedManager.getAllPosts(userId, page, perPage);
-            const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts, format);
+            const rawPosts = await this.feedManager.getAllPosts(userId, page, perPage, format);
+            const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts);
 
             response.success({
                 posts,
@@ -120,8 +120,8 @@ export default class FeedController {
 
             const siteId = site.id;
             const total = await this.feedManager.getSiteTotal(siteId);
-            const rawPosts = await this.feedManager.getSiteFeed(userId, siteId, page, perPage);
-            const { posts, users } = await this.enricher.enrichRawPosts(rawPosts, format);
+            const rawPosts = await this.feedManager.getSiteFeed(userId, siteId, page, perPage, format);
+            const { posts, users } = await this.enricher.enrichRawPosts(rawPosts);
 
             response.success({
                 posts,
@@ -146,8 +146,8 @@ export default class FeedController {
 
         try {
             const total = await this.feedManager.getWatchTotal(userId, filter === 'all');
-            const rawPosts = await this.feedManager.getWatchFeed(userId, page, perPage, filter === 'all');
-            const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts, format);
+            const rawPosts = await this.feedManager.getWatchFeed(userId, page, perPage, filter === 'all', format);
+            const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts);
 
             response.success({
                 posts,

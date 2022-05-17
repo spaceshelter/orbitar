@@ -89,6 +89,7 @@ type FeedWatchResponse = {
 type PostGetRequest = {
     id: number;
     format?: ContentFormat;
+    noComments?: boolean;
 };
 type PostGetResponse = {
     post: PostEntity;
@@ -124,6 +125,17 @@ type CommentEditRequest = {
 };
 type CommentEditResponse = {
     comment: CommentEntity;
+    users: Record<number, UserInfo>;
+};
+
+type PostEditRequest = {
+    id: number;
+    title: string;
+    content: string;
+    format?: ContentFormat;
+};
+type PostEditResponse = {
+    post: PostEntity;
     users: Record<number, UserInfo>;
 };
 
@@ -208,9 +220,11 @@ export default class PostAPI {
         });
     }
 
-    get(postId: number): Promise<PostGetResponse> {
+    get(postId: number, format: ContentFormat = 'html', noComments = false): Promise<PostGetResponse> {
         return this.api.request<PostGetRequest, PostGetResponse>('/post/get', {
-            id: postId
+            id: postId,
+            format,
+            noComments
         });
     }
 
@@ -232,6 +246,14 @@ export default class PostAPI {
     editComment(content: string, commentId: number): Promise<CommentEditResponse> {
         return this.api.request<CommentEditRequest, CommentEditResponse>('/post/edit-comment', {
             id: commentId,
+            content
+        });
+    }
+
+    editPost(title: string, content: string, postId: number): Promise<PostEditResponse> {
+        return this.api.request<PostEditRequest, PostEditResponse>('/post/edit', {
+            id: postId,
+            title,
             content
         });
     }
