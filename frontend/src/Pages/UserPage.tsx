@@ -64,7 +64,7 @@ export default function UserPage() {
                         </div>}
                         {profile.invites.length > 0 && <div>
                             По его приглашениям зарегистрированы: {profile.invites.map((user, idx) => {
-                                return <span key={idx}><Username  user={user}/>{idx < profile.invites.length - 1 ? ', ' : ''}</span>;
+                                return <Username key={idx} user={user}/>;
                             })}
                         </div>}
                         { isMyProfile && <button className={styles.logout} onClick={handleLogout}><LogoutIcon /> Выход </button> }

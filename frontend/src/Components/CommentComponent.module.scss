@@ -31,10 +31,9 @@
     }
     .username {
         color: var(--fgMedium);
-        svg{ fill: var(--fgSoftest); }
+        svg{ fill: var(--fgMedium); }
         &:hover {
             color: var(--primary);
-            svg{  fill: var(--primary); }
         }
     }
 }

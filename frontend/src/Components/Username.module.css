@@ -2,7 +2,18 @@
     color: var(--primary);
     display: flex;
     align-items: center;
+    transition: none;
 }
 .username svg{
+    transition: none;
     fill:  var(--primary);
+    opacity: .7;
+
+}
+
+.username:hover svg{
+    color:  var(--primaryHover);
+}
+.username:hover svg{
+    fill:  var(--primaryHover);
 }

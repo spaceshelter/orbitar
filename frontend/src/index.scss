@@ -15,14 +15,15 @@ html,body {
   height: 100%;
 }
 
-svg{
-  transition: fill 300ms ease-out;
-}
-*{
-  transition-duration: 300ms;
-  transition-timing-function: ease-out;
-  transition-property: color, background-color;
-}
+//svg{
+//  transition: fill 300ms ease-out;
+//}
+//*{
+//  transition-duration: 300ms;
+//  transition-timing-function: ease-out;
+//  transition-property: color, background-color;
+//}
+
 
 input[type="text"], input[type="password"], input[type="email"], textarea {
   background: var(--lowered);
