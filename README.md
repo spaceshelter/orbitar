@@ -96,7 +96,7 @@
     VAPID_PRIVATE_KEY=<Private Key>
     VAPID_CONTACT=<email@email.com>
     ```
-4. В `frontend/.env.local` добавить публичный ключ и `WDS_SOCKET_PORT=0`:
+4. В `frontend/.env.local` добавить публичный ключ:
    ```
    REACT_APP_VAPID_PUBLIC_KEY=<Public Key>
    ```
