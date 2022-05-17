@@ -1,10 +1,9 @@
 import React from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App';
-import { AppStateProvider } from './AppState/AppState';
-import { ThemeProvider } from './Theme/ThemeProvider';
-import { getThemes } from './theme';
-import { BrowserRouter } from 'react-router-dom';
+import {AppStateProvider} from './AppState/AppState';
+import {getThemes, ThemeProvider} from './Theme/ThemeProvider';
+import {BrowserRouter} from 'react-router-dom';
 (async () => {
     if (!('serviceWorker' in navigator)) {
         return;

@@ -31,10 +31,9 @@
     }
     .username {
         color: var(--fgMedium);
-        svg{ fill: var(--fgSoftest); }
+        svg{ fill: var(--fgMedium); }
         &:hover {
             color: var(--primary);
-            svg{  fill: var(--primary); }
         }
     }
 }
@@ -99,34 +98,33 @@
     }
 }
 
+:global {
+    .unreadOnly .comment:not(:global(.isNew)) > .commentBody {
+        opacity: 0.4;
+        transition: opacity 500ms;
+    }
 
-.unreadOnly .comment:not(.isNew) > .body {
-    opacity: 0.4;
-    transition: opacity 500ms;
-}
+    .unreadOnly .comment:not(:global(.isNew)) > .commentBody:hover {
+        opacity: inherit;
+        transition: opacity 500ms;
+    }
 
-.unreadOnly .comment:not(.isNew) > .body:hover {
-    opacity: inherit;
-    transition: opacity 500ms;
-}
+    .isNew {
+        border-left: 2px solid var(--primary);
+        margin-left: -8px;
+        padding-left: 8px;
 
-.isNew {
-    border-left: 2px solid var(--primary);
-    margin-left: -8px;
-    padding-left: 8px;
+        @media only screen and (min-width: 990px) {
+            margin-left: -21px;
+            padding-left: 21px;
+        }
+    }
 
-    @media only screen and (min-width: 990px) {
-        margin-left: -21px;
-        padding-left: 21px;
+    /* highlight only top level of unread comments */
+    .isNew .isNew {
+        border-left: 1px solid var(--fgAlmostInvisible);
     }
 }
-
-
-/* highlight only top level of unread comments */
-.isNew .isNew {
-    border-left: 1px solid var(--fgAlmostInvisible);
-}
-
 .newComment {
     color: var(--primary);
     font-style: italic;

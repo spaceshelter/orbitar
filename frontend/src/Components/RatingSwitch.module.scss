@@ -43,7 +43,8 @@ a.username {
     position: absolute;
     display: flex;
     width: 312px;
-    height: 257px;
+    min-height: 240px;
+    max-height: 320px;
     background: var(--elevated);
     box-shadow: 0 0 4px var(--shadow);
     border-radius: 8px;
@@ -83,6 +84,7 @@ a.username {
 .listDown {
     flex: 1;
     overflow: auto;
+    display: flex;
 
 }
 .listScrollContainer {
@@ -90,14 +92,13 @@ a.username {
     align-items: stretch;
     background: var(--dim1);
     gap: 4px;
-    min-height: 100%;
+    flex: 1;
     overflow-x: hidden;
     overflow-y: auto;
 }
 
 .listMinus, .listPlus {
     flex: 1;
-    min-height: 100%;
     font-size: 13px;
     padding: 12px;
     line-height: 1.5em;

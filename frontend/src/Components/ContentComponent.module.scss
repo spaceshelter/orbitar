@@ -7,7 +7,9 @@
     -webkit-mask-image: -webkit-gradient(linear, left 70%, left 90%, from(rgba(0,0,0,1)), to(rgba(0,0,0,0)));
     mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 70%, rgba(0,0,0,0) 90%);
   }
-
+  b, i, u, strike, blockquote{
+    color: var(--fg);
+  }
 }
 
 .cutCover {
