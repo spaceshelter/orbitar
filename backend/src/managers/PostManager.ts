@@ -124,6 +124,9 @@ export default class PostManager {
             if (raw.author_id === forUserId) {
                 comment.canEdit = true;
             }
+            if (raw.edit_flag) {
+                comment.editFlag = raw.edit_flag;
+            }
 
             comments.push(comment);
         }
@@ -171,7 +174,7 @@ export default class PostManager {
 
         const html = (await this.parser.parse(content)).text;
 
-        const updated = await this.commentRepository.updateCommentText(commentId, content, html);
+        const updated = await this.commentRepository.updateCommentText(forUserId, commentId, content, html);
         if (!updated) {
             throw new CodeError('unknown', 'Could not edit comment');
         }

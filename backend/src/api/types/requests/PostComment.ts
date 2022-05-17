@@ -1,6 +1,6 @@
 import {CommentEntity} from '../entities/CommentEntity';
 import {UserEntity} from '../entities/UserEntity';
-import {ContentFormat} from '../entities/ContentFormat';
+import {ContentFormat} from '../entities/common';
 import {SiteEntity} from '../entities/SiteEntity';
 
 export type PostCommentRequest = {

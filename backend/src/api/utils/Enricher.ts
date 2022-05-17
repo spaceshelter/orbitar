@@ -56,7 +56,7 @@ export class Enricher {
                 siteName = sitesById[post.site_id].site;
             }
 
-            posts.push({
+            const postResult: PostEntity = {
                 id: post.post_id,
                 site: siteName,
                 author: post.author_id,
@@ -69,7 +69,12 @@ export class Enricher {
                 bookmark: !!post.bookmark,
                 watch: !!post.watch,
                 vote: post.vote
-            });
+            };
+            if (post.edit_flag) {
+                postResult.editFlag = post.edit_flag;
+            }
+
+            posts.push(postResult);
         }
 
         return {
@@ -108,6 +113,9 @@ export class Enricher {
             }
             if (rawComment.canEdit) {
                 comment.canEdit = true;
+            }
+            if (rawComment.editFlag) {
+                comment.editFlag = rawComment.editFlag;
             }
 
             users[rawComment.author] = users[rawComment.author] || await this.userManager.getById(rawComment.author);

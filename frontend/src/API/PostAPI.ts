@@ -4,6 +4,11 @@ import {SiteInfo} from '../Types/SiteInfo';
 
 export type ContentFormat = 'html' | 'source';
 
+export enum EditFlag {
+    original,
+    edited
+}
+
 export type PostEntity = {
     id: number;
     site: string;
@@ -14,6 +19,7 @@ export type PostEntity = {
     rating: number;
     comments: number;
     newComments: number;
+    editFlag?: EditFlag;
     vote?: number;
 };
 
@@ -26,6 +32,7 @@ export type CommentEntity = {
     rating: number;
     vote?: number;
     isNew?: boolean;
+    editFlag?: EditFlag;
 
     post: number;
     site: string;

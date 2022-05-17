@@ -1,4 +1,4 @@
-import {ContentFormat} from '../entities/ContentFormat';
+import {ContentFormat} from '../entities/common';
 import {UserEntity} from '../entities/UserEntity';
 import {CommentEntity} from '../entities/CommentEntity';
 

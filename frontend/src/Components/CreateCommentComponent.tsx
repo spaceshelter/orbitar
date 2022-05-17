@@ -21,7 +21,6 @@ interface CreateCommentProps {
     text?: string;
 
     onAnswer: (text: string, post?: PostLinkInfo, comment?: CommentInfo) => Promise<CommentInfo | undefined>;
-    onPreview: (text: string) => Promise<string>;
 }
 
 export default function CreateCommentComponent(props: CreateCommentProps) {

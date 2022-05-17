@@ -1,6 +1,5 @@
 import DB from '../DB';
 import {PostRaw, PostRawWithUserData} from '../types/PostRaw';
-import {OkPacket} from 'mysql2';
 import CodeError from '../../CodeError';
 
 export default class PostRepository {
@@ -162,20 +161,38 @@ export default class PostRepository {
     }
 
     async createPost(siteId: number, userId: number, title: string, source: string, html: string): Promise<PostRaw> {
-        const postInsertResult: OkPacket =
-            await this.db.query('insert into posts (site_id, author_id, title, source, html) values(:siteId, :userId, :title, :source, :html)',
-                {siteId, userId, title, source, html});
-        const postInsertId = postInsertResult.insertId;
-        if (!postInsertId) {
-            throw new CodeError('unknown', 'Could not insert post');
-        }
+        return await this.db.inTransaction(async (db) => {
+            const postId = await db.insert('posts', {
+                site_id: siteId,
+                author_id: userId,
+                title,
+                source,
+                html
+            });
 
-        const post = this.getPost(postInsertId);
-        if (!post) {
-            throw new CodeError('unknown', 'Could not select post');
-        }
+            const contentSourceId = await db.insert('content_source', {
+                ref_type: 'post',
+                ref_id: postId,
+                author_id: userId,
+                source
+            });
 
-        return post;
+            await db.query('update posts set content_source_id=:contentSourceId where post_id=:postId', {
+                postId,
+                contentSourceId
+            });
+
+            const post = await db.fetchOne<PostRaw>('select * from posts where post_id=:postId', {
+                postId
+            });
+
+            if (!post) {
+                console.log('POST', post, postId);
+                throw new CodeError('unknown', 'Could not select post');
+            }
+
+            return post;
+        });
     }
 
     async getSitePostUpdateDates(forUserId: number, siteId: number, afterPostId: number, limit: number): Promise<{ post_id: number, commented_at: Date }[]> {

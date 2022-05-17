@@ -78,6 +78,7 @@ export default function CommentComponent(props: CommentProps) {
                 <div className={styles.signature}>
                     {props.showSite ? <><Link to={`//${props.comment.site}.${process.env.REACT_APP_ROOT_DOMAIN}/`}>{props.comment.site}</Link> • </> : ''}
                     <Username className={styles.username} user={author} /> • <PostLink post={props.comment.postLink} commentId={props.comment.id}><DateComponent date={created} /></PostLink>
+                    {props.comment.editFlag && <> • изменён</>}
                 </div>
                 {editingText === false ?
                     <div className={styles.content}>

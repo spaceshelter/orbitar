@@ -1,7 +1,7 @@
 import DB from '../DB';
 import {CommentRaw, CommentRawWithUserData} from '../types/PostRaw';
 import CodeError from '../../CodeError';
-import {OkPacket, ResultSetHeader} from 'mysql2';
+import {ResultSetHeader} from 'mysql2';
 
 export default class CommentRepository {
     private db: DB;
@@ -21,16 +21,6 @@ export default class CommentRepository {
             commentId,
             forUserId
         });
-    }
-
-    async updateCommentText(commentId, source: string, html: string): Promise<boolean> {
-        const result = await this.db.query<ResultSetHeader>('update comments set source=:source, html=:html where comment_id=:commentId', {
-            commentId,
-            source,
-            html
-        });
-
-        return result.changedRows > 0;
     }
 
     async getPostComments(postId: number, forUserId: number): Promise<CommentRawWithUserData[]> {
@@ -82,11 +72,7 @@ export default class CommentRepository {
                 throw new CodeError('no-post', 'Post not found');
             }
 
-            const commentInsertResult: OkPacket = await conn.query(`
-                insert into comments
-                    (site_id, post_id, parent_comment_id, author_id, source, html)
-                    values(:site_id, :post_id, :parent_comment_id, :author_id, :source, :html)
-            `, {
+            const commentId = await conn.insert('comments', {
                 site_id: siteResult.site_id,
                 post_id: postId,
                 parent_comment_id: parentCommentId,
@@ -95,18 +81,68 @@ export default class CommentRepository {
                 html: html
             });
 
-            const commentInsertId = commentInsertResult.insertId;
-            if (!commentInsertId) {
-                throw new CodeError('unknown', 'Could not insert comment');
-            }
+            const contentSourceId = await conn.insert('content_source', {
+                ref_type: 'comment',
+                ref_id: commentId,
+                author_id: userId,
+                source
+            });
+
+            await conn.query('update comments set content_source_id=:contentSourceId where comment_id=:commentId', {
+                commentId,
+                contentSourceId
+            });
 
             await conn.query(`update posts p set comments=(select count(*) from comments c where c.post_id = p.post_id), last_comment_id=:last_comment_id, commented_at=now() where p.post_id=:post_id`, {
                 post_id: postId,
-                last_comment_id: commentInsertId
+                last_comment_id: commentId
             });
 
-            const commentResult:CommentRaw[] = await conn.query(`select * from comments where comment_id = :comment_id`, { comment_id: commentInsertId });
-            return commentResult[0];
+            const comment = await conn.fetchOne<CommentRaw>(`select * from comments where comment_id = :commentId`, {
+                commentId
+            });
+
+            if (!comment) {
+                throw new CodeError('unknown', 'Could not select comment');
+            }
+
+            return comment;
+        });
+    }
+
+    async updateCommentText(updateByUserId: number, commentId: number, source: string, html: string, comment?: string): Promise<boolean> {
+        return await this.db.inTransaction(async (conn) => {
+            const originalComment = await conn.fetchOne<CommentRaw>(`select * from comments where comment_id = :commentId`, {
+                commentId
+            });
+
+            if (!originalComment) {
+                throw new CodeError('unknown', 'Could not select comment');
+            }
+
+            const contentSourceId = await conn.insert('content_source', {
+                ref_type: 'comment',
+                ref_id: commentId,
+                author_id: updateByUserId,
+                source,
+                comment
+            });
+
+            const editFlag = 1;
+
+            const result = await conn.query<ResultSetHeader>('update comments set source=:source, html=:html, content_source_id=:contentSourceId, edit_flag=:editFlag where comment_id=:commentId', {
+                commentId,
+                source,
+                html,
+                contentSourceId,
+                editFlag
+            });
+
+            if (!result.changedRows) {
+                throw new CodeError('unknown', 'Could not update comment');
+            }
+
+            return true;
         });
     }
 }

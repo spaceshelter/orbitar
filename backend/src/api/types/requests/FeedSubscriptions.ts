@@ -1,7 +1,7 @@
 import {PostEntity} from '../entities/PostEntity';
 import {UserEntity} from '../entities/UserEntity';
 import {SiteBaseEntity} from '../entities/SiteEntity';
-import {ContentFormat} from '../entities/ContentFormat';
+import {ContentFormat} from '../entities/common';
 
 export type FeedSubscriptionsRequest = {
     page?: number;

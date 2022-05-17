@@ -30,6 +30,7 @@ export interface CommentInfo {
     rating: number;
     vote?: number;
     isNew?: boolean;
+    editFlag?: boolean;
     postLink: PostLinkInfo;
     answers?: CommentInfo[];
     post?: number;
