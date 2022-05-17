@@ -153,7 +153,7 @@ function applyTheme(stylesheet: HTMLStyleElement, toStyle: ThemeStyles, withTran
     if(withTransition){
         const transitionCss = `svg{transition: fill 300ms ease-in-out;}\n*{ transition-duration: 300ms; transition-timing-function: ease-in; transition-property: color, background-color; }\n`;
         stylesheet.innerHTML = css + transitionCss;
-        setTimeout(()=>{  stylesheet.innerHTML =css; }, 350);
+        setTimeout(()=>{  stylesheet.innerHTML =css; }, 700);
     }else{
         stylesheet.innerHTML = css;
     }
