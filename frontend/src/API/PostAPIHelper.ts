@@ -2,7 +2,7 @@ import PostAPI, {CommentEntity, PostEntity} from './PostAPI';
 import {CommentInfo, PostInfo} from '../Types/PostInfo';
 import {SiteInfo} from '../Types/SiteInfo';
 import APICache from './APICache';
-import {AppStateSetters} from '../AppState/AppState';
+import {AppState} from '../AppState/AppState';
 import {UserInfo} from '../Types/UserInfo';
 
 type FeedPostsResult = {
@@ -30,12 +30,12 @@ interface CommentResponse {
 export default class PostAPIHelper {
     private postAPI: PostAPI;
     private cache: APICache;
-    private setters: AppStateSetters;
+    private appState: AppState;
 
-    constructor(postAPI: PostAPI, setters: AppStateSetters, cache: APICache) {
+    constructor(postAPI: PostAPI, appState: AppState, cache: APICache) {
         this.postAPI = postAPI;
         this.cache = cache;
-        this.setters = setters;
+        this.appState = appState;
     }
 
     async create(site: string, title: string, content: string) {
@@ -148,9 +148,10 @@ export default class PostAPIHelper {
 
     async read(postId: number, comments: number, lastCommentId?: number) {
         const result = await this.postAPI.read(postId, comments, lastCommentId);
-        if (result.watch) {
-            this.setters.setUserStats((old) => {
-                return { ...old, watch: result.watch, notifications: result.notifications };
+        if (result.watch && result.notifications) {
+            this.appState.setUserStats({
+                watch: result.watch,
+                notifications: result.notifications
             });
         }
         return result;

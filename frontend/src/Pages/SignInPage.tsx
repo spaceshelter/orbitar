@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
 import styles from './SignInPage.module.css';
 import {useForm, SubmitHandler} from 'react-hook-form';
-import {useAppState} from '../AppState/AppState';
+import {useAPI} from '../AppState/AppState';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {APIError} from '../API/APIBase';
 
@@ -11,7 +11,7 @@ type SignInForm = {
 };
 
 export default function SignInPage() {
-    const { api } = useAppState();
+    const api = useAPI();
     const navigate = useNavigate();
     const location = useLocation();
     const [isSigningIn, setSigningIn] = useState(false);

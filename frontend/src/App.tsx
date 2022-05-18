@@ -2,15 +2,15 @@ import React, {useState} from 'react';
 import { Routes, Route, Outlet } from 'react-router-dom';
 import {Theme, ToastContainer} from 'react-toastify';
 
-import {AppState, useAppState} from './AppState/AppState';
+import {AppLoadingState, useAppState} from './AppState/AppState';
 import {CreatePostPage} from './Pages/CreatePostPage';
 
 import PostPage from './Pages/PostPage';
-import Topbar, {TopbarMenuState} from './Components/Topbar';
+import {Topbar, TopbarMenuState} from './Components/Topbar';
 import InvitePage from './Pages/InvitePage';
 import LoadingPage from './Pages/LoadingPage';
 import SignInPage from './Pages/SignInPage';
-import UserPage from './Pages/UserPage';
+import {UserPage} from './Pages/UserPage';
 import FeedPage from './Pages/FeedPage';
 
 import styles from './App.module.css';
@@ -18,23 +18,24 @@ import './index.scss';
 import 'react-toastify/dist/ReactToastify.css';
 import {ReactComponent as MonsterIcon} from './Assets/monster_large.svg';
 import {useTheme} from './Theme/ThemeProvider';
-import SiteSidebar from './Components/SiteSidebar';
+import {SiteSidebar} from './Components/SiteSidebar';
 import WatchPage from './Pages/WatchPage';
 import ThemePreviewPage from './Pages/ThemePreviewPage';
+import {observer} from 'mobx-react-lite';
 
-export default function App() {
-    const {appState} = useAppState();
+export const App = observer(() => {
+    const {appLoadingState} = useAppState();
 
-    if (appState === AppState.loading) {
+    if (appLoadingState === AppLoadingState.loading) {
         return <Loading />;
     }
 
-    if (appState === AppState.unauthorized) {
+    if (appLoadingState === AppLoadingState.unauthorized) {
         return <Unauthorized />;
     }
 
     return <Ready />;
-}
+});
 
 function Loading() {
     return (
@@ -59,9 +60,8 @@ function Unauthorized() {
     );
 }
 
-function ReadyContainer() {
+const ReadyContainer = observer(() => {
     const {theme} = useTheme();
-    const {site} = useAppState();
     const [menuState, setMenuState] = useState<TopbarMenuState>(localStorage.getItem('menuState') === 'close' ? 'close' : 'open');
 
     const handleMenuToggle = () => {
@@ -81,7 +81,7 @@ function ReadyContainer() {
     return (
         <>
             <Topbar menuState={menuState} onMenuToggle={handleMenuToggle} />
-            {site && menuState === 'open' && <SiteSidebar site={site} />}
+            {menuState === 'open' && <SiteSidebar />}
             <div className={styles.container}>
                 <div className={styles.innerContainer}>
                     <Outlet />
@@ -91,9 +91,9 @@ function ReadyContainer() {
             <ToastContainer theme={theme as Theme} />
         </>
     );
-}
+});
 
-function Ready() {
+const Ready = observer(() => {
     return (
         <>
             <Routes>
@@ -113,4 +113,4 @@ function Ready() {
             </Routes>
         </>
     );
-}
+});

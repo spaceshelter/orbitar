@@ -2,7 +2,7 @@ import AuthAPIHelper from './AuthAPIHelper';
 import AuthAPI from './AuthAPI';
 import InviteAPI from './InviteAPI';
 import APIBase, {APIError} from './APIBase';
-import {AppState, AppStateSetters} from '../AppState/AppState';
+import {AppLoadingState, AppState} from '../AppState/AppState';
 import PostAPI from './PostAPI';
 import PostAPIHelper from './PostAPIHelper';
 import APICache from './APICache';
@@ -29,12 +29,14 @@ export default class APIHelper {
     notificationsAPI: NotificationsAPI;
     notifications: NotificationsAPIHelper;
     private baseAPI: APIBase;
-    private setters: AppStateSetters;
     private readonly siteName: string;
     private initRetryCount = 0;
+    private appState: AppState;
+    private updateInterval: number = parseInt(process.env.REACT_APP_STATUS_UPDATE_INTERVAL || '60');
 
-    constructor(api: APIBase, setters: AppStateSetters) {
+    constructor(api: APIBase, appState: AppState) {
         this.baseAPI = api;
+        this.appState = appState;
         this.cache = new APICache();
         this.authAPI = new AuthAPI(api);
         this.inviteAPI = new InviteAPI(api);
@@ -42,13 +44,12 @@ export default class APIHelper {
         this.voteAPI = new VoteAPI(api);
         this.siteAPI = new SiteAPI(api);
         this.notificationsAPI = new NotificationsAPI(api);
-        this.post = new PostAPIHelper(this.postAPI, setters, this.cache);
+        this.post = new PostAPIHelper(this.postAPI, appState, this.cache);
         this.userAPI = new UserAPI(api, this.post);
-        this.auth = new AuthAPIHelper(this.authAPI, setters);
+        this.auth = new AuthAPIHelper(this.authAPI, appState);
         this.user = new UserAPIHelper(this.userAPI, this.cache);
-        this.site = new SiteAPIHelper(this.siteAPI, setters);
-        this.notifications = new NotificationsAPIHelper(this.notificationsAPI, setters);
-        this.setters = setters;
+        this.site = new SiteAPIHelper(this.siteAPI, appState);
+        this.notifications = new NotificationsAPIHelper(this.notificationsAPI, appState);
 
         let siteName = 'main';
         if (window.location.hostname !== process.env.REACT_APP_ROOT_DOMAIN) {
@@ -60,32 +61,27 @@ export default class APIHelper {
         this.siteName = siteName;
     }
 
-    updateSetters(setters: AppStateSetters) {
-        this.setters = setters;
-        this.auth.setters = setters;
-    }
-
     async init() {
         try {
-            this.setters.setAppState(AppState.loading);
+            this.appState.appLoadingState = AppLoadingState.loading;
 
             const status = await this.authAPI.status(this.siteName);
 
-            this.setters.setUserInfo(status.user);
-            this.setters.setSite(status.site);
-            this.setters.setAppState(AppState.authorized);
-            this.setters.setUserStats({ watch: status.watch, notifications: status.notifications });
+            this.appState.setUserInfo(status.user);
+            this.appState.setUserStats({ watch: status.watch, notifications: status.notifications });
+            this.appState.setSite(status.site);
+            this.appState.setAppLoadingState(AppLoadingState.authorized);
 
             // start fetch status update
             setTimeout(() => {
                 this.fetchStatusUpdate().then().catch();
-            }, 60 * 1000);
+            }, this.updateInterval * 1000);
         }
         catch (error) {
             if (error instanceof APIError) {
                 console.log('ME ERROR', error.code, error.message);
                 if (error.code === 'auth-required') {
-                    this.setters.setAppState(AppState.unauthorized);
+                    this.appState.setAppLoadingState(AppLoadingState.unauthorized);
                 }
             }
             else {
@@ -114,15 +110,15 @@ export default class APIHelper {
         try {
             const status = await this.authAPI.status(this.siteName);
 
-            this.setters.setUserInfo(status.user);
-            this.setters.setSite(status.site);
-            this.setters.setAppState(AppState.authorized);
-            this.setters.setUserStats({watch: status.watch, notifications: status.notifications});
+            this.appState.setUserInfo(status.user);
+            this.appState.setUserStats({ watch: status.watch, notifications: status.notifications });
+            this.appState.setSite(status.site);
+            this.appState.setAppLoadingState(AppLoadingState.authorized);
         }
         finally {
             setTimeout(() => {
                 this.fetchStatusUpdate().then().catch();
-            }, 60 * 1000);
+            }, this.updateInterval * 1000);
         }
     }
 

@@ -1,20 +1,19 @@
 import SiteAPI from './SiteAPI';
-import {AppStateSetters} from '../AppState/AppState';
+import {AppState} from '../AppState/AppState';
 
 export default class SiteAPIHelper {
     private api: SiteAPI;
-    setters: AppStateSetters;
+    private appState: AppState;
 
-    constructor(api: SiteAPI, setters: AppStateSetters) {
+    constructor(api: SiteAPI, appState: AppState) {
         this.api = api;
-        this.setters = setters;
+        this.appState = appState;
     }
 
     async subscribe(site: string, main: boolean, bookmarks: boolean) {
         await this.api.subscribe(site, main, bookmarks);
-        this.setters.setSite(prev => {
-            if (!prev) return;
-            return { ...prev, subscribe: { bookmarks: bookmarks, main: main } };
-        });
+        if (this.appState.site) {
+            this.appState.setSite({...this.appState.site, subscribe: { bookmarks, main }});
+        }
     }
 }

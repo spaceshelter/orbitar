@@ -1,5 +1,5 @@
 import NotificationsAPI, {CommentBaseEntity, PostBaseEntity, UserBaseEntity} from './NotificationsAPI';
-import {AppStateSetters} from '../AppState/AppState';
+import {AppState} from '../AppState/AppState';
 
 export type NotificationInfo = {
     id: number;
@@ -14,11 +14,11 @@ export type NotificationInfo = {
 
 export default class NotificationsAPIHelper {
     private api: NotificationsAPI;
-    private setters: AppStateSetters;
+    private appState: AppState;
 
-    constructor(api: NotificationsAPI, setters: AppStateSetters) {
+    constructor(api: NotificationsAPI, appState: AppState) {
         this.api = api;
-        this.setters = setters;
+        this.appState = appState;
     }
 
     async read(id: number) {
@@ -26,9 +26,7 @@ export default class NotificationsAPIHelper {
     }
 
     async readAll() {
-        this.setters.setUserStats((old) => {
-            return { ...old, notifications: 0 };
-        });
+        this.appState.setNotificationsCount(0);
         return await this.api.readAll();
     }
 

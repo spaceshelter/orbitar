@@ -1,6 +1,6 @@
 import React from 'react';
 import {createRoot} from 'react-dom/client';
-import App from './App';
+import {App} from './App';
 import {AppStateProvider} from './AppState/AppState';
 import {getThemes, ThemeProvider} from './Theme/ThemeProvider';
 import {BrowserRouter} from 'react-router-dom';

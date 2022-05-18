@@ -12,6 +12,7 @@ import {ReactComponent as ProfileIcon} from '../Assets/profile.svg';
 import {ReactComponent as DarkIcon} from '../Assets/theme_dark.svg';
 import {ReactComponent as LightIcon} from '../Assets/theme_light.svg';
 import NotificationsPopup from './NotificationsPopup';
+import {observer} from 'mobx-react-lite';
 
 export type TopbarMenuState = 'disabled' | 'open' | 'close';
 
@@ -20,11 +21,10 @@ type TopbarProps = {
     onMenuToggle: () => void;
 };
 
-export default function Topbar(props: TopbarProps) {
-    const {userInfo, userStats} = useAppState();
+export const Topbar = observer((props: TopbarProps) => {
+    const {userInfo} = useAppState();
     const {theme, setTheme} = useTheme();
     const [showNotifications, setShowNotifications] = useState(false);
-
 
     if (!userInfo) {
         return <></>;
@@ -71,12 +71,26 @@ export default function Topbar(props: TopbarProps) {
 
                 <div className={styles.right}>
                     <button onClick={toggleTheme}>{theme === 'dark' ? <LightIcon /> : <DarkIcon />}</button>
-                    <Link to={'/watch'} className={userStats.watch.comments > 0 ? styles.active : ''}><HotIcon /><span className={styles.label}>{userStats.watch.comments > 0 ? userStats.watch.comments : ''}</span></Link>
-                    <button disabled={userStats.notifications === 0} className={userStats.notifications > 0 ? styles.active : ''} onClick={handleNotificationsToggle}><NotificationIcon /><span className={styles.label}>{userStats.notifications > 0 ? userStats.notifications : ''}</span></button>
+                    <WatchButton />
+                    <NotificationsButton onClick={handleNotificationsToggle} />
                     <Link to={'/user/' + userInfo.username}><ProfileIcon /></Link>
                 </div>
             </div>
             {showNotifications && <NotificationsPopup onClose={handleNotificationsClose} />}
         </>
     );
-}
+});
+
+const WatchButton = observer(() => {
+    const {userStats} = useAppState();
+    return (
+        <Link to={'/watch'} className={userStats.watch.comments > 0 ? styles.active : ''}><HotIcon /><span className={styles.label}>{userStats.watch.comments > 0 ? userStats.watch.comments : ''}</span></Link>
+    );
+});
+
+const NotificationsButton = observer((props: React.ComponentPropsWithRef<'button'>) => {
+    const {userStats} = useAppState();
+    return (
+        <button {...props} disabled={userStats.notifications === 0} className={userStats.notifications > 0 ? styles.active : ''}><NotificationIcon /><span className={styles.label}>{userStats.notifications > 0 ? userStats.notifications : ''}</span></button>
+    );
+});
