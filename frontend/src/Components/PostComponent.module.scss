@@ -64,6 +64,7 @@
     margin-right: 30px;
     display: flex;
     align-items: center;
+    color: var(--fgSoftest);
 
     button, >a {
         height: 24px;
@@ -87,6 +88,9 @@
             fill: var(--primary);
             color: var(--primary);
             font-weight: bold;
+            .label{
+                color: var(--primary);
+            }
         }
         &:hover {
             color: var(--primaryHover);

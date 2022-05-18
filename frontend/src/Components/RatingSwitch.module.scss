@@ -30,14 +30,19 @@
 
 a.username {
     color: var(--fg);
-    svg{display: none;}
     font-weight: normal;
+
+    display: block;
+    max-width: 100px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+
+    svg{display: none;}
     &:hover {
         color: var(--primary);
     }
 }
-
-
 
 .list {
     position: absolute;
@@ -53,9 +58,9 @@ a.username {
 }
 
 .listUp {
-    height: 92px;
     display: flex;
     align-items: center;
+    flex: 0 0 92px;
 }
 .listValue {
     text-align: center;
@@ -74,7 +79,6 @@ a.username {
 }
 
 .listDetails {
-    flex: 1;
     border-left: 1px solid var(--fgGhost);
     color: var(--fg);
     padding: 5px 0 5px 18px;
@@ -82,26 +86,29 @@ a.username {
 }
 
 .listDown {
-    flex: 1;
-    overflow: auto;
     display: flex;
-
+    overflow: auto;
+    background: var(--dim1);
+    min-height: 100%;
+    flex-grow: 1;
 }
 .listScrollContainer {
     display: flex;
-    align-items: stretch;
-    background: var(--dim1);
+    align-items: flex-start;
     gap: 4px;
-    flex: 1;
+    flex: 1  auto;
+    min-height: 100%;
     overflow-x: hidden;
     overflow-y: auto;
 }
 
 .listMinus, .listPlus {
-    flex: 1;
+    flex: 0 1 50%;
     font-size: 13px;
     padding: 12px;
-    line-height: 1.5em;
+    line-height: 1.5em;height: auto;
+    min-height: 100%;
+    box-sizing: border-box;
     >div{
         display: flex;
         align-items: center;
