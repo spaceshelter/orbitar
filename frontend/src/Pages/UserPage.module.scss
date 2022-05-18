@@ -4,14 +4,20 @@
     margin: 56px auto 0;
 }
 
-.header, .userinfo {
+
+.header{
     padding: 10px 0;
+}
+
+.userinfo {
+    padding-top: 40px;
     >div{
         width: 100%;
         display: flex;
         flex-wrap: wrap;
-        gap: 8px;
+        gap: 2px 8px;
         color: var(--fg);
+        padding-bottom: 16px;
     }
 }
 
