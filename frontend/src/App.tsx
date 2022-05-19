@@ -102,9 +102,15 @@ function Ready() {
                     <Route path="posts" element={<FeedPage />} />
                     <Route path="subscriptions" element={<FeedPage />} />
                     <Route path="post/:postId" element={<PostPage />} />
-                    <Route path="user/:username" element={<UserPage />} />
-                    <Route path="user/:username/posts" element={<UserPage />} />
-                    <Route path="user/:username/comments" element={<UserPage />} />
+                    <Route path="user/:username">
+                        <Route path="" element={<UserPage />} />
+                        <Route path=":page" element={<UserPage />} />
+                    </Route>
+                    <Route path="profile">
+                        <Route path="" element={<UserPage />} />
+                        <Route path=":page" element={<UserPage />} />
+                    </Route>
+
                     <Route path="create" element={<CreatePostPage />} />
                     <Route path="watch" element={<WatchPage />} />
                     <Route path="watch/all" element={<WatchPage />} />

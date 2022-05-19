@@ -80,7 +80,8 @@ export default class NotificationManager {
                     }
                     const byUser = {
                         id: byUserRaw.user_id,
-                        username: byUserRaw.username
+                        username: byUserRaw.username,
+                        gender: byUserRaw.gender
                     };
 
                     const postRaw = await this.postRepository.getPost(data.source.postId);

@@ -10,6 +10,7 @@ export type PostRaw = {
     commented_at: Date;
     edit_flag?: number;
     comments: number;
+    gold: number;
 };
 
 export type PostRawWithUserData = PostRaw & {

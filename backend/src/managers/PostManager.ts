@@ -1,7 +1,7 @@
 import PostRepository from '../db/repositories/PostRepository';
 import CommentRepository from '../db/repositories/CommentRepository';
 import BookmarkRepository from '../db/repositories/BookmarkRepository';
-import {CommentRawWithUserData} from '../db/types/PostRaw';
+import {CommentRawWithUserData, PostRaw} from '../db/types/PostRaw';
 import {BookmarkRaw} from '../db/types/BookmarkRaw';
 import SiteManager from './SiteManager';
 import CodeError from '../CodeError';
@@ -48,6 +48,10 @@ export default class PostManager {
     async getPostsByUser(userId: number, forUserId: number, page: number, perpage: number, format: ContentFormat): Promise<PostInfo[]> {
         const posts = await this.postRepository.getPostsByUser(userId, forUserId, page, perpage);
         return await this.feedManager.convertRawPost(forUserId, posts, format);
+    }
+
+    getPostWithoutUserData(postId: number): Promise<PostRaw | undefined> {
+        return this.postRepository.getPost(postId);
     }
 
     getPostsByUserTotal(userId: number): Promise<number> {

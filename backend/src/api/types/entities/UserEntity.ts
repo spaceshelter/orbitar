@@ -8,10 +8,10 @@ export type UserBaseEntity = {
     id: number;
     username: string;
     gender: UserGender;
-    karma: number;
 };
 
 export type UserEntity = UserBaseEntity & {
+    karma: number;
     name?: string;
     vote?: number;
 };

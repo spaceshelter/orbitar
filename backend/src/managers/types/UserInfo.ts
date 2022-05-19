@@ -7,10 +7,10 @@ export enum UserGender {
 export type UserBaseInfo = {
     id: number;
     username: string;
+    gender: UserGender;
 };
 
 export type UserInfo = UserBaseInfo & {
-    gender: UserGender;
     karma: number;
     name: string;
     vote?: number;
