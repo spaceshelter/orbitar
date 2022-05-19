@@ -1,7 +1,8 @@
 import DB from '../DB';
 import {PostRaw, PostRawWithUserData} from '../types/PostRaw';
-import {OkPacket} from 'mysql2';
 import CodeError from '../../CodeError';
+import {ResultSetHeader} from 'mysql2';
+import {ContentSourceRaw} from '../types/ContentSourceRaw';
 
 export default class PostRepository {
     private db: DB;
@@ -162,20 +163,38 @@ export default class PostRepository {
     }
 
     async createPost(siteId: number, userId: number, title: string, source: string, html: string): Promise<PostRaw> {
-        const postInsertResult: OkPacket =
-            await this.db.query('insert into posts (site_id, author_id, title, source, html) values(:siteId, :userId, :title, :source, :html)',
-                {siteId, userId, title, source, html});
-        const postInsertId = postInsertResult.insertId;
-        if (!postInsertId) {
-            throw new CodeError('unknown', 'Could not insert post');
-        }
+        return await this.db.inTransaction(async (db) => {
+            const postId = await db.insert('posts', {
+                site_id: siteId,
+                author_id: userId,
+                title,
+                source,
+                html
+            });
 
-        const post = this.getPost(postInsertId);
-        if (!post) {
-            throw new CodeError('unknown', 'Could not select post');
-        }
+            const contentSourceId = await db.insert('content_source', {
+                ref_type: 'post',
+                ref_id: postId,
+                author_id: userId,
+                source
+            });
 
-        return post;
+            await db.query('update posts set content_source_id=:contentSourceId where post_id=:postId', {
+                postId,
+                contentSourceId
+            });
+
+            const post = await db.fetchOne<PostRaw>('select * from posts where post_id=:postId', {
+                postId
+            });
+
+            if (!post) {
+                console.log('POST', post, postId);
+                throw new CodeError('unknown', 'Could not select post');
+            }
+
+            return post;
+        });
     }
 
     async getSitePostUpdateDates(forUserId: number, siteId: number, afterPostId: number, limit: number): Promise<{ post_id: number, commented_at: Date }[]> {
@@ -196,5 +215,50 @@ export default class PostRepository {
                 last_post_id: afterPostId,
                 limit: limit
             });
+    }
+
+    async updatePostText(updateByUserId: number, postId: number, title: string, source: string, html: string, comment?: string): Promise<boolean> {
+        return await this.db.inTransaction(async (conn) => {
+            const originalPost = await conn.fetchOne<PostRaw>(`select * from posts where post_id = :postId`, {
+                postId
+            });
+
+            if (!originalPost) {
+                throw new CodeError('unknown', 'Could not select post');
+            }
+
+            const contentSourceId = await conn.insert('content_source', {
+                ref_type: 'post',
+                ref_id: postId,
+                author_id: updateByUserId,
+                title,
+                source,
+                comment
+            });
+
+            const editFlag = 1;
+
+            const result = await conn.query<ResultSetHeader>('update posts set title=:title, source=:source, html=:html, content_source_id=:contentSourceId, edit_flag=:editFlag where post_id=:postId', {
+                title: title || '',
+                postId,
+                source,
+                html,
+                contentSourceId,
+                editFlag
+            });
+
+            if (!result.changedRows) {
+                throw new CodeError('unknown', 'Could not update post');
+            }
+
+            return true;
+        });
+    }
+
+
+    async getContentSources(refId: number, refType: string): Promise<ContentSourceRaw[]> {
+        return await this.db.fetchAll<ContentSourceRaw>('select * from content_source where ref_id=:refId and ref_type=:refType order by content_source_id desc', {
+            refId, refType
+        });
     }
 }

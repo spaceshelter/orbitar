@@ -8,6 +8,7 @@ import {UserPostsRequest, UserPostsResponse} from './types/requests/UserPosts';
 import PostManager from '../managers/PostManager';
 import {Enricher} from './utils/Enricher';
 import {UserCommentsRequest, UserCommentsResponse} from './types/requests/UserComments';
+import {UserProfileEntity} from './types/entities/UserEntity';
 
 export default class UserController {
     public readonly router = Router();
@@ -46,14 +47,20 @@ export default class UserController {
         const { username } = request.body;
 
         try {
-            const profile = await this.userManager.getFullProfile(username, userId);
+            const profileInfo = await this.userManager.getFullProfile(username, userId);
 
-            if (!profile) {
+            if (!profileInfo) {
                 return response.error('not-found', 'User not found', 404);
             }
 
-            const invites = await this.userManager.getInvites(profile.id);
-            const invitedBy = await this.userManager.getInvitedBy(profile.id);
+            const invites = await this.userManager.getInvites(profileInfo.id);
+            const invitedBy = await this.userManager.getInvitedBy(profileInfo.id);
+
+            // FIXME: converter needed
+            const profile: UserProfileEntity = {
+                ...profileInfo
+            } as unknown as UserProfileEntity;
+            profile.registered = profileInfo.registered.toISOString();
 
             return response.success({
                 profile: profile,
@@ -83,14 +90,13 @@ export default class UserController {
             }
 
             const total = await this.postManager.getPostsByUserTotal(profile.id);
-            const rawPosts = await this.postManager.getPostsByUser(profile.id, userId,  page || 1, perpage || 20);
-            const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts, format);
+            const rawPosts = await this.postManager.getPostsByUser(profile.id, userId,  page || 1, perpage || 20, format);
+            const { posts, users } = await this.enricher.enrichRawPosts(rawPosts);
 
             response.success({
                 posts,
                 total,
-                users,
-                sites
+                users
             });
 
         } catch (error) {

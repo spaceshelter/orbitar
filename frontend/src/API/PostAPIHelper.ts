@@ -4,6 +4,7 @@ import {SiteInfo} from '../Types/SiteInfo';
 import APICache from './APICache';
 import {AppStateSetters} from '../AppState/AppState';
 import {UserInfo} from '../Types/UserInfo';
+import {HistoryInfo} from '../Types/HistoryInfo';
 
 type FeedPostsResult = {
     posts: PostInfo[];
@@ -23,9 +24,17 @@ type PostResult = {
     lastCommentId: number;
 };
 
-interface CommentResponse {
+type PostCommentResult = {
     comment: CommentInfo;
-}
+};
+
+type PostCommentEditResult = {
+    comment: CommentInfo;
+};
+
+type PostEditResult = {
+    post: PostInfo;
+};
 
 export default class PostAPIHelper {
     private postAPI: PostAPI;
@@ -36,10 +45,6 @@ export default class PostAPIHelper {
         this.postAPI = postAPI;
         this.cache = cache;
         this.setters = setters;
-    }
-
-    async create(site: string, title: string, content: string) {
-
     }
 
     async get(postId: number): Promise<PostResult> {
@@ -136,13 +141,33 @@ export default class PostAPIHelper {
                 (comment.answers && this.getLastCommentId(comment.answers)) || comment.id), undefined);
     }
 
-    async comment(content: string, postId: number, commentId?: number): Promise<CommentResponse> {
+    async comment(content: string, postId: number, commentId?: number): Promise<PostCommentResult> {
         const response = await this.postAPI.comment(content, postId, commentId);
 
         const [comment] = this.fixComments([response.comment], response.users);
 
         return {
             comment
+        };
+    }
+
+    async editComment(content: string, commentId: number): Promise<PostCommentEditResult> {
+        const response = await this.postAPI.editComment(content, commentId);
+
+        const [comment] = this.fixComments([response.comment], response.users);
+
+        return {
+            comment
+        };
+    }
+
+    async editPost(postId: number, title: string, content: string): Promise<PostEditResult> {
+        const response = await this.postAPI.editPost(postId, title, content);
+
+        const [post] = this.fixPosts([response.post], response.users);
+
+        return {
+            post
         };
     }
 
@@ -162,5 +187,16 @@ export default class PostAPIHelper {
 
     async watch(postId: number, watch: boolean) {
         return await this.postAPI.watch(postId, watch);
+    }
+
+    async history(id: number, type: string): Promise<HistoryInfo[]> {
+        const result = await this.postAPI.history(id, type);
+        return result.history.map(h => {
+            const info: HistoryInfo = {
+                ...h
+            } as unknown as HistoryInfo;
+            info.date = this.postAPI.api.fixDate(new Date(h.date));
+            return info;
+        });
     }
 }

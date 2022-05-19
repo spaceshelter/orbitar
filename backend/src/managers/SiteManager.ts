@@ -1,19 +1,15 @@
 import {SiteBaseInfo, SiteInfo, SiteWithUserInfo} from './types/SiteInfo';
 import UserManager from './UserManager';
 import SiteRepository from '../db/repositories/SiteRepository';
-import CodeError from '../CodeError';
-import FeedManager from './FeedManager';
 
 export default class SiteManager {
     private siteRepository: SiteRepository;
     private cache: Record<string, SiteInfo | undefined> = {};
     private cacheId: Record<number, SiteInfo | undefined> = {};
     private userManager: UserManager;
-    private feedManager: FeedManager;
 
-    constructor(siteRepository: SiteRepository, userManager: UserManager, feedManager: FeedManager) {
+    constructor(siteRepository: SiteRepository, userManager: UserManager) {
         this.siteRepository = siteRepository;
-        this.feedManager = feedManager;
         this.userManager = userManager;
     }
 
@@ -102,18 +98,7 @@ export default class SiteManager {
         return site;
     }
 
-    async subscribe(userId: number, siteName: string, main: boolean, bookmarks: boolean) {
-        const site = await this.getSiteByName(siteName);
-        if (!site) {
-            throw new CodeError('no-site', 'Site not found');
-        }
-
-        const siteId = site.id;
+    async siteSubscribe(userId: number, siteId: number, main: boolean, bookmarks: boolean) {
         await this.siteRepository.subscribe(userId, siteId, main, bookmarks);
-
-        // fanout in background
-        this.feedManager.siteFanOut(userId, siteId, !main).then().catch();
-
-        return { main, bookmarks };
     }
 }

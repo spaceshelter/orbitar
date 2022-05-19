@@ -1,15 +1,13 @@
 import {CommentEntity} from '../entities/CommentEntity';
-import {UserEntity} from '../entities/UserEntity';
 import {ContentFormat} from '../entities/common';
+import {UserEntity} from '../entities/UserEntity';
 
-export type PostCommentRequest = {
-    comment_id?: number;
-    post_id: number;
-    content: string;
+export type PostGetCommentRequest = {
+    id: number;
     format?: ContentFormat;
 };
 
-export type PostCommentResponse = {
+export type PostGetCommentResponse = {
     comment: CommentEntity;
     users: Record<number, UserEntity>;
 };

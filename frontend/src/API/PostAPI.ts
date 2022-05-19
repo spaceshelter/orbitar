@@ -4,6 +4,11 @@ import {SiteInfo} from '../Types/SiteInfo';
 
 export type ContentFormat = 'html' | 'source';
 
+export enum EditFlag {
+    original,
+    edited
+}
+
 export type PostEntity = {
     id: number;
     site: string;
@@ -14,6 +19,7 @@ export type PostEntity = {
     rating: number;
     comments: number;
     newComments: number;
+    editFlag?: EditFlag;
     vote?: number;
 };
 
@@ -26,6 +32,7 @@ export type CommentEntity = {
     rating: number;
     vote?: number;
     isNew?: boolean;
+    editFlag?: EditFlag;
 
     post: number;
     site: string;
@@ -82,11 +89,21 @@ type FeedWatchResponse = {
 type PostGetRequest = {
     id: number;
     format?: ContentFormat;
+    noComments?: boolean;
 };
 type PostGetResponse = {
     post: PostEntity;
     site: SiteInfo;
     comments: CommentEntity[];
+    users: Record<number, UserInfo>;
+};
+
+type CommentGetRequest = {
+    id: number;
+    format?: ContentFormat;
+};
+type CommentGetResponse = {
+    comment: CommentEntity;
     users: Record<number, UserInfo>;
 };
 
@@ -99,7 +116,27 @@ type CommentCreateRequest = {
 type CommentCreateResponse = {
     comment: CommentEntity;
     users: Record<number, UserInfo>;
-    sites: Record<number, SiteInfo>;
+};
+
+type CommentEditRequest = {
+    id: number;
+    content: string;
+    format?: ContentFormat;
+};
+type CommentEditResponse = {
+    comment: CommentEntity;
+    users: Record<number, UserInfo>;
+};
+
+type PostEditRequest = {
+    id: number;
+    title: string;
+    content: string;
+    format?: ContentFormat;
+};
+type PostEditResponse = {
+    post: PostEntity;
+    users: Record<number, UserInfo>;
 };
 
 type PostReadRequest = {
@@ -133,6 +170,22 @@ type PostWatchRequest = {
 };
 type PostWatchResponse = {
     watch: boolean;
+};
+
+type HistoryEntity = {
+    content: string;
+    date: string;
+    editor: number;
+    changed?: number;
+};
+
+type PostHistoryRequest = {
+    id: number;
+    type: string;
+    format?: ContentFormat;
+};
+type PostHistoryResponse = {
+    history: HistoryEntity[];
 };
 
 export default class PostAPI {
@@ -183,9 +236,11 @@ export default class PostAPI {
         });
     }
 
-    get(postId: number): Promise<PostGetResponse> {
+    get(postId: number, format: ContentFormat = 'html', noComments = false): Promise<PostGetResponse> {
         return this.api.request<PostGetRequest, PostGetResponse>('/post/get', {
-            id: postId
+            id: postId,
+            format,
+            noComments
         });
     }
 
@@ -193,6 +248,28 @@ export default class PostAPI {
         return this.api.request<CommentCreateRequest, CommentCreateResponse>('/post/comment', {
             post_id: postId,
             comment_id: commentId,
+            content
+        });
+    }
+
+    getComment(commentId: number, format: ContentFormat = 'html'): Promise<CommentGetResponse> {
+        return this.api.request<CommentGetRequest, CommentGetResponse>('/post/get-comment', {
+            id: commentId,
+            format
+        });
+    }
+
+    editComment(content: string, commentId: number): Promise<CommentEditResponse> {
+        return this.api.request<CommentEditRequest, CommentEditResponse>('/post/edit-comment', {
+            id: commentId,
+            content
+        });
+    }
+
+    editPost(postId: number, title: string, content: string): Promise<PostEditResponse> {
+        return this.api.request<PostEditRequest, PostEditResponse>('/post/edit', {
+            id: postId,
+            title,
             content
         });
     }
@@ -222,6 +299,14 @@ export default class PostAPI {
         return this.api.request<PostWatchRequest, PostWatchResponse>('/post/watch', {
             post_id: postId,
             watch: watch
+        });
+    }
+
+    history(id: number, type: string) {
+        return this.api.request<PostHistoryRequest, PostHistoryResponse>('/post/history', {
+            id,
+            type,
+            format: 'html'
         });
     }
 }

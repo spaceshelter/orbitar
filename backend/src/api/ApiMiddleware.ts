@@ -2,6 +2,7 @@ import express, {RequestHandler} from 'express';
 import Joi, {ObjectSchema} from 'joi';
 import * as core from 'express-serve-static-core';
 import Session from '../session/Session';
+import {NextFunction} from 'express-serve-static-core';
 
 type ResponseSuccess<T> = {
     result: 'success';
@@ -16,16 +17,26 @@ type ResponseError = {
 };
 type ResponseBody<T> = ResponseSuccess<T> | ResponseError;
 
-export interface APIRequest<ReqBody, P = core.ParamsDictionary, ResBody = object> extends express.Request<P, ResBody, ReqBody> {
+export interface APIRequestHandler<ReqBody, ResPayload, ResBody = ResponseBody<ResPayload>>
+    extends RequestHandler<core.ParamsDictionary, ResBody, ReqBody>
+{
+    (
+        req: APIRequest<ReqBody, ResBody>,
+        res: APIResponse<ResPayload>,
+        next: NextFunction,
+    ): void;
+}
+
+export interface APIRequest<ReqBody, ResBody = object, P = core.ParamsDictionary> extends express.Request<P, ResBody, ReqBody> {
     session: Session;
 }
-export interface APIResponse<ResBody> extends express.Response<ResponseBody<ResBody>> {
-    success<T = ResBody>(payload: T): void;
+export interface APIResponse<Payload> extends express.Response<ResponseBody<Payload>> {
+    success(payload: Payload): void;
     error(code: string, message: string, status?: number, meta?: object): void;
     authRequired(): void;
 }
 
-function success<T>(payload: T) {
+function success<T, Payload = T extends ResponseBody<infer U> ? U : never>(payload: Payload) {
     return this.send({
         result: 'success',
         payload: payload,
@@ -55,7 +66,7 @@ function authRequired() {
     return this.error('auth-required', 'Authorization required');
 }
 
-export function apiMiddleware(): RequestHandler {
+export function apiMiddleware(): APIRequestHandler<unknown, unknown> {
     return (req, res, next) => {
         res.success = success;
         res.error = error;
@@ -64,7 +75,7 @@ export function apiMiddleware(): RequestHandler {
     };
 }
 
-export function validate<ReqBody, ResBody, P = core.ParamsDictionary>(schema: ObjectSchema<ReqBody>): RequestHandler<P, ResBody, ReqBody> {
+export function validate<ReqBody, ResPayload>(schema: ObjectSchema<ReqBody>): APIRequestHandler<ReqBody, ResPayload> {
     return (req, res, next) => {
         schema.validateAsync(req.body)
             .then(result => {

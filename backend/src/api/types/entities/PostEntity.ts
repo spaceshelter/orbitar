@@ -1,3 +1,5 @@
+import {EditFlag} from './common';
+
 export type PostBaseEntity = {
     id: number;
     site: string;
@@ -11,7 +13,9 @@ export type PostEntity = PostBaseEntity & {
     rating: number;
     comments: number;
     newComments: number;
-    bookmark: boolean;
-    watch: boolean;
+    bookmark?: boolean;
+    watch?: boolean;
+    canEdit?: boolean;
+    editFlag?: EditFlag;
     vote?: number;
 };

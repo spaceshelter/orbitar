@@ -1,5 +1,5 @@
 import {PostEntity} from '../entities/PostEntity';
-import {ContentFormat} from '../entities/ContentFormat';
+import {ContentFormat} from '../entities/common';
 
 export type PostCreateRequest = {
     site: string;

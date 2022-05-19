@@ -1,3 +1,5 @@
+import {EditFlag} from './common';
+
 export type CommentBaseEntity = {
     id: number;
     author: number;
@@ -9,10 +11,12 @@ export type CommentEntity = CommentBaseEntity & {
     deleted?: boolean;
     rating: number;
     parentComment?: number;
+    editFlag?: EditFlag;
 
     post: number;
     site: string;
 
+    canEdit?: boolean;
     isNew?: boolean;
     vote?: number;
     answers?: CommentEntity[];

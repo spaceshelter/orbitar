@@ -1,4 +1,5 @@
 import {UserInfo} from './UserInfo';
+import {EditFlag} from '../API/PostAPI';
 
 export type PostLinkInfo = {
     id: number;
@@ -15,9 +16,11 @@ export interface PostInfo extends PostLinkInfo {
     rating: number;
     comments: number;
     newComments: number;
+    editFlag?: number;
     vote?: number;
     watch?: boolean;
     bookmark?: boolean;
+    canEdit?: boolean;
 }
 
 export interface CommentInfo {
@@ -29,8 +32,10 @@ export interface CommentInfo {
     rating: number;
     vote?: number;
     isNew?: boolean;
+    editFlag?: EditFlag;
     postLink: PostLinkInfo;
     answers?: CommentInfo[];
     post?: number;
     site?: string;
+    canEdit?: boolean;
 }

@@ -1,17 +1,17 @@
 import {Logger} from 'winston';
 import {Router} from 'express';
 import {APIRequest, APIResponse} from './ApiMiddleware';
-import SiteManager from '../managers/SiteManager';
 import {SiteSubscribeRequest, SiteSubscribeResponse} from './types/requests/SiteSubscribe';
+import FeedManager from '../managers/FeedManager';
 
 export default class SiteController {
     public router = Router();
     private logger: Logger;
-    private siteManager: SiteManager;
+    private feedManager: FeedManager;
 
-    constructor(siteManager: SiteManager, logger: Logger) {
+    constructor(feedManager: FeedManager, logger: Logger) {
         this.logger = logger;
-        this.siteManager = siteManager;
+        this.feedManager = feedManager;
 
         this.router.post('/site/subscribe', (req, res) => this.subscribe(req, res));
     }
@@ -28,7 +28,7 @@ export default class SiteController {
         }
 
         try {
-            const result = await this.siteManager.subscribe(userId, site, !!main, !!bookmarks);
+            const result = await this.feedManager.siteSubscribe(userId, site, !!main, !!bookmarks);
 
             response.success(result);
         }

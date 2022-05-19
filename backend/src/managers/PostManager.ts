@@ -1,7 +1,7 @@
 import PostRepository from '../db/repositories/PostRepository';
 import CommentRepository from '../db/repositories/CommentRepository';
 import BookmarkRepository from '../db/repositories/BookmarkRepository';
-import {CommentRawWithUserData, PostRaw, PostRawWithUserData} from '../db/types/PostRaw';
+import {CommentRawWithUserData, PostRaw} from '../db/types/PostRaw';
 import {BookmarkRaw} from '../db/types/BookmarkRaw';
 import SiteManager from './SiteManager';
 import CodeError from '../CodeError';
@@ -13,6 +13,7 @@ import NotificationManager from './NotificationManager';
 import UserManager from './UserManager';
 import {CommentInfoWithPostData} from './types/CommentInfo';
 import {SiteInfo} from './types/SiteInfo';
+import {HistoryInfo} from './types/HistoryInfo';
 
 export default class PostManager {
     private bookmarkRepository: BookmarkRepository;
@@ -39,16 +40,18 @@ export default class PostManager {
         this.parser = parser;
     }
 
-    getPost(postId: number, forUserId: number): Promise<PostRawWithUserData | undefined> {
-        return this.postRepository.getPostWithUserData(postId, forUserId);
+    async getPost(postId: number, forUserId: number, format: ContentFormat): Promise<PostInfo | undefined> {
+        const rawPost = await this.postRepository.getPostWithUserData(postId, forUserId);
+        return (await this.feedManager.convertRawPost(forUserId, [rawPost], format))[0];
+    }
+
+    async getPostsByUser(userId: number, forUserId: number, page: number, perpage: number, format: ContentFormat): Promise<PostInfo[]> {
+        const posts = await this.postRepository.getPostsByUser(userId, forUserId, page, perpage);
+        return await this.feedManager.convertRawPost(forUserId, posts, format);
     }
 
     getPostWithoutUserData(postId: number): Promise<PostRaw | undefined> {
         return this.postRepository.getPost(postId);
-    }
-
-    getPostsByUser(userId: number, forUserId: number, page: number, perpage: number): Promise<PostRawWithUserData[]> {
-        return this.postRepository.getPostsByUser(userId, forUserId, page, perpage);
     }
 
     getPostsByUserTotal(userId: number): Promise<number> {
@@ -89,17 +92,42 @@ export default class PostManager {
         };
     }
 
+    async editPost(forUserId: number, postId: number, title: string | undefined, content: string, format: ContentFormat): Promise<PostInfo> {
+        let rawPost = await this.postRepository.getPostWithUserData(postId, forUserId);
+        if (rawPost.author_id !== forUserId) {
+            throw new CodeError('access-denied', 'Access denied');
+        }
+
+        if (rawPost.source === content && rawPost.title === title) {
+            // nothing changed
+            const [post] = await this.feedManager.convertRawPost(forUserId, [rawPost], format);
+            return post;
+        }
+
+        const html = (await this.parser.parse(content)).text;
+
+        const updated = await this.postRepository.updatePostText(forUserId, postId, title, content, html);
+        if (!updated) {
+            throw new CodeError('unknown', 'Could not edit comment');
+        }
+
+        rawPost = await this.postRepository.getPostWithUserData(postId, forUserId);
+        const [post] = await this.feedManager.convertRawPost(forUserId, [rawPost], format);
+
+        return post;
+    }
+
     async getPostComments(postId: number, forUserId: number, format: ContentFormat): Promise<CommentInfoWithPostData[]> {
         const rawComments = await this.commentRepository.getPostComments(postId, forUserId);
-        return await this.convertRawCommentsWithPostData(rawComments, format);
+        return await this.convertRawCommentsWithPostData(forUserId, rawComments, format);
     }
 
     async getUserComments(userId: number, forUserId: number, page: number, perpage: number, format: ContentFormat): Promise<CommentInfoWithPostData[]> {
         const rawComments = await this.commentRepository.getUserComments(userId, forUserId, page, perpage);
-        return await this.convertRawCommentsWithPostData(rawComments, format);
+        return await this.convertRawCommentsWithPostData(forUserId, rawComments, format);
     }
 
-    private async convertRawCommentsWithPostData(rawComments: CommentRawWithUserData[], format: ContentFormat): Promise<CommentInfoWithPostData[]> {
+    private async convertRawCommentsWithPostData(forUserId: number, rawComments: CommentRawWithUserData[], format: ContentFormat): Promise<CommentInfoWithPostData[]> {
         const siteById: Record<number, SiteInfo> = {};
         const comments: CommentInfoWithPostData[] = [];
 
@@ -110,19 +138,29 @@ export default class PostManager {
                 siteById[raw.site_id] = site;
             }
 
-            comments.push({
+            const comment: CommentInfoWithPostData = {
                 id: raw.comment_id,
                 post: raw.post_id,
                 site: site ? site.site : '',
                 content: format === 'html' ? raw.html : raw.source,
                 author: raw.author_id,
                 created: raw.created_at,
-                deleted: !!raw.deleted,
                 rating: raw.rating,
                 parentComment: raw.parent_comment_id,
 
                 vote: raw.vote,
-            });
+            };
+            if (raw.deleted) {
+                comment.deleted = true;
+            }
+            if (raw.author_id === forUserId) {
+                comment.canEdit = true;
+            }
+            if (raw.edit_flag) {
+                comment.editFlag = raw.edit_flag;
+            }
+
+            comments.push(comment);
         }
 
         return comments;
@@ -150,8 +188,38 @@ export default class PostManager {
         // fan out in background
         this.feedManager.postFanOut(commentRaw.post_id).then().catch();
 
-        const comments = await this.convertRawCommentsWithPostData([commentRaw], format);
+        const comments = await this.convertRawCommentsWithPostData(userId, [commentRaw], format);
         return comments[0];
+    }
+
+    async getComment(forUserId: number, commentId: number, format: ContentFormat): Promise<CommentInfoWithPostData | undefined> {
+        const rawComment = await this.commentRepository.getCommentWithUserData(forUserId, commentId);
+        const [comment] = await this.convertRawCommentsWithPostData(forUserId,[rawComment], format);
+        return comment;
+    }
+
+    async editComment(forUserId: number, commentId: number, content: string, format: ContentFormat): Promise<CommentInfoWithPostData> {
+        let rawComment = await this.commentRepository.getCommentWithUserData(forUserId, commentId);
+        if (rawComment.author_id !== forUserId) {
+            throw new CodeError('access-denied', 'Access denied');
+        }
+
+        if (rawComment.source === content) {
+            // nothing changed
+            const [comment] = await this.convertRawCommentsWithPostData(forUserId,[rawComment], format);
+            return comment;
+        }
+
+        const html = (await this.parser.parse(content)).text;
+
+        const updated = await this.commentRepository.updateCommentText(forUserId, commentId, content, html);
+        if (!updated) {
+            throw new CodeError('unknown', 'Could not edit comment');
+        }
+
+        rawComment = await this.commentRepository.getCommentWithUserData(forUserId, commentId);
+        const [comment] = await this.convertRawCommentsWithPostData(forUserId,[rawComment], format);
+        return comment;
     }
 
     async setRead(postId: number, userId: number, readComments: number, lastCommentId?: number): Promise<boolean> {
@@ -174,5 +242,30 @@ export default class PostManager {
 
     setWatch(postId: number, userId: number, bookmarked: boolean) {
         return this.bookmarkRepository.setWatch(postId, userId, bookmarked);
+    }
+
+    async getHistory(forUserId: number, id: number, type: string, format: ContentFormat): Promise<HistoryInfo[]> {
+        const rawSources = await this.postRepository.getContentSources(id, type);
+        const sources: HistoryInfo[] = [];
+
+        for (const rawSource of rawSources) {
+            let content = rawSource.source;
+            if (format === 'html') {
+                content =  (await this.parser.parse(content)).text;
+            }
+
+            const source: HistoryInfo = {
+                id: rawSource.content_source_id,
+                content,
+                title: rawSource.title,
+                comment: rawSource.comment,
+                date: rawSource.created_at,
+                changed: 0,
+                editor: rawSource.author_id
+            };
+            sources.push(source);
+        }
+
+        return sources;
     }
 }
