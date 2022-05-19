@@ -1,6 +1,5 @@
 import React, {useEffect, useState} from 'react';
 import styles from './PostPage.module.css';
-import commentStyles from '../Components/CommentComponent.module.scss';
 import {Link, useLocation, useParams, useSearchParams} from 'react-router-dom';
 import {CommentInfo, PostInfo, PostLinkInfo} from '../Types/PostInfo';
 import PostComponent from '../Components/PostComponent';
@@ -64,7 +63,7 @@ export default function PostPage() {
                 return;
             }
 
-            const el = document.querySelector(`[data-comment-id="${commentId}"] .${commentStyles.body}`);
+            const el = document.querySelector(`[data-comment-id="${commentId}"] .commentBody`);
             if (el) {
                 setTimeout(() => {
                     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -79,7 +78,7 @@ export default function PostPage() {
         }
         else if (unreadOnly) {
             // find new comment
-            const el = document.querySelector(`.${commentStyles.isNew}`);
+            const el = document.querySelector(`.isNew`);
             if (el) {
                 const commentId = parseInt(el.getAttribute('data-comment-id') || '');
                 if (!commentId) {
@@ -113,7 +112,7 @@ export default function PostPage() {
                 {post ? <div>
                         <PostComponent key={post.id} post={post} onChange={(_, partial) => updatePost(partial)} onEdit={handlePostEdit} />
                         <div className={styles.postButtons}><Link to={`/post/${post.id}`} className={unreadOnly ? '' : 'bold'}>все комментарии</Link> • <Link to={`/post/${post.id}?new`} className={unreadOnly ? 'bold' : ''}>только новые</Link></div>
-                        <div className={styles.comments + (unreadOnly ? ' ' + commentStyles.unreadOnly : '')}>
+                        <div className={styles.comments + (unreadOnly ? ' unreadOnly' : '')}>
                             {comments ?
                                 comments.map(comment => <CommentComponent key={comment.id} comment={comment} onAnswer={handleAnswer} onEdit={handleCommentEdit} />)
                                 :

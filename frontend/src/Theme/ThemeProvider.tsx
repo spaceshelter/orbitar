@@ -1,5 +1,7 @@
 import {createContext, ReactNode, useContext, useEffect, useMemo, useState} from 'react';
+import colorspace from 'color-space';
 import rgba from 'color-normalize';
+import {themes} from '../theme';
 
 type ColorTree = string | { [key: string]: ColorTree };
 
@@ -34,7 +36,7 @@ type ThemeProviderProps = {
 
 export function ThemeProvider(props: ThemeProviderProps) {
     const [theme, setThemeActual] = useState<string>();
-    const [currentStyles, setCurrentStylesActual] = useState<{ styles: ThemeStyles, transitionTime: number }>();
+    const [currentStyles, setCurrentStylesActual] = useState<{ styles: ThemeStyles, withTransition: boolean }>();
 
     useEffect(() => {
         // Restore theme and styles from localStorage
@@ -53,8 +55,9 @@ export function ThemeProvider(props: ThemeProviderProps) {
             styles = props.themeCollection[theme];
         }
 
-        setCurrentStylesActual({styles, transitionTime: 0});
+        setCurrentStylesActual({styles, withTransition:false});
     }, [props.themeCollection, props.initialTheme]);
+
 
     const stylesheet = useMemo(() => {
         const head = document.head || document.getElementsByTagName('head')[0];
@@ -65,23 +68,19 @@ export function ThemeProvider(props: ThemeProviderProps) {
     }, []);
 
     const {setTheme, setCurrentStyles} = useMemo(() => {
-        const setTheme = (newTheme: string, transitionTime?: number) => {
+        const setTheme = (newTheme: string) => {
             setThemeActual(newTheme);
-
             if (props.themeCollection[newTheme]) {
-                setCurrentStyles(props.themeCollection[newTheme], transitionTime);
+                setCurrentStyles(props.themeCollection[newTheme]);
             }
         };
 
-        const setCurrentStyles = (styles: ThemeStyles, transitionTime?: number) => {
-            if (!transitionTime) {
-                transitionTime = props.defaultTransitionTime || 0;
-            }
-            setCurrentStylesActual({ styles, transitionTime });
+        const setCurrentStyles = (styles: ThemeStyles) => {
+            setCurrentStylesActual({styles, withTransition:true});
         };
 
         return { setTheme, setCurrentStyles };
-    }, [props.defaultTransitionTime, props.themeCollection]);
+    }, [props.themeCollection]);
 
     useEffect(() => {
         if (theme) {
@@ -95,16 +94,8 @@ export function ThemeProvider(props: ThemeProviderProps) {
     }, [props.themeCollection, theme, currentStyles]);
 
     useEffect(() => {
-        if (!currentStyles) {
-            return;
-        }
-
-        // gather colors transition information
-        const transition = gatherColorsTransition(currentStyles.styles);
-
-        // apply smooth color transition
-        // and return cancel function to prevent multiple simultaneous transitions
-        return applyColorsTransition(stylesheet, transition, currentStyles.transitionTime, 10);
+        if (!currentStyles) return;
+        applyTheme(stylesheet, currentStyles.styles, currentStyles.withTransition);
     }, [currentStyles, stylesheet]);
 
     return (
@@ -123,7 +114,6 @@ function restoreTheme() {
     if (!storedStyles) {
         return { theme: undefined, styles: undefined };
     }
-
     try {
         const result = JSON.parse(storedStyles);
         return { theme: result.theme, styles: result.styles };
@@ -140,18 +130,7 @@ function storeTheme(theme: string, styles?: ThemeStyles) {
     }));
 }
 
-type ColorsTransition = {
-    [key: string]: {
-        from: string;
-        fromRGB: number[];
-        to: string;
-        toRGB: number[];
-    }
-};
-
-function gatherColorsTransition(toStyle: ThemeStyles): ColorsTransition {
-    const transition: ColorsTransition = {};
-
+function applyTheme(stylesheet: HTMLStyleElement, toStyle: ThemeStyles, withTransition = false ){
     const colors: Record<string, string> = {};
     const colorFlattener = (key: string, color: ColorTree) => {
         if (typeof color === 'string') {
@@ -164,71 +143,115 @@ function gatherColorsTransition(toStyle: ThemeStyles): ColorsTransition {
     };
     colorFlattener('-', toStyle.colors);
 
-    for (const name in colors) {
-        const to = colors[name];
-        const from = window.getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#ffffff';
-        const toRGB = rgba(to);
-        const fromRGB = rgba(from);
+    const pseudoClassNames = [':before', ':after', ':root'];
+    let css = `${pseudoClassNames.join(', ')} {\n`;
+    Object.keys(colors).forEach((k)=>{
+        css += `  ${k}: ${colors[k]};\n`;
+    });
+    css += '}\n';
 
-        transition[name] = { from, fromRGB, to, toRGB };
-    }
-
-    return transition;
-}
-
-function applyColorsTransition(stylesheet: HTMLStyleElement, transition: ColorsTransition, transitionTime: number, transitionStepInterval: number) {
-    const applyColors = (step: number) => {
-        const pseudoClassNames = [':before', ':after', ':root'];
-        let css = `${pseudoClassNames.join(', ')} {\n`;
-        for (const color in transition) {
-            let value;
-
-            if (step >= 1) {
-                // use raw color on final step
-                value = transition[color].to;
-            } else {
-                // calculate blended rgb value
-                const blended = blendValues(transition[color].fromRGB, transition[color].toRGB, step);
-                value = `rgba(${Math.floor(blended[0] * 255)}, ${Math.floor(blended[1] * 255)}, ${Math.floor(blended[2] * 255)}, ${blended[3]})`;
-            }
-
-            // document.documentElement.style.setProperty('--' + color, value);
-            css += `  ${color}: ${value};\n`;
-        }
-        css += '}\n';
+    if(withTransition){
+        const transitionCss = `svg{transition: fill 300ms ease-in-out;}\n*{ transition-duration: 300ms; transition-timing-function: ease-in; transition-property: color, background-color; }\n`;
+        stylesheet.innerHTML = css + transitionCss;
+        setTimeout(()=>{  stylesheet.innerHTML =css; }, 700);
+    }else{
         stylesheet.innerHTML = css;
-    };
-
-    if (!transitionTime) {
-        // apply final colors if transitionTime is zero
-        applyColors(1);
-        return () => {};
     }
-
-    const transitionStep = transitionStepInterval / transitionTime;
-    let step = 0;
-    const updateInterval = setInterval(() => {
-        if (step >= 1) {
-            clearInterval(updateInterval);
-            step = 1;
-        }
-
-        applyColors(step);
-        step += transitionStep;
-    }, transitionStepInterval);
-
-    return () => {
-        clearInterval(updateInterval);
-    };
 }
 
-function blendValues(c1: number[], c2: number[], balance: number) {
-    const bal = Math.min(Math.max(balance,0),1);
-    const nBal = 1 - bal;
-    return [
-        c1[0] * nBal + c2[0] * bal,
-        c1[1] * nBal + c2[1] * bal,
-        c1[2] * nBal + c2[2] * bal,
-        c1[3] * nBal + c2[3] * bal,
+
+export const getThemes = () => {
+    Object.values(themes).map( preprocessTheme );
+    return themes;
+};
+
+// GENERATE THEME
+const preprocessTheme = (theme: ThemeStyles) => {
+    const colors = theme.colors;
+
+    //detect if this is dark theme or light theme
+    const fg = colors.fg as string;
+    const isDark: boolean = hsl(fg).l > 0.5;
+
+    // generate harder versions of foreground color
+    colors.fgHardest ??= isDark ? '#fff':'#000';
+    colors.fgHard ??= lerpColor(fg, colors.fgHardest as string, .33 );
+    colors.fgHarder ??= lerpColor(fg, colors.fgHardest as string, .66 );
+
+    // generate softer versions of foreground color
+    colors.fgMedium ??= reduceAlpha( fg, .2);  //-20% alpha
+    colors.fgSoft ??= reduceAlpha( fg, .3);
+    colors.fgSofter ??= reduceAlpha( fg, .4);
+    colors.fgSoftest ??= reduceAlpha( fg, .5);
+    colors.fgGhost ??= reduceAlpha( fg, .7);
+    colors.fgAlmostInvisible ??= reduceAlpha( fg, .9); //-90% alpha
+
+    colors.onAccent ??= '#fff';
+    colors.onAccentGhost ??= 'rgba(255,255,255,0.7)';
+
+    // generate primary variants
+    colors.primaryHover ??= increaseSaturation( colors.primary as string, 0.75 );  //+75% saturation
+    colors.primaryGhost ??= reduceAlpha( colors.primary as string, .7); //-70% alpha
+
+    // generate danger variants
+    colors.dangerHover ??= increaseSaturation( colors.danger as string, 0.75 );
+    colors.dangerGhost ??= reduceAlpha( colors.danger as string, .7);
+
+    // generate positive variants
+    colors.positiveHover ??= increaseSaturation( colors.positive as string, 0.75 );
+    colors.positiveGhost ??= reduceAlpha( colors.positive as string, .7);
+
+    // generate link variants
+    colors.linkHover ??= increaseSaturation( colors.link as string, 0.75 );
+    colors.linkGhost ??= reduceAlpha( colors.link as string, .7);
+
+    // backgrounds
+    const c = isDark ? 255 : 0;
+    colors.elevated ??= isDark ? lerpColor( colors.bg as string, '#ffffff', 0.03): '#fff';
+    colors.lowered ??= lerpColor( colors.bg as string, '#000000',  isDark ? 0.2 : 0.03 );
+    colors.dim1 ??= rgbaToString([c,c,c,0.02]);
+    colors.dim2 ??= rgbaToString([c,c,c,0.04]);
+    colors.dim3 ??= rgbaToString([c,c,c,0.06]);
+};
+
+const reduceAlpha = (c: string, r: number): string => {
+    const [red,g,b,a] = rgba(c);
+    return rgbaToString( [red,g,b, lerp(a,0,r)]);
+};
+
+const increaseSaturation = (c: string, r: number): string => {
+    const p = hsl(c);
+    p.s = lerp(p.s, 1, r);
+    return HSLtoRGBString(p);
+};
+
+const lerp = (a: number, b: number, r: number) =>  a + Math.min(Math.max(r,0),1) * (b-a);
+
+const lerpColor = (a: string, b: string, r: number) => {
+    const c1 = rgba( a );
+    const c2 = rgba( b );
+    const bal = Math.min(Math.max(r,0),1);
+    const res = [
+        c1[0] + bal * (c2[0]-c1[0]),
+        c1[1] + bal * (c2[1]-c1[1]),
+        c1[2] + bal * (c2[2]-c1[2]),
+        c1[3] + bal * (c2[3]-c1[3])
     ];
-}
+    return rgbaToString(res);
+};
+
+const rgbaToString = (color: number[]): string => {
+    return `rgba(${Math.floor(color[0] * 255)}, ${Math.floor(color[1] * 255)}, ${Math.floor(color[2] * 255)}, ${color[3].toFixed(2).replace(/\.?0+$/, '')})`;
+};
+
+type HSL = { h: number, s: number, l: number };
+const hsl = (color: string): HSL => {
+    const [r,g,b] = rgba(color);
+    const hsl = colorspace.rgb.hsl([r * 255, g * 255, b * 255]);
+    return { h: hsl[0] / 360, s: hsl[1] / 100, l: hsl[2] / 100 };
+};
+
+const HSLtoRGBString = (c: HSL): string => {
+    const rgb = colorspace.hsl.rgb([c.h * 360, c.s * 100, c.l * 100]);
+    return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+};

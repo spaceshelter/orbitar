@@ -44,10 +44,9 @@
     }
     .username {
         color: var(--fgMedium);
-        svg{ fill: var(--fgSoftest); }
+        svg{ fill: var(--fgMedium); }
         &:hover {
             color: var(--primary);
-            svg{  fill: var(--primary); }
         }
     }
 }
@@ -65,6 +64,7 @@
     margin-right: 30px;
     display: flex;
     align-items: center;
+    color: var(--fgSoftest);
 
     button, >a {
         height: 24px;
@@ -88,6 +88,9 @@
             fill: var(--primary);
             color: var(--primary);
             font-weight: bold;
+            .label{
+                color: var(--primary);
+            }
         }
         &:hover {
             color: var(--primaryHover);

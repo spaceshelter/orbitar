@@ -73,8 +73,8 @@ export default function CommentComponent(props: CommentProps) {
     const {author, created} = props.comment;
 
     return (
-        <div className={styles.comment + (props.comment.isNew ? ' ' + styles.isNew : '')} data-comment-id={props.comment.id}>
-            <div className={styles.body}>
+        <div className={styles.comment + (props.comment.isNew ? ' isNew': '')} data-comment-id={props.comment.id}>
+            <div className='commentBody'>
                 <div className={styles.signature}>
                     {props.showSite ? <><Link to={`//${props.comment.site}.${process.env.REACT_APP_ROOT_DOMAIN}/`}>{props.comment.site}</Link> • </> : ''}
                     <Username className={styles.username} user={author} /> • <PostLink post={props.comment.postLink} commentId={props.comment.id}><DateComponent date={created} /></PostLink>
