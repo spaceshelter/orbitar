@@ -52,7 +52,7 @@ export default class PostController {
         });
         const postCreateSchema = Joi.object<PostCreateRequest>({
             site: Joi.string().required(),
-            title: Joi.alternatives(Joi.string().max(50), Joi.valid('').optional()),
+            title: Joi.alternatives(Joi.string().max(64), Joi.valid('').optional()),
             content: Joi.string().min(1).max(50000).required(),
             format: joiFormat
         });
@@ -84,7 +84,7 @@ export default class PostController {
         });
         const editSchema = Joi.object<PostEditRequest>({
             id: Joi.number().required(),
-            title: Joi.alternatives(Joi.string().max(50), Joi.valid('').optional()),
+            title: Joi.alternatives(Joi.string().max(64), Joi.valid('').optional()),
             content: Joi.string().min(1).max(50000).required(),
             format: joiFormat
         });

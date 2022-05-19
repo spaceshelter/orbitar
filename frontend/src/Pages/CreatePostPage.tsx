@@ -38,7 +38,7 @@ export function CreatePostPage() {
         <div className={styles.container}>
             <div className={classNames(styles.createpost, createCommentStyles.content)}>
                 <div className={styles.form}>
-                    <input className={styles.title} type="text" placeholder="Без названия" value={title} onChange={handleTitleChange} />
+                    <input className={styles.title} type="text" placeholder="Без названия" maxLength={64} value={title} onChange={handleTitleChange} />
                     <CreateCommentComponent open={true} onAnswer={handleAnswer} />
                 </div>
             </div>

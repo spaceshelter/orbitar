@@ -139,7 +139,7 @@ export default function PostComponent(props: PostComponentProps) {
 
                         :
                         <>
-                            <input className={styles.title} type="text" placeholder="Без названия" value={editingTitle} onChange={handleEditingTitle} />
+                            <input className={styles.title} type="text" placeholder="Без названия" maxLength={64} value={editingTitle} onChange={handleEditingTitle} />
                             <CreateCommentComponent open={true} text={editingText} onAnswer={handleEditComplete} />
                         </>
                     }
