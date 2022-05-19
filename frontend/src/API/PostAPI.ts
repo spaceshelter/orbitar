@@ -172,6 +172,22 @@ type PostWatchResponse = {
     watch: boolean;
 };
 
+type HistoryEntity = {
+    content: string;
+    date: string;
+    editor: number;
+    changed?: number;
+};
+
+type PostHistoryRequest = {
+    id: number;
+    type: string;
+    format?: ContentFormat;
+};
+type PostHistoryResponse = {
+    history: HistoryEntity[];
+};
+
 export default class PostAPI {
     api: APIBase;
     constructor(api: APIBase) {
@@ -250,7 +266,7 @@ export default class PostAPI {
         });
     }
 
-    editPost(title: string, content: string, postId: number): Promise<PostEditResponse> {
+    editPost(postId: number, title: string, content: string): Promise<PostEditResponse> {
         return this.api.request<PostEditRequest, PostEditResponse>('/post/edit', {
             id: postId,
             title,
@@ -283,6 +299,14 @@ export default class PostAPI {
         return this.api.request<PostWatchRequest, PostWatchResponse>('/post/watch', {
             post_id: postId,
             watch: watch
+        });
+    }
+
+    history(id: number, type: string) {
+        return this.api.request<PostHistoryRequest, PostHistoryResponse>('/post/history', {
+            id,
+            type,
+            format: 'html'
         });
     }
 }

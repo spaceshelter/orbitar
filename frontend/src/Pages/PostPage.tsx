@@ -101,9 +101,8 @@ export default function PostPage() {
         }
     }, [location.hash, comments, scrolledToComment, unreadOnly]);
 
-    const handlePostEdit = async (text: string, post: PostInfo): Promise<PostInfo | undefined> => {
-        const title = post.title || '';
-        return await editPost(title, text);
+    const handlePostEdit = async (post: PostInfo, text: string, title?: string): Promise<PostInfo | undefined> => {
+        return await editPost(title || '', text);
     };
 
     return (

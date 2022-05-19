@@ -22,6 +22,7 @@ exports.up = async function(db) {
       ref_id int not null,
       author_id int not null,
       source text not null,
+      title text null,
       comment varchar(100) null,
       created_at datetime default current_timestamp not null,
       constraint fk_content_source_author foreign key (author_id) references users(user_id) on delete cascade on update cascade,
@@ -41,8 +42,8 @@ exports.up = async function(db) {
     insert into content_source (ref_type, ref_id, author_id, source, created_at)
       select 'comment', comment_id, author_id, source, created_at from comments;
      
-    insert into content_source (ref_type, ref_id, author_id, source, created_at)
-      select 'post', post_id, author_id, source, created_at from posts;
+    insert into content_source (ref_type, ref_id, author_id, source, title, created_at)
+      select 'post', post_id, author_id, source, title, created_at from posts;
       
     update comments c, content_source cs set c.content_source_id=cs.content_source_id where cs.ref_type = 'comment' and cs.ref_id = c.comment_id;
     update posts p, content_source cs set p.content_source_id=cs.content_source_id where cs.ref_type = 'post' and cs.ref_id = p.post_id;

@@ -20,6 +20,8 @@ import {PostCommentEditRequest, PostCommentEditResponse} from './types/requests/
 import CodeError from '../CodeError';
 import {CommentEntity} from './types/entities/CommentEntity';
 import {PostEditRequest, PostEditResponse} from './types/requests/PostEdit';
+import {PostHistoryRequest, PostHistoryResponse} from './types/requests/PostHistory';
+import {HistoryEntity} from './types/entities/HistoryEntity';
 
 export default class PostController {
     public readonly router = Router();
@@ -86,6 +88,11 @@ export default class PostController {
             content: Joi.string().min(1).max(50000).required(),
             format: joiFormat
         });
+        const historySchema = Joi.object<PostHistoryRequest>({
+            id: Joi.number().required(),
+            type: Joi.valid('post', 'comment').required(),
+            format: joiFormat
+        });
 
         this.router.post('/post/get', validate(getSchema), (req, res) => this.postGet(req, res));
         this.router.post('/post/create', validate(postCreateSchema), (req, res) => this.create(req, res));
@@ -97,7 +104,7 @@ export default class PostController {
         this.router.post('/post/watch', validate(watchingSchema), (req, res) => this.watch(req, res));
         this.router.post('/post/get-comment', validate(getCommentSchema), (req, res) => this.getComment(req, res));
         this.router.post('/post/edit-comment', validate(editCommentSchema), (req, res) => this.editComment(req, res));
-
+        this.router.post('/post/history', validate(historySchema), (req, res) => this.history(req, res));
     }
 
     async postGet(request: APIRequest<PostGetRequest>, response: APIResponse<PostGetResponse>) {
@@ -182,7 +189,9 @@ export default class PostController {
         const { site, format, content, title } = request.body;
 
         try {
-            const post = await this.postManager.createPost(site, userId, title, content, format);
+            const postInfo = await this.postManager.createPost(site, userId, title, content, format);
+            const {posts: [post]} = await this.enricher.enrichRawPosts([postInfo]);
+
             this.logger.info(`Post created by #${userId}`, { user_id: userId, site, format, content, title });
             response.success({ post });
         }
@@ -199,7 +208,7 @@ export default class PostController {
         }
         const content = request.body.content;
         try {
-            const result =  this.postManager.preview(content);
+            const result = this.postManager.preview(content);
             response.success({ content : result });
         } catch (err) {
             this.logger.error('Comment create failed', { error: err, user_id: userId, content });
@@ -353,6 +362,42 @@ export default class PostController {
         }
         catch (err) {
             this.logger.error('Comment edit error', { error: err, comment_id: commentId });
+
+            if (err instanceof CodeError && err.code === 'access-denied') {
+                return response.error('access-denied', 'Access-denied');
+            }
+
+            return response.error('error', 'Unknown error', 500);
+        }
+    }
+
+    async history(request: APIRequest<PostHistoryRequest>, response: APIResponse<PostHistoryResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+
+        const userId = request.session.data.userId;
+        const { id, type, format } = request.body;
+
+        try {
+            const historyInfos = await this.postManager.getHistory(userId, id, type, format);
+
+            const history: HistoryEntity[] = historyInfos.map(h => ({
+                id: h.id,
+                title: h.title,
+                comment: h.comment,
+                content: h.content,
+                date: h.date.toISOString(),
+                editor: h.editor,
+                changed: h.changed
+            }));
+
+            response.success({
+                history,
+            });
+        }
+        catch (err) {
+            this.logger.error('History request error', { error: err, ref_id: id, ref_type: type });
 
             if (err instanceof CodeError && err.code === 'access-denied') {
                 return response.error('access-denied', 'Access-denied');

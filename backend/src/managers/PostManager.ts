@@ -13,6 +13,7 @@ import NotificationManager from './NotificationManager';
 import UserManager from './UserManager';
 import {CommentInfoWithPostData} from './types/CommentInfo';
 import {SiteInfo} from './types/SiteInfo';
+import {HistoryInfo} from './types/HistoryInfo';
 
 export default class PostManager {
     private bookmarkRepository: BookmarkRepository;
@@ -225,5 +226,30 @@ export default class PostManager {
 
     setWatch(postId: number, userId: number, bookmarked: boolean) {
         return this.bookmarkRepository.setWatch(postId, userId, bookmarked);
+    }
+
+    async getHistory(forUserId: number, id: number, type: string, format: ContentFormat): Promise<HistoryInfo[]> {
+        const rawSources = await this.postRepository.getContentSources(id, type);
+        const sources: HistoryInfo[] = [];
+
+        for (const rawSource of rawSources) {
+            let content = rawSource.source;
+            if (format === 'html') {
+                content =  (await this.parser.parse(content)).text;
+            }
+
+            const source: HistoryInfo = {
+                id: rawSource.content_source_id,
+                content,
+                title: rawSource.title,
+                comment: rawSource.comment,
+                date: rawSource.created_at,
+                changed: 0,
+                editor: rawSource.author_id
+            };
+            sources.push(source);
+        }
+
+        return sources;
     }
 }

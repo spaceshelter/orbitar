@@ -2,6 +2,7 @@ import DB from '../DB';
 import {PostRaw, PostRawWithUserData} from '../types/PostRaw';
 import CodeError from '../../CodeError';
 import {ResultSetHeader} from 'mysql2';
+import {ContentSourceRaw} from '../types/ContentSourceRaw';
 
 export default class PostRepository {
     private db: DB;
@@ -230,6 +231,7 @@ export default class PostRepository {
                 ref_type: 'post',
                 ref_id: postId,
                 author_id: updateByUserId,
+                title,
                 source,
                 comment
             });
@@ -250,6 +252,13 @@ export default class PostRepository {
             }
 
             return true;
+        });
+    }
+
+
+    async getContentSources(refId: number, refType: string): Promise<ContentSourceRaw[]> {
+        return await this.db.fetchAll<ContentSourceRaw>('select * from content_source where ref_id=:refId and ref_type=:refType order by content_source_id desc', {
+            refId, refType
         });
     }
 }

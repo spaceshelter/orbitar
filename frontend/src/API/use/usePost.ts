@@ -128,7 +128,7 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
         };
 
         const editPost = async (title: string, text: string) => {
-            const {post} = await api.post.editPost(title, text, postId);
+            const {post} = await api.post.editPost(postId, title, text);
             setPost(post);
             return post;
         };

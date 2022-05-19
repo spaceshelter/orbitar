@@ -4,6 +4,7 @@ import {SiteInfo} from '../Types/SiteInfo';
 import APICache from './APICache';
 import {AppStateSetters} from '../AppState/AppState';
 import {UserInfo} from '../Types/UserInfo';
+import {HistoryInfo} from '../Types/HistoryInfo';
 
 type FeedPostsResult = {
     posts: PostInfo[];
@@ -160,8 +161,8 @@ export default class PostAPIHelper {
         };
     }
 
-    async editPost(title: string, content: string, postId: number): Promise<PostEditResult> {
-        const response = await this.postAPI.editPost(title, content, postId);
+    async editPost(postId: number, title: string, content: string): Promise<PostEditResult> {
+        const response = await this.postAPI.editPost(postId, title, content);
 
         const [post] = this.fixPosts([response.post], response.users);
 
@@ -186,5 +187,16 @@ export default class PostAPIHelper {
 
     async watch(postId: number, watch: boolean) {
         return await this.postAPI.watch(postId, watch);
+    }
+
+    async history(id: number, type: string): Promise<HistoryInfo[]> {
+        const result = await this.postAPI.history(id, type);
+        return result.history.map(h => {
+            const info: HistoryInfo = {
+                ...h
+            } as unknown as HistoryInfo;
+            info.date = this.postAPI.api.fixDate(new Date(h.date));
+            return info;
+        });
     }
 }
