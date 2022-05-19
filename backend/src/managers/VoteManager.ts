@@ -1,11 +1,14 @@
 import PostManager from './PostManager';
 import VoteRepository, {VoteWithUsername} from '../db/repositories/VoteRepository';
+import UserRepository from '../db/repositories/UserRepository';
 
 export default class VoteManager {
     private voteRepository: VoteRepository;
     private postManager: PostManager;
+    private userRepository: UserRepository;
 
-    constructor(voteRepository: VoteRepository, postManager: PostManager) {
+    constructor(userRepository: UserRepository, voteRepository: VoteRepository, postManager: PostManager) {
+        this.userRepository = userRepository;
         this.voteRepository = voteRepository;
         this.postManager = postManager;
     }

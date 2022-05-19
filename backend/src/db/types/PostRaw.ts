@@ -9,6 +9,7 @@ export type PostRaw = {
     created_at: Date;
     commented_at: Date;
     comments: number;
+    gold: number;
 };
 
 export type PostRawWithUserData = PostRaw & {
