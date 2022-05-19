@@ -94,6 +94,12 @@ export default class PostManager {
             throw new CodeError('access-denied', 'Access denied');
         }
 
+        if (rawPost.source === content && rawPost.title === title) {
+            // nothing changed
+            const [post] = await this.feedManager.convertRawPost(forUserId, [rawPost], format);
+            return post;
+        }
+
         const html = (await this.parser.parse(content)).text;
 
         const updated = await this.postRepository.updatePostText(forUserId, postId, title, content, html);
@@ -192,6 +198,12 @@ export default class PostManager {
         let rawComment = await this.commentRepository.getCommentWithUserData(forUserId, commentId);
         if (rawComment.author_id !== forUserId) {
             throw new CodeError('access-denied', 'Access denied');
+        }
+
+        if (rawComment.source === content) {
+            // nothing changed
+            const [comment] = await this.convertRawCommentsWithPostData(forUserId,[rawComment], format);
+            return comment;
         }
 
         const html = (await this.parser.parse(content)).text;

@@ -124,7 +124,7 @@ export default function PostComponent(props: PostComponentProps) {
     return (
         <div className={styles.post}>
             <div className={styles.header}>
-                <SignatureComponent site={site} author={author} onHistoryClick={toggleHistory} postLink={props.post} date={created} editFlag={props.post.editFlag} />
+                <SignatureComponent showSite={props.showSite} site={site} author={author} onHistoryClick={toggleHistory} postLink={props.post} date={created} editFlag={props.post.editFlag} />
                 <div className={styles.contentContainer}>
                     {editingText === false ?
                         (showHistory

@@ -1,16 +1,14 @@
 import {CommentInfo, PostLinkInfo} from '../Types/PostInfo';
 import styles from './CommentComponent.module.scss';
 import RatingSwitch from './RatingSwitch';
-import Username from './Username';
-import {Link} from 'react-router-dom';
 import React, {useMemo, useState} from 'react';
 import CreateCommentComponent from './CreateCommentComponent';
-import DateComponent from './DateComponent';
 import ContentComponent from './ContentComponent';
-import PostLink from './PostLink';
 import {ReactComponent as EditIcon} from '../Assets/edit.svg';
 import {useAPI} from '../AppState/AppState';
 import {toast} from 'react-toastify';
+import {SignatureComponent} from './SignatureComponent';
+import {HistoryComponent} from './HistoryComponent';
 
 interface CommentProps {
     comment: CommentInfo;
@@ -23,6 +21,7 @@ interface CommentProps {
 export default function CommentComponent(props: CommentProps) {
     const [answerOpen, setAnswerOpen] = useState(false);
     const [editingText, setEditingText] = useState<false | string>(false);
+    const [showHistory, setShowHistory] = useState(false);
     const api = useAPI();
 
     const handleAnswerSwitch = (e: React.MouseEvent) => {
@@ -70,20 +69,25 @@ export default function CommentComponent(props: CommentProps) {
         }
     };
 
-    const {author, created} = props.comment;
+    const toggleHistory = () => {
+        setShowHistory(!showHistory);
+    };
+
+    const {author, created, site, postLink, editFlag, content} = props.comment;
 
     return (
         <div className={styles.comment + (props.comment.isNew ? ' isNew': '')} data-comment-id={props.comment.id}>
             <div className='commentBody'>
-                <div className={styles.signature}>
-                    {props.showSite ? <><Link to={`//${props.comment.site}.${process.env.REACT_APP_ROOT_DOMAIN}/`}>{props.comment.site}</Link> • </> : ''}
-                    <Username className={styles.username} user={author} /> • <PostLink post={props.comment.postLink} commentId={props.comment.id}><DateComponent date={created} /></PostLink>
-                    {props.comment.editFlag && <> • изменён</>}
-                </div>
+                <SignatureComponent showSite={props.showSite} site={site} author={author} onHistoryClick={toggleHistory} postLink={postLink} date={created} editFlag={editFlag} />
                 {editingText === false ?
-                    <div className={styles.content}>
-                        <ContentComponent className={styles.commentContent} content={props.comment.content} />
-                    </div>
+                    (showHistory
+                        ?
+                            <HistoryComponent initial={{ content, date: created }} history={{ id: props.comment.id, type: 'comment' }} onClose={toggleHistory} />
+                        :
+                            <div className={styles.content}>
+                                <ContentComponent className={styles.commentContent} content={content} />
+                            </div>
+                    )
                 :
                     <CreateCommentComponent open={true} text={editingText} onAnswer={handleEditComplete} />
                 }

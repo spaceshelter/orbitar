@@ -1,4 +1,5 @@
 import {UserInfo} from './UserInfo';
+import {EditFlag} from '../API/PostAPI';
 
 export type PostLinkInfo = {
     id: number;
@@ -31,7 +32,7 @@ export interface CommentInfo {
     rating: number;
     vote?: number;
     isNew?: boolean;
-    editFlag?: boolean;
+    editFlag?: EditFlag;
     postLink: PostLinkInfo;
     answers?: CommentInfo[];
     post?: number;
