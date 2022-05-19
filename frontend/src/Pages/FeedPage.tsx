@@ -12,7 +12,7 @@ export default function FeedPage() {
         siteName = window.location.hostname.split('.')[0];
     }
 
-    const { site } = useAppState();
+    const { siteInfo } = useAppState();
     const [search] = useSearchParams();
 
     const matchRoutePosts = !!useMatch('/posts');
@@ -44,7 +44,7 @@ export default function FeedPage() {
     }, [page]);
 
     useEffect(() => {
-        let docTitle = site?.name || 'ЪУЪ';
+        let docTitle = siteInfo?.name || 'ЪУЪ';
         if (feedType === 'subscriptions') {
             docTitle += ' / Подписки';
         }
@@ -52,18 +52,18 @@ export default function FeedPage() {
             docTitle += ' / Все посты';
         }
         document.title = docTitle;
-    }, [site, feedType]);
+    }, [siteInfo, feedType]);
 
     return (
         <div className={styles.container}>
             <div className={styles.feed}>
-                {site?.site === 'main' && <div className={styles.feedControls}>
+                {siteInfo?.site === 'main' && <div className={styles.feedControls}>
                     <Link to='/' className={feedType === 'all' ? styles.active : ''} replace={true}>все</Link> • <Link to='/subscriptions' className={feedType === 'subscriptions' ? styles.active : ''} replace={true}>мои подписки</Link> • <Link to='/posts' className={feedType === 'site' ? styles.active : ''} replace={true}>только главная</Link>
                 </div>}
                 {loading && <div className={styles.loading}>Загрузка</div>}
                 {error && <div className={styles.error}>{styles.error}</div> }
                 {posts && <div className={styles.posts}>
-                    {posts.map(post => <PostComponent key={post.id} post={post} showSite={site?.site !== post.site} onChange={updatePost} autoCut={true} />)}
+                    {posts.map(post => <PostComponent key={post.id} post={post} showSite={siteInfo?.site !== post.site} onChange={updatePost} autoCut={true} />)}
                 </div>}
 
                 <Paginator page={page} pages={pages} base={baseRoute} />

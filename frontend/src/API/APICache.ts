@@ -1,11 +1,11 @@
 import {UserInfo} from '../Types/UserInfo';
 import {PostInfo} from '../Types/PostInfo';
-import {SiteInfo} from '../Types/SiteInfo';
+import {SiteWithUserInfo} from '../Types/SiteInfo';
 
 export default class APICache {
     private userCache: Record<number, UserInfo> = {};
     private postCache: Record<number, PostInfo> = {};
-    private siteCache: Record<string, SiteInfo> = {};
+    private siteCache: Record<string, SiteWithUserInfo> = {};
 
     setUser(user: UserInfo): UserInfo {
         this.userCache[user.id] = user;
@@ -21,12 +21,12 @@ export default class APICache {
         return this.postCache[postId];
     }
 
-    setSite(site: SiteInfo): SiteInfo {
+    setSite(site: SiteWithUserInfo): SiteWithUserInfo {
         this.siteCache[site.site] = site;
         return site;
     }
 
-    getSite(site: string): SiteInfo | undefined {
+    getSite(site: string): SiteWithUserInfo | undefined {
         return this.siteCache[site];
     }
 }

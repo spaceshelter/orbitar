@@ -4,6 +4,8 @@ import {APIRequest, APIResponse} from './ApiMiddleware';
 import {Logger} from 'winston';
 import SiteManager from '../managers/SiteManager';
 import {StatusRequest, StatusResponse} from './types/requests/Status';
+import {SiteWithUserInfo} from '../managers/types/SiteInfo';
+import {SiteWithUserInfoEntity} from './types/entities/SiteEntity';
 
 export default class StatusController {
     public router = Router();
@@ -33,6 +35,7 @@ export default class StatusController {
             const user = await this.userManager.getById(userId);
             const site = await this.siteManager.getSiteByNameWithUserInfo(userId, siteName);
             const stats = await this.userManager.getUserStats(userId);
+            const subscriptions = await this.siteManager.getSubscriptions(userId);
 
             if (!site) {
                 return response.error('no-site', 'Site not found', 404);
@@ -45,12 +48,30 @@ export default class StatusController {
 
             return response.success({
                 user,
-                site,
+                site: this.siteInfoToEntity(site),
+                subscriptions: subscriptions.map(site => this.siteInfoToEntity(site)),
                 ...stats
             });
         }
         catch (err) {
             return response.error('error', 'Unknown error', 500);
         }
+    }
+
+    private siteInfoToEntity(siteInfo: SiteWithUserInfo): SiteWithUserInfoEntity {
+        const result: SiteWithUserInfoEntity = {
+            site: siteInfo.site,
+            name: siteInfo.name,
+            owner: {
+                id: siteInfo.owner.id,
+                username: siteInfo.owner.username,
+                gender: siteInfo.owner.gender,
+                karma: siteInfo.owner.karma,
+            }
+        };
+        if (siteInfo.subscribe) {
+            result.subscribe = siteInfo.subscribe;
+        }
+        return result;
     }
 }

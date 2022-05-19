@@ -116,4 +116,31 @@ export default class SiteManager {
 
         return { main, bookmarks };
     }
+
+    async getSubscriptions(forUserId: number): Promise<SiteWithUserInfo[]> {
+        const sitesRaw = await this.siteRepository.getSubscriptions(forUserId);
+        const sites: SiteWithUserInfo[] = [];
+
+        for (const siteRaw of sitesRaw) {
+            const owner = await this.userManager.getById(siteRaw.owner_id);
+
+            const site: SiteWithUserInfo = {
+                id: siteRaw.site_id,
+                site: siteRaw.subdomain,
+                name: siteRaw.name,
+                owner: owner,
+            };
+
+            if (siteRaw.feed_bookmarks || siteRaw.feed_main) {
+                site.subscribe = {
+                    bookmarks: !!siteRaw.feed_bookmarks,
+                    main: !!siteRaw.feed_main
+                };
+            }
+
+            sites.push(site);
+        }
+
+        return sites;
+    }
 }

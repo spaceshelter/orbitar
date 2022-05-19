@@ -8,15 +8,15 @@ import {observer} from 'mobx-react-lite';
 export const SiteSidebar = observer(() => {
     const [subsDisabled, setSubsDisabled] = useState(false);
     const api = useAPI();
-    const {site} = useAppState();
+    const {siteInfo, userStatus} = useAppState();
 
-    if (!site) {
+    if (!siteInfo) {
         return <></>;
     }
 
     const handleSubscribe = (subscribe: boolean) => {
         setSubsDisabled(true);
-        api.site.subscribe(site.site, subscribe, false)
+        api.site.subscribe(siteInfo.site, subscribe, false)
             .then(() => {
                 setSubsDisabled(false);
             })
@@ -28,19 +28,19 @@ export const SiteSidebar = observer(() => {
 
     return (<div className={styles.container}>
         <div className={styles.fixed}>
-            <Link className={styles.siteName} to={'/'}> {site.name}</Link>
-            {site.site !== 'main' &&
+            <Link className={styles.siteName} to={'/'}> {siteInfo.name}</Link>
+            {siteInfo.site !== 'main' &&
             <div className={styles.subscribe}>
-                {site.subscribe?.main ?
+                {siteInfo.subscribe?.main ?
                     <button className={styles.subscribed} disabled={subsDisabled} onClick={() => handleSubscribe(false)}>Отписаться</button>
                     :
                     <button className={styles.notSubscribed} disabled={subsDisabled} onClick={() => handleSubscribe(true)}>Подписаться</button>
                 }
             </div>}
             <div className={styles.podsites}>
-                {site.site !== 'main' && <div><a href="https://orbitar.space/">Главная</a></div>}
-                {site.site !== 'idiod' && <div><a href="https://idiod.orbitar.space/">idiod</a></div>}
-                {site.site !== 'dev' && <div><a href="https://dev.orbitar.space/">Баги и фичи</a></div>}
+                { userStatus.subscriptions.map(site => {
+                    return <div key={site.site}><Link to={site.site === 'main' ? '/' : `/s/${site.site}`}>{site.name}</Link></div>;
+                }) }
             </div>
         </div>
     </div>);

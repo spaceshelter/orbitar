@@ -87,7 +87,7 @@ export default function PostComponent(props: PostComponentProps) {
         <div className={styles.post}>
             <div className={styles.header}>
                 <div className={styles.signature}>
-                    {props.showSite ? <><Link to={`//${site}.${process.env.REACT_APP_ROOT_DOMAIN}/`}>{site}</Link> • </> : ''}
+                    {props.showSite && site !== 'main' && <><Link to={`/s/${site}`}>{site}</Link> • </>}
                     <Username className={styles.username} user={author} /> • <PostLink post={props.post}><DateComponent date={created} /></PostLink>
                 </div>
                 <div className={styles.contentContainer}>

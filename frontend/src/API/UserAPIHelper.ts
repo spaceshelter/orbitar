@@ -1,6 +1,6 @@
 import UserAPI from './UserAPI';
-import APICache from './APICache';
 import {UserInfo, UserProfileInfo} from '../Types/UserInfo';
+import {AppState} from '../AppState/AppState';
 
 export type UserProfileResult = {
     profile: UserProfileInfo;
@@ -10,11 +10,11 @@ export type UserProfileResult = {
 
 export default class UserAPIHelper {
     private api: UserAPI;
-    private cache: APICache;
+    private appState: AppState;
 
-    constructor(api: UserAPI, cache: APICache) {
+    constructor(api: UserAPI, appState: AppState) {
         this.api = api;
-        this.cache = cache;
+        this.appState = appState;
     }
 
     async userProfile(username: string): Promise<UserProfileResult> {
@@ -23,7 +23,7 @@ export default class UserAPIHelper {
         const profileInfo: UserProfileInfo = { ...profile } as unknown as UserProfileInfo;
 
         profileInfo.registered = this.api.api.fixDate(new Date(profile.registered));
-        this.cache.setUser(profileInfo);
+        this.appState.cache.setUser(profileInfo);
         return {
             profile: profileInfo,
             invitedBy,

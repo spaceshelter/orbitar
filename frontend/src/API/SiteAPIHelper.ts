@@ -10,10 +10,20 @@ export default class SiteAPIHelper {
         this.appState = appState;
     }
 
+    async site(site: string) {
+        const result = await this.api.site(site);
+        if (result) {
+            this.appState.cache.setSite(result.site);
+            if (this.appState.site === site) {
+                this.appState.setSiteInfo(result.site);
+            }
+        }
+    }
+
     async subscribe(site: string, main: boolean, bookmarks: boolean) {
-        await this.api.subscribe(site, main, bookmarks);
-        if (this.appState.site) {
-            this.appState.setSite({...this.appState.site, subscribe: { bookmarks, main }});
+        const result = await this.api.subscribe(site, main, bookmarks);
+        if (this.appState.siteInfo && this.appState.siteInfo.site === site) {
+            this.appState.setSiteInfo({...this.appState.siteInfo, subscribe: result});
         }
     }
 }

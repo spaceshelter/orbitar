@@ -13,4 +13,5 @@ export type StatusResponse = {
         comments: number;
     };
     notifications: number;
+    subscriptions: SiteWithUserInfoEntity[];
 };

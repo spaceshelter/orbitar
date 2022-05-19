@@ -31,6 +31,24 @@ export default class SiteRepository {
         });
     }
 
+    async getSubscriptions(forUserId: number): Promise<SiteWithUserInfoRaw[]> {
+        return await this.db.fetchAll<SiteWithUserInfoRaw>(`
+                select
+                    s.*,
+                    u.feed_main,
+                    u.feed_bookmarks
+                from user_sites u
+                    join sites s on (u.site_id = s.site_id)
+                where
+                    u.user_id = :user_id
+                    and (u.feed_bookmarks or u.feed_main) 
+                    and u.site_id <> 1 
+            `,
+            {
+                user_id: forUserId
+            });
+    }
+
     async subscribe(userId: number, siteId: number, main: boolean, bookmarks: boolean) {
         return await this.db.query('insert into user_sites (site_id, user_id, feed_main, feed_bookmarks) values (:site_id, :user_id, :main, :bookmarks) on duplicate key update feed_main=:main, feed_bookmarks=:bookmarks', {
             site_id: siteId,

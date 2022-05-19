@@ -13,6 +13,7 @@ type StatusResponse = {
         comments: number;
     };
     notifications: number;
+    subscriptions: SiteWithUserInfo[];
 };
 
 type SignInRequest = Record<string, unknown>;

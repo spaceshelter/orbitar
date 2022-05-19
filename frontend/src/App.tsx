@@ -1,5 +1,5 @@
-import React, {useState} from 'react';
-import { Routes, Route, Outlet } from 'react-router-dom';
+import React, {useEffect, useState} from 'react';
+import {Routes, Route, Outlet, useMatch} from 'react-router-dom';
 import {Theme, ToastContainer} from 'react-toastify';
 
 import {AppLoadingState, useAppState} from './AppState/AppState';
@@ -89,6 +89,7 @@ const ReadyContainer = observer(() => {
             </div>
             <div className={styles.monster}><MonsterIcon /></div>
             <ToastContainer theme={theme as Theme} />
+            <SiteWatcher />
         </>
     );
 });
@@ -101,16 +102,40 @@ const Ready = observer(() => {
                     <Route path="" element={<FeedPage />} />
                     <Route path="posts" element={<FeedPage />} />
                     <Route path="subscriptions" element={<FeedPage />} />
-                    <Route path="post/:postId" element={<PostPage />} />
-                    <Route path="user/:username" element={<UserPage />} />
-                    <Route path="user/:username/posts" element={<UserPage />} />
-                    <Route path="user/:username/comments" element={<UserPage />} />
+                    <Route path="p:postId" element={<PostPage />} />
                     <Route path="create" element={<CreatePostPage />} />
+
+                    <Route path="user/:username">
+                        <Route path="" element={<UserPage />} />
+                        <Route path="posts" element={<UserPage />} />
+                        <Route path="comments" element={<UserPage />} />
+                    </Route>
+
                     <Route path="watch" element={<WatchPage />} />
                     <Route path="watch/all" element={<WatchPage />} />
                     <Route path="theme" element={<ThemePreviewPage />} />
+
+                    <Route path="s/:site">
+                        <Route path="" element={<FeedPage />} />
+                        <Route path="create" element={<CreatePostPage />} />
+                        <Route path="p:postId" element={<PostPage />} />
+                    </Route>
                 </Route>
             </Routes>
         </>
     );
 });
+
+const SiteWatcher = () => {
+    const appState = useAppState();
+
+    const match = useMatch('s/:site/*');
+    useEffect(() => {
+        const newSite = match?.params.site || 'main';
+        if (newSite !== appState.site) {
+            console.log('Change site:', newSite);
+            appState.setSite(newSite);
+        }
+    }, [appState, match]);
+    return <></>;
+};

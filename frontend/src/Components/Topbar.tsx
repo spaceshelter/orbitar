@@ -82,15 +82,15 @@ export const Topbar = observer((props: TopbarProps) => {
 });
 
 const WatchButton = observer(() => {
-    const {userStats} = useAppState();
+    const {userStatus} = useAppState();
     return (
-        <Link to={'/watch'} className={userStats.watch.comments > 0 ? styles.active : ''}><HotIcon /><span className={styles.label}>{userStats.watch.comments > 0 ? userStats.watch.comments : ''}</span></Link>
+        <Link to={'/watch'} className={userStatus.watch.comments > 0 ? styles.active : ''}><HotIcon /><span className={styles.label}>{userStatus.watch.comments > 0 ? userStatus.watch.comments : ''}</span></Link>
     );
 });
 
 const NotificationsButton = observer((props: React.ComponentPropsWithRef<'button'>) => {
-    const {userStats} = useAppState();
+    const {userStatus} = useAppState();
     return (
-        <button {...props} disabled={userStats.notifications === 0} className={userStats.notifications > 0 ? styles.active : ''}><NotificationIcon /><span className={styles.label}>{userStats.notifications > 0 ? userStats.notifications : ''}</span></button>
+        <button {...props} disabled={userStatus.notifications === 0} className={userStatus.notifications > 0 ? styles.active : ''}><NotificationIcon /><span className={styles.label}>{userStatus.notifications > 0 ? userStatus.notifications : ''}</span></button>
     );
 });

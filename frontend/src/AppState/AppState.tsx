@@ -4,6 +4,7 @@ import APIHelper from '../API/APIHelper';
 import {UserInfo} from '../Types/UserInfo';
 import {SiteWithUserInfo} from '../Types/SiteInfo';
 import {observable, makeObservable, autorun, action} from 'mobx';
+import APICache from '../API/APICache';
 
 export enum AppLoadingState {
     loading,
@@ -11,16 +12,16 @@ export enum AppLoadingState {
     authorized
 }
 
-export type UserStats = {
+export type UserStatus = {
     watch: {
         posts: number;
         comments: number;
     };
     notifications: number;
+    subscriptions: SiteWithUserInfo[];
 };
 
 type AppStateContextState = {
-    api: APIHelper;
     appState: AppState;
 };
 
@@ -32,13 +33,24 @@ export class AppState {
     userInfo: UserInfo | undefined = undefined; // undefined means not authorized
 
     @observable.deep
-    userStats: UserStats = { notifications: 0, watch: { posts: 0, comments: 0 } };
+    userStatus: UserStatus = { notifications: 0, watch: { posts: 0, comments: 0 }, subscriptions: [] };
 
-    @observable.deep
-    site: SiteWithUserInfo | undefined = undefined;
+    @observable.struct
+    siteInfo: SiteWithUserInfo | undefined = undefined;
+
+    @observable
+    site = 'main';
+
+    readonly api: APIHelper;
+    readonly cache: APICache;
 
     constructor() {
         makeObservable(this);
+
+        const apiBase = new APIBase();
+        this.cache = new APICache();
+        this.api = new APIHelper(apiBase, this);
+        this.api.init().then().catch();
     }
 
     @action
@@ -52,30 +64,62 @@ export class AppState {
     }
 
     @action
-    setUserStats(value: UserStats) {
-        this.userStats = value;
+    setUserStatus(value: UserStatus) {
+        if (value.notifications !== this.userStatus.notifications) {
+            this.userStatus.notifications = value.notifications;
+        }
+        if (value.watch.comments !== this.userStatus.watch.comments) {
+            this.userStatus.watch.comments = value.watch.comments;
+        }
+        if (value.subscriptions.length !== this.userStatus.subscriptions.length) {
+            this.userStatus.subscriptions = value.subscriptions;
+        }
+        else {
+            for (let i = 0; i < value.subscriptions.length; i++) {
+                const oldSub = this.userStatus.subscriptions[i];
+                const newSub = value.subscriptions[i];
+                if (
+                    oldSub.name !== newSub.name
+                    || oldSub.site !== newSub.site
+                    || oldSub.subscribe?.main !== newSub.subscribe?.main
+                    || oldSub.subscribe?.bookmarks !== newSub.subscribe?.bookmarks
+                ) {
+                    this.userStatus.subscriptions[i] = newSub;
+                }
+            }
+        }
     }
 
     @action
     setNotificationsCount(value: number) {
-        this.userStats.notifications = value;
+        this.userStatus.notifications = value;
     }
 
     @action
-    setSite(value: SiteWithUserInfo | undefined) {
+    setSiteInfo(value: SiteWithUserInfo | undefined) {
+        this.siteInfo = value;
+        if (value) {
+            this.cache.setSite(value);
+        }
+    }
+
+    @action
+    setSite(value: string) {
         this.site = value;
+
+        this.siteInfo = this.cache.getSite(value);
+        if (!this.siteInfo) {
+            // request site info
+            this.api.site.site(value).then().catch();
+        }
     }
 }
 
 const AppStateContext = createContext<AppStateContextState>({} as AppStateContextState);
 
 export const AppStateProvider = (props: {children: ReactNode}) => {
-    const {appState, api} = useMemo(() => {
-        const appState = new AppState();
-        const apiBase = new APIBase();
-        const api = new APIHelper(apiBase, appState);
-        api.init().then().catch();
-        return {appState, api};
+    const appState = useMemo(() => {
+        return new AppState();
     }, []);
 
     useEffect(() => {
@@ -84,7 +128,7 @@ export const AppStateProvider = (props: {children: ReactNode}) => {
             if (!link) {
                 return;
             }
-            if (appState.userStats.notifications > 0) {
+            if (appState.userStatus.notifications > 0) {
                 link.href = '//' + process.env.REACT_APP_ROOT_DOMAIN + '/favicon-badge.png';
             }
             else {
@@ -93,7 +137,7 @@ export const AppStateProvider = (props: {children: ReactNode}) => {
         });
     }, [appState]);
 
-    return <AppStateContext.Provider value={{ api: api, appState }}>
+    return <AppStateContext.Provider value={{ appState }}>
         {props.children}
     </AppStateContext.Provider>;
 };
@@ -103,7 +147,7 @@ export function useAppState() {
 }
 
 export function useAPI() {
-    return useContext(AppStateContext).api;
+    return useContext(AppStateContext).appState.api;
 }
 
 let siteName: string | undefined;
