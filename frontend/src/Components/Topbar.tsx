@@ -73,7 +73,7 @@ export default function Topbar(props: TopbarProps) {
                     <button onClick={toggleTheme}>{theme === 'dark' ? <LightIcon /> : <DarkIcon />}</button>
                     <Link to={'/watch'} className={userStats.watch.comments > 0 ? styles.active : ''}><HotIcon /><span className={styles.label}>{userStats.watch.comments > 0 ? userStats.watch.comments : ''}</span></Link>
                     <button disabled={userStats.notifications === 0} className={userStats.notifications > 0 ? styles.active : ''} onClick={handleNotificationsToggle}><NotificationIcon /><span className={styles.label}>{userStats.notifications > 0 ? userStats.notifications : ''}</span></button>
-                    <Link to={'/user/' + userInfo.username}><ProfileIcon /></Link>
+                    <Link to={'/profile'}><ProfileIcon /></Link>
                 </div>
             </div>
             {showNotifications && <NotificationsPopup onClose={handleNotificationsClose} />}
