@@ -16,13 +16,14 @@ interface SignatureComponentProps {
     onHistoryClick: () => void;
     postLink: PostLinkInfo;
     date: Date;
+    commentId?: number;
 }
 
 export const SignatureComponent = (props: SignatureComponentProps) => {
     return (
         <div className={styles.signature}>
             {(props.showSite && props.site) ? <><Link to={`//${props.site}.${process.env.REACT_APP_ROOT_DOMAIN}/`}>{props.site}</Link> • </> : ''}
-            <Username className={styles.username} user={props.author} /> • <PostLink post={props.postLink}><DateComponent date={props.date} /></PostLink>
+            <Username className={styles.username} user={props.author} /> • <PostLink post={props.postLink} commentId={props.commentId}><DateComponent date={props.date} /></PostLink>
             {props.editFlag && <> • <button className={styles.toggleHistory} onClick={props.onHistoryClick}>изменён</button></>}
         </div>
     );
