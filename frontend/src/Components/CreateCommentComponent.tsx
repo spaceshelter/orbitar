@@ -157,7 +157,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         props.onAnswer(answerText, props.post, props.comment)
             .then(() => {
                 setPosting(false);
-                setAnswerText(props.comment ? props.comment.author.username + ', ' : '');
+                setAnswerText('');
             })
             .catch(error => {
                 console.log('onAnswer ERR', error);

@@ -25,6 +25,7 @@ export function CreatePostPage() {
         catch (error) {
             console.log('CREATE ERR', error);
             toast.error('Пост хороший, но создать его не удалось 🤐');
+            throw error;
         }
 
         return;
