@@ -14,16 +14,17 @@
         &.plus  { color: var(--primary); }
     }
     button {
-        fill: var(--fgSoftest);
         height: 24px;
         width: 24px;
         background: none;
         margin: 0;
         padding: 0;
         border: none;
-        &.minus { fill: var(--danger); }
-        &.plus { fill: var(--primary); }
-        &.dis {  fill: var(--fgGhost); }
+        font-size: 24px;
+        color: var(--fgSoftest);
+        &.minus { color: var(--danger); }
+        &.plus { color: var(--primary); }
+        &.dis {  color: var(--fgGhost); }
     }
 }
 
