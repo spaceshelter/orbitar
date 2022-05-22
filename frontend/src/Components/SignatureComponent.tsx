@@ -7,6 +7,7 @@ import React from 'react';
 import {UserInfo} from '../Types/UserInfo';
 import {EditFlag} from '../API/PostAPI';
 import {PostLinkInfo} from '../Types/PostInfo';
+import {ReactComponent as ArrowIcon} from '../Assets/arrow.svg';
 
 interface SignatureComponentProps {
     showSite?: boolean;
@@ -15,6 +16,7 @@ interface SignatureComponentProps {
     editFlag?: EditFlag;
     onHistoryClick: () => void;
     postLink: PostLinkInfo;
+    parentCommentId?: number;
     date: Date;
     commentId?: number;
 }
@@ -24,6 +26,7 @@ export const SignatureComponent = (props: SignatureComponentProps) => {
         <div className={styles.signature}>
             {(props.showSite && props.site) ? <><Link to={`//${props.site}.${process.env.REACT_APP_ROOT_DOMAIN}/`}>{props.site}</Link> • </> : ''}
             <Username className={styles.username} user={props.author} /> • <PostLink post={props.postLink} commentId={props.commentId}><DateComponent date={props.date} /></PostLink>
+            {props.parentCommentId && <> • <PostLink className={'arrow'} post={props.postLink} commentId={props.parentCommentId}><ArrowIcon /></PostLink></>}
             {props.editFlag && <> • <button className={styles.toggleHistory} onClick={props.onHistoryClick}>изменён</button></>}
         </div>
     );

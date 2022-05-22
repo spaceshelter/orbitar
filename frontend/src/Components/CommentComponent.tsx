@@ -13,9 +13,11 @@ import {HistoryComponent} from './HistoryComponent';
 interface CommentProps {
     comment: CommentInfo;
     showSite?: boolean;
-
+    parent?: CommentInfo;
     onAnswer?: (text: string, post?: PostLinkInfo, comment?: CommentInfo) => Promise<CommentInfo | undefined>;
     onEdit?: (text: string, comment: CommentInfo) => Promise<CommentInfo | undefined>;
+    depth?: number
+    maxTreeDepth?: number
 }
 
 export default function CommentComponent(props: CommentProps) {
@@ -74,11 +76,13 @@ export default function CommentComponent(props: CommentProps) {
     };
 
     const {author, created, site, postLink, editFlag, content} = props.comment;
-
+    const depth = props.depth || 0;
+    const maxDepth = props.maxTreeDepth || 0;
+    const isFlat = depth > maxDepth;
     return (
-        <div className={styles.comment + (props.comment.isNew ? ' isNew': '')} data-comment-id={props.comment.id}>
+        <div className={styles.comment + (props.comment.isNew ? ' isNew': '') + (isFlat?' isFlat':'')} data-comment-id={props.comment.id}>
             <div className='commentBody'>
-                <SignatureComponent showSite={props.showSite} site={site} author={author} onHistoryClick={toggleHistory} postLink={postLink} commentId={props.comment.id} date={created} editFlag={editFlag} />
+                <SignatureComponent showSite={props.showSite} site={site} author={author} onHistoryClick={toggleHistory} parentCommentId={isFlat?props.parent?.id:undefined} postLink={postLink} commentId={props.comment.id} date={created} editFlag={editFlag} />
                 {editingText === false ?
                     (showHistory
                         ?
@@ -101,10 +105,10 @@ export default function CommentComponent(props: CommentProps) {
                 </div>
             </div>
             {(props.comment.answers || answerOpen) ?
-                <div className={styles.answers}>
+                <div className={styles.answers + (isFlat?' isFlat':'')}>
                     {props.onAnswer && <CreateCommentComponent open={answerOpen} post={props.comment.postLink} comment={props.comment} onAnswer={handleAnswer} />}
                     {props.comment.answers && props.onAnswer ? props.comment.answers.map(comment =>
-                        <CommentComponent key={comment.id} comment={comment} onAnswer={props.onAnswer} onEdit={props.onEdit} />) : <></>}
+                        <CommentComponent maxTreeDepth={maxDepth} depth={depth+1} parent={props.comment} key={comment.id} comment={comment} onAnswer={props.onAnswer} onEdit={props.onEdit} />) : <></>}
                 </div>
                 : <></>}
 

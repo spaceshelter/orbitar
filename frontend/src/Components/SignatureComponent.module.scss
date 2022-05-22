@@ -3,7 +3,7 @@
   align-items: center;
   gap: 4px;
   font-size: 14px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   color: var(--fgSoftest);
   >a {
     text-decoration: none;
@@ -12,6 +12,15 @@
       color: var(--fgSofter);
     }
   }
+
+  :global{
+    .arrow{
+      display: flex;
+      align-items: center;
+      fill: var(--fgSoftest)
+    }
+  }
+
   .username {
     color: var(--fgMedium);
     svg{ fill: var(--fgMedium); }
