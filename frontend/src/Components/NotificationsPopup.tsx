@@ -29,6 +29,16 @@ export default function NotificationsPopup(props: NotificationsPopupProps) {
 
     const subscribe = useMemo(() => {
         return async () => {
+            if (siteName !== 'main') {
+                // request notifications only at main domain
+                return;
+            }
+
+            if (!('serviceWorker' in navigator) || !('Notification' in window)) {
+                // notifications not supported
+                return;
+            }
+
             if (Notification.permission === 'denied') {
                 return;
             }
@@ -44,7 +54,7 @@ export default function NotificationsPopup(props: NotificationsPopupProps) {
                 await api.notifications.subscribe(subscription);
             }
         };
-    }, [api, pushService]);
+    }, [api, pushService, siteName]);
 
     useEffect(() => {
         fetchNotifications()
