@@ -23,7 +23,9 @@
 
   .username {
     color: var(--fgMedium);
-    svg{ fill: var(--fgMedium); }
+    &:before {
+      color: var(--fgMedium);
+    }
     &:hover {
       color: var(--primary);
     }

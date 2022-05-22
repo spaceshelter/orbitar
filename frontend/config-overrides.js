@@ -13,7 +13,9 @@ module.exports = function override(config, env) {
     const htmlWebpackPlugin = config.plugins.find(plugin => plugin.constructor.name === 'HtmlWebpackPlugin');
     htmlWebpackPlugin.userOptions.excludeChunks = ['serviceWorker'];
 
-    config.plugins.push(new MiniCssExtractPlugin());
+    if (env === 'development') {
+        config.plugins.push(new MiniCssExtractPlugin());
+    }
 
     config.module.rules[1].oneOf = [
         {
