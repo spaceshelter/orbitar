@@ -2,8 +2,6 @@ import styles from './RatingSwitch.module.scss';
 import React, {ForwardedRef, useEffect, useRef, useState} from 'react';
 import {useAPI} from '../AppState/AppState';
 import { toast } from 'react-toastify';
-import {ReactComponent as MinusIcon} from '../Assets/rating_minus.svg';
-import {ReactComponent as PlusIcon} from '../Assets/rating_plus.svg';
 import {pluralize} from '../Utils/utils';
 import Username from './Username';
 
@@ -126,10 +124,10 @@ export default function RatingSwitch(props: RatingSwitchProps) {
     };
 
     const valueStyles = [styles.value];
-    const plusStyles = [];
-    const minusStyles = [];
-    const plus2Styles = [];
-    const minus2Styles = [];
+    const plusStyles = ['i', 'i-rating_plus'];
+    const minusStyles = ['i', 'i-rating_minus'];
+    const plus2Styles = ['i', 'i-rating_plus'];
+    const minus2Styles = ['i', 'i-rating_minus'];
     if (state.vote && state.vote < 0) {
         valueStyles.push(styles.minus);
         minusStyles.push(styles.minus);
@@ -152,11 +150,11 @@ export default function RatingSwitch(props: RatingSwitchProps) {
     return (
         <>
             <div ref={ratingRef} className={styles.rating}>
-                {props.double && <button className={minus2Styles.join(' ')} onClick={() => handleVote(-2)}><MinusIcon /></button>}
-                <button className={minusStyles.join(' ')} onClick={() => handleVote(-1)}><MinusIcon /></button>
+                {props.double && <button className={minus2Styles.join(' ')} onClick={() => handleVote(-2)}></button>}
+                <button className={minusStyles.join(' ')} onClick={() => handleVote(-1)}></button>
                 <div onClick={handleVoteList} className={valueStyles.join(' ')}>{state.rating}</div>
-                <button className={plusStyles.join(' ')} onClick={() => handleVote(1)}><PlusIcon /></button>
-                {props.double && <button className={plus2Styles.join(' ')} onClick={() => handleVote(2)}><PlusIcon /></button>}
+                <button className={plusStyles.join(' ')} onClick={() => handleVote(1)}></button>
+                {props.double && <button className={plus2Styles.join(' ')} onClick={() => handleVote(2)}></button>}
             </div>
             {showPopup && <RatingList ref={popupRef} vote={state.vote || 0} rating={state.rating} votes={votes}></RatingList>}
         </>

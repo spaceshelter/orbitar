@@ -57,6 +57,10 @@
         align-items: center;
     }
 
+    button:before {
+        font-size: 24px;
+    }
+
     button, a {
         height: 24px;
         background: none;

@@ -6,7 +6,7 @@ import {PostLinkInfo} from '../Types/PostInfo';
 interface PostLinkProps extends React.ComponentPropsWithRef<'a'> {
     post: PostLinkInfo;
     commentId?: number;
-    children: React.ReactNode;
+    children?: React.ReactNode;
     onlyNew?: boolean;
 }
 

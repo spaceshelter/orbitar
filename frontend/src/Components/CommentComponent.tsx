@@ -4,7 +4,6 @@ import RatingSwitch from './RatingSwitch';
 import React, {useMemo, useState} from 'react';
 import CreateCommentComponent from './CreateCommentComponent';
 import ContentComponent from './ContentComponent';
-import {ReactComponent as EditIcon} from '../Assets/edit.svg';
 import {useAPI} from '../AppState/AppState';
 import {toast} from 'react-toastify';
 import {SignatureComponent} from './SignatureComponent';
@@ -100,7 +99,7 @@ export default function CommentComponent(props: CommentProps) {
                     <div className={styles.control}>
                         <RatingSwitch type="comment" id={props.comment.id} rating={{ vote: props.comment.vote, value: props.comment.rating }} onVote={handleVote} />
                     </div>
-                    {props.comment.canEdit && props.onEdit && <div className={styles.control}><button onClick={handleEdit}><EditIcon /></button></div>}
+                    {props.comment.canEdit && props.onEdit && <div className={styles.control}><button onClick={handleEdit} className='i i-edit' /></div>}
                     {props.onAnswer && <div className={styles.control}><button onClick={handleAnswerSwitch}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</button></div>}
                 </div>
             </div>
