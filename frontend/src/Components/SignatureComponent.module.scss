@@ -15,7 +15,9 @@
 
   :global{
     .arrow{
-      margin-top: -3px;
+      display: flex;
+      align-items: center;
+      fill: var(--fgSoftest)
     }
   }
 
