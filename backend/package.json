@@ -10,7 +10,9 @@
     "migration:dev": "NODE_ENV=development node migrations.js",
     "migration:production": "NODE_ENV=production node migrations.js",
     "generate-dummy-content": "NODE_ENV=development node dummy_content_generator.js",
-    "lint": "npx eslint src"
+    "lint": "npx eslint src",
+    "test": "jest --coverage",
+    "test:watch": "jest --watch"
   },
   "keywords": [],
   "author": "",
@@ -27,7 +29,10 @@
     "eslint": "^8.14.0",
     "typescript": "^4.6.3",
     "@types/redis": "^4.0.11",
-    "@types/web-push": "^3.3.2"
+    "@types/web-push": "^3.3.2",
+    "jest": "^28.1.0",
+    "ts-jest": "^28.0.3",
+    "@types/jest": "^27.5.1"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

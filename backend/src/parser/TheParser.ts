@@ -4,6 +4,7 @@ import { escape as htmlEscape } from 'html-escaper';
 import escapeHTML from 'escape-html';
 import Url from 'url-parse';
 import qs from 'qs';
+import {urlRegex, urlRegexExact} from './urlregex';
 
 export type ParseResult = {
     text: string;
@@ -97,20 +98,21 @@ export default class TheParser {
     }
 
     private parseText(text: string): ParseResult {
-        const regex = /https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b[-a-zA-Z0-9()@:%_+.~#?&/=]*/g;
+
         const tokens: { type: string; data: string }[] = [];
 
         let sText = text;
-        let match = regex.exec(sText);
+        urlRegex.lastIndex = 0;
+        let match = urlRegex.exec(sText);
         while (match) {
             const url = match[0];
             const pText = sText.substring(0, match.index);
             tokens.push({ type: 'text', data: pText });
             sText = sText.substring(match.index + url.length);
             tokens.push({ type: 'url', data: url });
-            regex.lastIndex = 0; //match.index + url.length;
+            urlRegex.lastIndex = 0; //match.index + url.length;
 
-            match = regex.exec(sText);
+            match = urlRegex.exec(sText);
         }
         tokens.push({ type: 'text', data: sText });
 
@@ -246,21 +248,19 @@ export default class TheParser {
 
     parseA(node: Element): ParseResult {
         const url = node.attribs['href'] || '';
-        const regex = /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b[-a-zA-Z0-9()@:%_+.~#?&/=]*$/;
-        if (!url.match(regex)) {
+        if (!this.validUrl(url)) {
             return this.parseDisallowedTag(node);
         }
 
         const result = this.parseChildNodes(node.children);
-        const text = `<a href="${encodeURI(url)}" target="_blank">${result.text}</a>`;
+        const text = `<a href="${encodeURI(decodeURI(url))}" target="_blank">${result.text}</a>`;
 
         return { ...result, text, urls: [ ...result.urls, url ] } ;
     }
 
     parseImg(node: Element): ParseResult {
         const url = node.attribs['src'] || '';
-        const regex = /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b[-a-zA-Z0-9()@:%_+.~#?&/=]*$/;
-        if (!url.match(regex)) {
+        if (!this.validUrl(url)) {
             return this.parseDisallowedTag(node);
         }
 
@@ -269,8 +269,7 @@ export default class TheParser {
 
     parseVideo(node: Element): ParseResult {
         const url = node.attribs['src'] || '';
-        const regex = /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b[-a-zA-Z0-9()@:%_+.~#?&/=]*$/;
-        if (!url.match(regex)) {
+        if (!this.validUrl(url)) {
             return this.parseDisallowedTag(node);
         }
 
@@ -283,5 +282,9 @@ export default class TheParser {
         const result = this.parseChildNodes(node.children);
         const text = `<span class="irony">${result.text}</span>`;
         return { ...result, text };
+    }
+
+    validUrl(url: string) {
+        return encodeURI(decodeURI(url)).match(urlRegexExact);
     }
 }

@@ -1,7 +1,7 @@
 http://{$SERVER_DOMAIN}, http://*.{$SERVER_DOMAIN} {
   # CORS headers for *.svg
   @cors {
-    path_regexp \.svg$
+    path_regexp \.(svg|woff2?|ttf|eot)$
     header Origin *.{$SERVER_DOMAIN}
   }
   header @cors {

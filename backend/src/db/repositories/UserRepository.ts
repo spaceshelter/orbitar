@@ -12,6 +12,11 @@ export default class UserRepository {
         this.db = db;
     }
 
+    async getUserCount(): Promise<number> {
+        const result = await this.db.fetchOne<{cnt: string}>('select count(*) cnt from users', {});
+        return parseInt(result.cnt || '0');
+    }
+
     async getUserById(userId: number): Promise<UserRaw | undefined> {
         return await this.db.fetchOne<UserRaw>('select * from users where user_id=:user_id', {user_id: userId});
     }

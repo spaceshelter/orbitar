@@ -1,0 +1,43 @@
+.signature {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: var(--fgSoftest);
+  >a {
+    text-decoration: none;
+    color: var(--fgSoftest);
+    &:hover {
+      color: var(--fgSofter);
+    }
+  }
+
+  :global{
+    .arrow{
+      display: flex;
+      align-items: center;
+      fill: var(--fgSoftest)
+    }
+  }
+
+  .username {
+    color: var(--fgMedium);
+    &:before {
+      color: var(--fgMedium);
+    }
+    &:hover {
+      color: var(--primary);
+    }
+  }
+
+  .toggleHistory {
+    border: none;
+    background: none;
+    font-size: 14px;
+    margin: 0;
+    padding: 0;
+    color: var(--fgSoftest);
+    font-family: 'Roboto', sans-serif;
+  }
+}

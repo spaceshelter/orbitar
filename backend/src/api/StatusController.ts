@@ -65,8 +65,7 @@ export default class StatusController {
             owner: {
                 id: siteInfo.owner.id,
                 username: siteInfo.owner.username,
-                gender: siteInfo.owner.gender,
-                karma: siteInfo.owner.karma,
+                gender: siteInfo.owner.gender
             }
         };
         if (siteInfo.subscribe) {

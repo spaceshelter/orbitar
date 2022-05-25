@@ -1,0 +1,94 @@
+.history{
+  background: var(--dim1);
+  margin: 0 -16px;
+  border-radius: 8px;
+  display: flex;
+  max-height: 700px;
+
+  :global{
+
+    .content{
+      flex: 1 1 auto;
+      padding: 16px;
+      overflow-y: auto;
+    }
+    .title {
+      color: var(--fgHard);
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    .sideNav{
+      overflow-y: auto;
+      flex: 0 0 150px;
+      border-bottom-right-radius: 8px;
+      border-top-right-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+
+      .top{
+        display: flex;
+        font-size: 14px;
+        padding: 0 8px 0 16px;
+        height: 32px;
+        align-items: center;
+        background: var(--dim2);
+        span{
+          color: var(--fg);
+          flex: 1 1 auto;
+        }
+        .close{
+          height: 16px;
+          flex: 0 0 16px;
+          text-align: center;
+          background: var(--bg);
+          border-radius: 4px;
+          cursor: pointer;
+          fill: var(--fg);
+          padding: 2px;
+          &:hover{
+            background: var(--danger);
+            fill: var(--onAccent);
+          }
+        }
+      }
+
+      .item{
+        cursor: pointer;
+        padding: 12px 16px 12px 14px;
+        background: var(--dim2);
+        box-sizing: border-box;
+        border-left: 2px solid transparent;
+        .date{
+          color: var(--fg);
+          font-size: 16px;
+          line-height: 1.4em;
+        }
+        .version, .info{
+          font-size: 13px;
+          line-height: 1.2em;
+          color: var(--fgSofter);
+          &.danger{
+            font-weight: bold;
+            color: var(--danger);
+          }
+        }
+        &.selected{
+          background-color: var(--dim3);
+          border-left-color: var(--primary);
+        }
+        &:hover{
+          background-color: var(--dim3);
+        }
+      }
+
+      &::after{
+        content: '';
+        background: var(--dim2);
+        display: block;
+        flex: 1 1 auto;
+      }
+    }
+  }
+
+}

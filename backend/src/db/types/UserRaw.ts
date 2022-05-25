@@ -1,8 +1,11 @@
 import {UserGender} from '../../managers/types/UserInfo';
 
-export type UserRaw = {
+export type UserBaseRaw = {
     user_id: number;
     username: string;
+};
+
+export type UserRaw = UserBaseRaw & {
     password: string;
     twofactor?: string;
     gender: UserGender;

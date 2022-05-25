@@ -1,6 +1,6 @@
 import {PostEntity} from '../entities/PostEntity';
 import {UserEntity} from '../entities/UserEntity';
-import {ContentFormat} from '../entities/ContentFormat';
+import {ContentFormat} from '../entities/common';
 import {SiteBaseEntity} from '../entities/SiteEntity';
 
 export type FeedPostsRequest = {

@@ -4,14 +4,17 @@ import {APIRequest, APIResponse} from './ApiMiddleware';
 import SiteManager from '../managers/SiteManager';
 import {SiteSubscribeRequest, SiteSubscribeResponse} from './types/requests/SiteSubscribe';
 import {SiteRequest, SiteResponse} from './types/requests/Site';
+import FeedManager from '../managers/FeedManager';
 
 export default class SiteController {
     public router = Router();
     private logger: Logger;
+    private feedManager: FeedManager;
     private siteManager: SiteManager;
 
-    constructor(siteManager: SiteManager, logger: Logger) {
+    constructor(feedManager: FeedManager, siteManager: SiteManager, logger: Logger) {
         this.logger = logger;
+        this.feedManager = feedManager;
         this.siteManager = siteManager;
 
         this.router.post('/site', (req, res) => this.site(req, res));
@@ -56,7 +59,7 @@ export default class SiteController {
         }
 
         try {
-            const result = await this.siteManager.subscribe(userId, site, !!main, !!bookmarks);
+            const result = await this.feedManager.siteSubscribe(userId, site, !!main, !!bookmarks);
 
             response.success(result);
         }

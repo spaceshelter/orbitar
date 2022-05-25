@@ -29,7 +29,7 @@ export default class VoteRepository {
                 vote: vote
             });
 
-            const ratingResult = await conn.fetchOne<{ rating: number }>('select sum(vote) rating from post_votes where post_id=:post_id', {
+            const ratingResult = await conn.fetchOne<{ rating: string }>('select sum(vote) rating from post_votes where post_id=:post_id', {
                 post_id: postId
             });
             const rating = Number(ratingResult.rating || 0);

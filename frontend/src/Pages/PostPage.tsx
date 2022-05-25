@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import styles from './PostPage.module.css';
 import {Link, useLocation, useParams, useSearchParams} from 'react-router-dom';
-import {CommentInfo, PostLinkInfo} from '../Types/PostInfo';
+import {CommentInfo, PostInfo, PostLinkInfo} from '../Types/PostInfo';
 import PostComponent from '../Components/PostComponent';
 import CommentComponent from '../Components/CommentComponent';
 import CreateCommentComponent from '../Components/CreateCommentComponent';
@@ -20,7 +20,7 @@ export default function PostPage() {
     }
 
     const unreadOnly = search.get('new') !== null;
-    const {post, comments, postComment, preview, error, reload, updatePost} = usePost(subdomain, postId, unreadOnly);
+    const {post, comments, postComment, editComment, editPost, error, reload, updatePost} = usePost(subdomain, postId, unreadOnly);
 
     useEffect(() => {
         let docTitle = `Пост #${postId}`;
@@ -34,25 +34,21 @@ export default function PostPage() {
 
     }, [post, postId]);
 
-    const handleAnswer = (text: string, post?: PostLinkInfo, comment?: CommentInfo) => {
-        if (!post) {
-            return Promise.resolve(undefined);
-        }
-        return new Promise<CommentInfo>((resolve, reject) => {
-            postComment(text, comment?.id)
-                .then(comment => {
-                    // scroll to new comment
-                    setTimeout(() => {
-                        const el = document.querySelector(`div[data-comment-id="${comment.id}"]`);
-                        el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                    }, 100);
+    const handleCommentEdit = async (text: string, comment: CommentInfo) => {
+        return await editComment(text, comment.id);
+    };
 
-                    resolve(comment);
-                })
-                .catch(error => {
-                    reject(error);
-                });
-        });
+    const handleAnswer = async (text: string, post?: PostLinkInfo, comment?: CommentInfo) => {
+        if (!post) {
+            return;
+        }
+
+        const newComment = await postComment(text, comment?.id);
+        setTimeout(() => {
+            const el = document.querySelector(`div[data-comment-id="${newComment.id}"]`);
+            el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+        return comment;
     };
 
     useEffect(() => {
@@ -105,15 +101,19 @@ export default function PostPage() {
         }
     }, [location.hash, comments, scrolledToComment, unreadOnly]);
 
+    const handlePostEdit = async (post: PostInfo, text: string, title?: string): Promise<PostInfo | undefined> => {
+        return await editPost(title || '', text);
+    };
+
     return (
         <div className={styles.container}>
             <div className={styles.feed}>
                 {post ? <div>
-                        <PostComponent key={post.id} post={post} onChange={(_, partial) => updatePost(partial)} />
+                        <PostComponent key={post.id} post={post} onChange={(_, partial) => updatePost(partial)} onEdit={handlePostEdit} />
                         <div className={styles.postButtons}><Link to={`/post/${post.id}`} className={unreadOnly ? '' : 'bold'}>все комментарии</Link> • <Link to={`/post/${post.id}?new`} className={unreadOnly ? 'bold' : ''}>только новые</Link></div>
                         <div className={styles.comments + (unreadOnly ? ' unreadOnly' : '')}>
                             {comments ?
-                                comments.map(comment => <CommentComponent key={comment.id} comment={comment} onAnswer={handleAnswer} onPreview={preview} />)
+                                comments.map(comment => <CommentComponent maxTreeDepth={12} key={comment.id} comment={comment} onAnswer={handleAnswer} onEdit={handleCommentEdit} />)
                                 :
                                 (
                                     error ? <div className={styles.error}>{error}<div><button onClick={() => reload(unreadOnly)}>Повторить</button></div></div>
@@ -121,7 +121,7 @@ export default function PostPage() {
                                 )
                             }
                         </div>
-                        <CreateCommentComponent open={true} post={post} onAnswer={handleAnswer} onPreview={preview} />
+                        <CreateCommentComponent open={true} post={post} onAnswer={handleAnswer} />
                     </div>
                     :
                     (

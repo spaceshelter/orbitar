@@ -5,21 +5,27 @@ import UserRepository from '../db/repositories/UserRepository';
 import CodeError from '../CodeError';
 import ExclusiveTask, {TaskState} from '../utils/ExclusiveTask';
 import BookmarkRepository from '../db/repositories/BookmarkRepository';
+import {PostInfo} from './types/PostInfo';
+import {ContentFormat} from './types/common';
+import {SiteInfo} from './types/SiteInfo';
+import SiteManager from './SiteManager';
 
 export default class FeedManager {
-    private readonly redis: RedisClientType;
+    private readonly bookmarkRepository: BookmarkRepository;
     private readonly postRepository: PostRepository;
     private readonly userRepository: UserRepository;
-    private readonly bookmarkRepository: BookmarkRepository;
+    private readonly siteManager: SiteManager;
+    private readonly redis: RedisClientType;
 
-    constructor(bookmarkRepository: BookmarkRepository, postRepository: PostRepository, userRepository: UserRepository, redis: RedisClientType) {
+    constructor(bookmarkRepository: BookmarkRepository, postRepository: PostRepository, userRepository: UserRepository, siteManager: SiteManager, redis: RedisClientType) {
         this.bookmarkRepository = bookmarkRepository;
         this.postRepository = postRepository;
         this.userRepository = userRepository;
+        this.siteManager = siteManager;
         this.redis = redis;
     }
 
-    async getSubscriptionFeed(forUserId: number, page: number, perpage: number): Promise<PostRawWithUserData[]> {
+    async getSubscriptionFeed(forUserId: number, page: number, perpage: number, format: ContentFormat): Promise<PostInfo[]> {
         const limitFrom = (page - 1) * perpage;
 
         // check if fanned out
@@ -38,23 +44,25 @@ export default class FeedManager {
             posts.push(post);
         }
 
-        return posts;
+        return await this.convertRawPost(forUserId, posts, format);
     }
 
     async getSubscriptionsTotal(forUserId: number): Promise<number> {
         return await this.redis.zCount(`subscriptions:${forUserId}`, 0, '+inf');
     }
 
-    async getAllPosts(forUserId: number, page: number, perpage: number): Promise<PostRawWithUserData[]> {
-        return await this.postRepository.getAllPosts(forUserId, page, perpage);
+    async getAllPosts(forUserId: number, page: number, perpage: number, format: ContentFormat): Promise<PostInfo[]> {
+        const rawPosts = await this.postRepository.getAllPosts(forUserId, page, perpage);
+        return this.convertRawPost(forUserId, rawPosts, format);
     }
 
     async getAllPostsTotal(): Promise<number> {
         return await this.postRepository.getAllPostsTotal();
     }
 
-    async getWatchFeed(forUserId: number, page: number, perpage: number, all = false): Promise<PostRawWithUserData[]> {
-        return await this.postRepository.getWatchPosts(forUserId, page, perpage, all);
+    async getWatchFeed(forUserId: number, page: number, perpage: number, all = false, format: ContentFormat = 'html'): Promise<PostInfo[]> {
+        const rawPosts = await this.postRepository.getWatchPosts(forUserId, page, perpage, all);
+        return await this.convertRawPost(forUserId, rawPosts, format);
     }
 
     async getWatchTotal(forUserId: number, all = false): Promise<number> {
@@ -62,8 +70,9 @@ export default class FeedManager {
     }
 
 
-    async getSiteFeed(forUserId: number, siteId: number, page: number, perpage: number): Promise<PostRawWithUserData[]> {
-        return await this.postRepository.getPosts(siteId, forUserId, page, perpage);
+    async getSiteFeed(forUserId: number, siteId: number, page: number, perpage: number, format: ContentFormat): Promise<PostInfo[]> {
+        const rawPosts = await this.postRepository.getPosts(siteId, forUserId, page, perpage);
+        return this.convertRawPost(forUserId, rawPosts, format);
     }
 
     async getSiteTotal(siteId: number): Promise<number> {
@@ -182,5 +191,61 @@ export default class FeedManager {
         } while (posts.length > 0);
 
         // console.log('Fanout complete', siteId);
+    }
+
+    async convertRawPost(forUserId: number, rawPosts: PostRawWithUserData[], format: ContentFormat): Promise<PostInfo[]> {
+        const siteById: Record<number, SiteInfo> = {};
+        const posts: PostInfo[] = [];
+
+        for (const rawPost of rawPosts) {
+            let site = siteById[rawPost.site_id];
+            if (!site) {
+                site = await this.siteManager.getSiteById(rawPost.site_id);
+                siteById[rawPost.site_id] = site;
+            }
+
+            const post: PostInfo = {
+                id: rawPost.post_id,
+                site: site ? site.site : '',
+                author: rawPost.author_id,
+                created: rawPost.created_at,
+                title: rawPost.title,
+                content: format === 'html' ? rawPost.html : rawPost.source,
+                rating: rawPost.rating,
+                comments: rawPost.comments,
+                newComments: rawPost.read_comments ? Math.max(0, rawPost.comments - rawPost.read_comments) : rawPost.comments,
+                bookmark: !!rawPost.bookmark,
+                watch: !!rawPost.watch,
+                vote: rawPost.vote,
+                lastReadCommentId: rawPost.last_read_comment_id,
+            };
+            if (rawPost.author_id === forUserId) {
+                post.canEdit = true;
+            }
+            if (rawPost.edit_flag) {
+                post.editFlag = rawPost.edit_flag;
+            }
+
+            posts.push(post);
+        }
+
+        return posts;
+
+    }
+
+
+    async siteSubscribe(userId: number, siteName: string, main: boolean, bookmarks: boolean) {
+        const site = await this.siteManager.getSiteByName(siteName);
+        if (!site) {
+            throw new CodeError('no-site', 'Site not found');
+        }
+
+        const siteId = site.id;
+        await this.siteManager.siteSubscribe(userId, site.id, main, bookmarks);
+
+        // fanout in background
+        this.siteFanOut(userId, siteId, !main).then().catch();
+
+        return { main, bookmarks };
     }
 }

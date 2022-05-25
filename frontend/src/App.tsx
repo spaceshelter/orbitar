@@ -107,8 +107,11 @@ const Ready = observer(() => {
 
                     <Route path="user/:username">
                         <Route path="" element={<UserPage />} />
-                        <Route path="posts" element={<UserPage />} />
-                        <Route path="comments" element={<UserPage />} />
+                        <Route path=":page" element={<UserPage />} />
+                    </Route>
+                    <Route path="profile">
+                        <Route path="" element={<UserPage />} />
+                        <Route path=":page" element={<UserPage />} />
                     </Route>
 
                     <Route path="watch" element={<WatchPage />} />

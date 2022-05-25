@@ -7,6 +7,7 @@ import {NotificationsReadRequest, NotificationsReadResponse} from './types/reque
 import {NotificationsReadAllRequest, NotificationsReadAllResponse} from './types/requests/NotificationsReadAll';
 import UserManager from '../managers/UserManager';
 import {NotificationsSubscribeRequest, NotificationsSubscribeResponse} from './types/requests/NotificationsSubscribe';
+import {NotificationEntity} from './types/entities/NotificationEntity';
 
 export default class NotificationsController {
     router = Router();
@@ -34,8 +35,15 @@ export default class NotificationsController {
         const webPushAuth = request.body.webPushAuth;
 
         try {
-            const notifications = await this.notificationManager.getNotifications(userId);
+            const notificationsInfo = await this.notificationManager.getNotifications(userId);
             const haveWebPushCredentials = webPushAuth ? !!(await this.userManager.getPushSubscription(userId, webPushAuth)) : false;
+
+            // FIXME: converter needed
+            const notifications: NotificationEntity[] = notificationsInfo.map(n => {
+                const not = { ...n } as unknown as NotificationEntity;
+                not.date = n.date.toISOString();
+                return not;
+            });
 
             response.success({ notifications, webPushRegistered: haveWebPushCredentials });
         }

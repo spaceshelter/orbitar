@@ -8,7 +8,9 @@ export type PostRaw = {
     html: string;
     created_at: Date;
     commented_at: Date;
+    edit_flag?: number;
     comments: number;
+    gold: number;
 };
 
 export type PostRawWithUserData = PostRaw & {
@@ -30,6 +32,7 @@ export type CommentRaw = {
     source: string;
     html: string;
     rating: number;
+    edit_flag?: number;
 };
 
 export type CommentRawWithUserData = CommentRaw & {

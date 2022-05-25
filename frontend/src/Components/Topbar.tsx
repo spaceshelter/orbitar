@@ -73,7 +73,7 @@ export const Topbar = observer((props: TopbarProps) => {
                     <button onClick={toggleTheme}>{theme === 'dark' ? <LightIcon /> : <DarkIcon />}</button>
                     <WatchButton />
                     <NotificationsButton onClick={handleNotificationsToggle} />
-                    <Link to={'/user/' + userInfo.username}><ProfileIcon /></Link>
+                    <Link to={'/profile'}><ProfileIcon /></Link>
                 </div>
             </div>
             {showNotifications && <NotificationsPopup onClose={handleNotificationsClose} />}

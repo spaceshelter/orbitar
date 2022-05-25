@@ -21,6 +21,9 @@ jobs:
       - name: run build
         working-directory: "backend"
         run: npm run build
+      - name: test
+        working-directory: "backend"
+        run: npm run test
 
   build-frontend:
     runs-on: ubuntu-latest

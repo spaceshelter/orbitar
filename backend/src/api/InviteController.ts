@@ -10,6 +10,9 @@ import UserManager from '../managers/UserManager';
 import {UserEntity} from './types/entities/UserEntity';
 import {InviteCheckRequest, InviteCheckResponse} from './types/requests/InviteCheck';
 import {InviteUseRequest, InviteUseResponse} from './types/requests/InviteUse';
+import {InviteListRequest, InviteListResponse} from './types/requests/InviteList';
+import {InviteEntity} from './types/entities/InviteEntity';
+import {InviteRegenerateRequest, InviteRegenerateResponse} from './types/requests/InviteRegenerate';
 
 export default class InviteController {
     public router = Router();
@@ -43,10 +46,14 @@ export default class InviteController {
             gender: Joi.number().valid(0, 1, 2).default(0),
             password: Joi.string().required()
         });
+        const regenerateSchema = Joi.object<InviteCheckRequest>({
+            code: Joi.string().alphanum().required()
+        });
 
         this.router.post('/invite/check', limiter, validate(checkSchema), (req, res) => this.checkInvite(req, res));
         this.router.post('/invite/use', limiter, validate(useSchema), (req, res) => this.useInvite(req, res));
-        // this.router.post('/invite/lepra', limiter, (req, res) => this.lepra(req, res))
+        this.router.post('/invite/list', limiter, (req, res) => this.list(req, res));
+        this.router.post('/invite/regenerate', limiter, validate(regenerateSchema), (req, res) => this.regenerate(req, res));
     }
 
     async checkInvite(request: APIRequest<InviteCheckRequest>, response: APIResponse<InviteCheckResponse>) {
@@ -123,24 +130,70 @@ export default class InviteController {
         }
     }
 
-    // async lepra(request: express.Request, response: express.Response) {
-    //     if (request.session.user) {
-    //         response.status(403).send({ result: 'error', code: '403', message: 'Already registered' });
-    //         return;
-    //     }
-    //
-    //     try {
-    //         let body = <LepraRequest> request.body;
-    //         if (!body.code) {
-    //             response.status(400).send({result: 'error', code: 'invalid-payload', message: 'Invalid payload'});
-    //             return;
-    //         }
-    //
-    //
-    //     }
-    //     catch (e) {
-    //         response.status(500).send({result: 'error', code: 'unknown', message: 'Unknown error'});
-    //     }
-    // }
+    async list(request: APIRequest<InviteListRequest>, response: APIResponse<InviteListResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+
+        const userId = request.session.data.userId;
+
+        try {
+            const invites = await this.inviteManager.listInvites(userId);
+
+            const active: InviteEntity[] = [];
+            const inactive: InviteEntity[] = [];
+
+            for (const invite of invites) {
+                const entity: InviteEntity = {
+                    code: invite.code,
+                    issued: invite.issuedAt.toISOString(),
+                    invited: invite.invited,
+                    leftCount: invite.leftCount,
+                    reason: invite.reason
+                };
+
+                if (invite.leftCount > 0) {
+                    active.push(entity);
+                }
+                else {
+                    inactive.push(entity);
+                }
+            }
+
+            return response.success({
+                active,
+                inactive
+            });
+        }
+        catch (err) {
+            this.logger.error(`Invite list failed`, {error: err});
+            return response.error('unknown', 'Unknown error', 500);
+        }
+    }
+
+    async regenerate(request: APIRequest<InviteRegenerateRequest>, response: APIResponse<InviteRegenerateResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+
+        const userId = request.session.data.userId;
+        const {code} = request.body;
+
+        try {
+            const newCode = await this.inviteManager.regenerate(userId, code);
+
+            response.success({
+                code: newCode
+            });
+        }
+        catch (err) {
+            if (err instanceof CodeError && err.code === 'access-denied') {
+                return response.error('access-denied', 'Access-denied');
+            }
+
+            this.logger.error(`Invite regenerate failed`, {error: err});
+            return response.error('unknown', 'Unknown error', 500);
+        }
+    }
 
 }

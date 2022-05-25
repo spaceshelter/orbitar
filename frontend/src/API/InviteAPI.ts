@@ -1,5 +1,5 @@
 import APIBase from './APIBase';
-import {UserGender, UserInfo} from '../Types/UserInfo';
+import {UserBaseInfo, UserGender, UserInfo} from '../Types/UserInfo';
 
 interface InviteCheckRequest {
     code: string;
@@ -22,6 +22,27 @@ interface InviteUseResponse {
     session: string;
 }
 
+export type InviteEntity = {
+    code: string;
+    issued: string;
+    invited: UserBaseInfo[];
+    leftCount: number;
+    reason?: string;
+};
+export type InviteListRequest = Record<string, never>;
+
+export type InviteListResponse = {
+    active: InviteEntity[];
+    inactive: InviteEntity[];
+};
+export type InviteRegenerateRequest = {
+    code: string;
+};
+
+export type InviteRegenerateResponse = {
+    code: string;
+};
+
 export default class InviteAPI {
     private api: APIBase;
 
@@ -43,6 +64,16 @@ export default class InviteAPI {
             email,
             password,
             gender
+        });
+    }
+
+    async list(): Promise<InviteListResponse> {
+        return await this.api.request<InviteListRequest, InviteListResponse>('/invite/list', {});
+    }
+
+    async regenerate(code: string): Promise<InviteRegenerateResponse> {
+        return await this.api.request<InviteRegenerateRequest, InviteRegenerateResponse>('/invite/regenerate', {
+            code
         });
     }
 }

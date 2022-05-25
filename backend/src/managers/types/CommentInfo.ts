@@ -1,3 +1,5 @@
+import {EditFlag} from './common';
+
 export type CommentBaseInfo = {
     id: number;
     content: string;
@@ -13,6 +15,8 @@ export type CommentInfo = CommentBaseInfo & {
     isNew?: boolean;
     vote?: number;
     answers?: CommentInfo[];
+    canEdit?: boolean;
+    editFlag?: EditFlag;
 };
 
 export type CommentInfoWithPostData = CommentInfo & {

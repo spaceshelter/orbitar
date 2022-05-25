@@ -1,6 +1,7 @@
 /node_modules
 /build
 /.idea
+/coverage
 .DS_Store
 .env.local
 .env.development.local
