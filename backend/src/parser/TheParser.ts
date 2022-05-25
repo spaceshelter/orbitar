@@ -248,7 +248,7 @@ export default class TheParser {
 
     parseA(node: Element): ParseResult {
         const url = node.attribs['href'] || '';
-        if (!url.match(urlRegexExact)) {
+        if (!this.validUrl(url)) {
             return this.parseDisallowedTag(node);
         }
 
@@ -260,7 +260,7 @@ export default class TheParser {
 
     parseImg(node: Element): ParseResult {
         const url = node.attribs['src'] || '';
-        if (!url.match(urlRegexExact)) {
+        if (!this.validUrl(url)) {
             return this.parseDisallowedTag(node);
         }
 
@@ -269,7 +269,7 @@ export default class TheParser {
 
     parseVideo(node: Element): ParseResult {
         const url = node.attribs['src'] || '';
-        if (!url.match(urlRegexExact)) {
+        if (!this.validUrl(url)) {
             return this.parseDisallowedTag(node);
         }
 
@@ -282,5 +282,9 @@ export default class TheParser {
         const result = this.parseChildNodes(node.children);
         const text = `<span class="irony">${result.text}</span>`;
         return { ...result, text };
+    }
+
+    validUrl(url: string) {
+        return encodeURI(decodeURI(url)).match(urlRegexExact);
     }
 }

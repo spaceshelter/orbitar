@@ -1,4 +1,4 @@
-import {urlRegexExact} from "../../src/parser/urlregex";
+import {urlRegex, urlRegexExact} from "../../src/parser/urlregex";
 
 test('valid ULR parsing', () => {
     const validUrls = [
@@ -90,4 +90,28 @@ test('invalid ULR parsing', () => {
     for (const url of invalidUrls) {
         expect(url).not.toMatch(urlRegexExact);
     }
+});
+
+test('URL extraction', () => {
+    // baseline
+    urlRegex.lastIndex = 0;
+    expect(urlRegex.exec("http://test.com")[0]).toEqual("http://test.com");
+
+    // start of the url must be clearly separated from the text
+    urlRegex.lastIndex = 0;
+    expect(urlRegex.test("ahttp://test.com")).toBe(false);
+
+    urlRegex.lastIndex = 0;
+    expect(urlRegex.exec(".http://test.com?q=123 as")[0]).toEqual("http://test.com?q=123");
+
+    urlRegex.lastIndex = 0;
+    expect(urlRegex.exec("a http://test.com?q=123 as")[0]).toEqual("http://test.com?q=123");
+
+    // some symbols are explicitly excluded from the resource part of the url (like .,! brackets, etc):
+    urlRegex.lastIndex = 0;
+    expect(urlRegex.exec("(http://test.com?q=123)")[0]).toEqual("http://test.com?q=123");
+    urlRegex.lastIndex = 0;
+    expect(urlRegex.exec("[http://test.com?q=123]")[0]).toEqual("http://test.com?q=123");
+    urlRegex.lastIndex = 0;
+    expect(urlRegex.exec("http://test.com?q=123,")[0]).toEqual("http://test.com?q=123");
 });

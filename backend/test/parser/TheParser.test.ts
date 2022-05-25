@@ -18,6 +18,11 @@ test('parse A tag', () => {
     expect(
         p.parse('<a href="http://1.1.1.1.1">t</a>').text
     ).toEqual('&lt;a href=&quot;http://1.1.1.1.1&quot;&gt;t&lt;/a&gt;');
+
+    // invalid url in A tag that is valid if escaped
+    expect(
+        p.parse('<a href="http://1.1.1.1/ 1">t</a>').text
+    ).toEqual('<a href="http://1.1.1.1/%201" target="_blank">t</a>');
 });
 
 test('detect url in text', () => {
