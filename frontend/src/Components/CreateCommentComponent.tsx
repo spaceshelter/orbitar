@@ -156,11 +156,13 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         setPosting(true);
         props.onAnswer(answerText, props.post, props.comment)
             .then(() => {
-                setPosting(false);
                 setAnswerText('');
             })
             .catch(error => {
                 console.log('onAnswer ERR', error);
+            })
+            .finally(() => {
+                setPreviewing(null);
                 setPosting(false);
             });
     };
