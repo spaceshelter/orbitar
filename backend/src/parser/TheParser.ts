@@ -252,7 +252,7 @@ export default class TheParser {
         }
 
         const result = this.parseChildNodes(node.children);
-        const text = `<a href="${encodeURI(url)}" target="_blank">${result.text}</a>`;
+        const text = `<a href="${encodeURI(decodeURI(url))}" target="_blank">${result.text}</a>`;
 
         return { ...result, text, urls: [ ...result.urls, url ] } ;
     }
