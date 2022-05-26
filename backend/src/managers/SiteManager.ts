@@ -45,25 +45,7 @@ export default class SiteManager {
             return;
         }
 
-        const owner = await this.userManager.getById(siteRaw.owner_id);
-
-        const site: SiteWithUserInfo = {
-            id: siteRaw.site_id,
-            site: siteRaw.subdomain,
-            name: siteRaw.name,
-            owner: owner,
-            subscribers: siteRaw.subscribers,
-            siteInfo: siteRaw.site_info
-        };
-
-        if (siteRaw.feed_bookmarks || siteRaw.feed_main) {
-            site.subscribe = {
-                bookmarks: !!siteRaw.feed_bookmarks,
-                main: !!siteRaw.feed_main
-            };
-        }
-
-        return site;
+        return (await this.convertRawToInfo([siteRaw], true))[0];
     }
 
     async getSiteWithoutOwner(siteName: string): Promise<SiteBaseInfo | undefined> {
@@ -117,7 +99,13 @@ export default class SiteManager {
         return this.convertRawToInfo(sitesRaw);
     }
 
-    private async convertRawToInfo(sitesRaw: SiteWithUserInfoRaw[]): Promise<SiteWithUserInfo[]> {
+    async createSite(forUserId: number, site: string, name: string): Promise<SiteWithUserInfo | undefined> {
+        const siteRaw = await this.siteRepository.createSite(forUserId, site, name);
+
+        return (await this.convertRawToInfo([siteRaw], true))[0];
+    }
+
+    private async convertRawToInfo(sitesRaw: SiteWithUserInfoRaw[], withSiteInfo = false): Promise<SiteWithUserInfo[]> {
         const sites: SiteWithUserInfo[] = [];
 
         for (const siteRaw of sitesRaw) {
@@ -130,6 +118,10 @@ export default class SiteManager {
                 subscribers: siteRaw.subscribers,
                 owner: owner,
             };
+
+            if (withSiteInfo && siteRaw.site_info) {
+                site.siteInfo = siteRaw.site_info;
+            }
 
             if (siteRaw.feed_bookmarks || siteRaw.feed_main) {
                 site.subscribe = {

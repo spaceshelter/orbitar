@@ -21,6 +21,14 @@ export default class SiteAPIHelper {
         }
     }
 
+    async create(site: string, name: string) {
+        const result = await this.api.create(site, name);
+        if (result) {
+            this.appState.cache.setSite(result.site);
+        }
+        return result;
+    }
+
     async subscribe(site: string, main: boolean, bookmarks: boolean) {
         const result = await this.api.subscribe(site, main, bookmarks);
         if (this.appState.siteInfo && this.appState.siteInfo.site === site) {

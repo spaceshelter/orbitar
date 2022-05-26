@@ -53,6 +53,13 @@ export class AppState {
     constructor() {
         makeObservable(this);
 
+        // console.log('window.location.href', window.location.pathname);
+        const m = window.location.pathname.match(/^\/s\/([a-z\d-]+)(?:\/.*)?/);
+        if (m) {
+            console.log('MATCH', m);
+            this.site = m[1];
+        }
+
         const apiBase = new APIBase();
         this.cache = new APICache();
         this.api = new APIHelper(apiBase, this);
@@ -67,13 +74,6 @@ export class AppState {
     @action
     setUserInfo(value: UserInfo | undefined) {
         this.userInfo = value;
-    }
-
-    @action
-    setUserStatus(value: UserStatus) {
-        this.notificationsCount = value.notifications;
-        this.watchCommentsCount = value.watch.comments;
-        this.subscriptions = value.subscriptions;
     }
 
     @action

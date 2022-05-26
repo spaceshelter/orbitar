@@ -12,7 +12,7 @@ export function useFeed(id: string, feedType: FeedType, page: number, perpage: n
     const [posts, setPosts] = useState<PostInfo[] | undefined>(cachedPosts);
     const [loading, setLoading] = useState(true);
     const [pages, setPages] = useState(0);
-    const [error, setError] = useState<string>();
+    const [error, setError] = useState<[string, Error]>();
 
     const updatePost = useMemo(() => {
         return (id: number, partial: Partial<PostInfo>) => {
@@ -44,7 +44,7 @@ export function useFeed(id: string, feedType: FeedType, page: number, perpage: n
                 })
                 .catch(error => {
                     console.log('FEED ERROR', error);
-                    setError('Не удалось загрузить ленту постов');
+                    setError(['Не удалось загрузить ленту постов', error]);
                 });
         }
         else if (feedType === 'subscriptions') {
@@ -60,7 +60,7 @@ export function useFeed(id: string, feedType: FeedType, page: number, perpage: n
                 })
                 .catch(error => {
                     console.log('FEED ERROR', error);
-                    setError('Не удалось загрузить ленту постов');
+                    setError(['Не удалось загрузить ленту постов', error]);
                 });
         }
         else if (feedType === 'all') {
@@ -76,7 +76,7 @@ export function useFeed(id: string, feedType: FeedType, page: number, perpage: n
                 })
                 .catch(error => {
                     console.log('FEED ERROR', error);
-                    setError('Не удалось загрузить ленту постов');
+                    setError(['Не удалось загрузить ленту постов', error]);
                 });
         }
         else if (feedType === 'watch' || feedType === 'watch-all') {
@@ -92,7 +92,7 @@ export function useFeed(id: string, feedType: FeedType, page: number, perpage: n
                 })
                 .catch(error => {
                     console.log('FEED ERROR', error);
-                    setError('Не удалось загрузить ленту постов');
+                    setError(['Не удалось загрузить ленту постов', error]);
                 });
         }
         else if (feedType === 'user-profile') {
@@ -106,7 +106,7 @@ export function useFeed(id: string, feedType: FeedType, page: number, perpage: n
                 setPages(pages);
             }).catch(error => {
                 console.log('USER PROFILE POSTS ERROR', error);
-                setError('Не удалось загрузить ленту постов пользователя');
+                setError(['Не удалось загрузить ленту постов', error]);
             });
         }
     }, [id, feedType, page, api.post, perpage]);

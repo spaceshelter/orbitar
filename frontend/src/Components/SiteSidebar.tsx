@@ -28,7 +28,7 @@ export const SiteSidebar = observer(() => {
 
     return (<div className={styles.container}>
         <div className='fixed'>
-            <Link className='site-name' to={'/'}> {siteInfo.name}</Link>
+            <Link className='site-name' to={siteInfo.site !== 'main' ? `/s/${siteInfo.site}` : '/'}> {siteInfo.name}</Link>
             {siteInfo.site !== 'main' &&
             <div className='subscribe'>
                 {siteInfo.subscribe?.main ?

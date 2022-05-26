@@ -65,8 +65,8 @@ export const Topbar = observer((props: TopbarProps) => {
             <div className={styles.topbar}>
                 <div className={styles.left}>
                     <button className={menuClasses.join(' ')} onClick={menuToggle}><MenuIcon /></button>
-                    <Link to={`//${process.env.REACT_APP_ROOT_DOMAIN}/`}><MonsterIcon /></Link>
-                    <Link className={[styles.button, styles.newPost].join(' ')} to="/create"><PostIcon /> <span>Новый пост</span> </Link>
+                    <Link to={`/`}><MonsterIcon /></Link>
+                    <CreateButton />
                 </div>
 
                 <div className={styles.right}>
@@ -78,6 +78,14 @@ export const Topbar = observer((props: TopbarProps) => {
             </div>
             {showNotifications && <NotificationsPopup onClose={handleNotificationsClose} />}
         </>
+    );
+});
+
+const CreateButton = observer(() => {
+    const {site} = useAppState();
+
+    return (
+        <Link className={[styles.button, styles.newPost].join(' ')} to={site === 'main' ? '/create' : `/s/${site}/create`}><PostIcon /> <span>Новый пост</span> </Link>
     );
 });
 

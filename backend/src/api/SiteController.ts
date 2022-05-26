@@ -8,6 +8,8 @@ import FeedManager from '../managers/FeedManager';
 import {Enricher} from './utils/Enricher';
 import {SiteListRequest, SiteListResponse} from './types/requests/SiteList';
 import Joi from 'joi';
+import {SiteCreateRequest, SiteCreateResponse} from './types/requests/SiteCreate';
+import CodeError from '../CodeError';
 
 export default class SiteController {
     public readonly router = Router();
@@ -34,10 +36,15 @@ export default class SiteController {
             main: Joi.boolean().default(false),
             bookmarks: Joi.boolean().default(false)
         });
+        const siteCreateSchema = Joi.object<SiteCreateRequest>({
+            site: Joi.string().regex(/^[a-z\d-]{3,10}$/i).required(),
+            name: Joi.string().min(3).max(15).required()
+        });
 
         this.router.post('/site', validate(siteSchema), (req, res) => this.site(req, res));
         this.router.post('/site/subscribe', validate(siteSubscribeSchema), (req, res) => this.subscribe(req, res));
         this.router.post('/site/list', validate(siteListSchema), (req, res) => this.list(req, res));
+        this.router.post('/site/create', validate(siteCreateSchema), (req, res) => this.create(req, res));
     }
 
     async site(request: APIRequest<SiteRequest>, response: APIResponse<SiteResponse>) {
@@ -47,9 +54,6 @@ export default class SiteController {
 
         const userId = request.session.data.userId;
         const { site } = request.body;
-        if (!site) {
-            return response.error('invalid-payload', 'site required', 400);
-        }
 
         try {
             const siteInfo = await this.siteManager.getSiteByNameWithUserInfo(userId, site);
@@ -73,9 +77,6 @@ export default class SiteController {
 
         const userId = request.session.data.userId;
         const { site, main, bookmarks } = request.body;
-        if (!site) {
-            return response.error('invalid-payload', 'site required', 400);
-        }
 
         try {
             const result = await this.feedManager.siteSubscribe(userId, site, !!main, !!bookmarks);
@@ -110,6 +111,35 @@ export default class SiteController {
         }
         catch (error) {
             this.logger.error('Could not get sites', { error });
+            return response.error('error', 'Unknown error', 500);
+        }
+    }
+
+    async create(request: APIRequest<SiteCreateRequest>, response: APIResponse<SiteCreateResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+
+        const userId = request.session.data.userId;
+        const { site, name } = request.body;
+
+        try {
+            const siteInfo = await this.siteManager.createSite(userId, site, name);
+
+            response.success({ site: siteInfo });
+        }
+        catch (error) {
+            this.logger.error('Could not get site', { site });
+
+            if (error instanceof CodeError) {
+                if (error.code === 'site-limit') {
+                    return response.error('site-limit', 'Exceed site limit');
+                }
+                else if (error.code === 'site-exists') {
+                    return response.error('site-exists', 'Site already exists');
+                }
+            }
+
             return response.error('error', 'Unknown error', 500);
         }
     }

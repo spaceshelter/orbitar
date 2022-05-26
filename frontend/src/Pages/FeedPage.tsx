@@ -5,6 +5,7 @@ import PostComponent from '../Components/PostComponent';
 import Paginator from '../Components/Paginator';
 import {Link, useMatch, useSearchParams} from 'react-router-dom';
 import {FeedType, useFeed} from '../API/use/useFeed';
+import {APIError} from '../API/APIBase';
 
 export default function FeedPage() {
     const { site, siteInfo } = useAppState();
@@ -56,8 +57,10 @@ export default function FeedPage() {
                 {siteInfo?.site === 'main' && <div className={styles.feedControls}>
                     <Link to='/' className={feedType === 'subscriptions' ? styles.active : ''} replace={true}>мои подписки</Link> • <Link to='/all' className={feedType === 'all' ? styles.active : ''} replace={true}>все</Link> • <Link to='/posts' className={feedType === 'site' ? styles.active : ''} replace={true}>только главная</Link>
                 </div>}
-                {loading && <div className={styles.loading}>Загрузка</div>}
-                {error && <div className={styles.error}>{styles.error}</div> }
+                {!error && loading && <div className={styles.loading}>Загрузка</div>}
+                {error && <div className={styles.error}>{
+                    (error[1] as APIError)?.code === 'no-site' ? <>Нет такого сайта. <Link to='/sites/create'>Создать</Link>?</> : error[0]
+                }</div> }
                 {posts && <div className={styles.posts}>
                     {posts.map(post => <PostComponent key={post.id} post={post} showSite={siteInfo?.site !== post.site} onChange={updatePost} autoCut={true} />)}
                 </div>}

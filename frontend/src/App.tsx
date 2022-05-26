@@ -23,6 +23,7 @@ import WatchPage from './Pages/WatchPage';
 import ThemePreviewPage from './Pages/ThemePreviewPage';
 import {observer} from 'mobx-react-lite';
 import {SitesPage} from './Pages/SitesPage';
+import {SitesCreatePage} from './Pages/SitesCreatePage';
 
 export const App = observer(() => {
     const {appLoadingState} = useAppState();
@@ -119,6 +120,7 @@ const Ready = observer(() => {
                     <Route path="watch" element={<WatchPage />} />
                     <Route path="watch/all" element={<WatchPage />} />
                     <Route path="sites" element={<SitesPage />} />
+                    <Route path="sites/create" element={<SitesCreatePage />} />
                     <Route path="theme" element={<ThemePreviewPage />} />
 
                     <Route path="s/:site">

@@ -19,6 +19,14 @@ type SiteResponse = {
     site: SiteWithUserInfo;
 };
 
+type SiteCreateRequest = {
+    site: string;
+    name: string;
+};
+type SiteCreateResponse = {
+    site: SiteWithUserInfo;
+};
+
 type SiteListRequest = {
     page: number;
     perpage: number;
@@ -38,6 +46,12 @@ export default class SiteAPI {
     async site(site: string): Promise<SiteResponse> {
         return await this.api.request<SiteRequest, SiteResponse>('/site', {
             site
+        });
+    }
+
+    async create(site: string, name: string): Promise<SiteCreateResponse> {
+        return await this.api.request<SiteCreateRequest, SiteCreateResponse>('/site/create', {
+            site, name
         });
     }
 

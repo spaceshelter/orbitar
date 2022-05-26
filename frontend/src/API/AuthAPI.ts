@@ -3,10 +3,10 @@ import {UserInfo} from '../Types/UserInfo';
 import {SiteWithUserInfo} from '../Types/SiteInfo';
 
 type StatusRequest = {
-    site: string;
+    site?: string;
 };
 type StatusResponse = {
-    site: SiteWithUserInfo;
+    site?: SiteWithUserInfo;
     user: UserInfo;
     watch: {
         posts: number;

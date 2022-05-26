@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
 import styles from './CreatePostPage.module.css';
 import createCommentStyles from '../Components/CommentComponent.module.scss';
-import {useAPI, useSiteName} from '../AppState/AppState';
+import {useAPI, useAppState} from '../AppState/AppState';
 import {useNavigate} from 'react-router-dom';
 import CreateCommentComponent from '../Components/CreateCommentComponent';
 import {CommentInfo} from '../Types/PostInfo';
@@ -10,7 +10,7 @@ import classNames from 'classnames';
 
 export function CreatePostPage() {
     const api = useAPI();
-    const {siteName} = useSiteName();
+    const {site} = useAppState();
     const [title, setTitle] = useState('');
     const navigate = useNavigate();
 
@@ -18,9 +18,9 @@ export function CreatePostPage() {
         console.log('post', title, text);
 
         try {
-            const result = await api.postAPI.create(siteName, title, text);
+            const result = await api.postAPI.create(site, title, text);
             console.log('CREATE', result);
-            navigate('/post/' + result.post.id);
+            navigate((site !== 'main' ? `/s/${site}` : '') + `/p${result.post.id}`);
         }
         catch (error) {
             console.log('CREATE ERR', error);

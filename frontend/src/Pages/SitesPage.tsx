@@ -50,5 +50,6 @@ export const SitesPage = () => {
             }
             </div>
         </div>)}
+        <div><Link to='/sites/create'>Создать новый</Link></div>
     </div>;
 };

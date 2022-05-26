@@ -27,20 +27,13 @@ export default class StatusController {
         }
 
         const siteName = request.body.site;
-        if (!siteName) {
-            return response.error('invalid-payload', 'site required', 400);
-        }
 
         try {
             const userId = request.session.data.userId;
             const user = await this.userManager.getById(userId);
-            const site = await this.siteManager.getSiteByNameWithUserInfo(userId, siteName);
+            const site = siteName ? await this.siteManager.getSiteByNameWithUserInfo(userId, siteName) : undefined;
             const stats = await this.userManager.getUserStats(userId);
             const subscriptions = await this.siteManager.getSubscriptions(userId);
-
-            if (!site) {
-                return response.error('no-site', 'Site not found', 404);
-            }
 
             if (!user) {
                 // Something wrong, user should exist!
@@ -49,7 +42,7 @@ export default class StatusController {
 
             return response.success({
                 user,
-                site: this.enricher.siteInfoToEntity(site),
+                site: site ? this.enricher.siteInfoToEntity(site) : undefined,
                 subscriptions: subscriptions.map(site => this.enricher.siteInfoToEntity(site)),
                 ...stats
             });
