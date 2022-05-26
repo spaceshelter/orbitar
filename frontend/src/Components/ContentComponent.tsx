@@ -2,6 +2,8 @@ import React, {useEffect, useMemo, useRef, useState} from 'react';
 import classNames from 'classnames';
 import styles from './ContentComponent.module.scss';
 import htmlParser, {Element } from 'html-react-parser';
+import TelegramEmbed from './TelegramEmbed';
+import {useTheme} from '../Theme/ThemeProvider';
 
 interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
     content: string;
@@ -27,7 +29,7 @@ function ScalableImage(props: { src: string }) {
                 onLoad={onLoad} ref={ref} onClick={onClick} />;
 }
 
-function parseContent(content: string) {
+function parseContent(content: string, theme: string | undefined) {
     return htmlParser(content, {
         replace: domNode => {
             if (domNode instanceof Element && domNode.tagName.toUpperCase() === 'IMG') {
@@ -39,6 +41,9 @@ function parseContent(content: string) {
                     el = (el.parent instanceof Element) ? el.parent : null;
                 }
                 return <ScalableImage src={domNode.attribs['src']} />;
+            }
+            if (domNode instanceof Element && domNode.tagName.toUpperCase() === 'TELEGRAMEMBED') {
+                return <TelegramEmbed src={domNode.attribs.src} theme={theme} />;
             }
         }
     });
@@ -66,7 +71,8 @@ export default function ContentComponent(props: ContentComponentProps) {
         setCut(false);
     };
 
-    const content = useMemo(() => parseContent(props.content), [props.content]);
+    const {theme} = useTheme();
+    const content = useMemo(() => parseContent(props.content, theme), [props.content, theme]);
 
     return (
         <>
