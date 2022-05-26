@@ -171,11 +171,8 @@ export default class PostAPIHelper {
     async read(postId: number, comments: number, lastCommentId?: number) {
         const result = await this.postAPI.read(postId, comments, lastCommentId);
         if (result.watch !== undefined && result.notifications !== undefined) {
-            this.appState.setUserStatus({
-                ...this.appState.userStatus,
-                watch: result.watch,
-                notifications: result.notifications
-            });
+            this.appState.setNotificationsCount(result.notifications);
+            this.appState.setWatchCommentsCount(result.watch.comments);
         }
         return result;
     }

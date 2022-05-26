@@ -28,7 +28,7 @@ export default function UserProfilePosts(props: UserProfilePostsProps) {
                     {posts && <div className={styles.posts}>
                         {posts.map(post => <PostComponent key={post.id} post={post} showSite={true} onChange={updatePost} autoCut={true} />)}
                     </div>}
-                    <Paginator page={page} pages={pages} base={`/user/${props.username}/posts`} />
+                    <Paginator page={page} pages={pages} base={`/u/${props.username}/posts`} />
                 </>}
             </div>
         </div>

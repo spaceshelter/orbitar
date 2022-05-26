@@ -1,0 +1,48 @@
+.sites {
+  max-width: 800px;
+  margin: auto;
+
+  :global {
+    .site {
+      display: flex;
+      margin-bottom: 20px;
+
+      .site-info {
+        font-size: 20px;
+        flex: 1;
+        flex-direction: column;
+
+        .title {
+
+        }
+        .subscribers {
+          font-size: 13px;
+          color: var(--fgSofter);
+
+          a {
+            color: var(--fgMedium);
+          }
+        }
+      }
+
+      .subscribe {
+        button {
+          padding: 6px 10px;
+          border-radius: 4px;
+
+          &.subscribed {
+            background: var(--dim2);
+            color: var(--fg);
+            border: none;
+          }
+
+          &.not-subscribed {
+            background: var(--primary);
+            color: var(--onAccent);
+            border: none;
+          }
+        }
+      }
+    }
+  }
+}

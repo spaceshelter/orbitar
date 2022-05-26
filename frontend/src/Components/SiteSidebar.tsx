@@ -1,4 +1,4 @@
-import styles from './SiteSidebar.module.css';
+import styles from './SiteSidebar.module.scss';
 import {Link} from 'react-router-dom';
 import React, {useState} from 'react';
 import {useAPI, useAppState} from '../AppState/AppState';
@@ -8,7 +8,7 @@ import {observer} from 'mobx-react-lite';
 export const SiteSidebar = observer(() => {
     const [subsDisabled, setSubsDisabled] = useState(false);
     const api = useAPI();
-    const {siteInfo, userStatus} = useAppState();
+    const {siteInfo, subscriptions} = useAppState();
 
     if (!siteInfo) {
         return <></>;
@@ -27,21 +27,23 @@ export const SiteSidebar = observer(() => {
     };
 
     return (<div className={styles.container}>
-        <div className={styles.fixed}>
-            <Link className={styles.siteName} to={'/'}> {siteInfo.name}</Link>
+        <div className='fixed'>
+            <Link className='site-name' to={'/'}> {siteInfo.name}</Link>
             {siteInfo.site !== 'main' &&
-            <div className={styles.subscribe}>
+            <div className='subscribe'>
                 {siteInfo.subscribe?.main ?
-                    <button className={styles.subscribed} disabled={subsDisabled} onClick={() => handleSubscribe(false)}>Отписаться</button>
+                    <button className='subscribed' disabled={subsDisabled} onClick={() => handleSubscribe(false)}>Отписаться</button>
                     :
-                    <button className={styles.notSubscribed} disabled={subsDisabled} onClick={() => handleSubscribe(true)}>Подписаться</button>
+                    <button className='not-subscribed' disabled={subsDisabled} onClick={() => handleSubscribe(true)}>Подписаться</button>
                 }
             </div>}
-            <div className={styles.podsites}>
-                { userStatus.subscriptions.map(site => {
+            {siteInfo.siteInfo && <div className='site-info'>{siteInfo.siteInfo}</div>}
+            <div className='subsites'>
+                { subscriptions.map(site => {
                     return <div key={site.site}><Link to={site.site === 'main' ? '/' : `/s/${site.site}`}>{site.name}</Link></div>;
                 }) }
             </div>
+            <Link className='all-subsites' to='/sites'>Все подсайты</Link>
         </div>
     </div>);
 });

@@ -11,6 +11,6 @@ interface UsernameProps extends React.ComponentPropsWithRef<'a'> {
 
 export default function Username(props: UsernameProps) {
     return (
-        <Link to={'/user/' + props.user.username} className={classNames('i i-user', styles.username, props.className)}>{props.user.username}</Link>
+        <Link to={'/u/' + props.user.username} className={classNames('i i-user', styles.username, props.className)}>{props.user.username}</Link>
     );
 }

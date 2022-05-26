@@ -1,0 +1,68 @@
+.container {
+    position: fixed;
+    max-width: 200px;
+    width: 200px;
+    left: 0;
+    top: 59px;
+    bottom: 0;
+
+    :global {
+        .fixed {
+            margin: 20px;
+        }
+
+        .site-name {
+            display: block;
+            text-decoration: none;
+            color: var(--fg);
+            margin-bottom: 20px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .subscribe {
+            margin: 20px 0;
+
+            button {
+                padding: 6px 10px;
+                border-radius: 4px;
+
+                &.subscribed {
+                    background: var(--dim2);
+                    color: var(--fg);
+                    border: none;
+                }
+
+                &.not-subscribed {
+                    background: var(--primary);
+                    color: var(--onAccent);
+                    border: none;
+                }
+            }
+        }
+
+        .site-info {
+
+        }
+
+        .subsites {
+            margin-top: 20px;
+        }
+
+        .all-subsites {
+            display: block;
+            margin-top: 20px;
+            font-size: 14px;
+            color: var(--fgGhost);
+            &:hover {
+                color: var(--linkHover);
+            }
+        }
+    }
+}
+
+@media only screen and (max-width: 1179px){
+    .container {
+        background: var(--glass);
+    }
+}

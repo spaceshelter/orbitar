@@ -57,4 +57,28 @@ export default class SiteRepository {
             bookmarks: bookmarks ? 1 : 0
         });
     }
+
+    async getAllSitesWithUserInfo(forUserId: number, page: number, perpage: number): Promise<SiteWithUserInfoRaw[]> {
+        const limitFrom = (page - 1) * perpage;
+
+        return await this.db.fetchAll<SiteWithUserInfoRaw>(`
+                select
+                    s.*,
+                    u.feed_main,
+                    u.feed_bookmarks
+                from sites s 
+                    left join user_sites u on (u.site_id = s.site_id and u.user_id = :forUserId)
+                where
+                    s.site_id <> 1
+                order by
+                    s.subscribers desc
+                limit
+                    :limitFrom, :limit 
+            `,
+            {
+                forUserId,
+                limitFrom,
+                limit: perpage
+            });
+    }
 }

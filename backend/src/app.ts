@@ -112,11 +112,11 @@ const requests = [
     new AuthController(userManager, logger.child({ service: 'AUTH' })),
     new InviteController(inviteManager, userManager, logger.child({ service: 'INVITE' })),
     new PostController(apiEnricher, postManager, feedManager, siteManager, userManager, logger.child({ service: 'POST' })),
-    new StatusController(siteManager, userManager, logger.child({ service: 'STATUS' })),
+    new StatusController(apiEnricher, siteManager, userManager, logger.child({ service: 'STATUS' })),
     new VoteController(voteManager, logger.child({ service: 'VOTE' })),
     new UserController(apiEnricher, userManager, postManager, logger.child({ service: 'USER' })),
     new FeedController(apiEnricher, feedManager, siteManager, userManager, postManager, logger.child({ service: 'FEED' })),
-    new SiteController(feedManager, siteManager, logger.child( { service: 'SITE' })),
+    new SiteController(apiEnricher, feedManager, siteManager, logger.child( { service: 'SITE' })),
     new NotificationsController(notificationManager, userManager, logger.child({ service: 'NOTIFY' })),
 ];
 

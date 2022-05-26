@@ -60,7 +60,7 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
                                  : <div className={styles.loading}>Загрузка...</div>
                          )
                      }
-                    <Paginator page={page} pages={pages} base={`/user/${props.username}/comments`} />
+                    <Paginator page={page} pages={pages} base={`/u/${props.username}/comments`} />
                 </>}
             </div>
         </div>

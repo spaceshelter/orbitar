@@ -1,6 +1,7 @@
 import {SiteBaseInfo, SiteInfo, SiteWithUserInfo} from './types/SiteInfo';
 import UserManager from './UserManager';
 import SiteRepository from '../db/repositories/SiteRepository';
+import {SiteWithUserInfoRaw} from '../db/types/SiteRaw';
 
 export default class SiteManager {
     private siteRepository: SiteRepository;
@@ -27,7 +28,8 @@ export default class SiteManager {
                 id: siteRaw.site_id,
                 site: siteRaw.subdomain,
                 name: siteRaw.name,
-                owner: owner
+                owner: owner,
+                subscribers: siteRaw.subscribers
             };
 
             this.cacheId[siteRaw.site_id] = site;
@@ -50,6 +52,8 @@ export default class SiteManager {
             site: siteRaw.subdomain,
             name: siteRaw.name,
             owner: owner,
+            subscribers: siteRaw.subscribers,
+            siteInfo: siteRaw.site_info
         };
 
         if (siteRaw.feed_bookmarks || siteRaw.feed_main) {
@@ -89,7 +93,8 @@ export default class SiteManager {
                 id: siteRaw.site_id,
                 site: siteRaw.subdomain,
                 name: siteRaw.name,
-                owner: owner
+                owner: owner,
+                subscribers: siteRaw.subscribers
             };
         }
         this.cache[siteRaw.subdomain] = site;
@@ -104,6 +109,15 @@ export default class SiteManager {
 
     async getSubscriptions(forUserId: number): Promise<SiteWithUserInfo[]> {
         const sitesRaw = await this.siteRepository.getSubscriptions(forUserId);
+        return this.convertRawToInfo(sitesRaw);
+    }
+
+    async getSubsites(forUserId: number, page: number, perpage: number): Promise<SiteWithUserInfo[]> {
+        const sitesRaw = await this.siteRepository.getAllSitesWithUserInfo(forUserId, page, perpage);
+        return this.convertRawToInfo(sitesRaw);
+    }
+
+    private async convertRawToInfo(sitesRaw: SiteWithUserInfoRaw[]): Promise<SiteWithUserInfo[]> {
         const sites: SiteWithUserInfo[] = [];
 
         for (const siteRaw of sitesRaw) {
@@ -113,6 +127,7 @@ export default class SiteManager {
                 id: siteRaw.site_id,
                 site: siteRaw.subdomain,
                 name: siteRaw.name,
+                subscribers: siteRaw.subscribers,
                 owner: owner,
             };
 

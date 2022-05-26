@@ -1,5 +1,6 @@
 import SiteAPI from './SiteAPI';
 import {AppState} from '../AppState/AppState';
+import {SiteWithUserInfo} from '../Types/SiteInfo';
 
 export default class SiteAPIHelper {
     private api: SiteAPI;
@@ -25,5 +26,13 @@ export default class SiteAPIHelper {
         if (this.appState.siteInfo && this.appState.siteInfo.site === site) {
             this.appState.setSiteInfo({...this.appState.siteInfo, subscribe: result});
         }
+        if (result.subscriptions) {
+            this.appState.setSubscriptions(result.subscriptions);
+        }
+    }
+
+    async list(page: number, perpage: number): Promise<SiteWithUserInfo[]> {
+        const result = await this.api.list(page, perpage);
+        return result.sites;
     }
 }

@@ -32,8 +32,14 @@ export class AppState {
     @observable.struct
     userInfo: UserInfo | undefined = undefined; // undefined means not authorized
 
-    @observable.deep
-    userStatus: UserStatus = { notifications: 0, watch: { posts: 0, comments: 0 }, subscriptions: [] };
+    @observable
+    notificationsCount = 0;
+
+    @observable
+    watchCommentsCount = 0;
+
+    @observable.struct
+    subscriptions: SiteWithUserInfo[] = [];
 
     @observable.struct
     siteInfo: SiteWithUserInfo | undefined = undefined;
@@ -65,34 +71,24 @@ export class AppState {
 
     @action
     setUserStatus(value: UserStatus) {
-        if (value.notifications !== this.userStatus.notifications) {
-            this.userStatus.notifications = value.notifications;
-        }
-        if (value.watch.comments !== this.userStatus.watch.comments) {
-            this.userStatus.watch.comments = value.watch.comments;
-        }
-        if (value.subscriptions.length !== this.userStatus.subscriptions.length) {
-            this.userStatus.subscriptions = value.subscriptions;
-        }
-        else {
-            for (let i = 0; i < value.subscriptions.length; i++) {
-                const oldSub = this.userStatus.subscriptions[i];
-                const newSub = value.subscriptions[i];
-                if (
-                    oldSub.name !== newSub.name
-                    || oldSub.site !== newSub.site
-                    || oldSub.subscribe?.main !== newSub.subscribe?.main
-                    || oldSub.subscribe?.bookmarks !== newSub.subscribe?.bookmarks
-                ) {
-                    this.userStatus.subscriptions[i] = newSub;
-                }
-            }
-        }
+        this.notificationsCount = value.notifications;
+        this.watchCommentsCount = value.watch.comments;
+        this.subscriptions = value.subscriptions;
+    }
+
+    @action
+    setSubscriptions(value: SiteWithUserInfo[]) {
+        this.subscriptions = value;
+    }
+
+    @action
+    setWatchCommentsCount(value: number) {
+        this.watchCommentsCount = value;
     }
 
     @action
     setNotificationsCount(value: number) {
-        this.userStatus.notifications = value;
+        this.notificationsCount = value;
     }
 
     @action
@@ -128,7 +124,7 @@ export const AppStateProvider = (props: {children: ReactNode}) => {
             if (!link) {
                 return;
             }
-            if (appState.userStatus.notifications > 0) {
+            if (appState.notificationsCount > 0) {
                 link.href = '//' + process.env.REACT_APP_ROOT_DOMAIN + '/favicon-badge.png';
             }
             else {

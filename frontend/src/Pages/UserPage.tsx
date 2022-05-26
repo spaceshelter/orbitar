@@ -50,7 +50,7 @@ export const UserPage = observer(() => {
         const user = profile.profile;
         const rating = {value: user.karma, vote: user.vote};
         const isMyProfile = userInfo && userInfo.id === user.id;
-        const base = '/user/' + user.username;
+        const base = '/u/' + user.username;
 
         return (
             <div className={styles.container}>

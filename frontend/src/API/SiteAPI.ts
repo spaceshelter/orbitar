@@ -9,6 +9,7 @@ type SubscribeRequest = {
 type SubscribeResponse = {
     main: boolean;
     bookmarks: boolean;
+    subscriptions: SiteWithUserInfo[];
 };
 
 type SiteRequest = {
@@ -16,6 +17,15 @@ type SiteRequest = {
 };
 type SiteResponse = {
     site: SiteWithUserInfo;
+};
+
+type SiteListRequest = {
+    page: number;
+    perpage: number;
+};
+
+type SiteListResponse = {
+    sites: SiteWithUserInfo[];
 };
 
 export default class SiteAPI {
@@ -36,6 +46,12 @@ export default class SiteAPI {
             site,
             main,
             bookmarks
+        });
+    }
+
+    async list(page: number, perpage: number): Promise<SiteListResponse> {
+        return await this.api.request<SiteListRequest, SiteListResponse>('/site/list', {
+            page, perpage
         });
     }
 }

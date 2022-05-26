@@ -7,6 +7,8 @@ export type SiteWithoutOwner = {
 
 export type SiteInfo = SiteWithoutOwner & {
     owner: UserInfo;
+    subscribers: number;
+    siteInfo?: string;
 };
 
 export type SiteWithUserInfo = SiteInfo & {

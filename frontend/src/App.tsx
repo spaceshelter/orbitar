@@ -22,6 +22,7 @@ import {SiteSidebar} from './Components/SiteSidebar';
 import WatchPage from './Pages/WatchPage';
 import ThemePreviewPage from './Pages/ThemePreviewPage';
 import {observer} from 'mobx-react-lite';
+import {SitesPage} from './Pages/SitesPage';
 
 export const App = observer(() => {
     const {appLoadingState} = useAppState();
@@ -101,11 +102,12 @@ const Ready = observer(() => {
                 <Route path="/" element={<ReadyContainer />}>
                     <Route path="" element={<FeedPage />} />
                     <Route path="posts" element={<FeedPage />} />
+                    <Route path="all" element={<FeedPage />} />
                     <Route path="subscriptions" element={<FeedPage />} />
                     <Route path="p:postId" element={<PostPage />} />
                     <Route path="create" element={<CreatePostPage />} />
 
-                    <Route path="user/:username">
+                    <Route path="u/:username">
                         <Route path="" element={<UserPage />} />
                         <Route path=":page" element={<UserPage />} />
                     </Route>
@@ -116,6 +118,7 @@ const Ready = observer(() => {
 
                     <Route path="watch" element={<WatchPage />} />
                     <Route path="watch/all" element={<WatchPage />} />
+                    <Route path="sites" element={<SitesPage />} />
                     <Route path="theme" element={<ThemePreviewPage />} />
 
                     <Route path="s/:site">

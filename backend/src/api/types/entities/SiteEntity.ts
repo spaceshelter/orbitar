@@ -7,6 +7,8 @@ export type SiteBaseEntity = {
 
 export type SiteEntity = SiteBaseEntity & {
     owner: UserBaseEntity;
+    subscribers: number;
+    siteInfo?: string;
 };
 
 export type SiteWithUserInfoEntity = SiteEntity & {

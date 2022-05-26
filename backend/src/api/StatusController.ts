@@ -4,18 +4,19 @@ import {APIRequest, APIResponse} from './ApiMiddleware';
 import {Logger} from 'winston';
 import SiteManager from '../managers/SiteManager';
 import {StatusRequest, StatusResponse} from './types/requests/Status';
-import {SiteWithUserInfo} from '../managers/types/SiteInfo';
-import {SiteWithUserInfoEntity} from './types/entities/SiteEntity';
+import {Enricher} from './utils/Enricher';
 
 export default class StatusController {
-    public router = Router();
-    private siteManager: SiteManager;
-    private userManager: UserManager;
-    private logger: Logger;
+    public readonly router = Router();
+    private readonly siteManager: SiteManager;
+    private readonly userManager: UserManager;
+    private readonly logger: Logger;
+    private readonly enricher: Enricher;
 
-    constructor(siteManager: SiteManager, userManager: UserManager, logger: Logger) {
+    constructor(enricher: Enricher, siteManager: SiteManager, userManager: UserManager, logger: Logger) {
         this.siteManager = siteManager;
         this.userManager = userManager;
+        this.enricher = enricher;
         this.logger = logger;
         this.router.post('/status', (req, res) => this.status(req, res));
     }
@@ -48,8 +49,8 @@ export default class StatusController {
 
             return response.success({
                 user,
-                site: this.siteInfoToEntity(site),
-                subscriptions: subscriptions.map(site => this.siteInfoToEntity(site)),
+                site: this.enricher.siteInfoToEntity(site),
+                subscriptions: subscriptions.map(site => this.enricher.siteInfoToEntity(site)),
                 ...stats
             });
         }
@@ -58,19 +59,5 @@ export default class StatusController {
         }
     }
 
-    private siteInfoToEntity(siteInfo: SiteWithUserInfo): SiteWithUserInfoEntity {
-        const result: SiteWithUserInfoEntity = {
-            site: siteInfo.site,
-            name: siteInfo.name,
-            owner: {
-                id: siteInfo.owner.id,
-                username: siteInfo.owner.username,
-                gender: siteInfo.owner.gender
-            }
-        };
-        if (siteInfo.subscribe) {
-            result.subscribe = siteInfo.subscribe;
-        }
-        return result;
-    }
+
 }
