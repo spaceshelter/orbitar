@@ -108,4 +108,14 @@ export default class UserRepository {
 
         return parseInt(res.cnt);
     }
+
+    logVisit(userId: number, date: Date): Promise<void> {
+        // insert format: 2022-05-26 12:00:00.000
+        const dateToInsert = date.toISOString().replace(/T/, ' ').substring(0, 19) +
+            '.' + date.getMilliseconds();
+
+        return this.db.query(`
+            insert ignore into user_activity (user_id, visited_at) values (:user_id, :visited_at)
+        `, {user_id: userId, visited_at: dateToInsert});
+    }
 }

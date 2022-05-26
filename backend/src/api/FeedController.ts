@@ -58,6 +58,7 @@ export default class FeedController {
         }
 
         const userId = request.session.data.userId;
+        this.userManager.logVisit(userId);
         const { format, page, perpage: perPage } = request.body;
 
         try {
@@ -84,6 +85,7 @@ export default class FeedController {
         }
 
         const userId = request.session.data.userId;
+        this.userManager.logVisit(userId);
         const { format, page, perpage: perPage } = request.body;
 
         try {
@@ -110,6 +112,7 @@ export default class FeedController {
         }
 
         const userId = request.session.data.userId;
+        this.userManager.logVisit(userId);
         const { site: subdomain, format, page, perpage: perPage } = request.body;
 
         try {
@@ -142,6 +145,7 @@ export default class FeedController {
         }
 
         const userId = request.session.data.userId;
+        this.userManager.logVisit(userId);
         const { filter, format, page, perpage: perPage } = request.body;
 
         try {
