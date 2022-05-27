@@ -30,6 +30,8 @@ export default function FeedPage() {
             feedType = 'subscriptions';
             baseRoute = '/';
         }
+    } else {
+        baseRoute = '/s/' + site;
     }
 
     const perpage = 20;
