@@ -1,6 +1,6 @@
 import APIBase from './APIBase';
 import {UserInfo} from '../Types/UserInfo';
-import {SiteInfo} from '../Types/SiteInfo';
+import {SiteInfo, SiteWithUserInfo} from '../Types/SiteInfo';
 
 export type ContentFormat = 'html' | 'source';
 
@@ -60,7 +60,7 @@ type FeedPostsResponse = {
     posts: PostEntity[];
     users: Record<number, UserInfo>;
     total: number;
-    site: SiteInfo;
+    site: SiteWithUserInfo;
 };
 type FeedSubscriptionsRequest = {
     page?: number;

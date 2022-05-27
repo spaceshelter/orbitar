@@ -1,7 +1,7 @@
 import {PostEntity} from '../entities/PostEntity';
 import {CommentEntity} from '../entities/CommentEntity';
 import {ContentFormat} from '../entities/common';
-import {SiteEntity} from '../entities/SiteEntity';
+import {SiteWithUserInfoEntity} from '../entities/SiteEntity';
 import {UserEntity} from '../entities/UserEntity';
 
 export type PostGetRequest = {
@@ -12,7 +12,7 @@ export type PostGetRequest = {
 
 export type PostGetResponse = {
     post: PostEntity;
-    site: SiteEntity;
+    site: SiteWithUserInfoEntity;
     comments: CommentEntity[];
     users: Record<number, UserEntity>;
 };

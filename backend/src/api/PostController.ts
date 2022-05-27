@@ -121,7 +121,7 @@ export default class PostController {
                 return response.error('no-post', 'Post not found');
             }
 
-            const site = await this.siteManager.getSiteByName(rawPost.site);
+            const site = await this.siteManager.getSiteByNameWithUserInfo(userId, rawPost.site);
             if (!site) {
                 return response.error('error', 'Unknown error', 500);
             }
@@ -139,7 +139,7 @@ export default class PostController {
 
             response.success({
                 post: post,
-                site: site,
+                site: this.enricher.siteInfoToEntity(site),
                 comments: comments,
                 users: users
             });

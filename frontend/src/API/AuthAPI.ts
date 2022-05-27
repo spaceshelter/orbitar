@@ -33,7 +33,7 @@ export default class AuthAPI {
     }
 
     async status(site: string): Promise<StatusResponse> {
-        return await this.api.request<StatusRequest, StatusResponse>('/status', { site: site });
+        return await this.api.request<StatusRequest, StatusResponse>('/status', { site });
     }
 
     async signIn(username: string, password: string): Promise<SignInResponse> {
