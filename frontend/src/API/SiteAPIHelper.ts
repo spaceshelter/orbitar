@@ -11,16 +11,6 @@ export default class SiteAPIHelper {
         this.appState = appState;
     }
 
-    async site(site: string) {
-        const result = await this.api.site(site);
-        if (result) {
-            this.appState.cache.setSite(result.site);
-            if (this.appState.site === site) {
-                this.appState.setSiteInfo(result.site);
-            }
-        }
-    }
-
     async create(site: string, name: string) {
         const result = await this.api.create(site, name);
         if (result) {

@@ -5,7 +5,7 @@ import {useCache} from './useCache';
 
 export type FeedType = 'all' | 'subscriptions' | 'site' | 'watch' | 'watch-all' | 'user-profile';
 
-export function useFeed(id: string, feedType: FeedType, page: number, perpage: number) {
+export function useFeed(id: string, feedType: FeedType | undefined, page: number, perpage: number) {
     const api = useAPI();
     const [cachedPosts, setCachedPosts] = useCache<PostInfo[]>('feed', [id, feedType, page, perpage]);
 

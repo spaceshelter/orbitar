@@ -3,8 +3,10 @@ import APIBase from '../API/APIBase';
 import APIHelper from '../API/APIHelper';
 import {UserInfo} from '../Types/UserInfo';
 import {SiteWithUserInfo} from '../Types/SiteInfo';
-import {observable, makeObservable, autorun, action} from 'mobx';
+import {observable, makeObservable, autorun, action, computed, makeAutoObservable} from 'mobx';
 import APICache from '../API/APICache';
+import {createBrowserHistory} from 'history';
+import {RouterStore} from '@superwf/mobx-react-router';
 
 export enum AppLoadingState {
     loading,
@@ -41,11 +43,8 @@ export class AppState {
     @observable.struct
     subscriptions: SiteWithUserInfo[] = [];
 
-    @observable.struct
-    siteInfo: SiteWithUserInfo | undefined = undefined;
-
-    @observable
-    site = 'main';
+    browserHistory = createBrowserHistory();
+    router = new RouterStore(this.browserHistory);
 
     readonly api: APIHelper;
     readonly cache: APICache;
@@ -53,17 +52,24 @@ export class AppState {
     constructor() {
         makeObservable(this);
 
-        // console.log('window.location.href', window.location.pathname);
-        const m = window.location.pathname.match(/^\/s\/([a-z\d-]+)(?:\/.*)?/);
-        if (m) {
-            console.log('MATCH', m);
-            this.site = m[1];
-        }
+        this.router.appendPathList('/s/:site');
+        this.router.appendPathList('/s/:site/create');
+        this.router.appendPathList('/s/:site/:post');
 
         const apiBase = new APIBase();
-        this.cache = new APICache();
+        this.cache = makeAutoObservable(new APICache());
         this.api = new APIHelper(apiBase, this);
         this.api.init().then().catch();
+    }
+
+    @computed
+    get site() {
+        return this.router.pathValue['site'] || 'main';
+    }
+
+    @computed.struct
+    get siteInfo() {
+        return this.cache.getSite(this.site);
     }
 
     @action
@@ -93,21 +99,7 @@ export class AppState {
 
     @action
     setSiteInfo(value: SiteWithUserInfo | undefined) {
-        this.siteInfo = value;
-        if (value) {
-            this.cache.setSite(value);
-        }
-    }
-
-    @action
-    setSite(value: string) {
-        this.site = value;
-
-        this.siteInfo = this.cache.getSite(value);
-        if (!this.siteInfo) {
-            // request site info
-            this.api.site.site(value).then().catch();
-        }
+        value && this.cache.setSite(value);
     }
 }
 
