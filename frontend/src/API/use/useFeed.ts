@@ -1,12 +1,13 @@
-import {useAPI} from '../../AppState/AppState';
+import {useAPI, useAppState} from '../../AppState/AppState';
 import {useEffect, useMemo, useState} from 'react';
 import {PostInfo} from '../../Types/PostInfo';
 import {useCache} from './useCache';
 
 export type FeedType = 'all' | 'subscriptions' | 'site' | 'watch' | 'watch-all' | 'user-profile';
 
-export function useFeed(id: string, feedType: FeedType, page: number, perpage: number) {
+export function useFeed(id: string, feedType: FeedType | undefined, page: number, perpage: number) {
     const api = useAPI();
+    const appState = useAppState();
     const [cachedPosts, setCachedPosts] = useCache<PostInfo[]>('feed', [id, feedType, page, perpage]);
 
     const [posts, setPosts] = useState<PostInfo[] | undefined>(cachedPosts);
@@ -30,10 +31,13 @@ export function useFeed(id: string, feedType: FeedType, page: number, perpage: n
     }, [posts]);
 
     useEffect(() => {
+        console.log('effect', feedType, appState.site, id, page, api.post, perpage);
+
         setLoading(true);
         if (feedType === 'site') {
             api.post.feedPosts(id, page, perpage)
                 .then(result => {
+                    console.log('setposts: site', feedType, appState.site);
                     setCachedPosts(result.posts);
 
                     setError(undefined);
@@ -50,6 +54,7 @@ export function useFeed(id: string, feedType: FeedType, page: number, perpage: n
         else if (feedType === 'subscriptions') {
             api.post.feedSubscriptions(page, perpage)
                 .then(result => {
+                    console.log('setposts: subscriptions', feedType, appState.site);
                     setCachedPosts(result.posts);
 
                     setError(undefined);

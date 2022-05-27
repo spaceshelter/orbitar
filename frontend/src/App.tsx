@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from 'react';
-import {Routes, Route, Outlet, useMatch} from 'react-router-dom';
+import React, {useState} from 'react';
+import {Outlet, Route, Routes} from 'react-router-dom';
 import {Theme, ToastContainer} from 'react-toastify';
 
 import {AppLoadingState, useAppState} from './AppState/AppState';
@@ -91,7 +91,6 @@ const ReadyContainer = observer(() => {
             </div>
             <div className={styles.monster}><MonsterIcon /></div>
             <ToastContainer theme={theme as Theme} />
-            <SiteWatcher />
         </>
     );
 });
@@ -133,17 +132,3 @@ const Ready = observer(() => {
         </>
     );
 });
-
-const SiteWatcher = () => {
-    const appState = useAppState();
-
-    const match = useMatch('s/:site/*');
-    useEffect(() => {
-        const newSite = match?.params.site || 'main';
-        if (newSite !== appState.site) {
-            console.log('Change site:', newSite);
-            appState.setSite(newSite);
-        }
-    }, [appState, match]);
-    return <></>;
-};
