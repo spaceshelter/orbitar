@@ -6,6 +6,7 @@ import PostComponent from '../Components/PostComponent';
 import CommentComponent from '../Components/CommentComponent';
 import CreateCommentComponent from '../Components/CreateCommentComponent';
 import {usePost} from '../API/use/usePost';
+import {useAppState} from '../AppState/AppState';
 
 export default function PostPage() {
     const params = useParams<{postId: string}>();
@@ -13,14 +14,10 @@ export default function PostPage() {
     const postId = params.postId ? parseInt(params.postId, 10) : 0;
     const location = useLocation();
     const [scrolledToComment, setScrolledToComment] = useState<{postId: number, commentId: number}>();
-
-    let subdomain = 'main';
-    if (window.location.hostname !== process.env.REACT_APP_ROOT_DOMAIN) {
-        subdomain = window.location.hostname.split('.')[0];
-    }
+    const {site} = useAppState();
 
     const unreadOnly = search.get('new') !== null;
-    const {post, comments, postComment, editComment, editPost, error, reload, updatePost} = usePost(subdomain, postId, unreadOnly);
+    const {post, comments, postComment, editComment, editPost, error, reload, updatePost} = usePost(site, postId, unreadOnly);
 
     useEffect(() => {
         let docTitle = `Пост #${postId}`;
@@ -105,12 +102,14 @@ export default function PostPage() {
         return await editPost(title || '', text);
     };
 
+    const baseRoute = site === 'main' ? '/' : `/s/${site}/`;
+
     return (
         <div className={styles.container}>
             <div className={styles.feed}>
                 {post ? <div>
                         <PostComponent key={post.id} post={post} onChange={(_, partial) => updatePost(partial)} onEdit={handlePostEdit} />
-                        <div className={styles.postButtons}><Link to={`/post/${post.id}`} className={unreadOnly ? '' : 'bold'}>все комментарии</Link> • <Link to={`/post/${post.id}?new`} className={unreadOnly ? 'bold' : ''}>только новые</Link></div>
+                        <div className={styles.postButtons}><Link to={`${baseRoute}p${post.id}`} className={unreadOnly ? '' : 'bold'}>все комментарии</Link> • <Link to={`${baseRoute}p${post.id}?new`} className={unreadOnly ? 'bold' : ''}>только новые</Link></div>
                         <div className={styles.comments + (unreadOnly ? ' unreadOnly' : '')}>
                             {comments ?
                                 comments.map(comment => <CommentComponent maxTreeDepth={12} key={comment.id} comment={comment} onAnswer={handleAnswer} onEdit={handleCommentEdit} />)
