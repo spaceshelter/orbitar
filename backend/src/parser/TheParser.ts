@@ -163,7 +163,7 @@ export default class TheParser {
 
     processVideo(url: Url<string>) {
         if (url.pathname.match(/\.(mp4|webm)$/)) {
-            return `<video loop="" preload="metadata" controls="" width="500"><source src="${encodeURI(url.toString())}" type="video/mp4"></video>`;
+            return this.renderVideoTag(url.toString(), false);
         }
 
         return false;
@@ -272,10 +272,14 @@ export default class TheParser {
         if (!this.validUrl(url)) {
             return this.parseDisallowedTag(node);
         }
-
-        const text = `<video loop="" preload="metadata" controls="" width="500"><source src="${encodeURI(url)}" type="video/mp4"></video>`;
-
+        const text = this.renderVideoTag(url, node.attribs['loop'] !== undefined);
         return { text, mentions: [], urls: [], images: [url] };
+    }
+
+    renderVideoTag(url: string, loop: boolean) {
+        const match = url.match(/https?:\/\/i.imgur.com\/([^.]+).mp4$/);
+        const poster = match ? `poster="https://i.imgur.com/${encodeURI(match[1])}.jpg"` : '';
+        return `<video ${loop ? 'loop=""' : ''} preload="metadata" ${poster} controls="" width="500"><source src="${encodeURI(url)}" type="video/mp4"></video>`;
     }
 
     parseIrony(node: Element): ParseResult {

@@ -107,11 +107,18 @@ test('URL extraction', () => {
     urlRegex.lastIndex = 0;
     expect(urlRegex.exec("a http://test.com?q=123 as")[0]).toEqual("http://test.com?q=123");
 
-    // some symbols are explicitly excluded from the resource part of the url (like .,! brackets, etc):
+    // some symbols are explicitly excluded from the resource part of the url (like .,! brackets, etc)
+    // but only when they are not at the end of the url
     urlRegex.lastIndex = 0;
     expect(urlRegex.exec("(http://test.com?q=123)")[0]).toEqual("http://test.com?q=123");
     urlRegex.lastIndex = 0;
     expect(urlRegex.exec("[http://test.com?q=123]")[0]).toEqual("http://test.com?q=123");
     urlRegex.lastIndex = 0;
     expect(urlRegex.exec("http://test.com?q=123,")[0]).toEqual("http://test.com?q=123");
+
+    // when punctuation symbols are in the middle of the url, they are not considered as part of the url:
+    urlRegex.lastIndex = 0;
+    expect(urlRegex.exec("http://test.com?q=123,blabla")[0]).toEqual("http://test.com?q=123,blabla");
+    urlRegex.lastIndex = 0;
+    expect(urlRegex.exec("https://i.imgur.com/LEv7f25.mp4")[0]).toEqual("https://i.imgur.com/LEv7f25.mp4");
 });
