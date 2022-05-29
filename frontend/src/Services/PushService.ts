@@ -28,7 +28,7 @@ export class PushService {
         }
 
         const registration = await this.getRegistration();
-        if (!registration) {
+        if (!registration || !registration.pushManager || !registration.pushManager.getSubscription) {
             return;
         }
 
