@@ -3,7 +3,7 @@ import {PostInfo} from '../Types/PostInfo';
 import {action, computed, makeObservable, observable, runInAction} from 'mobx';
 import APIHelper from '../API/APIHelper';
 
-export enum PostFeedStateType {
+export enum PostsFeedStateType {
     Loading,
     Ready,
     Error
@@ -14,7 +14,7 @@ type GetPostsResult = {
     total: number;
 };
 
-export abstract class PostFeedStateBase {
+export abstract class PostsFeedStateBase {
 
     protected readonly api: APIHelper;
 
@@ -28,9 +28,11 @@ export abstract class PostFeedStateBase {
     pages = 0;
 
     @observable
-    status: PostFeedStateType = PostFeedStateType.Loading;
+    status: PostsFeedStateType = PostsFeedStateType.Loading;
 
     readonly posts = observable.array<PostInfo>([]);
+
+    protected getPosts!: () => Promise<GetPostsResult>;
 
     constructor(api: APIHelper, perPage: number) {
         this.api = api;
@@ -39,16 +41,14 @@ export abstract class PostFeedStateBase {
         makeObservable(this);
     }
 
-    abstract getPosts(): Promise<GetPostsResult>;
-
     @computed
     get loading(): boolean {
-        return this.status === PostFeedStateType.Loading;
+        return this.status === PostsFeedStateType.Loading;
     }
 
     @computed
     get error(): boolean {
-        return this.status === PostFeedStateType.Error;
+        return this.status === PostsFeedStateType.Error;
     }
 
     @action
@@ -62,7 +62,7 @@ export abstract class PostFeedStateBase {
     }
 
     @action
-    protected setStatus(status: PostFeedStateType) {
+    protected setStatus(status: PostsFeedStateType) {
         this.status = status;
     }
 
@@ -89,7 +89,7 @@ export abstract class PostFeedStateBase {
     loadPage(page: number): Promise<void> {
         runInAction(() => {
             this.setPage(page);
-            this.setStatus(PostFeedStateType.Loading);
+            this.setStatus(PostsFeedStateType.Loading);
             this.loadFromCache();
         });
         return this.loadPosts();
@@ -105,26 +105,47 @@ export abstract class PostFeedStateBase {
                 // If the page has changed, we don't want to replace the posts
                 runInAction(() => {
                     this.setPosts(postsResult.posts);
-                    this.setStatus(PostFeedStateType.Ready);
+                    this.setStatus(PostsFeedStateType.Ready);
                     this.setPages(Math.floor((postsResult.total - 1) / this.perPage) + 1);
                 });
             }
         } catch (e) {
-            this.setStatus(PostFeedStateType.Error);
+            this.setStatus(PostsFeedStateType.Error);
         }
     }
 }
 
-export class WatchPostFeedState extends PostFeedStateBase {
-    private readonly isAll: boolean;
-
-    constructor(api: APIHelper, siteName: string, isAll: boolean, perPage: number) {
+export class WatchPostsFeedState extends PostsFeedStateBase {
+    constructor(api: APIHelper, isAll: boolean, perPage: number) {
         super(api, perPage);
-        this.isAll = isAll;
-    }
-
-    override getPosts(): Promise<GetPostsResult> {
-        return this.api.post.feedWatch(this.isAll, this.page, this.perPage);
+        this.getPosts = () => this.api.post.feedWatch(isAll, this.page, this.perPage);
     }
 }
 
+export class SitePostsFeedState extends PostsFeedStateBase {
+    constructor(api: APIHelper, siteName: string, perPage: number) {
+        super(api, perPage);
+        this.getPosts = () => this.api.post.feedPosts(siteName, this.page, this.perPage);
+    }
+}
+
+export class AllPostsFeedState extends PostsFeedStateBase {
+    constructor(api: APIHelper, perPage: number) {
+        super(api, perPage);
+        this.getPosts = () => this.api.post.feedAll(this.page, this.perPage);
+    }
+}
+
+export class SubscriptionsPostsFeedState extends PostsFeedStateBase {
+    constructor(api: APIHelper, perPage: number) {
+        super(api, perPage);
+        this.getPosts = () => this.api.post.feedSubscriptions(this.page, this.perPage);
+    }
+}
+
+export class UserPostsFeedState extends PostsFeedStateBase {
+    constructor(api: APIHelper, username: string, perPage: number) {
+        super(api, perPage);
+        this.getPosts = () => this.api.userAPI.userPosts(username, this.page, this.perPage);
+    }
+}

@@ -1,21 +1,19 @@
-import React, {useEffect} from 'react';
-import {useAppState} from '../AppState/AppState';
+import React, {useEffect, useMemo} from 'react';
+import {useAPI, useAppState} from '../AppState/AppState';
 import styles from './FeedPage.module.scss';
-import PostComponent from '../Components/PostComponent';
-import Paginator from '../Components/Paginator';
 import {Link, useMatch, useSearchParams} from 'react-router-dom';
-import {FeedType, useFeed} from '../API/use/useFeed';
-import {APIError} from '../API/APIBase';
+import {AllPostsFeedState, SitePostsFeedState, SubscriptionsPostsFeedState} from '../AppState/PostFeedState';
+import PostFeedComponent from '../Components/PostFeedComponent';
 
 export default function FeedPage() {
     const { site, siteInfo } = useAppState();
-
+    const api = useAPI();
     const [search] = useSearchParams();
 
     const matchRoutePosts = !!useMatch('/posts');
     const matchRouteAll = !!useMatch('/all');
 
-    let feedType: FeedType = 'site';
+    let feedType: 'all' | 'subscriptions' | 'site' = 'site';
     let baseRoute = '/';
     if (site === 'main') {
         if (matchRoutePosts) {
@@ -37,9 +35,26 @@ export default function FeedPage() {
     const perpage = 20;
     const page = parseInt(search.get('page') || '1');
 
-    const { posts, loading, pages, error, updatePost } = useFeed(site, feedType, page, perpage);
+    const state = useMemo(() => {
+        switch (feedType) {
+            case 'site':
+                return new SitePostsFeedState(api, site, perpage);
+            case 'all':
+                return new AllPostsFeedState(api, perpage);
+            case 'subscriptions':
+                return new SubscriptionsPostsFeedState(api, perpage);
+            default:
+                throw new Error('Unknown feed type: ' + feedType);
+        }
+    }, [api, site, feedType, perpage]);
+
+
     useEffect(() => {
-        window.scrollTo({ top: 0 });
+        state.loadPage(page).catch();
+    }, [page, state]);
+
+    useEffect(() => {
+        window.scrollTo({top: 0});
     }, [page]);
 
     useEffect(() => {
@@ -57,17 +72,11 @@ export default function FeedPage() {
         <div className={styles.container}>
             <div className={styles.feed}>
                 {siteInfo?.site === 'main' && <div className={styles.feedControls}>
-                    <Link to='/' className={feedType === 'subscriptions' ? styles.active : ''} replace={true}>мои подписки</Link> • <Link to='/all' className={feedType === 'all' ? styles.active : ''} replace={true}>все</Link> • <Link to='/posts' className={feedType === 'site' ? styles.active : ''} replace={true}>только главная</Link>
+                    <Link to='/' className={feedType === 'subscriptions' ? styles.active : ''} replace={true}>мои подписки</Link> •
+                    <Link to='/all' className={feedType === 'all' ? styles.active : ''} replace={true}>все</Link> •
+                    <Link to='/posts' className={feedType === 'site' ? styles.active : ''} replace={true}>только главная</Link>
                 </div>}
-                {!error && loading && <div className={styles.loading}>Загрузка</div>}
-                {error && <div className={styles.error}>{
-                    (error[1] as APIError)?.code === 'no-site' ? <>Нет такого сайта. <Link to='/sites/create'>Создать</Link>?</> : error[0]
-                }</div> }
-                {posts && <div className={styles.posts}>
-                    {posts.map(post => <PostComponent key={post.id} post={post} showSite={siteInfo?.site !== post.site} onChange={updatePost} autoCut={true} />)}
-                </div>}
-
-                <Paginator page={page} pages={pages} base={baseRoute} />
+                <PostFeedComponent state={state} baseRoute={baseRoute}/>
             </div>
         </div>
     );
