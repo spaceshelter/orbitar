@@ -168,7 +168,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.ctrlKey && e.code === 'Enter') {
+        if ((e.ctrlKey || e.metaKey) && e.code === 'Enter') {
             handleAnswer();
         }
     };
