@@ -21,8 +21,13 @@ export default function NotificationsPopup(props: NotificationsPopupProps) {
 
     const fetchNotifications = useMemo(() => {
         return async () => {
-            const auth = siteName === 'main' ? await pushService.getAuth() : undefined;
-            console.log('have auth:', auth);
+            let auth = undefined;
+            try {
+                auth = siteName === 'main' ? await pushService.getAuth() : undefined;
+                console.log('have auth:', auth);
+            } catch (e) {
+                console.error('failed to get auth', e);
+            }
             return await api.notifications.list(auth);
         };
     }, [api, pushService, siteName]);
