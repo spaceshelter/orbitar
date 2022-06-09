@@ -1,5 +1,4 @@
 import React, {useEffect} from 'react';
-import {useAppState} from '../AppState/AppState';
 import styles from './FeedPage.module.scss';
 import PostComponent from '../Components/PostComponent';
 import Paginator from '../Components/Paginator';
@@ -12,7 +11,6 @@ export default function WatchPage() {
         siteName = window.location.hostname.split('.')[0];
     }
 
-    const { site } = useAppState();
     const [search] = useSearchParams();
     const matchRouteAll = useMatch('/watch/all');
     // temporary replacement
@@ -40,7 +38,7 @@ export default function WatchPage() {
                 {error && <div className={styles.error}>{styles.error}</div> }
                 {posts && <div className={styles.posts}>
                     {posts.length === 0 && <div>Здесь ничего нет. Вероятно, вы уже всё прочитали!</div>}
-                    {posts.map(post => <PostComponent key={post.id} post={post} showSite={site?.site !== post.site} onChange={updatePost} autoCut={true} />)}
+                    {posts.map(post => <PostComponent key={post.id} post={post} showSite={true} onChange={updatePost} autoCut={true} />)}
                 </div>}
 
                 <Paginator page={page} pages={pages} base={isAll ? '/watch/all' : '/watch'} />

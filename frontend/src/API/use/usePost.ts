@@ -1,6 +1,6 @@
 import {CommentInfo, PostInfo} from '../../Types/PostInfo';
 import {useEffect, useMemo, useRef, useState} from 'react';
-import {useAPI} from '../../AppState/AppState';
+import {useAppState} from '../../AppState/AppState';
 import {SiteInfo} from '../../Types/SiteInfo';
 import {useCache} from './useCache';
 
@@ -28,7 +28,9 @@ function usePrevious<T>(value: T): T | undefined {
 }
 
 export function usePost(siteName: string, postId: number, showUnreadOnly?: boolean): UsePost {
-    const api = useAPI();
+    const appState = useAppState();
+    const api = appState.api;
+
     const [post, setPost] = useState<PostInfo>();
     const [site, setSite] = useState<SiteInfo>();
     const [cachedComments, setCachedComments] = useCache<CommentInfo[]>('post', [siteName, postId, !!showUnreadOnly]);
@@ -173,13 +175,13 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
 
         if (prev?.siteName !== siteName) {
             // load site from cache
-            const siteInfo = api.cache.getSite(siteName);
+            const siteInfo = appState.cache.getSite(siteName);
             setSite(siteInfo);
         }
 
         if (prev?.postId !== postId) {
             // load post from cache
-            const postInfo = api.cache.getPost(postId);
+            const postInfo = appState.cache.getPost(postId);
             setPost(postInfo);
             // reset comments
             setRawComments(undefined);

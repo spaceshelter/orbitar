@@ -3,16 +3,17 @@ import {UserInfo} from '../Types/UserInfo';
 import {SiteWithUserInfo} from '../Types/SiteInfo';
 
 type StatusRequest = {
-    site: string;
+    site?: string;
 };
 type StatusResponse = {
-    site: SiteWithUserInfo;
+    site?: SiteWithUserInfo;
     user: UserInfo;
     watch: {
         posts: number;
         comments: number;
     };
     notifications: number;
+    subscriptions: SiteWithUserInfo[];
 };
 
 type SignInRequest = Record<string, unknown>;
@@ -32,7 +33,7 @@ export default class AuthAPI {
     }
 
     async status(site: string): Promise<StatusResponse> {
-        return await this.api.request<StatusRequest, StatusResponse>('/status', { site: site });
+        return await this.api.request<StatusRequest, StatusResponse>('/status', { site });
     }
 
     async signIn(username: string, password: string): Promise<SignInResponse> {

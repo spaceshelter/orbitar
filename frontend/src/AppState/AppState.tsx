@@ -1,78 +1,141 @@
-import {createContext, Dispatch, ReactNode, SetStateAction, useContext, useEffect, useMemo, useState} from 'react';
+import {createContext, ReactNode, useContext, useEffect, useMemo} from 'react';
 import APIBase from '../API/APIBase';
 import APIHelper from '../API/APIHelper';
 import {UserInfo} from '../Types/UserInfo';
-import {SiteInfo, SiteWithUserInfo} from '../Types/SiteInfo';
+import {SiteWithUserInfo} from '../Types/SiteInfo';
+import {observable, makeObservable, autorun, action, computed, makeAutoObservable} from 'mobx';
+import APICache from '../API/APICache';
+import {createBrowserHistory} from 'history';
+import {RouterStore} from '@superwf/mobx-react-router';
 
-export enum AppState {
+export enum AppLoadingState {
     loading,
     unauthorized,
     authorized
 }
 
-export type UserStats = {
+export type UserStatus = {
     watch: {
         posts: number;
         comments: number;
     };
     notifications: number;
+    subscriptions: SiteWithUserInfo[];
 };
 
 type AppStateContextState = {
-    userInfo?: UserInfo;
     appState: AppState;
-    api: APIHelper;
-    site?: SiteWithUserInfo;
-    userStats: UserStats;
 };
 
-export type AppStateSetters = {
-    setSite: Dispatch<SetStateAction<SiteWithUserInfo | undefined>>;
-    setUserInfo: (user: UserInfo | undefined) => void;
-    setAppState: (state: AppState) => void;
-    setUserStats: Dispatch<SetStateAction<UserStats>>;
-};
+export class AppState {
+    @observable
+    appLoadingState = AppLoadingState.loading;
+
+    @observable.struct
+    userInfo: UserInfo | undefined = undefined; // undefined means not authorized
+
+    @observable
+    notificationsCount = 0;
+
+    @observable
+    watchCommentsCount = 0;
+
+    @observable.struct
+    subscriptions: SiteWithUserInfo[] = [];
+
+    browserHistory = createBrowserHistory();
+    router = new RouterStore(this.browserHistory);
+
+    readonly api: APIHelper;
+    readonly cache: APICache;
+
+    constructor() {
+        makeObservable(this);
+
+        this.router.appendPathList('/s/:site');
+        this.router.appendPathList('/s/:site/create');
+        this.router.appendPathList('/s/:site/:post');
+
+        const apiBase = new APIBase();
+        this.cache = makeAutoObservable(new APICache());
+        this.api = new APIHelper(apiBase, this);
+        this.api.init().then().catch();
+    }
+
+    @computed
+    get site() {
+        return this.router.pathValue['site'] || 'main';
+    }
+
+    @computed.struct
+    get siteInfo() {
+        return this.cache.getSite(this.site);
+    }
+
+    @action
+    setAppLoadingState(value: AppLoadingState) {
+        this.appLoadingState = value;
+    }
+
+    @action
+    setUserInfo(value: UserInfo | undefined) {
+        this.userInfo = value;
+    }
+
+    @action
+    setSubscriptions(value: SiteWithUserInfo[]) {
+        this.subscriptions = value;
+    }
+
+    @action
+    setWatchCommentsCount(value: number) {
+        this.watchCommentsCount = value;
+    }
+
+    @action
+    setNotificationsCount(value: number) {
+        this.notificationsCount = value;
+    }
+
+    @action
+    setSiteInfo(value: SiteWithUserInfo | undefined) {
+        value && this.cache.setSite(value);
+    }
+}
 
 const AppStateContext = createContext<AppStateContextState>({} as AppStateContextState);
 
-const apiBase = new APIBase();
-
 export const AppStateProvider = (props: {children: ReactNode}) => {
-    const [userInfo, setUserInfo] = useState<UserInfo | undefined>(undefined);
-    const [appState, setAppState] = useState<AppState>(AppState.loading);
-    const [userStats, setUserStats] = useState<UserStats>({ notifications: 0, watch: { posts: 0, comments: 0 } });
-    const [site, setSite] = useState<SiteInfo>();
-    const api = useMemo(() => new APIHelper(apiBase, {setUserInfo, setAppState, setSite, setUserStats}), []);
-    api.updateSetters({setUserInfo, setAppState, setSite, setUserStats});
+    const appState = useMemo(() => {
+        return new AppState();
+    }, []);
 
     useEffect(() => {
-        api.init().then();
-    }, [api]);
+        return autorun(() => {
+            const link = document.querySelector('link[rel~="icon"]') as HTMLLinkElement;
+            if (!link) {
+                return;
+            }
+            if (appState.notificationsCount > 0) {
+                link.href = '//' + process.env.REACT_APP_ROOT_DOMAIN + '/favicon-badge.png';
+            }
+            else {
+                link.href = '//' + process.env.REACT_APP_ROOT_DOMAIN + '/favicon.ico';
+            }
+        });
+    }, [appState]);
 
-    useEffect(() => {
-        const link = document.querySelector('link[rel~="icon"]') as HTMLLinkElement;
-        if (!link) {
-            return;
-        }
-        if (userStats && userStats.notifications > 0) {
-            link.href = '//' + process.env.REACT_APP_ROOT_DOMAIN + '/favicon-badge.png';
-        }
-        else {
-            link.href = '//' + process.env.REACT_APP_ROOT_DOMAIN + '/favicon.ico';
-        }
-    }, [userStats]);
-
-    return <AppStateContext.Provider value={{ userInfo, appState, api: api, site: site, userStats }}>
+    return <AppStateContext.Provider value={{ appState }}>
         {props.children}
     </AppStateContext.Provider>;
 };
 
 export function useAppState() {
-    return useContext(AppStateContext);
+    return useContext(AppStateContext).appState;
 }
 
 export function useAPI() {
-    return useContext(AppStateContext).api;
+    return useContext(AppStateContext).appState.api;
 }
 
 let siteName: string | undefined;

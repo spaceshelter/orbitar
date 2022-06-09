@@ -2,10 +2,9 @@ import AuthAPIHelper from './AuthAPIHelper';
 import AuthAPI from './AuthAPI';
 import InviteAPI from './InviteAPI';
 import APIBase, {APIError} from './APIBase';
-import {AppState, AppStateSetters} from '../AppState/AppState';
+import {AppLoadingState, AppState} from '../AppState/AppState';
 import PostAPI from './PostAPI';
 import PostAPIHelper from './PostAPIHelper';
-import APICache from './APICache';
 import VoteAPI from './VoteAPI';
 import UserAPIHelper from './UserAPIHelper';
 import UserAPI from './UserAPI';
@@ -20,7 +19,6 @@ export default class APIHelper {
     inviteAPI: InviteAPI;
     postAPI: PostAPI;
     post: PostAPIHelper;
-    cache: APICache;
     voteAPI: VoteAPI;
     user: UserAPIHelper;
     userAPI: UserAPI;
@@ -29,63 +27,52 @@ export default class APIHelper {
     notificationsAPI: NotificationsAPI;
     notifications: NotificationsAPIHelper;
     private baseAPI: APIBase;
-    private setters: AppStateSetters;
-    private readonly siteName: string;
     private initRetryCount = 0;
+    private appState: AppState;
+    private updateInterval: number = parseInt(process.env.REACT_APP_STATUS_UPDATE_INTERVAL || '60');
 
-    constructor(api: APIBase, setters: AppStateSetters) {
+    constructor(api: APIBase, appState: AppState) {
         this.baseAPI = api;
-        this.cache = new APICache();
+        this.appState = appState;
         this.authAPI = new AuthAPI(api);
         this.inviteAPI = new InviteAPI(api);
         this.postAPI = new PostAPI(api);
         this.voteAPI = new VoteAPI(api);
         this.siteAPI = new SiteAPI(api);
         this.notificationsAPI = new NotificationsAPI(api);
-        this.post = new PostAPIHelper(this.postAPI, setters, this.cache);
+        this.post = new PostAPIHelper(this.postAPI, appState);
         this.userAPI = new UserAPI(api, this.post);
-        this.auth = new AuthAPIHelper(this.authAPI, setters);
-        this.user = new UserAPIHelper(this.userAPI, this.cache);
-        this.site = new SiteAPIHelper(this.siteAPI, setters);
-        this.notifications = new NotificationsAPIHelper(this.notificationsAPI, setters);
-        this.setters = setters;
-
-        let siteName = 'main';
-        if (window.location.hostname !== process.env.REACT_APP_ROOT_DOMAIN) {
-            siteName = window.location.hostname.split('.')[0];
-        }
-        if (siteName === 'design-test') {
-            siteName = 'main';
-        }
-        this.siteName = siteName;
-    }
-
-    updateSetters(setters: AppStateSetters) {
-        this.setters = setters;
-        this.auth.setters = setters;
+        this.auth = new AuthAPIHelper(this.authAPI, appState);
+        this.user = new UserAPIHelper(this.userAPI, appState);
+        this.site = new SiteAPIHelper(this.siteAPI, appState);
+        this.notifications = new NotificationsAPIHelper(this.notificationsAPI, appState);
     }
 
     async init() {
         try {
-            this.setters.setAppState(AppState.loading);
+            this.appState.appLoadingState = AppLoadingState.loading;
 
-            const status = await this.authAPI.status(this.siteName);
+            const status = await this.authAPI.status(this.appState.site);
 
-            this.setters.setUserInfo(status.user);
-            this.setters.setSite(status.site);
-            this.setters.setAppState(AppState.authorized);
-            this.setters.setUserStats({ watch: status.watch, notifications: status.notifications });
+            this.appState.setUserInfo(status.user);
+            this.appState.setWatchCommentsCount(status.watch.comments);
+            this.appState.setNotificationsCount(status.notifications);
+            this.appState.setSubscriptions(status.subscriptions);
+            if (status.site) {
+                this.appState.setSiteInfo(status.site);
+            }
+            this.appState.setAppLoadingState(AppLoadingState.authorized);
 
             // start fetch status update
             setTimeout(() => {
                 this.fetchStatusUpdate().then().catch();
-            }, 60 * 1000);
+            }, this.updateInterval * 1000);
         }
         catch (error) {
             if (error instanceof APIError) {
                 console.log('ME ERROR', error.code, error.message);
                 if (error.code === 'auth-required') {
-                    this.setters.setAppState(AppState.unauthorized);
+                    this.appState.setAppLoadingState(AppLoadingState.unauthorized);
                 }
             }
             else {
@@ -112,17 +99,21 @@ export default class APIHelper {
 
     async fetchStatusUpdate() {
         try {
-            const status = await this.authAPI.status(this.siteName);
+            const status = await this.authAPI.status(this.appState.site);
 
-            this.setters.setUserInfo(status.user);
-            this.setters.setSite(status.site);
-            this.setters.setAppState(AppState.authorized);
-            this.setters.setUserStats({watch: status.watch, notifications: status.notifications});
+            this.appState.setUserInfo(status.user);
+            this.appState.setWatchCommentsCount(status.watch.comments);
+            this.appState.setNotificationsCount(status.notifications);
+            this.appState.setSubscriptions(status.subscriptions);
+            if (status.site) {
+                this.appState.setSiteInfo(status.site);
+            }
+            this.appState.setAppLoadingState(AppLoadingState.authorized);
         }
         finally {
             setTimeout(() => {
                 this.fetchStatusUpdate().then().catch();
-            }, 60 * 1000);
+            }, this.updateInterval * 1000);
         }
     }
 

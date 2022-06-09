@@ -1,21 +1,21 @@
-import { SiteWithUserInfo} from '../Types/SiteInfo';
-import styles from './SiteSidebar.module.css';
+import styles from './SiteSidebar.module.scss';
 import {Link} from 'react-router-dom';
 import React, {useState} from 'react';
-import {useAPI} from '../AppState/AppState';
+import {useAPI, useAppState} from '../AppState/AppState';
 import {toast} from 'react-toastify';
+import {observer} from 'mobx-react-lite';
 
-interface SiteSidebarProps {
-    site: SiteWithUserInfo;
-}
-
-export default function SiteSidebar(props: SiteSidebarProps) {
+export const SiteSidebar = observer(() => {
     const [subsDisabled, setSubsDisabled] = useState(false);
     const api = useAPI();
+    const {site, siteInfo, subscriptions} = useAppState();
 
     const handleSubscribe = (subscribe: boolean) => {
+        if (!siteInfo) {
+            return;
+        }
         setSubsDisabled(true);
-        api.site.subscribe(props.site.site, subscribe, false)
+        api.site.subscribe(siteInfo.site, subscribe, false)
             .then(() => {
                 setSubsDisabled(false);
             })
@@ -26,21 +26,23 @@ export default function SiteSidebar(props: SiteSidebarProps) {
     };
 
     return (<div className={styles.container}>
-        <div className={styles.fixed}>
-            <Link className={styles.siteName} to={'/'}> {props.site.name}</Link>
-            {props.site.site !== 'main' &&
-            <div className={styles.subscribe}>
-                {props.site.subscribe?.main ?
-                    <button className={styles.subscribed} disabled={subsDisabled} onClick={() => handleSubscribe(false)}>Отписаться</button>
+        <div className='fixed'>
+            <Link className='site-name' to={site !== 'main' ? `/s/${site}` : '/'}> {siteInfo?.name || '...'}</Link>
+            {site !== 'main' &&
+            <div className='subscribe'>
+                {!siteInfo || siteInfo.subscribe?.main ?
+                    <button className='subscribed' disabled={!siteInfo || subsDisabled} onClick={() => handleSubscribe(false)}>Отписаться</button>
                     :
-                    <button className={styles.notSubscribed} disabled={subsDisabled} onClick={() => handleSubscribe(true)}>Подписаться</button>
+                    <button className='not-subscribed' disabled={!siteInfo || subsDisabled} onClick={() => handleSubscribe(true)}>Подписаться</button>
                 }
             </div>}
-            <div className={styles.podsites}>
-                {props.site.site !== 'main' && <div><a href="https://orbitar.space/">Главная</a></div>}
-                {props.site.site !== 'idiod' && <div><a href="https://idiod.orbitar.space/">idiod</a></div>}
-                {props.site.site !== 'dev' && <div><a href="https://dev.orbitar.space/">Баги и фичи</a></div>}
+            {siteInfo?.siteInfo && <div className='site-info'>{siteInfo.siteInfo}</div>}
+            <div className='subsites'>
+                { subscriptions.map(site => {
+                    return <div key={site.site}><Link to={site.site === 'main' ? '/' : `/s/${site.site}`}>{site.name}</Link></div>;
+                }) }
             </div>
+            <Link className='all-subsites' to='/sites'>Все подсайты</Link>
         </div>
     </div>);
-}
+});

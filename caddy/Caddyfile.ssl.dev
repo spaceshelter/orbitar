@@ -1,4 +1,4 @@
-{$SERVER_DOMAIN}, *.{$SERVER_DOMAIN} {
+{$SERVER_DOMAIN} {
   tls /certs/orbitar.crt /certs/orbitar.key
 
   # imgur proxy
@@ -19,6 +19,15 @@
   }
 
   reverse_proxy http://host.docker.internal:5000
+}
+
+*.{$SERVER_DOMAIN} {
+  @post {
+    path_regexp post ^\/post\/([0-9]+)$
+  }
+  redir @post https://{$SERVER_DOMAIN}/s/{http.request.host.labels.2}/p{re.post.1}
+
+  redir / https://{$SERVER_DOMAIN}/s/{http.request.host.labels.2}
 }
 
 api.{$SERVER_DOMAIN} {

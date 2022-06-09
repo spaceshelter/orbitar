@@ -1,4 +1,4 @@
-http://{$SERVER_DOMAIN}, http://*.{$SERVER_DOMAIN} {
+http://{$SERVER_DOMAIN} {
   # CORS headers for *.svg
   @cors {
     path_regexp \.(svg|woff2?|ttf|eot)$
@@ -29,6 +29,15 @@ http://{$SERVER_DOMAIN}, http://*.{$SERVER_DOMAIN} {
   root * /srv
   file_server
   try_files {path} /index.html
+}
+
+http://*.{$SERVER_DOMAIN} {
+  @post {
+    path_regexp post ^\/post\/([0-9]+)$
+  }
+  redir @post http://{$SERVER_DOMAIN}/s/{http.request.host.labels.2}/p{re.post.1}
+
+  redir / http://{$SERVER_DOMAIN}/s/{http.request.host.labels.2}
 }
 
 http://api.{$SERVER_DOMAIN} {

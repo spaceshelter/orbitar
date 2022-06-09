@@ -113,7 +113,8 @@ export default class FeedController {
         const { site: subdomain, format, page, perpage: perPage } = request.body;
 
         try {
-            const site = await this.siteManager.getSiteByName(subdomain);
+            const site = await this.siteManager.getSiteByNameWithUserInfo(userId, subdomain);
+
             if (!site) {
                 return response.error('no-site', 'Site not found');
             }
@@ -127,7 +128,7 @@ export default class FeedController {
                 posts,
                 total,
                 users,
-                site
+                site: this.enricher.siteInfoToEntity(site)
             });
         }
         catch (err) {

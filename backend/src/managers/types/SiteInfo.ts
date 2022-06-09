@@ -8,6 +8,8 @@ export type SiteBaseInfo = {
 
 export type SiteInfo = SiteBaseInfo & {
     owner: UserInfo;
+    subscribers: number;
+    siteInfo?: string;
 };
 
 export type SiteWithUserInfo = SiteInfo & {

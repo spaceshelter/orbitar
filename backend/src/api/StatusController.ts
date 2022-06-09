@@ -4,16 +4,19 @@ import {APIRequest, APIResponse} from './ApiMiddleware';
 import {Logger} from 'winston';
 import SiteManager from '../managers/SiteManager';
 import {StatusRequest, StatusResponse} from './types/requests/Status';
+import {Enricher} from './utils/Enricher';
 
 export default class StatusController {
-    public router = Router();
-    private siteManager: SiteManager;
-    private userManager: UserManager;
-    private logger: Logger;
+    public readonly router = Router();
+    private readonly siteManager: SiteManager;
+    private readonly userManager: UserManager;
+    private readonly logger: Logger;
+    private readonly enricher: Enricher;
 
-    constructor(siteManager: SiteManager, userManager: UserManager, logger: Logger) {
+    constructor(enricher: Enricher, siteManager: SiteManager, userManager: UserManager, logger: Logger) {
         this.siteManager = siteManager;
         this.userManager = userManager;
+        this.enricher = enricher;
         this.logger = logger;
         this.router.post('/status', (req, res) => this.status(req, res));
     }
@@ -24,19 +27,13 @@ export default class StatusController {
         }
 
         const siteName = request.body.site;
-        if (!siteName) {
-            return response.error('invalid-payload', 'site required', 400);
-        }
 
         try {
             const userId = request.session.data.userId;
             const user = await this.userManager.getById(userId);
-            const site = await this.siteManager.getSiteByNameWithUserInfo(userId, siteName);
+            const site = siteName ? await this.siteManager.getSiteByNameWithUserInfo(userId, siteName) : undefined;
             const stats = await this.userManager.getUserStats(userId);
-
-            if (!site) {
-                return response.error('no-site', 'Site not found', 404);
-            }
+            const subscriptions = await this.siteManager.getSubscriptions(userId);
 
             if (!user) {
                 // Something wrong, user should exist!
@@ -45,7 +42,8 @@ export default class StatusController {
 
             return response.success({
                 user,
-                site,
+                site: site ? this.enricher.siteInfoToEntity(site) : undefined,
+                subscriptions: subscriptions.map(site => this.enricher.siteInfoToEntity(site)),
                 ...stats
             });
         }
@@ -53,4 +51,6 @@ export default class StatusController {
             return response.error('error', 'Unknown error', 500);
         }
     }
+
+
 }

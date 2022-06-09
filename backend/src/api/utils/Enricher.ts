@@ -1,4 +1,4 @@
-import {SiteBaseEntity} from '../types/entities/SiteEntity';
+import {SiteBaseEntity, SiteWithUserInfoEntity} from '../types/entities/SiteEntity';
 import {UserEntity} from '../types/entities/UserEntity';
 import {PostEntity} from '../types/entities/PostEntity';
 import UserManager from '../../managers/UserManager';
@@ -6,6 +6,7 @@ import SiteManager from '../../managers/SiteManager';
 import {CommentEntity} from '../types/entities/CommentEntity';
 import {CommentInfoWithPostData} from '../../managers/types/CommentInfo';
 import {PostInfo} from '../../managers/types/PostInfo';
+import {SiteWithUserInfo} from '../../managers/types/SiteInfo';
 
 export type EnrichedPosts = {
     posts: PostEntity[];
@@ -41,7 +42,6 @@ export class Enricher {
             if (!sites[post.site]) {
                 const site = await this.siteManager.getSiteByName(post.site);
                 sites[post.site] = {
-                    id: site.id,
                     site: site.site,
                     name: site.name
                 };
@@ -141,5 +141,23 @@ export class Enricher {
             rootComments,
             users
         };
+    }
+
+    siteInfoToEntity(siteInfo: SiteWithUserInfo): SiteWithUserInfoEntity {
+        const result: SiteWithUserInfoEntity = {
+            site: siteInfo.site,
+            name: siteInfo.name,
+            subscribers: siteInfo.subscribers,
+            siteInfo: siteInfo.siteInfo,
+            owner: {
+                id: siteInfo.owner.id,
+                username: siteInfo.owner.username,
+                gender: siteInfo.owner.gender
+            }
+        };
+        if (siteInfo.subscribe) {
+            result.subscribe = siteInfo.subscribe;
+        }
+        return result;
     }
 }

@@ -1,20 +1,36 @@
 import SiteAPI from './SiteAPI';
-import {AppStateSetters} from '../AppState/AppState';
+import {AppState} from '../AppState/AppState';
+import {SiteWithUserInfo} from '../Types/SiteInfo';
 
 export default class SiteAPIHelper {
     private api: SiteAPI;
-    setters: AppStateSetters;
+    private appState: AppState;
 
-    constructor(api: SiteAPI, setters: AppStateSetters) {
+    constructor(api: SiteAPI, appState: AppState) {
         this.api = api;
-        this.setters = setters;
+        this.appState = appState;
+    }
+
+    async create(site: string, name: string) {
+        const result = await this.api.create(site, name);
+        if (result) {
+            this.appState.cache.setSite(result.site);
+        }
+        return result;
     }
 
     async subscribe(site: string, main: boolean, bookmarks: boolean) {
-        await this.api.subscribe(site, main, bookmarks);
-        this.setters.setSite(prev => {
-            if (!prev) return;
-            return { ...prev, subscribe: { bookmarks: bookmarks, main: main } };
-        });
+        const result = await this.api.subscribe(site, main, bookmarks);
+        if (this.appState.siteInfo && this.appState.siteInfo.site === site) {
+            this.appState.setSiteInfo({...this.appState.siteInfo, subscribe: result});
+        }
+        if (result.subscriptions) {
+            this.appState.setSubscriptions(result.subscriptions);
+        }
+    }
+
+    async list(page: number, perpage: number): Promise<SiteWithUserInfo[]> {
+        const result = await this.api.list(page, perpage);
+        return result.sites;
     }
 }

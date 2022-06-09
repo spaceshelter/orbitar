@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {useAppState} from '../AppState/AppState';
+import {useAPI} from '../AppState/AppState';
 import SignUpForm, {SignUpFormErrors} from '../Components/SignUpForm';
 import {useNavigate, useParams} from 'react-router-dom';
 import {APIError} from '../API/APIBase';
@@ -17,7 +17,7 @@ export default function InvitePage() {
     const [inviteStatus, setInviteStatus] = useState<{state: InviteState, code?: string, username?: string}>({ state: InviteState.unknown });
     const [formDisabled, setFormDisabled] = useState(false);
     const [formErrors, setFormErrors] = useState<SignUpFormErrors>({});
-    const {api} = useAppState();
+    const api = useAPI();
     const {code} = useParams<{code: string}>();
     const navigate = useNavigate();
 

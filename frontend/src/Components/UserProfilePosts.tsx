@@ -1,5 +1,4 @@
 import React, {useEffect} from 'react';
-import {useAppState} from '../AppState/AppState';
 import styles from '../Pages/FeedPage.module.scss';
 import PostComponent from '../Components/PostComponent';
 import Paginator from '../Components/Paginator';
@@ -11,8 +10,6 @@ type UserProfilePostsProps = {
 };
 
 export default function UserProfilePosts(props: UserProfilePostsProps) {
-
-    const { site } = useAppState();
     const [search] = useSearchParams();
     const perpage = 20;
     const page = parseInt(search.get('page') || '1');
@@ -29,9 +26,9 @@ export default function UserProfilePosts(props: UserProfilePostsProps) {
                  <>
                     {error && <div className={styles.error}>{styles.error}</div> }
                     {posts && <div className={styles.posts}>
-                        {posts.map(post => <PostComponent key={post.id} post={post} showSite={site?.site !== post.site} onChange={updatePost} autoCut={true} />)}
+                        {posts.map(post => <PostComponent key={post.id} post={post} showSite={true} onChange={updatePost} autoCut={true} />)}
                     </div>}
-                    <Paginator page={page} pages={pages} base={`/user/${props.username}/posts`} />
+                    <Paginator page={page} pages={pages} base={`/u/${props.username}/posts`} />
                 </>}
             </div>
         </div>

@@ -6,14 +6,15 @@ import RatingSwitch from '../Components/RatingSwitch';
 import DateComponent from '../Components/DateComponent';
 import {useUserProfile} from '../API/use/useUserProfile';
 import {ReactComponent as LogoutIcon} from '../Assets/logout.svg';
-import {useAppState} from '../AppState/AppState';
+import {useAPI, useAppState} from '../AppState/AppState';
 import UserProfilePosts from '../Components/UserProfilePosts';
 import UserProfileComments from '../Components/UserProfileComments';
 import {UserProfileInvites} from '../Components/UserProfileInvites';
+import {observer} from 'mobx-react-lite';
 
-export default function UserPage() {
-
-    const {userInfo, api} = useAppState();
+export const UserPage = observer(() => {
+    const {userInfo} = useAppState();
+    const api = useAPI();
     const params = useParams<{username?: string, page?: string}>();
 
     const username = params.username || userInfo?.username;
@@ -49,7 +50,7 @@ export default function UserPage() {
         const user = profile.profile;
         const rating = {value: user.karma, vote: user.vote};
         const isMyProfile = userInfo && userInfo.id === user.id;
-        const base = '/user/' + user.username;
+        const base = '/u/' + user.username;
 
         return (
             <div className={styles.container}>
@@ -96,4 +97,4 @@ export default function UserPage() {
     return (
         <div>Загрузка...</div>
     );
-}
+});

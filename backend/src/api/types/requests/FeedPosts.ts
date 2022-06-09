@@ -1,7 +1,7 @@
 import {PostEntity} from '../entities/PostEntity';
 import {UserEntity} from '../entities/UserEntity';
 import {ContentFormat} from '../entities/common';
-import {SiteBaseEntity} from '../entities/SiteEntity';
+import {SiteWithUserInfoEntity} from '../entities/SiteEntity';
 
 export type FeedPostsRequest = {
     site: string;
@@ -14,5 +14,5 @@ export type FeedPostsResponse = {
     posts: PostEntity[];
     total: number;
     users: Record<number, UserEntity>;
-    site: SiteBaseEntity;
+    site: SiteWithUserInfoEntity;
 };

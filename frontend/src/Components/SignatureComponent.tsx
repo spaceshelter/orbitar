@@ -23,7 +23,7 @@ interface SignatureComponentProps {
 export const SignatureComponent = (props: SignatureComponentProps) => {
     return (
         <div className={styles.signature}>
-            {(props.showSite && props.site) ? <><Link to={`//${props.site}.${process.env.REACT_APP_ROOT_DOMAIN}/`}>{props.site}</Link> • </> : ''}
+            {(props.showSite && props.site && props.site !== 'main') ? <><Link to={`/s/${props.site}`}>{props.site}</Link> • </> : ''}
             <Username className={styles.username} user={props.author} /> • <PostLink post={props.postLink} commentId={props.commentId}><DateComponent date={props.date} /></PostLink>
             {props.parentCommentId && <> • <PostLink className={'arrow i i-arrow'} post={props.postLink} commentId={props.parentCommentId}></PostLink></>}
             {props.editFlag && <> • <button className={styles.toggleHistory} onClick={props.onHistoryClick}>изменён</button></>}

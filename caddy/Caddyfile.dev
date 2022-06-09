@@ -1,4 +1,4 @@
-http://{$SERVER_DOMAIN}, http://*.{$SERVER_DOMAIN} {
+http://{$SERVER_DOMAIN} {
   # imgur proxy
   handle_path /upload {
     rewrite * /3/upload
@@ -17,6 +17,15 @@ http://{$SERVER_DOMAIN}, http://*.{$SERVER_DOMAIN} {
   }
 
   reverse_proxy http://host.docker.internal:5000
+}
+
+http://*.{$SERVER_DOMAIN} {
+  @post {
+    path_regexp post ^\/post\/([0-9]+)$
+  }
+  redir @post http://{$SERVER_DOMAIN}/s/{http.request.host.labels.2}/p{re.post.1}
+
+  redir / http://{$SERVER_DOMAIN}/s/{http.request.host.labels.2}
 }
 
 http://api.{$SERVER_DOMAIN} {

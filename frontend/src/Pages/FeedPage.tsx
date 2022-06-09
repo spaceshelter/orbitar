@@ -5,46 +5,45 @@ import PostComponent from '../Components/PostComponent';
 import Paginator from '../Components/Paginator';
 import {Link, useMatch, useSearchParams} from 'react-router-dom';
 import {FeedType, useFeed} from '../API/use/useFeed';
+import {APIError} from '../API/APIBase';
 
 export default function FeedPage() {
-    let siteName = 'main';
-    if (window.location.hostname !== process.env.REACT_APP_ROOT_DOMAIN) {
-        siteName = window.location.hostname.split('.')[0];
-    }
+    const { site, siteInfo } = useAppState();
 
-    const { site } = useAppState();
     const [search] = useSearchParams();
 
     const matchRoutePosts = !!useMatch('/posts');
-    const matchRouteSubscriptions = !!useMatch('/subscriptions');
+    const matchRouteAll = !!useMatch('/all');
 
     let feedType: FeedType = 'site';
     let baseRoute = '/';
-    if (siteName === 'main') {
+    if (site === 'main') {
         if (matchRoutePosts) {
             feedType = 'site';
             baseRoute = '/posts';
         }
-        else if (matchRouteSubscriptions) {
-            feedType = 'subscriptions';
-            baseRoute = '/subscriptions';
+        else if (matchRouteAll) {
+            feedType = 'all';
+            baseRoute = '/all';
         }
         else {
-            feedType = 'all';
+            feedType = 'subscriptions';
             baseRoute = '/';
         }
+    } else {
+        baseRoute = '/s/' + site;
     }
 
     const perpage = 20;
     const page = parseInt(search.get('page') || '1');
 
-    const { posts, loading, pages, error, updatePost } = useFeed(siteName, feedType, page, perpage);
+    const { posts, loading, pages, error, updatePost } = useFeed(site, feedType, page, perpage);
     useEffect(() => {
         window.scrollTo({ top: 0 });
     }, [page]);
 
     useEffect(() => {
-        let docTitle = site?.name || 'ЪУЪ';
+        let docTitle = siteInfo?.name || 'ЪУЪ';
         if (feedType === 'subscriptions') {
             docTitle += ' / Подписки';
         }
@@ -52,18 +51,20 @@ export default function FeedPage() {
             docTitle += ' / Все посты';
         }
         document.title = docTitle;
-    }, [site, feedType]);
+    }, [siteInfo, feedType]);
 
     return (
         <div className={styles.container}>
             <div className={styles.feed}>
-                {site?.site === 'main' && <div className={styles.feedControls}>
-                    <Link to='/' className={feedType === 'all' ? styles.active : ''} replace={true}>все</Link> • <Link to='/subscriptions' className={feedType === 'subscriptions' ? styles.active : ''} replace={true}>мои подписки</Link> • <Link to='/posts' className={feedType === 'site' ? styles.active : ''} replace={true}>только главная</Link>
+                {siteInfo?.site === 'main' && <div className={styles.feedControls}>
+                    <Link to='/' className={feedType === 'subscriptions' ? styles.active : ''} replace={true}>мои подписки</Link> • <Link to='/all' className={feedType === 'all' ? styles.active : ''} replace={true}>все</Link> • <Link to='/posts' className={feedType === 'site' ? styles.active : ''} replace={true}>только главная</Link>
                 </div>}
-                {loading && <div className={styles.loading}>Загрузка</div>}
-                {error && <div className={styles.error}>{styles.error}</div> }
+                {!error && loading && <div className={styles.loading}>Загрузка</div>}
+                {error && <div className={styles.error}>{
+                    (error[1] as APIError)?.code === 'no-site' ? <>Нет такого сайта. <Link to='/sites/create'>Создать</Link>?</> : error[0]
+                }</div> }
                 {posts && <div className={styles.posts}>
-                    {posts.map(post => <PostComponent key={post.id} post={post} showSite={site?.site !== post.site} onChange={updatePost} autoCut={true} />)}
+                    {posts.map(post => <PostComponent key={post.id} post={post} showSite={siteInfo?.site !== post.site} onChange={updatePost} autoCut={true} />)}
                 </div>}
 
                 <Paginator page={page} pages={pages} base={baseRoute} />

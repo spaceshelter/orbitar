@@ -1,8 +1,7 @@
 import PostAPI, {CommentEntity, PostEntity} from './PostAPI';
 import {CommentInfo, PostInfo} from '../Types/PostInfo';
 import {SiteInfo} from '../Types/SiteInfo';
-import APICache from './APICache';
-import {AppStateSetters} from '../AppState/AppState';
+import {AppState} from '../AppState/AppState';
 import {UserInfo} from '../Types/UserInfo';
 import {HistoryInfo} from '../Types/HistoryInfo';
 
@@ -38,22 +37,20 @@ type PostEditResult = {
 
 export default class PostAPIHelper {
     private postAPI: PostAPI;
-    private cache: APICache;
-    private setters: AppStateSetters;
+    private appState: AppState;
 
-    constructor(postAPI: PostAPI, setters: AppStateSetters, cache: APICache) {
+    constructor(postAPI: PostAPI, appState: AppState) {
         this.postAPI = postAPI;
-        this.cache = cache;
-        this.setters = setters;
+        this.appState = appState;
     }
 
     async get(postId: number): Promise<PostResult> {
         const response = await this.postAPI.get(postId);
-        const siteInfo = this.cache.setSite(response.site);
+        const siteInfo = this.appState.cache.setSite(response.site);
 
         const post: PostInfo = { ...response.post } as unknown as PostInfo;
         // fix fields
-        post.author = this.cache.setUser(response.users[response.post.author]);
+        post.author = this.appState.cache.setUser(response.users[response.post.author]);
         post.created = this.postAPI.api.fixDate(new Date(response.post.created));
 
 
@@ -70,7 +67,7 @@ export default class PostAPIHelper {
 
     async feedPosts(site: string, page: number, perPage: number): Promise<FeedPostsResult> {
         const response = await this.postAPI.feedPosts(site, page, perPage);
-        const siteInfo = this.cache.setSite(response.site);
+        const siteInfo = this.appState.cache.setSite(response.site);
         return {
             posts: this.fixPosts(response.posts, response.users),
             site: siteInfo,
@@ -109,10 +106,10 @@ export default class PostAPIHelper {
         return posts.map(post => {
             const p: PostInfo = { ...post } as unknown as PostInfo;
             // fix fields
-            p.author = this.cache.setUser(users[post.author]);
+            p.author = this.appState.cache.setUser(users[post.author]);
             p.created = this.postAPI.api.fixDate(new Date(post.created));
 
-            this.cache.setPost(p);
+            this.appState.cache.setPost(p);
             return p;
         });
     }
@@ -121,7 +118,7 @@ export default class PostAPIHelper {
         return comments.map(comment => {
             const c: CommentInfo = { ...comment } as unknown as CommentInfo;
             // fix fields
-            c.author = this.cache.setUser(users[comment.author]);
+            c.author = this.appState.cache.setUser(users[comment.author]);
             c.created = this.postAPI.api.fixDate(new Date(comment.created));
             c.postLink = {
                 id: comment.post,
@@ -173,10 +170,9 @@ export default class PostAPIHelper {
 
     async read(postId: number, comments: number, lastCommentId?: number) {
         const result = await this.postAPI.read(postId, comments, lastCommentId);
-        if (result.watch) {
-            this.setters.setUserStats((old) => {
-                return { ...old, watch: result.watch, notifications: result.notifications };
-            });
+        if (result.watch !== undefined && result.notifications !== undefined) {
+            this.appState.setNotificationsCount(result.notifications);
+            this.appState.setWatchCommentsCount(result.watch.comments);
         }
         return result;
     }
