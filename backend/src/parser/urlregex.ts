@@ -95,5 +95,5 @@ function getRegex(path = '\\S*') {
         `(?:[/?#]${path})?`;
 }
 
-export const urlRegex = new RegExp('\\b' + getRegex('[^\\s,.:;!()\\[\\]{}]*'), 'gi');
+export const urlRegex = new RegExp('\\b' + getRegex('(?:[^\\s.,:;!()\\[\\]{}]|[.,:;!]+\\b)*'), 'gi');
 export const urlRegexExact = new RegExp('^' + getRegex() + '$', 'i');
