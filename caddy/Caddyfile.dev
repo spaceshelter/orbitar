@@ -1,9 +1,9 @@
 http://{$SERVER_DOMAIN} {
-  # imgur proxy
+  # idiod.video proxy
   handle_path /upload {
-    rewrite * /3/upload
-    reverse_proxy https://api.imgur.com {
-      header_up Host api.imgur.com
+    rewrite * /api/upload.php
+    reverse_proxy https://idiod.video {
+      header_up Host idiod.video
       header_up +authorization "Client-ID {$IMGUR_CLIENT_ID}"
       header_up -origin
       header_up -referer

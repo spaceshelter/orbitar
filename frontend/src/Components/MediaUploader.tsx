@@ -161,14 +161,8 @@ export default function MediaUploader(props: MediaUploaderProps) {
         }
         else if (uploadData.type === 'video' || uploadData.type === 'image') {
             const file = uploadData.file;
-
             const formData = new FormData();
-            if (uploadData.type === 'video') {
-                formData.append('video', file);
-            }
-            else {
-                formData.append('image', file);
-            }
+            formData.append('file', file);
 
             setUploading(true);
 
@@ -183,11 +177,10 @@ export default function MediaUploader(props: MediaUploaderProps) {
                 if (response.ok) {
                     response.json()
                         .then(data => {
-                            if (data.data.link) {
-                                console.log('UPLOAD COMPLETE');
-                                props.onSuccess(data.data.link, uploadData.type);
-                            }
-                            else {
+                            if (data.status === 'ok') {
+                                console.log('UPLOAD COMPLETE', data);
+                                props.onSuccess('https://idiod.video/' + data.url, uploadData.type);
+                            } else {
                                 console.log('UPLOAD FAILED: no link', data, file.type);
                                 toast.error('Произошла ошибка при загрузке 🥺');
                             }
