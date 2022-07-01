@@ -24,6 +24,7 @@ import ThemePreviewPage from './Pages/ThemePreviewPage';
 import {observer} from 'mobx-react-lite';
 import {SitesPage} from './Pages/SitesPage';
 import {SitesCreatePage} from './Pages/SitesCreatePage';
+import KarmaCalculatorPage from './Pages/KarmaCalculatorPage';
 
 export const App = observer(() => {
     const {appLoadingState} = useAppState();
@@ -121,6 +122,7 @@ const Ready = observer(() => {
                     <Route path="sites" element={<SitesPage />} />
                     <Route path="sites/create" element={<SitesCreatePage />} />
                     <Route path="theme" element={<ThemePreviewPage />} />
+                    <Route path="karma" element={<KarmaCalculatorPage />} />
 
                     <Route path="s/:site">
                         <Route path="" element={<FeedPage />} />
