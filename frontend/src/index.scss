@@ -2,6 +2,10 @@
 
 // TODO add css reset
 
+html {
+  overflow-y: overlay;
+}
+
 html,body {
   height: 100%;
   margin: 0;
