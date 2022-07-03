@@ -115,7 +115,7 @@ export default class UserRepository {
             '.' + date.getMilliseconds();
 
         return this.db.query(`
-            insert ignore into user_activity (user_id, visited_at) values (:user_id, :visited_at)
+            insert ignore into activity_db.user_activity (user_id, visited_at) values (:user_id, :visited_at)
         `, {user_id: userId, visited_at: dateToInsert});
     }
 }
