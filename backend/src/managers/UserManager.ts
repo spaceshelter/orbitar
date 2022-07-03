@@ -17,6 +17,7 @@ export default class UserManager {
 
     private cacheId: Record<number, UserInfo> = {};
     private cacheUsername: Record<string, UserInfo> = {};
+    private cacheLastVisit: Record<number, Date> = {};
 
     constructor(credentialsRepository: UserCredentials, userRepository: UserRepository, voteRepository: VoteRepository, webPushRepository: WebPushRepository, notificationManager: NotificationManager) {
         this.credentialsRepository = credentialsRepository;
@@ -148,6 +149,19 @@ export default class UserManager {
 
     async resetPushSubscription(forUserId: number, auth: string) {
         return await this.webPushRepository.resetSubscription(forUserId, auth);
+    }
+
+    logVisit(userId: number) {
+        const date = this.truncateVisitDate(new Date());
+        if (!this.cacheLastVisit[userId] || this.cacheLastVisit[userId].getTime() !== date.getTime()) {
+            this.cacheLastVisit[userId] = date;
+            return this.userRepository.logVisit(userId, date);
+        }
+        return Promise.resolve();
+    }
+
+    truncateVisitDate(date: Date, truncatePeriodMs: number = 12 * 60 * 60 * 1000 /*12h*/) {
+        return new Date(Math.floor(date.getTime() / truncatePeriodMs) * truncatePeriodMs);
     }
 
     private mapUserRaw(rawUser: UserRaw): UserInfo {
