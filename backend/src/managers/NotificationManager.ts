@@ -228,14 +228,15 @@ export default class NotificationManager {
             return;
         }
 
-        const baseUrl = (this.siteConfig.http ? 'http://' : 'https://') + (site.subdomain === 'main' ? '' : site.subdomain + '.') + this.siteConfig.domain;
+        const baseUrl = (this.siteConfig.http ? 'http://' : 'https://') +  this.siteConfig.domain;
 
         let commentText = comment.source;
         if (commentText.length > 30) {
             commentText = commentText.substring(0, 30) + '...';
         }
 
-        const url = `${baseUrl}/post/${notification.source.postId}#${notification.source.commentId}`;
+        const subdomain = (site.subdomain === 'main' ? '' : '/s/' + site.subdomain);
+        const url = `${baseUrl}${subdomain}/p${notification.source.postId}#${notification.source.commentId}`;
         const icon = `${baseUrl}/favicon.ico`;
 
         let title = '';
