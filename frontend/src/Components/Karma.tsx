@@ -9,7 +9,7 @@ export function Karma() {
 
     useEffect(() => {
          setU( clamp(profileVotingResult, -profileVotesCount, profileVotesCount));
-    },[profileVotesCount]);
+    },[profileVotesCount, profileVotingResult]);
 
     //TODO extract the rest of coefficients to constants and comment them
 
