@@ -1,47 +1,52 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import classNames from 'classnames';
 import styles from './ContentComponent.module.scss';
+import htmlParser, {Element } from 'html-react-parser';
+import TelegramEmbed from './TelegramEmbed';
+import {useTheme} from '../Theme/ThemeProvider';
 
 interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
     content: string;
     autoCut?: boolean;
 }
 
-function updateContent(div: HTMLDivElement) {
-    div.querySelectorAll('img').forEach(img => {
-        if (img.complete) {
-            updateImg(img);
-            return;
-        }
+function ScalableImage(props: { src: string }) {
+    const ref = useRef<HTMLImageElement>(null);
+    const [scaled, setScaled] = useState(false);
+    const [scalable, setScalable] = useState<boolean | undefined>(undefined);
 
-        img.onload = () => {
-            updateImg(img);
-        };
-    });
+    const onLoad = () => {
+        if (scalable === undefined) {
+            setScalable(ref.current!.naturalWidth > 500 || ref.current!.naturalHeight > 500);
+        }
+    };
+    const onClick = () => {
+        if (scalable) {
+            setScaled(!scaled);
+        }
+    };
+    return <img src={props.src} className={classNames({ 'image-scalable' : scalable,  'image-preview' : scaled } )}
+                onLoad={onLoad} ref={ref} onClick={onClick} />;
 }
 
-function updateImg(img: HTMLImageElement) {
-    let el: HTMLElement | null = img;
-    while (el) {
-        if (el.tagName.toUpperCase() === 'A') {
-            return;
-        }
-        el = el.parentElement;
-    }
-
-    let imageLarge = false;
-    img.classList.add('image-scalable');
-    if (img.naturalWidth > 500 || img.naturalHeight > 500) {
-        img.onclick = () => {
-            if (imageLarge) {
-                imageLarge = false;
-                img.classList.remove('image-preview');
-                return;
+function parseContent(content: string, theme: string | undefined) {
+    return htmlParser(content, {
+        replace: domNode => {
+            if (domNode instanceof Element && domNode.tagName.toUpperCase() === 'IMG') {
+                let el: Element | null = domNode;
+                while (el) {
+                    if (el.tagName.toUpperCase() === 'A') {
+                        return;
+                    }
+                    el = (el.parent instanceof Element) ? el.parent : null;
+                }
+                return <ScalableImage src={domNode.attribs['src']} />;
             }
-            imageLarge = true;
-            img.classList.add('image-preview');
-        };
-    }
+            if (domNode instanceof Element && domNode.tagName.toUpperCase() === 'TELEGRAMEMBED') {
+                return <TelegramEmbed src={domNode.attribs.src} theme={theme} />;
+            }
+        }
+    });
 }
 
 export default function ContentComponent(props: ContentComponentProps) {
@@ -53,8 +58,6 @@ export default function ContentComponent(props: ContentComponentProps) {
         if (!content) {
             return;
         }
-
-        updateContent(content);
 
         if (props.autoCut) {
             const rect = content.getBoundingClientRect();
@@ -68,9 +71,14 @@ export default function ContentComponent(props: ContentComponentProps) {
         setCut(false);
     };
 
+    const {theme} = useTheme();
+    const content = useMemo(() => parseContent(props.content, theme), [props.content, theme]);
+
     return (
         <>
-            <div className={classNames(styles.content, props.className, cut && styles.cut)} dangerouslySetInnerHTML={{__html: props.content}} ref={contentDiv} />
+            <div className={classNames(styles.content, props.className, cut && styles.cut)} ref={contentDiv}>
+                {content}
+            </div>
             {cut && <div className={styles.cutCover}><button className={styles.cutButton} onClick={handleCut}>Читать дальше</button></div>}
         </>
     );

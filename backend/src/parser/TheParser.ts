@@ -31,6 +31,7 @@ export default class TheParser {
             img: (node) => this.parseImg(node),
             irony: (node) => this.parseIrony(node),
             video: (node) => this.parseVideo(node),
+            embed: (node) => this.parseEmbed(node),
             blockquote: true,
             b: true,
             i: true,
@@ -286,6 +287,21 @@ export default class TheParser {
         const result = this.parseChildNodes(node.children);
         const text = `<span class="irony">${result.text}</span>`;
         return { ...result, text };
+    }
+
+    parseEmbed(node: Element): ParseResult {
+        const url = node.attribs['src'] || '';
+        if (!this.validUrl(url)) {
+            return this.parseDisallowedTag(node);
+        }
+
+        const tMatch = url.match(/^https?:\/\/t(?:elegram)?\.me\/[^/]+\/[\d]+$/);
+        if (tMatch) {
+            const text = `<TelegramEmbed src="${tMatch}" />`;
+            return { text, mentions: [], urls: [], images: [] };
+        }
+
+        return this.parseDisallowedTag(node);
     }
 
     validUrl(url: string) {
