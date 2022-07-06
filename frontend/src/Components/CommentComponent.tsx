@@ -82,7 +82,7 @@ export default function CommentComponent(props: CommentProps) {
     return (
         <div className={styles.comment + (props.comment.isNew ? ' isNew': '') + (isFlat?' isFlat':'')} data-comment-id={props.comment.id}>
             <div className='commentBody'>
-                <SignatureComponent showSite={props.showSite} site={site} author={author} onHistoryClick={toggleHistory} parentCommentId={isFlat?props.parent?.id:undefined} postLink={postLink} commentId={props.comment.id} date={created} editFlag={editFlag} />
+                <SignatureComponent showSite={props.showSite} site={site} author={author} onHistoryClick={toggleHistory} parentCommentId={props.parent?.id} parentCommentAuthor={props.parent?.author?.username} postLink={postLink} commentId={props.comment.id} date={created} editFlag={editFlag} />
                 {editingText === false ?
                     (showHistory
                         ?
