@@ -100,6 +100,14 @@ img.image-preview {
   max-height: none;
   cursor: zoom-out;
 }
+img.low-rating, video.low-rating, iframe.low-rating {
+  opacity: 0.5;
+  /*blur*/
+  filter: blur(5px);
+  -webkit-filter: blur(5px);
+  max-height: 36px;
+  max-width: 36px;
+}
 
 /*br {*/
 /*  content: "";*/

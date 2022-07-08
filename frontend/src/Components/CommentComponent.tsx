@@ -88,7 +88,7 @@ export default function CommentComponent(props: CommentProps) {
                             <HistoryComponent initial={{ content, date: created }} history={{ id: props.comment.id, type: 'comment' }} onClose={toggleHistory} />
                         :
                             <div className={styles.content}>
-                                <ContentComponent className={styles.commentContent} content={content} />
+                                <ContentComponent className={styles.commentContent} content={content} lowRating={props.comment.rating <= -3} autoCut={props.comment.rating <= -3} />
                             </div>
                     )
                 :

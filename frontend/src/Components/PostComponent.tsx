@@ -132,7 +132,7 @@ export default function PostComponent(props: PostComponentProps) {
                             : <>
                                     {title && <div className={styles.title}><PostLink post={props.post}>{title}</PostLink></div>}
                                     <div className={styles.content}>
-                                        <ContentComponent className={styles.content} content={content} autoCut={props.autoCut} />
+                                        <ContentComponent className={styles.content} content={content} autoCut={props.autoCut} lowRating={rating <= -3} />
                                     </div>
                                 </>
                         )
