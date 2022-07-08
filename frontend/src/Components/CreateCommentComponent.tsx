@@ -116,7 +116,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             }
             default: {
                 newValue = `<${tag}>${oldValue}</${tag}>`;
-                newPos = newValue.length;
+                newPos = oldValue ? newValue.length : newValue.length - `</${tag}>`.length;
             }
 
         }
