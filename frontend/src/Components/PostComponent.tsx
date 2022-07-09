@@ -15,6 +15,7 @@ import {toast} from 'react-toastify';
 import CreateCommentComponent from './CreateCommentComponent';
 import { HistoryComponent } from './HistoryComponent';
 import {SignatureComponent} from './SignatureComponent';
+import Conf from '../Conf';
 
 interface PostComponentProps {
     post: PostInfo;
@@ -132,7 +133,7 @@ export default function PostComponent(props: PostComponentProps) {
                             : <>
                                     {title && <div className={styles.title}><PostLink post={props.post}>{title}</PostLink></div>}
                                     <div className={styles.content}>
-                                        <ContentComponent className={styles.content} content={content} autoCut={props.autoCut} />
+                                        <ContentComponent className={styles.content} content={content} autoCut={props.autoCut} lowRating={rating <= Conf.POST_LOW_RATING_THRESHOLD} />
                                     </div>
                                 </>
                         )
