@@ -8,6 +8,7 @@ import {useAPI} from '../AppState/AppState';
 import {toast} from 'react-toastify';
 import {SignatureComponent} from './SignatureComponent';
 import {HistoryComponent} from './HistoryComponent';
+import Conf from '../Conf';
 
 interface CommentProps {
     comment: CommentInfo;
@@ -88,7 +89,7 @@ export default function CommentComponent(props: CommentProps) {
                             <HistoryComponent initial={{ content, date: created }} history={{ id: props.comment.id, type: 'comment' }} onClose={toggleHistory} />
                         :
                             <div className={styles.content}>
-                                <ContentComponent className={styles.commentContent} content={content} lowRating={props.comment.rating <= -3} autoCut={props.comment.rating <= -3} />
+                                <ContentComponent className={styles.commentContent} content={content} lowRating={props.comment.rating <= Conf.COMMENT_LOW_RATING_THRESHOLD} autoCut={props.comment.rating <= Conf.COMMENT_LOW_RATING_THRESHOLD} />
                             </div>
                     )
                 :

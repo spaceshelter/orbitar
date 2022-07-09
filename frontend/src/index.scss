@@ -103,10 +103,10 @@ img.image-preview {
 img.low-rating, video.low-rating, iframe.low-rating {
   opacity: 0.5;
   /*blur*/
-  filter: blur(5px);
-  -webkit-filter: blur(5px);
-  max-height: 36px;
-  max-width: 36px;
+  filter: blur(2px);
+  -webkit-filter: blur(2px);
+  max-height: 48px;
+  max-width: 48px;
 }
 
 /*br {*/
