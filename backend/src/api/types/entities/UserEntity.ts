@@ -18,4 +18,5 @@ export type UserEntity = UserBaseEntity & {
 
 export type UserProfileEntity = UserEntity & {
     registered: string;
+    active: boolean;
 };

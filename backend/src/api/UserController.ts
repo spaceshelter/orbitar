@@ -3,24 +3,29 @@ import UserManager from '../managers/UserManager';
 import {APIRequest, APIResponse, joiFormat, joiUsername, validate} from './ApiMiddleware';
 import Joi from 'joi';
 import {Logger} from 'winston';
-import {UserProfileRequest, UserProfileResponse} from './types/requests/UserProfile';
+import {UserKarmaResponse, UserProfileRequest, UserProfileResponse} from './types/requests/UserProfile';
 import {UserPostsRequest, UserPostsResponse} from './types/requests/UserPosts';
 import PostManager from '../managers/PostManager';
 import {Enricher} from './utils/Enricher';
 import {UserCommentsRequest, UserCommentsResponse} from './types/requests/UserComments';
 import {UserProfileEntity} from './types/entities/UserEntity';
+import VoteManager from '../managers/VoteManager';
+import {VoteWithUsername} from '../db/repositories/VoteRepository';
+import {UserRatingBySubsite} from '../managers/types/UserInfo';
 
 export default class UserController {
     public readonly router = Router();
     private readonly userManager: UserManager;
     private readonly postManager: PostManager;
+    private readonly voteManager: VoteManager;
     private readonly logger: Logger;
     private readonly enricher: Enricher;
 
-    constructor(enricher: Enricher, userManager: UserManager, postManager: PostManager, logger: Logger) {
+    constructor(enricher: Enricher, userManager: UserManager, postManager: PostManager, voteManager: VoteManager, logger: Logger) {
         this.enricher = enricher;
         this.userManager = userManager;
         this.postManager = postManager;
+        this.voteManager = voteManager;
         this.logger = logger;
 
         const profileSchema = Joi.object<UserProfileRequest>({
@@ -36,6 +41,7 @@ export default class UserController {
         this.router.post('/user/profile', validate(profileSchema), (req, res) => this.profile(req, res));
         this.router.post('/user/posts', validate(postsOrCommentsSchema), (req, res) => this.posts(req, res));
         this.router.post('/user/comments', validate(postsOrCommentsSchema), (req, res) => this.comments(req, res));
+        this.router.post('/user/karma', validate(profileSchema), (req, res) => this.karma(req, res));
     }
 
     async profile(request: APIRequest<UserProfileRequest>, response: APIResponse<UserProfileResponse>) {
@@ -55,10 +61,11 @@ export default class UserController {
 
             const invites = await this.userManager.getInvites(profileInfo.id);
             const invitedBy = await this.userManager.getInvitedBy(profileInfo.id);
+            const active = await this.userManager.isUserActive(profileInfo.id);
 
             // FIXME: converter needed
             const profile: UserProfileEntity = {
-                ...profileInfo
+                ...profileInfo, active
             } as unknown as UserProfileEntity;
             profile.registered = profileInfo.registered.toISOString();
 
@@ -133,6 +140,42 @@ export default class UserController {
         catch (error) {
             this.logger.error('Could not get user comments', { username, error });
             return response.error('error', `Could not get comments for user ${username}`, 500);
+        }
+    }
+
+    async karma(request: APIRequest<UserProfileRequest>, response: APIResponse<UserKarmaResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+
+        const userId = request.session.data.userId;
+        const { username } = request.body;
+
+        try {
+            const profile = await this.userManager.getFullProfile(username, userId);
+
+            if (!profile) {
+                return response.error('not-found', 'User not found', 404);
+            }
+
+            const ratingBySubsite: UserRatingBySubsite = await this.userManager.getUserRatingBySubsite(profile.id);
+            const userVotes: VoteWithUsername[] = await this.voteManager.getUserVotes(profile.id);
+            const activeKarmaVotes: Record<string, number> = {};
+            for (const vote of userVotes) {
+                const user = await this.userManager.getByUsername(vote.username);
+                if (await this.userManager.isUserActive(user.id)) {
+                    activeKarmaVotes[vote.username] = vote.vote;
+                }
+            }
+            return response.success({
+                activeKarmaVotes,
+                postRatingBySubsite: ratingBySubsite.postRatingBySubsite,
+                commentRatingBySubsite: ratingBySubsite.commentRatingBySubsite
+            });
+        }
+        catch (error) {
+            this.logger.error('Could not get user karma', { username, error });
+            return response.error('error', `Could not get karma for user ${username}`, 500);
         }
     }
 }

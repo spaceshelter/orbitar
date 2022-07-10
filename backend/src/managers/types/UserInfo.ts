@@ -27,3 +27,8 @@ export type UserStats = {
         comments: number;
     }
 };
+
+export type UserRatingBySubsite = {
+    postRatingBySubsite: Record<string, number>;
+    commentRatingBySubsite: Record<string, number>;
+};

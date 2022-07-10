@@ -1,12 +1,13 @@
 import {UserRaw} from '../db/types/UserRaw';
-import {UserInfo, UserGender, UserProfile, UserStats} from './types/UserInfo';
+import {UserInfo, UserGender, UserProfile, UserStats, UserRatingBySubsite} from './types/UserInfo';
 import UserRepository from '../db/repositories/UserRepository';
-import VoteRepository from '../db/repositories/VoteRepository';
+import VoteRepository, {UserRatingOnSubsite} from '../db/repositories/VoteRepository';
 import bcrypt from 'bcryptjs';
 import NotificationManager from './NotificationManager';
 import UserCredentials from '../db/repositories/UserCredentials';
 import WebPushRepository from '../db/repositories/WebPushRepository';
 import {PushSubscription} from 'web-push';
+import {RedisClientType} from 'redis';
 
 export default class UserManager {
     private credentialsRepository: UserCredentials;
@@ -14,17 +15,19 @@ export default class UserManager {
     private voteRepository: VoteRepository;
     private notificationManager: NotificationManager;
     private webPushRepository: WebPushRepository;
+    private readonly redis: RedisClientType;
 
     private cacheId: Record<number, UserInfo> = {};
     private cacheUsername: Record<string, UserInfo> = {};
     private cacheLastVisit: Record<number, Date> = {};
 
-    constructor(credentialsRepository: UserCredentials, userRepository: UserRepository, voteRepository: VoteRepository, webPushRepository: WebPushRepository, notificationManager: NotificationManager) {
+    constructor(credentialsRepository: UserCredentials, userRepository: UserRepository, voteRepository: VoteRepository, webPushRepository: WebPushRepository, notificationManager: NotificationManager, redis: RedisClientType) {
         this.credentialsRepository = credentialsRepository;
         this.userRepository = userRepository;
         this.voteRepository = voteRepository;
         this.notificationManager = notificationManager;
         this.webPushRepository = webPushRepository;
+        this.redis = redis;
     }
 
     async getById(userId: number): Promise<UserInfo | undefined> {
@@ -162,6 +165,48 @@ export default class UserManager {
 
     truncateVisitDate(date: Date, truncatePeriodMs: number = 12 * 60 * 60 * 1000 /*12h*/) {
         return new Date(Math.floor(date.getTime() / truncatePeriodMs) * truncatePeriodMs);
+    }
+
+    async getNumActiveUsers() {
+        const numActiveUsers = await this.redis.get('num_active_users');
+        if (!numActiveUsers) {
+            const numActiveUsers = await this.userRepository.getNumActiveUsers();
+            await this.redis.set('num_active_users', numActiveUsers);
+            await this.redis.expire('num_active_users', 60 * 60 * 6 /*6 h*/);
+            return numActiveUsers;
+        }
+        return parseInt(numActiveUsers);
+    }
+
+    async isUserActive(userId: number) {
+        const isActive = await this.redis.get(`is_user_active_${userId}`);
+        if (!isActive) {
+            const isActive = await this.userRepository.isUserActive(userId);
+            await this.redis.set(`is_user_active_${userId}`, isActive.toString());
+            const random1h = Math.floor(Math.random() * 60 * 60);
+            await this.redis.expire(`is_user_active_${userId}`, 60 * 60 * 6 + random1h /*6h + (0-1) h */);
+            return isActive;
+        }
+        return isActive === 'true';
+    }
+
+    async getUserRatingBySubsite(userId: number): Promise<UserRatingBySubsite> {
+        const ratingBySubsite: UserRatingOnSubsite[] =
+            await this.voteRepository.getUserRatingOnSubsites(userId);
+        const postRatingBySubsite: Record<string, number> = {};
+        const commentRatingBySubsite: Record<string, number> = {};
+        for (const rating of ratingBySubsite) {
+            if (rating.post_rating) {
+                postRatingBySubsite[rating.subdomain] = rating.post_rating;
+            }
+            if (rating.comment_rating) {
+                commentRatingBySubsite[rating.subdomain] = rating.comment_rating;
+            }
+        }
+        return {
+            postRatingBySubsite,
+            commentRatingBySubsite
+        };
     }
 
     private mapUserRaw(rawUser: UserRaw): UserInfo {
