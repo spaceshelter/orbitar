@@ -62,6 +62,7 @@ export type UserRestrictionsResponse = {
     postSlowModeWaitSec: number;
     commentSlowModeWaitSec: number;
     restrictedToPostId: number | true | false;
+    canVote: boolean;
 };
 
 export default class UserAPI {

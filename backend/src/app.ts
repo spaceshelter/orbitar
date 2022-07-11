@@ -113,7 +113,7 @@ const requests = [
     new InviteController(inviteManager, userManager, logger.child({ service: 'INVITE' })),
     new PostController(apiEnricher, postManager, feedManager, siteManager, userManager, logger.child({ service: 'POST' })),
     new StatusController(apiEnricher, siteManager, userManager, logger.child({ service: 'STATUS' })),
-    new VoteController(voteManager, logger.child({ service: 'VOTE' })),
+    new VoteController(voteManager, userManager, logger.child({ service: 'VOTE' })),
     new UserController(apiEnricher, userManager, postManager, voteManager, logger.child({ service: 'USER' })),
     new FeedController(apiEnricher, feedManager, siteManager, userManager, postManager, logger.child({ service: 'FEED' })),
     new SiteController(apiEnricher, feedManager, siteManager, logger.child( { service: 'SITE' })),

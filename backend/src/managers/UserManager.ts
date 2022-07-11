@@ -296,13 +296,12 @@ export default class UserManager {
 
         return {
             effectiveKarma,
-
             postSlowModeWaitSec: lastOwnPost ?
                 Math.max(lastOwnPost.created_at.getTime() / 1000 - Date.now() / 1000 + postSlowModeDelay, 0)  : 0,
             commentSlowModeWaitSec: lastCommentTime ?
                 Math.max(lastCommentTime.getTime() / 1000 - Date.now() / 1000 + commentSlowModeDelay, 0) : 0,
-
-            restrictedToPostId: (effectiveKarma <= -1000 ? (lastOwnPost?.post_id || true) : false)
+            restrictedToPostId: (effectiveKarma <= -1000 ? (lastOwnPost?.post_id || true) : false),
+            canVote: effectiveKarma >= -10,
         };
     }
 
