@@ -20,7 +20,7 @@ export class DBConnection {
     }
 
     async query<T = RowDataPacket[][] | RowDataPacket[] | OkPacket | OkPacket[] | ResultSetHeader>(
-        query: string, params: string[] | object): Promise<T> {
+        query: string, params: string[] | object = {}): Promise<T> {
         this.logger.verbose('Query', { query: query.replace(/[\s\n]+/g, ' '), params: params });
 
         try {
@@ -32,11 +32,11 @@ export class DBConnection {
         }
     }
 
-    async fetchAll<T = object>(query: string, params: string[] | object): Promise<T[]> {
+    async fetchAll<T = object>(query: string, params: string[] | object = {}): Promise<T[]> {
         return (await this.query<T[]>(query, params));
     }
 
-    async fetchOne<T = object>(query: string, params: string[] | object): Promise<T | undefined> {
+    async fetchOne<T = object>(query: string, params: string[] | object = {}): Promise<T | undefined> {
         return (await this.query<T[]>(query, params))[0];
     }
 

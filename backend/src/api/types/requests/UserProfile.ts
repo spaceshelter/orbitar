@@ -9,3 +9,9 @@ export type UserProfileResponse = {
     invitedBy?: UserBaseEntity;
     invites: UserBaseEntity[];
 };
+
+export type UserKarmaResponse = {
+    activeKarmaVotes: Record<string, number>;
+    postRatingBySubsite: Record<string, number>;
+    commentRatingBySubsite: Record<string, number>;
+};
