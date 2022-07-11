@@ -12,7 +12,9 @@ import ContentComponent from './ContentComponent';
 import classNames from 'classnames';
 import MediaUploader from './MediaUploader';
 import {UserGender} from '../Types/UserInfo';
-import {useAPI} from '../AppState/AppState';
+import {useAPI, useAppState} from '../AppState/AppState';
+import SlowMode from './SlowMode';
+import {observer} from 'mobx-react-lite';
 
 interface CreateCommentProps {
     open: boolean;
@@ -22,6 +24,38 @@ interface CreateCommentProps {
 
     onAnswer: (text: string, post?: PostLinkInfo, comment?: CommentInfo) => Promise<CommentInfo | undefined>;
 }
+
+// same as CreateCommentComponent, but with slow mode and other restrictions
+export const CreateCommentComponentRestricted = observer((props: CreateCommentProps) => {
+    const api = useAPI();
+    const {userRestrictions} = useAppState();
+
+    useEffect(() => {
+        if (props.open) {
+            api.user.refreshUserRestrictions();
+        }
+    }, [api, props.open]);
+
+    if (!props.open) {
+        return null;
+    }
+
+    if (userRestrictions?.restrictedToPostId && userRestrictions.restrictedToPostId !== props.post?.id) {
+        return <div className={styles.answer}><RestrictedToPostIdMessage postId={userRestrictions.restrictedToPostId}/></div>;
+    }
+
+    if (userRestrictions?.commentSlowModeWaitSec) {
+        return <div className={styles.answer}><RestrictedSlowMode
+            endTime={new Date(Date.now() + userRestrictions.commentSlowModeWaitSec * 1000)}
+            endCallback={() => api.user.refreshUserRestrictions()}/></div>;
+    }
+
+    return <CreateCommentComponent {...props} onAnswer={(text, post, comment) => {
+        return props.onAnswer(text, post, comment).finally(() => {
+            api.user.refreshUserRestrictions();
+        });
+    }}/>;
+});
 
 export default function CreateCommentComponent(props: CreateCommentProps) {
     const answerRef = useRef<HTMLTextAreaElement>(null);
@@ -219,3 +253,23 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         </div>
     );
 }
+
+const RestrictedToPostIdMessage = (props: { postId: number | true }) => {
+    return props.postId === true ?
+        <div className={styles.restrictedToPostIdMessage}>
+            Возможность комментировать в чужих постах заблокирована из-за низкой кармы.
+            <a href={'/create'}>Создать свой пост.</a>
+        </div>
+        : <div className={styles.restrictedToPostIdMessage}>
+        Возможность комментировать заблокирована из-за низкой кармы.
+        Можно комментировать только в <a href={`/p${props.postId}`}>этом посте</a>.
+    </div>;
+};
+
+const RestrictedSlowMode = (props: { endTime: Date; endCallback: () => void }) => {
+    return <SlowMode endTime={props.endTime} endCallback={props.endCallback}>
+        <div className={styles.restrictedSlowMode}>
+            Возможность комментировать ограничена из-за низкой кармы. До конца ожидания осталось:
+        </div>
+    </SlowMode>;
+};

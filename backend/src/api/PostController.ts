@@ -189,6 +189,14 @@ export default class PostController {
         const { site, format, content, title } = request.body;
 
         try {
+            const userRestrictions = await this.userManager.getUserRestrictions(userId);
+            if (userRestrictions.postSlowModeWaitSec !== 0) {
+                return response.error('slow-mode', `Slow mode is enabled. Time left ${userRestrictions.postSlowModeWaitSec} seconds.`, 403);
+            }
+            if (userRestrictions.restrictedToPostId && userRestrictions.restrictedToPostId !== true) {
+                return response.error('post-creation-restricted', 'You cannot create any more post due to low karma.', 403);
+            }
+
             const postInfo = await this.postManager.createPost(site, userId, title, content, format);
             const {posts: [post]} = await this.enricher.enrichRawPosts([postInfo]);
 
@@ -226,6 +234,16 @@ export default class PostController {
 
         try {
             const users: Record<number, UserEntity> = {[userId]: await this.userManager.getById(userId)};
+
+            const userRestrictions = await this.userManager.getUserRestrictions(userId);
+            if (userRestrictions.commentSlowModeWaitSec > 0) {
+                return response.error('slow-mode', `Slow mode, time left ${userRestrictions.commentSlowModeWaitSec} sec`, 403);
+            }
+            if (userRestrictions.restrictedToPostId && postId !== userRestrictions.restrictedToPostId) {
+                const rid = userRestrictions.restrictedToPostId;
+                return response.error('restricted', `Commenting restricted ${rid === true ? 'to own posts' : `to post #${rid}`}`, 403);
+            }
+
             const commentInfo = await this.postManager.createComment(userId, postId, parentCommentId, content, format);
             const { allComments : [comment] } = await this.enricher.enrichRawComments([commentInfo], {}, format, () => true);
 

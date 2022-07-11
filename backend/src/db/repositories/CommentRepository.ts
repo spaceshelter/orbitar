@@ -58,6 +58,12 @@ export default class CommentRepository {
             });
     }
 
+    async getLastUserComment(userId: number): Promise<CommentRaw | undefined> {
+        return await this.db.fetchOne<CommentRaw>('select * from comments where author_id=:user_id order by created_at desc limit 1', {
+            user_id: userId
+        });
+    }
+
     async getUserCommentsTotal(userId: number): Promise<number> {
         return this.db.fetchOne<{ cnt: string }>('select count(*) cnt from comments where author_id = :user_id and deleted = 0', {
             user_id: userId

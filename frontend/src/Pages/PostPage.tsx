@@ -4,7 +4,7 @@ import {Link, useLocation, useParams, useSearchParams} from 'react-router-dom';
 import {CommentInfo, PostInfo, PostLinkInfo} from '../Types/PostInfo';
 import PostComponent from '../Components/PostComponent';
 import CommentComponent from '../Components/CommentComponent';
-import CreateCommentComponent from '../Components/CreateCommentComponent';
+import {CreateCommentComponentRestricted} from '../Components/CreateCommentComponent';
 import {usePost} from '../API/use/usePost';
 import {useAppState} from '../AppState/AppState';
 
@@ -120,7 +120,7 @@ export default function PostPage() {
                                 )
                             }
                         </div>
-                        <CreateCommentComponent open={true} post={post} onAnswer={handleAnswer} />
+                        <CreateCommentComponentRestricted open={true} post={post} onAnswer={handleAnswer} />
                     </div>
                     :
                     (

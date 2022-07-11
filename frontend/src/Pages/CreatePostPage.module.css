@@ -36,3 +36,10 @@
     display: inline;
     content: "⚠ ";
 }
+
+.createpost .lastPostMessage {
+    margin-bottom: 20px;
+    border-left: var(--danger) solid 4px;
+    padding-left: 20px;
+    line-height: 1.5em;
+}

@@ -116,6 +116,10 @@ export default class PostRepository {
             });
     }
 
+    getLastUserPost(userId: number): Promise<PostRaw | undefined> {
+        return this.db.fetchOne<PostRawWithUserData>('select * from posts where author_id=:user_id order by created_at desc limit 1', {user_id: userId});
+    }
+
     async getWatchPostsTotal(forUserId: number, all = false): Promise<number> {
         const result = await this.db.fetchOne<{ cnt: string }>(`
             select count(*) cnt from (
