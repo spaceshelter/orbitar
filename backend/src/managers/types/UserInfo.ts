@@ -32,3 +32,13 @@ export type UserRatingBySubsite = {
     postRatingBySubsite: Record<string, number>;
     commentRatingBySubsite: Record<string, number>;
 };
+
+export type UserRestrictions = {
+    effectiveKarma: number;
+
+    postSlowModeWaitSec: number; /* time to wait until can post */
+    commentSlowModeWaitSec: number; /* time to wait until can comment */
+    restrictedToPostId: number | true | false; /* if number: post id to restrict commenting to,
+                                                  if true - restriction active, but no posts,
+                                                  if false - no restriction */
+};

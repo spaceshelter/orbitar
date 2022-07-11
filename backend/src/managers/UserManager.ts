@@ -1,5 +1,5 @@
 import {UserRaw} from '../db/types/UserRaw';
-import {UserInfo, UserGender, UserProfile, UserStats, UserRatingBySubsite} from './types/UserInfo';
+import {UserInfo, UserGender, UserProfile, UserStats, UserRatingBySubsite, UserRestrictions} from './types/UserInfo';
 import UserRepository from '../db/repositories/UserRepository';
 import VoteRepository, {UserRatingOnSubsite} from '../db/repositories/VoteRepository';
 import bcrypt from 'bcryptjs';
@@ -8,11 +8,15 @@ import UserCredentials from '../db/repositories/UserCredentials';
 import WebPushRepository from '../db/repositories/WebPushRepository';
 import {PushSubscription} from 'web-push';
 import {RedisClientType} from 'redis';
+import PostRepository from '../db/repositories/PostRepository';
+import CommentRepository from '../db/repositories/CommentRepository';
 
 export default class UserManager {
     private credentialsRepository: UserCredentials;
     private userRepository: UserRepository;
     private voteRepository: VoteRepository;
+    private commentRepository: CommentRepository;
+    private postRepository: PostRepository;
     private notificationManager: NotificationManager;
     private webPushRepository: WebPushRepository;
     private readonly redis: RedisClientType;
@@ -21,10 +25,13 @@ export default class UserManager {
     private cacheUsername: Record<string, UserInfo> = {};
     private cacheLastVisit: Record<number, Date> = {};
 
-    constructor(credentialsRepository: UserCredentials, userRepository: UserRepository, voteRepository: VoteRepository, webPushRepository: WebPushRepository, notificationManager: NotificationManager, redis: RedisClientType) {
+    constructor(credentialsRepository: UserCredentials, userRepository: UserRepository, voteRepository: VoteRepository,
+                commentRepository: CommentRepository,  postRepository: PostRepository,  webPushRepository: WebPushRepository, notificationManager: NotificationManager, redis: RedisClientType) {
         this.credentialsRepository = credentialsRepository;
         this.userRepository = userRepository;
         this.voteRepository = voteRepository;
+        this.commentRepository = commentRepository;
+        this.postRepository = postRepository;
         this.notificationManager = notificationManager;
         this.webPushRepository = webPushRepository;
         this.redis = redis;
@@ -206,6 +213,96 @@ export default class UserManager {
         return {
             postRatingBySubsite,
             commentRatingBySubsite
+        };
+    }
+
+    async getUserEffectiveKarma(userId: number): Promise<number> {
+        const user = await this.getById(userId);
+        if (!user) {
+            return 0;
+        }
+
+        const userContentRating = await this.getUserRatingBySubsite(userId);
+        const userVotes = await this.getActiveKarmaVotes(userId);
+        const profileVotingResult = Object.values(userVotes).reduce((acc, vote) => acc + vote, 0);
+        const profileVotesCount = Object.values(userVotes).length;
+
+        const allPostsValue = Object.values(userContentRating.postRatingBySubsite).reduce((acc, rating) => acc + rating, 0);
+        const allCommentsValue = Object.values(userContentRating.commentRatingBySubsite).reduce((acc, rating) => acc + rating, 0);
+
+        const fit01 = (current: number, in_min: number, in_max: number, out_min: number, out_max: number): number => {
+            const mapped: number = ((current - in_min) * (out_max - out_min)) / (in_max - in_min) + out_min;
+            return clamp(mapped, out_min, out_max);
+        };
+        const clamp = (n: number, min: number, max: number): number => Math.max(min, Math.min(max, n));
+        const lerp = (start: number, end: number, r: number): number => (1 - r) * start + r * end;
+        const bipolarSigmoid = (n: number): number => n / Math.sqrt(1 + n * n);
+
+        const positiveCommentsDivisor = 10; // positive comments are 10x cheaper than posts
+        const negativeCommentsDivisor = 2; // negative comments are only 2x cheaper than posts
+        const contentVal = (allPostsValue + allCommentsValue / (allCommentsValue >= 0 ? positiveCommentsDivisor : negativeCommentsDivisor)) / 5000;
+        const contentRating = (contentVal > 0 ? bipolarSigmoid(contentVal / 3) : Math.max(-1, -Math.pow(contentVal, 2) * 7));
+
+        //user reputation ratio
+        const ratio = profileVotingResult / profileVotesCount;
+        const s = fit01(profileVotesCount, 10, 200, 0, 1);
+        const userRating = (profileVotingResult >= 0 ? 1 : Math.max(0, 1 - lerp(Math.pow(ratio / 100, 2), Math.pow(ratio * 2, 2), s)));
+
+        // karma without punishment
+        return Math.ceil(((contentRating + 1) * userRating - 1) * 1000);
+    }
+
+    /**
+     * Return non-zero profile/karma votes from active users only
+     * @param userId
+     */
+    async getActiveKarmaVotes(userId: number): Promise<Record<string, number>> {
+        const user = await this.getById(userId);
+        if (!user) {
+            return {};
+        }
+
+        // try fetching from redis cache first
+        const cachedVotes = await this.redis.get(`active_karma_votes_${userId}`);
+        if (cachedVotes) {
+            return JSON.parse(cachedVotes);
+        }
+
+        const userVotes = await this.voteRepository.getUserVotes(userId);
+
+        const activeKarmaVotes: Record<string, number> = {};
+        for (const vote of userVotes) {
+            const user = await this.getByUsername(vote.username);
+            if (await this.isUserActive(user.id)) {
+                activeKarmaVotes[vote.username] = vote.vote;
+            }
+        }
+
+        // note cache is explicitly evicted when user karma changes
+        await this.redis.set(`active_karma_votes_${userId}`, JSON.stringify(activeKarmaVotes));
+        await this.redis.expire(`active_karma_votes_${userId}`, 60 * 30 + Math.floor(Math.random() * 60 * 5) /* 30-35 minutes */);
+        return activeKarmaVotes;
+    }
+
+    async getUserRestrictions(userId: number): Promise<UserRestrictions> {
+        const effectiveKarma = await this.getUserEffectiveKarma(userId);
+
+        const lastCommentTime = await this.commentRepository.getLastUserComment(userId).then(comment => comment?.created_at);
+        const lastOwnPost = await this.postRepository.getLastUserPost(userId);
+
+        const postSlowModeDelay = (effectiveKarma < -10 ? /*12 hours */3600 * 12 : 0);
+        const commentSlowModeDelay =
+            effectiveKarma <= -1000 ? /*1 hour */3600 : (effectiveKarma < -10 ? /*10 minutes */ 10 * 60 : 0);
+
+        return {
+            effectiveKarma,
+
+            postSlowModeWaitSec: lastOwnPost ?
+                Math.max(lastOwnPost.created_at.getTime() / 1000 - Date.now() / 1000 + postSlowModeDelay, 0)  : 0,
+            commentSlowModeWaitSec: lastCommentTime ?
+                Math.max(lastCommentTime.getTime() / 1000 - Date.now() / 1000 + commentSlowModeDelay, 0) : 0,
+
+            restrictedToPostId: (effectiveKarma <= -1000 ? (lastOwnPost?.post_id || true) : false)
         };
     }
 

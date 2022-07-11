@@ -56,6 +56,14 @@ export type UserKarmaResponse = {
     commentRatingBySubsite: Record<string, number>;
 };
 
+/* see UserRestrictions */
+export type UserRestrictionsResponse = {
+    effectiveKarma: number;
+    postSlowModeWaitSec: number;
+    commentSlowModeWaitSec: number;
+    restrictedToPostId: number | true | false;
+};
+
 export default class UserAPI {
     api: APIBase;
     postAPIHelper: PostAPIHelper;
@@ -91,6 +99,10 @@ export default class UserAPI {
 
     async userKarma(username: string): Promise<UserKarmaResponse> {
         return await this.api.request<{username: string}, UserKarmaResponse>('/user/karma', {username});
+    }
+
+    userRestrictions(username: string): Promise<UserRestrictionsResponse> {
+        return this.api.request<{username: string}, UserRestrictionsResponse>('/user/restrictions', {username});
     }
 
 }
