@@ -60,8 +60,8 @@ export const UserPage = observer(() => {
                     <div className={styles.username}>{user.username}</div>
                     <div className={styles.name}>{user.name}</div>
                     <div className={styles.registered}>#{user.id}, зарегистрирован <DateComponent date={user.registered} />
-                        {user.active && <span className={styles.active} title={'Был на сайте в эту неделю'}>, 🌚 активен</span>}
-                        {!user.active && <span className={styles.active} title={'Не был на сайте в эту неделю'}>, 🌑 неактивен</span>}
+                        {user.active && <span className={styles.active} title={'Был на сайте в эту неделю'}>, <span className={'i i-alive'}></span>  активен</span>}
+                        {!user.active && <span className={styles.active} title={'Не был на сайте в эту неделю'}>, <span className={'i i-ghost'}></span> неактивен</span>}
                     </div>
                 </div>
                 <div className={styles.controls}>
