@@ -1,0 +1,78 @@
+{
+  "settings": {
+    "index": {
+      "number_of_shards": 1,
+      "number_of_replicas": 1
+    },
+    "analysis": {
+      "filter": {
+        "russian_stop": {
+          "type": "stop",
+          "stopwords": "_russian_"
+        },
+        "russian_keywords": {
+          "type": "keyword_marker",
+          "keywords": []
+        },
+        "russian_stemmer": {
+          "type": "stemmer",
+          "language": "russian"
+        }
+      },
+      "analyzer": {
+        "russian_analyzer": {
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "russian_stop",
+            "russian_keywords",
+            "russian_stemmer"
+          ]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "created_at": {
+        "type": "date",
+        "format": "epoch_second"
+      },
+      "post_id": {
+        "type": "integer"
+      },
+      "comment_id": {
+        "type": "integer"
+      },
+      "site_id": {
+        "type": "integer"
+      },
+      "author_id": {
+        "type": "integer"
+      },
+      "gold": {
+        "type": "integer"
+      },
+      "title": {
+        "type": "text",
+        "analyzer": "russian_analyzer",
+        "fields": {
+          "en": {
+            "type": "text",
+            "analyzer": "english"
+          }
+        }
+      },
+      "source": {
+        "type":  "text",
+        "analyzer": "russian_analyzer",
+        "fields": {
+          "en": {
+            "type": "text",
+            "analyzer": "english"
+          }
+        }
+      }
+    }
+  }
+}

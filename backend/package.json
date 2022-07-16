@@ -10,6 +10,8 @@
     "migration:dev": "NODE_ENV=development node migrations.js",
     "migration:production": "NODE_ENV=production node migrations.js",
     "generate-dummy-content": "NODE_ENV=development node dummy_content_generator.js",
+    "elasticsearch:setup": "elasticsearch/setup.sh",
+    "elasticsearch:index-current-data": "NODE_ENV=development node elasticsearch/index-current-data.js",
     "lint": "npx eslint src",
     "test": "jest --coverage",
     "test:watch": "jest --watch"
@@ -32,7 +34,8 @@
     "@types/web-push": "^3.3.2",
     "jest": "^28.1.0",
     "ts-jest": "^28.0.3",
-    "@types/jest": "^27.5.1"
+    "@types/jest": "^27.5.1",
+    "node-fetch": "^2.6.7"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -51,6 +54,7 @@
     "redis": "^4.0.6",
     "url-parse": "^1.5.10",
     "web-push": "^3.5.0",
-    "winston": "^3.7.2"
+    "winston": "^3.7.2",
+    "es7": "npm:@elastic/elasticsearch@^7.17.0"
   }
 }
