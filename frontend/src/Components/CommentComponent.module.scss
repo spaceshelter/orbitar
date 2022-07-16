@@ -42,6 +42,18 @@
          max-width: 100%;
          max-height: 500px;
     }
+
+
+    transition: max-height 1s, margin-top 1s, margin-bottom 1s;
+    max-height: 2000px;
+    overflow: hidden;
+}
+
+.collapsed {
+  max-height: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  overflow-anchor: none;
 }
 
 .controls {

@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import styles from './PostPage.module.css';
 import {Link, useLocation, useParams, useSearchParams} from 'react-router-dom';
 import {CommentInfo, PostInfo, PostLinkInfo} from '../Types/PostInfo';
@@ -7,6 +7,7 @@ import CommentComponent from '../Components/CommentComponent';
 import CreateCommentComponent from '../Components/CreateCommentComponent';
 import {usePost} from '../API/use/usePost';
 import {useAppState} from '../AppState/AppState';
+import {observable, runInAction} from 'mobx';
 
 export default function PostPage() {
     const params = useParams<{postId: string}>();
@@ -104,6 +105,27 @@ export default function PostPage() {
 
     const baseRoute = site === 'main' ? '/' : `/s/${site}/`;
 
+    // mobx observable set
+    const collapsedComments = useMemo(() => {
+        const collapsed = new Set<number>();
+        return observable(collapsed);
+    }, [post]);
+
+    const handleCollapse = (commentId: number, comments: number[]) => {
+        console.log('collapse', commentId, comments);
+        runInAction(() => {
+            collapsedComments.clear();
+            for (const comment of comments) {
+                collapsedComments.add(comment);
+            }
+        });
+    };
+    const handleUnfocus = () => {
+        runInAction(() => {
+            collapsedComments.clear();
+        });
+    };
+
     return (
         <div className={styles.container}>
             <div className={styles.feed}>
@@ -112,7 +134,9 @@ export default function PostPage() {
                         <div className={styles.postButtons}><Link to={`${baseRoute}p${post.id}`} className={unreadOnly ? '' : 'bold'}>все комментарии</Link> • <Link to={`${baseRoute}p${post.id}?new`} className={unreadOnly ? 'bold' : ''}>только новые</Link></div>
                         <div className={styles.comments + (unreadOnly ? ' unreadOnly' : '')}>
                             {comments ?
-                                comments.map(comment => <CommentComponent maxTreeDepth={12} key={comment.id} comment={comment} onAnswer={handleAnswer} onEdit={handleCommentEdit} />)
+                                comments.map(comment => <CommentComponent maxTreeDepth={12} key={comment.id} comment={comment} onAnswer={handleAnswer}
+                                                                          onEdit={handleCommentEdit} focus={handleCollapse} unfocus={handleUnfocus}
+                                                                          collapsedIds={collapsedComments}/>)
                                 :
                                 (
                                     error ? <div className={styles.error}>{error}<div><button onClick={() => reload(unreadOnly)}>Повторить</button></div></div>

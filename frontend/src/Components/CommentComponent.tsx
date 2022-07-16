@@ -8,6 +8,9 @@ import {useAPI} from '../AppState/AppState';
 import {toast} from 'react-toastify';
 import {SignatureComponent} from './SignatureComponent';
 import {HistoryComponent} from './HistoryComponent';
+import {computed} from 'mobx';
+import {Observer} from 'mobx-react-lite';
+import classNames from 'classnames';
 
 interface CommentProps {
     comment: CommentInfo;
@@ -17,6 +20,11 @@ interface CommentProps {
     onEdit?: (text: string, comment: CommentInfo) => Promise<CommentInfo | undefined>;
     depth?: number
     maxTreeDepth?: number
+
+    collapsedIds?: Set<number>;
+    unfocus?: () => void;
+    focus?: (childId: number, collapsedIds: number []) => void;
+    childIdx?: number;
 }
 
 export default function CommentComponent(props: CommentProps) {
@@ -74,14 +82,45 @@ export default function CommentComponent(props: CommentProps) {
         setShowHistory(!showHistory);
     };
 
+    const handleFocus = (childId: number, toCollapse: number[]) => {
+        if (!props.comment.answers || !props.focus) {
+            return;
+        }
+
+        for (const child of props.comment.answers) {
+            if (child.id === childId) {
+                break;
+            }
+            toCollapse.push(child.id);
+        }
+        props.focus(props.comment.id, toCollapse);
+    };
+
+    const collapsed = useMemo(() => {
+        return computed(() => {
+            return props.collapsedIds && props.collapsedIds.has(props.comment.id);
+        });
+    }, [props.collapsedIds]);
+
     const {author, created, site, postLink, editFlag, content} = props.comment;
     const depth = props.depth || 0;
     const maxDepth = props.maxTreeDepth || 0;
     const isFlat = depth > maxDepth;
+
     return (
-        <div className={styles.comment + (props.comment.isNew ? ' isNew': '') + (isFlat?' isFlat':'')} data-comment-id={props.comment.id}>
+        <Observer>{() =>
+        <div className={
+            classNames(styles.comment, {
+            [styles.collapsed]: collapsed.get(),
+            'isNew': props.comment.isNew,
+            'isFlat': isFlat,
+        })
+        } data-comment-id={props.comment.id}>
             <div className='commentBody'>
-                <SignatureComponent showSite={props.showSite} site={site} author={author} onHistoryClick={toggleHistory} parentCommentId={isFlat?props.parent?.id:undefined} postLink={postLink} commentId={props.comment.id} date={created} editFlag={editFlag} />
+                <SignatureComponent showSite={props.showSite} site={site} author={author} onHistoryClick={toggleHistory}
+                                    parentCommentId={props.childIdx && props.parent?.id} postLink={postLink} commentId={props.comment.id} date={created} editFlag={editFlag}
+                                    handleFocus={() => props.focus?.(props.comment.id, [])}
+                />
                 {editingText === false ?
                     (showHistory
                         ?
@@ -106,12 +145,15 @@ export default function CommentComponent(props: CommentProps) {
             {(props.comment.answers || answerOpen) ?
                 <div className={styles.answers + (isFlat?' isFlat':'')}>
                     {props.onAnswer && <CreateCommentComponent open={answerOpen} post={props.comment.postLink} comment={props.comment} onAnswer={handleAnswer} />}
-                    {props.comment.answers && props.onAnswer ? props.comment.answers.map(comment =>
-                        <CommentComponent maxTreeDepth={maxDepth} depth={depth+1} parent={props.comment} key={comment.id} comment={comment} onAnswer={props.onAnswer} onEdit={props.onEdit} />) : <></>}
+                    {props.comment.answers && props.onAnswer ? props.comment.answers.map((comment, idx) =>
+                        <CommentComponent maxTreeDepth={maxDepth} depth={depth+1} parent={props.comment} key={comment.id} comment={comment}
+                                          onAnswer={props.onAnswer} onEdit={props.onEdit}
+                                          focus={handleFocus} unfocus={props.unfocus} collapsedIds={props.collapsedIds} childIdx={idx}/>) : <></>}
                 </div>
                 : <></>}
 
         </div>
+        }</Observer>
     );
 }
 
