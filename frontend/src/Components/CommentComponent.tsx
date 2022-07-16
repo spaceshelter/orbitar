@@ -1,13 +1,14 @@
 import {CommentInfo, PostLinkInfo} from '../Types/PostInfo';
 import styles from './CommentComponent.module.scss';
 import RatingSwitch from './RatingSwitch';
-import React, {useMemo, useState} from 'react';
+import React, {useMemo, useRef, useState} from 'react';
 import CreateCommentComponent from './CreateCommentComponent';
 import ContentComponent from './ContentComponent';
 import {useAPI} from '../AppState/AppState';
 import {toast} from 'react-toastify';
 import {SignatureComponent} from './SignatureComponent';
 import {HistoryComponent} from './HistoryComponent';
+import classNames from 'classnames';
 
 interface CommentProps {
     comment: CommentInfo;
@@ -17,6 +18,9 @@ interface CommentProps {
     onEdit?: (text: string, comment: CommentInfo) => Promise<CommentInfo | undefined>;
     depth?: number
     maxTreeDepth?: number
+
+    toggleParentSelection?: (parent?: HTMLDivElement, child?: HTMLDivElement) => void;
+    parentRef?: React.RefObject<HTMLDivElement>;
 }
 
 export default function CommentComponent(props: CommentProps) {
@@ -74,20 +78,26 @@ export default function CommentComponent(props: CommentProps) {
         setShowHistory(!showHistory);
     };
 
+    const bodyRef = useRef<HTMLDivElement>(null);
+
     const {author, created, site, postLink, editFlag, content} = props.comment;
     const depth = props.depth || 0;
     const maxDepth = props.maxTreeDepth || 0;
     const isFlat = depth > maxDepth;
     return (
         <div className={styles.comment + (props.comment.isNew ? ' isNew': '') + (isFlat?' isFlat':'')} data-comment-id={props.comment.id}>
-            <div className='commentBody'>
+            <div className={classNames('commentBody')} ref={bodyRef}>
                 <SignatureComponent showSite={props.showSite} site={site} author={author} onHistoryClick={toggleHistory} parentCommentId={isFlat?props.parent?.id:undefined} postLink={postLink} commentId={props.comment.id} date={created} editFlag={editFlag} />
                 {editingText === false ?
                     (showHistory
                         ?
                             <HistoryComponent initial={{ content, date: created }} history={{ id: props.comment.id, type: 'comment' }} onClose={toggleHistory} />
                         :
-                            <div className={styles.content}>
+                            <div className={styles.content}
+                                 onClick={() => {
+                                     props.toggleParentSelection && props.toggleParentSelection(props.parentRef?.current || undefined, bodyRef.current || undefined);
+                                 }}
+                            >
                                 <ContentComponent className={styles.commentContent} content={content} />
                             </div>
                     )
@@ -104,10 +114,12 @@ export default function CommentComponent(props: CommentProps) {
                 </div>
             </div>
             {(props.comment.answers || answerOpen) ?
-                <div className={styles.answers + (isFlat?' isFlat':'')}>
+                <div className={classNames('answers', styles.answers, { isFlat })}>
                     {props.onAnswer && <CreateCommentComponent open={answerOpen} post={props.comment.postLink} comment={props.comment} onAnswer={handleAnswer} />}
                     {props.comment.answers && props.onAnswer ? props.comment.answers.map(comment =>
-                        <CommentComponent maxTreeDepth={maxDepth} depth={depth+1} parent={props.comment} key={comment.id} comment={comment} onAnswer={props.onAnswer} onEdit={props.onEdit} />) : <></>}
+                        <CommentComponent maxTreeDepth={maxDepth} depth={depth+1} parent={props.comment} key={comment.id}
+                                          comment={comment} onAnswer={props.onAnswer} onEdit={props.onEdit}
+                                          toggleParentSelection={props.toggleParentSelection} parentRef={bodyRef}  />) : <></>}
                 </div>
                 : <></>}
 

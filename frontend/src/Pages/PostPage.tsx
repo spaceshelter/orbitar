@@ -104,6 +104,64 @@ export default function PostPage() {
 
     const baseRoute = site === 'main' ? '/' : `/s/${site}/`;
 
+    const [selected, setSelected] = useState<[HTMLDivElement, HTMLDivElement] | undefined>();
+
+    const toggleParentSelection = (parent: HTMLDivElement | undefined, child: HTMLDivElement | undefined) => {
+        const justRemove = selected && selected[0] === parent && selected[1] === child;
+
+        if (selected && child === selected[0]) {
+            setTimeout(() => {
+                child.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+            }, 0);
+        }
+
+        if (selected) {
+            selected[0].parentElement?.classList.remove('selected');
+            selected[1].classList.remove('selectedChild');
+            selected[0].style.top = '';
+        }
+
+        if (justRemove) {
+            setSelected(undefined);
+        } else if (parent && child) {
+            setSelected([parent, child]);
+            parent?.parentElement?.classList.add('selected');
+            child?.classList.add('selectedChild');
+        }
+    };
+
+    const onScroll = () => {
+        // set the relative position of the comment such that it's on top of the screen
+        if (selected) {
+            const [parent, child] = selected;
+            const parentRect = parent.getBoundingClientRect();
+            const childRect = child.getBoundingClientRect();
+            const maxGap = 30;
+
+            if (childRect.top >= parentRect.height + maxGap) {
+                parent.style.top = '0px';
+            } else {
+                parent.style.top =  `${childRect.top - parentRect.height - maxGap}px`;
+            }
+
+            const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+            // check if child is out of viewport
+            if (childRect.top > vh || childRect.bottom < 0) {
+                toggleParentSelection(undefined, undefined);
+            }
+        }
+    };
+
+    useEffect(() => {
+        if (selected) {
+            document.addEventListener('scroll', onScroll);
+            onScroll();
+            return () => {
+                document.removeEventListener('scroll', onScroll);
+            };
+        }
+    }, [selected]);
+
     return (
         <div className={styles.container}>
             <div className={styles.feed}>
@@ -112,7 +170,8 @@ export default function PostPage() {
                         <div className={styles.postButtons}><Link to={`${baseRoute}p${post.id}`} className={unreadOnly ? '' : 'bold'}>все комментарии</Link> • <Link to={`${baseRoute}p${post.id}?new`} className={unreadOnly ? 'bold' : ''}>только новые</Link></div>
                         <div className={styles.comments + (unreadOnly ? ' unreadOnly' : '')}>
                             {comments ?
-                                comments.map(comment => <CommentComponent maxTreeDepth={12} key={comment.id} comment={comment} onAnswer={handleAnswer} onEdit={handleCommentEdit} />)
+                                comments.map(comment => <CommentComponent maxTreeDepth={12} key={comment.id} comment={comment} onAnswer={handleAnswer} onEdit={handleCommentEdit}
+                                    toggleParentSelection={toggleParentSelection}/>)
                                 :
                                 (
                                     error ? <div className={styles.error}>{error}<div><button onClick={() => reload(unreadOnly)}>Повторить</button></div></div>
