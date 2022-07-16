@@ -1,13 +1,14 @@
 import {CommentInfo, PostLinkInfo} from '../Types/PostInfo';
 import styles from './CommentComponent.module.scss';
 import RatingSwitch from './RatingSwitch';
-import React, {useMemo, useState} from 'react';
+import React, {useMemo, useRef, useState} from 'react';
 import CreateCommentComponent from './CreateCommentComponent';
 import ContentComponent from './ContentComponent';
 import {useAPI} from '../AppState/AppState';
 import {toast} from 'react-toastify';
 import {SignatureComponent} from './SignatureComponent';
 import {HistoryComponent} from './HistoryComponent';
+import classNames from 'classnames';
 
 interface CommentProps {
     comment: CommentInfo;
@@ -17,6 +18,10 @@ interface CommentProps {
     onEdit?: (text: string, comment: CommentInfo) => Promise<CommentInfo | undefined>;
     depth?: number
     maxTreeDepth?: number
+
+    idx?: number;
+    toggleParentSelection?: (parent?: HTMLDivElement, child?: HTMLDivElement) => void;
+    parentRef?: React.RefObject<HTMLDivElement>;
 }
 
 export default function CommentComponent(props: CommentProps) {
@@ -74,14 +79,24 @@ export default function CommentComponent(props: CommentProps) {
         setShowHistory(!showHistory);
     };
 
+    const bodyRef = useRef<HTMLDivElement>(null);
+
     const {author, created, site, postLink, editFlag, content} = props.comment;
     const depth = props.depth || 0;
     const maxDepth = props.maxTreeDepth || 0;
     const isFlat = depth > maxDepth;
     return (
-        <div className={styles.comment + (props.comment.isNew ? ' isNew': '') + (isFlat?' isFlat':'')} data-comment-id={props.comment.id}>
-            <div className='commentBody'>
-                <SignatureComponent showSite={props.showSite} site={site} author={author} onHistoryClick={toggleHistory} parentCommentId={isFlat?props.parent?.id:undefined} postLink={postLink} commentId={props.comment.id} date={created} editFlag={editFlag} />
+        <div className={
+        //    styles.comment + (props.comment.isNew ? ' isNew': '') + (isFlat?' isFlat':'')
+            classNames('comment', styles.comment, { 'isNew': props.comment.isNew, isFlat })
+        } data-comment-id={props.comment.id}>
+            <div className={classNames('commentBody', styles.commentBody)} ref={bodyRef}
+                 onMouseEnter={() => {
+                     props.toggleParentSelection && props.toggleParentSelection(props.parentRef?.current || undefined, bodyRef.current || undefined);
+                 }}
+            >
+                <SignatureComponent showSite={props.showSite} site={site} author={author} onHistoryClick={toggleHistory}
+                                    parentCommentId={props.idx && props.parent?.id} postLink={postLink} commentId={props.comment.id} date={created} editFlag={editFlag} />
                 {editingText === false ?
                     (showHistory
                         ?
@@ -95,7 +110,7 @@ export default function CommentComponent(props: CommentProps) {
                     <CreateCommentComponent open={true} text={editingText} onAnswer={handleEditComplete} />
                 }
 
-                <div className={styles.controls}>
+                <div className={classNames('controls', styles.controls)}>
                     <div className={styles.control}>
                         <RatingSwitch type="comment" id={props.comment.id} rating={{ vote: props.comment.vote, value: props.comment.rating }} onVote={handleVote} />
                     </div>
@@ -104,10 +119,12 @@ export default function CommentComponent(props: CommentProps) {
                 </div>
             </div>
             {(props.comment.answers || answerOpen) ?
-                <div className={styles.answers + (isFlat?' isFlat':'')}>
+                <div className={classNames('answers', styles.answers, { isFlat })}>
                     {props.onAnswer && <CreateCommentComponent open={answerOpen} post={props.comment.postLink} comment={props.comment} onAnswer={handleAnswer} />}
-                    {props.comment.answers && props.onAnswer ? props.comment.answers.map(comment =>
-                        <CommentComponent maxTreeDepth={maxDepth} depth={depth+1} parent={props.comment} key={comment.id} comment={comment} onAnswer={props.onAnswer} onEdit={props.onEdit} />) : <></>}
+                    {props.comment.answers && props.onAnswer ? props.comment.answers.map( (comment,idx) =>
+                        <CommentComponent maxTreeDepth={maxDepth} depth={depth+1} parent={props.comment} key={comment.id}
+                                          comment={comment} onAnswer={props.onAnswer} onEdit={props.onEdit}
+                                          toggleParentSelection={props.toggleParentSelection} parentRef={bodyRef} idx={idx}  />) : <></>}
                 </div>
                 : <></>}
 

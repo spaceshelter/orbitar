@@ -28,6 +28,8 @@
     }
     */
 
+    position: relative;
+
     margin-bottom: 32px;
     .content>div {
         font-size: 16px;
@@ -102,13 +104,22 @@ $smallShift: 8px;
     margin-top: 8px;
     padding-top: 24px;
     //margin-bottom: 32px;
-    border-left: 1px solid var(--fgAlmostInvisible);
+    border-left: 2px solid transparent;
 
     padding-left: $smallShift;
     @media only screen and (min-width: 990px) {
         padding-left: $bigShift;
         margin-left: 8px; // half of [-] icon width
     }
+}
+
+.commentBody .controls, .commentBody .signatureExtra  {
+  opacity: 0;
+}
+
+
+.commentBody:hover  .controls , .commentBody:hover .signatureExtra {
+  opacity: 1;
 }
 
 :global {
@@ -125,6 +136,24 @@ $smallShift: 8px;
     .unreadOnly :local(.comment):not(.isNew) > .commentBody:hover {
         opacity: inherit;
         transition: opacity 500ms;
+    }
+
+    .selected > .commentBody{
+      position: sticky;
+      top: 0;
+      background: #2d2d2d;
+      opacity: 1 !important;
+      z-index: 50000;
+      // shadow-bottom
+      box-shadow: 0px 0px 1px 0px rgba(0, 0, 0, 0.5);
+    }
+
+    .selected > .answers {
+      border-left: var(--fgAlmostInvisible) solid 2px !important;
+    }
+
+    .selected .selectedChild {
+        //box-shadow: 0px 0px 20px 0px rgba(0, 0, 0, 0.5);
     }
 
     .isNew {
