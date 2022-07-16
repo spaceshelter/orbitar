@@ -2,6 +2,7 @@ require('dotenv-flow').config();
 
 const argparse = require('argparse');
 const mysql = require('mysql2/promise');
+const fetch = require('node-fetch');
 
 const db_config = {
     host: process.env.MYSQL_HOST || "localhost",
@@ -32,11 +33,33 @@ parser.add_argument('-c', '--comments', {
     help: 'Number of comments to generate',
     default: 0
 });
+parser.add_argument('-f', '--fish', {
+    help: 'Use FishText API to generate texts',
+    default: 0
+});
 
 const args = parser.parse_args();
 if (args.help) {
     parser.print_help();
     process.exit(0);
+}
+
+async function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Generates random text using fish-text.ru API
+ * @param isHeader true if you need a header (short string)
+ */
+async function generate_random_text_with_fish_text_api(isHeader) {
+    const response = await fetch(`https://fish-text.ru/get?type=${isHeader ? 'title' : 'paragraph'}`);
+    let jsonData = await response.json();
+    if (!jsonData || jsonData.status !== 'success' ) {
+        throw new Error('Request to fish-text failed');
+    }
+    await sleep(300);
+    return jsonData.text.replace(/\\n/g, "<br/>");
 }
 
 /**
@@ -53,7 +76,10 @@ function pick_random(array) {
  * @param length
  * @return {string}
  */
-function generate_random_string(length) {
+async function generate_random_string(length) {
+    if (args.fish) {
+        return await generate_random_text_with_fish_text_api(length < 50);
+    }
     let result = [];
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789   ';
     for (let i = 0; i < length; i++) {
@@ -146,9 +172,9 @@ async function main() {
                     site_id: pick_random(existing_site_ids),
                     author_id: pick_random(existing_user_ids),
                     rating: Math.floor(Math.random() * 5),
-                    title: generate_random_string(Math.floor(Math.random() * 20) + 5),
-                    source: generate_random_string(Math.floor(Math.random() * 2000) + 20),
-                    html: generate_random_string(Math.floor(Math.random() * 2000) + 100)
+                    title: await generate_random_string(Math.floor(Math.random() * 20) + 5),
+                    source: await generate_random_string(Math.floor(Math.random() * 2000) + 20),
+                    html: await generate_random_string(Math.floor(Math.random() * 2000) + 100)
                 }
                 inserted_id = (await connection.execute(query, params))[0].insertId;
                 existing_post_ids.push(inserted_id);
@@ -180,8 +206,8 @@ async function main() {
                         parent_comment_id: pick_random(post_comment_ids) || null,
                         created_at: get_random_date().toISOString().slice(0, 19).replace('T', ' '),
                         author_id: pick_random(existing_user_ids),
-                        source: generate_random_string(Math.floor(Math.random() * 1000) + 20),
-                        html: generate_random_string(Math.floor(Math.random() * 1000) + 100),
+                        source: await generate_random_string(Math.floor(Math.random() * 1000) + 20),
+                        html: await generate_random_string(Math.floor(Math.random() * 1000) + 100),
                         rating: Math.floor(Math.random() * 5),
                         site_id: post_site_id
                     }
