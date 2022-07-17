@@ -102,6 +102,12 @@ export default function CommentComponent(props: CommentProps) {
         });
     }, [props.collapsedIds]);
 
+    const collapsedChildren = useMemo(() => {
+        return computed(() => {
+            return props.collapsedIds && props.comment.answers && props.comment.answers.some(child => props.collapsedIds!.has(child.id));
+        });
+    }, [props.collapsedIds]);
+
     const {author, created, site, postLink, editFlag, content} = props.comment;
     const depth = props.depth || 0;
     const maxDepth = props.maxTreeDepth || 0;
@@ -116,7 +122,7 @@ export default function CommentComponent(props: CommentProps) {
             'isFlat': isFlat,
         })
         } data-comment-id={props.comment.id}>
-            <div className='commentBody'>
+            <div className={classNames('commentBody', {'collapsedChildren' : collapsedChildren.get() })}>
                 <SignatureComponent showSite={props.showSite} site={site} author={author} onHistoryClick={toggleHistory}
                                     parentCommentId={props.childIdx && props.parent?.id} postLink={postLink} commentId={props.comment.id} date={created} editFlag={editFlag}
                                     handleFocus={() => props.focus?.(props.comment.id, [])}
@@ -142,6 +148,10 @@ export default function CommentComponent(props: CommentProps) {
                     {props.onAnswer && <div className={styles.control}><button onClick={handleAnswerSwitch}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</button></div>}
                 </div>
             </div>
+            {collapsedChildren.get() && <div className={styles.collapsedInfo} onClick={props.unfocus}>
+                Комментарии скрыты...
+            </div>}
+
             {(props.comment.answers || answerOpen) ?
                 <div className={styles.answers + (isFlat?' isFlat':'')}>
                     {props.onAnswer && <CreateCommentComponent open={answerOpen} post={props.comment.postLink} comment={props.comment} onAnswer={handleAnswer} />}
