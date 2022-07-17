@@ -112,6 +112,7 @@ $smallShift: 8px;
     margin-left: 8px; // half of [-] icon width
   }
   cursor: pointer;
+  overflow-anchor: none;
 }
 
 .answers {
