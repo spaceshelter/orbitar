@@ -23,6 +23,10 @@
     font-weight: bold;
 }
 
+.blur {
+    filter: grayscale(100%) blur(5px);
+}
+
 .loading {
 
 }
