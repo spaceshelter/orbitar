@@ -94,11 +94,11 @@ export default class UserRepository {
     }
 
     async getUserUnreadComments(forUserId: number): Promise<number> {
-        const res = await this.db.fetchOne<{ cnt: string | null }>(`
-            select sum(p.comments - ub.read_comments) cnt
+        const res = await this.db.fetchOne<{ cnt: string }>(`
+          select sum(p.comments - COALESCE(ub.read_comments, 0)) cnt
             from
               user_bookmarks ub
-              join posts p on (p.post_id = ub.post_id) 
+              join posts p on (p.post_id = ub.post_id)
             where
               ub.user_id = :user_id
               and watch = 1
