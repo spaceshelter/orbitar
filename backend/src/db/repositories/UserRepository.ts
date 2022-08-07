@@ -94,11 +94,11 @@ export default class UserRepository {
     }
 
     async getUserUnreadComments(forUserId: number): Promise<number> {
-        const res = await this.db.fetchOne<{ cnt: string | null }>(`
-            select sum(p.comments - ub.read_comments) cnt
+        const res = await this.db.fetchOne<{ cnt: string }>(`
+          select sum(p.comments - COALESCE(ub.read_comments, 0)) cnt
             from
               user_bookmarks ub
-              join posts p on (p.post_id = ub.post_id) 
+              join posts p on (p.post_id = ub.post_id)
             where
               ub.user_id = :user_id
               and watch = 1
@@ -117,5 +117,25 @@ export default class UserRepository {
         return this.db.query(`
             insert ignore into activity_db.user_activity (user_id, visited_at) values (:user_id, :visited_at)
         `, {user_id: userId, visited_at: dateToInsert});
+    }
+
+    async getNumActiveUsers(): Promise<number> {
+        const res = await this.db.fetchOne<{ cnt: string | null }>(`
+            select count(*) cnt from (select user_id, count(*) as cnt
+                                      from activity_db.user_activity
+                                      where visited_at > date_sub(now(), interval 7 day)
+                                      group by user_id
+                                      having cnt > 3) as active_users
+        `);
+        return parseInt(res.cnt || '0');
+    }
+
+    async isUserActive(userId: number): Promise<boolean> {
+        const res = await this.db.fetchOne<{ cnt: string | null }>(`
+            select count(*) as cnt
+            from activity_db.user_activity
+            where user_id = :user_id and visited_at > date_sub(now(), interval 7 day)
+        `, {user_id: userId});
+        return parseInt(res.cnt || '0') >= 3;
     }
 }
