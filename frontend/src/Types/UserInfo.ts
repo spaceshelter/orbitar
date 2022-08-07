@@ -18,5 +18,6 @@ export type UserInfo = UserBaseInfo & {
 
 export type UserProfileInfo = UserInfo & {
     registered: Date;
+    active: boolean;
 };
 

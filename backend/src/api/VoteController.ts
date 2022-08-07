@@ -6,14 +6,17 @@ import Joi from 'joi';
 import {VoteSetRequest, VoteSetResponse} from './types/requests/VoteSet';
 import {VoteListRequest, VoteListResponse} from './types/requests/VoteList';
 import {VoteListItemEntity} from './types/entities/VoteEntity';
+import UserManager from '../managers/UserManager';
 
 export default class VoteController {
     public router = Router();
     private voteManager: VoteManager;
+    private userManager: UserManager;
     private logger: Logger;
 
-    constructor(voteManager: VoteManager, logger: Logger) {
+    constructor(voteManager: VoteManager, userManager: UserManager, logger: Logger) {
         this.voteManager = voteManager;
+        this.userManager = userManager;
         this.logger = logger;
 
         const voteSchema = Joi.object<VoteSetRequest>({
@@ -37,6 +40,11 @@ export default class VoteController {
 
         const userId = request.session.data.userId;
         const {id, type, vote} = request.body;
+
+        const restrictions = await this.userManager.getUserRestrictions(userId);
+        if (!restrictions.canVote) {
+            return response.error('cant-vote', 'Voting is disabled', 403);
+        }
 
         try {
             const max = type === 'user' ? 2 : 1;

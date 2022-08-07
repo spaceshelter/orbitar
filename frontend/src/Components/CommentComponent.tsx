@@ -2,7 +2,7 @@ import {CommentInfo, PostLinkInfo} from '../Types/PostInfo';
 import styles from './CommentComponent.module.scss';
 import RatingSwitch from './RatingSwitch';
 import React, {useMemo, useState} from 'react';
-import CreateCommentComponent from './CreateCommentComponent';
+import {CreateCommentComponentRestricted} from './CreateCommentComponent';
 import ContentComponent from './ContentComponent';
 import {useAPI} from '../AppState/AppState';
 import {toast} from 'react-toastify';
@@ -92,7 +92,7 @@ export default function CommentComponent(props: CommentProps) {
                             </div>
                     )
                 :
-                    <CreateCommentComponent open={true} text={editingText} onAnswer={handleEditComplete} />
+                    <CreateCommentComponentRestricted open={true} text={editingText} onAnswer={handleEditComplete} />
                 }
 
                 <div className={styles.controls}>
@@ -105,7 +105,7 @@ export default function CommentComponent(props: CommentProps) {
             </div>
             {(props.comment.answers || answerOpen) ?
                 <div className={styles.answers + (isFlat?' isFlat':'')}>
-                    {props.onAnswer && <CreateCommentComponent open={answerOpen} post={props.comment.postLink} comment={props.comment} onAnswer={handleAnswer} />}
+                    {props.onAnswer && <CreateCommentComponentRestricted open={answerOpen} post={props.comment.postLink} comment={props.comment} onAnswer={handleAnswer} />}
                     {props.comment.answers && props.onAnswer ? props.comment.answers.map(comment =>
                         <CommentComponent maxTreeDepth={maxDepth} depth={depth+1} parent={props.comment} key={comment.id} comment={comment} onAnswer={props.onAnswer} onEdit={props.onEdit} />) : <></>}
                 </div>

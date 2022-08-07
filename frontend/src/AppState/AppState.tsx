@@ -7,6 +7,7 @@ import {observable, makeObservable, autorun, action, computed, makeAutoObservabl
 import APICache from '../API/APICache';
 import {createBrowserHistory} from 'history';
 import {RouterStore} from '@superwf/mobx-react-router';
+import {UserRestrictionsResponse} from '../API/UserAPI';
 
 export enum AppLoadingState {
     loading,
@@ -33,6 +34,9 @@ export class AppState {
 
     @observable.struct
     userInfo: UserInfo | undefined = undefined; // undefined means not authorized
+
+    @observable.struct
+    userRestrictions: UserRestrictionsResponse | undefined;
 
     @observable
     notificationsCount = 0;
@@ -80,6 +84,11 @@ export class AppState {
     @action
     setUserInfo(value: UserInfo | undefined) {
         this.userInfo = value;
+    }
+
+    @action
+    setUserRestrictions(value: UserRestrictionsResponse) {
+        this.userRestrictions = value;
     }
 
     @action

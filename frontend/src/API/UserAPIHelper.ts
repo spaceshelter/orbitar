@@ -11,6 +11,7 @@ export type UserProfileResult = {
 export default class UserAPIHelper {
     private api: UserAPI;
     private appState: AppState;
+    private restrictionRefreshInProgress = false; // avoid duplicate requests
 
     constructor(api: UserAPI, appState: AppState) {
         this.api = api;
@@ -29,5 +30,16 @@ export default class UserAPIHelper {
             invitedBy,
             invites
         };
+    }
+
+    refreshUserRestrictions() {
+        if (this.appState.userInfo && !this.restrictionRefreshInProgress) {
+            this.restrictionRefreshInProgress = true;
+            this.api.userRestrictions(this.appState.userInfo.username).then(restrictions => {
+                this.appState.setUserRestrictions(restrictions);
+            }).finally(() => {
+                this.restrictionRefreshInProgress = false;
+            });
+        }
     }
 }
