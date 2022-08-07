@@ -15,6 +15,7 @@ import {UserGender} from '../Types/UserInfo';
 import {useAPI, useAppState} from '../AppState/AppState';
 import SlowMode from './SlowMode';
 import {observer} from 'mobx-react-lite';
+import TextareaAutosize from 'react-textarea-autosize';
 
 interface CreateCommentProps {
     open: boolean;
@@ -242,7 +243,10 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             </div>
             {
                 (previewing === null )
-                ?  <div className={styles.editor}><textarea ref={answerRef} disabled={isPosting} placeholder={placeholderText} value={answerText} onChange={handleAnswerChange} onKeyDown={handleKeyDown} /></div>
+                ?  <div className={styles.editor}>
+                        <TextareaAutosize ref={answerRef} disabled={isPosting} placeholder={placeholderText} value={answerText}
+                                      onChange={handleAnswerChange} onKeyDown={handleKeyDown} maxRows={25}/>
+                    </div>
                 :  <div className={classNames(commentStyles.content, styles.preview, postStyles.preview)} onClick={handlePreview}><ContentComponent content={previewing} /></div>
             }
             <div className={styles.final}>
