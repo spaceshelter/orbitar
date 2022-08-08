@@ -31,6 +31,11 @@ export default class SiteController {
         keyGenerator: (req) => String(req.session.data?.userId)
     });
 
+    private static readonly siteDomainMinLengthChars = 3;
+    private static readonly siteDomainMaxLengthChars = 15;
+    private static readonly siteNameMinLengthChars = 3;
+    private static readonly siteNameMaxLengthChars = 20;
+
     constructor(enricher: Enricher, feedManager: FeedManager, siteManager: SiteManager, userManager: UserManager, logger: Logger) {
         this.enricher = enricher;
         this.logger = logger;
@@ -50,9 +55,10 @@ export default class SiteController {
             main: Joi.boolean().default(false),
             bookmarks: Joi.boolean().default(false)
         });
+        const domainValidationRegex = new RegExp('^[a-z\\d-]{' + SiteController.siteDomainMinLengthChars + ',' + SiteController.siteDomainMaxLengthChars + '}$');
         const siteCreateSchema = Joi.object<SiteCreateRequest>({
-            site: joiSite.required(),
-            name: Joi.string().min(3).max(15).required()
+            site: Joi.string().regex(domainValidationRegex).required(),
+            name: Joi.string().min(SiteController.siteNameMinLengthChars).max(SiteController.siteNameMaxLengthChars).required()
         });
 
         this.router.post('/site', validate(siteSchema), (req, res) => this.site(req, res));

@@ -11,9 +11,10 @@
 }
 
 .container {
+    --sidebar-width: 200px;
     position: fixed;
-    max-width: 200px;
-    width: 200px;
+    max-width: var(--sidebar-width);
+    width: var(--sidebar-width);
     left: 0;
     top: 59px;
     bottom: 0;
@@ -72,6 +73,16 @@
             margin-top: 20px;
             overflow-y: auto;
             overflow-x: hidden;
+
+            div {
+                a {
+                    white-space: nowrap;
+                    display: inline-block;
+                    overflow: hidden;
+                    width: calc(var(--sidebar-width) - 20px);
+                    text-overflow: ellipsis;
+                }
+            }
         }
 
         .all-subsites {
