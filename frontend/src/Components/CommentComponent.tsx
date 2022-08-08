@@ -18,6 +18,8 @@ interface CommentProps {
     onEdit?: (text: string, comment: CommentInfo) => Promise<CommentInfo | undefined>;
     depth?: number
     maxTreeDepth?: number
+    idx?: number
+    unreadOnly?: boolean
 }
 
 export default function CommentComponent(props: CommentProps) {
@@ -82,7 +84,9 @@ export default function CommentComponent(props: CommentProps) {
     return (
         <div className={styles.comment + (props.comment.isNew ? ' isNew': '') + (isFlat?' isFlat':'')} data-comment-id={props.comment.id}>
             <div className='commentBody'>
-                <SignatureComponent showSite={props.showSite} site={site} author={author} onHistoryClick={toggleHistory} parentCommentId={isFlat?props.parent?.id:undefined} postLink={postLink} commentId={props.comment.id} date={created} editFlag={editFlag} />
+                <SignatureComponent showSite={props.showSite} site={site} author={author} onHistoryClick={toggleHistory}
+                                    parentCommentId={props.idx && props.parent?.id} parentCommentAuthor={props.parent?.author?.username}
+                                    postLink={postLink} commentId={props.comment.id} postLinkIsNew={props.unreadOnly} date={created} editFlag={editFlag} />
                 {editingText === false ?
                     (showHistory
                         ?
@@ -107,8 +111,9 @@ export default function CommentComponent(props: CommentProps) {
             {(props.comment.answers || answerOpen) ?
                 <div className={styles.answers + (isFlat?' isFlat':'')}>
                     {props.onAnswer && <CreateCommentComponentRestricted open={answerOpen} post={props.comment.postLink} comment={props.comment} onAnswer={handleAnswer} />}
-                    {props.comment.answers && props.onAnswer ? props.comment.answers.map(comment =>
-                        <CommentComponent maxTreeDepth={maxDepth} depth={depth+1} parent={props.comment} key={comment.id} comment={comment} onAnswer={props.onAnswer} onEdit={props.onEdit} />) : <></>}
+                    {props.comment.answers && props.onAnswer ? props.comment.answers.map( (comment, idx) =>
+                        <CommentComponent maxTreeDepth={maxDepth} depth={depth+1} parent={props.comment} key={comment.id}
+                                          comment={comment} onAnswer={props.onAnswer} onEdit={props.onEdit} unreadOnly={props.unreadOnly} idx={idx} />) : <></>}
                 </div>
                 : <></>}
 
