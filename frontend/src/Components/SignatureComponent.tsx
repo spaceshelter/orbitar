@@ -15,6 +15,7 @@ interface SignatureComponentProps {
     editFlag?: EditFlag;
     onHistoryClick: () => void;
     postLink: PostLinkInfo;
+    postLinkIsNew?: boolean
     parentCommentId?: number;
     parentCommentAuthor?: string;
     date: Date;
@@ -26,7 +27,7 @@ export const SignatureComponent = (props: SignatureComponentProps) => {
         <div className={styles.signature}>
             {(props.showSite && props.site && props.site !== 'main') ? <><Link to={`/s/${props.site}`}>{props.site}</Link> • </> : ''}
             <Username className={styles.username} user={props.author} /> • <PostLink post={props.postLink} commentId={props.commentId}><DateComponent date={props.date} /></PostLink>
-            {props.parentCommentId && <> • <PostLink className={'arrow i i-arrow'} post={props.postLink} commentId={props.parentCommentId}> {props.parentCommentAuthor}</PostLink></>}
+            {props.parentCommentId && <> • <PostLink className={'arrow i i-arrow'} post={props.postLink} onlyNew={props.postLinkIsNew} commentId={props.parentCommentId}> @{props.parentCommentAuthor}</PostLink></>}
             {props.editFlag && <> • <button className={styles.toggleHistory} onClick={props.onHistoryClick}>изменён</button></>}
         </div>
     );
