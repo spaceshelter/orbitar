@@ -1,6 +1,6 @@
 import {Logger} from 'winston';
 import {Router} from 'express';
-import {APIRequest, APIResponse, validate, joiSite} from './ApiMiddleware';
+import {APIRequest, APIResponse, validate} from './ApiMiddleware';
 import SiteManager from '../managers/SiteManager';
 import {SiteSubscribeRequest, SiteSubscribeResponse} from './types/requests/SiteSubscribe';
 import {SiteRequest, SiteResponse} from './types/requests/Site';
@@ -31,6 +31,7 @@ export default class SiteController {
         keyGenerator: (req) => String(req.session.data?.userId)
     });
 
+    // TODO: have a single source of truth with frontend/src/Conf.ts
     private static readonly siteDomainMinLengthChars = 3;
     private static readonly siteDomainMaxLengthChars = 15;
     private static readonly siteNameMinLengthChars = 3;
