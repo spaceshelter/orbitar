@@ -39,3 +39,14 @@ test('detect url in text', () => {
         'the end'
     );
 });
+
+test('return valid youtube url wrapper in video-container', () => {
+  const p = new TheParser();
+
+  expect(
+      p.parse('https://www.youtube.com/watch?v=aboZctrHfK8'
+      ).text
+  ).toEqual(
+      `<div class=\"video-container\"><iframe width=\"500\" height=\"282\" src=\"https://www.youtube.com/embed/aboZctrHfK8\" allowfullscreen class=\"youtube\" frameborder=\"0\"></iframe></div>`
+  );
+});
