@@ -1,4 +1,5 @@
 import styles from './PostComponent.module.scss';
+import './PostContentVideo.css';
 import RatingSwitch from './RatingSwitch';
 import React, {useMemo, useState} from 'react';
 import {PostInfo} from '../Types/PostInfo';
