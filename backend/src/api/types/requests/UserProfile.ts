@@ -23,4 +23,5 @@ export type UserRestrictionsResponse = {
     commentSlowModeWaitSec: number;
     restrictedToPostId: number | true | false;
     canVote: boolean;
+    canInvite: boolean;
 };

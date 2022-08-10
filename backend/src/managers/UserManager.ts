@@ -272,8 +272,7 @@ export default class UserManager {
 
         const activeKarmaVotes: Record<string, number> = {};
         for (const vote of userVotes) {
-            const user = await this.getByUsername(vote.username);
-            if (await this.isUserActive(user.id)) {
+            if (await this.isUserActive(vote.voterId)) {
                 activeKarmaVotes[vote.username] = vote.vote;
             }
         }
@@ -284,8 +283,28 @@ export default class UserManager {
         return activeKarmaVotes;
     }
 
+    async removeVotesWhenKarmaIsLow(userId: number) {
+        // cached check status from redis
+        const cachedStatus = await this.redis.get(`remove_votes_when_karma_is_low_${userId}`);
+        if (cachedStatus) {
+            return;
+        }
+
+        const karmaVotes = await this.voteRepository.getVotesByUser(userId);
+        for (const vote of karmaVotes) {
+            await this.voteRepository.userSetVote(vote.userId, 0, vote.voterId);
+        }
+        await this.redis.set(`remove_votes_when_karma_is_low_${userId}`, 'true');
+        await this.redis.expire(`remove_votes_when_karma_is_low_${userId}`,
+            60 * 30 + Math.floor(Math.random() * 60 * 5) /* 30-35 minutes */);
+    }
+
     async getUserRestrictions(userId: number): Promise<UserRestrictions> {
         const effectiveKarma = await this.getUserEffectiveKarma(userId);
+
+        if (effectiveKarma < -10) {
+            await this.removeVotesWhenKarmaIsLow(userId);
+        }
 
         const lastCommentTime = await this.commentRepository.getLastUserComment(userId).then(comment => comment?.created_at);
         const lastOwnPost = await this.postRepository.getLastUserPost(userId);
@@ -302,6 +321,7 @@ export default class UserManager {
                 Math.max(lastCommentTime.getTime() / 1000 - Date.now() / 1000 + commentSlowModeDelay, 0) : 0,
             restrictedToPostId: (effectiveKarma <= -1000 ? (lastOwnPost?.post_id || true) : false),
             canVote: effectiveKarma >= -10,
+            canInvite : effectiveKarma > 0,
         };
     }
 

@@ -70,6 +70,13 @@ export default class InviteController {
                 return response.error('invalid-code', 'Invite code not found or already used');
             }
 
+            const issuerRestrictions = await this.userManager.getUserRestrictions(invite.issued_by);
+            if (!issuerRestrictions.canInvite) {
+                this.logger.warn(`Invite issuer ${invite.issued_by} has no permission to invite`,
+                    {invite: code});
+                return response.error('invalid-code', 'Invite code can\'t be used');
+            }
+
             return response.success({
                 code: invite.code,
                 inviter: invite.issuer

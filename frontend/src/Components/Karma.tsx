@@ -40,7 +40,7 @@ export function Karma(props: KarmaCalculatorProps) {
 
     return (
         <div id='karmaCalculator'>
-            <h1>Калькулятор кармы</h1>
+            <h1>Калькулятор</h1>
             <h2>Входные данные</h2>
                 <label className="slider">Суммарный рейтинг всех постов: {allPostsValue}<br/>
                         <input type="range" min="-2000" max="30000" value={allPostsValue} step="100" onChange={e => setP( +e.target.value) } />
@@ -60,11 +60,11 @@ export function Karma(props: KarmaCalculatorProps) {
 
                 <div>
                     <h2>-------------------------------------</h2>
-                    <h2>Результат</h2>
+                    <h2>Формула саморегуляции:</h2>
                     <p> Рейтинг контента: {contentRating}</p>
                     <p> Рейтинг юзера: {userRating}</p>
-                    <p> Сырая Карма: {rawKarma}</p>
-                    <p> Карма: {karma}</p>
+                    <p> Сырой результат: {rawKarma}</p>
+                    <p> Результат: {karma}</p>
                 </div>
         </div>
     );
