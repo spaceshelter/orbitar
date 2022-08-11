@@ -1,14 +1,12 @@
 .content {
   max-height: fit-content;
   
-  div[class^=ContentComponent_content__] {
   iframe, video {
-    max-width: 100%;
-    aspect-ratio: 16 / 9;
-    height: auto;
+      max-width: 100%;
+      aspect-ratio: 16 / 9;
+      height: auto;
   }
-}
-
+  
   &.cut {
     max-height: 650px;
     overflow: hidden;
