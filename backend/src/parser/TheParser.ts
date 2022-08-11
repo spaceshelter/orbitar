@@ -221,7 +221,6 @@ export default class TheParser {
 
         // noinspection HtmlDeprecatedAttribute
         return `<iframe width="500" height="282" src="${encodeURI(embed)}" allowfullscreen frameborder="0"></iframe>`;
-
     }
 
     parseAllowedTag(node: Element): ParseResult {
