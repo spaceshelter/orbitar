@@ -1,5 +1,13 @@
 .content {
   max-height: fit-content;
+  
+  div[class^=ContentComponent_content__] {
+  iframe, video {
+    max-width: 100%;
+    aspect-ratio: 16 / 9;
+    height: auto;
+  }
+}
 
   &.cut {
     max-height: 650px;
@@ -29,13 +37,5 @@
   font-size: 15px;
   &:hover{
     background: var(--dim3);
-  }
-}
-
-div[class^=ContentComponent_content__] {
-  iframe, video {
-    max-width: 100%;
-    aspect-ratio: 16 / 9;
-    height: auto;
   }
 }
