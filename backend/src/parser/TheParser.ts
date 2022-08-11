@@ -220,7 +220,8 @@ export default class TheParser {
         }
 
         // noinspection HtmlDeprecatedAttribute
-        return `<div class="video-container"><iframe width="500" height="282" src="${encodeURI(embed)}" allowfullscreen class="youtube" frameborder="0"></iframe></div>`;
+        return `<iframe width="500" height="282" src="${encodeURI(embed)}" allowfullscreen frameborder="0"></iframe>`;
+
     }
 
     parseAllowedTag(node: Element): ParseResult {
