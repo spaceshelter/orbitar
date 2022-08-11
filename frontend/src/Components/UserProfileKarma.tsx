@@ -2,10 +2,11 @@ import {useAPI} from '../AppState/AppState';
 import React, {useEffect, useState} from 'react';
 import Username from './Username';
 import {Karma} from './Karma';
-import {UserKarmaResponse} from '../API/UserAPI';
+import {UserKarmaResponse, UserRestrictionsResponse} from '../API/UserAPI';
 import ratingSwitchStyles from './RatingSwitch.module.scss';
 import styles from './UserProfileKarma.module.scss';
 import {Link} from 'react-router-dom';
+import PostLink from './PostLink';
 
 type UserProfileKarmaProps = {
     username: string;
@@ -14,6 +15,7 @@ type UserProfileKarmaProps = {
 export const UserProfileKarma = (props: UserProfileKarmaProps) => {
     const api = useAPI();
     const [karmaResult, setKarmaResult] = useState<UserKarmaResponse | undefined>();
+    const [restrictionsResult, setRestrictionsResult] = useState<UserRestrictionsResponse | undefined>();
 
     useEffect(() => {
         api.userAPI.userKarma(props.username)
@@ -24,6 +26,14 @@ export const UserProfileKarma = (props: UserProfileKarmaProps) => {
             .catch(err => {
                 console.error('Karma response error', err);
             });
+        api.userAPI.userRestrictions(props.username)
+            .then(result => {
+                    console.log('Restrictions response', result);
+                    setRestrictionsResult(result);
+                }
+            ).catch(err => {
+            console.error('Restrictions response error', err);
+        });
     }, [api.userAPI]);
 
 
@@ -47,10 +57,26 @@ export const UserProfileKarma = (props: UserProfileKarmaProps) => {
     const negativeKarmaVotes = karmaResult &&
         Object.keys(karmaResult.activeKarmaVotes).filter(key => karmaResult.activeKarmaVotes[key] < 0);
 
+    const postSubsites = karmaResult && Object.keys(karmaResult.postRatingBySubsite);
+    const commentSubsites = karmaResult && Object.keys(karmaResult.commentRatingBySubsite);
+
     return (
-        !karmaResult ?
+        !karmaResult || !restrictionsResult ?
             <div>Загрузка...</div>
             : <>
+                <div>
+                    {restrictionsResult.restrictedToPostId === true &&
+                        <span className={styles.restricted}>Может создать один последний пост</span>}
+                    { Number.isFinite(restrictionsResult.restrictedToPostId) &&
+                        <span className={styles.restricted}>
+                            Может комментировать только&nbsp;
+                            <PostLink post={{ id : restrictionsResult.restrictedToPostId as number, site: 'main'}}>в посте</PostLink>
+                        </span>}
+                    { restrictionsResult.commentSlowModeWaitSec > 0 && <span className={styles.restricted}>Временно не может комментировать</span>}
+                    { restrictionsResult.postSlowModeWaitSec > 0 && <span className={styles.restricted}>Временно не может создавать посты</span>}
+                    { !restrictionsResult.canVote && <span className={styles.restricted}>Не может голосовать</span>}
+                    { !restrictionsResult.canInvite && <span className={styles.restricted}>Не может приглашать</span>}
+                </div>
                 <div className={styles.container}>
                     <Karma commentsSumRating={sumCommentRating} postsSumRating={sumPostRating}
                            profileVotesCount={activeKarmaVotesCount} profileVotesSum={activeKarmaVotesSum}/>
@@ -81,18 +107,20 @@ export const UserProfileKarma = (props: UserProfileKarmaProps) => {
                     </div>
                 </div>
                 <div className={styles.container}>
-                    <div>
+                    <div className={styles.subsiteList}>
                         <h3>Рейтинг постов:</h3>
-                        {Object.keys(karmaResult.postRatingBySubsite).map((key) => {
+                        {!postSubsites?.length && <div>Нет постов</div>}
+                        {postSubsites?.map((key) => {
                             const rating = karmaResult.postRatingBySubsite[key];
                             return <div key={key}><Link
                                 to={key === 'main' ? '/' : `/s/${key}`}>{key}</Link>: {rating}
                             </div>;
                         })}
                     </div>
-                    <div>
+                    <div className={styles.subsiteList}>
                         <h3>Рейтинг комментариев:</h3>
-                        {Object.keys(karmaResult.commentRatingBySubsite).map((key) => {
+                        {!commentSubsites?.length && <div>Нет комментариев</div>}
+                        {commentSubsites?.map((key) => {
                             const rating = karmaResult.commentRatingBySubsite[key];
                             return <div key={key}><Link
                                 to={key === 'main' ? '/' : `/s/${key}`}>{key}</Link>: {rating}

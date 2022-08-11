@@ -42,4 +42,5 @@ export type UserRestrictions = {
                                                   if true - restriction active, but no posts,
                                                   if false - no restriction */
     canVote: boolean; /* if user can vote for posts, comments and karma */
+    canInvite: boolean; /* whether invites by this user should work */
 };

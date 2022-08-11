@@ -3,6 +3,8 @@ import DB from '../DB';
 export type VoteWithUsername = {
     vote: number;
     username: string;
+    userId: number;
+    voterId: number;
 };
 
 export type UserRatingOnSubsite = {
@@ -158,19 +160,49 @@ export default class VoteRepository {
     }
 
     async getPostVotes(postId: number): Promise<VoteWithUsername[]> {
-        return await this.db.fetchAll('select u.username, v.vote from post_votes v join users u on (v.voter_id = u.user_id) where v.post_id=:post_id order by voted_at desc', {
+        return await this.db.fetchAll(`select u.username, v.vote, v.user_id as userId, v.voter_id as voterId
+                                       from post_votes v
+                                                join users u on (v.voter_id = u.user_id)
+                                       where v.post_id = :post_id
+                                       order by voted_at desc`, {
             post_id: postId
         });
     }
 
     async getCommentVotes(commentId: number): Promise<VoteWithUsername[]> {
-        return await this.db.fetchAll('select u.username, v.vote from comment_votes v join users u on (v.voter_id = u.user_id) where v.comment_id=:comment_id order by voted_at desc', {
+        return await this.db.fetchAll(`select u.username, v.vote, v.user_id as userId, v.voter_id as voterId
+                                       from comment_votes v
+                                                join users u on (v.voter_id = u.user_id)
+                                       where v.comment_id = :comment_id
+                                       order by voted_at desc`, {
             comment_id: commentId
         });
     }
 
+    /**
+     * Returns votes FOR a user (votes made by other users)
+     * @param userId for whom to get votes
+     */
     async getUserVotes(userId: number): Promise<VoteWithUsername[]> {
-        return await this.db.fetchAll('select u.username, v.vote from user_karma v join users u on (v.voter_id = u.user_id) where v.user_id=:user_id order by voted_at desc', {
+        return await this.db.fetchAll(`select u.username, v.vote, v.user_id as userId, v.voter_id as voterId
+                                       from user_karma v
+                                                join users u on (v.voter_id = u.user_id)
+                                       where v.user_id = :user_id
+                                       order by voted_at desc`, {
+            user_id: userId
+        });
+    }
+
+    /**
+     * Returns votes BY a user (votes FOR other users).
+     * @param userId whose votes to get
+     */
+    async getVotesByUser(userId: number): Promise<VoteWithUsername[]> {
+        return await this.db.fetchAll(`select u.username, v.vote, v.user_id as userId, v.voter_id as voterId
+                                       from user_karma v
+                                                join users u on (v.user_id = u.user_id)
+                                       where v.voter_id = :user_id
+                                       order by voted_at desc`, {
             user_id: userId
         });
     }
