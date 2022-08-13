@@ -236,7 +236,7 @@ export default class NotificationManager {
         }
 
         const subdomain = (site.subdomain === 'main' ? '' : '/s/' + site.subdomain);
-        const url = `${baseUrl}${subdomain}/p${notification.source.postId}#${notification.source.commentId}`;
+        const url = `${baseUrl}${subdomain}/p${notification.source.postId}?new#${notification.source.commentId}`;
         const icon = `${baseUrl}/favicon.ico`;
 
         let title = '';
