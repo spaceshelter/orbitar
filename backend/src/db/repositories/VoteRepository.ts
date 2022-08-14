@@ -160,7 +160,7 @@ export default class VoteRepository {
     }
 
     async getPostVotes(postId: number): Promise<VoteWithUsername[]> {
-        return await this.db.fetchAll(`select u.username, v.vote, v.user_id as userId, v.voter_id as voterId
+        return await this.db.fetchAll(`select u.username, v.vote, u.user_id as userId, v.voter_id as voterId
                                        from post_votes v
                                                 join users u on (v.voter_id = u.user_id)
                                        where v.post_id = :post_id
@@ -170,7 +170,7 @@ export default class VoteRepository {
     }
 
     async getCommentVotes(commentId: number): Promise<VoteWithUsername[]> {
-        return await this.db.fetchAll(`select u.username, v.vote, v.user_id as userId, v.voter_id as voterId
+        return await this.db.fetchAll(`select u.username, v.vote, u.user_id as userId, v.voter_id as voterId
                                        from comment_votes v
                                                 join users u on (v.voter_id = u.user_id)
                                        where v.comment_id = :comment_id
