@@ -125,7 +125,8 @@ export const UserProfileKarma = (props: UserProfileKarmaProps) => {
             </div>}
 
             {!restrictionsResult && <div>Загрузка...</div>}
-            {!!restrictions?.length && <div>{restrictions.map(r => <div className={styles.restricted}>{r}</div>)}</div>}
+            {!!restrictions?.length && <div>{restrictions.map((r, idx) =>
+                <div key={idx} className={styles.restricted}>{r}</div>)}</div>}
 
             {karmaResult && <>
                 <div className={styles.container}>
