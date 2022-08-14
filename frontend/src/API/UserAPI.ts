@@ -59,11 +59,17 @@ export type UserKarmaResponse = {
 /* see UserRestrictions */
 export type UserRestrictionsResponse = {
     effectiveKarma: number;
+
     postSlowModeWaitSec: number;
+    postSlowModeWaitSecRemain: number;
+
     commentSlowModeWaitSec: number;
+    commentSlowModeWaitSecRemain: number;
+
     restrictedToPostId: number | true | false;
     canVote: boolean;
     canInvite: boolean;
+    canEditOwnContent: boolean;
 };
 
 export default class UserAPI {

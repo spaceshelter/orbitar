@@ -155,11 +155,21 @@ export default class PostController {
                 return response.error('error', 'Unknown error', 500);
             }
 
+            const restrictions = await this.userManager.getUserRestrictions(userId);
+
             const {posts: [post], users} = await this.enricher.enrichRawPosts([rawPost]);
+            if (!restrictions.canEditOwnContent) {
+                post.canEdit = false;
+            }
 
             let comments: CommentEntity[] = [];
             if (!noComments) {
                 const rawComments = await this.postManager.getPostComments(postId, userId, format);
+
+                if (!restrictions.canEditOwnContent) {
+                    rawComments.forEach(comment => comment.canEdit = false);
+                }
+
                 const {rootComments} = await this.enricher.enrichRawComments(rawComments, users, format,
                     (comment) => comment.author !== userId && comment.id > rawPost.lastReadCommentId
                 );
@@ -219,11 +229,11 @@ export default class PostController {
 
         try {
             const userRestrictions = await this.userManager.getUserRestrictions(userId);
-            if (userRestrictions.postSlowModeWaitSec !== 0) {
-                return response.error('slow-mode', `Slow mode is enabled. Time left ${userRestrictions.postSlowModeWaitSec} seconds.`, 403);
+            if (userRestrictions.postSlowModeWaitSecRemain !== 0) {
+                return response.error('slow-mode', `Slow mode is enabled. Time left ${userRestrictions.postSlowModeWaitSecRemain} seconds.`, 403);
             }
             if (userRestrictions.restrictedToPostId && userRestrictions.restrictedToPostId !== true) {
-                return response.error('post-creation-restricted', 'You cannot create any more post due to low karma.', 403);
+                return response.error('post-creation-restricted', 'You cannot create any more posts due to low karma.', 403);
             }
 
             const postInfo = await this.postManager.createPost(site, userId, title, content, format);
@@ -265,8 +275,8 @@ export default class PostController {
             const users: Record<number, UserEntity> = {[userId]: await this.userManager.getById(userId)};
 
             const userRestrictions = await this.userManager.getUserRestrictions(userId);
-            if (userRestrictions.commentSlowModeWaitSec > 0) {
-                return response.error('slow-mode', `Slow mode, time left ${userRestrictions.commentSlowModeWaitSec} sec`, 403);
+            if (userRestrictions.commentSlowModeWaitSecRemain > 0) {
+                return response.error('slow-mode', `Slow mode, time left ${userRestrictions.commentSlowModeWaitSecRemain} sec`, 403);
             }
             if (userRestrictions.restrictedToPostId && postId !== userRestrictions.restrictedToPostId) {
                 const rid = userRestrictions.restrictedToPostId;
@@ -393,6 +403,11 @@ export default class PostController {
         const { id: commentId, content, format } = request.body;
 
         try {
+            const userRestrictions = await this.userManager.getUserRestrictions(userId);
+            if (!userRestrictions.canEditOwnContent) {
+                return response.error('restricted', 'Editing restricted', 403);
+            }
+
             const commentInfo = await this.postManager.editComment(userId, commentId, content, format);
             if (!commentInfo) {
                 return response.error('no-comment', 'Comment not found');

@@ -1,24 +1,40 @@
-import {useAPI} from '../AppState/AppState';
+import {useAPI, useAppState} from '../AppState/AppState';
 import React, {useEffect, useState} from 'react';
 import Username from './Username';
 import {Karma} from './Karma';
 import {UserKarmaResponse, UserRestrictionsResponse} from '../API/UserAPI';
 import ratingSwitchStyles from './RatingSwitch.module.scss';
 import styles from './UserProfileKarma.module.scss';
-import {Link} from 'react-router-dom';
+import {Link, useSearchParams} from 'react-router-dom';
 import PostLink from './PostLink';
+import {ReactComponent as ThumbsUpIcon} from '../Assets/thumbs-up.svg';
+import {ReactComponent as DeadIcon} from '../Assets/dead.svg';
+import {ReactComponent as CannotInviteIcon} from '../Assets/can-not-invite.svg';
+import {ReactComponent as CannotEditIcon} from '../Assets/no-edit.svg';
+import {ReactComponent as SlowIcon} from '../Assets/slow.svg';
+import {ReactComponent as BrokenHeartIcon} from '../Assets/broken-heart.svg';
+import moment from 'moment';
 
 type UserProfileKarmaProps = {
     username: string;
 };
 
+const formatTimeSec = (sec: number) => {
+    return moment.duration(sec, 'seconds').humanize();
+};
+
 export const UserProfileKarma = (props: UserProfileKarmaProps) => {
     const api = useAPI();
+    const {userInfo} = useAppState();
     const [karmaResult, setKarmaResult] = useState<UserKarmaResponse | undefined>();
     const [restrictionsResult, setRestrictionsResult] = useState<UserRestrictionsResponse | undefined>();
 
+    const debug = useSearchParams()[0].get('debug') !== null;
+
+    const isOwnProfile = props.username === userInfo?.username;
+
     useEffect(() => {
-        api.userAPI.userKarma(props.username)
+        debug && api.userAPI.userKarma(props.username)
             .then(result => {
                 console.log('Karma response', result);
                 setKarmaResult(result);
@@ -34,7 +50,7 @@ export const UserProfileKarma = (props: UserProfileKarmaProps) => {
             ).catch(err => {
             console.error('Restrictions response error', err);
         });
-    }, [api.userAPI]);
+    }, [api.userAPI, debug, props.username]);
 
 
     const sumPostRating = !karmaResult ? 0 :
@@ -60,23 +76,62 @@ export const UserProfileKarma = (props: UserProfileKarmaProps) => {
     const postSubsites = karmaResult && Object.keys(karmaResult.postRatingBySubsite);
     const commentSubsites = karmaResult && Object.keys(karmaResult.commentRatingBySubsite);
 
+    const restrictions = restrictionsResult && [
+        !restrictionsResult.canInvite && <><CannotInviteIcon/>
+            Нет права приглашать других людей на орбитар.<br/>
+            {restrictionsResult.effectiveKarma >= 0 && <>
+                Для новичков это нормально, они получают это право после того, как начитают писать хорошие посты и
+                комменты.
+            </>}
+        </>,
+
+        !restrictionsResult.canVote &&
+        <><BrokenHeartIcon/>Нет права ставить плюсы и минусы. Голоса в карму другим людям отменены.</>,
+
+        restrictionsResult.commentSlowModeWaitSec > 0 &&
+        <><SlowIcon/>Право комментировать ограничено одним комментарием в {formatTimeSec(restrictionsResult.commentSlowModeWaitSec)}.</>,
+
+        restrictionsResult.postSlowModeWaitSec > 0 &&
+        <><SlowIcon/>Право писать посты ограничено одним постом в {formatTimeSec(restrictionsResult.postSlowModeWaitSec)}.</>,
+
+        !restrictionsResult.canEditOwnContent &&
+        <><CannotEditIcon/>Нет права редактировать свои посты и комментарии.</>,
+
+        restrictionsResult.restrictedToPostId === true &&
+        <><DeadIcon/>Права максимально ограничены, есть возможность создать свой последний пост.</>,
+
+        Number.isFinite(restrictionsResult.restrictedToPostId) &&
+        <>
+            <DeadIcon/>
+            Права максимально ограничены, есть возможность писать только в своем
+            <PostLink post={{
+                id: restrictionsResult.restrictedToPostId as number,
+                site: 'main'
+            }}> последнем посте</PostLink>.
+        </>,
+    ].filter(Boolean);
+
+    if (restrictions && restrictions.length === 0) {
+        restrictions.push(<><ThumbsUpIcon/> Ура! Права не ограничены!</>);
+    }
+
     return (
-        !karmaResult || !restrictionsResult ?
-            <div>Загрузка...</div>
-            : <>
-                <div>
-                    {restrictionsResult.restrictedToPostId === true &&
-                        <span className={styles.restricted}>Может создать один последний пост</span>}
-                    { Number.isFinite(restrictionsResult.restrictedToPostId) &&
-                        <span className={styles.restricted}>
-                            Может комментировать только&nbsp;
-                            <PostLink post={{ id : restrictionsResult.restrictedToPostId as number, site: 'main'}}>в посте</PostLink>
-                        </span>}
-                    { restrictionsResult.commentSlowModeWaitSec > 0 && <span className={styles.restricted}>Временно не может комментировать</span>}
-                    { restrictionsResult.postSlowModeWaitSec > 0 && <span className={styles.restricted}>Временно не может создавать посты</span>}
-                    { !restrictionsResult.canVote && <span className={styles.restricted}>Не может голосовать</span>}
-                    { !restrictionsResult.canInvite && <span className={styles.restricted}>Не может приглашать</span>}
-                </div>
+        <>
+            {isOwnProfile && <div className={styles.info}>
+                <div><span className={styles.beta}>BETA</span></div>
+
+                <p>Мы продолжаем работать над саморегуляцией.</p>
+
+                <p>Это самая первая версия, работающая по механизму,
+                <PostLink post={{id: 781, site: 'dev'}}> описанному тут</PostLink>.</p>
+                <p>Формула саморегуляции зависит от двух вещей — оценок другими людьми вас и вашего контента (постов и комментариев).
+                    Если коротко, ведите себя по-человечески, производите хороший контент, и все будет хорошо.</p>
+            </div>}
+
+            {!restrictionsResult && <div>Загрузка...</div>}
+            {!!restrictions?.length && <div>{restrictions.map(r => <div className={styles.restricted}>{r}</div>)}</div>}
+
+            {karmaResult && <>
                 <div className={styles.container}>
                     <Karma commentsSumRating={sumCommentRating} postsSumRating={sumPostRating}
                            profileVotesCount={activeKarmaVotesCount} profileVotesSum={activeKarmaVotesSum}/>
@@ -128,6 +183,7 @@ export const UserProfileKarma = (props: UserProfileKarmaProps) => {
                         })}
                     </div>
                 </div>
-            </>
+            </>}
+        </>
     );
 };

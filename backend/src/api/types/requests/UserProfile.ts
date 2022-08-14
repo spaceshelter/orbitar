@@ -20,8 +20,11 @@ export type UserKarmaResponse = {
 export type UserRestrictionsResponse = {
     effectiveKarma: number;
     postSlowModeWaitSec: number;
+    postSlowModeWaitSecRemain: number;
     commentSlowModeWaitSec: number;
+    commentSlowModeWaitSecRemain: number;
     restrictedToPostId: number | true | false;
     canVote: boolean;
     canInvite: boolean;
+    canEditOwnContent: boolean;
 };

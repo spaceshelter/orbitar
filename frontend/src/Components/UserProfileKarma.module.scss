@@ -4,18 +4,43 @@
   flex-direction: row;
 }
 
-.restricted {
-  border-radius: 5px;
-  padding: 5px;
-  background-color: var(--danger);
-  font-size: 14px;
-  line-height: 20px;
-  margin-top: 5px;
-  white-space: nowrap;
+div.info {
+  display: block;
+  margin-bottom: 12px;
 }
 
-.restricted a {
-  text-shadow: var(--bg) 0 0 2px;
+div.info p {
+  margin: 5px 0;
+}
+
+.beta {
+  display: inline-block;
+  flex: none;
+  color: var(--fg);
+  font-size: 10px;
+  background: var(--dim3);
+  padding: 2px;
+  border-radius: 2px;
+  margin-bottom: 5px;
+}
+
+.restricted {
+  border-radius: 5px;
+  padding: 20px 10px 20px 60px;
+  color: var(--fgSoft);
+  background-color: var(--dim3);
+  position: relative;
+  width: 100%;
+  margin-bottom: 6px;
+}
+
+.restricted svg {
+  /* center vertically */
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 20px;
+    fill: var(--fg);
 }
 
 .subsiteList {

@@ -40,9 +40,9 @@ export const CreatePostPage = observer(() => {
         return <RestrictedToPostIdMessage postId={userRestrictions!.restrictedToPostId as number}/>;
     }
 
-    if (userRestrictions?.postSlowModeWaitSec) {
+    if (userRestrictions?.postSlowModeWaitSecRemain) {
         return <RestrictedSlowMode
-            endTime={new Date(Date.now() + userRestrictions.postSlowModeWaitSec * 1000)}
+            endTime={new Date(Date.now() + userRestrictions.postSlowModeWaitSecRemain * 1000)}
             endCallback={() => {
                 api.user.refreshUserRestrictions();
             }}

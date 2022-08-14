@@ -300,28 +300,43 @@ export default class UserManager {
     }
 
     async getUserRestrictions(userId: number): Promise<UserRestrictions> {
+        const MIN_KARMA = -1000;
+        const NEG_KARMA_THRESH = -10;
+
         const effectiveKarma = await this.getUserEffectiveKarma(userId);
 
-        if (effectiveKarma < -10) {
+        if (effectiveKarma < NEG_KARMA_THRESH) {
             await this.removeVotesWhenKarmaIsLow(userId);
         }
 
         const lastCommentTime = await this.commentRepository.getLastUserComment(userId).then(comment => comment?.created_at);
         const lastOwnPost = await this.postRepository.getLastUserPost(userId);
 
-        const postSlowModeDelay = (effectiveKarma < -10 ? /*12 hours */3600 * 12 : 0);
+        const restrictedToPostId = effectiveKarma <= MIN_KARMA ? lastOwnPost?.post_id || true : false;
+        const canCreatePosts = !Number.isFinite(restrictedToPostId);
+
+        const postSlowModeDelay = (effectiveKarma < NEG_KARMA_THRESH ? /*12 hours */3600 * 12 : 0);
         const commentSlowModeDelay =
-            effectiveKarma <= -1000 ? /*1 hour */3600 : (effectiveKarma < -10 ? /*10 minutes */ 10 * 60 : 0);
+            effectiveKarma <= -1000 ? /*1 hour */3600 : (effectiveKarma < NEG_KARMA_THRESH ? /*10 minutes */ 10 * 60 : 0);
 
         return {
             effectiveKarma,
-            postSlowModeWaitSec: lastOwnPost ?
+
+            postSlowModeWaitSec: canCreatePosts ? postSlowModeDelay : 0,
+            postSlowModeWaitSecRemain: canCreatePosts && lastOwnPost ?
                 Math.max(lastOwnPost.created_at.getTime() / 1000 - Date.now() / 1000 + postSlowModeDelay, 0)  : 0,
-            commentSlowModeWaitSec: lastCommentTime ?
+
+            commentSlowModeWaitSec: commentSlowModeDelay,
+            commentSlowModeWaitSecRemain: lastCommentTime ?
                 Math.max(lastCommentTime.getTime() / 1000 - Date.now() / 1000 + commentSlowModeDelay, 0) : 0,
-            restrictedToPostId: (effectiveKarma <= -1000 ? (lastOwnPost?.post_id || true) : false),
-            canVote: effectiveKarma >= -10,
-            canInvite : effectiveKarma > 0,
+
+            restrictedToPostId,
+
+            canVote: effectiveKarma >= NEG_KARMA_THRESH,
+            canInvite : effectiveKarma > 0 || userId === 0 /* Orbitar */,
+
+            canCreateSubsites : effectiveKarma > 0,
+            canEditOwnContent : effectiveKarma > MIN_KARMA
         };
     }
 

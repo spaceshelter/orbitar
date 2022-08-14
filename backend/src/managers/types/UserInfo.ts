@@ -36,11 +36,17 @@ export type UserRatingBySubsite = {
 export type UserRestrictions = {
     effectiveKarma: number;
 
-    postSlowModeWaitSec: number; /* time to wait until can post */
-    commentSlowModeWaitSec: number; /* time to wait until can comment */
+    postSlowModeWaitSec: number; /* time to wait between posts */
+    postSlowModeWaitSecRemain: number; /* actual time remaining time to wait until can post */
+
+    commentSlowModeWaitSec: number; /* time to wait between comments */
+    commentSlowModeWaitSecRemain: number; /* actual time remaining to wait until can comment */
+
     restrictedToPostId: number | true | false; /* if number: post id to restrict commenting to,
                                                   if true - restriction active, but no posts,
                                                   if false - no restriction */
     canVote: boolean; /* if user can vote for posts, comments and karma */
     canInvite: boolean; /* whether invites by this user should work */
+    canCreateSubsites: boolean; /* whether this user can create subsites */
+    canEditOwnContent: boolean; /* whether this user can edit own content */
 };
