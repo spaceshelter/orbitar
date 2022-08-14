@@ -1,16 +1,30 @@
+.fade{
+    display: none;
+    position: fixed;
+    top:0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--glass);
+    backdrop-filter: blur(3px);
+    z-index: 99;
+}
+
 .container {
     position: fixed;
     max-width: 200px;
     width: 200px;
     left: 0;
     top: 59px;
-    bottom: 60px;
+    bottom: 0;
     overflow-y: auto;
     overflow-x: hidden;
+    z-index: 100;
 
     :global {
         .fixed {
-            margin: 20px 0 20px 20px;
+            width: 160px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
         }
@@ -73,7 +87,16 @@
 }
 
 @media only screen and (max-width: 1179px){
+    .fade{
+        display: block;
+    }
     .container {
-        background: var(--glass);
+        background: var(--bg);
+        box-shadow: 0 0 1px var(--shadow), 0 16px 16px var(--shadow);
+        :global {
+            .subsites div{
+                padding: 4px 0;
+            }
+        }
     }
 }
