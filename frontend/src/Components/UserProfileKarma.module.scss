@@ -7,40 +7,39 @@
 div.info {
   display: block;
   margin-bottom: 12px;
-}
-
-div.info p {
-  margin: 5px 0;
+  > p {
+    margin: 16px 0;
+    line-height: 1.4em;
+  }
 }
 
 .beta {
   display: inline-block;
-  flex: none;
-  color: var(--fg);
-  font-size: 10px;
-  background: var(--dim3);
-  padding: 2px;
+  color: var(--bg);
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--primary);
+  padding: 2px 4px;
   border-radius: 2px;
   margin-bottom: 5px;
 }
 
 .restricted {
-  border-radius: 5px;
-  padding: 20px 10px 20px 60px;
-  color: var(--fgSoft);
-  background-color: var(--dim3);
-  position: relative;
   width: 100%;
+  border-radius: 4px;
+  padding: 20px 16px 20px 24px;
+  color: var(--fg);
+  background-color: var(--dim3);
   margin-bottom: 6px;
-}
-
-.restricted svg {
-  /* center vertically */
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    left: 20px;
-    fill: var(--fg);
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  >span{font-size: 24px;}
+  p{
+    margin: 4px 0 0;
+    font-size: 0.8em;
+    color: var(--fgSoft);
+  }
 }
 
 .subsiteList {

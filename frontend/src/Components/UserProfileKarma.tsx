@@ -7,12 +7,6 @@ import ratingSwitchStyles from './RatingSwitch.module.scss';
 import styles from './UserProfileKarma.module.scss';
 import {Link, useSearchParams} from 'react-router-dom';
 import PostLink from './PostLink';
-import {ReactComponent as ThumbsUpIcon} from '../Assets/thumbs-up.svg';
-import {ReactComponent as DeadIcon} from '../Assets/dead.svg';
-import {ReactComponent as CannotInviteIcon} from '../Assets/can-not-invite.svg';
-import {ReactComponent as CannotEditIcon} from '../Assets/no-edit.svg';
-import {ReactComponent as SlowIcon} from '../Assets/slow.svg';
-import {ReactComponent as BrokenHeartIcon} from '../Assets/broken-heart.svg';
 import moment from 'moment';
 
 type UserProfileKarmaProps = {
@@ -77,51 +71,53 @@ export const UserProfileKarma = (props: UserProfileKarmaProps) => {
     const commentSubsites = karmaResult && Object.keys(karmaResult.commentRatingBySubsite);
 
     const restrictions = restrictionsResult && [
-        !restrictionsResult.canInvite && <><CannotInviteIcon/>
-            Нет права приглашать других людей на орбитар.<br/>
-            {restrictionsResult.effectiveKarma >= 0 && <>
-                Для новичков это нормально, они получают это право после того, как начитают писать хорошие посты и
-                комменты.
-            </>}
+        !restrictionsResult.canInvite &&
+        <><span className={'i i-can-not-invite'}></span>
+            <div>
+                Нет права приглашать других людей на орбитар.
+                {restrictionsResult.effectiveKarma >= 0 && <>
+                   <p>Для новичков это нормально, они получают это право после того, как начитают писать хорошие посты и комменты.</p>
+                </>}
+            </div>
         </>,
 
-        !restrictionsResult.canVote &&
-        <><BrokenHeartIcon/>Нет права ставить плюсы и минусы. Голоса в карму другим людям отменены.</>,
 
         restrictionsResult.commentSlowModeWaitSec > 0 &&
-        <><SlowIcon/>Право комментировать ограничено одним комментарием в {formatTimeSec(restrictionsResult.commentSlowModeWaitSec)}.</>,
+        <><span className={'i i-slow'}></span>Право комментировать ограничено одним комментарием в {formatTimeSec(restrictionsResult.commentSlowModeWaitSec)}.</>,
 
         restrictionsResult.postSlowModeWaitSec > 0 &&
-        <><SlowIcon/>Право писать посты ограничено одним постом в {formatTimeSec(restrictionsResult.postSlowModeWaitSec)}.</>,
+        <><span className={'i i-no-posts'}></span>Право писать посты ограничено одним постом в {formatTimeSec(restrictionsResult.postSlowModeWaitSec)}.</>,
 
         !restrictionsResult.canEditOwnContent &&
-        <><CannotEditIcon/>Нет права редактировать свои посты и комментарии.</>,
+        <><span className={'i i-no-edit'}></span>Нет права редактировать свои посты и комментарии.</>,
+
+        !restrictionsResult.canVote &&
+        <><span className={'i i-no-poop'}></span>Нет права ставить плюсы и минусы. Голоса в карму другим людям отменены.</>,
 
         restrictionsResult.restrictedToPostId === true &&
-        <><DeadIcon/>Права максимально ограничены, есть возможность создать свой последний пост.</>,
+        <><span className={'i i-dead'}></span>Права максимально ограничены, есть возможность создать свой последний пост.</>,
 
         Number.isFinite(restrictionsResult.restrictedToPostId) &&
         <>
-            <DeadIcon/>
-            Права максимально ограничены, есть возможность писать только в своем
+            <span className={'i i-dead'}></span>
+            <div>Права максимально ограничены, есть возможность писать только в своем
             <PostLink post={{
                 id: restrictionsResult.restrictedToPostId as number,
                 site: 'main'
             }}> последнем посте</PostLink>.
+            </div>
         </>,
     ].filter(Boolean);
 
     if (restrictions && restrictions.length === 0) {
-        restrictions.push(<><ThumbsUpIcon/> Ура! Права не ограничены!</>);
+        restrictions.push(<><span className={'i i-thumbs-up'}></span>Ура! Права не ограничены!</>);
     }
 
     return (
         <>
             {isOwnProfile && <div className={styles.info}>
-                <div><span className={styles.beta}>BETA</span></div>
-
+                <div className={styles.beta}>BETA</div>
                 <p>Мы продолжаем работать над саморегуляцией.</p>
-
                 <p>Это самая первая версия, работающая по механизму,
                 <PostLink post={{id: 781, site: 'dev'}}> описанному тут</PostLink>.</p>
                 <p>Формула саморегуляции зависит от двух вещей — оценок другими людьми вас и вашего контента (постов и комментариев).

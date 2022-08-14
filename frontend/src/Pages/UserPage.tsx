@@ -57,22 +57,29 @@ export const UserPage = observer(() => {
         return (
             <div className={styles.container}>
                 <div className={styles.header}>
-                    <div className={styles.username}>{user.username}</div>
-                    <div className={styles.name}>{user.name}</div>
+                    <div className={styles.row}>
+                        <div>
+                            <div className={styles.username}>{user.username}</div>
+                            <div className={styles.name}>{user.name}</div>
+                        </div>
+                        <div className={styles.karma}>
+                            <RatingSwitch rating={rating} type='user' id={user.id} double={true} />
+                        </div>
+                    </div>
+
                     <div className={styles.registered}>#{user.id}, зарегистрирован <DateComponent date={user.registered} />
-                        {user.active && <span className={styles.active} title={'Активно посещал сайт в эту неделю'}>, <span className={'i i-alive'}></span>  активен</span>}
-                        {!user.active && <span className={styles.active} title={'Не был или был недолго на сайте в эту неделю'}>, <span className={'i i-ghost'}></span> неактивен</span>}
+                        {user.active && <span className={styles.active} title={'Активно посещал сайт в эту неделю'}>, <span className={'i i-alive'}></span>&nbsp;активен</span>}
+                        {!user.active && <span className={styles.active} title={'Не был или был недолго на сайте в эту неделю'}>, <span className={'i i-ghost'}></span>&nbsp;неактивен</span>}
                     </div>
                 </div>
+
                 <div className={styles.controls}>
                     <Link className={`${styles.control} ${isProfile ? styles.active : ''}`} to={base}>Профиль</Link>
                     <Link className={`${styles.control} ${isPosts ? styles.active : ''}`} to={base + '/posts'}>Посты</Link>
                     <Link className={`${styles.control} ${isComments ? styles.active : ''}`} to={base + '/comments'}>Комментарии</Link>
                     <Link className={`${styles.control} ${isKarma ? styles.active : ''}`} to={base + '/karma'}>Саморегуляция</Link>
                     {isMyProfile && <Link className={`${styles.control} ${isInvites ? styles.active : ''}`} to={'/profile/invites'}>Инвайты</Link>}
-                    <div className={styles.karma}>
-                        <RatingSwitch rating={rating} type='user' id={user.id} double={true} />
-                    </div>
+
                 </div>
                 <div className={styles.userinfo}>
                     {isProfile && <>
