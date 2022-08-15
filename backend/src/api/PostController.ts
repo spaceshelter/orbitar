@@ -22,6 +22,14 @@ import {CommentEntity} from './types/entities/CommentEntity';
 import {PostEditRequest, PostEditResponse} from './types/requests/PostEdit';
 import {PostHistoryRequest, PostHistoryResponse} from './types/requests/PostHistory';
 import {HistoryEntity} from './types/entities/HistoryEntity';
+import rateLimit from 'express-rate-limit';
+
+const commonRateLimitConfig = {
+    skipSuccessfulRequests: false,
+    standardHeaders: false,
+    legacyHeaders: false,
+    keyGenerator: (req) => String(req.session.data?.userId)
+};
 
 export default class PostController {
     public readonly router = Router();
@@ -31,6 +39,27 @@ export default class PostController {
     private readonly siteManager: SiteManager;
     private readonly logger: Logger;
     private readonly enricher: Enricher;
+
+    // 5 per hour
+    private readonly postCreateRateLimiter = rateLimit({
+        max: 5,
+        windowMs: 3600 * 1000,
+        ...commonRateLimitConfig
+    });
+
+    /* 40/(30 mins) */
+    private readonly postEditRateLimiter = rateLimit({
+        max: 40,
+        windowMs: 30 * 60 * 1000,
+        ...commonRateLimitConfig
+    });
+
+    /* 40/(30 mins) */
+    private readonly commentRateLimiter = rateLimit({
+        max: 40,
+        windowMs: 30 * 60 * 1000,
+        ...commonRateLimitConfig
+    });
 
     constructor(enricher: Enricher, postManager: PostManager, feedManager: FeedManager, siteManager: SiteManager, userManager: UserManager, logger: Logger) {
         this.enricher = enricher;
@@ -95,15 +124,15 @@ export default class PostController {
         });
 
         this.router.post('/post/get', validate(getSchema), (req, res) => this.postGet(req, res));
-        this.router.post('/post/create', validate(postCreateSchema), (req, res) => this.create(req, res));
-        this.router.post('/post/edit', validate(editSchema), (req, res) => this.postEdit(req, res));
-        this.router.post('/post/comment', validate(commentSchema), (req, res) => this.comment(req, res));
+        this.router.post('/post/create', this.postCreateRateLimiter, validate(postCreateSchema), (req, res) => this.create(req, res));
+        this.router.post('/post/edit', this.postEditRateLimiter, validate(editSchema), (req, res) => this.postEdit(req, res));
+        this.router.post('/post/comment', this.commentRateLimiter, validate(commentSchema), (req, res) => this.comment(req, res));
         this.router.post('/post/preview', validate(previewSchema), (req, res) => this.preview(req, res));
         this.router.post('/post/read', validate(readSchema), (req, res) => this.read(req, res));
         this.router.post('/post/bookmark', validate(bookmarkSchema), (req, res) => this.bookmark(req, res));
         this.router.post('/post/watch', validate(watchingSchema), (req, res) => this.watch(req, res));
         this.router.post('/post/get-comment', validate(getCommentSchema), (req, res) => this.getComment(req, res));
-        this.router.post('/post/edit-comment', validate(editCommentSchema), (req, res) => this.editComment(req, res));
+        this.router.post('/post/edit-comment', this.commentRateLimiter, validate(editCommentSchema), (req, res) => this.editComment(req, res));
         this.router.post('/post/history', validate(historySchema), (req, res) => this.history(req, res));
     }
 
