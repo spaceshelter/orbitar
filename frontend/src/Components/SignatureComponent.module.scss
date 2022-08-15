@@ -3,6 +3,7 @@
   align-items: center;
   gap: 4px;
   font-size: 14px;
+  line-height: 14px;
   margin-bottom: 8px;
   color: var(--fgSoftest);
   >a {
@@ -25,6 +26,7 @@
     color: var(--fgMedium);
     &:before {
       color: var(--fgMedium);
+      margin-top: -2px;
     }
     &:hover {
       color: var(--primary);
