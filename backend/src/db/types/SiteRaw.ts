@@ -8,7 +8,9 @@ export interface SiteRaw {
     site_info?: string;
 }
 
-export type SiteWithUserInfoRaw = SiteRaw & {
+export type UserSiteSubscription = {
     feed_main: number;
     feed_bookmarks: number;
 };
+
+export type SiteWithUserInfoRaw = SiteRaw & UserSiteSubscription;

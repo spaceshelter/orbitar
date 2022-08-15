@@ -10,6 +10,7 @@ import {SiteListRequest, SiteListResponse} from './types/requests/SiteList';
 import Joi from 'joi';
 import {SiteCreateRequest, SiteCreateResponse} from './types/requests/SiteCreate';
 import CodeError from '../CodeError';
+import rateLimit from 'express-rate-limit';
 
 export default class SiteController {
     public readonly router = Router();
@@ -17,6 +18,16 @@ export default class SiteController {
     private readonly feedManager: FeedManager;
     private readonly siteManager: SiteManager;
     private readonly enricher: Enricher;
+
+    // 60 per hour
+    private readonly subscribeRateLimiter = rateLimit({
+        max: 60,
+        windowMs: 3600 * 1000,
+        skipSuccessfulRequests: false,
+        standardHeaders: false,
+        legacyHeaders: false,
+        keyGenerator: (req) => String(req.session.data?.userId)
+    });
 
     constructor(enricher: Enricher, feedManager: FeedManager, siteManager: SiteManager, logger: Logger) {
         this.enricher = enricher;
@@ -42,7 +53,7 @@ export default class SiteController {
         });
 
         this.router.post('/site', validate(siteSchema), (req, res) => this.site(req, res));
-        this.router.post('/site/subscribe', validate(siteSubscribeSchema), (req, res) => this.subscribe(req, res));
+        this.router.post('/site/subscribe', this.subscribeRateLimiter, validate(siteSubscribeSchema), (req, res) => this.subscribe(req, res));
         this.router.post('/site/list', validate(siteListSchema), (req, res) => this.list(req, res));
         this.router.post('/site/create', validate(siteCreateSchema), (req, res) => this.create(req, res));
     }

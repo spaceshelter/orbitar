@@ -1,5 +1,5 @@
 import DB from '../DB';
-import {SiteRaw, SiteWithUserInfoRaw} from '../types/SiteRaw';
+import {SiteRaw, SiteWithUserInfoRaw, UserSiteSubscription} from '../types/SiteRaw';
 import CodeError from '../../CodeError';
 
 export default class SiteRepository {
@@ -131,6 +131,22 @@ export default class SiteRepository {
                 forUserId,
                 limitFrom,
                 limit: perpage
+            });
+    }
+
+    getSubscription(userId: number, siteId: number): Promise<UserSiteSubscription | undefined> {
+        return this.db.fetchOne<UserSiteSubscription>(`
+                select
+                    feed_main,
+                    feed_bookmarks
+                from user_sites
+                where
+                    user_id = :user_id
+                    and site_id = :site_id
+            `,
+            {
+                user_id: userId,
+                site_id: siteId
             });
     }
 }
