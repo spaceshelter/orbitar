@@ -84,7 +84,7 @@ const ReadyContainer = observer(() => {
     return (
         <>
             <Topbar menuState={menuState} onMenuToggle={handleMenuToggle} />
-            {menuState === 'open' && <SiteSidebar />}
+            {menuState === 'open' && <SiteSidebar onMenuToggle={handleMenuToggle}  />}
             <div className={styles.container}>
                 <div className={styles.innerContainer}>
                     <Outlet />
