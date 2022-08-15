@@ -1,5 +1,5 @@
 import {UserRaw} from '../db/types/UserRaw';
-import {UserInfo, UserGender, UserProfile, UserStats, UserRatingBySubsite, UserRestrictions} from './types/UserInfo';
+import {UserInfo, UserGender, UserStats, UserRatingBySubsite, UserRestrictions} from './types/UserInfo';
 import UserRepository from '../db/repositories/UserRepository';
 import VoteRepository, {UserRatingOnSubsite} from '../db/repositories/VoteRepository';
 import bcrypt from 'bcryptjs';
@@ -74,23 +74,13 @@ export default class UserManager {
         return user;
     }
 
-    async getFullProfile(username: string, forUserId: number): Promise<UserProfile | undefined> {
-        const rawUser = await this.userRepository.getUserByUsername(username);
-        if (!rawUser) {
+    async getByUsernameWithVote(username: string, forUserId: number): Promise<UserInfo | undefined> {
+        const infoWithoutVote = await this.getByUsername(username);
+        if (!infoWithoutVote) {
             return;
         }
-
-        const vote = await this.voteRepository.getUserVote(rawUser.user_id, forUserId);
-
-        return {
-            id: rawUser.user_id,
-            username: rawUser.username,
-            gender: rawUser.gender,
-            karma: rawUser.karma,
-            name: rawUser.name,
-            registered: rawUser.registered_at,
-            vote: vote
-        };
+        const vote = await this.voteRepository.getUserVote(infoWithoutVote.id, forUserId);
+        return {vote, ...infoWithoutVote};
     }
 
     async getInvitedBy(userId: number): Promise<UserInfo | undefined> {
@@ -302,6 +292,11 @@ export default class UserManager {
     async getUserRestrictions(userId: number): Promise<UserRestrictions> {
         const MIN_KARMA = -1000;
         const NEG_KARMA_THRESH = -10;
+        const POS_KARMA_THRESH = 2;
+
+        // calculate days on site
+        const daysOnSite = (Date.now() - (await this.getById(userId)).registered.getTime()) / (1000 * 60 * 60 * 24);
+        const userIsNew = daysOnSite < 3;
 
         const effectiveKarma = await this.getUserEffectiveKarma(userId);
 
@@ -333,7 +328,9 @@ export default class UserManager {
             restrictedToPostId,
 
             canVote: effectiveKarma >= NEG_KARMA_THRESH,
-            canInvite : effectiveKarma > 0 || userId === 0 /* Orbitar */,
+            canVoteKarma: effectiveKarma >= POS_KARMA_THRESH && !userIsNew,
+
+            canInvite : (effectiveKarma >= POS_KARMA_THRESH && !userIsNew) || userId <= 1 /* Orbitar, Plotva */,
 
             canCreateSubsites : effectiveKarma > 0,
             canEditOwnContent : effectiveKarma > MIN_KARMA
@@ -346,7 +343,8 @@ export default class UserManager {
             username: rawUser.username,
             gender: rawUser.gender,
             karma: rawUser.karma,
-            name: rawUser.name
+            name: rawUser.name,
+            registered: rawUser.registered_at,
         };
     }
 }

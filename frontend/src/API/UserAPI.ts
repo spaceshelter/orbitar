@@ -68,6 +68,7 @@ export type UserRestrictionsResponse = {
 
     restrictedToPostId: number | true | false;
     canVote: boolean;
+    canVoteKarma: boolean;
     canInvite: boolean;
     canEditOwnContent: boolean;
 };

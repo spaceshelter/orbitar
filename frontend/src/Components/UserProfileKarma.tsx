@@ -14,7 +14,7 @@ type UserProfileKarmaProps = {
 };
 
 const formatTimeSec = (sec: number) => {
-    return moment.duration(sec, 'seconds').humanize();
+    return moment.duration(sec, 'seconds').humanize(true);
 };
 
 export const UserProfileKarma = (props: UserProfileKarmaProps) => {
@@ -81,7 +81,6 @@ export const UserProfileKarma = (props: UserProfileKarmaProps) => {
             </div>
         </>,
 
-
         restrictionsResult.commentSlowModeWaitSec > 0 &&
         <><span className={'i i-slow'}></span>Право комментировать ограничено одним комментарием в {formatTimeSec(restrictionsResult.commentSlowModeWaitSec)}.</>,
 
@@ -91,8 +90,17 @@ export const UserProfileKarma = (props: UserProfileKarmaProps) => {
         !restrictionsResult.canEditOwnContent &&
         <><span className={'i i-no-edit'}></span>Нет права редактировать свои посты и комментарии.</>,
 
+        !restrictionsResult.canVoteKarma &&
+        <><span className={'i i-broken-heart'}></span>
+            <div>Нет права ставить плюсы и минусы в карму.
+                {restrictionsResult.effectiveKarma >= 0 && <>
+                    <p>Это абсолютно нормально для новичков. Это право появляется после нескольких дней на сайте, если не молчать.</p>
+                </>}
+            </div>
+        </>,
+
         !restrictionsResult.canVote &&
-        <><span className={'i i-no-poop'}></span>Нет права ставить плюсы и минусы. Голоса в карму другим людям отменены.</>,
+        <><span className={'i i-no-poop'}></span>Нет права ставить плюсы и минусы постам и комментариям. Голоса в карму другим людям отменены.</>,
 
         restrictionsResult.restrictedToPostId === true &&
         <><span className={'i i-dead'}></span>Права максимально ограничены, есть возможность создать свой последний пост.</>,

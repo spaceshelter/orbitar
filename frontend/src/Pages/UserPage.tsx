@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import styles from './UserPage.module.scss';
 import {Link, useLocation, useNavigate, useParams} from 'react-router-dom';
 import Username from '../Components/Username';
@@ -12,6 +12,7 @@ import UserProfileComments from '../Components/UserProfileComments';
 import {UserProfileInvites} from '../Components/UserProfileInvites';
 import {observer} from 'mobx-react-lite';
 import {UserProfileKarma} from '../Components/UserProfileKarma';
+import {UserRestrictionsResponse} from '../API/UserAPI';
 
 export const UserPage = observer(() => {
     const {userInfo} = useAppState();
@@ -33,11 +34,25 @@ export const UserPage = observer(() => {
 
     const isProfile = !isPosts && !isComments && !isInvites && !isKarma;
 
+    const [restrictions, setRestrictions] = useState<UserRestrictionsResponse | undefined>();
+
     useEffect(() => {
         if (state.status === 'ready') {
             document.title = state.profile.profile.username;
         }
     }, [state]);
+
+    useEffect(() => {
+        const userName = userInfo?.username;
+        userName && api.userAPI.userRestrictions(userName)
+            .then(result => {
+                    console.log('Restrictions response', result);
+                    setRestrictions(result);
+                }
+            ).catch(err => {
+            console.error('Restrictions response error', err);
+        });
+    }, [userInfo?.username, api.userAPI]);
 
     const handleLogout = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -63,7 +78,7 @@ export const UserPage = observer(() => {
                             <div className={styles.name}>{user.name}</div>
                         </div>
                         <div className={styles.karma}>
-                            <RatingSwitch rating={rating} type='user' id={user.id} double={true} />
+                            <RatingSwitch rating={rating} type='user' id={user.id} double={true} canVote={restrictions?.canVoteKarma} />
                         </div>
                     </div>
 
@@ -78,7 +93,7 @@ export const UserPage = observer(() => {
                     <Link className={`${styles.control} ${isPosts ? styles.active : ''}`} to={base + '/posts'}>Посты</Link>
                     <Link className={`${styles.control} ${isComments ? styles.active : ''}`} to={base + '/comments'}>Комментарии</Link>
                     <Link className={`${styles.control} ${isKarma ? styles.active : ''}`} to={base + '/karma'}>Саморегуляция</Link>
-                    {isMyProfile && <Link className={`${styles.control} ${isInvites ? styles.active : ''}`} to={'/profile/invites'}>Инвайты</Link>}
+                    {isMyProfile && restrictions?.canInvite && <Link className={`${styles.control} ${isInvites ? styles.active : ''}`} to={'/profile/invites'}>Инвайты</Link>}
 
                 </div>
                 <div className={styles.userinfo}>
