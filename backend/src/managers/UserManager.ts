@@ -298,7 +298,9 @@ export default class UserManager {
         const daysOnSite = (Date.now() - (await this.getById(userId)).registered.getTime()) / (1000 * 60 * 60 * 24);
         const userIsNew = daysOnSite < 3;
 
-        const effectiveKarma = await this.getUserEffectiveKarma(userId);
+        const effectiveKarmaWOPenalty = await this.getUserEffectiveKarma(userId);
+        const penalty = ~~(await this.redis.get(`karma_penalty_${userId}`)); // parses string to int or 0
+        const effectiveKarma = Math.max(effectiveKarmaWOPenalty - penalty, MIN_KARMA);
 
         if (effectiveKarma < NEG_KARMA_THRESH) {
             await this.removeVotesWhenKarmaIsLow(userId);
@@ -316,6 +318,7 @@ export default class UserManager {
 
         return {
             effectiveKarma,
+            senatePenalty: penalty,
 
             postSlowModeWaitSec: canCreatePosts ? postSlowModeDelay : 0,
             postSlowModeWaitSecRemain: canCreatePosts && lastOwnPost ?

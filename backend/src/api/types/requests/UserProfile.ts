@@ -11,6 +11,7 @@ export type UserProfileResponse = {
 };
 
 export type UserKarmaResponse = {
+    senatePenalty: number;
     activeKarmaVotes: Record<string, number>;
     postRatingBySubsite: Record<string, number>;
     commentRatingBySubsite: Record<string, number>;
@@ -19,6 +20,7 @@ export type UserKarmaResponse = {
 /* see UserRestrictions */
 export type UserRestrictionsResponse = {
     effectiveKarma: number;
+    senatePenalty: number;
     postSlowModeWaitSec: number;
     postSlowModeWaitSecRemain: number;
     commentSlowModeWaitSec: number;

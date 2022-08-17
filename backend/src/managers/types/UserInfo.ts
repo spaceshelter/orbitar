@@ -32,6 +32,7 @@ export type UserRatingBySubsite = {
 
 export type UserRestrictions = {
     effectiveKarma: number;
+    senatePenalty: number;
 
     postSlowModeWaitSec: number; /* time to wait between posts */
     postSlowModeWaitSecRemain: number; /* actual time remaining time to wait until can post */

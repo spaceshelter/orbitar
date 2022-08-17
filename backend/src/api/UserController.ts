@@ -162,10 +162,12 @@ export default class UserController {
                 return response.error('not-found', 'User not found', 404);
             }
 
+            const restrictions = await this.userManager.getUserRestrictions(profile.id);
             const ratingBySubsite: UserRatingBySubsite = await this.userManager.getUserRatingBySubsite(profile.id);
             const activeKarmaVotes = await this.userManager.getActiveKarmaVotes(profile.id);
 
             return response.success({
+                senatePenalty: restrictions.senatePenalty,
                 activeKarmaVotes,
                 postRatingBySubsite: ratingBySubsite.postRatingBySubsite,
                 commentRatingBySubsite: ratingBySubsite.commentRatingBySubsite

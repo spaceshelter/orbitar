@@ -2,6 +2,7 @@ import React, {useEffect, useState} from 'react';
 import './KarmaCalculator.scss';
 
 type KarmaCalculatorProps = {
+    senatePenalty?: number;
     postsSumRating?: number;
     commentsSumRating?: number;
     profileVotesCount?: number;
@@ -13,7 +14,7 @@ export function Karma(props: KarmaCalculatorProps) {
     const [allCommentsValue, setC] = useState(props.commentsSumRating || 0); // sum of votes for all comments
     const [profileVotesCount, setUCount] = useState(props.profileVotesCount || 0); //count of votes in profile
     const [profileVotingResult, setU] = useState(props.profileVotesSum || 0); // sum of votes in profile
-    const [punishment, setPunishment] = useState(0); // penalty set by moderator
+    const [punishment, setPunishment] = useState(props.senatePenalty || 0); // penalty set by moderator
 
     useEffect(() => {
          setU( clamp(profileVotingResult, -profileVotesCount * 2, profileVotesCount * 2));

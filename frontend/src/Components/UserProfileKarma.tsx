@@ -121,6 +121,12 @@ export const UserProfileKarma = (props: UserProfileKarmaProps) => {
         restrictions.push(<><span className={'i i-thumbs-up'}></span>Ура! Права не ограничены!</>);
     }
 
+    if (restrictions && restrictionsResult.senatePenalty > 0) {
+        // prepend
+        restrictions.unshift(<><span className={'i i-irony'}></span>Наложен штраф сенатом. Но ведь у нас еще нет
+            сената!</>);
+    }
+
     return (
         <>
             {isOwnProfile && <div className={styles.info}>
@@ -139,7 +145,8 @@ export const UserProfileKarma = (props: UserProfileKarmaProps) => {
             {karmaResult && <>
                 <div className={styles.container}>
                     <Karma commentsSumRating={sumCommentRating} postsSumRating={sumPostRating}
-                           profileVotesCount={activeKarmaVotesCount} profileVotesSum={activeKarmaVotesSum}/>
+                           profileVotesCount={activeKarmaVotesCount} profileVotesSum={activeKarmaVotesSum}
+                           senatePenalty={karmaResult.senatePenalty} />
 
                     <div>
                         <h3>Голоса активных пользователей:</h3>
