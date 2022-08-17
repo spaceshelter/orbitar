@@ -78,13 +78,13 @@ export const UserPage = observer(() => {
                             <div className={styles.name}>{user.name}</div>
                         </div>
                         <div className={styles.karma}>
-                            <RatingSwitch rating={rating} type='user' id={user.id} double={true} canVote={restrictions?.canVoteKarma} />
+                            <RatingSwitch rating={rating} type='user' id={user.id} double={true} votingDisabled={!restrictions?.canVoteKarma} />
                         </div>
                     </div>
 
                     <div className={styles.registered}>#{user.id}, зарегистрирован <DateComponent date={user.registered} />
                         {user.active && <span className={styles.active} title={'Активно посещал сайт в эту неделю'}>, <span className={'i i-alive'}></span>&nbsp;активен</span>}
-                        {!user.active && <span className={styles.active} title={'Не был или был недолго на сайте в эту неделю'}>, <span className={'i i-ghost'}></span>&nbsp;неактивен</span>}
+                        {!user.active && <span className={styles.active} title={'В последнюю неделю не заходил на сайт или заходил недостаточно часто, чтобы считаться активным'}>, <span className={'i i-ghost'}></span>&nbsp;неактивен</span>}
                     </div>
                 </div>
 
