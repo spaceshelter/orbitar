@@ -46,17 +46,15 @@ export const UserProfileInvites = () => {
                 ?
                     <>
                         {activeInvites.map(invite =>
-                            <React.Fragment key={invite.code}>
-                                <div className='item'>
-                                    <button onClick={e => handleCopyInvite(e, invite.code)}>Скопировать</button>
-                                    <div className='code'><Link to={`//${process.env.REACT_APP_ROOT_DOMAIN}/invite/${invite.code}`} onClick={e => handleCopyInvite(e, invite.code)}>{process.env.REACT_APP_ROOT_DOMAIN}/invite/{invite.code}</Link></div>
-                                    {invite.invited.length > 0 &&
-                                        <div className='invited'>
-                                            {invite.invited.map(user => <Username key={user.username} user={user} />)}
-                                        </div>
-                                    }
-                                </div>
-                            </React.Fragment>
+                            <div className='item' key={invite.code}>
+                                <button onClick={e => handleCopyInvite(e, invite.code)}>Скопировать</button>
+                                <div className='code'><Link to={`//${process.env.REACT_APP_ROOT_DOMAIN}/invite/${invite.code}`} onClick={e => handleCopyInvite(e, invite.code)}>{process.env.REACT_APP_ROOT_DOMAIN}/invite/{invite.code}</Link></div>
+                                {invite.invited.length > 0 &&
+                                    <div className='invited'>
+                                        {invite.invited.map(user => <Username key={user.username} user={user} />)}
+                                    </div>
+                                }
+                            </div>
                         )}
                     </>
                 :
@@ -68,16 +66,14 @@ export const UserProfileInvites = () => {
                     <h4>Использованные инвайты</h4>
                     <div className='list'>
                         {inactiveInvites.map(invite =>
-                            <React.Fragment key={invite.code}>
-                                <div className='item'>
-                                    <div className='code'>{invite.code}</div>
-                                    {invite.invited.length > 0 &&
-                                        <div className='invited'>
-                                            {invite.invited.map(user => <Username key={user.username} user={user}/>)}
-                                        </div>
-                                    }
-                                </div>
-                            </React.Fragment>
+                            <div className='item' key={invite.code}>
+                                <div className='code'>{invite.code}</div>
+                                {invite.invited.length > 0 &&
+                                    <div className='invited'>
+                                        {invite.invited.map(user => <Username key={user.username} user={user}/>)}
+                                    </div>
+                                }
+                            </div>
                         )}
                     </div>
                 </>
