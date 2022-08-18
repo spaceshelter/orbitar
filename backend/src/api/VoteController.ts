@@ -42,7 +42,7 @@ export default class VoteController {
         const {id, type, vote} = request.body;
 
         const restrictions = await this.userManager.getUserRestrictions(userId);
-        if (!restrictions.canVote) {
+        if ((type === 'user' && !restrictions.canVoteKarma) || (type !== 'user' && !restrictions.canVote)) {
             return response.error('cant-vote', 'Voting is disabled', 403);
         }
 

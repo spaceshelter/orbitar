@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import styles from './UserPage.module.scss';
 import {Link, useLocation, useNavigate, useParams} from 'react-router-dom';
 import Username from '../Components/Username';
@@ -12,6 +12,7 @@ import UserProfileComments from '../Components/UserProfileComments';
 import {UserProfileInvites} from '../Components/UserProfileInvites';
 import {observer} from 'mobx-react-lite';
 import {UserProfileKarma} from '../Components/UserProfileKarma';
+import {UserRestrictionsResponse} from '../API/UserAPI';
 
 export const UserPage = observer(() => {
     const {userInfo} = useAppState();
@@ -33,11 +34,25 @@ export const UserPage = observer(() => {
 
     const isProfile = !isPosts && !isComments && !isInvites && !isKarma;
 
+    const [restrictions, setRestrictions] = useState<UserRestrictionsResponse | undefined>();
+
     useEffect(() => {
         if (state.status === 'ready') {
             document.title = state.profile.profile.username;
         }
     }, [state]);
+
+    useEffect(() => {
+        const userName = userInfo?.username;
+        userName && api.userAPI.userRestrictions(userName)
+            .then(result => {
+                    console.log('Restrictions response', result);
+                    setRestrictions(result);
+                }
+            ).catch(err => {
+            console.error('Restrictions response error', err);
+        });
+    }, [userInfo?.username, api.userAPI]);
 
     const handleLogout = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -57,22 +72,29 @@ export const UserPage = observer(() => {
         return (
             <div className={styles.container}>
                 <div className={styles.header}>
-                    <div className={styles.username}>{user.username}</div>
-                    <div className={styles.name}>{user.name}</div>
+                    <div className={styles.row}>
+                        <div>
+                            <div className={styles.username}>{user.username}</div>
+                            <div className={styles.name}>{user.name}</div>
+                        </div>
+                        <div className={styles.karma}>
+                            <RatingSwitch rating={rating} type='user' id={user.id} double={true} votingDisabled={!restrictions?.canVoteKarma} />
+                        </div>
+                    </div>
+
                     <div className={styles.registered}>#{user.id}, зарегистрирован <DateComponent date={user.registered} />
-                        {user.active && <span className={styles.active} title={'Активно посещал сайт в эту неделю'}>, <span className={'i i-alive'}></span>  активен</span>}
-                        {!user.active && <span className={styles.active} title={'Не был или был недолго на сайте в эту неделю'}>, <span className={'i i-ghost'}></span> неактивен</span>}
+                        {user.active && <span className={styles.active} title={'Активно посещал сайт в эту неделю'}>, <span className={'i i-alive'}></span>&nbsp;активен</span>}
+                        {!user.active && <span className={styles.active} title={'В последнюю неделю не заходил на сайт или заходил недостаточно часто, чтобы считаться активным'}>, <span className={'i i-ghost'}></span>&nbsp;неактивен</span>}
                     </div>
                 </div>
+
                 <div className={styles.controls}>
                     <Link className={`${styles.control} ${isProfile ? styles.active : ''}`} to={base}>Профиль</Link>
                     <Link className={`${styles.control} ${isPosts ? styles.active : ''}`} to={base + '/posts'}>Посты</Link>
                     <Link className={`${styles.control} ${isComments ? styles.active : ''}`} to={base + '/comments'}>Комментарии</Link>
                     <Link className={`${styles.control} ${isKarma ? styles.active : ''}`} to={base + '/karma'}>Саморегуляция</Link>
-                    {isMyProfile && <Link className={`${styles.control} ${isInvites ? styles.active : ''}`} to={'/profile/invites'}>Инвайты</Link>}
-                    <div className={styles.karma}>
-                        <RatingSwitch rating={rating} type='user' id={user.id} double={true} />
-                    </div>
+                    {isMyProfile && restrictions?.canInvite && <Link className={`${styles.control} ${isInvites ? styles.active : ''}`} to={'/profile/invites'}>Инвайты</Link>}
+
                 </div>
                 <div className={styles.userinfo}>
                     {isProfile && <>

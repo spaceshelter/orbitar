@@ -58,7 +58,7 @@ export default class UserController {
         const { username } = request.body;
 
         try {
-            const profileInfo = await this.userManager.getFullProfile(username, userId);
+            const profileInfo = await this.userManager.getByUsernameWithVote(username, userId);
 
             if (!profileInfo) {
                 return response.error('not-found', 'User not found', 404);
@@ -95,7 +95,7 @@ export default class UserController {
         const { username, format, page, perpage } = request.body;
 
         try {
-            const profile = await this.userManager.getFullProfile(username, userId);
+            const profile = await this.userManager.getByUsername(username);
 
             if (!profile) {
                 return response.error('not-found', 'User not found', 404);
@@ -126,7 +126,7 @@ export default class UserController {
         const { username, format, page, perpage } = request.body;
 
         try {
-            const profile = await this.userManager.getFullProfile(username, userId);
+            const profile = await this.userManager.getByUsername(username);
 
             if (!profile) {
                 return response.error('not-found', 'User not found', 404);
@@ -153,20 +153,21 @@ export default class UserController {
             return response.authRequired();
         }
 
-        const userId = request.session.data.userId;
         const { username } = request.body;
 
         try {
-            const profile = await this.userManager.getFullProfile(username, userId);
+            const profile = await this.userManager.getByUsername(username);
 
             if (!profile) {
                 return response.error('not-found', 'User not found', 404);
             }
 
+            const restrictions = await this.userManager.getUserRestrictions(profile.id);
             const ratingBySubsite: UserRatingBySubsite = await this.userManager.getUserRatingBySubsite(profile.id);
             const activeKarmaVotes = await this.userManager.getActiveKarmaVotes(profile.id);
 
             return response.success({
+                senatePenalty: restrictions.senatePenalty,
                 activeKarmaVotes,
                 postRatingBySubsite: ratingBySubsite.postRatingBySubsite,
                 commentRatingBySubsite: ratingBySubsite.commentRatingBySubsite
@@ -183,11 +184,10 @@ export default class UserController {
             return response.authRequired();
         }
 
-        const userId = request.session.data.userId;
         const { username } = request.body;
 
         try {
-            const profile = await this.userManager.getFullProfile(username, userId);
+            const profile = await this.userManager.getByUsername(username);
 
             if (!profile) {
                 return response.error('not-found', 'User not found', 404);

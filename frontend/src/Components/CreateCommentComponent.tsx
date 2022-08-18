@@ -45,9 +45,9 @@ export const CreateCommentComponentRestricted = observer((props: CreateCommentPr
         return <div className={styles.answer}><RestrictedToPostIdMessage postId={userRestrictions.restrictedToPostId}/></div>;
     }
 
-    if (userRestrictions?.commentSlowModeWaitSec) {
+    if (userRestrictions?.commentSlowModeWaitSecRemain) {
         return <div className={styles.answer}><RestrictedSlowMode
-            endTime={new Date(Date.now() + userRestrictions.commentSlowModeWaitSec * 1000)}
+            endTime={new Date(Date.now() + userRestrictions.commentSlowModeWaitSecRemain * 1000)}
             endCallback={() => api.user.refreshUserRestrictions()}/></div>;
     }
 
