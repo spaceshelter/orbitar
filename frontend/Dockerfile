@@ -1,6 +1,6 @@
 FROM node:14 as build
 WORKDIR /frontend-build
-COPY package*.json .
+COPY package*.json ./
 RUN npm install
 COPY . .
 ARG SERVER_DOMAIN
