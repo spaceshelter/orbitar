@@ -60,6 +60,7 @@ export default class VoteController {
                     break;
                 case 'user':
                     rating = await this.voteManager.userVote(id, rangedVote, userId);
+                    this.userManager.clearCache(userId);
                     break;
                 default:
                     return response.error('wrong-type', 'Wrong type', 401);

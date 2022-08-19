@@ -53,6 +53,10 @@ export default class UserManager {
         return user;
     }
 
+    public clearCache(userId: number) {
+        delete this.cacheId[userId];
+    }
+
     private cache(user: UserInfo) {
         this.cacheId[user.id] = user;
         this.cacheUsername[user.username] = user;
