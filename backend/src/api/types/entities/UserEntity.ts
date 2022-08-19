@@ -11,7 +11,7 @@ export type UserBaseEntity = {
 };
 
 export type UserEntity = UserBaseEntity & {
-    karma: number;
+    karma?: number;
     name?: string;
     vote?: number;
 };

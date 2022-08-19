@@ -58,7 +58,7 @@ export default class UserController {
         const { username } = request.body;
 
         try {
-            const profileInfo = await this.userManager.getByUsernameWithVote(username, userId);
+            const profileInfo = await this.userManager.getByUsernameWithVoteAndKarma(username, userId);
 
             if (!profileInfo) {
                 return response.error('not-found', 'User not found', 404);

@@ -21,6 +21,13 @@ export default class UserRepository {
         return await this.db.fetchOne<UserRaw>('select * from users where user_id=:user_id', {user_id: userId});
     }
 
+    async getUserKarma(userId: number): Promise<number> {
+        const res = await this.db.fetchOne<{ karma: string }>(`
+            select karma from users where user_id = :user_id
+        `, {user_id: userId});
+        return parseInt(res.karma || '0');
+    }
+
     async getUserByUsername(username: string): Promise<UserRaw | undefined> {
         return await this.db.fetchOne<UserRaw>('select * from users where username=:username', {username: username});
     }

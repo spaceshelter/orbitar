@@ -26,7 +26,7 @@ export default class UserManager {
     private cacheLastVisit: Record<number, Date> = {};
 
     constructor(credentialsRepository: UserCredentials, userRepository: UserRepository, voteRepository: VoteRepository,
-                commentRepository: CommentRepository,  postRepository: PostRepository,  webPushRepository: WebPushRepository, notificationManager: NotificationManager, redis: RedisClientType) {
+                commentRepository: CommentRepository, postRepository: PostRepository, webPushRepository: WebPushRepository, notificationManager: NotificationManager, redis: RedisClientType) {
         this.credentialsRepository = credentialsRepository;
         this.userRepository = userRepository;
         this.voteRepository = voteRepository;
@@ -74,13 +74,14 @@ export default class UserManager {
         return user;
     }
 
-    async getByUsernameWithVote(username: string, forUserId: number): Promise<UserInfo | undefined> {
+    async getByUsernameWithVoteAndKarma(username: string, forUserId: number): Promise<UserInfo | undefined> {
         const infoWithoutVote = await this.getByUsername(username);
         if (!infoWithoutVote) {
             return;
         }
         const vote = await this.voteRepository.getUserVote(infoWithoutVote.id, forUserId);
-        return {vote, ...infoWithoutVote};
+        const karma = await this.userRepository.getUserKarma(infoWithoutVote.id);
+        return {...infoWithoutVote, vote, karma};
     }
 
     async getInvitedBy(userId: number): Promise<UserInfo | undefined> {
@@ -322,7 +323,7 @@ export default class UserManager {
 
             postSlowModeWaitSec: canCreatePosts ? postSlowModeDelay : 0,
             postSlowModeWaitSecRemain: canCreatePosts && lastOwnPost ?
-                Math.max(lastOwnPost.created_at.getTime() / 1000 - Date.now() / 1000 + postSlowModeDelay, 0)  : 0,
+                Math.max(lastOwnPost.created_at.getTime() / 1000 - Date.now() / 1000 + postSlowModeDelay, 0) : 0,
 
             commentSlowModeWaitSec: commentSlowModeDelay,
             commentSlowModeWaitSecRemain: lastCommentTime ?
@@ -333,10 +334,10 @@ export default class UserManager {
             canVote: effectiveKarma >= NEG_KARMA_THRESH,
             canVoteKarma: effectiveKarma >= POS_KARMA_THRESH && !userIsNew,
 
-            canInvite : (effectiveKarma >= POS_KARMA_THRESH && !userIsNew) || userId <= 1 /* Orbitar, Plotva */,
+            canInvite: (effectiveKarma >= POS_KARMA_THRESH && !userIsNew) || userId <= 1 /* Orbitar, Plotva */,
 
-            canCreateSubsites : effectiveKarma > 0,
-            canEditOwnContent : effectiveKarma > MIN_KARMA
+            canCreateSubsites: effectiveKarma > 0,
+            canEditOwnContent: effectiveKarma > MIN_KARMA
         };
     }
 
