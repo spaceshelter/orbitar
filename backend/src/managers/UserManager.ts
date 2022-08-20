@@ -54,7 +54,12 @@ export default class UserManager {
     }
 
     public clearCache(userId: number) {
+        const cacheEntry = this.cacheId[userId];
+        if (!cacheEntry) {
+            return;
+        }
         delete this.cacheId[userId];
+        delete this.cacheUsername[cacheEntry.username];
     }
 
     private cache(user: UserInfo) {
