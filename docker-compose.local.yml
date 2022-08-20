@@ -40,6 +40,7 @@ services:
       args:
         NODE_ENV: production
         SERVER_DOMAIN: ${SERVER_DOMAIN}
+        API_DOMAIN: ${API_DOMAIN}
     restart: "no"
     volumes:
       - frontend_build:/frontend
