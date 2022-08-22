@@ -10,6 +10,10 @@ on:
   #   branches:
   #     - dev
 
+env:
+  SERVER_DOMAIN: stage.orbitar.space
+  API_DOMAIN: stage-api.orbitar.space
+
 jobs:
   deployment:
     runs-on: [self-hosted, stage]
