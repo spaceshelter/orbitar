@@ -33,4 +33,4 @@ jobs:
         run: docker-compose -f docker-compose.local.yml build backend frontend
 
       - name: Deploy
-        run: docker-compose -f docker-compose.local.yml up frontend backend
+        run: docker-compose -f docker-compose.local.yml -d up frontend backend
