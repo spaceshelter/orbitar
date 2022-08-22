@@ -27,7 +27,5 @@ jobs:
       - name: Build backend & frontend
         run: docker-compose -f docker-compose.local.yml build backend frontend
 
-      - name: Replace docker images
-        run: docker-compose -f docker-compose.local.yml up
-      
       - name: Deploy
+        run: docker-compose -f docker-compose.local.yml up
