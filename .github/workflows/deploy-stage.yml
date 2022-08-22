@@ -24,6 +24,9 @@ jobs:
 
       - name: Copy Caddy configuration
         run: |
+          whoami
+          ls -al /opt/
+          ls -al /opt/deployment-specific-files/
           cp -f /opt/deployment-specific-files/Caddyfile $GITHUB_WORKSPACE/caddy
           cp -f /opt/deployment-specific-files/chain.pem $GITHUB_WORKSPACE/caddy/certs
           cp -f /opt/deployment-specific-files/priv.pem $GITHUB_WORKSPACE/caddy/certs
