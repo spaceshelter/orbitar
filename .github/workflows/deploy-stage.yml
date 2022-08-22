@@ -1,0 +1,35 @@
+name: Staging Deployment
+
+concurrency: stage
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 4 * * 0'
+  # push:
+  #   branches:
+  #     - dev
+
+env:
+  SERVER_DOMAIN: stage.orbitar.space
+  API_DOMAIN: stage-api.orbitar.space
+
+jobs:
+  deployment:
+    runs-on: [self-hosted, stage]
+    environment: Staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Copy Caddy configuration
+        run: |
+          cp -f /opt/deployment-specific-files/Caddyfile $GITHUB_WORKSPACE/caddy
+          cp -f /opt/deployment-specific-files/chain.pem $GITHUB_WORKSPACE/caddy/certs
+          cp -f /opt/deployment-specific-files/priv.pem $GITHUB_WORKSPACE/caddy/certs
+
+      - name: Build backend & frontend
+        run: docker-compose -f docker-compose.local.yml build backend frontend
+
+      - name: Deploy
+        run: docker-compose -f docker-compose.local.yml up
