@@ -1,0 +1,49 @@
+{$SERVER_DOMAIN} {
+  tls /certs/chain.pem /certs/priv.pem
+
+  # CORS headers for *.svg
+  @cors {
+    path_regexp \.(svg|woff2?|ttf|eot)$
+    header Origin *.{$SERVER_DOMAIN}
+  }
+  header @cors {
+    Access-Control-Allow-Origin "{header.Origin}"
+    Vary Origin
+  }
+
+  # idiod.video proxy
+  handle_path /upload {
+    rewrite * /api/upload.php
+    reverse_proxy https://idiod.video {
+      header_up Host idiod.video
+      header_up -origin
+      header_up -referer
+      header_up -sec-ch-ua
+      header_up -sec-ch-ua-mobile
+      header_up -sec-ch-ua-platform
+      header_up -sec-fetch-dest
+      header_up -sec-fetch-mode
+      header_up -sec-fetch-site
+    }
+  }
+
+  root * /srv
+  file_server
+  try_files {path} /index.html
+}
+
+https://{$API_DOMAIN} {
+  tls /certs/chain.pem /certs/priv.pem
+  
+  reverse_proxy http://backend:5001
+}
+
+https://*.{$SERVER_DOMAIN} {
+  tls /certs/chain.pem /certs/priv.pem
+  @post {
+    path_regexp post ^\/post\/([0-9]+)$
+  }
+  redir @post http://{$SERVER_DOMAIN}/s/{http.request.host.labels.2}/p{re.post.1}
+
+  redir / http://{$SERVER_DOMAIN}/s/{http.request.host.labels.2}
+}
