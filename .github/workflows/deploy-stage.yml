@@ -30,7 +30,7 @@ jobs:
           cp -f /opt/deployment-specific-files/.env $GITHUB_WORKSPACE/
 
       - name: Build backend & frontend
-        run: docker-compose -f docker-compose.local.yml build backend frontend
+        run: docker-compose -f docker-compose.ssl.local.yml build backend frontend
 
       - name: Deploy
-        run: docker-compose -f docker-compose.local.yml up -d frontend backend
+        run: docker-compose -f docker-compose.ssl.local.yml up -d backend frontend
