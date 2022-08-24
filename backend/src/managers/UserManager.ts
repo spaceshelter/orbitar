@@ -369,7 +369,7 @@ export default class UserManager {
     }
 
     private mapUserFeedSortingSettingsRaw(rawUserSettings: FeedSortingSettingsRaw[]): FeedSortingSettingsBySite {
-        let result = {};
+        const result = {};
         rawUserSettings.map((settingItem) => {
             const siteId = settingItem.site_id === null ? 0 : settingItem.site_id;
             if (result[siteId] === undefined) {
