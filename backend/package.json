@@ -4,10 +4,10 @@
   "description": "",
   "main": "dist/app.js",
   "scripts": {
-    "start:dev": "npx tsc && SET NODE_ENV=development node build/app.js",
+    "start:dev": "npx tsc && NODE_ENV=development node build/app.js",
     "build": "npx tsc",
     "start:production": "NODE_ENV=production node build/app.js",
-    "migration:dev": "SET NODE_ENV=development node migrations.js",
+    "migration:dev": "NODE_ENV=development node migrations.js",
     "migration:production": "NODE_ENV=production node migrations.js",
     "generate-dummy-content": "NODE_ENV=development node dummy_content_generator.js",
     "lint": "npx eslint src",

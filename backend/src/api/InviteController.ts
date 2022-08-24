@@ -16,7 +16,7 @@ import {InviteRegenerateRequest, InviteRegenerateResponse} from './types/request
 import {InviteRawWithIssuer} from '../db/types/InviteRaw';
 
 // constant variables
-import { ERROR_CODES } from '../constants';
+import { ERROR_CODES } from '../api/utils/error-codes';
 
 export default class InviteController {
     public router = Router();

@@ -18,7 +18,7 @@ import VoteManager from '../managers/VoteManager';
 import {UserRatingBySubsite} from '../managers/types/UserInfo';
 
 // constant variables
-import { ERROR_CODES } from '../constants';
+import { ERROR_CODES } from '../api/utils/error-codes';
 
 export default class UserController {
     public readonly router = Router();
