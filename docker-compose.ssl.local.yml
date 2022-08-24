@@ -11,6 +11,7 @@ services:
       IMGUR_CLIENT_ID: ${IMGUR_CLIENT_ID}
     volumes:
       - $PWD/caddy/Caddyfile.ssl.local:/etc/caddy/Caddyfile
+      - $PWD/caddy/certs:/certs
       - frontend_build:/srv
       - caddy_data:/data
       - caddy_config:/config
