@@ -39,11 +39,11 @@ export default class UserRepository {
     }
 
     async getFeedSortingSettingsByUserId(userId: number): Promise<FeedSortingSettingsRaw[] | undefined> {
-        return await this.db.query<FeedSortingSettingsRaw[]>('select * from user_settings where user_id=:user_id', {user_id: userId});
+        return await this.db.query<FeedSortingSettingsRaw[]>('select * from feed_sorting_settings where user_id=:user_id', {user_id: userId});
     }
 
     async saveFeedSorting(siteId: number, feedSorting: FeedSorting, userId: number) {
-        await this.db.query(`replace into user_settings (user_id, site_id, feed_sorting) values (:user_id, :site_id, :feed_sorting)`, {
+        await this.db.query(`replace into feed_sorting_settings (user_id, site_id, feed_sorting) values (:user_id, :site_id, :feed_sorting)`, {
             user_id: userId,
             site_id: siteId,
             feed_sorting: feedSorting
