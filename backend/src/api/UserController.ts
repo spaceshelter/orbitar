@@ -17,6 +17,9 @@ import {UserProfileEntity} from './types/entities/UserEntity';
 import VoteManager from '../managers/VoteManager';
 import {UserRatingBySubsite} from '../managers/types/UserInfo';
 
+// constant variables
+import { ERROR_CODES } from '../constants';
+
 export default class UserController {
     public readonly router = Router();
     private readonly userManager: UserManager;
@@ -61,7 +64,7 @@ export default class UserController {
             const profileInfo = await this.userManager.getByUsernameWithVote(username, userId);
 
             if (!profileInfo) {
-                return response.error('not-found', 'User not found', 404);
+                return response.error(ERROR_CODES.NOT_FOUND, 'User not found', 404);
             }
 
             const invites = await this.userManager.getInvites(profileInfo.id);
@@ -98,7 +101,7 @@ export default class UserController {
             const profile = await this.userManager.getByUsername(username);
 
             if (!profile) {
-                return response.error('not-found', 'User not found', 404);
+                return response.error(ERROR_CODES.NOT_FOUND, 'User not found', 404);
             }
 
             const total = await this.postManager.getPostsByUserTotal(profile.id);
@@ -129,7 +132,7 @@ export default class UserController {
             const profile = await this.userManager.getByUsername(username);
 
             if (!profile) {
-                return response.error('not-found', 'User not found', 404);
+                return response.error(ERROR_CODES.NOT_FOUND, 'User not found', 404);
             }
 
             const total = await this.postManager.getUserCommentsTotal(profile.id);
@@ -159,7 +162,7 @@ export default class UserController {
             const profile = await this.userManager.getByUsername(username);
 
             if (!profile) {
-                return response.error('not-found', 'User not found', 404);
+                return response.error(ERROR_CODES.NOT_FOUND, 'User not found', 404);
             }
 
             const restrictions = await this.userManager.getUserRestrictions(profile.id);
@@ -190,7 +193,7 @@ export default class UserController {
             const profile = await this.userManager.getByUsername(username);
 
             if (!profile) {
-                return response.error('not-found', 'User not found', 404);
+                return response.error(ERROR_CODES.NOT_FOUND, 'User not found', 404);
             }
 
             const restrictions = await this.userManager.getUserRestrictions(profile.id);

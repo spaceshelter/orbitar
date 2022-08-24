@@ -15,6 +15,9 @@ import {InviteEntity} from './types/entities/InviteEntity';
 import {InviteRegenerateRequest, InviteRegenerateResponse} from './types/requests/InviteRegenerate';
 import {InviteRawWithIssuer} from '../db/types/InviteRaw';
 
+// constant variables
+import { ERROR_CODES } from '../constants';
+
 export default class InviteController {
     public router = Router();
     private inviteManager: InviteManager;
@@ -78,11 +81,11 @@ export default class InviteController {
             const invite = await this.inviteManager.get(code);
             if (!invite || invite.left_count < 1) {
                 this.logger.warn(`Invalid or expired invite checked: ${code}`, { invite: code });
-                return response.error('invalid-code', 'Invite code not found or already used');
+                return response.error(ERROR_CODES.INVALID_CODE, 'Invite code not found or already used');
             }
 
             if (!await this.verifyInvitePermissions(invite)) {
-                return response.error('invalid-code', 'Invite code can\'t be used');
+                return response.error(ERROR_CODES.INVALID_CODE, 'Invite code can\'t be used');
             }
 
             return response.success({
@@ -106,7 +109,7 @@ export default class InviteController {
         try {
             const invite = await this.inviteManager.get(code);
             if (!invite || !await this.verifyInvitePermissions(invite)) {
-                return response.error('invalid-code', 'Invite code not found or already used');
+                return response.error(ERROR_CODES.INVALID_CODE, 'Invite code not found or already used');
             }
 
             const passwordHash = await bcrypt.hash(password, 10);
