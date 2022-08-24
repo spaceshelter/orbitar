@@ -32,7 +32,7 @@
   try_files {path} /index.html
 }
 
-https://{$API_DOMAIN} {
+{$API_DOMAIN} {
   tls /certs/chain.pem /certs/priv.pem
   
   reverse_proxy http://backend:5001
