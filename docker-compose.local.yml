@@ -20,7 +20,7 @@ services:
   mysql:
     platform: linux/amd64
     build:
-      context: mysql
+      context: mysql:8.0.30
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
