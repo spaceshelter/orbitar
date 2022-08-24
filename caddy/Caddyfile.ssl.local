@@ -36,7 +36,7 @@
   tls /certs/chain.pem /certs/priv.pem
 
   header {
-    Access-Control-Allow-Origin * "{header.Origin}"
+    Access-Control-Allow-Origin .* "{header.Origin}"
   }
   
   reverse_proxy http://backend:5001
