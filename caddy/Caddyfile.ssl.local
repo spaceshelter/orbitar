@@ -37,13 +37,3 @@ https://{$API_DOMAIN} {
   
   reverse_proxy http://backend:5001
 }
-
-https://*.{$SERVER_DOMAIN} {
-  tls /certs/chain.pem /certs/priv.pem
-  @post {
-    path_regexp post ^\/post\/([0-9]+)$
-  }
-  redir @post http://{$SERVER_DOMAIN}/s/{http.request.host.labels.2}/p{re.post.1}
-
-  redir / http://{$SERVER_DOMAIN}/s/{http.request.host.labels.2}
-}
