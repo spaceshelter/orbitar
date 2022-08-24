@@ -11,18 +11,9 @@ services:
       API_DOMAIN: ${API_DOMAIN}
       IMGUR_CLIENT_ID: ${IMGUR_CLIENT_ID}
     volumes:
-      - type: volume
-        source: $PWD/caddy/Caddyfile.ssl.local
-        target: /etc/caddy/Caddyfile
-        read_only: true
-      - type: volume
-        source: $PWD/caddy/certs
-        target: /certs
-        read_only: true
-      - type: volume
-        source: frontend_build
-        target: /srv
-        read_only: true
+      - $PWD/caddy/Caddyfile.ssl.local:/etc/caddy/Caddyfile:ro
+      - $PWD/caddy/certs:/certs:ro
+      - frontend_build:/srv:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
