@@ -21,10 +21,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          ref: dev
 
       - name: Copy configuration
         run: |
-          cp -f /opt/deployment-specific-files/Caddyfile $GITHUB_WORKSPACE/caddy
           cp -f /opt/deployment-specific-files/chain.pem $GITHUB_WORKSPACE/caddy/certs
           cp -f /opt/deployment-specific-files/priv.pem $GITHUB_WORKSPACE/caddy/certs
           cp -f /opt/deployment-specific-files/.env $GITHUB_WORKSPACE/
