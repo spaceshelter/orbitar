@@ -1,6 +1,7 @@
 import {UserInfo} from './UserInfo';
 
 export type SiteWithoutOwner = {
+    id: number;
     site: string;
     name: string;
 };

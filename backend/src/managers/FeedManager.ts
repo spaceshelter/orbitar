@@ -9,19 +9,23 @@ import {PostInfo} from './types/PostInfo';
 import {ContentFormat} from './types/common';
 import {SiteInfo} from './types/SiteInfo';
 import SiteManager from './SiteManager';
+import {FeedSorting, getFeedSortingBySiteId} from '../db/types/FeedSortingSettings';
+import UserManager from './UserManager';
 
 export default class FeedManager {
     private readonly bookmarkRepository: BookmarkRepository;
     private readonly postRepository: PostRepository;
     private readonly userRepository: UserRepository;
     private readonly siteManager: SiteManager;
+    private readonly userManager: UserManager;
     private readonly redis: RedisClientType;
 
-    constructor(bookmarkRepository: BookmarkRepository, postRepository: PostRepository, userRepository: UserRepository, siteManager: SiteManager, redis: RedisClientType) {
+    constructor(bookmarkRepository: BookmarkRepository, postRepository: PostRepository, userRepository: UserRepository, siteManager: SiteManager, userManager: UserManager, redis: RedisClientType) {
         this.bookmarkRepository = bookmarkRepository;
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.siteManager = siteManager;
+        this.userManager = userManager;
         this.redis = redis;
     }
 
@@ -51,8 +55,8 @@ export default class FeedManager {
         return await this.redis.zCount(`subscriptions:${forUserId}`, 0, '+inf');
     }
 
-    async getAllPosts(forUserId: number, page: number, perpage: number, format: ContentFormat): Promise<PostInfo[]> {
-        const rawPosts = await this.postRepository.getAllPosts(forUserId, page, perpage);
+    async getAllPosts(forUserId: number, page: number, perpage: number, format: ContentFormat, sortBy: FeedSorting): Promise<PostInfo[]> {
+        const rawPosts = await this.postRepository.getAllPosts(forUserId, page, perpage, sortBy);
         return this.convertRawPost(forUserId, rawPosts, format);
     }
 
@@ -60,8 +64,8 @@ export default class FeedManager {
         return await this.postRepository.getAllPostsTotal();
     }
 
-    async getWatchFeed(forUserId: number, page: number, perpage: number, all = false, format: ContentFormat = 'html'): Promise<PostInfo[]> {
-        const rawPosts = await this.postRepository.getWatchPosts(forUserId, page, perpage, all);
+    async getWatchFeed(forUserId: number, page: number, perpage: number, all = false, format: ContentFormat = 'html', sortBy: FeedSorting): Promise<PostInfo[]> {
+        const rawPosts = await this.postRepository.getWatchPosts(forUserId, page, perpage, all, sortBy);
         return await this.convertRawPost(forUserId, rawPosts, format);
     }
 
@@ -69,9 +73,8 @@ export default class FeedManager {
         return await this.postRepository.getWatchPostsTotal(forUserId, all);
     }
 
-
-    async getSiteFeed(forUserId: number, siteId: number, page: number, perpage: number, format: ContentFormat): Promise<PostInfo[]> {
-        const rawPosts = await this.postRepository.getPosts(siteId, forUserId, page, perpage);
+    async getSiteFeed(forUserId: number, siteId: number, page: number, perpage: number, format: ContentFormat, sortBy: FeedSorting): Promise<PostInfo[]> {
+        const rawPosts = await this.postRepository.getPosts(siteId, forUserId, page, perpage, sortBy);
         return this.convertRawPost(forUserId, rawPosts, format);
     }
 
@@ -134,7 +137,9 @@ export default class FeedManager {
             }
 
             // console.log(`update subscription for ${user_id}`);
-            await this.redis.zAdd(`subscriptions:${user_id}`, [{ score: post.commented_at.getTime(), value: strPostId }]);
+            const user = await this.userManager.getById(user_id);
+            const sortingType = getFeedSortingBySiteId(user.feedSortingSettings, 1);
+            await this.redis.zAdd(`subscriptions:${user_id}`, [{ score: post[sortingType === FeedSorting.postCreatedAt ? 'created_at' : 'commented_at'].getTime(), value: strPostId }]);
 
             // TODO: use redis for update bookmarks
             await this.bookmarkRepository.setUpdated(postId, user_id, post.commented_at);
@@ -160,10 +165,12 @@ export default class FeedManager {
 
     async siteFanOutRun(forUserId: number, siteId: number, remove, state: TaskState) {
         // console.log('Fanout site', siteId);
-        let posts: { post_id: number, commented_at: Date }[];
+        let posts: { post_id: number, created_at: Date, commented_at: Date }[];
         let last_post_id = 0;
+        const user = await this.userManager.getById(forUserId);
+        const sortingType = getFeedSortingBySiteId(user.feedSortingSettings, 1);
         do {
-            posts = await this.postRepository.getSitePostUpdateDates(forUserId, siteId, last_post_id, 100);
+            posts = await this.postRepository.getSitePostUpdateAndCreateDates(forUserId, siteId, last_post_id, 100);
 
             if (state.cancelled) {
                 throw new Error('Fanout cancelled');
@@ -182,7 +189,7 @@ export default class FeedManager {
             else {
                 const redisValues = posts.map(post => {
                     return {
-                        score: post.commented_at.getTime(),
+                        score: post[sortingType === FeedSorting.postCreatedAt ? 'created_at' : 'commented_at'].getTime(),
                         value: `${post.post_id}`
                     };
                 });
@@ -233,7 +240,6 @@ export default class FeedManager {
 
     }
 
-
     async siteSubscribe(userId: number, siteName: string, main: boolean, bookmarks: boolean) {
         const site = await this.siteManager.getSiteByName(siteName);
         if (!site) {
@@ -254,5 +260,9 @@ export default class FeedManager {
         this.siteFanOut(userId, siteId, !main).then().catch();
 
         return { main, bookmarks };
+    }
+
+    async resetFeed(forUserId: number) {
+        this.redis.del(`subscriptions:${forUserId}:fanned`).catch();
     }
 }

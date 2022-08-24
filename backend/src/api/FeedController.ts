@@ -10,6 +10,9 @@ import {FeedPostsRequest, FeedPostsResponse} from './types/requests/FeedPosts';
 import {FeedWatchRequest, FeedWatchResponse} from './types/requests/FeedWatch';
 import PostManager from '../managers/PostManager';
 import {Enricher} from './utils/Enricher';
+import {FeedSorting, getFeedSortingBySiteId} from '../db/types/FeedSortingSettings';
+import rateLimit from 'express-rate-limit';
+import {FeedSortingSaveRequest, FeedSortingSaveResponse} from './types/requests/FeedSortingSave';
 
 export default class FeedController {
     public readonly router = Router();
@@ -46,10 +49,36 @@ export default class FeedController {
             format: joiFormat
         });
 
+        // limit changing sorting type to 10 times per minute to prevent flooding
+        const saveFeedSortingLimiter = rateLimit({
+            windowMs: 60 * 1000,
+            max: 10
+        });
+
         this.router.post('/feed/subscriptions', validate(feedSubscriptionsSchema), (req, res) => this.feedSubscriptions(req, res));
         this.router.post('/feed/all', validate(feedSubscriptionsSchema), (req, res) => this.feedAll(req, res));
         this.router.post('/feed/posts', validate(feedPostsSchema), (req, res) => this.feedPosts(req, res));
         this.router.post('/feed/watch', validate(feedWatchSchema), (req, res) => this.feedWatch(req, res));
+        this.router.post('/feed/sorting', saveFeedSortingLimiter, (req, res) => this.saveFeedSorting(req, res));
+    }
+
+    async saveFeedSorting(request: APIRequest<FeedSortingSaveRequest>, response: APIResponse<FeedSortingSaveResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+
+        const userId = request.session.data.userId;
+
+        try {
+            await this.userManager.saveFeedSorting(request.body['site-id'], request.body['feed-sorting'] as FeedSorting, userId);
+            this.userManager.clearCache(userId);
+            await this.feedManager.resetFeed(userId);
+            return response.success({});
+        }
+        catch (err) {
+            this.logger.error(`Failed to change feed sorting`, {error: err});
+            return response.error('unknown', 'Unknown error', 500);
+        }
     }
 
     async feedSubscriptions(request: APIRequest<FeedSubscriptionsRequest>, response: APIResponse<FeedSubscriptionsResponse>) {
@@ -90,7 +119,8 @@ export default class FeedController {
 
         try {
             const total = await this.feedManager.getAllPostsTotal();
-            const rawPosts = await this.feedManager.getAllPosts(userId, page, perPage, format);
+            const user = await this.userManager.getById(userId);
+            const rawPosts = await this.feedManager.getAllPosts(userId, page, perPage, format, getFeedSortingBySiteId(user.feedSortingSettings, 1));
             const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts);
 
             response.success({
@@ -124,7 +154,8 @@ export default class FeedController {
 
             const siteId = site.id;
             const total = await this.feedManager.getSiteTotal(siteId);
-            const rawPosts = await this.feedManager.getSiteFeed(userId, siteId, page, perPage, format);
+            const user = await this.userManager.getById(userId);
+            const rawPosts = await this.feedManager.getSiteFeed(userId, siteId, page, perPage, format, getFeedSortingBySiteId(user.feedSortingSettings, siteId));
             const { posts, users } = await this.enricher.enrichRawPosts(rawPosts);
 
             response.success({
@@ -151,7 +182,8 @@ export default class FeedController {
 
         try {
             const total = await this.feedManager.getWatchTotal(userId, filter === 'all');
-            const rawPosts = await this.feedManager.getWatchFeed(userId, page, perPage, filter === 'all', format);
+            const user = await this.userManager.getById(userId);
+            const rawPosts = await this.feedManager.getWatchFeed(userId, page, perPage, filter === 'all', format, getFeedSortingBySiteId(user.feedSortingSettings, 1));
             const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts);
 
             response.success({

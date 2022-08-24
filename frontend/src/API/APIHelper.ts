@@ -12,6 +12,8 @@ import SiteAPI from './SiteAPI';
 import SiteAPIHelper from './SiteAPIHelper';
 import NotificationsAPI from './NotificationsAPI';
 import NotificationsAPIHelper from './NotificationsAPIHelper';
+import FeedAPI from './FeedAPI';
+import FeedAPIHelper from './FeedAPIHelper';
 
 export default class APIHelper {
     auth: AuthAPIHelper;
@@ -26,6 +28,8 @@ export default class APIHelper {
     site: SiteAPIHelper;
     notificationsAPI: NotificationsAPI;
     notifications: NotificationsAPIHelper;
+    feedAPI: FeedAPI;
+    feed: FeedAPIHelper;
     private baseAPI: APIBase;
     private initRetryCount = 0;
     private appState: AppState;
@@ -40,6 +44,8 @@ export default class APIHelper {
         this.voteAPI = new VoteAPI(api);
         this.siteAPI = new SiteAPI(api);
         this.notificationsAPI = new NotificationsAPI(api);
+        this.feedAPI = new FeedAPI(api);
+        this.feed = new FeedAPIHelper(this.feedAPI, appState);
         this.post = new PostAPIHelper(this.postAPI, appState);
         this.userAPI = new UserAPI(api, this.post);
         this.auth = new AuthAPIHelper(this.authAPI, appState);

@@ -1,14 +1,31 @@
-import React, {useEffect} from 'react';
-import {useAppState} from '../AppState/AppState';
+import React, {useEffect, useState} from 'react';
+import {useAPI, useAppState} from '../AppState/AppState';
 import styles from './FeedPage.module.scss';
 import PostComponent from '../Components/PostComponent';
 import Paginator from '../Components/Paginator';
 import {Link, useMatch, useSearchParams} from 'react-router-dom';
 import {FeedType, useFeed} from '../API/use/useFeed';
 import {APIError} from '../API/APIBase';
+import {FeedSorting} from '../Types/FeedSortingSettings';
 
 export default function FeedPage() {
-    const { site, siteInfo } = useAppState();
+    const getFeedSorting = (siteId?: number): FeedSorting => {
+        if (!siteId) {
+            siteId = 0;
+        }
+        if (
+            !userInfo ||
+            !userInfo.feedSortingSettings ||
+            !userInfo.feedSortingSettings[siteId]
+        ) {
+            return FeedSorting.postCommentedAt;
+        }
+        return userInfo.feedSortingSettings[siteId].feed_sorting;
+    };
+
+    const { site, siteInfo, userInfo } = useAppState();
+    const [feedSorting, setFeedSorting] = useState(getFeedSorting(siteInfo?.id));
+    const api = useAPI();
 
     const [search] = useSearchParams();
 
@@ -37,7 +54,8 @@ export default function FeedPage() {
     const perpage = 20;
     const page = parseInt(search.get('page') || '1');
 
-    const { posts, loading, pages, error, updatePost } = useFeed(site, feedType, page, perpage);
+    const { posts, loading, pages, error, updatePost } = useFeed(site, feedType, page, perpage, feedSorting);
+
     useEffect(() => {
         window.scrollTo({ top: 0 });
     }, [page]);
@@ -53,11 +71,26 @@ export default function FeedPage() {
         document.title = docTitle;
     }, [siteInfo, feedType]);
 
+    const handleFeedSortingChange = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        const feedSorting = (e.currentTarget as HTMLAnchorElement).dataset.feedSorting;
+        if (feedSorting === undefined || !siteInfo?.id) {
+            return;
+        }
+        const newFeedSorting = parseInt(feedSorting, 10) as FeedSorting;
+        await api.feed.saveSorting(siteInfo.id, newFeedSorting);
+        setFeedSorting(newFeedSorting);
+    };
+
     return (
         <div className={styles.container}>
             <div className={styles.feed}>
                 {siteInfo?.site === 'main' && <div className={styles.feedControls}>
                     <Link to='/' className={feedType === 'subscriptions' ? styles.active : ''} replace={true}>мои подписки</Link> • <Link to='/all' className={feedType === 'all' ? styles.active : ''} replace={true}>все</Link> • <Link to='/posts' className={feedType === 'site' ? styles.active : ''} replace={true}>только главная</Link>
+                </div>}
+                {siteInfo && <div className={styles.feedControls}>
+                    <a href='#' data-feed-sorting={FeedSorting.postCommentedAt} className={feedSorting === FeedSorting.postCommentedAt ? styles.active : ''} onClick={handleFeedSortingChange}>LIVE</a>&nbsp;•&nbsp;
+                    <a href='#' data-feed-sorting={FeedSorting.postCreatedAt} className={feedSorting === FeedSorting.postCreatedAt ? styles.active : ''} onClick={handleFeedSortingChange}>НОВОЕ</a>
                 </div>}
                 {!error && loading && <div className={styles.loading}>Загрузка</div>}
                 {error && <div className={styles.error}>{

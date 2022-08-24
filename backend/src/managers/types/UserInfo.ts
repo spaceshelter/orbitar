@@ -1,3 +1,5 @@
+import {FeedSortingSettingsBySite} from '../../db/types/FeedSortingSettings';
+
 export enum UserGender {
     fluid,
     he,
@@ -15,6 +17,7 @@ export type UserInfo = UserBaseInfo & {
     name: string;
     vote?: number;
     registered: Date;
+    feedSortingSettings?: FeedSortingSettingsBySite;
 };
 
 export type UserStats = {

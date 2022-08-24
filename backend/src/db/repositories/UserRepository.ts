@@ -4,6 +4,7 @@ import {InviteRaw} from '../types/InviteRaw';
 import CodeError from '../../CodeError';
 import {OkPacket} from 'mysql2';
 import {UserGender} from '../../managers/types/UserInfo';
+import {FeedSorting, FeedSortingSettingsRaw} from '../types/FeedSortingSettings';
 
 export default class UserRepository {
     private db: DB;
@@ -34,6 +35,18 @@ export default class UserRepository {
     async getUserChildren(userId: number): Promise<UserRaw[]> {
         return await this.db.query<UserRaw[]>('select u.* from user_invites i join users u on (i.child_id = u.user_id) where i.parent_id=:user_id order by i.invited', {
             user_id: userId
+        });
+    }
+
+    async getFeedSortingSettingsByUserId(userId: number): Promise<FeedSortingSettingsRaw[] | undefined> {
+        return await this.db.query<FeedSortingSettingsRaw[]>('select * from user_settings where user_id=:user_id', {user_id: userId});
+    }
+
+    async saveFeedSorting(siteId: number, feedSorting: FeedSorting, userId: number) {
+        await this.db.query(`replace into user_settings (user_id, site_id, feed_sorting) values (:user_id, :site_id, :feed_sorting)`, {
+            user_id: userId,
+            site_id: siteId,
+            feed_sorting: feedSorting
         });
     }
 

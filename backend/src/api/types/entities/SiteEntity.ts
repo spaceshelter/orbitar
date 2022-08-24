@@ -1,6 +1,7 @@
 import {UserBaseEntity} from './UserEntity';
 
 export type SiteBaseEntity = {
+    id: number;
     site: string;
     name: string;
 };

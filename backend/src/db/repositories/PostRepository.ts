@@ -3,6 +3,7 @@ import {PostRaw, PostRawWithUserData} from '../types/PostRaw';
 import CodeError from '../../CodeError';
 import {ResultSetHeader} from 'mysql2';
 import {ContentSourceRaw} from '../types/ContentSourceRaw';
+import {FeedSorting} from '../types/FeedSortingSettings';
 
 export default class PostRepository {
     private db: DB;
@@ -37,7 +38,7 @@ export default class PostRepository {
         return result[0].cnt;
     }
 
-    async getPosts(siteId: number, forUserId: number, page: number, perPage: number): Promise<PostRawWithUserData[]> {
+    async getPosts(siteId: number, forUserId: number, page: number, perPage: number, sortBy: FeedSorting = FeedSorting.postCommentedAt): Promise<PostRawWithUserData[]> {
         const limitFrom = (page - 1) * perPage;
 
         return await this.db.query(`
@@ -48,7 +49,7 @@ export default class PostRepository {
                 where
                     site_id=:site_id
                 order by
-                    commented_at desc
+                    ${sortBy === FeedSorting.postCommentedAt ? 'commented_at' : 'created_at'} desc
                 limit :limit_from,:limit_count
             `,
             {
@@ -95,7 +96,7 @@ export default class PostRepository {
         return parseInt(result.cnt || '');
     }
 
-    async getAllPosts(forUserId: number, page: number, perPage: number): Promise<PostRawWithUserData[]> {
+    async getAllPosts(forUserId: number, page: number, perPage: number, sortBy: FeedSorting = FeedSorting.postCommentedAt): Promise<PostRawWithUserData[]> {
         const limitFrom = (page - 1) * perPage;
 
         return await this.db.query(`
@@ -105,7 +106,7 @@ export default class PostRepository {
                 left join user_bookmarks b on (p.post_id = b.post_id and b.user_id=:user_id)
                 left join post_votes v on (v.post_id = p.post_id and v.voter_id=:user_id)
             order by
-                p.commented_at desc
+                p.${sortBy === FeedSorting.postCommentedAt ? 'commented_at' : 'created_at'} desc
             limit
                 :limit_from,:limit_count
             `,
@@ -141,7 +142,7 @@ export default class PostRepository {
         return parseInt(result.cnt || '');
     }
 
-    async getWatchPosts(forUserId: number, page: number, perPage: number, all = false): Promise<PostRawWithUserData[]> {
+    async getWatchPosts(forUserId: number, page: number, perPage: number, all = false, sortBy: FeedSorting = FeedSorting.postCommentedAt): Promise<PostRawWithUserData[]> {
         const limitFrom = (page - 1) * perPage;
 
         return await this.db.query(`
@@ -155,7 +156,7 @@ export default class PostRepository {
                 and watch = 1
             ${all ? '' : 'having cnt > 0'}
             order by
-                b.post_updated_at desc
+                b.${sortBy === FeedSorting.postCommentedAt ? 'post_updated_at' : 'post_id'} desc
             limit
                 :limit_from,:limit_count
             `,
@@ -201,9 +202,9 @@ export default class PostRepository {
         });
     }
 
-    async getSitePostUpdateDates(forUserId: number, siteId: number, afterPostId: number, limit: number): Promise<{ post_id: number, commented_at: Date }[]> {
+    async getSitePostUpdateAndCreateDates(forUserId: number, siteId: number, afterPostId: number, limit: number): Promise<{ post_id: number, commented_at: Date, created_at: Date }[]> {
         return await this.db.fetchAll(`
-                    select p.post_id, p.commented_at
+                    select p.post_id, p.commented_at, p.created_at
                     from posts p 
                     where
                         p.site_id=:site_id and

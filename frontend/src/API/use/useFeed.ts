@@ -2,10 +2,11 @@ import {useAPI} from '../../AppState/AppState';
 import {useEffect, useMemo, useState} from 'react';
 import {PostInfo} from '../../Types/PostInfo';
 import {useCache} from './useCache';
+import {FeedSorting} from '../../Types/FeedSortingSettings';
 
 export type FeedType = 'all' | 'subscriptions' | 'site' | 'watch' | 'watch-all' | 'user-profile';
 
-export function useFeed(id: string, feedType: FeedType | undefined, page: number, perpage: number) {
+export function useFeed(id: string, feedType: FeedType | undefined, page: number, perpage: number, feedSorting: FeedSorting = FeedSorting.postCommentedAt) {
     const api = useAPI();
     const [cachedPosts, setCachedPosts] = useCache<PostInfo[]>('feed', [id, feedType, page, perpage]);
 
@@ -109,7 +110,7 @@ export function useFeed(id: string, feedType: FeedType | undefined, page: number
                 setError(['Не удалось загрузить ленту постов', error]);
             });
         }
-    }, [id, feedType, page, api.post, perpage]);
+    }, [id, feedType, page, api.post, perpage, feedSorting]);
 
     return { posts, loading, pages, error, updatePost };
 }
