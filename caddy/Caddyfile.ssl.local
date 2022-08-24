@@ -34,6 +34,11 @@
 
 {$API_DOMAIN} {
   tls /certs/chain.pem /certs/priv.pem
+
+  header {
+    Access-Control-Allow-Origin "{header.Origin}"
+    Vary Origin
+  }
   
   reverse_proxy http://backend:5001
 }
