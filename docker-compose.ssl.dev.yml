@@ -8,24 +8,22 @@ services:
       - "443:443"
     environment:
       SERVER_DOMAIN: ${SERVER_DOMAIN}
+      API_DOMAIN: ${API_DOMAIN}
       IMGUR_CLIENT_ID: ${IMGUR_CLIENT_ID}
     volumes:
-      - $PWD/caddy/Caddyfile.ssl.dev:/etc/caddy/Caddyfile
-      - $PWD/caddy/certs:/certs
+      - $PWD/caddy/Caddyfile.ssl.dev:/etc/caddy/Caddyfile:ro
+      - $PWD/caddy/certs:/certs:ro
       - caddy_data:/data
       - caddy_config:/config
 
   mysql:
-    platform: linux/amd64
-    build:
-      context: mysql
+    image: mysql:5.7
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
       - mysql_db:/var/lib/mysql
-    ports:
-      - "3306:3306"
+      - $PWD/mysql/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
 
   redis:
     image: redis:7
