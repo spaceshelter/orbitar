@@ -241,6 +241,13 @@ export default class FeedManager {
         }
 
         const siteId = site.id;
+
+        const existingSubscription = await this.siteManager.getSubscription(userId, site.id);
+        if (existingSubscription && !!existingSubscription.feed_main === main &&
+            !!existingSubscription.feed_bookmarks === bookmarks) {
+            return { main, bookmarks };
+        }
+
         await this.siteManager.siteSubscribe(userId, site.id, main, bookmarks);
 
         // fanout in background

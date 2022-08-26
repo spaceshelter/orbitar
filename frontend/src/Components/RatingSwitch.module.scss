@@ -26,6 +26,9 @@
         &.plus { color: var(--primary); }
         &.dis {  color: var(--fgGhost); }
     }
+    button:disabled {
+        color: var(--fgAlmostInvisible);
+    }
 }
 
 

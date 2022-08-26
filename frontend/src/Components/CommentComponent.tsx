@@ -2,12 +2,13 @@ import {CommentInfo, PostLinkInfo} from '../Types/PostInfo';
 import styles from './CommentComponent.module.scss';
 import RatingSwitch from './RatingSwitch';
 import React, {useMemo, useState} from 'react';
-import CreateCommentComponent from './CreateCommentComponent';
+import {CreateCommentComponentRestricted} from './CreateCommentComponent';
 import ContentComponent from './ContentComponent';
 import {useAPI} from '../AppState/AppState';
 import {toast} from 'react-toastify';
 import {SignatureComponent} from './SignatureComponent';
 import {HistoryComponent} from './HistoryComponent';
+import Conf from '../Conf';
 
 interface CommentProps {
     comment: CommentInfo;
@@ -17,6 +18,8 @@ interface CommentProps {
     onEdit?: (text: string, comment: CommentInfo) => Promise<CommentInfo | undefined>;
     depth?: number
     maxTreeDepth?: number
+    idx?: number
+    unreadOnly?: boolean
 }
 
 export default function CommentComponent(props: CommentProps) {
@@ -81,18 +84,20 @@ export default function CommentComponent(props: CommentProps) {
     return (
         <div className={styles.comment + (props.comment.isNew ? ' isNew': '') + (isFlat?' isFlat':'')} data-comment-id={props.comment.id}>
             <div className='commentBody'>
-                <SignatureComponent showSite={props.showSite} site={site} author={author} onHistoryClick={toggleHistory} parentCommentId={isFlat?props.parent?.id:undefined} postLink={postLink} commentId={props.comment.id} date={created} editFlag={editFlag} />
+                <SignatureComponent showSite={props.showSite} site={site} author={author} onHistoryClick={toggleHistory}
+                                    parentCommentId={props.idx && props.parent?.id} parentCommentAuthor={props.parent?.author?.username}
+                                    postLink={postLink} commentId={props.comment.id} postLinkIsNew={props.unreadOnly} date={created} editFlag={editFlag} />
                 {editingText === false ?
                     (showHistory
                         ?
                             <HistoryComponent initial={{ content, date: created }} history={{ id: props.comment.id, type: 'comment' }} onClose={toggleHistory} />
                         :
                             <div className={styles.content}>
-                                <ContentComponent className={styles.commentContent} content={content} />
+                                <ContentComponent className={styles.commentContent} content={content} lowRating={props.comment.rating <= Conf.COMMENT_LOW_RATING_THRESHOLD} autoCut={props.comment.rating <= Conf.COMMENT_LOW_RATING_THRESHOLD} />
                             </div>
                     )
                 :
-                    <CreateCommentComponent open={true} text={editingText} onAnswer={handleEditComplete} />
+                    <CreateCommentComponentRestricted open={true} text={editingText} onAnswer={handleEditComplete} />
                 }
 
                 <div className={styles.controls}>
@@ -105,9 +110,10 @@ export default function CommentComponent(props: CommentProps) {
             </div>
             {(props.comment.answers || answerOpen) ?
                 <div className={styles.answers + (isFlat?' isFlat':'')}>
-                    {props.onAnswer && <CreateCommentComponent open={answerOpen} post={props.comment.postLink} comment={props.comment} onAnswer={handleAnswer} />}
-                    {props.comment.answers && props.onAnswer ? props.comment.answers.map(comment =>
-                        <CommentComponent maxTreeDepth={maxDepth} depth={depth+1} parent={props.comment} key={comment.id} comment={comment} onAnswer={props.onAnswer} onEdit={props.onEdit} />) : <></>}
+                    {props.onAnswer && <CreateCommentComponentRestricted open={answerOpen} post={props.comment.postLink} comment={props.comment} onAnswer={handleAnswer} />}
+                    {props.comment.answers && props.onAnswer ? props.comment.answers.map( (comment, idx) =>
+                        <CommentComponent maxTreeDepth={maxDepth} depth={depth+1} parent={props.comment} key={comment.id}
+                                          comment={comment} onAnswer={props.onAnswer} onEdit={props.onEdit} unreadOnly={props.unreadOnly} idx={idx} />) : <></>}
                 </div>
                 : <></>}
 

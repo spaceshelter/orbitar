@@ -13,6 +13,7 @@ import {InviteUseRequest, InviteUseResponse} from './types/requests/InviteUse';
 import {InviteListRequest, InviteListResponse} from './types/requests/InviteList';
 import {InviteEntity} from './types/entities/InviteEntity';
 import {InviteRegenerateRequest, InviteRegenerateResponse} from './types/requests/InviteRegenerate';
+import {InviteRawWithIssuer} from '../db/types/InviteRaw';
 
 export default class InviteController {
     public router = Router();
@@ -56,6 +57,16 @@ export default class InviteController {
         this.router.post('/invite/regenerate', limiter, validate(regenerateSchema), (req, res) => this.regenerate(req, res));
     }
 
+    async verifyInvitePermissions(invite: InviteRawWithIssuer) {
+        const issuerRestrictions = await this.userManager.getUserRestrictions(invite.issued_by);
+        if (!issuerRestrictions.canInvite) {
+            this.logger.warn(`Invite issuer ${invite.issued_by} has no permission to invite`,
+                {invite: invite.code});
+            return false;
+        }
+        return true;
+    }
+
     async checkInvite(request: APIRequest<InviteCheckRequest>, response: APIResponse<InviteCheckResponse>) {
         if (request.session.data.userId) {
             return response.error('signed-in', 'Already signed in');
@@ -68,6 +79,10 @@ export default class InviteController {
             if (!invite || invite.left_count < 1) {
                 this.logger.warn(`Invalid or expired invite checked: ${code}`, { invite: code });
                 return response.error('invalid-code', 'Invite code not found or already used');
+            }
+
+            if (!await this.verifyInvitePermissions(invite)) {
+                return response.error('invalid-code', 'Invite code can\'t be used');
             }
 
             return response.success({
@@ -89,6 +104,11 @@ export default class InviteController {
         const {code, username, email, name, password, gender} = request.body;
 
         try {
+            const invite = await this.inviteManager.get(code);
+            if (!invite || !await this.verifyInvitePermissions(invite)) {
+                return response.error('invalid-code', 'Invite code not found or already used');
+            }
+
             const passwordHash = await bcrypt.hash(password, 10);
 
             const user = await this.userManager.registerByInvite(code, username, name, email, passwordHash, gender);
@@ -138,6 +158,11 @@ export default class InviteController {
         const userId = request.session.data.userId;
 
         try {
+            if (!(await this.userManager.getUserRestrictions(userId)).canInvite) {
+                this.logger.warn(`User ${userId} has no permission to list invites`, {user: userId});
+                return response.error('no-permission', 'No permission to list invites', 403);
+            }
+
             const invites = await this.inviteManager.listInvites(userId);
 
             const active: InviteEntity[] = [];

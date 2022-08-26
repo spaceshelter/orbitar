@@ -130,7 +130,7 @@ export const themes: ThemeCollection = {
     light: {
         colors: {
             fg: 'rgba(0,0,0,0.76)',//text color
-            bg: '#efefef',// background
+            bg: '#fefefe',// background
             primary: '#4d94de', // primary accent for important
             danger: '#ED6158',// accent fo negative/dangerous things
             dangerHover: '#ce4c42',
@@ -140,7 +140,7 @@ export const themes: ThemeCollection = {
             linkVisited: '#4d94de',
             linkHover: '#2a74bd',
             shadow: 'rgba(0,0,0,0.15)',// shadows for elevated elements
-            glass: 'rgba(250,250,250,0.7)',// semi-transparent background
+            glass: 'rgba(255,255,255,0.7)',// semi-transparent background
 
 
             // ALL COLORS BELOW ARE DEPRECATED

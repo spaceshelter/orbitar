@@ -1,7 +1,7 @@
 import {SiteBaseInfo, SiteInfo, SiteWithUserInfo} from './types/SiteInfo';
 import UserManager from './UserManager';
 import SiteRepository from '../db/repositories/SiteRepository';
-import {SiteWithUserInfoRaw} from '../db/types/SiteRaw';
+import {SiteWithUserInfoRaw, UserSiteSubscription} from '../db/types/SiteRaw';
 
 export default class SiteManager {
     private siteRepository: SiteRepository;
@@ -87,6 +87,10 @@ export default class SiteManager {
 
     async siteSubscribe(userId: number, siteId: number, main: boolean, bookmarks: boolean) {
         await this.siteRepository.subscribe(userId, siteId, main, bookmarks);
+    }
+
+    getSubscription(userId: number, siteId: number): Promise<UserSiteSubscription | undefined> {
+        return this.siteRepository.getSubscription(userId, siteId);
     }
 
     async getSubscriptions(forUserId: number): Promise<SiteWithUserInfo[]> {

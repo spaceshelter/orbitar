@@ -5,6 +5,7 @@ import styles from './ContentComponent.module.scss';
 interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
     content: string;
     autoCut?: boolean;
+    lowRating?: boolean;
 }
 
 function updateContent(div: HTMLDivElement) {
@@ -62,6 +63,18 @@ export default function ContentComponent(props: ContentComponentProps) {
                 setCut(true);
             }
         }
+
+        if (props.lowRating) {
+            content.querySelectorAll('img, video, iframe').forEach(el => el.classList.add('low-rating'));
+
+            content.addEventListener('click', (evt) => {
+                evt.preventDefault();
+                evt.stopPropagation();
+                content.querySelectorAll('img, iframe, video').forEach(el => el.classList.remove('low-rating'));
+                return false;
+            }, {once: true});
+        }
+
     }, [contentDiv, props.autoCut]);
 
     const handleCut = () => {

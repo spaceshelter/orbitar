@@ -105,6 +105,7 @@ export default function NotificationsPopup(props: NotificationsPopupProps) {
                         post={{ id: notify.source.post.id, site: notify.source.post.site }}
                         commentId={notify.source.comment?.id}
                         onClick={e => handleNotificationClick(e, notify)}
+                        onlyNew={true}
                     >
                         <div className={styles.type}>{notify.type === 'answer' ? <CommentIcon /> : <MentionIcon />}</div>
                         <div className={styles.content}>

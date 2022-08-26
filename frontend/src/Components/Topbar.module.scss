@@ -12,11 +12,15 @@
     font-size: 16px;
     padding: 0 14px;
     z-index: 100;
+    pointer-events: none;
 
 
     .left, .right {
         display: flex;
         gap: 16px;
+        >*{
+            pointer-events: auto;
+        }
     }
 
    //:global{ }
@@ -25,6 +29,7 @@
         background-color:var(--glass);
         backdrop-filter: blur(4px);
         border-bottom: 1px solid var(--dim1);
+        pointer-events: auto;
     }
 
 

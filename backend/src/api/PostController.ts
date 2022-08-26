@@ -22,6 +22,14 @@ import {CommentEntity} from './types/entities/CommentEntity';
 import {PostEditRequest, PostEditResponse} from './types/requests/PostEdit';
 import {PostHistoryRequest, PostHistoryResponse} from './types/requests/PostHistory';
 import {HistoryEntity} from './types/entities/HistoryEntity';
+import rateLimit from 'express-rate-limit';
+
+const commonRateLimitConfig = {
+    skipSuccessfulRequests: false,
+    standardHeaders: false,
+    legacyHeaders: false,
+    keyGenerator: (req) => String(req.session.data?.userId)
+};
 
 export default class PostController {
     public readonly router = Router();
@@ -31,6 +39,27 @@ export default class PostController {
     private readonly siteManager: SiteManager;
     private readonly logger: Logger;
     private readonly enricher: Enricher;
+
+    // 5 per hour
+    private readonly postCreateRateLimiter = rateLimit({
+        max: 5,
+        windowMs: 3600 * 1000,
+        ...commonRateLimitConfig
+    });
+
+    /* 40/(30 mins) */
+    private readonly postEditRateLimiter = rateLimit({
+        max: 40,
+        windowMs: 30 * 60 * 1000,
+        ...commonRateLimitConfig
+    });
+
+    /* 40/(30 mins) */
+    private readonly commentRateLimiter = rateLimit({
+        max: 40,
+        windowMs: 30 * 60 * 1000,
+        ...commonRateLimitConfig
+    });
 
     constructor(enricher: Enricher, postManager: PostManager, feedManager: FeedManager, siteManager: SiteManager, userManager: UserManager, logger: Logger) {
         this.enricher = enricher;
@@ -95,15 +124,15 @@ export default class PostController {
         });
 
         this.router.post('/post/get', validate(getSchema), (req, res) => this.postGet(req, res));
-        this.router.post('/post/create', validate(postCreateSchema), (req, res) => this.create(req, res));
-        this.router.post('/post/edit', validate(editSchema), (req, res) => this.postEdit(req, res));
-        this.router.post('/post/comment', validate(commentSchema), (req, res) => this.comment(req, res));
+        this.router.post('/post/create', this.postCreateRateLimiter, validate(postCreateSchema), (req, res) => this.create(req, res));
+        this.router.post('/post/edit', this.postEditRateLimiter, validate(editSchema), (req, res) => this.postEdit(req, res));
+        this.router.post('/post/comment', this.commentRateLimiter, validate(commentSchema), (req, res) => this.comment(req, res));
         this.router.post('/post/preview', validate(previewSchema), (req, res) => this.preview(req, res));
         this.router.post('/post/read', validate(readSchema), (req, res) => this.read(req, res));
         this.router.post('/post/bookmark', validate(bookmarkSchema), (req, res) => this.bookmark(req, res));
         this.router.post('/post/watch', validate(watchingSchema), (req, res) => this.watch(req, res));
         this.router.post('/post/get-comment', validate(getCommentSchema), (req, res) => this.getComment(req, res));
-        this.router.post('/post/edit-comment', validate(editCommentSchema), (req, res) => this.editComment(req, res));
+        this.router.post('/post/edit-comment', this.commentRateLimiter, validate(editCommentSchema), (req, res) => this.editComment(req, res));
         this.router.post('/post/history', validate(historySchema), (req, res) => this.history(req, res));
     }
 
@@ -126,11 +155,21 @@ export default class PostController {
                 return response.error('error', 'Unknown error', 500);
             }
 
+            const restrictions = await this.userManager.getUserRestrictions(userId);
+
             const {posts: [post], users} = await this.enricher.enrichRawPosts([rawPost]);
+            if (!restrictions.canEditOwnContent) {
+                post.canEdit = false;
+            }
 
             let comments: CommentEntity[] = [];
             if (!noComments) {
                 const rawComments = await this.postManager.getPostComments(postId, userId, format);
+
+                if (!restrictions.canEditOwnContent) {
+                    rawComments.forEach(comment => comment.canEdit = false);
+                }
+
                 const {rootComments} = await this.enricher.enrichRawComments(rawComments, users, format,
                     (comment) => comment.author !== userId && comment.id > rawPost.lastReadCommentId
                 );
@@ -189,6 +228,14 @@ export default class PostController {
         const { site, format, content, title } = request.body;
 
         try {
+            const userRestrictions = await this.userManager.getUserRestrictions(userId);
+            if (userRestrictions.postSlowModeWaitSecRemain !== 0) {
+                return response.error('slow-mode', `Slow mode is enabled. Time left ${userRestrictions.postSlowModeWaitSecRemain} seconds.`, 403);
+            }
+            if (userRestrictions.restrictedToPostId && userRestrictions.restrictedToPostId !== true) {
+                return response.error('post-creation-restricted', 'You cannot create any more posts due to low karma.', 403);
+            }
+
             const postInfo = await this.postManager.createPost(site, userId, title, content, format);
             const {posts: [post]} = await this.enricher.enrichRawPosts([postInfo]);
 
@@ -226,6 +273,16 @@ export default class PostController {
 
         try {
             const users: Record<number, UserEntity> = {[userId]: await this.userManager.getById(userId)};
+
+            const userRestrictions = await this.userManager.getUserRestrictions(userId);
+            if (userRestrictions.commentSlowModeWaitSecRemain > 0) {
+                return response.error('slow-mode', `Slow mode, time left ${userRestrictions.commentSlowModeWaitSecRemain} sec`, 403);
+            }
+            if (userRestrictions.restrictedToPostId && postId !== userRestrictions.restrictedToPostId) {
+                const rid = userRestrictions.restrictedToPostId;
+                return response.error('restricted', `Commenting restricted ${rid === true ? 'to own posts' : `to post #${rid}`}`, 403);
+            }
+
             const commentInfo = await this.postManager.createComment(userId, postId, parentCommentId, content, format);
             const { allComments : [comment] } = await this.enricher.enrichRawComments([commentInfo], {}, format, () => true);
 
@@ -346,6 +403,11 @@ export default class PostController {
         const { id: commentId, content, format } = request.body;
 
         try {
+            const userRestrictions = await this.userManager.getUserRestrictions(userId);
+            if (!userRestrictions.canEditOwnContent) {
+                return response.error('restricted', 'Editing restricted', 403);
+            }
+
             const commentInfo = await this.postManager.editComment(userId, commentId, content, format);
             if (!commentInfo) {
                 return response.error('no-comment', 'Comment not found');

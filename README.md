@@ -123,3 +123,9 @@ docker-compose -p orbitar -f docker-compose.local.yml up
    
     npm run generate-dummy-content -- -u 10 -s 8 -p 20 -c 100
    
+Для генерации осмысленных текстов используйте параметр `-f 1`, например:
+
+    npm run generate-dummy-content -- -u 10 -s 8 -p 20 -c 100 -f 1
+
+
+Для генерации осмысленных текстов используется API https://fish-text.ru/, соответственно, нужно интернет-соединение
