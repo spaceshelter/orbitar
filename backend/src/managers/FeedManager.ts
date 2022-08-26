@@ -189,10 +189,10 @@ export default class FeedManager {
                 await this.redis.zRem(`subscriptions:${forUserId}`, redisValues);
             }
             else {
-                let redisValuesSortedByPostCreated = [];
-                let redisValuesSortedByPostCommented = [];
+                const redisValuesSortedByPostCreated = [];
+                const redisValuesSortedByPostCommented = [];
                 for (let i = 0; i < posts.length; i++) {
-                    let post = posts[i];
+                    const post = posts[i];
                     redisValuesSortedByPostCreated.push({
                         score: post.created_at.getTime(),
                         value: post.post_id
