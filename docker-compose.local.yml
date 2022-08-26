@@ -8,23 +8,24 @@ services:
       - "80:80"
     environment:
       SERVER_DOMAIN: ${SERVER_DOMAIN}
+      API_DOMAIN: ${API_DOMAIN}
       IMGUR_CLIENT_ID: ${IMGUR_CLIENT_ID}
     volumes:
-      - $PWD/caddy/Caddyfile.local:/etc/caddy/Caddyfile
-      - frontend_build:/srv
+      - $PWD/caddy/Caddyfile.local:/etc/caddy/Caddyfile:ro
+      - frontend_build:/srv:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
       - backend
 
   mysql:
-    platform: linux/amd64
-    image: mysql:8.0.30
+    image: mysql:5.7
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
       - mysql_db:/var/lib/mysql
+      - $PWD/mysql/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
 
   redis:
     image: redis:7
