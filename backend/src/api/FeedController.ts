@@ -1,7 +1,7 @@
 import FeedManager from '../managers/FeedManager';
 import {Logger} from 'winston';
 import {Router} from 'express';
-import {APIRequest, APIResponse, joiFormat, validate} from './ApiMiddleware';
+import {APIRequest, APIResponse, joiFormat, validate, joiSite} from './ApiMiddleware';
 import Joi from 'joi';
 import UserManager from '../managers/UserManager';
 import SiteManager from '../managers/SiteManager';
@@ -11,8 +11,7 @@ import {FeedWatchRequest, FeedWatchResponse} from './types/requests/FeedWatch';
 import PostManager from '../managers/PostManager';
 import {Enricher} from './utils/Enricher';
 import rateLimit from 'express-rate-limit';
-import {FeedSortingSaveRequest} from './types/requests/FeedSortingSave';
-import {getFeedSortingBySite} from '../db/utils/Feed';
+import {FeedSortingSaveRequest, FeedSortingSaveResponse} from './types/requests/FeedSortingSave';
 import {FeedSorting, MainSubdomain} from './types/entities/common';
 
 export default class FeedController {
@@ -50,7 +49,7 @@ export default class FeedController {
             format: joiFormat
         });
         const feedSortingSchema = Joi.object<FeedSortingSaveRequest>({
-            site: Joi.string().regex(/^[a-z\d-]{3,10}$/i).required(),
+            site: joiSite.required(),
             feedSorting: Joi.number().valid(FeedSorting.postCreatedAt, FeedSorting.postCommentedAt)
         });
 
@@ -67,7 +66,7 @@ export default class FeedController {
         this.router.post('/feed/sorting', saveFeedSortingLimiter, validate(feedSortingSchema), (req, res) => this.saveFeedSorting(req, res));
     }
 
-    async saveFeedSorting(request: APIRequest<FeedSortingSaveRequest>, response: APIResponse<Record<string, unknown>>) {
+    async saveFeedSorting(request: APIRequest<FeedSortingSaveRequest>, response: APIResponse<FeedSortingSaveResponse>) {
         if (!request.session.data.userId) {
             return response.authRequired();
         }
@@ -75,7 +74,7 @@ export default class FeedController {
         const userId = request.session.data.userId;
 
         try {
-            await this.userManager.saveFeedSorting(request.body['site'], request.body['feedSorting'] as FeedSorting, userId);
+            await this.userManager.saveFeedSorting(request.body.site, request.body.feedSorting as FeedSorting, userId);
             this.userManager.clearCache(userId);
             return response.success({});
         }
@@ -124,7 +123,7 @@ export default class FeedController {
         try {
             const total = await this.feedManager.getAllPostsTotal();
             const user = await this.userManager.getById(userId);
-            const rawPosts = await this.feedManager.getAllPosts(userId, page, perPage, format, getFeedSortingBySite(user.feedSortingSettings, MainSubdomain));
+            const rawPosts = await this.feedManager.getAllPosts(userId, page, perPage, format, UserManager.getFeedSortingBySite(user.feedSortingSettings, MainSubdomain));
             const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts);
 
             response.success({
@@ -159,7 +158,7 @@ export default class FeedController {
             const siteId = site.id;
             const total = await this.feedManager.getSiteTotal(siteId);
             const user = await this.userManager.getById(userId);
-            const rawPosts = await this.feedManager.getSiteFeed(userId, siteId, page, perPage, format, getFeedSortingBySite(user.feedSortingSettings, subdomain));
+            const rawPosts = await this.feedManager.getSiteFeed(userId, siteId, page, perPage, format, UserManager.getFeedSortingBySite(user.feedSortingSettings, subdomain));
             const { posts, users } = await this.enricher.enrichRawPosts(rawPosts);
 
             response.success({
@@ -187,7 +186,7 @@ export default class FeedController {
         try {
             const total = await this.feedManager.getWatchTotal(userId, filter === 'all');
             const user = await this.userManager.getById(userId);
-            const rawPosts = await this.feedManager.getWatchFeed(userId, page, perPage, filter === 'all', format, getFeedSortingBySite(user.feedSortingSettings, MainSubdomain));
+            const rawPosts = await this.feedManager.getWatchFeed(userId, page, perPage, filter === 'all', format, UserManager.getFeedSortingBySite(user.feedSortingSettings, MainSubdomain));
             const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts);
 
             response.success({

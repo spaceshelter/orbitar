@@ -10,7 +10,6 @@ import {ContentFormat} from './types/common';
 import {SiteInfo} from './types/SiteInfo';
 import SiteManager from './SiteManager';
 import UserManager from './UserManager';
-import {getFeedSortingBySite} from '../db/utils/Feed';
 import {FeedSorting, MainSubdomain} from '../api/types/entities/common';
 
 export default class FeedManager {
@@ -41,7 +40,7 @@ export default class FeedManager {
         }
 
         const user = await this.userManager.getById(forUserId);
-        const sortingType = getFeedSortingBySite(user.feedSortingSettings, MainSubdomain);
+        const sortingType = UserManager.getFeedSortingBySite(user.feedSortingSettings, MainSubdomain);
 
         // get post ids from redis
         const redisFeedName = sortingType === FeedSorting.postCommentedAt ? `subscriptions:${forUserId}` : `subscriptions:${forUserId}:created_at`;

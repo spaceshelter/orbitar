@@ -382,4 +382,12 @@ export default class UserManager {
     async saveFeedSorting(site: string, feedSorting: FeedSorting, userId: number) {
         await this.userRepository.saveFeedSorting(site, feedSorting, userId);
     }
+
+    public static getFeedSortingBySite(feedSortingSettings: FeedSortingSettingsBySite, site: string): FeedSorting {
+        if (!feedSortingSettings || feedSortingSettings[site] === undefined) {
+            return FeedSorting.postCommentedAt;
+        }
+        return feedSortingSettings[site];
+    }
+
 }
