@@ -42,7 +42,6 @@ export class Enricher {
             if (!sites[post.site]) {
                 const site = await this.siteManager.getSiteByName(post.site);
                 sites[post.site] = {
-                    id: site.id,
                     site: site.site,
                     name: site.name
                 };
@@ -146,7 +145,6 @@ export class Enricher {
 
     siteInfoToEntity(siteInfo: SiteWithUserInfo): SiteWithUserInfoEntity {
         const result: SiteWithUserInfoEntity = {
-            id: siteInfo.id,
             site: siteInfo.site,
             name: siteInfo.name,
             subscribers: siteInfo.subscribers,
