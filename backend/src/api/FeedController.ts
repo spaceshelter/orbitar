@@ -64,7 +64,7 @@ export default class FeedController {
         this.router.post('/feed/all', validate(feedSubscriptionsSchema), (req, res) => this.feedAll(req, res));
         this.router.post('/feed/posts', validate(feedPostsSchema), (req, res) => this.feedPosts(req, res));
         this.router.post('/feed/watch', validate(feedWatchSchema), (req, res) => this.feedWatch(req, res));
-        this.router.post('/feed/sorting', validate(feedSortingSchema), (req, res) => this.saveFeedSorting(req, res));
+        this.router.post('/feed/sorting', saveFeedSortingLimiter, validate(feedSortingSchema), (req, res) => this.saveFeedSorting(req, res));
     }
 
     async saveFeedSorting(request: APIRequest<FeedSortingSaveRequest>, response: APIResponse<Record<string, unknown>>) {
