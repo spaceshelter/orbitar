@@ -4,10 +4,8 @@ export enum FeedSorting {
     postCreatedAt
 }
 
-export type FeedSortingSettings = {
-    feed_sorting: FeedSorting;
+export type FeedSortingSettingsBySite = {
+    [key: string]: FeedSorting;
 };
 
-export type FeedSortingSettingsBySite = {
-    [key: number]: FeedSortingSettings
-};
+export const MainSubdomain = 'main';

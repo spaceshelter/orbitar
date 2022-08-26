@@ -4,3 +4,10 @@ export enum EditFlag {
     original,
     edited
 }
+
+export enum FeedSorting {
+    postCommentedAt,
+    postCreatedAt
+}
+
+export const MainSubdomain = 'main';

@@ -4,7 +4,8 @@ import {InviteRaw} from '../types/InviteRaw';
 import CodeError from '../../CodeError';
 import {OkPacket} from 'mysql2';
 import {UserGender} from '../../managers/types/UserInfo';
-import {FeedSorting, FeedSortingSettingsRaw} from '../types/FeedSortingSettings';
+import {FeedSortingSettingsRaw} from '../types/FeedSortingSettings';
+import {FeedSorting} from '../../api/types/entities/common';
 
 export default class UserRepository {
     private db: DB;
@@ -39,13 +40,13 @@ export default class UserRepository {
     }
 
     async getFeedSortingSettingsByUserId(userId: number): Promise<FeedSortingSettingsRaw[] | undefined> {
-        return await this.db.query<FeedSortingSettingsRaw[]>('select * from feed_sorting_settings where user_id=:user_id', {user_id: userId});
+        return await this.db.query<FeedSortingSettingsRaw[]>('select fss.feed_sorting, s.subdomain from feed_sorting_settings fss, sites s where fss.user_id=:user_id and s.site_id = fss.site_id', {user_id: userId});
     }
 
-    async saveFeedSorting(siteId: number, feedSorting: FeedSorting, userId: number) {
-        await this.db.query(`replace into feed_sorting_settings (user_id, site_id, feed_sorting) values (:user_id, :site_id, :feed_sorting)`, {
+    async saveFeedSorting(site: string, feedSorting: FeedSorting, userId: number) {
+        await this.db.query(`insert into feed_sorting_settings (user_id, site_id, feed_sorting) select :user_id, s.site_id, :feed_sorting from sites s where s.subdomain = :site on duplicate key update feed_sorting = :feed_sorting`, {
             user_id: userId,
-            site_id: siteId,
+            site: site,
             feed_sorting: feedSorting
         });
     }

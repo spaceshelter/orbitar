@@ -3,7 +3,7 @@ import {PostRaw, PostRawWithUserData} from '../types/PostRaw';
 import CodeError from '../../CodeError';
 import {ResultSetHeader} from 'mysql2';
 import {ContentSourceRaw} from '../types/ContentSourceRaw';
-import {FeedSorting} from '../types/FeedSortingSettings';
+import {FeedSorting} from '../../api/types/entities/common';
 
 export default class PostRepository {
     private db: DB;

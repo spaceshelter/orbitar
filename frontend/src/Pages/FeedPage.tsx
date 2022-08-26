@@ -6,25 +6,25 @@ import Paginator from '../Components/Paginator';
 import {Link, useMatch, useSearchParams} from 'react-router-dom';
 import {FeedType, useFeed} from '../API/use/useFeed';
 import {APIError} from '../API/APIBase';
-import {FeedSorting} from '../Types/FeedSortingSettings';
+import {FeedSorting, MainSubdomain} from '../Types/FeedSortingSettings';
 
 export default function FeedPage() {
-    const getFeedSorting = (siteId?: number): FeedSorting => {
-        if (!siteId) {
-            siteId = 0;
+    const getFeedSorting = (siteSubdomain?: string): FeedSorting => {
+        if (!siteSubdomain) {
+            siteSubdomain = MainSubdomain;
         }
         if (
             !userInfo ||
             !userInfo.feedSortingSettings ||
-            !userInfo.feedSortingSettings[siteId]
+            !userInfo.feedSortingSettings[siteSubdomain]
         ) {
             return FeedSorting.postCommentedAt;
         }
-        return userInfo.feedSortingSettings[siteId].feed_sorting;
+        return userInfo.feedSortingSettings[siteSubdomain];
     };
 
     const { site, siteInfo, userInfo } = useAppState();
-    const [feedSorting, setFeedSorting] = useState(getFeedSorting(siteInfo?.id));
+    const [feedSorting, setFeedSorting] = useState(getFeedSorting(siteInfo?.site));
     const api = useAPI();
 
     const [search] = useSearchParams();
@@ -34,7 +34,7 @@ export default function FeedPage() {
 
     let feedType: FeedType = 'site';
     let baseRoute = '/';
-    if (site === 'main') {
+    if (site === MainSubdomain) {
         if (matchRoutePosts) {
             feedType = 'site';
             baseRoute = '/posts';
@@ -74,18 +74,18 @@ export default function FeedPage() {
     const handleFeedSortingChange = async (e: React.MouseEvent) => {
         e.preventDefault();
         const feedSorting = (e.currentTarget as HTMLAnchorElement).dataset.feedSorting;
-        if (feedSorting === undefined || !siteInfo?.id) {
+        if (feedSorting === undefined || !siteInfo?.site) {
             return;
         }
         const newFeedSorting = parseInt(feedSorting, 10) as FeedSorting;
-        await api.feed.saveSorting(siteInfo.id, newFeedSorting);
+        await api.feed.saveSorting(siteInfo.site, newFeedSorting);
         setFeedSorting(newFeedSorting);
     };
 
     return (
         <div className={styles.container}>
             <div className={styles.feed}>
-                {siteInfo?.site === 'main' && <div className={styles.feedControls}>
+                {siteInfo?.site === MainSubdomain && <div className={styles.feedControls}>
                     <Link to='/' className={feedType === 'subscriptions' ? styles.active : ''} replace={true}>мои подписки</Link> • <Link to='/all' className={feedType === 'all' ? styles.active : ''} replace={true}>все</Link> • <Link to='/posts' className={feedType === 'site' ? styles.active : ''} replace={true}>только главная</Link>
                 </div>}
                 {siteInfo && <div className={styles.feedControls}>

@@ -10,7 +10,8 @@ import {PushSubscription} from 'web-push';
 import {RedisClientType} from 'redis';
 import PostRepository from '../db/repositories/PostRepository';
 import CommentRepository from '../db/repositories/CommentRepository';
-import {FeedSorting, FeedSortingSettingsBySite, FeedSortingSettingsRaw} from '../db/types/FeedSortingSettings';
+import {FeedSortingSettingsBySite, FeedSortingSettingsRaw} from '../db/types/FeedSortingSettings';
+import {FeedSorting} from '../api/types/entities/common';
 
 export default class UserManager {
     private credentialsRepository: UserCredentials;
@@ -50,14 +51,14 @@ export default class UserManager {
         }
 
         const user = this.mapUserRaw(rawUser);
-        user.feedSortingSettings = await this.getUserFeedSortingSettings(user);
+        user.feedSortingSettings = await this.getFeedSortingSettings(user);
         this.cache(user);
         return user;
     }
 
-    private async getUserFeedSortingSettings(user: UserInfo): Promise<FeedSortingSettingsBySite | undefined> {
-        const rawUserSettings = await this.userRepository.getFeedSortingSettingsByUserId(user.id);
-        return  this.mapUserFeedSortingSettingsRaw(rawUserSettings);
+    private async getFeedSortingSettings(user: UserInfo): Promise<FeedSortingSettingsBySite | undefined> {
+        const rawFeedSortingSettings = await this.userRepository.getFeedSortingSettingsByUserId(user.id);
+        return  this.mapFeedSortingSettingsRaw(rawFeedSortingSettings);
     }
 
     public clearCache(userId: number) {
@@ -86,7 +87,7 @@ export default class UserManager {
         }
 
         const user = this.mapUserRaw(rawUser);
-        user.feedSortingSettings = await this.getUserFeedSortingSettings(user);
+        user.feedSortingSettings = await this.getFeedSortingSettings(user);
         this.cache(user);
         return user;
     }
@@ -368,20 +369,17 @@ export default class UserManager {
         };
     }
 
-    private mapUserFeedSortingSettingsRaw(rawUserSettings: FeedSortingSettingsRaw[]): FeedSortingSettingsBySite {
+    private mapFeedSortingSettingsRaw(rawFeedSortingSettings: FeedSortingSettingsRaw[]): FeedSortingSettingsBySite {
         const result = {};
-        rawUserSettings.map((settingItem) => {
-            const siteId = settingItem.site_id === null ? 0 : settingItem.site_id;
-            if (result[siteId] === undefined) {
-                result[siteId] = {
-                    feed_sorting: settingItem.feed_sorting
-                };
+        rawFeedSortingSettings.map((settingItem) => {
+            if (result[settingItem.subdomain] === undefined) {
+                result[settingItem.subdomain] = settingItem.feed_sorting;
             }
         });
         return result;
     }
 
-    async saveFeedSorting(siteId: number, feedSorting: FeedSorting, userId: number) {
-        await this.userRepository.saveFeedSorting(siteId, feedSorting, userId);
+    async saveFeedSorting(site: string, feedSorting: FeedSorting, userId: number) {
+        await this.userRepository.saveFeedSorting(site, feedSorting, userId);
     }
 }

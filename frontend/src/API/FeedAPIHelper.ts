@@ -11,9 +11,9 @@ export default class FeedAPIHelper {
         this.appState = appState;
     }
 
-    async saveSorting(siteId: number, feedSorting: FeedSorting) {
+    async saveSorting(siteSubdomain: string, feedSorting: FeedSorting) {
         try {
-            await this.api.saveSorting(siteId, feedSorting);
+            await this.api.saveSorting(siteSubdomain, feedSorting);
         }
         catch (error) {
             console.log('ERROR SAVING FEED SORTING', error);

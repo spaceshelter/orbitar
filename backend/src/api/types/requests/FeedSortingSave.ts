@@ -1,8 +1,6 @@
-import {FeedSorting} from '../../../db/types/FeedSortingSettings';
+import {FeedSorting} from '../entities/common';
 
 export type FeedSortingSaveRequest = {
-    'site-id': number;
-    'feed-sorting': FeedSorting;
+    'site': string;
+    'feedSorting': FeedSorting;
 };
-
-export type FeedSortingSaveResponse = {};
