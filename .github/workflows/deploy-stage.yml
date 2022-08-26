@@ -4,11 +4,6 @@ concurrency: stage
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 4 * * 0'
-  # push:
-  #   branches:
-  #     - dev
 
 env:
   SERVER_DOMAIN: stage.orbitar.space
@@ -21,18 +16,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          ref: dev
 
-      - name: Copy Caddy configuration
+      - name: Copy configuration
         run: |
-          whoami
-          ls -al /opt/
-          ls -al /opt/deployment-specific-files/
-          cp -f /opt/deployment-specific-files/Caddyfile $GITHUB_WORKSPACE/caddy
           cp -f /opt/deployment-specific-files/chain.pem $GITHUB_WORKSPACE/caddy/certs
           cp -f /opt/deployment-specific-files/priv.pem $GITHUB_WORKSPACE/caddy/certs
+          cp -f /opt/deployment-specific-files/.env $GITHUB_WORKSPACE/
 
       - name: Build backend & frontend
-        run: docker-compose -f docker-compose.local.yml build backend frontend
+        run: docker-compose -f docker-compose.ssl.local.yml build backend frontend
 
       - name: Deploy
-        run: docker-compose -f docker-compose.local.yml up
+        run: docker-compose -f docker-compose.ssl.local.yml up -d backend frontend
