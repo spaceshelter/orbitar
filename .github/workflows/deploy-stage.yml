@@ -4,8 +4,8 @@ concurrency: stage
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 4 * * 0'
+  # schedule:
+  #   - cron: '0 1 * * 0'
   # push:
   #   branches:
   #     - dev
