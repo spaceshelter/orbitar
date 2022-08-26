@@ -15,6 +15,7 @@ type RatingSwitchProps = {
     id: number;
     double?: boolean;
     onVote?: (value: number, vote?: number) => void;
+    votingDisabled?: boolean;
 };
 
 type VoteType = { vote: number, username: string };
@@ -147,14 +148,19 @@ export default function RatingSwitch(props: RatingSwitchProps) {
         }
     }
 
+    const buttonExtraProps = {
+        title: props.votingDisabled ? 'Голосование за карму невозможно. Загляните во вкладку "Саморегуляция" в профиле.' : undefined,
+        disabled: props.votingDisabled
+    };
+
     return (
         <>
             <div ref={ratingRef} className={styles.rating}>
-                {props.double && <button className={minus2Styles.join(' ')} onClick={() => handleVote(-2)}></button>}
-                <button className={minusStyles.join(' ')} onClick={() => handleVote(-1)}></button>
+                {props.double && <button {...buttonExtraProps} className={minus2Styles.join(' ')} onClick={() => handleVote(-2)}></button>}
+                <button {...buttonExtraProps} className={minusStyles.join(' ')} onClick={() => handleVote(-1)}></button>
                 <div onClick={handleVoteList} className={valueStyles.join(' ')}>{state.rating}</div>
-                <button className={plusStyles.join(' ')} onClick={() => handleVote(1)}></button>
-                {props.double && <button className={plus2Styles.join(' ')} onClick={() => handleVote(2)}></button>}
+                <button {...buttonExtraProps} className={plusStyles.join(' ')} onClick={() => handleVote(1)}></button>
+                {props.double && <button {...buttonExtraProps} className={plus2Styles.join(' ')} onClick={() => handleVote(2)}></button>}
             </div>
             {showPopup && <RatingList ref={popupRef} vote={state.vote || 0} rating={state.rating} votes={votes}></RatingList>}
         </>

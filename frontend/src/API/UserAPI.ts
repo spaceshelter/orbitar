@@ -7,6 +7,7 @@ import {CommentInfo, PostInfo} from '../Types/PostInfo';
 
 export type UserProfileEntity = UserInfo & {
     registered: string;
+    active: boolean;
 };
 type UseProfileRequest = {
     username: string;
@@ -49,6 +50,31 @@ type UserProfileCommentsResult = {
     total: number;
 };
 
+export type UserKarmaResponse = {
+    senatePenalty: number;
+    activeKarmaVotes: Record<string, number>;
+    postRatingBySubsite: Record<string, number>;
+    commentRatingBySubsite: Record<string, number>;
+};
+
+/* see UserRestrictions */
+export type UserRestrictionsResponse = {
+    effectiveKarma: number;
+    senatePenalty: number;
+
+    postSlowModeWaitSec: number;
+    postSlowModeWaitSecRemain: number;
+
+    commentSlowModeWaitSec: number;
+    commentSlowModeWaitSecRemain: number;
+
+    restrictedToPostId: number | true | false;
+    canVote: boolean;
+    canVoteKarma: boolean;
+    canInvite: boolean;
+    canEditOwnContent: boolean;
+};
+
 export default class UserAPI {
     api: APIBase;
     postAPIHelper: PostAPIHelper;
@@ -80,6 +106,14 @@ export default class UserAPI {
             comments: this.postAPIHelper.fixComments(result.comments, result.users),
             total: result.total,
         };
+    }
+
+    async userKarma(username: string): Promise<UserKarmaResponse> {
+        return await this.api.request<{username: string}, UserKarmaResponse>('/user/karma', {username});
+    }
+
+    userRestrictions(username: string): Promise<UserRestrictionsResponse> {
+        return this.api.request<{username: string}, UserRestrictionsResponse>('/user/restrictions', {username});
     }
 
 }

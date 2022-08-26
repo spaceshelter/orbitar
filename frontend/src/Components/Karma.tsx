@@ -1,14 +1,23 @@
 import React, {useEffect, useState} from 'react';
 import './KarmaCalculator.scss';
-export function Karma() {
-    const [allPostsValue, setP] = useState(0); // sum of votes for all posts
-    const [allCommentsValue, setC] = useState(0); // sum of votes for all comments
-    const [profileVotesCount, setUCount] = useState(0); //count of votes in profile
-    const [profileVotingResult, setU] = useState(0); // sum of votes in profile
-    const [punishment, setPunishment] = useState(0); // penalty set by moderator
+
+type KarmaCalculatorProps = {
+    senatePenalty?: number;
+    postsSumRating?: number;
+    commentsSumRating?: number;
+    profileVotesCount?: number;
+    profileVotesSum?: number;
+};
+
+export function Karma(props: KarmaCalculatorProps) {
+    const [allPostsValue, setP] = useState(props.postsSumRating || 0); // sum of votes for all posts
+    const [allCommentsValue, setC] = useState(props.commentsSumRating || 0); // sum of votes for all comments
+    const [profileVotesCount, setUCount] = useState(props.profileVotesCount || 0); //count of votes in profile
+    const [profileVotingResult, setU] = useState(props.profileVotesSum || 0); // sum of votes in profile
+    const [punishment, setPunishment] = useState(props.senatePenalty || 0); // penalty set by moderator
 
     useEffect(() => {
-         setU( clamp(profileVotingResult, -profileVotesCount, profileVotesCount));
+         setU( clamp(profileVotingResult, -profileVotesCount * 2, profileVotesCount * 2));
     },[profileVotesCount, profileVotingResult]);
 
     //TODO extract the rest of coefficients to constants and comment them
@@ -32,7 +41,7 @@ export function Karma() {
 
     return (
         <div id='karmaCalculator'>
-            <h1>Калькулятор кармы</h1>
+            <h1>Калькулятор</h1>
             <h2>Входные данные</h2>
                 <label className="slider">Суммарный рейтинг всех постов: {allPostsValue}<br/>
                         <input type="range" min="-2000" max="30000" value={allPostsValue} step="100" onChange={e => setP( +e.target.value) } />
@@ -44,7 +53,7 @@ export function Karma() {
                         <input type="range" min="0" max="250" value={profileVotesCount.toString()} step="1" onChange={e => setUCount( +e.target.value) } />
                 </label>
                 <label className="slider">Сумма всех голосов в профиле: {profileVotingResult}<br/>
-                        <input type="range" min={-profileVotesCount} max={profileVotesCount} value={profileVotingResult} step="1" onChange={e => setU( +e.target.value) } />
+                        <input type="range" min={-profileVotesCount * 2} max={profileVotesCount * 2} value={profileVotingResult} step="1" onChange={e => setU( +e.target.value) } />
                 </label>
                 <label className="slider">Кармический штраф наложенный сенатом: {punishment}<br/>
                         <input type="range" min="0" max="2000" value={punishment} step="100" onChange={e => setPunishment( +e.target.value) } />
@@ -52,11 +61,11 @@ export function Karma() {
 
                 <div>
                     <h2>-------------------------------------</h2>
-                    <h2>Результат</h2>
+                    <h2>Формула саморегуляции:</h2>
                     <p> Рейтинг контента: {contentRating}</p>
                     <p> Рейтинг юзера: {userRating}</p>
-                    <p> Сырая Карма: {rawKarma}</p>
-                    <p> Карма: {karma}</p>
+                    <p> Сырой результат: {rawKarma}</p>
+                    <p> Результат: {karma}</p>
                 </div>
         </div>
     );

@@ -5,7 +5,10 @@ moment.locale('ru');
 moment.updateLocale('ru', {
     months: [
         'января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
-    ]
+    ],
+    relativeTime : {
+        future: '%s'
+    }
 });
 const startYear = moment().startOf('year');
 
