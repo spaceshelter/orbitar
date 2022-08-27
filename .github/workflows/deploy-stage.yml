@@ -4,11 +4,6 @@ concurrency: stage
 
 on:
   workflow_dispatch:
-  # schedule:
-  #   - cron: '0 1 * * 0'
-  # push:
-  #   branches:
-  #     - dev
 
 env:
   SERVER_DOMAIN: stage.orbitar.space
