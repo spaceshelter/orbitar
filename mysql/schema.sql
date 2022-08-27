@@ -6,7 +6,7 @@ CREATE DATABASE `orbitar_db` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8
 USE `orbitar_db`;
 
 CREATE USER 'orbitar'@'%' IDENTIFIED BY 'orbitar';
-GRANT SELECT, INSERT, UPDATE ON orbitar_db.* TO 'orbitar'@'%';
+GRANT SELECT, INSERT, UPDATE, DELETE ON orbitar_db.* TO 'orbitar'@'%';
 
 
 DROP TABLE IF EXISTS `comment_votes`;
