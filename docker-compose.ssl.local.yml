@@ -5,13 +5,15 @@ services:
     image: caddy
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "443:443"
     environment:
       SERVER_DOMAIN: ${SERVER_DOMAIN}
+      API_DOMAIN: ${API_DOMAIN}
       IMGUR_CLIENT_ID: ${IMGUR_CLIENT_ID}
     volumes:
-      - $PWD/caddy/Caddyfile.local:/etc/caddy/Caddyfile
-      - frontend_build:/srv
+      - $PWD/caddy/Caddyfile.ssl.local:/etc/caddy/Caddyfile:ro
+      - $PWD/caddy/certs:/certs:ro
+      - frontend_build:/srv:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
