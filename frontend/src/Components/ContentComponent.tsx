@@ -19,6 +19,23 @@ function updateContent(div: HTMLDivElement) {
             updateImg(img);
         };
     });
+
+    div.querySelectorAll('video').forEach(video => {
+        updateVideo(video);
+    });
+}
+
+function updateVideo(video: HTMLVideoElement) {
+    if (video.dataset.aspectRatioProcessed) {
+        return;
+    }
+    video.addEventListener('loadeddata', () => {
+        if (video.readyState < 3 || video.videoHeight === 0) {
+            return;
+        }
+        video.style.aspectRatio = (video.videoWidth / video.videoHeight).toString();
+        video.dataset.aspectRatioProcessed = '1';
+    });
 }
 
 function updateImg(img: HTMLImageElement) {
