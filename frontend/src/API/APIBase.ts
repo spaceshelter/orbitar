@@ -30,7 +30,7 @@ export default class APIBase {
 
     constructor() {
         this.sessionId = Cookies.get('session');
-        this.endpoint = '//' + (process.env.REACT_APP_API_DOMAIN ? process.env.REACT_APP_API_DOMAIN : ('api.' + process.env.REACT_APP_ROOT_DOMAIN)) + '/api/v1';
+        this.endpoint = '//' + (process.env.REACT_APP_API_DOMAIN || ('api.' + process.env.REACT_APP_ROOT_DOMAIN)) + '/api/v1';
     }
 
     async request<Req, Res>(url: string, payload: Req): Promise<Res> {
