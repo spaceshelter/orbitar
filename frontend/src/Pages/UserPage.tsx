@@ -12,15 +12,13 @@ import UserProfileComments from '../Components/UserProfileComments';
 import {UserProfileInvites} from '../Components/UserProfileInvites';
 import {observer} from 'mobx-react-lite';
 import {UserProfileKarma} from '../Components/UserProfileKarma';
-import {UserRestrictionsResponse} from '../API/UserAPI';
 import classNames from 'classnames';
 import ContentComponent from '../Components/ContentComponent';
 
 export const UserPage = observer(() => {
-    const {userInfo} = useAppState();
+    const {userInfo, userRestrictions: restrictions} = useAppState();
     const api = useAPI();
     const params = useParams<{username?: string, page?: string}>();
-
     const username = params.username || userInfo?.username;
     const page = params.page || 'profile';
 
@@ -42,8 +40,6 @@ export const UserPage = observer(() => {
 
     const isProfile = !isPosts && !isComments && !isInvites && !isKarma;
 
-    const [restrictions, setRestrictions] = useState<UserRestrictionsResponse | undefined>();
-
     useEffect(() => {
         if (state.status === 'ready') {
             document.title = state.profile.profile.username;
@@ -51,15 +47,8 @@ export const UserPage = observer(() => {
     }, [state]);
 
     useEffect(() => {
-        const userName = userInfo?.username;
-        userName && api.userAPI.userRestrictions(userName)
-            .then(result => {
-                    setRestrictions(result);
-                }
-            ).catch(err => {
-            console.error('Restrictions response error', err);
-        });
-    }, [userInfo?.username, api.userAPI]);
+        api.user.refreshUserRestrictions();
+    }, [api]);
 
     const handleLogout = (e: React.MouseEvent) => {
         e.preventDefault();

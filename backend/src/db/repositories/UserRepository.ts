@@ -102,12 +102,14 @@ export default class UserRepository {
             }
 
             await conn.query('update invites set left_count=left_count-1 where code=:code', {code: inviteCode});
-            const userInsertResult: OkPacket = await conn.query('insert into users (username, password, gender, name, email) values(:username, :password, :gender, :name, :email)', {
+            const userInsertResult: OkPacket = await conn.query(
+                `insert into users (username, password, gender, name, email, ontrial) values(:username, :password, :gender, :name, :email, :ontrial)`, {
                 username: username,
                 password: passwordHash,
                 gender: gender,
                 name: name,
-                email: email
+                email: email,
+                ontrial: inviteRow.restricted
             });
 
             const userInsertId = userInsertResult.insertId;

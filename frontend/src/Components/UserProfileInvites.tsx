@@ -1,83 +1,201 @@
-import {useAPI} from '../AppState/AppState';
+import {useAPI, useAppState} from '../AppState/AppState';
 import React, {useEffect, useState} from 'react';
 import {InviteEntity} from '../API/InviteAPI';
 import {Link} from 'react-router-dom';
 import styles from './UserProfileInvites.module.scss';
 import {toast} from 'react-toastify';
 import Username from './Username';
+import createPostStyles from '../Pages/CreatePostPage.module.css';
+import createCommentStyles from '../Components/CommentComponent.module.scss';
+import classNames from 'classnames';
+import CreateCommentComponent from './CreateCommentComponent';
+import {CommentInfo} from '../Types/PostInfo';
+import ContentComponent from './ContentComponent';
+import {observer} from 'mobx-react-lite';
 
-export const UserProfileInvites = () => {
+export const UserProfileInvites = observer(() => {
     const api = useAPI();
+    const restrictions = useAppState().userRestrictions;
+    console.log(restrictions);
     const [loading, setLoading] = useState(true);
     const [activeInvites, setActiveInvites] = useState<InviteEntity[]>([]);
+    const [restrictedInvites, setRestrictedInvites] = useState<InviteEntity[]>([]);
     const [inactiveInvites, setInactiveInvites] = useState<InviteEntity[]>([]);
+    const [invitesLeftToCreate, setInvitesLeftToCreate] = useState(0);
+
+    const [createNewInviteForm, setCreateNewInviteForm] = useState(false);
+    const toggleCreateNewInviteForm = () => setCreateNewInviteForm(!createNewInviteForm);
+    const [refreshCount, setRefreshCount] = useState(0);
+    const forceRefresh = () => setRefreshCount(refreshCount + 1);
 
     useEffect(() => {
         api.inviteAPI.list()
             .then(result => {
                 console.log('INVITES', result);
-                setActiveInvites(result.active);
+                const activeInvites = result.active.filter(invite => !invite.restricted);
+                const restrictedInvites = result.active.filter(invite => invite.restricted);
+                setActiveInvites(activeInvites);
+                setRestrictedInvites(restrictedInvites);
                 setInactiveInvites(result.inactive);
+                setInvitesLeftToCreate(result.leftToCreate);
                 setLoading(false);
             })
             .catch(err => {
                 console.error('Invite list error', err);
             });
-    }, [api.inviteAPI]);
+    }, [api.inviteAPI, refreshCount]);
 
-    const handleCopyInvite = (e: React.MouseEvent, code: string) => {
-        if (!navigator.clipboard) {
-            return;
+    const handleCreateInvite = async (reason: string): Promise<CommentInfo | undefined> => {
+        try {
+            const result = await api.inviteAPI.create(reason);
+            console.log('CREATE', result);
+            setCreateNewInviteForm(false);
+            forceRefresh();
+        } catch (error: any) {
+            console.log('CREATE ERR', error);
+            toast.error(error?.message || 'Не удалось создать инвайт.');
+            throw error;
         }
-        navigator.clipboard.writeText(`https://${process.env.REACT_APP_ROOT_DOMAIN}/invite/${code}`).then(() => {
-            toast('В буфере!');
-        }).catch();
-        e.preventDefault();
+        return;
+    };
+
+    const handleRegenerate = async (code: string) => {
+        try {
+            const result = await api.inviteAPI.regenerate(code);
+            console.log('REGENERATE', result);
+            forceRefresh();
+        } catch (error: any) {
+            console.log('REGENERATE ERR', error);
+            toast.error(error?.message || 'Не удалось создать инвайт.');
+            throw error;
+        }
+    };
+
+    const handleDelete = async (code: string) => {
+        try {
+            const result = await api.inviteAPI.delete(code);
+            console.log('DELETE', result);
+            forceRefresh();
+        } catch (error: any) {
+            console.log('DELETE ERR', error);
+            toast.error(error?.message || 'Не удалось удалить инвайт.');
+            throw error;
+        }
     };
 
     return (
         loading ?
             <div>Загрузка...</div>
             :
-        <div className={styles.invites}>
-            <h4>Ваши инвайты</h4>
-            <div className='list'>
-                {activeInvites.length
-                ?
+            <div className={styles.invites}>
+                <h4>Ваши инвайты</h4>
+                <div className="list">
+                    {!!activeInvites.length && <>
+                        <h5>Неограниченные инвайты</h5>
+                        {activeInvites.map(invite => <Invite invite={invite} key={invite.code}
+                                                             handleRegenerate={handleRegenerate}
+                                                             handleDelete={handleDelete}/>)}
+                    </>}
+                    {!!restrictedInvites.length && <>
+                        <h5>Ограниченные инвайты</h5>
+                        {restrictedInvites.map(invite => <Invite invite={invite} key={invite.code}
+                                                                 handleRegenerate={handleRegenerate}
+                                                                 handleDelete={handleDelete}/>)}
+                    </>}
+                    {!inactiveInvites.length && !activeInvites.length && <>Кажется, инвайтов у вас нет.</>}
+                </div>
+
+                {restrictions?.canInvite && invitesLeftToCreate === 0 && <>Больше пока инвайтов создать нельзя.</>}
+                {restrictions?.canInvite && !createNewInviteForm && invitesLeftToCreate > 0 &&
+                    <button onClick={toggleCreateNewInviteForm}>Создать новый инвайт
+                        ({invitesLeftToCreate == 1 ? 'остался последний' : `осталось ${invitesLeftToCreate}`})</button>}
+                {createNewInviteForm && <div className={createPostStyles.container}>
+                    <div className={classNames(createPostStyles.createpost, createCommentStyles.content)}>
+                        <div className={createPostStyles.form}>
+                            Причина для инвайта:
+                            <CreateCommentComponent open={true} onAnswer={handleCreateInvite}/>
+                        </div>
+                    </div>
+                </div>}
+
+                {inactiveInvites.length > 0 &&
                     <>
-                        {activeInvites.map(invite =>
-                            <div className='item' key={invite.code}>
-                                <button onClick={e => handleCopyInvite(e, invite.code)}>Скопировать</button>
-                                <div className='code'><Link to={`//${process.env.REACT_APP_ROOT_DOMAIN}/invite/${invite.code}`} onClick={e => handleCopyInvite(e, invite.code)}>{process.env.REACT_APP_ROOT_DOMAIN}/invite/{invite.code}</Link></div>
-                                {invite.invited.length > 0 &&
-                                    <div className='invited'>
-                                        {invite.invited.map(user => <Username key={user.username} user={user} />)}
-                                    </div>
-                                }
-                            </div>
-                        )}
+                        <h4>Использованные инвайты</h4>
+                        <div className="list">
+                            {inactiveInvites.map(invite =>
+                                <div className="item" key={invite.code}>
+                                    <div className="code">{invite.code}</div>
+                                    {invite.invited.length > 0 &&
+                                        <div className="invited">
+                                            {invite.invited.map(user => <Username key={user.username} user={user}/>)}
+                                        </div>
+                                    }
+                                </div>
+                            )}
+                        </div>
                     </>
-                :
-                    <>Кажется, инвайтов у вас нет. Попробуете <Link to='/create'>пост интересный</Link> написать?</>
                 }
             </div>
-            {inactiveInvites.length > 0 &&
-                <>
-                    <h4>Использованные инвайты</h4>
-                    <div className='list'>
-                        {inactiveInvites.map(invite =>
-                            <div className='item' key={invite.code}>
-                                <div className='code'>{invite.code}</div>
-                                {invite.invited.length > 0 &&
-                                    <div className='invited'>
-                                        {invite.invited.map(user => <Username key={user.username} user={user}/>)}
-                                    </div>
-                                }
-                            </div>
-                        )}
-                    </div>
-                </>
-            }
-        </div>
     );
+});
+
+const Invite = (props: {
+    invite: InviteEntity,
+    handleRegenerate: (code: string) => void,
+    handleDelete: (code: string) => void
+}) => {
+    const {invite} = props;
+
+    const [showReason, setShowReason] = useState(false);
+
+    const handleCopyInvite = (e: React.MouseEvent) => {
+        if (!navigator.clipboard) {
+            return;
+        }
+        navigator.clipboard.writeText(`https://${process.env.REACT_APP_ROOT_DOMAIN}/invite/${invite.code}`).then(() => {
+            toast('В буфере!');
+        }).catch();
+        e.preventDefault();
+    };
+
+    return <div className="item" key={invite.code}>
+        <button onClick={e => handleCopyInvite}>Скопировать</button>
+        <div className="code"><Link to={`//${process.env.REACT_APP_ROOT_DOMAIN}/invite/${invite.code}`}
+                                    onClick={handleCopyInvite}>{process.env.REACT_APP_ROOT_DOMAIN}/invite/{invite.code}</Link>
+        </div>
+        &nbsp;<ConfirmButton onAction={() => props.handleRegenerate(invite.code)}>Перегенерить</ConfirmButton>
+        {invite.restricted && !invite.invited?.length &&
+            <ConfirmButton onAction={() => props.handleDelete(invite.code)}>Удалить</ConfirmButton>}
+        {invite.reason && <button title={'Причина'} onClick={() => setShowReason(!showReason)}>?</button>}
+        {invite.reason && showReason && <div className="content"><ContentComponent content={invite.reason}/></div>}
+        {invite.invited.length > 0 &&
+            <div className="invited">
+                {invite.invited.map(user => <Username key={user.username} user={user}/>)}
+            </div>
+        }
+    </div>;
+};
+
+const ConfirmButton = (props: { onAction: () => void, children: React.ReactNode }) => {
+    const [confirm, setConfirm] = useState(false);
+    const handleConfirm = () => {
+        setConfirm(true);
+    };
+    const handleCancel = () => {
+        setConfirm(false);
+    };
+    const handleAction = () => {
+        setConfirm(false);
+        props.onAction();
+    };
+    return <>
+        {!confirm && <button onClick={handleConfirm}>{props.children}</button>}
+        {confirm && <div className="confirm">
+                <span>Точно?
+                    &nbsp;
+                    <button onClick={handleAction}>Да</button>
+                <button onClick={handleCancel}>Нет</button>
+                </span>
+        </div>}
+    </>;
 };

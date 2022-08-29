@@ -4,6 +4,7 @@ export type InviteRaw = {
     issued_by: number;
     issued_at: Date;
     issued_count: number;
+    restricted: number;
     left_count: number;
     reason?: string;
 };
