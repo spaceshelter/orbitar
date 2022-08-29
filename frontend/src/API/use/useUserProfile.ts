@@ -1,7 +1,7 @@
-import {UserInfo, UserProfileInfo} from '../../Types/UserInfo';
 import {useAPI} from '../../AppState/AppState';
 import {useEffect, useState} from 'react';
 import {APIError} from '../APIBase';
+import {UserProfileResult} from '../UserAPIHelper';
 
 type ProfileStateBase = {
     status: 'loading' | 'not-found';
@@ -12,35 +12,23 @@ type ProfileStateError = {
 };
 type ProfileStateReady = {
     status: 'ready';
-    profile: {
-        profile: UserProfileInfo;
-        invitedBy: UserInfo;
-        invites: UserInfo[];
-    };
+    profile: UserProfileResult;
 };
 type ProfileState = ProfileStateBase | ProfileStateError | ProfileStateReady;
 
-export function useUserProfile(username: string): ProfileState {
+export function useUserProfile(username: string): [ProfileState, () => void] {
     const api = useAPI();
     const [state, setState] = useState<ProfileState>({ status: 'loading' });
 
-    useEffect(() => {
-        let reject = false;
-
+    const refresh = () => {
         api.user.userProfile(username)
             .then(profile => {
-                if (reject) {
-                    return;
-                }
                 setState({
                     status: 'ready',
                     profile
                 });
             })
             .catch(error => {
-                if (reject) {
-                    return;
-                }
                 console.log('ERROR', error);
                 if (error instanceof APIError) {
                     if (error.statusCode === 404) {
@@ -54,9 +42,11 @@ export function useUserProfile(username: string): ProfileState {
 
                 setState( { status: 'error', message: 'Неизвестная ошибка' });
             });
+    };
 
-        return () => { reject = true; };
+    useEffect(() => {
+        refresh();
     }, [username, api.user]);
 
-    return state;
+    return [state, refresh];
 }

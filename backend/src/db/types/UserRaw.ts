@@ -10,6 +10,7 @@ export type UserRaw = UserBaseRaw & {
     twofactor?: string;
     gender: UserGender;
     karma: number;
+    ontrial: number;
     name: string;
     registered_at: Date;
 };

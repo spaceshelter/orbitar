@@ -61,6 +61,8 @@ export default class VoteController {
                 case 'user':
                     rating = await this.voteManager.userVote(id, rangedVote, userId);
                     this.userManager.clearCache(id);
+                    await this.userManager.tryEndTrial(id, true)
+                        .catch(err => this.logger.error('End trial error', { error: err }));
                     break;
                 default:
                     return response.error('wrong-type', 'Wrong type', 401);

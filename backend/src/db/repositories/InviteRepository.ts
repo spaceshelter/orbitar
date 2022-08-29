@@ -39,7 +39,6 @@ export default class InviteRepository {
         });
     }
 
-
     async updateCode(code: string, newCode: string) {
         const result = await this.db.query<ResultSetHeader>('update invites set code=:newCode where code=:code', {
             code,
@@ -48,4 +47,17 @@ export default class InviteRepository {
 
         return result.changedRows > 0;
     }
+
+    getInviteReason(userId: number): Promise<string | undefined> {
+        return this.db.fetchOne<{reason: string}>(
+            `select reason
+             from user_invites ui
+                      left join invites i
+                                on (i.invite_id = ui.invite_id)
+             where ui.child_id = :user_id limit 1`,
+            {
+                user_id: userId
+            }).then(_ => _?.reason);
+    }
+
 }

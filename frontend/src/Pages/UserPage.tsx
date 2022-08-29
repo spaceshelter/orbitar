@@ -13,6 +13,8 @@ import {UserProfileInvites} from '../Components/UserProfileInvites';
 import {observer} from 'mobx-react-lite';
 import {UserProfileKarma} from '../Components/UserProfileKarma';
 import {UserRestrictionsResponse} from '../API/UserAPI';
+import classNames from 'classnames';
+import ContentComponent from '../Components/ContentComponent';
 
 export const UserPage = observer(() => {
     const {userInfo} = useAppState();
@@ -22,7 +24,13 @@ export const UserPage = observer(() => {
     const username = params.username || userInfo?.username;
     const page = params.page || 'profile';
 
-    const state = useUserProfile(username || '');
+    const [state, refreshProfile] = useUserProfile(username || '');
+    const [showReason, setShowReason] = useState(false);
+    const toggleInviteReason = (e: any) => {
+        e.preventDefault();
+        setShowReason(!showReason);
+        return false;
+    };
 
     const isPosts = page === 'posts';
     const isComments = page === 'comments';
@@ -60,13 +68,20 @@ export const UserPage = observer(() => {
         });
     };
 
-
     if (state.status === 'ready') {
         const profile = state.profile;
         const user = profile.profile;
         const rating = {value: user.karma, vote: user.vote};
         const isMyProfile = userInfo && userInfo.id === user.id;
         const base = '/u/' + user.username;
+
+        const handleOnVote = (value: number, vote?: number, postApiCall?: boolean) => {
+            if (postApiCall) {
+                refreshProfile();
+            }
+        };
+
+        const canVoteTrial = restrictions?.canVoteKarma && profile.trialProgress !== undefined;
 
         return (
             <div className={styles.container}>
@@ -76,8 +91,9 @@ export const UserPage = observer(() => {
                             <div className={styles.username}>{user.username}</div>
                             <div className={styles.name}>{user.name}</div>
                         </div>
-                        <div className={styles.karma}>
-                            <RatingSwitch rating={rating} type='user' id={user.id} double={true} votingDisabled={!restrictions?.canVoteKarma} />
+                        <div className={classNames(styles.karma, { [styles.karmaOnTrial] : canVoteTrial } )}
+                            title={canVoteTrial ? 'Пользователь на испытательном сроке! Голос в карму влияет на решение о принятие пользователя.' : ''}>
+                            <RatingSwitch rating={rating} type='user' id={user.id} double={true} votingDisabled={!restrictions?.canVoteKarma} onVote={handleOnVote}/>
                         </div>
                     </div>
 
@@ -99,7 +115,22 @@ export const UserPage = observer(() => {
                     {isProfile && <>
                         {profile.invitedBy && <div>
                             Зарегистрирован по приглашению <Username user={profile.invitedBy} />
+                            {(profile.trialApprovers || profile.invitedReason) && <a href={'#'} onClick={toggleInviteReason}>?</a> }
                         </div>}
+                        {profile.trialProgress !== undefined && <div>
+                            Испытательный срок: {Math.round(profile.trialProgress * 100)}%
+                        </div>}
+                        {showReason && <>
+                        {!!profile.trialApprovers && <>
+                            {profile.trialApprovers.find(u => u.vote > 0) && <div>За приглашение голосовали:
+                                {profile.trialApprovers.map(user => user.vote > 0 && <Username key={user.username} user={user}/>)}
+                            </div>}
+                            {profile.trialApprovers.find(u => u.vote < 0) && <div>Против голосовали:
+                                {profile.trialApprovers.map(user => user.vote < 0 && <Username key={user.username} user={user}/>)}
+                            </div>}
+                        </>}
+                        {!!profile.invitedReason && <div className={'content'}>Причина приглашения: <ContentComponent content={profile.invitedReason}/></div>}
+                        </>}
                         {profile.invites.length > 0 && <div>
                             По его приглашениям зарегистрированы: {profile.invites.map((user, idx) => {
                                 return <Username key={idx} user={user}/>;

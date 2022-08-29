@@ -193,6 +193,16 @@ export default class VoteRepository {
         });
     }
 
+    async getSecondaryVotes(primaryVoters: number[]): Promise<VoteWithUsername[]> {
+        return await this.db.fetchAll(
+            `select u.username, v.vote as vote, v.user_id as userId, v.voter_id as voterId
+             from user_karma v join users u on (v.voter_id = u.user_id)
+             where v.user_id in (:primary_voters) and (v.vote >= 2 or v.vote < 0)
+             `, {
+                primary_voters: primaryVoters
+            });
+    }
+
     /**
      * Returns votes BY a user (votes FOR other users).
      * @param userId whose votes to get
@@ -215,5 +225,14 @@ export default class VoteRepository {
              where user_id = :user_id`, {
                 user_id: userId
             });
+    }
+
+    getTrialsApprovers(userId: number): Promise<VoteWithUsername[]>  {
+        return this.db.fetchAll(`select u.username, v.vote, v.user_id as userId, v.voter_id as voterId
+                                       from user_trial_approvers v
+                                                join users u on (v.voter_id = u.user_id)
+                                       where v.user_id = :user_id`, {
+            user_id: userId
+        });
     }
 }

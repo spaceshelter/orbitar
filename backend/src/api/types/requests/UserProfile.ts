@@ -1,4 +1,5 @@
 import {UserBaseEntity, UserProfileEntity} from '../entities/UserEntity';
+import {VoteListItemEntity} from '../entities/VoteEntity';
 
 export type UserProfileRequest = {
     username: string;
@@ -7,6 +8,10 @@ export type UserProfileRequest = {
 export type UserProfileResponse = {
     profile: UserProfileEntity;
     invitedBy?: UserBaseEntity;
+    invitedReason? : string;
+    trialApprovers?: VoteListItemEntity[];
+    trialProgress?: number;
+
     invites: UserBaseEntity[];
 };
 
