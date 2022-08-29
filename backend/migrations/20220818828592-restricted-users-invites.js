@@ -25,12 +25,6 @@ exports.up = async function (db) {
             add column restricted tinyint default 0;
     `);
 
-    // set restricted for all invites
-    await db.runSql(`
-        update invites
-        set restricted = 1;
-    `);
-
     // approvers table
     await db.runSql(`
         DROP TABLE IF EXISTS user_trial_approvers;

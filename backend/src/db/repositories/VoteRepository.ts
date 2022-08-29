@@ -194,6 +194,9 @@ export default class VoteRepository {
     }
 
     async getSecondaryVotes(primaryVoters: number[]): Promise<VoteWithUsername[]> {
+        if (primaryVoters.length === 0) {
+            return [];
+        }
         return await this.db.fetchAll(
             `select u.username, v.vote as vote, v.user_id as userId, v.voter_id as voterId
              from user_karma v join users u on (v.voter_id = u.user_id)

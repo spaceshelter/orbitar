@@ -28,18 +28,27 @@ export type InviteEntity = {
     invited: UserBaseInfo[];
     leftCount: number;
     reason?: string;
+    restricted: boolean;
 };
 export type InviteListRequest = Record<string, never>;
 
 export type InviteListResponse = {
     active: InviteEntity[];
     inactive: InviteEntity[];
+    leftToCreate: number;
 };
 export type InviteRegenerateRequest = {
     code: string;
 };
-
 export type InviteRegenerateResponse = {
+    code: string;
+};
+
+export type InviteCreateRequest = {
+    reason: string;
+};
+
+export type InviteDeleteRequest = {
     code: string;
 };
 
@@ -73,6 +82,16 @@ export default class InviteAPI {
 
     async regenerate(code: string): Promise<InviteRegenerateResponse> {
         return await this.api.request<InviteRegenerateRequest, InviteRegenerateResponse>('/invite/regenerate', {
+            code
+        });
+    }
+
+    async create(reason: string): Promise<InviteEntity> {
+        return await this.api.request<InviteCreateRequest, InviteEntity>('/invite/create', {reason});
+    }
+
+    async delete(code: string): Promise<boolean> {
+        return await this.api.request<InviteDeleteRequest, boolean>('/invite/delete', {
             code
         });
     }

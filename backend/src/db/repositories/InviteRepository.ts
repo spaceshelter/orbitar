@@ -60,4 +60,34 @@ export default class InviteRepository {
             }).then(_ => _?.reason);
     }
 
+    async createInvite(forUserId: number, code: string, reason: string, restricted=true) {
+        await this.db.query<ResultSetHeader>(
+            'insert into invites (code, issued_by, issued_at, issued_count, left_count, reason, restricted) values (:code, :forUserId, now(), 1, 1, :reason, :restricted)', {
+            code,
+            forUserId,
+            reason,
+            restricted
+        });
+    }
+
+    deleteInvite(userId: number, code: string): Promise<boolean> {
+        return this.db.query<ResultSetHeader>(
+            'delete from invites where issued_by = :user_id and code = :code and NOT EXISTS (select * from user_invites where invite_id = invites.invite_id)', {
+                user_id: userId,
+                code
+            }).then(_ => _.affectedRows > 0);
+    }
+
+    async getInvitesCount(userId: number, used: boolean, restricted?: boolean): Promise<number> {
+        return await this.db.fetchOne<{ count: number }>(
+            `select count(*) count
+             from invites
+             where issued_by = :user_id 
+               ${restricted !== undefined ? 'and restricted = ' + (restricted ? '1' : '0') : ''}
+               and ((left_count = 0) = :used)`, {
+                user_id: userId,
+                used
+            }).then(_ => _.count);
+    }
+
 }

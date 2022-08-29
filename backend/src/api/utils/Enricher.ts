@@ -7,6 +7,9 @@ import {CommentEntity} from '../types/entities/CommentEntity';
 import {CommentInfoWithPostData} from '../../managers/types/CommentInfo';
 import {PostInfo} from '../../managers/types/PostInfo';
 import {SiteWithUserInfo} from '../../managers/types/SiteInfo';
+import {InviteRaw} from '../../db/types/InviteRaw';
+import {InviteInfo, InviteInfoWithInvited} from '../../managers/types/InviteInfo';
+import {InviteEntity} from '../types/entities/InviteEntity';
 
 export type EnrichedPosts = {
     posts: PostEntity[];
@@ -160,5 +163,20 @@ export class Enricher {
             result.subscribe = siteInfo.subscribe;
         }
         return result;
+    }
+
+    inviteToEntity(invite: InviteInfo | InviteInfoWithInvited): InviteEntity {
+        const res = {
+            code: invite.code,
+            issued: invite.issuedAt.toISOString(),
+            invited: [],
+            leftCount: invite.leftCount,
+            reason: invite.reason,
+            restricted: invite.restricted
+        };
+        if ((invite as InviteInfoWithInvited).invited) {
+            res.invited = (invite as InviteInfoWithInvited).invited;
+        }
+        return res;
     }
 }
