@@ -58,4 +58,8 @@ export default class InviteManager {
 
         return newCode;
     }
+
+    getInviteReason(userId: number): Promise<string | undefined> {
+        return this.inviteRepository.getInviteReason(userId);
+    }
 }

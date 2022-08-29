@@ -17,14 +17,17 @@ type VoteListRequest = {
     type: VoteType;
     id: number;
 };
+
+export type VoteListItemEntity = {
+    vote: number;
+    username: string;
+};
+
 type VoteListResponse = {
     type: VoteType;
     id: number;
     rating: number;
-    votes: {
-        vote: number;
-        username: string;
-    }[]
+    votes: VoteListItemEntity[];
 };
 
 export default class VoteAPI {

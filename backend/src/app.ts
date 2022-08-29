@@ -115,7 +115,7 @@ const requests = [
     new PostController(apiEnricher, postManager, feedManager, siteManager, userManager, logger.child({ service: 'POST' })),
     new StatusController(apiEnricher, siteManager, userManager, logger.child({ service: 'STATUS' })),
     new VoteController(voteManager, userManager, logger.child({ service: 'VOTE' })),
-    new UserController(apiEnricher, userManager, postManager, voteManager, logger.child({ service: 'USER' })),
+    new UserController(apiEnricher, userManager, postManager, voteManager, inviteManager, logger.child({ service: 'USER' })),
     new FeedController(apiEnricher, feedManager, siteManager, userManager, postManager, logger.child({ service: 'FEED' })),
     new SiteController(apiEnricher, feedManager, siteManager, userManager, logger.child( { service: 'SITE' })),
     new NotificationsController(notificationManager, userManager, logger.child({ service: 'NOTIFY' })),

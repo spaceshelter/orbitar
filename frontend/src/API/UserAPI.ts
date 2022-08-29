@@ -4,6 +4,7 @@ import {SiteInfo} from '../Types/SiteInfo';
 import {CommentEntity, ContentFormat, PostEntity} from './PostAPI';
 import PostAPIHelper from './PostAPIHelper';
 import {CommentInfo, PostInfo} from '../Types/PostInfo';
+import {VoteListItemEntity} from './VoteAPI';
 
 export type UserProfileEntity = UserInfo & {
     registered: string;
@@ -16,6 +17,10 @@ type UserProfileResponse = {
     profile: UserProfileEntity;
     invitedBy: UserInfo;
     invites: UserInfo[];
+
+    invitedReason?: string;
+    trialProgress?: number;
+    trialApprovers?: VoteListItemEntity[];
 };
 type UserProfilePostsRequest = {
     username: string;

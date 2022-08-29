@@ -159,6 +159,21 @@ export default class UserRepository {
         return parseInt(res.cnt);
     }
 
+    endTrial(userId: number): Promise<void> {
+        return this.db.inTransaction(async (conn) => {
+            await conn.query('update users set ontrial = 0 where user_id = :user_id', {user_id: userId});
+
+            // copy karma votes into user_trial_approvers
+            await conn.query(
+                `insert into user_trial_approvers (user_id, voter_id, vote)
+                 select user_id, voter_id, vote
+                 from user_karma
+                 where user_id = :user_id and vote != 0`, {
+                    user_id: userId
+                });
+        });
+    }
+
     logVisit(userId: number, date: Date): Promise<void> {
         // insert format: 2022-05-26 12:00:00.000
         const dateToInsert = date.toISOString().replace(/T/, ' ').substring(0, 19) +
@@ -169,13 +184,19 @@ export default class UserRepository {
         `, {user_id: userId, visited_at: dateToInsert});
     }
 
-    async getNumActiveUsers(): Promise<number> {
+    /**
+     * Returns the number of active users that are not on trial.
+     */
+    async getNumActiveUsersThatCanVote(): Promise<number> {
         const res = await this.db.fetchOne<{ cnt: string | null }>(`
             select count(*) cnt from (select user_id, count(*) as cnt
                                       from activity_db.user_activity
                                       where visited_at > date_sub(now(), interval 7 day)
+                                      and EXISTS(select * from user_karma where voter_id = activity_db.user_activity.user_id)
                                       group by user_id
                                       having cnt > 3) as active_users
+                                      join users on (users.user_id = active_users.user_id)
+                                      where users.ontrial = 0
         `);
         return parseInt(res.cnt || '0');
     }

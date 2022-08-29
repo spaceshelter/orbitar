@@ -1,11 +1,15 @@
 import UserAPI from './UserAPI';
 import {UserInfo, UserProfileInfo} from '../Types/UserInfo';
 import {AppState} from '../AppState/AppState';
+import {VoteListItemEntity} from './VoteAPI';
 
 export type UserProfileResult = {
     profile: UserProfileInfo;
     invitedBy: UserInfo;
     invites: UserInfo[];
+    invitedReason?: string;
+    trialProgress?: number;
+    trialApprovers?: VoteListItemEntity[];
 };
 
 export default class UserAPIHelper {
@@ -19,16 +23,16 @@ export default class UserAPIHelper {
     }
 
     async userProfile(username: string): Promise<UserProfileResult> {
-        const {profile, invitedBy, invites} = await this.api.userProfile(username);
+        const userProfileResponse = await this.api.userProfile(username);
+        const profile = userProfileResponse.profile;
 
         const profileInfo: UserProfileInfo = { ...profile } as unknown as UserProfileInfo;
 
         profileInfo.registered = this.api.api.fixDate(new Date(profile.registered));
         this.appState.cache.setUser(profileInfo);
         return {
+            ...userProfileResponse,
             profile: profileInfo,
-            invitedBy,
-            invites
         };
     }
 
