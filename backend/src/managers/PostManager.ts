@@ -14,7 +14,6 @@ import UserManager from './UserManager';
 import {CommentInfoWithPostData} from './types/CommentInfo';
 import {SiteInfo} from './types/SiteInfo';
 import {HistoryInfo} from './types/HistoryInfo';
-import {number} from 'joi';
 
 export default class PostManager {
     private bookmarkRepository: BookmarkRepository;
