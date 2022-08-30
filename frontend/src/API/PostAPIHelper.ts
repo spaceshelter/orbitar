@@ -114,22 +114,32 @@ export default class PostAPIHelper {
         });
     }
 
-    fixComments(comments: CommentEntity[], users: Record<number, UserInfo>): CommentInfo[] {
-        return comments.map(comment => {
-            const c: CommentInfo = { ...comment } as unknown as CommentInfo;
-            // fix fields
-            c.author = this.appState.cache.setUser(users[comment.author]);
-            c.created = this.postAPI.api.fixDate(new Date(comment.created));
-            c.postLink = {
-                id: comment.post,
-                site: comment.site
-            };
+    private fixComment(comment: CommentEntity, users: Record<number, UserInfo>): CommentInfo {
+        const c: CommentInfo = { ...comment } as unknown as CommentInfo;
+        // fix fields
+        c.author = this.appState.cache.setUser(users[comment.author]);
+        c.created = this.postAPI.api.fixDate(new Date(comment.created));
+        c.postLink = {
+            id: comment.post,
+            site: comment.site
+        };
 
-            if (comment.answers) {
-                c.answers = this.fixComments(comment.answers, users);
-            }
-            return c;
-        });
+        if (comment.answers) {
+            c.answers = this.fixComments(comment.answers, users);
+        }
+        return c;
+    }
+
+    fixCommentsRecords(comments: Record<number, CommentEntity>, users: Record<number, UserInfo>): Record<number, CommentInfo> {
+        const result: Record<number, CommentInfo> = {};
+        for (const commentId in comments) {
+            result[commentId] = this.fixComment(comments[commentId], users);
+        }
+        return result;
+    }
+
+    fixComments(comments: CommentEntity[], users: Record<number, UserInfo>): CommentInfo[] {
+        return comments.map(comment => this.fixComment(comment, users));
     }
 
     getLastCommentId(comments: CommentEntity[]): number | undefined {

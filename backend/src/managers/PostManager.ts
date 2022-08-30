@@ -1,7 +1,7 @@
 import PostRepository from '../db/repositories/PostRepository';
 import CommentRepository from '../db/repositories/CommentRepository';
 import BookmarkRepository from '../db/repositories/BookmarkRepository';
-import {CommentRawWithUserData, PostRaw} from '../db/types/PostRaw';
+import {CommentRawWithUserData, PostRaw, CommentRaw} from '../db/types/PostRaw';
 import {BookmarkRaw} from '../db/types/BookmarkRaw';
 import SiteManager from './SiteManager';
 import CodeError from '../CodeError';
@@ -14,6 +14,7 @@ import UserManager from './UserManager';
 import {CommentInfoWithPostData} from './types/CommentInfo';
 import {SiteInfo} from './types/SiteInfo';
 import {HistoryInfo} from './types/HistoryInfo';
+import {number} from 'joi';
 
 export default class PostManager {
     private bookmarkRepository: BookmarkRepository;
@@ -120,6 +121,14 @@ export default class PostManager {
     async getPostComments(postId: number, forUserId: number, format: ContentFormat): Promise<CommentInfoWithPostData[]> {
         const rawComments = await this.commentRepository.getPostComments(postId, forUserId);
         return await this.convertRawCommentsWithPostData(forUserId, rawComments, format);
+    }
+
+    async getParentCommentsForASetOfComments(comments: CommentInfoWithPostData[]): Promise<CommentRaw[] | undefined> {
+        const commentIds = comments.flatMap(comment => comment.parentComment ? [comment.parentComment] : []);
+        if (!commentIds.length) {
+            return undefined;
+        }
+        return await this.commentRepository.getComments(commentIds);
     }
 
     async getUserComments(userId: number, forUserId: number, page: number, perpage: number, format: ContentFormat): Promise<CommentInfoWithPostData[]> {

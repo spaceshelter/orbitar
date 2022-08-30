@@ -7,6 +7,7 @@ import {CommentEntity} from '../types/entities/CommentEntity';
 import {CommentInfoWithPostData} from '../../managers/types/CommentInfo';
 import {PostInfo} from '../../managers/types/PostInfo';
 import {SiteWithUserInfo} from '../../managers/types/SiteInfo';
+import {CommentRaw} from '../../db/types/PostRaw';
 
 export type EnrichedPosts = {
     posts: PostEntity[];
@@ -19,6 +20,7 @@ export type EnrichedComments = {
     allComments: CommentEntity[];
     commentsIndex: Record<number, CommentEntity>;
     users: Record<number, UserEntity>;
+    parentComments: Record<number, CommentEntity>
 };
 
 export class Enricher {
@@ -86,11 +88,14 @@ export class Enricher {
     async enrichRawComments(rawComments: CommentInfoWithPostData[],
                             users: Record<number, UserEntity>,
                             format: string,
-                            isNew: (c: CommentEntity) => boolean): Promise<EnrichedComments> {
+                            isNew: (c: CommentEntity) => boolean,
+                            rawParentComments: CommentRaw[] = []): Promise<EnrichedComments> {
 
         const commentsIndex: Record<number, CommentEntity> = {};
         const rootComments: CommentEntity[] = [];
         const allComments: CommentEntity[] = [];
+        const parentComments: Record<number, CommentEntity> = {};
+        const sites: Record<string, SiteBaseEntity> = {};
 
         for (const rawComment of rawComments) {
             const comment: CommentEntity = {
@@ -102,6 +107,7 @@ export class Enricher {
                 site: rawComment.site,
                 post: rawComment.post,
                 vote: rawComment.vote,
+                parentComment: rawComment.parentComment,
                 isNew: false
             };
             if (isNew(comment)) {
@@ -135,11 +141,35 @@ export class Enricher {
             }
             allComments.push(comment);
         }
+
+        for (const rawParentComment of rawParentComments) {
+            if (!sites[rawParentComment.site_id]) {
+                const site = await this.siteManager.getSiteById(rawParentComment.site_id);
+                sites[rawParentComment.site_id] = {
+                    site: site.site,
+                    name: site.name
+                };
+            }
+            const comment: CommentEntity = {
+                id: rawParentComment.comment_id,
+                created: rawParentComment.created_at.toISOString(),
+                author: rawParentComment.author_id,
+                content: format === 'html' ? rawParentComment.html : rawParentComment.source,
+                rating: rawParentComment.rating,
+                site: sites[rawParentComment.site_id].name,
+                post: rawParentComment.post_id,
+                isNew: false
+            };
+            parentComments[comment.id] = comment;
+            users[rawParentComment.author_id] = users[rawParentComment.author_id] || await this.userManager.getById(rawParentComment.author_id);
+        }
+
         return {
             allComments,
             commentsIndex,
             rootComments,
-            users
+            users,
+            parentComments
         };
     }
 

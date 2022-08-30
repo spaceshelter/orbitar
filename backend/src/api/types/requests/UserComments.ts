@@ -13,4 +13,5 @@ export type UserCommentsResponse = {
     comments: CommentEntity[];
     total: number;
     users: Record<number, UserEntity>;
+    parentComments: Record<number, CommentEntity>;
 };

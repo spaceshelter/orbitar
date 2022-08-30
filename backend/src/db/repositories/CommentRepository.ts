@@ -16,6 +16,10 @@ export default class CommentRepository {
         });
     }
 
+    async getComments(commentIds: number[]): Promise<CommentRaw[] | undefined> {
+        return await this.db.fetchAll(`select * from comments where comment_id in (?)`, [commentIds]);
+    }
+
     async getCommentWithUserData(forUserId: number, commentId: number): Promise<CommentRawWithUserData | undefined> {
         return await this.db.fetchOne<CommentRaw>(`select c.*, v.vote from comments c left join comment_votes v on (v.comment_id = c.comment_id and v.voter_id = :forUserId) where c.comment_id=:commentId`, {
             commentId,
