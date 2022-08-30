@@ -1,7 +1,7 @@
 import PostRepository from '../db/repositories/PostRepository';
 import CommentRepository from '../db/repositories/CommentRepository';
 import BookmarkRepository from '../db/repositories/BookmarkRepository';
-import {CommentRawWithUserData, PostRaw, CommentRaw} from '../db/types/PostRaw';
+import {CommentRawWithUserData, PostRaw} from '../db/types/PostRaw';
 import {BookmarkRaw} from '../db/types/BookmarkRaw';
 import SiteManager from './SiteManager';
 import CodeError from '../CodeError';
