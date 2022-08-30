@@ -137,8 +137,14 @@ export default class UserController {
 
             const total = await this.postManager.getUserCommentsTotal(profile.id);
             const rawComments = await this.postManager.getUserComments(profile.id, userId, page || 1, perpage || 20, format);
-            const rawParentComments = await this.postManager.getParentCommentsForASetOfComments(rawComments);
-            const {allComments, users, parentComments} = await this.enricher.enrichRawComments(rawComments, {}, format, (_) => false, rawParentComments);
+            const rawParentComments = await this.postManager.getParentCommentsForASetOfComments(rawComments, userId, format);
+            const {allComments, users} = await this.enricher.enrichRawComments(rawComments, {}, format, (_) => false);
+            const {allComments:parentCommentsList} = await this.enricher.enrichRawComments(rawParentComments, users, format, (_) => false);
+
+            const parentComments = parentCommentsList.reduce((acc, comment) => {
+                acc[comment.id] = comment;
+                return acc;
+            }, {});
 
             response.success({
                 comments: allComments,
