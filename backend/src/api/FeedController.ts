@@ -12,7 +12,6 @@ import PostManager from '../managers/PostManager';
 import {Enricher} from './utils/Enricher';
 import {FeedSorting} from './types/entities/common';
 import {FeedSortingSaveRequest, FeedSortingSaveResponse} from './types/requests/FeedSortingSave';
-import rateLimit from 'express-rate-limit';
 
 export default class FeedController {
     public readonly router = Router();
@@ -53,17 +52,11 @@ export default class FeedController {
             feedSorting: Joi.number().valid(FeedSorting.postCreatedAt, FeedSorting.postCommentedAt)
         });
 
-        // limit changing sorting type to 10 times per minute to prevent flooding
-        const saveFeedSortingLimiter = rateLimit({
-            windowMs: 60 * 1000,
-            max: 10
-        });
-
         this.router.post('/feed/subscriptions', validate(feedSubscriptionsSchema), (req, res) => this.feedSubscriptions(req, res));
         this.router.post('/feed/all', validate(feedSubscriptionsSchema), (req, res) => this.feedAll(req, res));
         this.router.post('/feed/posts', validate(feedPostsSchema), (req, res) => this.feedPosts(req, res));
         this.router.post('/feed/watch', validate(feedWatchSchema), (req, res) => this.feedWatch(req, res));
-        this.router.post('/feed/sorting', saveFeedSortingLimiter, validate(feedSortingSchema), (req, res) => this.saveFeedSorting(req, res));
+        this.router.post('/feed/sorting', validate(feedSortingSchema), (req, res) => this.saveFeedSorting(req, res));
     }
 
     async feedSubscriptions(request: APIRequest<FeedSubscriptionsRequest>, response: APIResponse<FeedSubscriptionsResponse>) {

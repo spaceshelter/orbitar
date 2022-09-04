@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {useAppState, useAPI} from '../AppState/AppState';
+import {useAPI, useAppState} from '../AppState/AppState';
 import styles from './FeedPage.module.scss';
 import PostComponent from '../Components/PostComponent';
 import Paginator from '../Components/Paginator';
@@ -7,6 +7,7 @@ import {Link, useMatch, useSearchParams} from 'react-router-dom';
 import {FeedType, useFeed} from '../API/use/useFeed';
 import {APIError} from '../API/APIBase';
 import {FeedSorting} from '../Types/FeedSortingSettings';
+import classNames from 'classnames';
 
 export default function FeedPage() {
     const { site, siteInfo } = useAppState();
@@ -39,7 +40,7 @@ export default function FeedPage() {
     const perpage = 20;
     const page = parseInt(search.get('page') || '1');
 
-    const [changeSorting, setChangeSorting] = useState(-1);
+    const [changeSorting, setChangeSorting] = useState<FeedSorting>();
     const {posts, loading, pages, error, updatePost, sorting} = useFeed(site, feedType, page, perpage, changeSorting);
 
     useEffect(() => {
@@ -57,16 +58,14 @@ export default function FeedPage() {
         document.title = docTitle;
     }, [siteInfo, feedType]);
 
-    const handleFeedSortingChange = async (e: React.MouseEvent) => {
+    const handleFeedSortingChange = (newFeedSorting: FeedSorting) => async (e: React.MouseEvent) => {
         e.preventDefault();
-        const feedSorting = (e.currentTarget as HTMLAnchorElement).dataset.feedSorting;
-        if (feedSorting === undefined || !siteInfo?.site) {
-            return;
-        }
-        const newFeedSorting = parseInt(feedSorting, 10) as FeedSorting;
         await api.feed.saveSorting(site, newFeedSorting);
         setChangeSorting(newFeedSorting);
     };
+
+    const liveSorting = sorting !== FeedSorting.postCreatedAt;
+
     return (
         <div className={styles.container}>
             <div className={styles.feed}>
@@ -74,8 +73,8 @@ export default function FeedPage() {
                     <Link to='/' className={feedType === 'subscriptions' ? styles.active : ''} replace={true}>мои подписки</Link> • <Link to='/all' className={feedType === 'all' ? styles.active : ''} replace={true}>все</Link> • <Link to='/posts' className={feedType === 'site' ? styles.active : ''} replace={true}>только главная</Link>
                 </div>}
                 {siteInfo && <div className={styles.feedControls}>
-                  <a href='#' data-feed-sorting={FeedSorting.postCommentedAt} className={sorting === FeedSorting.postCommentedAt ? styles.active : ''} onClick={handleFeedSortingChange}>LIVE</a>&nbsp;•&nbsp;
-                  <a href='#' data-feed-sorting={FeedSorting.postCreatedAt} className={sorting === FeedSorting.postCreatedAt ? styles.active : ''} onClick={handleFeedSortingChange}>НОВОЕ</a>
+                  <a href='#' className={classNames({[styles.active]: liveSorting})} onClick={handleFeedSortingChange(FeedSorting.postCommentedAt)}>LIVE</a>&nbsp;•&nbsp;
+                  <a href='#' className={classNames({[styles.active]: !liveSorting})} onClick={handleFeedSortingChange(FeedSorting.postCreatedAt)}>НОВОЕ</a>
                 </div>}
                 {!error && loading && <div className={styles.loading}>Загрузка</div>}
                 {error && <div className={styles.error}>{

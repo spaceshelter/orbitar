@@ -26,18 +26,23 @@ export default class FeedManager {
         this.redis = redis;
     }
 
+    private getRedisKey(forUserId: number, sorting: FeedSorting = FeedSorting.postCommentedAt, suffix = ''): string {
+        const createdAt = sorting === FeedSorting.postCommentedAt ? '' : ':created_at';
+        return `subscriptions:${forUserId}${createdAt}${suffix}`;
+    }
+
     async getSubscriptionFeed(forUserId: number, page: number, perpage: number, format: ContentFormat, sorting: FeedSorting): Promise<PostInfo[]> {
         const limitFrom = (page - 1) * perpage;
 
         // check if fanned out
-        const result = await this.redis.get(`subscriptions:${forUserId}:fanned`);
+        const result = await this.redis.get(this.getRedisKey(forUserId, sorting, ':fanned'));
         if (!result) {
             // pull if not fanned out yet
             await this.pullSubscriptionsFeed(forUserId);
         }
 
         // get post ids from redis
-        const redisFeedName = sorting === FeedSorting.postCommentedAt ? `subscriptions:${forUserId}` : `subscriptions:${forUserId}:created_at`;
+        const redisFeedName = this.getRedisKey(forUserId, sorting);
         const postIds = await this.redis.zRange(redisFeedName, '+inf', 0, { REV: true, BY: 'SCORE', LIMIT: { offset: limitFrom, count: perpage } });
 
         const posts: PostRawWithUserData[] = [];
@@ -50,7 +55,7 @@ export default class FeedManager {
     }
 
     async getSubscriptionsTotal(forUserId: number): Promise<number> {
-        return await this.redis.zCount(`subscriptions:${forUserId}`, 0, '+inf');
+        return await this.redis.zCount(this.getRedisKey(forUserId), 0, '+inf');
     }
 
     async getAllPosts(forUserId: number, page: number, perpage: number, format: ContentFormat, sorting: FeedSorting): Promise<PostInfo[]> {
@@ -85,7 +90,8 @@ export default class FeedManager {
         // TODO: check for simultaneous pulls
 
         // set fanout flag
-        await this.redis.set(`subscriptions:${forUserId}:fanned`, 'true');
+        await this.redis.set(this.getRedisKey(forUserId, FeedSorting.postCreatedAt, ':fanned'), 'true');
+        await this.redis.set(this.getRedisKey(forUserId, FeedSorting.postCommentedAt, ':fanned'), 'true');
 
         const sites = await this.userRepository.getUserMainSubscriptions(forUserId);
 
@@ -129,15 +135,18 @@ export default class FeedManager {
                 throw new Error('Fanout cancelled');
             }
 
-            const result = await this.redis.exists(`subscriptions:${user_id}:fanned`);
-            if (!result) {
-                // skip not fanned-out users
-                continue;
+            if (await this.redis.exists(this.getRedisKey(user_id, FeedSorting.postCommentedAt, ':fanned'))) {
+                await this.redis.zAdd(this.getRedisKey(user_id, FeedSorting.postCommentedAt), [{
+                    score: post.commented_at.getTime(),
+                    value: strPostId
+                }]);
             }
-
-            // console.log(`update subscription for ${user_id}`);
-            await this.redis.zAdd(`subscriptions:${user_id}`, [{ score: post.commented_at.getTime(), value: strPostId }]);
-            await this.redis.zAdd(`subscriptions:${user_id}:created_at`, [{ score: post.created_at.getTime(), value: strPostId }]);
+            if (await this.redis.exists(this.getRedisKey(user_id, FeedSorting.postCreatedAt, ':fanned'))) {
+                await this.redis.zAdd(this.getRedisKey(user_id, FeedSorting.postCreatedAt), [{
+                    score: post.created_at.getTime(),
+                    value: strPostId
+                }]);
+            }
 
             // TODO: use redis for update bookmarks
             await this.bookmarkRepository.setUpdated(postId, user_id, post.commented_at);
@@ -180,7 +189,8 @@ export default class FeedManager {
 
             if (remove) {
                 const redisValues = posts.map(post => `${post.post_id}`);
-                await this.redis.zRem(`subscriptions:${forUserId}`, redisValues);
+                await this.redis.zRem(this.getRedisKey(forUserId, FeedSorting.postCreatedAt), redisValues);
+                await this.redis.zRem(this.getRedisKey(forUserId, FeedSorting.postCommentedAt), redisValues);
             }
             else {
                 const redisValuesSortedByPostCreated = [];
@@ -196,8 +206,8 @@ export default class FeedManager {
                         value: post.post_id
                     });
                 }
-                await this.redis.zAdd(`subscriptions:${forUserId}`, redisValuesSortedByPostCommented);
-                await this.redis.zAdd(`subscriptions:${forUserId}:created_at`, redisValuesSortedByPostCreated);
+                await this.redis.zAdd(this.getRedisKey(forUserId, FeedSorting.postCommentedAt), redisValuesSortedByPostCommented);
+                await this.redis.zAdd(this.getRedisKey(forUserId, FeedSorting.postCreatedAt), redisValuesSortedByPostCreated);
             }
         } while (posts.length > 0);
 
