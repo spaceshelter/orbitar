@@ -6,7 +6,7 @@ import Paginator from '../Components/Paginator';
 import {Link, useMatch, useSearchParams} from 'react-router-dom';
 import {FeedType, useFeed} from '../API/use/useFeed';
 import {APIError} from '../API/APIBase';
-import {MainSubdomain, FeedSorting} from '../Types/FeedSortingSettings';
+import {FeedSorting} from '../Types/FeedSortingSettings';
 
 export default function FeedPage() {
     const { site, siteInfo } = useAppState();
@@ -70,7 +70,7 @@ export default function FeedPage() {
     return (
         <div className={styles.container}>
             <div className={styles.feed}>
-                {siteInfo?.site === MainSubdomain && <div className={styles.feedControls}>
+                {siteInfo?.site === 'main' && <div className={styles.feedControls}>
                     <Link to='/' className={feedType === 'subscriptions' ? styles.active : ''} replace={true}>мои подписки</Link> • <Link to='/all' className={feedType === 'all' ? styles.active : ''} replace={true}>все</Link> • <Link to='/posts' className={feedType === 'site' ? styles.active : ''} replace={true}>только главная</Link>
                 </div>}
                 {siteInfo && <div className={styles.feedControls}>

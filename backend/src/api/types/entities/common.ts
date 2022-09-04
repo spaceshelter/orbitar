@@ -9,5 +9,3 @@ export enum FeedSorting {
     postCommentedAt,
     postCreatedAt
 }
-
-export const MainSubdomain = 'main';
