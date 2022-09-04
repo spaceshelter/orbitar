@@ -5,6 +5,8 @@ import crypto from 'crypto';
 import CodeError from '../CodeError';
 import TheParser from '../parser/TheParser';
 import UserManager from './UserManager';
+import {InvitesAvailability} from '../api/types/requests/InviteList';
+import {UserRestrictions} from './types/UserInfo';
 
 export default class InviteManager {
     private inviteRepository: InviteRepository;
@@ -85,19 +87,63 @@ export default class InviteManager {
         return this.inviteRepository.deleteInvite(userId, code);
     }
 
-    async numberOfInvitesLeftToCreate(userId:number): Promise<number> {
+    async invitesAvailability(userId: number): Promise<InvitesAvailability> {
+        const gcd = (a: number, b: number): number => {
+            if (!b) {
+                return a;
+            }
+            return gcd(b, a % b);
+        };
+
         // currently unused restricted invites number
         const unused = await this.inviteRepository.getInvitesCount(userId, /*used*/false, /*restricted*/ true);
         const invitedUsers = await this.userManager.getInvites(userId);
-        let activeInvitedUsersNotOnTrial = 0;
-        let invitedUsersOnTrial = 0;
+        let activeIntegratedUsers = 0;
+        let rejectedUsers = 0;
+
         for (const user of invitedUsers) {
-            if (user.ontrial) {
-                invitedUsersOnTrial++;
-            } else if (await this.userManager.isUserActive(user.id)) {
-                activeInvitedUsersNotOnTrial++;
+            let cachedRestrictions: UserRestrictions | undefined;
+            const getRestrictions = async () => {
+                cachedRestrictions = cachedRestrictions || await this.userManager.getUserRestrictions(user.id);
+                return cachedRestrictions;
+            };
+            if (!user.ontrial && await this.userManager.isUserActive(user.id) && (await getRestrictions()).canVoteKarma) {
+                activeIntegratedUsers++;
+            } else if (!(await getRestrictions()).canVote) {
+                rejectedUsers++;
             }
         }
-        return Math.max(0, activeInvitedUsersNotOnTrial + 2 - unused - invitedUsersOnTrial);
+
+        /* each rejected user increases invite waiting period by 1 week */
+        let inviteWaitPeriodDays = 7 * (1 + rejectedUsers);
+        let invitesPerPeriod = 1 + activeIntegratedUsers;
+
+        /* simplify fraction */
+        const gcdResult = gcd(1 + rejectedUsers, invitesPerPeriod);
+        inviteWaitPeriodDays /= gcdResult;
+        invitesPerPeriod /= gcdResult;
+
+        const msInAnHour = 60 * 60 * 1000;
+        const currentInvitePeriodStartTs = Date.now() - inviteWaitPeriodDays * 24 * msInAnHour;
+        const usersInTheInvitedPeriod = invitedUsers.reduce((acc, user) =>
+            user.registered.getTime() > currentInvitePeriodStartTs ? acc + 1 : acc, 0);
+
+        const invitesLeft = Math.max(0, invitesPerPeriod - usersInTheInvitedPeriod - unused);
+        let daysLeftToNextAvailableInvite: number | undefined;
+
+        if (invitesLeft === 0 && unused === 0 && invitesPerPeriod < invitedUsers.length) {
+            //sort by registration date descending
+            invitedUsers.sort((a, b) => b.registered.getTime() - a.registered.getTime());
+            // number of recent invited users that delay the next available invite
+            const nextAvailableInviteTs = invitedUsers[invitesPerPeriod - 1].registered.getTime() + inviteWaitPeriodDays * 24 * msInAnHour;
+            daysLeftToNextAvailableInvite = Math.ceil((nextAvailableInviteTs - Date.now()) / (24 * msInAnHour));
+        }
+
+        return {
+            invitesLeft,
+            daysLeftToNextAvailableInvite,
+            inviteWaitPeriodDays,
+            invitesPerPeriod
+        };
     }
 }

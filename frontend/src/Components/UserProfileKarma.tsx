@@ -11,6 +11,7 @@ import moment from 'moment';
 
 type UserProfileKarmaProps = {
     username: string;
+    trialProgress?: number;
 };
 
 const formatTimeSec = (sec: number) => {
@@ -117,6 +118,8 @@ export const UserProfileKarma = (props: UserProfileKarmaProps) => {
         </>,
     ].filter(Boolean);
 
+    const hasRestrictions = restrictions && restrictions.length !== 0;
+
     if (restrictions && restrictions.length === 0) {
         restrictions.push(<><span className={'i i-thumbs-up'}></span>Ура! Права не ограничены!</>);
     }
@@ -139,10 +142,22 @@ export const UserProfileKarma = (props: UserProfileKarmaProps) => {
             </div>}
 
             {!restrictionsResult && <div>Загрузка...</div>}
+
+            {props.trialProgress !== undefined && (hasRestrictions || debug) && <div>
+                Прогресс к полноценным правам: {Math.round(props.trialProgress * 100)}%<br/>
+            </div>}
+
             {!!restrictions?.length && <div>{restrictions.map((r, idx) =>
                 <div key={idx} className={styles.restricted}>{r}</div>)}</div>}
 
             {karmaResult && <>
+                <div>
+                    Прогресс прав:
+                    <pre>
+                        {JSON.stringify(karmaResult.trialProgress, null, 2)}
+                    </pre>
+                </div>
+
                 <div className={styles.container}>
                     <Karma commentsSumRating={sumCommentRating} postsSumRating={sumPostRating}
                            profileVotesCount={activeKarmaVotesCount} profileVotesSum={activeKarmaVotesSum}

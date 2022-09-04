@@ -15,11 +15,19 @@ export type UserProfileResponse = {
     invites: UserBaseEntity[];
 };
 
+export type TrialProgressDebugInfo = {
+    effectiveKarmaPart: number;
+    daysOnSitePart: number;
+    singleVotesPart?: number;
+    doubleVotesPart?: number
+};
+
 export type UserKarmaResponse = {
     senatePenalty: number;
     activeKarmaVotes: Record<string, number>;
     postRatingBySubsite: Record<string, number>;
     commentRatingBySubsite: Record<string, number>;
+    trialProgress: TrialProgressDebugInfo;
 };
 
 /* see UserRestrictions */

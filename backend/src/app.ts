@@ -105,7 +105,7 @@ const inviteManager = new InviteManager(inviteRepository, theParser, userManager
 const siteManager = new SiteManager(siteRepository, userManager);
 const feedManager = new FeedManager(bookmarkRepository, postRepository, userRepository, siteManager, redis.client);
 const postManager = new PostManager(bookmarkRepository, commentRepository, postRepository, feedManager, notificationManager, siteManager, userManager, theParser);
-const voteManager = new VoteManager(voteRepository, postManager, redis.client);
+const voteManager = new VoteManager(voteRepository, postManager, userManager, redis.client);
 
 const apiEnricher = new Enricher(siteManager, userManager);
 

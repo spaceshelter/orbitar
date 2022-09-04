@@ -66,6 +66,7 @@ export default class PostManager {
 
         const parseResult = this.parser.parse(content);
         const postRaw = await this.postRepository.createPost(site.id, userId, title, content, parseResult.text);
+        this.userManager.clearUserRestrictionsCache(userId);
 
         await this.bookmarkRepository.setWatch(postRaw.post_id, userId, true);
 
@@ -183,6 +184,7 @@ export default class PostManager {
         const parseResult = this.parser.parse(content);
 
         const commentRaw = await this.commentRepository.createComment(userId, postId, parentCommentId, content, parseResult.text);
+        this.userManager.clearUserRestrictionsCache(userId);
 
         for (const mention of parseResult.mentions) {
             await this.notificationManager.sendMentionNotify(mention, userId, postId, commentRaw.comment_id);

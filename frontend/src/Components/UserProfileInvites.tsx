@@ -1,6 +1,6 @@
 import {useAPI, useAppState} from '../AppState/AppState';
 import React, {useEffect, useState} from 'react';
-import {InviteEntity} from '../API/InviteAPI';
+import {InviteEntity, InvitesAvailability} from '../API/InviteAPI';
 import {Link} from 'react-router-dom';
 import styles from './UserProfileInvites.module.scss';
 import {toast} from 'react-toastify';
@@ -12,6 +12,7 @@ import CreateCommentComponent from './CreateCommentComponent';
 import {CommentInfo} from '../Types/PostInfo';
 import ContentComponent from './ContentComponent';
 import {observer} from 'mobx-react-lite';
+import moment from 'moment';
 
 export const UserProfileInvites = observer(() => {
     const api = useAPI();
@@ -21,7 +22,7 @@ export const UserProfileInvites = observer(() => {
     const [activeInvites, setActiveInvites] = useState<InviteEntity[]>([]);
     const [restrictedInvites, setRestrictedInvites] = useState<InviteEntity[]>([]);
     const [inactiveInvites, setInactiveInvites] = useState<InviteEntity[]>([]);
-    const [invitesLeftToCreate, setInvitesLeftToCreate] = useState(0);
+    const [invitesAvailability, setInvitesAvailability] = useState<InvitesAvailability | undefined>(undefined);
 
     const [createNewInviteForm, setCreateNewInviteForm] = useState(false);
     const toggleCreateNewInviteForm = () => setCreateNewInviteForm(!createNewInviteForm);
@@ -37,7 +38,7 @@ export const UserProfileInvites = observer(() => {
                 setActiveInvites(activeInvites);
                 setRestrictedInvites(restrictedInvites);
                 setInactiveInvites(result.inactive);
-                setInvitesLeftToCreate(result.leftToCreate);
+                setInvitesAvailability(result.invitesAvailability);
                 setLoading(false);
             })
             .catch(err => {
@@ -91,7 +92,8 @@ export const UserProfileInvites = observer(() => {
                 <h4>Ваши инвайты</h4>
                 <div className="list">
                     {!!activeInvites.length && <>
-                        <h5>Неограниченные инвайты</h5>
+                        <h5 title="Приглашенный по такому инвайту быстрее получит полные права: возможность голосовать и приглашать. Используйте, только если на 100% уверены в приглашаемом.">
+                            Опасные инвайты</h5>
                         {activeInvites.map(invite => <Invite invite={invite} key={invite.code}
                                                              handleRegenerate={handleRegenerate}
                                                              handleDelete={handleDelete}/>)}
@@ -105,10 +107,21 @@ export const UserProfileInvites = observer(() => {
                     {!inactiveInvites.length && !activeInvites.length && <>Кажется, инвайтов у вас нет.</>}
                 </div>
 
-                {restrictions?.canInvite && invitesLeftToCreate === 0 && <>Больше пока инвайтов создать нельзя.</>}
-                {restrictions?.canInvite && !createNewInviteForm && invitesLeftToCreate > 0 &&
+                {restrictions?.canInvite && invitesAvailability?.invitesLeft === 0 && <>Больше инвайтов пока создать нельзя.</>}
+
+                {restrictions?.canInvite && !createNewInviteForm && !!invitesAvailability?.invitesLeft &&
                     <button onClick={toggleCreateNewInviteForm}>Создать новый инвайт
-                        ({invitesLeftToCreate == 1 ? 'остался последний' : `осталось ${invitesLeftToCreate}`})</button>}
+                        ({invitesAvailability?.invitesLeft === 1 ? 'остался один' : `осталось ${invitesAvailability?.invitesLeft}`})</button>}
+
+                {restrictions?.canInvite && !createNewInviteForm && invitesAvailability?.daysLeftToNextAvailableInvite !== undefined &&
+                    <div>До следующего доступного инвайта
+                        осталось ждать {moment.duration(Math.round(invitesAvailability?.daysLeftToNextAvailableInvite * 24), 'hours').humanize(true)}.
+                        <br/>
+                        Выдается инвайтов: {invitesAvailability.invitesPerPeriod} в&nbsp;
+                        {moment.duration(Math.round(invitesAvailability.inviteWaitPeriodDays), 'days').humanize(true)}.
+                    </div>}
+
+
                 {createNewInviteForm && <div className={createPostStyles.container}>
                     <div className={classNames(createPostStyles.createpost, createCommentStyles.content)}>
                         <div className={createPostStyles.form}>
@@ -159,7 +172,7 @@ const Invite = (props: {
     };
 
     return <div className="item" key={invite.code}>
-        <button onClick={e => handleCopyInvite}>Скопировать</button>
+        <button onClick={() => handleCopyInvite}>Скопировать</button>
         <div className="code"><Link to={`//${process.env.REACT_APP_ROOT_DOMAIN}/invite/${invite.code}`}
                                     onClick={handleCopyInvite}>{process.env.REACT_APP_ROOT_DOMAIN}/invite/{invite.code}</Link>
         </div>

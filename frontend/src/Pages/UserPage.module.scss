@@ -37,24 +37,6 @@
     //float: right;
 }
 
-.karmaOnTrial {
-  border: 2px solid var(--primary);
-  animation: borderAnimation 2s infinite;
-}
-
-/*frames*/
-@keyframes borderAnimation {
-  0% {
-    border-color: var(--primary);
-  }
-  33% {
-    border-color: var(--primaryHover);
-  }
-  66% {
-    border-color: var(--secondary);
-  }
-}
-
 .controls {
    // padding: 10px 0;
     margin: 0 -10px;

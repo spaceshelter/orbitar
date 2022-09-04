@@ -34,7 +34,7 @@ export function Karma(props: KarmaCalculatorProps) {
     const userRating = ( profileVotingResult >= 0 ? 1 : Math.max(0, 1 - lerp(Math.pow(ratio/100, 2), Math.pow(ratio*2, 2), s)));
 
     // karma without punishment
-    const rawKarma = Math.ceil(((contentRating+1)*userRating-1) * 1000);
+    const rawKarma = Math.ceil(((contentRating + 1) * userRating - 1) * 1000 * 100) / 100;
 
     // karma with punishment
     const karma = Math.max(-1000, rawKarma - punishment);
@@ -44,10 +44,10 @@ export function Karma(props: KarmaCalculatorProps) {
             <h1>Калькулятор</h1>
             <h2>Входные данные</h2>
                 <label className="slider">Суммарный рейтинг всех постов: {allPostsValue}<br/>
-                        <input type="range" min="-2000" max="30000" value={allPostsValue} step="100" onChange={e => setP( +e.target.value) } />
+                        <input type="range" min="-3000" max="3000" value={allPostsValue} step="2" onChange={e => setP( +e.target.value) } />
                 </label>
                 <label className="slider">Суммарный рейтинг всех комментов: {allCommentsValue}<br/>
-                        <input type="range" min="-4000" max="30000" value={allCommentsValue} step="100" onChange={e => setC( +e.target.value) } />
+                        <input type="range" min="-3000" max="3000" value={allCommentsValue} step="2" onChange={e => setC( +e.target.value) } />
                 </label>
                 <label className="slider">Количество голосов в профиле: {profileVotesCount}<br/>
                         <input type="range" min="0" max="250" value={profileVotesCount.toString()} step="1" onChange={e => setUCount( +e.target.value) } />

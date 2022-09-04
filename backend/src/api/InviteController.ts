@@ -174,7 +174,7 @@ export default class InviteController {
             }
 
             const invites = await this.inviteManager.listInvites(userId);
-            const leftToCreate = await this.inviteManager.numberOfInvitesLeftToCreate(userId);
+            const invitesAvailability = await this.inviteManager.invitesAvailability(userId);
 
             const active: InviteEntity[] = [];
             const inactive: InviteEntity[] = [];
@@ -193,7 +193,7 @@ export default class InviteController {
             return response.success({
                 active,
                 inactive,
-                leftToCreate
+                invitesAvailability
             });
         }
         catch (err) {
@@ -240,7 +240,8 @@ export default class InviteController {
                 return response.error(ERROR_CODES.NO_PERMISSION, 'No permission to create invites', 403);
             }
 
-            if ((await this.inviteManager.numberOfInvitesLeftToCreate(userId)) < 1) {
+            // FIXME potential race condition between availability check and invite creation
+            if ((await this.inviteManager.invitesAvailability(userId)).invitesLeft === 0) {
                 this.logger.warn(`User ${userId} has no more invites left to create`, {user: userId});
                 return response.error(ERROR_CODES.NO_PERMISSION, 'No more invites left to create', 403);
             }
