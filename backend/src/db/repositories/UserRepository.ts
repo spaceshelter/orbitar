@@ -5,7 +5,6 @@ import CodeError from '../../CodeError';
 import {OkPacket} from 'mysql2';
 import {UserGender} from '../../managers/types/UserInfo';
 import {FeedSorting} from '../../api/types/entities/common';
-import {FeedSortingSettingsRaw} from '../types/FeedSortingSettings';
 
 export default class UserRepository {
     private db: DB;

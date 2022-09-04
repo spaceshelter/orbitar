@@ -76,7 +76,7 @@ export default class FeedController {
         const { format, page, perpage: perPage } = request.body;
 
         try {
-            let sorting = await this.userManager.getFeedSorting(userId, 1);
+            const sorting = await this.userManager.getFeedSorting(userId, 1);
             const total = await this.feedManager.getSubscriptionsTotal(userId);
             const rawPosts = await this.feedManager.getSubscriptionFeed(userId, page, perPage, format, sorting);
             const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts);
@@ -105,7 +105,7 @@ export default class FeedController {
         const { format, page, perpage: perPage } = request.body;
 
         try {
-            let sorting = await this.userManager.getFeedSorting(userId, 1);
+            const sorting = await this.userManager.getFeedSorting(userId, 1);
             const total = await this.feedManager.getAllPostsTotal();
             const rawPosts = await this.feedManager.getAllPosts(userId, page, perPage, format, sorting);
             const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts);
@@ -135,7 +135,7 @@ export default class FeedController {
 
         try {
             const site = await this.siteManager.getSiteByNameWithUserInfo(userId, subdomain);
-            let sorting = await this.userManager.getFeedSorting(userId, site.id);
+            const sorting = await this.userManager.getFeedSorting(userId, site.id);
             if (!site) {
                 return response.error('no-site', 'Site not found');
             }
