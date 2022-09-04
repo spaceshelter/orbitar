@@ -1,7 +1,7 @@
 import {PostEntity} from '../entities/PostEntity';
 import {UserEntity} from '../entities/UserEntity';
 import {SiteBaseEntity} from '../entities/SiteEntity';
-import {ContentFormat} from '../entities/common';
+import {ContentFormat, FeedSorting} from '../entities/common';
 
 export type FeedSubscriptionsRequest = {
     page?: number;
@@ -14,4 +14,5 @@ export type FeedSubscriptionsResponse = {
     total: number;
     users: Record<number, UserEntity>;
     sites: Record<string, SiteBaseEntity>;
+    sorting: FeedSorting;
 };

@@ -2,10 +2,11 @@ import {useAPI} from '../../AppState/AppState';
 import {useEffect, useMemo, useState} from 'react';
 import {PostInfo} from '../../Types/PostInfo';
 import {useCache} from './useCache';
+import {FeedSorting} from '../../Types/FeedSortingSettings';
 
 export type FeedType = 'all' | 'subscriptions' | 'site' | 'watch' | 'watch-all' | 'user-profile';
 
-export function useFeed(id: string, feedType: FeedType | undefined, page: number, perpage: number) {
+export function useFeed(id: string, feedType: FeedType | undefined, page: number, perpage: number, changedSorting?: FeedSorting) {
     const api = useAPI();
     const [cachedPosts, setCachedPosts] = useCache<PostInfo[]>('feed', [id, feedType, page, perpage]);
 
@@ -13,6 +14,7 @@ export function useFeed(id: string, feedType: FeedType | undefined, page: number
     const [loading, setLoading] = useState(true);
     const [pages, setPages] = useState(0);
     const [error, setError] = useState<[string, Error]>();
+    const [sorting, setSorting] = useState<FeedSorting | undefined>(FeedSorting.postCommentedAt);
 
     const updatePost = useMemo(() => {
         return (id: number, partial: Partial<PostInfo>) => {
@@ -41,6 +43,7 @@ export function useFeed(id: string, feedType: FeedType | undefined, page: number
                     setPosts(result.posts);
                     const pages = Math.floor((result.total - 1) / perpage) + 1;
                     setPages(pages);
+                    setSorting(result.sorting);
                 })
                 .catch(error => {
                     console.log('FEED ERROR', error);
@@ -57,6 +60,7 @@ export function useFeed(id: string, feedType: FeedType | undefined, page: number
                     setPosts(result.posts);
                     const pages = Math.floor((result.total - 1) / perpage) + 1;
                     setPages(pages);
+                    setSorting(result.sorting);
                 })
                 .catch(error => {
                     console.log('FEED ERROR', error);
@@ -73,6 +77,7 @@ export function useFeed(id: string, feedType: FeedType | undefined, page: number
                     setPosts(result.posts);
                     const pages = Math.floor((result.total - 1) / perpage) + 1;
                     setPages(pages);
+                    setSorting(result.sorting);
                 })
                 .catch(error => {
                     console.log('FEED ERROR', error);
@@ -109,7 +114,7 @@ export function useFeed(id: string, feedType: FeedType | undefined, page: number
                 setError(['Не удалось загрузить ленту постов', error]);
             });
         }
-    }, [id, feedType, page, api.post, perpage]);
+    }, [id, feedType, page, api.post, perpage, changedSorting]);
 
-    return { posts, loading, pages, error, updatePost };
+    return { posts, loading, pages, error, updatePost, sorting };
 }

@@ -17,10 +17,12 @@
 }
 
 .feedControls a {
+    cursor: pointer;
 }
 
 .feedControls a.active {
     font-weight: bold;
+    pointer-events: none;
 }
 
 .loading {

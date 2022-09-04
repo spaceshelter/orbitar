@@ -1,7 +1,7 @@
 import FeedManager from '../managers/FeedManager';
 import {Logger} from 'winston';
 import {Router} from 'express';
-import {APIRequest, APIResponse, joiFormat, validate} from './ApiMiddleware';
+import {APIRequest, APIResponse, joiFormat, validate, joiSite} from './ApiMiddleware';
 import Joi from 'joi';
 import UserManager from '../managers/UserManager';
 import SiteManager from '../managers/SiteManager';
@@ -10,6 +10,9 @@ import {FeedPostsRequest, FeedPostsResponse} from './types/requests/FeedPosts';
 import {FeedWatchRequest, FeedWatchResponse} from './types/requests/FeedWatch';
 import PostManager from '../managers/PostManager';
 import {Enricher} from './utils/Enricher';
+import {FeedSorting} from './types/entities/common';
+import {FeedSortingSaveRequest, FeedSortingSaveResponse} from './types/requests/FeedSortingSave';
+import rateLimit from 'express-rate-limit';
 
 export default class FeedController {
     public readonly router = Router();
@@ -45,11 +48,22 @@ export default class FeedController {
             perpage: Joi.number().min(1).max(50).default(10),
             format: joiFormat
         });
+        const feedSortingSchema = Joi.object<FeedSortingSaveRequest>({
+            site: joiSite.required(),
+            feedSorting: Joi.number().valid(FeedSorting.postCreatedAt, FeedSorting.postCommentedAt)
+        });
+
+        // limit changing sorting type to 10 times per minute to prevent flooding
+        const saveFeedSortingLimiter = rateLimit({
+            windowMs: 60 * 1000,
+            max: 10
+        });
 
         this.router.post('/feed/subscriptions', validate(feedSubscriptionsSchema), (req, res) => this.feedSubscriptions(req, res));
         this.router.post('/feed/all', validate(feedSubscriptionsSchema), (req, res) => this.feedAll(req, res));
         this.router.post('/feed/posts', validate(feedPostsSchema), (req, res) => this.feedPosts(req, res));
         this.router.post('/feed/watch', validate(feedWatchSchema), (req, res) => this.feedWatch(req, res));
+        this.router.post('/feed/sorting', saveFeedSortingLimiter, validate(feedSortingSchema), (req, res) => this.saveFeedSorting(req, res));
     }
 
     async feedSubscriptions(request: APIRequest<FeedSubscriptionsRequest>, response: APIResponse<FeedSubscriptionsResponse>) {
@@ -62,15 +76,17 @@ export default class FeedController {
         const { format, page, perpage: perPage } = request.body;
 
         try {
+            let sorting = await this.userManager.getFeedSorting(userId, 1);
             const total = await this.feedManager.getSubscriptionsTotal(userId);
-            const rawPosts = await this.feedManager.getSubscriptionFeed(userId, page, perPage, format);
+            const rawPosts = await this.feedManager.getSubscriptionFeed(userId, page, perPage, format, sorting);
             const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts);
 
             response.success({
                 posts,
                 total,
                 users,
-                sites
+                sites,
+                sorting
             });
         }
         catch (err) {
@@ -89,15 +105,17 @@ export default class FeedController {
         const { format, page, perpage: perPage } = request.body;
 
         try {
+            let sorting = await this.userManager.getFeedSorting(userId, 1);
             const total = await this.feedManager.getAllPostsTotal();
-            const rawPosts = await this.feedManager.getAllPosts(userId, page, perPage, format);
+            const rawPosts = await this.feedManager.getAllPosts(userId, page, perPage, format, sorting);
             const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts);
 
             response.success({
                 posts,
                 total,
                 users,
-                sites
+                sites,
+                sorting
             });
         }
         catch (err) {
@@ -117,21 +135,22 @@ export default class FeedController {
 
         try {
             const site = await this.siteManager.getSiteByNameWithUserInfo(userId, subdomain);
-
+            let sorting = await this.userManager.getFeedSorting(userId, site.id);
             if (!site) {
                 return response.error('no-site', 'Site not found');
             }
 
             const siteId = site.id;
             const total = await this.feedManager.getSiteTotal(siteId);
-            const rawPosts = await this.feedManager.getSiteFeed(userId, siteId, page, perPage, format);
+            const rawPosts = await this.feedManager.getSiteFeed(userId, siteId, page, perPage, format, sorting);
             const { posts, users } = await this.enricher.enrichRawPosts(rawPosts);
 
             response.success({
                 posts,
                 total,
                 users,
-                site: this.enricher.siteInfoToEntity(site)
+                site: this.enricher.siteInfoToEntity(site),
+                sorting
             });
         }
         catch (err) {
@@ -164,6 +183,24 @@ export default class FeedController {
         catch (err) {
             this.logger.error('Subscriptions feed failed', { error: err, user_id: userId, format });
             return response.error('error', 'Unknown error', 500);
+        }
+    }
+
+    async saveFeedSorting(request: APIRequest<FeedSortingSaveRequest>, response: APIResponse<FeedSortingSaveResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+
+        const userId = request.session.data.userId;
+
+        try {
+            await this.userManager.saveFeedSorting(request.body.site, request.body.feedSorting as FeedSorting, userId);
+            //this.userManager.clearCache(userId);
+            return response.success({});
+        }
+        catch (err) {
+            this.logger.error(`Failed to change feed sorting`, {error: err});
+            return response.error('unknown', 'Unknown error', 500);
         }
     }
 }
