@@ -109,7 +109,7 @@ const siteManager = new SiteManager(siteRepository, userManager);
 const feedManager = new FeedManager(bookmarkRepository, postRepository, userRepository, siteManager, redis.client);
 const translationManager = new TranslationManager(translationRepository, postRepository, theParser, logger.child({ service: 'TRANSL' }));
 const postManager = new PostManager(bookmarkRepository, commentRepository, postRepository, feedManager, notificationManager, siteManager, userManager, translationManager, theParser);
-const voteManager = new VoteManager(voteRepository, postManager, redis.client);
+const voteManager = new VoteManager(voteRepository, postManager, userManager, redis.client);
 
 const apiEnricher = new Enricher(siteManager, userManager);
 

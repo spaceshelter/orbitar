@@ -18,7 +18,7 @@ import VoteManager from '../managers/VoteManager';
 import {UserRatingBySubsite} from '../managers/types/UserInfo';
 
 // constant variables
-import {ERROR_CODES} from '../api/utils/error-codes';
+import {ERROR_CODES} from './utils/error-codes';
 import InviteManager from '../managers/InviteManager';
 
 export default class UserController {
@@ -52,6 +52,7 @@ export default class UserController {
         this.router.post('/user/posts', validate(postsOrCommentsSchema), (req, res) => this.posts(req, res));
         this.router.post('/user/comments', validate(postsOrCommentsSchema), (req, res) => this.comments(req, res));
         this.router.post('/user/karma', validate(profileSchema), (req, res) => this.karma(req, res));
+        this.router.post('/user/clearCache', validate(profileSchema), (req, res) => this.clearCache(req, res));
         this.router.post('/user/restrictions', validate(profileSchema), (req, res) => this.restrictions(req, res));
     }
 
@@ -183,12 +184,14 @@ export default class UserController {
             const restrictions = await this.userManager.getUserRestrictions(profile.id);
             const ratingBySubsite: UserRatingBySubsite = await this.userManager.getUserRatingBySubsite(profile.id);
             const activeKarmaVotes = await this.userManager.getActiveKarmaVotes(profile.id);
+            const trialProgress = await this.userManager.getTrialProgressRaw(profile.id);
 
             return response.success({
                 senatePenalty: restrictions.senatePenalty,
                 activeKarmaVotes,
                 postRatingBySubsite: ratingBySubsite.postRatingBySubsite,
-                commentRatingBySubsite: ratingBySubsite.commentRatingBySubsite
+                commentRatingBySubsite: ratingBySubsite.commentRatingBySubsite,
+                trialProgress
             });
         }
         catch (error) {
@@ -219,6 +222,28 @@ export default class UserController {
         }
         catch (error) {
             this.logger.error('Could not get user restrictions', { username, error });
+            return response.error('error', `Could not get restrictions for user ${username}`, 500);
+        }
+    }
+
+    async clearCache(request: APIRequest<UserProfileRequest>, response: APIResponse<void>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+        const {username} = request.body;
+
+        try {
+            const profile = await this.userManager.getByUsername(username);
+
+            if (!profile) {
+                return response.error(ERROR_CODES.NOT_FOUND, 'User not found', 404);
+            }
+
+            this.userManager.clearCache(profile.id);
+            this.userManager.clearUserRestrictionsCache(profile.id);
+        }
+        catch (error) {
+            this.logger.error('Something went wrong', { username, error });
             return response.error('error', `Could not get restrictions for user ${username}`, 500);
         }
     }

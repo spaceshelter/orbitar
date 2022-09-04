@@ -12,7 +12,6 @@ import UserProfileComments from '../Components/UserProfileComments';
 import {UserProfileInvites} from '../Components/UserProfileInvites';
 import {observer} from 'mobx-react-lite';
 import {UserProfileKarma} from '../Components/UserProfileKarma';
-import classNames from 'classnames';
 import ContentComponent from '../Components/ContentComponent';
 
 export const UserPage = observer(() => {
@@ -70,8 +69,6 @@ export const UserPage = observer(() => {
             }
         };
 
-        const canVoteTrial = restrictions?.canVoteKarma && profile.trialProgress !== undefined;
-
         return (
             <div className={styles.container}>
                 <div className={styles.header}>
@@ -80,8 +77,7 @@ export const UserPage = observer(() => {
                             <div className={styles.username}>{user.username}</div>
                             <div className={styles.name}>{user.name}</div>
                         </div>
-                        <div className={classNames(styles.karma, { [styles.karmaOnTrial] : canVoteTrial } )}
-                            title={canVoteTrial ? 'Пользователь на испытательном сроке! Голос в карму влияет на решение о принятие пользователя.' : ''}>
+                        <div className={styles.karma}>
                             <RatingSwitch rating={rating} type='user' id={user.id} double={true} votingDisabled={!restrictions?.canVoteKarma} onVote={handleOnVote}/>
                         </div>
                     </div>
@@ -106,16 +102,10 @@ export const UserPage = observer(() => {
                             Зарегистрирован по приглашению <Username user={profile.invitedBy} />
                             {(profile.trialApprovers || profile.invitedReason) && <a href={'#'} onClick={toggleInviteReason}>?</a> }
                         </div>}
-                        {profile.trialProgress !== undefined && <div>
-                            Испытательный срок: {Math.round(profile.trialProgress * 100)}%
-                        </div>}
                         {showReason && <>
                         {!!profile.trialApprovers && <>
-                            {profile.trialApprovers.find(u => u.vote > 0) && <div>За приглашение голосовали:
+                            {profile.trialApprovers.find(u => u.vote > 0) && <div>Принятие поддержали:
                                 {profile.trialApprovers.map(user => user.vote > 0 && <Username key={user.username} user={user}/>)}
-                            </div>}
-                            {profile.trialApprovers.find(u => u.vote < 0) && <div>Против голосовали:
-                                {profile.trialApprovers.map(user => user.vote < 0 && <Username key={user.username} user={user}/>)}
                             </div>}
                         </>}
                         {!!profile.invitedReason && <div className={'content'}>Причина приглашения: <ContentComponent content={profile.invitedReason}/></div>}
@@ -130,7 +120,7 @@ export const UserPage = observer(() => {
                     {isPosts && <UserProfilePosts username={user.username} />}
                     {isComments && <UserProfileComments username={user.username} />}
                     {isInvites && <UserProfileInvites />}
-                    {isKarma && <UserProfileKarma username={user.username} />}
+                    {isKarma && <UserProfileKarma username={user.username} trialProgress={profile?.trialProgress} />}
                 </div>
             </div>
         );

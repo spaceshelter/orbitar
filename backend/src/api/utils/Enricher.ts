@@ -7,7 +7,6 @@ import {CommentEntity} from '../types/entities/CommentEntity';
 import {CommentInfoWithPostData} from '../../managers/types/CommentInfo';
 import {PostInfo} from '../../managers/types/PostInfo';
 import {SiteWithUserInfo} from '../../managers/types/SiteInfo';
-import {InviteRaw} from '../../db/types/InviteRaw';
 import {InviteInfo, InviteInfoWithInvited} from '../../managers/types/InviteInfo';
 import {InviteEntity} from '../types/entities/InviteEntity';
 
