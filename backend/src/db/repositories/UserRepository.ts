@@ -4,6 +4,7 @@ import {InviteRaw} from '../types/InviteRaw';
 import CodeError from '../../CodeError';
 import {OkPacket} from 'mysql2';
 import {UserGender} from '../../managers/types/UserInfo';
+import crypto from 'crypto';
 
 export default class UserRepository {
     private db: DB;
@@ -23,6 +24,53 @@ export default class UserRepository {
 
     async getUserByUsername(username: string): Promise<UserRaw | undefined> {
         return await this.db.fetchOne<UserRaw>('select * from users where username=:username', {username: username});
+    }
+
+    // TODO: need to decide if we want to encrypt email addresses
+    async getUserByEmail(email: string): Promise<UserRaw | undefined> {
+        return await this.db.fetchOne<UserRaw>('select * from users where email=:email', {email});
+    }
+
+    async generateAndSavePasswordResetForUser(userId: number): Promise<string | undefined> {
+        const hash = crypto.createHash('md5').update(Math.random().toString() + userId).digest("hex");
+        await this.db.insert('user_password_reset', {
+            user_id: userId.toString(),
+            code: hash
+        });
+        return hash;
+    }
+
+    async getResetPasswordUserIdByResetCode(code: string) {
+        return await this.db.fetchOne<{user_id: number}>('select user_id from user_password_reset where code=:code', {
+            code
+        });
+    }
+
+    async updatePassword(passwordHash: string, userId: number) {
+        const result = await this.db.query('update users set password=:password_hash where user_id=:user_id', {
+            password_hash: passwordHash,
+            user_id: userId
+        }) as OkPacket;
+        if (result.affectedRows !== 1) {
+            throw 'Failed to update user password';
+        }
+        return true;
+    }
+
+    async clearResetPasswordCode(code: string, userId: number) {
+        const result = await this.db.query('delete from user_password_reset where code=:code or user_id=:user_id', {
+            code,
+            user_id: userId
+        }) as OkPacket;
+        if (result.affectedRows < 1) {
+            throw 'Failed to cleanup reset password code';
+        }
+        return true;
+    }
+
+    async clearResetPasswordExpiredLinks() {
+        await this.db.query(`delete from user_password_reset where generated_at < now() - interval 1 day`);
+        return true;
     }
 
     async getUserParent(userId: number): Promise<UserRaw | undefined> {

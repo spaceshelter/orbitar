@@ -10,6 +10,8 @@ import {PushSubscription} from 'web-push';
 import {RedisClientType} from 'redis';
 import PostRepository from '../db/repositories/PostRepository';
 import CommentRepository from '../db/repositories/CommentRepository';
+import {sendResetPasswordEmail} from '../utils/Mailer';
+import {SiteConfig} from '../config';
 
 export default class UserManager {
     private credentialsRepository: UserCredentials;
@@ -20,13 +22,13 @@ export default class UserManager {
     private notificationManager: NotificationManager;
     private webPushRepository: WebPushRepository;
     private readonly redis: RedisClientType;
-
+    private siteConfig: SiteConfig;
     private cacheId: Record<number, UserInfo> = {};
     private cacheUsername: Record<string, UserInfo> = {};
     private cacheLastVisit: Record<number, Date> = {};
 
     constructor(credentialsRepository: UserCredentials, userRepository: UserRepository, voteRepository: VoteRepository,
-                commentRepository: CommentRepository,  postRepository: PostRepository,  webPushRepository: WebPushRepository, notificationManager: NotificationManager, redis: RedisClientType) {
+                commentRepository: CommentRepository,  postRepository: PostRepository,  webPushRepository: WebPushRepository, notificationManager: NotificationManager, redis: RedisClientType, siteConfig: SiteConfig) {
         this.credentialsRepository = credentialsRepository;
         this.userRepository = userRepository;
         this.voteRepository = voteRepository;
@@ -35,6 +37,7 @@ export default class UserManager {
         this.notificationManager = notificationManager;
         this.webPushRepository = webPushRepository;
         this.redis = redis;
+        this.siteConfig = siteConfig;
     }
 
     async getById(userId: number): Promise<UserInfo | undefined> {
@@ -358,5 +361,39 @@ export default class UserManager {
             name: rawUser.name,
             registered: rawUser.registered_at,
         };
+    }
+
+    async sendResetPasswordEmail(email: string): Promise<boolean> {
+        email = email.toLowerCase();
+        const user = await this.userRepository.getUserByEmail(email);
+        if (!user) {
+            return false;
+        }
+        const resetHash = await this.userRepository.generateAndSavePasswordResetForUser(user.user_id);
+        if (!resetHash) {
+            return false;
+        }
+        return sendResetPasswordEmail(user.username, email, resetHash, this.siteConfig);
+    }
+
+    async setNewPassword(password: string, code: string): Promise<boolean> {
+        const userId = await this.checkIfPasswordResetCodeExists(code);
+        if (!userId) {
+            return false;
+        }
+        const passwordHash = await bcrypt.hash(password, 10);
+        return (
+            await this.userRepository.updatePassword(passwordHash, userId) &&
+            await this.userRepository.clearResetPasswordCode(code, userId) &&
+            await this.userRepository.clearResetPasswordExpiredLinks()
+        );
+    }
+
+    async checkIfPasswordResetCodeExists(code: string): Promise<number | undefined> {
+        const user = await this.userRepository.getResetPasswordUserIdByResetCode(code);
+        if (!user?.user_id) {
+            return undefined;
+        }
+        return user.user_id;
     }
 }

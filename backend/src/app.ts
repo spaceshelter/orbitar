@@ -100,7 +100,7 @@ const webPushRepository = new WebPushRepository(db);
 
 const inviteManager = new InviteManager(inviteRepository);
 const notificationManager = new NotificationManager(commentRepository, notificationsRepository, postRepository, siteRepository, userRepository, webPushRepository, config.vapid, config.site);
-const userManager = new UserManager(credentialsRepository, userRepository, voteRepository, commentRepository, postRepository, webPushRepository, notificationManager, redis.client);
+const userManager = new UserManager(credentialsRepository, userRepository, voteRepository, commentRepository, postRepository, webPushRepository, notificationManager, redis.client, config.site);
 const siteManager = new SiteManager(siteRepository, userManager);
 const feedManager = new FeedManager(bookmarkRepository, postRepository, userRepository, siteManager, redis.client);
 const postManager = new PostManager(bookmarkRepository, commentRepository, postRepository, feedManager, notificationManager, siteManager, userManager, theParser);

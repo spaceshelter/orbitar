@@ -25,6 +25,7 @@ import {observer} from 'mobx-react-lite';
 import {SitesPage} from './Pages/SitesPage';
 import {SitesCreatePage} from './Pages/SitesCreatePage';
 import KarmaCalculatorPage from './Pages/KarmaCalculatorPage';
+import ResetPasswordPage from './Pages/ResetPasswordPage';
 
 export const App = observer(() => {
     const {appLoadingState} = useAppState();
@@ -57,6 +58,8 @@ function Unauthorized() {
             <Routes>
                 <Route path="*" element={<SignInPage />} />
                 <Route path="/invite/:code" element={<InvitePage />} />
+                <Route path="/forgot-password" element={<ResetPasswordPage />} />
+                <Route path="/forgot-password/:code" element={<ResetPasswordPage />} />
             </Routes>
             <ToastContainer theme={theme as Theme} />
         </>

@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import styles from './SignInPage.module.css';
 import {useForm, SubmitHandler} from 'react-hook-form';
 import {useAPI} from '../AppState/AppState';
-import {useLocation, useNavigate} from 'react-router-dom';
+import {useLocation, useNavigate, Link} from 'react-router-dom';
 import {APIError} from '../API/APIBase';
 
 type SignInForm = {
@@ -45,6 +45,7 @@ export default function SignInPage() {
 
     return (
         <div className={styles.signup}>
+            <h2>Вход</h2>
             <form onSubmit={handleSubmit(onSubmit)}>
                 <label>Юзернейм</label>
                 <input type="text" {...register('username', {
@@ -61,6 +62,9 @@ export default function SignInPage() {
                 <div><input type="submit" disabled={!isValid || isSigningIn} value="Войти" /></div>
                 {error && <p className={styles.error}>{error}</p>}
             </form>
+            <div className={styles.resetLink}>
+                <Link to='/forgot-password'>Забыли пароль?</Link>
+            </div>
         </div>
     );
 }

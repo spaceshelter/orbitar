@@ -36,4 +36,22 @@ export default class AuthAPIHelper {
             throw new Error('Could not sign out');
         }
     }
+
+    async resetPassword(email: string) {
+        try {
+            return await this.api.resetPassword(email);
+        } catch (error) {
+            console.log('ERROR RESETTING PASSWORD', error);
+            throw error;
+        }
+    }
+
+    async setNewPassword(password: string, key: string) {
+        try {
+            return await this.api.setNewPassword(password, key);
+        } catch (error) {
+            console.log('ERROR SETTING NEW PASSWORD', error);
+            throw error;
+        }
+    }
 }

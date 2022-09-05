@@ -1,8 +1,36 @@
-.signup form {
+.signup form,
+.signup h2,
+.signup h3,
+.signup .resetSent,
+.signup .resetLink {
     max-width: 600px;
-    margin: 0 auto;
+    margin: auto;
+    padding: 0 20px;
 }
 
+.signup h2,
+.signup h3 {
+    margin: 10px auto;
+}
+
+.signup form {
+    margin-bottom: 60px;
+}
+
+.signup .resetInfo {
+    color: gray;
+    font-style: italic;
+    margin-bottom: 10px;
+}
+
+.signup .resetSent {
+    color: var(--positive);
+}
+
+.signup .resetLink {
+    text-align: right;
+    margin-bottom: 20px;
+}
 
 .signup label {
     display: block;
@@ -20,7 +48,7 @@
 }
 
 .signup p.error {
-    color: red;
+    color: var(--danger);
 }
 
 .signup p.error::before {
