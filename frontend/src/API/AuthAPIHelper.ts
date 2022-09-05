@@ -46,9 +46,9 @@ export default class AuthAPIHelper {
         }
     }
 
-    async setNewPassword(password: string, key: string) {
+    async setNewPassword(password: string, code: string) {
         try {
-            return await this.api.setNewPassword(password, key);
+            return await this.api.setNewPassword(password, code);
         } catch (error) {
             console.log('ERROR SETTING NEW PASSWORD', error);
             throw error;
