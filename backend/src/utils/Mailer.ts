@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 import {SiteConfig} from '../config';
 
-export async function sendResetPasswordEmail(username: string, email: string, resetHash: string, siteConfig: SiteConfig): Promise<boolean> {
+export async function sendResetPasswordEmail(username: string, email: string, code: string, siteConfig: SiteConfig): Promise<boolean> {
     try {
         const response = await fetch('https://api.sendinblue.com/v3/smtp/email', {
             method: 'POST',
@@ -23,7 +23,7 @@ export async function sendResetPasswordEmail(username: string, email: string, re
                 'subject': 'Orbitar: сброс пароля для пользователя ' + username,
                 'htmlContent': `<html><head></head><body>
                     <p>Привет, ${username}!</p>
-                    <p>Чтобы сбросить пароль, пройдите по этой ссылке: ${(siteConfig.http ? 'http://' : 'https://') + siteConfig.domain}/forgot-password/${resetHash}</p>
+                    <p>Чтобы сбросить пароль, пройдите по этой ссылке: ${(siteConfig.http ? 'http://' : 'https://') + siteConfig.domain}/forgot-password/${code}</p>
                     <p>Если ничего не получается, можете написать в <a href="https://t.me/orbitar_bot">телеграм боту</a></p>
                     </body></html>`
             })

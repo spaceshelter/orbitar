@@ -369,11 +369,11 @@ export default class UserManager {
         if (!user) {
             return false;
         }
-        const resetHash = await this.userRepository.generateAndSavePasswordResetForUser(user.user_id);
-        if (!resetHash) {
+        const code = await this.userRepository.generateAndSavePasswordResetForUser(user.user_id);
+        if (!code) {
             return false;
         }
-        return sendResetPasswordEmail(user.username, email, resetHash, this.siteConfig);
+        return sendResetPasswordEmail(user.username, email, code, this.siteConfig);
     }
 
     async setNewPassword(password: string, code: string): Promise<boolean> {
