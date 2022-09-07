@@ -36,10 +36,10 @@ export default class AuthController {
             legacyHeaders: false
         });
 
-        // 2 attempts per minute should be enough
+        // 5 requests per hour
         const resetPaswsordLimiter = rateLimit({
-            windowMs: 60 * 1000,
-            max: 100, // todo: put 2 instead of 100
+            windowMs: 60 * 60 * 1000,
+            max: 5
         });
 
         const signInSchema = Joi.object<AuthSignInRequest>({
