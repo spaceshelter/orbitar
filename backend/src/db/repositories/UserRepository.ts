@@ -32,7 +32,7 @@ export default class UserRepository {
     }
 
     async generateAndSavePasswordResetForUser(userId: number): Promise<string | undefined> {
-        const code = crypto.createHash('md5').update(Math.random().toString() + userId).digest('hex');
+        const code = crypto.createHash('sha256').update(Math.random().toString() + userId).digest('hex');
         await this.db.insert('user_password_reset', {
             user_id: userId.toString(),
             code
