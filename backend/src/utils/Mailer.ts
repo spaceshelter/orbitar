@@ -24,6 +24,7 @@ export async function sendResetPasswordEmail(username: string, email: string, co
                 'htmlContent': `<html><head></head><body>
                     <p>Привет, ${username}!</p>
                     <p>Чтобы сбросить пароль, пройдите по этой ссылке: ${(siteConfig.http ? 'http://' : 'https://') + siteConfig.domain}/forgot-password/${code}</p>
+                    <p>Ссылка активна только 3 часа</p>
                     <p>Если ничего не получается, можете написать в <a href="https://t.me/orbitar_bot">телеграм боту</a></p>
                     </body></html>`
             })

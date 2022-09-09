@@ -8,6 +8,7 @@ import crypto from 'crypto';
 
 export default class UserRepository {
     private db: DB;
+    private passwordResetCodeLifeTime: string = '3 hour';
 
     constructor(db: DB) {
         this.db = db;
@@ -41,7 +42,7 @@ export default class UserRepository {
     }
 
     async getResetPasswordUserIdByResetCode(code: string) {
-        return await this.db.fetchOne<{user_id: number}>('select user_id from user_password_reset where code=:code', {
+        return await this.db.fetchOne<{user_id: number}>('select user_id from user_password_reset where code=:code and generated_at < now() - interval ' + this.passwordResetCodeLifeTime, {
             code
         });
     }
@@ -69,7 +70,7 @@ export default class UserRepository {
     }
 
     async clearResetPasswordExpiredLinks() {
-        await this.db.query(`delete from user_password_reset where generated_at < now() - interval 1 day`);
+        await this.db.query(`delete from user_password_reset where generated_at < now() - interval ` + this.passwordResetCodeLifeTime);
         return true;
     }
 
