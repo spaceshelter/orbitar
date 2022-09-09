@@ -53,11 +53,11 @@ export default class AuthController {
 
         const newPasswordSchema = Joi.object<AuthNewPasswordRequest>({
             password: Joi.string().required(),
-            code: Joi.string().required().min(32).max(32)
+            code: Joi.string().required().min(64).max(64)
         });
 
         const checkResetPasswordCodeSchema = Joi.object<AuthCheckResetPasswordCodeRequest>({
-            code: Joi.string().required().min(32).max(32)
+            code: Joi.string().required().min(64).max(64)
         });
 
         this.router.post('/auth/signin', signInLimiter, validate(signInSchema), (req, res) => this.signin(req, res));

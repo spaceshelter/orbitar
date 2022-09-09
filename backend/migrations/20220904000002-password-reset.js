@@ -19,7 +19,7 @@ exports.up = async function(db) {
     drop table if exists user_password_reset;
     create table user_password_reset (
       user_id int(11) not null,
-      code varchar(32) not null,
+      code varchar(64) not null,
       generated_at datetime not null default CURRENT_TIMESTAMP,
       unique key (\`code\`),
       constraint fk_reset_password_user foreign key (user_id) references users(user_id) on delete cascade

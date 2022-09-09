@@ -42,7 +42,7 @@ export default class UserRepository {
     }
 
     async getResetPasswordUserIdByResetCode(code: string) {
-        return await this.db.fetchOne<{user_id: number}>('select user_id from user_password_reset where code=:code and generated_at < now() - interval ' + this.passwordResetCodeLifeTime, {
+        return await this.db.fetchOne<{user_id: number}>('select user_id from user_password_reset where code=:code and generated_at > now() - interval ' + this.passwordResetCodeLifeTime, {
             code
         });
     }
