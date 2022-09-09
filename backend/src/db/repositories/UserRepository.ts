@@ -8,7 +8,7 @@ import crypto from 'crypto';
 
 export default class UserRepository {
     private db: DB;
-    private passwordResetCodeLifeTime: string = '3 hour';
+    private passwordResetCodeLifeTime = '3 hour';
 
     constructor(db: DB) {
         this.db = db;
