@@ -20,7 +20,6 @@ export const UserProfileInvites = observer(() => {
     console.log(restrictions);
     const [loading, setLoading] = useState(true);
     const [activeInvites, setActiveInvites] = useState<InviteEntity[]>([]);
-    const [restrictedInvites, setRestrictedInvites] = useState<InviteEntity[]>([]);
     const [inactiveInvites, setInactiveInvites] = useState<InviteEntity[]>([]);
     const [invitesAvailability, setInvitesAvailability] = useState<InvitesAvailability | undefined>(undefined);
 
@@ -35,8 +34,7 @@ export const UserProfileInvites = observer(() => {
                 console.log('INVITES', result);
                 const activeInvites = result.active.filter(invite => !invite.restricted);
                 const restrictedInvites = result.active.filter(invite => invite.restricted);
-                setActiveInvites(activeInvites);
-                setRestrictedInvites(restrictedInvites);
+                setActiveInvites(activeInvites.concat(restrictedInvites));
                 setInactiveInvites(result.inactive);
                 setInvitesAvailability(result.invitesAvailability);
                 setLoading(false);
@@ -92,17 +90,9 @@ export const UserProfileInvites = observer(() => {
                 <h4>Ваши инвайты</h4>
                 <div className="list">
                     {!!activeInvites.length && <>
-                        <h5 title="Приглашенный по такому инвайту быстрее получит полные права: возможность голосовать и приглашать. Используйте, только если на 100% уверены в приглашаемом.">
-                            Опасные инвайты</h5>
                         {activeInvites.map(invite => <Invite invite={invite} key={invite.code}
                                                              handleRegenerate={handleRegenerate}
                                                              handleDelete={handleDelete}/>)}
-                    </>}
-                    {!!restrictedInvites.length && <>
-                        <h5>Ограниченные инвайты</h5>
-                        {restrictedInvites.map(invite => <Invite invite={invite} key={invite.code}
-                                                                 handleRegenerate={handleRegenerate}
-                                                                 handleDelete={handleDelete}/>)}
                     </>}
                     {!inactiveInvites.length && !activeInvites.length && <>Кажется, инвайтов у вас нет.</>}
                 </div>
