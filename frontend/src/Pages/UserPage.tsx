@@ -107,6 +107,9 @@ export const UserPage = observer(() => {
                             {profile.trialApprovers.find(u => u.vote > 0) && <div>Принятие поддержали:
                                 {profile.trialApprovers.map(user => user.vote > 0 && <Username key={user.username} user={user}/>)}
                             </div>}
+                            {profile.trialApprovers.find(u => u.vote < 0) && <div>Против принятия:
+                                {profile.trialApprovers.map(user => user.vote < 0 && <Username key={user.username} user={user}/>)}
+                            </div>}
                         </>}
                         {!!profile.invitedReason && <div className={'content'}>Причина приглашения: <ContentComponent content={profile.invitedReason}/></div>}
                         </>}
