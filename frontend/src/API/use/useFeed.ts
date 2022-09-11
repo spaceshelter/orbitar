@@ -116,5 +116,5 @@ export function useFeed(id: string, feedType: FeedType | undefined, page: number
         }
     }, [id, feedType, page, api.post, perpage, changedSorting]);
 
-    return { posts, loading, pages, error, updatePost, sorting };
+    return { posts, loading, pages, error, updatePost, sorting, setLoading };
 }

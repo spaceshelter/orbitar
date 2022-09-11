@@ -41,7 +41,7 @@ export default function FeedPage() {
     const page = parseInt(search.get('page') || '1');
 
     const [changeSorting, setChangeSorting] = useState<FeedSorting>();
-    const {posts, loading, pages, error, updatePost, sorting} = useFeed(site, feedType, page, perpage, changeSorting);
+    const {posts, loading, pages, error, updatePost, sorting, setLoading} = useFeed(site, feedType, page, perpage, changeSorting);
 
     useEffect(() => {
         window.scrollTo({ top: 0 });
@@ -60,8 +60,10 @@ export default function FeedPage() {
 
     const handleFeedSortingChange = (newFeedSorting: FeedSorting) => async (e: React.MouseEvent) => {
         e.preventDefault();
+        setLoading(true);
         await api.feed.saveSorting(site, newFeedSorting);
         setChangeSorting(newFeedSorting);
+        setLoading(false);
     };
 
     const liveSorting = sorting !== FeedSorting.postCreatedAt;
