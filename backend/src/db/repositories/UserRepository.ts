@@ -109,7 +109,7 @@ export default class UserRepository {
                 gender: gender,
                 name: name,
                 email: email,
-                ontrial: inviteRow.restricted
+                ontrial: 1
             });
 
             const userInsertId = userInsertResult.insertId;
