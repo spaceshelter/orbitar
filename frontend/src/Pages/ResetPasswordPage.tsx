@@ -43,7 +43,7 @@ export default function ResetPasswordPage() {
         mode: 'onChange'
     });
 
-    const { register: registerNewPassword, handleSubmit: handleSubimtNewPassword, watch, formState: { isValid: isValidNewPassword } } = useForm<NewPasswordForm>({
+    const { register: registerNewPassword, handleSubmit: handleSubmitNewPassword, watch, formState: { isValid: isValidNewPassword } } = useForm<NewPasswordForm>({
         mode: 'onChange'
     });
 
@@ -60,7 +60,7 @@ export default function ResetPasswordPage() {
         api.auth.resetPassword(data.email).then(() => {
             setResetSent(true);
         }).catch(_ => {
-            setResetError('Не удалось начать сброс пароля. Проверьте адрес и попробуйте ещё раз немного позже');
+            setResetError('Не удалось начать сброс пароля. Проверьте адрес и попробуйте ещё раз немного позже.');
         }).finally(() => {
             setResetting(false);
         });
@@ -76,14 +76,14 @@ export default function ResetPasswordPage() {
         const enteredPasswordStrength = passwordStrength(data.password1).value;
         const passwordIsWeak =  enteredPasswordStrength === 'Too weak'; // || enteredPasswordStrength === 'Weak';
         if (passwordIsWeak) {
-            setNewPasswordError('Слишком простой пароль. Минимум 6 символов, и ещё спользуйте буквы разного регистра или хотя бы одну цифру или спецсимвол');
+            setNewPasswordError('Слишком простой пароль. Нужно минимум 6 символов, буквы разного регистра или хотя бы одна цифра или спецсимвол.');
             return false;
         }
         setCreatingNewPassword(true);
         api.auth.setNewPassword(data.password1, code as string).then(() => {
             setNewPasswordCreated(true);
         }).catch(_ => {
-            setNewPasswordError('Не удалось установить новый пароль. Попробуйте ещё раз немного позже');
+            setNewPasswordError('Не удалось установить новый пароль. Попробуйте ещё раз немного позже.');
         }).finally(() => {
             setCreatingNewPassword(false);
         });
@@ -103,15 +103,15 @@ export default function ResetPasswordPage() {
                 <h2>Новый пароль</h2>
                 {
                     !isNewPasswordCreated && (
-                        <form onSubmit={handleSubimtNewPassword(onNewPasswordSubmit)}>
+                        <form onSubmit={handleSubmitNewPassword(onNewPasswordSubmit)}>
                             <label>Пароль</label>
                             <input type="password" {...registerNewPassword('password1', {
-                                required: 'Пароль жизненно важен'
+                                required: 'Пароль жизненно важен.'
                             })} />
                             <label>Пароль ещё раз</label>
                             <input type="password" {...registerNewPassword('password2', {
                                 required: true,
-                                validate: value => value === password.current || 'Пароли должны совпадать'
+                                validate: value => value === password.current || 'Пароли должны совпадать.'
                             })} />
                             <div><input type="submit" disabled={!isValidNewPassword || isCreatingNewPassword} value="Поехали!" /></div>
                             {newPasswordError && <p className={styles.error}>{newPasswordError}</p>}
@@ -140,7 +140,7 @@ export default function ResetPasswordPage() {
             <form onSubmit={handleSubmitReset(onResetSubmit)}>
                 <div className={styles.resetInfo}>Введите ваш емейл. На него придёт ссылка на сброс пароля</div>
                 <input type="text" placeholder="ваш e-mail адрес" {...registerReset('email', {
-                    required: 'Нужен емейл, чтобы отправить на него ссылку для сброса пароля'
+                    required: 'Нужен емейл, чтобы отправить на него ссылку для сброса пароля.'
                 })} />
                 <div><input type="submit" disabled={!isValidReset || isResetting} value="Сбросить пароль"/></div>
                 {resetError && <p className={styles.error}>{resetError}</p>}
