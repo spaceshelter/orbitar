@@ -14,23 +14,37 @@
 .feedControlsWrapper{
     display: flex;
     justify-content: space-between;
-    margin-bottom: 24px;
+    margin-bottom: 40px;
 }
 .feedControls {
     margin: 20px 0;
-    color: var(--fgSoftest);
     text-transform: uppercase;
     font-size: 14px;
+    color: var(--fgSoft);
 }
 
-.feedControls a {
+.feedControls a{
     cursor: pointer;
+    i{
+        font-size: 16px;
+        margin-right: 4px;
+        color: var(--fgSoft);
+    }
+    margin: 0 8px;
+    color: var(--fgSoft);
+    &:first-child{margin-left: 0;}
+    &:last-child{margin-right: 0;}
+
+    &.active{
+        font-weight: 600;
+        pointer-events: none;
+    }
+    &.active, &:hover{
+        color: var(--primary);
+        i{color: var(--primary); }
+    }
 }
 
-.feedControls a.active {
-    font-weight: bold;
-    pointer-events: none;
-}
 
 .loading {
     position: fixed;

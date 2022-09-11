@@ -73,11 +73,11 @@ export default function FeedPage() {
             <div className={styles.feed}>
                 <div className={styles.feedControlsWrapper}>
                     {siteInfo && <div className={styles.feedControls}>
-                      <a href='#' className={classNames({[styles.active]: liveSorting})} onClick={handleFeedSortingChange(FeedSorting.postCommentedAt)}>LIVE</a>&nbsp;•&nbsp;
-                      <a href='#' className={classNames({[styles.active]: !liveSorting})} onClick={handleFeedSortingChange(FeedSorting.postCreatedAt)}>НОВОЕ</a>
+                      <a href='#' className={classNames({[styles.active]: liveSorting})} onClick={handleFeedSortingChange(FeedSorting.postCommentedAt)}><i className='i i-live'></i>LIVE</a>
+                      <a href='#' className={classNames({[styles.active]: !liveSorting})} onClick={handleFeedSortingChange(FeedSorting.postCreatedAt)}><i className='i i-new'></i>НОВОЕ</a>
                     </div>}
                     {siteInfo?.site === 'main' && <div className={styles.feedControls}>
-                        <Link to='/' className={feedType === 'subscriptions' ? styles.active : ''} replace={true}>подписки</Link>&nbsp;•&nbsp;<Link to='/all' className={feedType === 'all' ? styles.active : ''} replace={true}>всё</Link>&nbsp;•&nbsp;<Link to='/posts' className={feedType === 'site' ? styles.active : ''} replace={true}>главная</Link>
+                        <Link to='/' className={feedType === 'subscriptions' ? styles.active : ''} replace={true}>подписки</Link>•<Link to='/all' className={feedType === 'all' ? styles.active : ''} replace={true}>всё</Link>•<Link to='/posts' className={feedType === 'site' ? styles.active : ''} replace={true}>главная</Link>
                     </div>}
                 </div>
                 {!error && loading && <div className={styles.loading}></div>}
