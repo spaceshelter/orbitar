@@ -5,15 +5,22 @@
 .feed {
     width: 100%;
     max-width: 880px;
-    margin: 56px auto 0;
+    margin: 16px auto 0;
     /*margin-left: auto;*/
     /*margin-left: clamp(-200px, auto,200px);*/
     /*margin-right: clamp(-200px, auto,200px);*/
 }
 
+.feedControlsWrapper{
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 24px;
+}
 .feedControls {
     margin: 20px 0;
     color: var(--fgSoftest);
+    text-transform: uppercase;
+    font-size: 14px;
 }
 
 .feedControls a {
@@ -26,7 +33,31 @@
 }
 
 .loading {
+    position: fixed;
+    top: 60px;
+    height: 4px;
+    width: 100vw;
+    left: 0;
+    &::after{
+        content: '';
+        display: block;
+        background-color: var(--primary);
+        width: 50%;
+        height: 4px;
+        position: absolute;
+        top: 0;
+        left:-50%;
+        animation-duration: 1s;
+        animation-fill-mode: forwards;
+        animation-iteration-count: infinite;
+        animation-name: preload;
+        animation-timing-function: linear;
+    }
+}
 
+@keyframes preload {
+    0% { left: -60%; }
+    100% { left: 100%; }
 }
 
 .posts>div{

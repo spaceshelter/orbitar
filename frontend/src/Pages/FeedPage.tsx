@@ -69,14 +69,16 @@ export default function FeedPage() {
     return (
         <div className={styles.container}>
             <div className={styles.feed}>
-                {siteInfo?.site === 'main' && <div className={styles.feedControls}>
-                    <Link to='/' className={feedType === 'subscriptions' ? styles.active : ''} replace={true}>мои подписки</Link> • <Link to='/all' className={feedType === 'all' ? styles.active : ''} replace={true}>все</Link> • <Link to='/posts' className={feedType === 'site' ? styles.active : ''} replace={true}>только главная</Link>
-                </div>}
-                {siteInfo && <div className={styles.feedControls}>
-                  <a href='#' className={classNames({[styles.active]: liveSorting})} onClick={handleFeedSortingChange(FeedSorting.postCommentedAt)}>LIVE</a>&nbsp;•&nbsp;
-                  <a href='#' className={classNames({[styles.active]: !liveSorting})} onClick={handleFeedSortingChange(FeedSorting.postCreatedAt)}>НОВОЕ</a>
-                </div>}
-                {!error && loading && <div className={styles.loading}>Загрузка</div>}
+                <div className={styles.feedControlsWrapper}>
+                    {siteInfo && <div className={styles.feedControls}>
+                      <a href='#' className={classNames({[styles.active]: liveSorting})} onClick={handleFeedSortingChange(FeedSorting.postCommentedAt)}>LIVE</a>&nbsp;•&nbsp;
+                      <a href='#' className={classNames({[styles.active]: !liveSorting})} onClick={handleFeedSortingChange(FeedSorting.postCreatedAt)}>НОВОЕ</a>
+                    </div>}
+                    {siteInfo?.site === 'main' && <div className={styles.feedControls}>
+                        <Link to='/' className={feedType === 'subscriptions' ? styles.active : ''} replace={true}>подписки</Link>&nbsp;•&nbsp;<Link to='/all' className={feedType === 'all' ? styles.active : ''} replace={true}>всё</Link>&nbsp;•&nbsp;<Link to='/posts' className={feedType === 'site' ? styles.active : ''} replace={true}>главная</Link>
+                    </div>}
+                </div>
+                {!error && loading && <div className={styles.loading}></div>}
                 {error && <div className={styles.error}>{
                     (error[1] as APIError)?.code === 'no-site' ? <>Нет такого сайта. <Link to='/sites/create'>Создать</Link>?</> : error[0]
                 }</div> }
