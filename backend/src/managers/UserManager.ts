@@ -12,6 +12,7 @@ import PostRepository from '../db/repositories/PostRepository';
 import CommentRepository from '../db/repositories/CommentRepository';
 import {sendResetPasswordEmail} from '../utils/Mailer';
 import {SiteConfig} from '../config';
+import {Logger} from 'winston';
 
 export default class UserManager {
     private credentialsRepository: UserCredentials;
@@ -363,17 +364,19 @@ export default class UserManager {
         };
     }
 
-    async sendResetPasswordEmail(email: string): Promise<boolean> {
+    async sendResetPasswordEmail(email: string, logger: Logger): Promise<boolean> {
         email = email.toLowerCase();
         const user = await this.userRepository.getUserByEmail(email);
         if (!user) {
+            logger.error(`Failed to find user by email: ` + email);
             return false;
         }
         const code = await this.userRepository.generateAndSavePasswordResetForUser(user.user_id);
         if (!code) {
+            logger.error(`Failed to generate password reset code for email: ` + email);
             return false;
         }
-        return sendResetPasswordEmail(user.username, email, code, this.siteConfig);
+        return sendResetPasswordEmail(user.username, email, code, this.siteConfig, logger);
     }
 
     async setNewPassword(password: string, code: string): Promise<boolean> {

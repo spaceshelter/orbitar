@@ -1,7 +1,8 @@
 import fetch from 'node-fetch';
 import {SiteConfig} from '../config';
+import {Logger} from 'winston';
 
-export async function sendResetPasswordEmail(username: string, email: string, code: string, siteConfig: SiteConfig): Promise<boolean> {
+export async function sendResetPasswordEmail(username: string, email: string, code: string, siteConfig: SiteConfig, logger: Logger): Promise<boolean> {
     try {
         const response = await fetch('https://api.sendinblue.com/v3/smtp/email', {
             method: 'POST',
@@ -30,8 +31,12 @@ export async function sendResetPasswordEmail(username: string, email: string, co
             })
         });
         const result = await response.json();
+        if (!result.messageId) {
+            logger.error(result);
+        }
         return !!result.messageId;
     } catch (e) {
+        logger.error(`Failed to send email with password reset code` + email);
         console.trace(e);
         return false;
     }
