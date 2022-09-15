@@ -2,6 +2,8 @@ import fetch from 'node-fetch';
 import {SiteConfig} from '../config';
 import {Logger} from 'winston';
 
+// TODO: convert this into a proper service, make siteConfig and logger injectable
+
 export async function sendResetPasswordEmail(username: string, email: string, code: string, siteConfig: SiteConfig, logger: Logger): Promise<boolean> {
     try {
         const response = await fetch('https://api.sendinblue.com/v3/smtp/email', {
@@ -32,12 +34,12 @@ export async function sendResetPasswordEmail(username: string, email: string, co
         });
         const result = await response.json();
         if (!result.messageId) {
-            logger.error(result);
+            logger.error('Could not send email', {result});
         }
         return !!result.messageId;
     } catch (e) {
-        logger.error(`Failed to send email with password reset code` + email);
-        console.trace(e);
+        logger.error(`Failed to send email with password reset code to ` + email);
+        logger.error(e);
         return false;
     }
 }

@@ -71,6 +71,7 @@ const consoleTransport = new winston.transports.Console({
             service = colors[color](service);
             return `${info.level} ${service} ${info.message} ${colors.gray(rest)}`;
         }),
+        winston.format.errors({ stack: true }),
     )
 });
 
@@ -100,7 +101,7 @@ const webPushRepository = new WebPushRepository(db);
 
 const inviteManager = new InviteManager(inviteRepository);
 const notificationManager = new NotificationManager(commentRepository, notificationsRepository, postRepository, siteRepository, userRepository, webPushRepository, config.vapid, config.site);
-const userManager = new UserManager(credentialsRepository, userRepository, voteRepository, commentRepository, postRepository, webPushRepository, notificationManager, redis.client, config.site);
+const userManager = new UserManager(credentialsRepository, userRepository, voteRepository, commentRepository, postRepository, webPushRepository, notificationManager, redis.client, config.site, logger.child({ service: 'USER' }));
 const siteManager = new SiteManager(siteRepository, userManager);
 const feedManager = new FeedManager(bookmarkRepository, postRepository, userRepository, siteManager, redis.client);
 const postManager = new PostManager(bookmarkRepository, commentRepository, postRepository, feedManager, notificationManager, siteManager, userManager, theParser);

@@ -71,7 +71,7 @@ export default class AuthController {
         const {email} = request.body;
 
         try {
-            const result = await this.userManager.sendResetPasswordEmail(email, this.logger);
+            const result = await this.userManager.sendResetPasswordEmail(email);
             if (!result) {
                 response.error('reset-password-initiation-failed', 'Failed to generate password reset link and email');
                 return;

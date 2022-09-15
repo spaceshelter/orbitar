@@ -27,9 +27,12 @@ export default class UserManager {
     private cacheId: Record<number, UserInfo> = {};
     private cacheUsername: Record<string, UserInfo> = {};
     private cacheLastVisit: Record<number, Date> = {};
+    private readonly logger: Logger;
+    private readonly mailLogger: Logger;
 
     constructor(credentialsRepository: UserCredentials, userRepository: UserRepository, voteRepository: VoteRepository,
-                commentRepository: CommentRepository,  postRepository: PostRepository,  webPushRepository: WebPushRepository, notificationManager: NotificationManager, redis: RedisClientType, siteConfig: SiteConfig) {
+                commentRepository: CommentRepository,  postRepository: PostRepository,  webPushRepository: WebPushRepository,
+                notificationManager: NotificationManager, redis: RedisClientType, siteConfig: SiteConfig, logger: Logger) {
         this.credentialsRepository = credentialsRepository;
         this.userRepository = userRepository;
         this.voteRepository = voteRepository;
@@ -39,6 +42,8 @@ export default class UserManager {
         this.webPushRepository = webPushRepository;
         this.redis = redis;
         this.siteConfig = siteConfig;
+        this.logger = logger;
+        this.mailLogger = logger.child({service: 'MAIL'});
     }
 
     async getById(userId: number): Promise<UserInfo | undefined> {
@@ -364,19 +369,19 @@ export default class UserManager {
         };
     }
 
-    async sendResetPasswordEmail(email: string, logger: Logger): Promise<boolean> {
+    async sendResetPasswordEmail(email: string): Promise<boolean> {
         email = email.toLowerCase();
         const user = await this.userRepository.getUserByEmail(email);
         if (!user) {
-            logger.error(`Failed to find user by email: ` + email);
+            this.logger.error(`Failed to find user by email: ` + email);
             return false;
         }
         const code = await this.userRepository.generateAndSavePasswordResetForUser(user.user_id);
         if (!code) {
-            logger.error(`Failed to generate password reset code for email: ` + email);
+            this.logger.error(`Failed to generate password reset code for email: ` + email);
             return false;
         }
-        return sendResetPasswordEmail(user.username, email, code, this.siteConfig, logger);
+        return sendResetPasswordEmail(user.username, email, code, this.siteConfig, this.mailLogger);
     }
 
     async setNewPassword(password: string, code: string): Promise<boolean> {
