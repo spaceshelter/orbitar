@@ -1,0 +1,35 @@
+.hamburger {
+    display: inline-block;
+    margin-top: 6px;
+    transform: rotate(0deg);
+    transition: transform 0.25s ease-in-out;
+    svg rect {
+        display: block;
+        position: absolute;
+        height: 2px;
+        fill: var(--fgSoft);
+        border-radius: 0.6em;
+        left: 0em;
+        transform: rotate(0deg);
+        transition: transform 0.25s ease-in-out, fill 0.3s ease;
+        transform-origin: center;
+    }
+    &:hover {
+        svg rect {
+            fill: var(--primaryHover);
+        }
+    }
+    &.open {
+        transform: translate(-3px, -3px);
+        svg rect {
+            &:nth-child(1) {
+                transform: rotate(45deg) translate(5px, 5px);
+                top: 0.6em;
+            }
+            &:nth-child(2) {
+                transform: rotate(-45deg);
+                top: 0.6em;
+            }
+        }
+    }
+}
