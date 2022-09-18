@@ -4,9 +4,12 @@ import React, {useState} from 'react';
 import {useAPI, useAppState} from '../AppState/AppState';
 import {toast} from 'react-toastify';
 import {observer} from 'mobx-react-lite';
+import {TopbarMenuState} from '../Components/Topbar';
+import classNames from 'classnames';
 
 type SidebarProps = {
     onMenuToggle: () => void;
+    menuState: TopbarMenuState;
 };
 
 export const SiteSidebar = observer((props: SidebarProps) => {
@@ -33,7 +36,10 @@ export const SiteSidebar = observer((props: SidebarProps) => {
             });
     };
 
-    return (<>
+    return (
+        <div className={classNames(styles.sidebar, {
+            [styles.open]: props.menuState === 'close',
+        })}>
             <div className={styles.fade} onClick={menuToggle}></div>
             <div className={styles.container}>
                 <div className='fixed'>
@@ -55,5 +61,6 @@ export const SiteSidebar = observer((props: SidebarProps) => {
                     <Link onClick={menuToggle} className='all-subsites' to='/sites'>Все подсайты</Link>
                 </div>
             </div>
-        </>);
+        </div>
+    );
 });
