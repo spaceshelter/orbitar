@@ -34,7 +34,6 @@ export const Hamburger = (props: HamburgerProps) => {
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
               className={styles.icon}
-              transform-origin="center"
             >
                 <rect
                   width="34"
