@@ -12,7 +12,7 @@ type UsePost = {
 
     postComment(comment: string, answerToCommentId?: number): Promise<CommentInfo>;
     editComment(comment: string, commentId: number): Promise<CommentInfo>;
-    editPost(title: string, content: string): Promise<PostInfo>;
+    editPost(title: string, content: string, site: string, main: boolean): Promise<PostInfo>;
     setVote(value: number): void;
     setCommentVote(commentId: number, vote: number): void;
     reload(showUnreadOnly?: boolean): void;
@@ -129,8 +129,8 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
             return comment;
         };
 
-        const editPost = async (title: string, text: string) => {
-            const {post} = await api.post.editPost(postId, title, text);
+        const editPost = async (title: string, text: string, site: string, main: boolean) => {
+            const {post} = await api.post.editPost(postId, title, text, site, main);
             setPost(post);
             return post;
         };

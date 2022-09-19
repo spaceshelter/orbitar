@@ -69,7 +69,7 @@ export default class PostManager {
             () => this.postRepository.getPostsByUserTotal(userId, filter));
     }
 
-    async createPost(siteName: string, userId: number, title: string, content: string, format: ContentFormat): Promise<PostInfo> {
+    async createPost(siteName: string, userId: number, title: string, content: string, main: boolean, format: ContentFormat): Promise<PostInfo> {
         const site = await this.siteManager.getSiteByName(siteName);
         if (!site) {
             throw new CodeError('no-site', 'Site not found');
@@ -77,8 +77,8 @@ export default class PostManager {
 
         const parseResult = this.parser.parse(content);
         const language = await this.translationManager.detectLanguage(title, parseResult.text);
-        const postRaw = await this.postRepository.createPost(site.id, userId, title, content, language, parseResult.text);
         this.userManager.clearUserRestrictionsCache(userId);
+        const postRaw = await this.postRepository.createPost(site.id, userId, title, content, language, parseResult.text, main || site.id === 1);
 
         await this.bookmarkRepository.setWatch(postRaw.post_id, userId, true);
 
@@ -87,7 +87,7 @@ export default class PostManager {
         }
 
         // fan out in background
-        this.feedManager.postFanOut(postRaw.site_id, postRaw.post_id,
+        this.feedManager.postFanOut(postRaw.site_id, postRaw.main === 1, postRaw.post_id,
             postRaw.created_at, postRaw.created_at
         ).then().catch();
 
@@ -100,6 +100,7 @@ export default class PostManager {
             created: postRaw.created_at,
             title: postRaw.title,
             content: format === 'html' ? postRaw.html : postRaw.source,
+            main: postRaw.main === 1,
             rating: 0,
             comments: 0,
             newComments: 0,
@@ -109,13 +110,18 @@ export default class PostManager {
         };
     }
 
-    async editPost(forUserId: number, postId: number, title: string | undefined, content: string, format: ContentFormat): Promise<PostInfo> {
-        let [rawPost] = await this.postRepository.getPostsWithUserData([postId], forUserId);
+    async editPost(forUserId: number, postId: number, title: string | undefined, content: string, siteName: string, main: boolean, format: ContentFormat): Promise<PostInfo> {
+        const site = await this.siteManager.getSiteByName(siteName);
+        if (!site) {
+            throw new CodeError('no-site', 'Site not found');
+        }
+
+        const [rawPost] = await this.postRepository.getPostsWithUserData([postId], forUserId);
         if (rawPost.author_id !== forUserId) {
             throw new CodeError('access-denied', 'Access denied');
         }
 
-        if (rawPost.source === content && rawPost.title === title) {
+        if (rawPost.source === content && rawPost.title === title && rawPost.main === (main || site.id === 1 ? 1 : 0) && rawPost.site_id === site.id) {
             // nothing changed
             const [post] = await this.feedManager.convertRawPost(forUserId, [rawPost], format);
             return post;
@@ -124,13 +130,26 @@ export default class PostManager {
         const html = (await this.parser.parse(content)).text;
         const language = await this.translationManager.detectLanguage(title, html);
 
-        const updated = await this.postRepository.updatePostText(forUserId, postId, title, content, language, html);
+        const updated = await this.postRepository.updatePostText(forUserId, postId, title, content, language, html,
+            site.id, main || site.id === 1);
         if (!updated) {
-            throw new CodeError('unknown', 'Could not edit comment');
+            throw new CodeError('unknown', 'Could not edit post');
         }
 
-        [rawPost] = await this.postRepository.getPostsWithUserData([postId], forUserId);
-        const [post] = await this.feedManager.convertRawPost(forUserId, [rawPost], format);
+        const [updatedRawPost] = await this.postRepository.getPostsWithUserData([postId], forUserId);
+
+        if (rawPost.site_id !== updatedRawPost.site_id || rawPost.main !== updatedRawPost.main) {
+            // in background
+            this.feedManager.removePostFromFeed(rawPost.site_id, rawPost.main === 1, rawPost.post_id)
+                .then(() =>
+                    this.feedManager.postFanOut(updatedRawPost.site_id,
+                        updatedRawPost.main === 1,
+                        postId,
+                        updatedRawPost.created_at, updatedRawPost.created_at)
+                ).then().catch();
+        }
+
+        const [post] = await this.feedManager.convertRawPost(forUserId, [updatedRawPost], format);
 
         return post;
     }
@@ -140,7 +159,7 @@ export default class PostManager {
         return await this.convertRawCommentsWithPostData(forUserId, rawComments, format);
     }
 
-    async getParentCommentsForASetOfComments(comments: CommentInfoWithPostData[], forUserId: number,  format: ContentFormat): Promise<CommentInfoWithPostData[]> {
+    async getParentCommentsForASetOfComments(comments: CommentInfoWithPostData[], forUserId: number, format: ContentFormat): Promise<CommentInfoWithPostData[]> {
         const commentIds = comments.flatMap(comment => comment.parentComment ? [comment.parentComment] : []);
         if (!commentIds.length) {
             return [];
@@ -207,6 +226,7 @@ export default class PostManager {
         const language = await this.translationManager.detectLanguage('', parseResult.text);
 
         const commentRaw = await this.commentRepository.createComment(userId, postId, parentCommentId, content, language, parseResult.text);
+        const postRaw = await this.postRepository.getPost(postId);
         this.userManager.clearUserRestrictionsCache(userId);
 
         for (const mention of parseResult.mentions) {
@@ -220,9 +240,11 @@ export default class PostManager {
         await this.bookmarkRepository.setWatch(postId, userId, true);
 
         // fan out in background
-        this.feedManager.postFanOut(commentRaw.site_id, commentRaw.post_id,
-                undefined,
-                commentRaw.created_at
+        this.feedManager.postFanOut(commentRaw.site_id,
+            postRaw.main === 1,
+            commentRaw.post_id,
+            undefined,
+            commentRaw.created_at
         ).then().catch();
 
         const comments = await this.convertRawCommentsWithPostData(userId, [commentRaw], format);
@@ -232,7 +254,7 @@ export default class PostManager {
 
     async getComment(forUserId: number, commentId: number, format: ContentFormat): Promise<CommentInfoWithPostData | undefined> {
         const rawComment = await this.commentRepository.getCommentWithUserData(forUserId, commentId);
-        const [comment] = await this.convertRawCommentsWithPostData(forUserId,[rawComment], format);
+        const [comment] = await this.convertRawCommentsWithPostData(forUserId, [rawComment], format);
         return comment;
     }
 
@@ -244,7 +266,7 @@ export default class PostManager {
 
         if (rawComment.source === content) {
             // nothing changed
-            const [comment] = await this.convertRawCommentsWithPostData(forUserId,[rawComment], format);
+            const [comment] = await this.convertRawCommentsWithPostData(forUserId, [rawComment], format);
             return comment;
         }
 
@@ -257,7 +279,7 @@ export default class PostManager {
         }
 
         rawComment = await this.commentRepository.getCommentWithUserData(forUserId, commentId);
-        const [comment] = await this.convertRawCommentsWithPostData(forUserId,[rawComment], format);
+        const [comment] = await this.convertRawCommentsWithPostData(forUserId, [rawComment], format);
         return comment;
     }
 
@@ -290,7 +312,7 @@ export default class PostManager {
         for (const rawSource of rawSources) {
             let content = rawSource.source;
             if (format === 'html') {
-                content =  (await this.parser.parse(content)).text;
+                content = (await this.parser.parse(content)).text;
             }
 
             const source: HistoryInfo = {
@@ -313,7 +335,7 @@ class ContentNumberCache {
     filtered?: [string, number];
     total?: number;
 
-    async getOrUpdate(filter: string,  set: () => Promise<number>): Promise<number> {
+    async getOrUpdate(filter: string, set: () => Promise<number>): Promise<number> {
         if (filter !== '') {
             if (this.filtered && this.filtered[0] === filter) {
                 return this.filtered[1];

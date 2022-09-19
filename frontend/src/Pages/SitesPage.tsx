@@ -14,7 +14,7 @@ export const SitesPage = observer(() => {
     const {userRestrictions} = useAppState();
 
     useEffect(() => {
-        api.site.list(1, 1000)
+        api.site.list(true, 1, 1000)
             .then(setSites)
             .catch(err => {
                 console.error('Site list error', err);

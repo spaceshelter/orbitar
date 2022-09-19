@@ -102,8 +102,8 @@ export default class SiteManager {
         return this.siteRepository.getSiteSubscriptionIds(forUserId);
     }
 
-    async getSubsites(forUserId: number, page: number, perpage: number): Promise<SiteWithUserInfo[]> {
-        const sitesRaw = await this.siteRepository.getAllSitesWithUserInfo(forUserId, page, perpage);
+    async getSubsites(forUserId: number, includeMain: boolean, page: number, perpage: number): Promise<SiteWithUserInfo[]> {
+        const sitesRaw = await this.siteRepository.getAllSitesWithUserInfo(forUserId, includeMain, page, perpage);
         return this.convertRawToInfo(sitesRaw);
     }
 

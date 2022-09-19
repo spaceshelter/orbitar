@@ -38,6 +38,7 @@ function SearchResult(props: {
                                    title: resultItem.highlight_title?.join('&nbsp;&nbsp;&nbsp;…&nbsp;&nbsp;&nbsp;') || resultItem.post_title,
                                    author,
                                    content,
+                                   main: false,
                                    site: resultItem.site,
                                    created: date,
                                    rating: 0,

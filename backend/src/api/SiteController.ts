@@ -42,6 +42,7 @@ export default class SiteController {
             site: Joi.string().required()
         });
         const siteListSchema = Joi.object<SiteListRequest>({
+            main: Joi.boolean().default(false),
             page: Joi.number().default(1),
             perpage: Joi.number().default(100)
         });
@@ -115,10 +116,10 @@ export default class SiteController {
         }
 
         const userId = request.session.data.userId;
-        const {page, perpage} = request.body;
+        const {main, page, perpage} = request.body;
 
         try {
-            const sites = await this.siteManager.getSubsites(userId, page, perpage);
+            const sites = await this.siteManager.getSubsites(userId, main, page, perpage);
 
             response.success({
                 sites: sites.map(site => this.enricher.siteInfoToEntity(site)),

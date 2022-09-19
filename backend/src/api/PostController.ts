@@ -4,7 +4,7 @@ import UserManager from '../managers/UserManager';
 import SiteManager from '../managers/SiteManager';
 import {Logger} from 'winston';
 import Joi from 'joi';
-import {APIRequest, APIResponse, joiFormat, validate} from './ApiMiddleware';
+import {APIRequest, APIResponse, joiFormat, joiSite, validate} from './ApiMiddleware';
 import FeedManager from '../managers/FeedManager';
 import {PostGetRequest, PostGetResponse} from './types/requests/PostGet';
 import {PostCreateRequest, PostCreateResponse} from './types/requests/PostCreate';
@@ -85,8 +85,9 @@ export default class PostController {
             last_comment_id: Joi.number().optional()
         });
         const postCreateSchema = Joi.object<PostCreateRequest>({
-            site: Joi.string().required(),
+            site: joiSite.required(),
             title: Joi.alternatives(Joi.string().max(64), Joi.valid('').optional()),
+            main: Joi.boolean().default(false),
             content: Joi.string().min(1).max(50000).required(),
             format: joiFormat
         });
@@ -119,6 +120,8 @@ export default class PostController {
         const editSchema = Joi.object<PostEditRequest>({
             id: Joi.number().required(),
             title: Joi.alternatives(Joi.string().max(64), Joi.valid('').optional()),
+            site: joiSite.required(),
+            main: Joi.boolean().default(false),
             content: Joi.string().min(1).max(50000).required(),
             format: joiFormat
         });
@@ -205,21 +208,21 @@ export default class PostController {
         }
 
         const userId = request.session.data.userId;
-        const { id, title, format, content } = request.body;
+        const { id, title, format, content, site, main } = request.body;
 
         try {
-            const postInfo = await this.postManager.editPost(userId, id, title, content, format);
+            const postInfo = await this.postManager.editPost(userId, id, title, content, site, main, format);
             if (!postInfo) {
                 return response.error('no-comment', 'Post not found');
             }
 
             const {posts: [post], users} = await this.enricher.enrichRawPosts([postInfo]);
 
-            this.logger.info(`Post edited by #${userId}`, { user_id: userId, post_id: id, format, content, title });
+            this.logger.info(`Post edited by #${userId}`, { user_id: userId, post_id: id, format, content, title, site, main });
             response.success({ post, users });
         }
         catch (err) {
-            this.logger.error('Post edit error', { error: err, user_id: userId, post_id: id, format, content, title });
+            this.logger.error('Post edit error', { error: err, user_id: userId, post_id: id, format, content, title, site, main });
 
             if (err instanceof CodeError && err.code === 'access-denied') {
                 return response.error('access-denied', 'Access-denied');
@@ -235,7 +238,7 @@ export default class PostController {
         }
 
         const userId = request.session.data.userId;
-        const { site, format, content, title } = request.body;
+        const { site, format, content, title, main } = request.body;
 
         try {
             const userRestrictions = await this.userManager.getUserRestrictions(userId);
@@ -246,7 +249,7 @@ export default class PostController {
                 return response.error('post-creation-restricted', 'You cannot create any more posts due to low karma.', 403);
             }
 
-            const postInfo = await this.postManager.createPost(site, userId, title, content, format);
+            const postInfo = await this.postManager.createPost(site, userId, title, content, main, format);
             const {posts: [post]} = await this.enricher.enrichRawPosts([postInfo]);
 
             this.logger.info(`Post created by #${userId}`, { user_id: userId, site, format, content, title });

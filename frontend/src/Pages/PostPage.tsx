@@ -98,8 +98,8 @@ export default function PostPage() {
         }
     }, [location.hash, comments, scrolledToComment, unreadOnly]);
 
-    const handlePostEdit = async (post: PostInfo, text: string, title?: string): Promise<PostInfo | undefined> => {
-        return await editPost(title || '', text);
+    const handlePostEdit = async (post: PostInfo, text: string, title: string, site: string, main: boolean): Promise<PostInfo | undefined> => {
+        return await editPost(title || '', text, site, main);
     };
 
     const baseRoute = site === 'main' ? '/' : `/s/${site}/`;
