@@ -5,7 +5,7 @@ type CacheRecord = {
 };
 const localCache: Record<string, CacheRecord> = {};
 
-function getCachedValue<T>(name: string, deps: unknown[]): T | undefined {
+export function getCachedValue<T>(name: string, deps: any[]): T | undefined {
     let cached: CacheRecord | undefined = localCache[name];
     if (!cached) {
         // try to load from localStorage
@@ -42,7 +42,7 @@ function getCachedValue<T>(name: string, deps: unknown[]): T | undefined {
         return cached.value as T;
     }
 }
-function setCachedValue<T>(name: string, deps: unknown[], value: T) {
+export function setCachedValue<T>(name: string, deps: unknown[], value: T) {
     const cached: CacheRecord = { deps: [...deps], value };
     localCache[name] = cached;
 
