@@ -20,7 +20,7 @@ export const Hamburger = (props: HamburgerProps) => {
         } else {
           setTransformUpperRect('rotate(45) translate(-4 -20)');
           setTransformLowerRect('rotate(-45) translate(2 2)');
-        }  
+        }
     }, [props.open]);
 
     return (
