@@ -10,6 +10,7 @@ import {PushSubscription} from 'web-push';
 import {RedisClientType} from 'redis';
 import PostRepository from '../db/repositories/PostRepository';
 import CommentRepository from '../db/repositories/CommentRepository';
+import {FeedSorting} from '../api/types/entities/common';
 
 export default class UserManager {
     private credentialsRepository: UserCredentials;
@@ -358,5 +359,13 @@ export default class UserManager {
             name: rawUser.name,
             registered: rawUser.registered_at,
         };
+    }
+
+    async saveFeedSorting(site: string, feedSorting: FeedSorting, userId: number) {
+        await this.userRepository.saveFeedSorting(site, feedSorting, userId);
+    }
+
+    async getFeedSorting(userId: number, siteId: number): Promise<FeedSorting | undefined> {
+        return await this.userRepository.getFeedSorting(userId, siteId);
     }
 }

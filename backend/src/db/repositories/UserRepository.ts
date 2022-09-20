@@ -4,6 +4,7 @@ import {InviteRaw} from '../types/InviteRaw';
 import CodeError from '../../CodeError';
 import {OkPacket} from 'mysql2';
 import {UserGender} from '../../managers/types/UserInfo';
+import {FeedSorting} from '../../api/types/entities/common';
 
 export default class UserRepository {
     private db: DB;
@@ -137,5 +138,21 @@ export default class UserRepository {
             where user_id = :user_id and visited_at > date_sub(now(), interval 7 day)
         `, {user_id: userId});
         return parseInt(res.cnt || '0') >= 3;
+    }
+
+    async saveFeedSorting(site: string, feedSorting: FeedSorting, userId: number) {
+        await this.db.query(`insert into feed_sorting_settings (user_id, site_id, feed_sorting) select :user_id, s.site_id, :feed_sorting from sites s where s.subdomain = :site on duplicate key update feed_sorting = :feed_sorting`, {
+            user_id: userId,
+            site: site,
+            feed_sorting: feedSorting
+        });
+    }
+
+    async getFeedSorting(userId: number, siteId: number): Promise<FeedSorting> {
+        const res = await this.db.fetchOne<{ feed_sorting: FeedSorting } | undefined>('select fss.feed_sorting from feed_sorting_settings fss where fss.user_id=:user_id and fss.site_id=:site_id', {user_id: userId, site_id: siteId});
+        if (!res) {
+            return FeedSorting.postCommentedAt;
+        }
+        return res.feed_sorting as FeedSorting;
     }
 }

@@ -1,6 +1,7 @@
 import APIBase from './APIBase';
 import {UserInfo} from '../Types/UserInfo';
 import {SiteInfo, SiteWithUserInfo} from '../Types/SiteInfo';
+import {FeedSorting} from '../Types/FeedSortingSettings';
 
 export type ContentFormat = 'html' | 'source';
 
@@ -61,6 +62,7 @@ type FeedPostsResponse = {
     users: Record<number, UserInfo>;
     total: number;
     site: SiteWithUserInfo;
+    sorting: FeedSorting;
 };
 type FeedSubscriptionsRequest = {
     page?: number;
@@ -72,6 +74,7 @@ type FeedSubscriptionsResponse = {
     users: Record<number, UserInfo>;
     total: number;
     sites: Record<string, SiteInfo>;
+    sorting: FeedSorting;
 };
 type FeedWatchRequest = {
     filter?: 'all' | 'new';

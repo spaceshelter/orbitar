@@ -4,3 +4,8 @@ export enum EditFlag {
     original,
     edited
 }
+
+export enum FeedSorting {
+    postCommentedAt,
+    postCreatedAt
+}

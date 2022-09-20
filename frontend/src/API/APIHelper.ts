@@ -12,6 +12,8 @@ import SiteAPI from './SiteAPI';
 import SiteAPIHelper from './SiteAPIHelper';
 import NotificationsAPI from './NotificationsAPI';
 import NotificationsAPIHelper from './NotificationsAPIHelper';
+import FeedAPI from './FeedAPI';
+import FeedAPIHelper from './FeedAPIHelper';
 
 export default class APIHelper {
     auth: AuthAPIHelper;
@@ -26,6 +28,8 @@ export default class APIHelper {
     site: SiteAPIHelper;
     notificationsAPI: NotificationsAPI;
     notifications: NotificationsAPIHelper;
+    feedAPI: FeedAPI;
+    feed: FeedAPIHelper;
     private baseAPI: APIBase;
     private initRetryCount = 0;
     private appState: AppState;
@@ -46,6 +50,8 @@ export default class APIHelper {
         this.user = new UserAPIHelper(this.userAPI, appState);
         this.site = new SiteAPIHelper(this.siteAPI, appState);
         this.notifications = new NotificationsAPIHelper(this.notificationsAPI, appState);
+        this.feedAPI = new FeedAPI(api);
+        this.feed = new FeedAPIHelper(this.feedAPI, appState);
     }
 
     async init() {

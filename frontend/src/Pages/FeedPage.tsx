@@ -1,14 +1,17 @@
-import React, {useEffect} from 'react';
-import {useAppState} from '../AppState/AppState';
+import React, {useEffect, useState} from 'react';
+import {useAPI, useAppState} from '../AppState/AppState';
 import styles from './FeedPage.module.scss';
 import PostComponent from '../Components/PostComponent';
 import Paginator from '../Components/Paginator';
 import {Link, useMatch, useSearchParams} from 'react-router-dom';
 import {FeedType, useFeed} from '../API/use/useFeed';
 import {APIError} from '../API/APIBase';
+import {FeedSorting} from '../Types/FeedSortingSettings';
+import classNames from 'classnames';
 
 export default function FeedPage() {
     const { site, siteInfo } = useAppState();
+    const api = useAPI();
 
     const [search] = useSearchParams();
 
@@ -37,7 +40,9 @@ export default function FeedPage() {
     const perpage = 20;
     const page = parseInt(search.get('page') || '1');
 
-    const { posts, loading, pages, error, updatePost } = useFeed(site, feedType, page, perpage);
+    const [changeSorting, setChangeSorting] = useState<FeedSorting>();
+    const {posts, loading, pages, error, updatePost, sorting, setLoading} = useFeed(site, feedType, page, perpage, changeSorting);
+
     useEffect(() => {
         window.scrollTo({ top: 0 });
     }, [page]);
@@ -53,13 +58,29 @@ export default function FeedPage() {
         document.title = docTitle;
     }, [siteInfo, feedType]);
 
+    const handleFeedSortingChange = (newFeedSorting: FeedSorting) => async (e: React.MouseEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        await api.feed.saveSorting(site, newFeedSorting);
+        setChangeSorting(newFeedSorting);
+        setLoading(false);
+    };
+
+    const liveSorting = sorting !== FeedSorting.postCreatedAt;
+
     return (
         <div className={styles.container}>
             <div className={styles.feed}>
-                {siteInfo?.site === 'main' && <div className={styles.feedControls}>
-                    <Link to='/' className={feedType === 'subscriptions' ? styles.active : ''} replace={true}>мои подписки</Link> • <Link to='/all' className={feedType === 'all' ? styles.active : ''} replace={true}>все</Link> • <Link to='/posts' className={feedType === 'site' ? styles.active : ''} replace={true}>только главная</Link>
-                </div>}
-                {!error && loading && <div className={styles.loading}>Загрузка</div>}
+                <div className={styles.feedControlsWrapper}>
+                    {siteInfo && <div className={styles.feedControls}>
+                      <a href='#' className={classNames({[styles.active]: liveSorting})} onClick={handleFeedSortingChange(FeedSorting.postCommentedAt)}><i className='i i-live'></i>LIVE</a>
+                      <a href='#' className={classNames({[styles.active]: !liveSorting})} onClick={handleFeedSortingChange(FeedSorting.postCreatedAt)}><i className='i i-new'></i>НОВОЕ</a>
+                    </div>}
+                    {siteInfo?.site === 'main' && <div className={styles.feedControls}>
+                        <Link to='/' className={feedType === 'subscriptions' ? styles.active : ''} replace={true}>подписки</Link>•<Link to='/all' className={feedType === 'all' ? styles.active : ''} replace={true}>всё</Link>•<Link to='/posts' className={feedType === 'site' ? styles.active : ''} replace={true}>главная</Link>
+                    </div>}
+                </div>
+                {!error && loading && <div className={styles.loading}></div>}
                 {error && <div className={styles.error}>{
                     (error[1] as APIError)?.code === 'no-site' ? <>Нет такого сайта. <Link to='/sites/create'>Создать</Link>?</> : error[0]
                 }</div> }
