@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import styles from './Hamburger.module.scss';
 import classNames from 'classnames';
 
@@ -7,49 +7,19 @@ type HamburgerProps = {
 };
 
 export const Hamburger = (props: HamburgerProps) => {
-    const [transformUpperRect, setTransformUpperRect] = useState('');
-    const [transformLowerRect, setTransformLowerRect] = useState('');
-    const dropRotate = () => {
-        setTransformUpperRect('');
-        setTransformLowerRect('');
-    };
-
-    useEffect(() => {
-        if (props.open) {
-          dropRotate();
-        } else {
-          setTransformUpperRect('rotate(45) translate(-4 -20)');
-          setTransformLowerRect('rotate(-45) translate(2 2)');
-        }  
-    }, [props.open]);
-
     return (
-        <div className={classNames(styles.hamburger, {
+      <svg
+          className={classNames(styles.hamburger, {
               [styles.open]: props.open,
-        })}>
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 34 13"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className={styles.icon}
-              transform-origin="center"
-            >
-                <rect
-                  width="34"
-                  height="3"
-                  fill="#2A2B40"
-                  transform={transformUpperRect}
-                />
-                <rect
-                  y="10"
-                  width="34"
-                  height="3"
-                  fill="#2A2B40"
-                  transform={transformLowerRect}
-                />
-            </svg>
-        </div>
+          })}
+          width="24"
+          height="24"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+      >
+          <rect x="3" y="5.99998" width="18" height="1"/>
+          <rect x="3" y="10.99998" width="18" height="1"/>
+          <rect x="3" y="15.99998" width="18" height="1"/>
+      </svg>
     );
 };
