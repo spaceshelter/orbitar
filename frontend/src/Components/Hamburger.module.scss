@@ -21,13 +21,13 @@
     &.open {
         rect {
             &:nth-child(1) {
-                transform: rotate(45deg) scale(1.13, 1.8);
+                transform: rotate(45deg) scale(1.13, 1.6);
             }
             &:nth-child(2) {
                 transform: scale(0, 1);
             }
             &:nth-child(3) {
-                transform: rotate(-45deg) scale(1.13, 1.8);
+                transform: rotate(-45deg) scale(1.13, 1.6);
             }
         }
     }
