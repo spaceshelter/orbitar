@@ -1,0 +1,19 @@
+name: build-docker
+on:
+  push:
+    branches:
+      - dev
+      - main
+  pull_request:
+    paths:
+      - .github/workflows/build-docker-dev.yml
+
+jobs:
+  build-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build backend & frontend
+        run: docker-compose -f docker-compose.ssl.local.yml build --no-cache backend frontend
