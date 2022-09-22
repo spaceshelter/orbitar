@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useEffect} from 'react';
 import styles from './PasswordStrength.module.scss';
 import {passwordStrength} from 'check-password-strength';
 import {PasswordStrength} from '../Types/PasswordStrength';
