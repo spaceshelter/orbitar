@@ -3,7 +3,6 @@
     margin: 0 auto;
 }
 
-
 .signup label {
     display: block;
     font-size: 18px;
@@ -26,4 +25,8 @@
 .signup p.error::before {
     display: inline;
     content: "⚠ ";
+}
+
+.signup .passwordStrengthContainer {
+    margin-bottom: 15px;
 }

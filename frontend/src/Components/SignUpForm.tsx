@@ -1,7 +1,10 @@
 import {SubmitHandler, useForm} from 'react-hook-form';
-import React, {useRef} from 'react';
+import React, {useRef, useCallback, useState} from 'react';
 import styles from './SignUpForm.module.css';
 import {UserGender} from '../Types/UserInfo';
+import PasswordStrengthComponent from '../Components/PasswordStrengthComponent';
+import {PasswordStrength} from '../Types/PasswordStrength';
+import WeakPasswordConfirmation from './WeakPasswordConfirmation';
 
 type SignUpFormValues = {
     username: string;
@@ -31,8 +34,26 @@ export default function SignUpForm(props: SignUpFormProps) {
         mode: 'onChange'
     });
 
+    const [passwordStrength, setPasswordStrength] = useState<PasswordStrength | undefined>(undefined);
+    const [isWeakPasswordConfirmed, setIsWeakPasswordConfirmed] = useState(false);
+
     const password = useRef({});
     password.current = watch('password1', '');
+
+    const onPasswordStrengthUpdate = useCallback((newStrength: PasswordStrength | undefined) => {
+        setPasswordStrength(newStrength);
+    }, []);
+
+    const formReady = () => {
+        return !(!isValid ||
+            props.disabled ||
+            (passwordStrength !== PasswordStrength.Strong && !isWeakPasswordConfirmed));
+    };
+
+    const weakPasswordConfirmationChanged = (e: React.FormEvent<HTMLInputElement>) => {
+        setIsWeakPasswordConfirmed(e.currentTarget.checked);
+    };
+
     const onSubmit: SubmitHandler<SignUpFormValues> = data => {
         props.onSignUp(data.username, data.name, data.email, data.password1, UserGender.fluid);
     };
@@ -84,9 +105,12 @@ export default function SignUpForm(props: SignUpFormProps) {
                     disabled: props.disabled
                 })} />
                 {errors.password2 && <p className={styles.error}>{errors.password2.message}</p>}
-
-                <div><input type="submit" disabled={!isValid || props.disabled} value="Поехали!" /></div>
+                <div className={styles.passwordStrengthContainer}>
+                    <PasswordStrengthComponent password={password.current as string} onUpdate={onPasswordStrengthUpdate} />
+                </div>
+                <div><input type="submit" disabled={!formReady()} value="Поехали!" /></div>
                 {props.errors.submit && <p className={styles.error}>{props.errors.submit.message}</p>}
+                <WeakPasswordConfirmation onConfirmationChanged={weakPasswordConfirmationChanged} passwordStrength={passwordStrength} />
             </form>
         </div>
     );

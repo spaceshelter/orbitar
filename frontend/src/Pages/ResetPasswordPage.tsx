@@ -1,9 +1,11 @@
 import {useParams, Link} from 'react-router-dom';
-import React, {useState, useRef, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {useForm, SubmitHandler} from 'react-hook-form';
 import styles from './ResetPasswordPage.module.scss';
 import {useAPI} from '../AppState/AppState';
-import {passwordStrength} from 'check-password-strength';
+import PasswordStrengthComponent from '../Components/PasswordStrengthComponent';
+import {PasswordStrength} from '../Types/PasswordStrength';
+import WeakPasswordConfirmation from '../Components/WeakPasswordConfirmation';
 
 type ResetPasswordForm = {
     email: string;
@@ -25,6 +27,9 @@ export default function ResetPasswordPage() {
     const [isCreatingNewPassword, setCreatingNewPassword] = useState(false);
     const [isNewPasswordCreated, setNewPasswordCreated] = useState(false);
     const [isLinkInvalid, setLinkInvalid] = useState(false);
+    const [newPassword, setNewPassword] = useState<string>('');
+    const [newPasswordStrength, setNewPasswordStrength] = useState<PasswordStrength | undefined>(undefined);
+    const [isWeakPasswordConfirmed, setIsWeakPasswordConfirmed] = useState(false);
 
     useEffect(() => {
         if (!code) {
@@ -39,16 +44,17 @@ export default function ResetPasswordPage() {
             });
     }, [code, api]);
 
+    const onPasswordStrengthUpdate = useCallback((newStrength: PasswordStrength | undefined) => {
+        setNewPasswordStrength(newStrength);
+    }, []);
+
     const { register: registerReset, handleSubmit: handleSubmitReset, formState: { isValid: isValidReset } } = useForm<ResetPasswordForm>({
         mode: 'onChange'
     });
 
-    const { register: registerNewPassword, handleSubmit: handleSubmitNewPassword, watch, formState: { isValid: isValidNewPassword } } = useForm<NewPasswordForm>({
+    const { register: registerNewPassword, handleSubmit: handleSubmitNewPassword, formState: { errors: newPasswordErrors, isValid: isValidNewPassword } } = useForm<NewPasswordForm>({
         mode: 'onChange'
     });
-
-    const password = useRef({});
-    password.current = watch('password1', '');
 
     const onResetSubmit: SubmitHandler<ResetPasswordForm> = data => {
         setResetError('');
@@ -72,13 +78,6 @@ export default function ResetPasswordPage() {
             setNewPasswordError('Пароли не совпадают!');
             return false;
         }
-
-        const enteredPasswordStrength = passwordStrength(data.password1).value;
-        const passwordIsWeak =  enteredPasswordStrength === 'Too weak'; // || enteredPasswordStrength === 'Weak';
-        if (passwordIsWeak) {
-            setNewPasswordError('Слишком простой пароль. Нужно минимум 6 символов, буквы разного регистра или хотя бы одна цифра или спецсимвол.');
-            return false;
-        }
         setCreatingNewPassword(true);
         api.auth.setNewPassword(data.password1, code as string).then(() => {
             setNewPasswordCreated(true);
@@ -87,6 +86,17 @@ export default function ResetPasswordPage() {
         }).finally(() => {
             setCreatingNewPassword(false);
         });
+    };
+
+    const newPasswordFormReady = () => {
+        if (newPasswordStrength !== PasswordStrength.Strong && !isWeakPasswordConfirmed) {
+            return false;
+        }
+        return isValidNewPassword && !isCreatingNewPassword;
+    };
+
+    const weakPasswordConfirmationChanged = (e: React.FormEvent<HTMLInputElement>) => {
+        setIsWeakPasswordConfirmed(e.currentTarget.checked);
     };
 
     if (isLinkInvalid) {
@@ -106,15 +116,31 @@ export default function ResetPasswordPage() {
                         <form onSubmit={handleSubmitNewPassword(onNewPasswordSubmit)}>
                             <label>Пароль</label>
                             <input type="password" {...registerNewPassword('password1', {
-                                required: 'Пароль жизненно важен.'
-                            })} />
+                                required: true
+                            })}
+                                onChange={(e) => {
+                                    setNewPassword(e.currentTarget.value);
+                                    setNewPasswordError('');
+                                }}
+                            />
                             <label>Пароль ещё раз</label>
                             <input type="password" {...registerNewPassword('password2', {
                                 required: true,
-                                validate: value => value === password.current || 'Пароли должны совпадать.'
-                            })} />
-                            <div><input type="submit" disabled={!isValidNewPassword || isCreatingNewPassword} value="Поехали!" /></div>
+                                validate: (value: string) => {
+                                    if (value !== newPassword) {
+                                        return 'Пароли должны совпадать.';
+                                    }
+                                    return true;
+                                }
+                            })}
+                            />
+                            <div className={styles.passwordStrengthContainer}>
+                                <PasswordStrengthComponent password={newPassword} onUpdate={onPasswordStrengthUpdate} />
+                            </div>
+                            <div><input type="submit" disabled={!newPasswordFormReady()} value="Поехали!" /></div>
+                            {newPasswordErrors.password2?.message && <p className={styles.error}>{newPasswordErrors.password2.message}</p>}
                             {newPasswordError && <p className={styles.error}>{newPasswordError}</p>}
+                            <WeakPasswordConfirmation passwordStrength={newPasswordStrength} onConfirmationChanged={weakPasswordConfirmationChanged} />
                         </form>
                     )
                 }
@@ -152,7 +178,7 @@ export default function ResetPasswordPage() {
                 isResetSent && <div className={styles.resetSent}>
                 <p>Письмо со ссылкой на сброс пароля отправлено вам на почту. Если не пришло, проверьте папку Спам.</p>
                 <p>Если всё ещё не пришло, и вы пользуетесь Gmail, проверьте вкладку Promotions (Промоакции).</p>
-                <p>Если совсем не приходит, <a href='https://t.me/orbitar_bot'>напишите нашему боту в Телеграме</a>, что-нибудь придумаем.</p>
+                <p>Если совсем не приходит, <a href='https://discord.gg/j4tevpV9'>напишите нам в Дискорде</a>, что-нибудь придумаем.</p>
               </div>
             }
         </div>
