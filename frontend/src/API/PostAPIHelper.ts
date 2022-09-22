@@ -4,16 +4,19 @@ import {SiteInfo} from '../Types/SiteInfo';
 import {AppState} from '../AppState/AppState';
 import {UserInfo} from '../Types/UserInfo';
 import {HistoryInfo} from '../Types/HistoryInfo';
+import {FeedSorting} from '../Types/FeedSortingSettings';
 
 type FeedPostsResult = {
     posts: PostInfo[];
     site: SiteInfo;
     total: number;
+    sorting: FeedSorting;
 };
 type FeedSubscriptionsResult = {
     posts: PostInfo[];
     sites: Record<string, SiteInfo>;
     total: number;
+    sorting?: FeedSorting;
 };
 
 type PostResult = {
@@ -71,7 +74,8 @@ export default class PostAPIHelper {
         return {
             posts: this.fixPosts(response.posts, response.users),
             site: siteInfo,
-            total: response.total
+            total: response.total,
+            sorting: response.sorting
         };
     }
 
@@ -80,7 +84,8 @@ export default class PostAPIHelper {
         return {
             posts: this.fixPosts(response.posts, response.users),
             sites: response.sites,
-            total: response.total
+            total: response.total,
+            sorting: response.sorting
         };
     }
 
@@ -89,7 +94,8 @@ export default class PostAPIHelper {
         return {
             posts: this.fixPosts(response.posts, response.users),
             sites: response.sites,
-            total: response.total
+            total: response.total,
+            sorting: response.sorting
         };
     }
 

@@ -22,7 +22,7 @@ export default function UserProfilePosts(props: UserProfilePostsProps) {
     return (
         <div className={styles.container}>
             <div className={styles.feed}>
-                {loading ? <div className={styles.loading}>Загрузка</div> :
+                {loading ? <div className={styles.loading}></div> :
                  <>
                     {error && <div className={styles.error}>{styles.error}</div> }
                     {posts && <div className={styles.posts}>

@@ -4,6 +4,15 @@ concurrency: stage
 
 on:
   workflow_dispatch:
+    inputs:
+      build-flag:
+        type: choice
+        description: docker-compose additional build flag
+        required: false
+        default: ""
+        options:
+          - ""
+          - "--no-cache"
 
 env:
   SERVER_DOMAIN: stage.orbitar.space
@@ -26,7 +35,7 @@ jobs:
           cp -f /opt/deployment-specific-files/.env $GITHUB_WORKSPACE/
 
       - name: Build backend & frontend
-        run: docker-compose -f docker-compose.ssl.local.yml build backend frontend
+        run: docker-compose -f docker-compose.ssl.local.yml build ${{ github.event.inputs.build-flag }} backend frontend
 
       - name: Deploy
         run: docker-compose -f docker-compose.ssl.local.yml up -d backend frontend

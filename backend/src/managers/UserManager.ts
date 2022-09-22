@@ -13,6 +13,7 @@ import CommentRepository from '../db/repositories/CommentRepository';
 import {sendResetPasswordEmail} from '../utils/Mailer';
 import {SiteConfig} from '../config';
 import {Logger} from 'winston';
+import {FeedSorting} from '../api/types/entities/common';
 
 export default class UserManager {
     private credentialsRepository: UserCredentials;
@@ -403,5 +404,13 @@ export default class UserManager {
             return undefined;
         }
         return user.user_id;
+    }
+
+    async saveFeedSorting(site: string, feedSorting: FeedSorting, userId: number) {
+        await this.userRepository.saveFeedSorting(site, feedSorting, userId);
+    }
+
+    async getFeedSorting(userId: number, siteId: number): Promise<FeedSorting | undefined> {
+        return await this.userRepository.getFeedSorting(userId, siteId);
     }
 }
