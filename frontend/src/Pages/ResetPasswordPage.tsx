@@ -85,6 +85,9 @@ export default function ResetPasswordPage() {
     };
 
     const newPasswordFormReady = () => {
+        if (newPasswordStrength === PasswordStrength.TooWeak) {
+            return false;
+        }
         if (newPasswordStrength !== PasswordStrength.Strong && !isWeakPasswordConfirmed) {
             return false;
         }
@@ -174,7 +177,7 @@ export default function ResetPasswordPage() {
                 isResetSent && <div className={styles.resetSent}>
                 <p>Письмо со ссылкой на сброс пароля отправлено вам на почту. Если не пришло, проверьте папку Спам.</p>
                 <p>Если всё ещё не пришло, и вы пользуетесь Gmail, проверьте вкладку Promotions (Промоакции).</p>
-                <p>Если совсем не приходит, <a href='https://discord.gg/j4tevpV9'>напишите нам в Дискорде</a>, что-нибудь придумаем.</p>
+                <p>Если совсем не приходит, напишите нам на почту <a href='mailto:orbitar.space@gmail.com'>orbitar.space@gmail.com</a>, что-нибудь придумаем.</p>
               </div>
             }
         </div>

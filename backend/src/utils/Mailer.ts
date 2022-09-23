@@ -28,7 +28,7 @@ export async function sendResetPasswordEmail(username: string, email: string, co
                     <p>Привет, ${username}!</p>
                     <p>Чтобы сбросить пароль, пройдите по этой ссылке: ${(siteConfig.http ? 'http://' : 'https://') + siteConfig.domain}/forgot-password/${code}</p>
                     <p>Ссылка активна только 3 часа</p>
-                    <p>Если ничего не получается, можете написать нам в <a href="https://discord.gg/j4tevpV9">Дискорд</a></p>
+                    <p>Если ничего не получается, можете написать нам на почту <a href="mailto:orbitar.space@gmail.com">orbitar.space@gmail.com</a></p>
                     </body></html>`
             })
         });

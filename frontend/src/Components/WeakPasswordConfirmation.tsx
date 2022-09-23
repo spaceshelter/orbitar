@@ -8,6 +8,9 @@ type WeakPasswordConfirmationProps = {
 };
 
 export default function WeakPasswordConfirmation(props: WeakPasswordConfirmationProps) {
+    if (props.passwordStrength === PasswordStrength.TooWeak) {
+        return <></>;
+    }
     return <div className={styles.weakPasswordConfirmationContainer}>
         {props.passwordStrength !== PasswordStrength.Strong && props.passwordStrength !== undefined && (
             <label className={styles.weakPasswordConfirmationLabel}>

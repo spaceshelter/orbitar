@@ -45,6 +45,9 @@ export default function SignUpForm(props: SignUpFormProps) {
     };
 
     const formReady = () => {
+        if (passwordStrength === PasswordStrength.TooWeak) {
+            return false;
+        }
         return isValid && !props.disabled && (passwordStrength === PasswordStrength.Strong || isWeakPasswordConfirmed);
     };
 
