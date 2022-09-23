@@ -45,9 +45,7 @@ export default function SignUpForm(props: SignUpFormProps) {
     }, []);
 
     const formReady = () => {
-        return !(!isValid ||
-            props.disabled ||
-            (passwordStrength !== PasswordStrength.Strong && !isWeakPasswordConfirmed));
+        return isValid && !props.disabled && (passwordStrength === PasswordStrength.Strong || isWeakPasswordConfirmed);
     };
 
     const weakPasswordConfirmationChanged = (e: React.FormEvent<HTMLInputElement>) => {
