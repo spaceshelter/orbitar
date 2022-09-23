@@ -36,12 +36,8 @@ export default function ResetPasswordPage() {
             return;
         }
         api.authAPI.checkResetPasswordCode(code)
-            .then(result => {
-                setLinkInvalid(false);
-            })
-            .catch(error => {
-                setLinkInvalid(true);
-            });
+            .then(() => setLinkInvalid(false))
+            .catch(() => setLinkInvalid(true));
     }, [code, api]);
 
     const onPasswordStrengthUpdate = useCallback((newStrength: PasswordStrength | undefined) => {
