@@ -137,10 +137,10 @@ export default function ResetPasswordPage() {
                             <div className={styles.passwordStrengthContainer}>
                                 <PasswordStrengthComponent password={newPassword} onUpdate={onPasswordStrengthUpdate} />
                             </div>
+                            <WeakPasswordConfirmation passwordStrength={newPasswordStrength} onConfirmationChanged={weakPasswordConfirmationChanged} />
                             <div><input type="submit" disabled={!newPasswordFormReady()} value="Поехали!" /></div>
                             {newPasswordErrors.password2?.message && <p className={styles.error}>{newPasswordErrors.password2.message}</p>}
                             {newPasswordError && <p className={styles.error}>{newPasswordError}</p>}
-                            <WeakPasswordConfirmation passwordStrength={newPasswordStrength} onConfirmationChanged={weakPasswordConfirmationChanged} />
                         </form>
                     )
                 }

@@ -11,7 +11,7 @@ export default function WeakPasswordConfirmation(props: WeakPasswordConfirmation
     return <div className={styles.weakPasswordConfirmationContainer}>
         {props.passwordStrength !== PasswordStrength.Strong && props.passwordStrength !== undefined && (
             <label className={styles.weakPasswordConfirmationLabel}>
-                <input type='checkbox' onChange={props.onConfirmationChanged} /> - я понимаю, что ставлю себе слабый пароль, но я всё равно так хочу
+                <input type='checkbox' onChange={props.onConfirmationChanged} /> я понял, что пароль слаб, люблю жить опасно, отстаньте от меня
             </label>
         )}
     </div>;

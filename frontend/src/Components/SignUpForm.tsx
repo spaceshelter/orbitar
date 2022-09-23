@@ -106,9 +106,9 @@ export default function SignUpForm(props: SignUpFormProps) {
                 <div className={styles.passwordStrengthContainer}>
                     <PasswordStrengthComponent password={password.current as string} onUpdate={onPasswordStrengthUpdate} />
                 </div>
+                <WeakPasswordConfirmation onConfirmationChanged={weakPasswordConfirmationChanged} passwordStrength={passwordStrength} />
                 <div><input type="submit" disabled={!formReady()} value="Поехали!" /></div>
                 {props.errors.submit && <p className={styles.error}>{props.errors.submit.message}</p>}
-                <WeakPasswordConfirmation onConfirmationChanged={weakPasswordConfirmationChanged} passwordStrength={passwordStrength} />
             </form>
         </div>
     );
