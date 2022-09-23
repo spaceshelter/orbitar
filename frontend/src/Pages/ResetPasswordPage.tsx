@@ -1,5 +1,5 @@
 import {useParams, Link} from 'react-router-dom';
-import React, {useState, useEffect, useCallback} from 'react';
+import React, {useState, useEffect} from 'react';
 import {useForm, SubmitHandler} from 'react-hook-form';
 import styles from './ResetPasswordPage.module.scss';
 import {useAPI} from '../AppState/AppState';
@@ -40,9 +40,9 @@ export default function ResetPasswordPage() {
             .catch(() => setLinkInvalid(true));
     }, [code, api]);
 
-    const onPasswordStrengthUpdate = useCallback((newStrength: PasswordStrength | undefined) => {
+    const onPasswordStrengthUpdate = (newStrength: PasswordStrength | undefined) => {
         setNewPasswordStrength(newStrength);
-    }, []);
+    };
 
     const { register: registerReset, handleSubmit: handleSubmitReset, formState: { isValid: isValidReset } } = useForm<ResetPasswordForm>({
         mode: 'onChange'

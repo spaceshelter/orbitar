@@ -1,5 +1,5 @@
 import {SubmitHandler, useForm} from 'react-hook-form';
-import React, {useRef, useCallback, useState} from 'react';
+import React, {useRef, useState} from 'react';
 import styles from './SignUpForm.module.css';
 import {UserGender} from '../Types/UserInfo';
 import PasswordStrengthComponent from '../Components/PasswordStrengthComponent';
@@ -40,9 +40,9 @@ export default function SignUpForm(props: SignUpFormProps) {
     const password = useRef({});
     password.current = watch('password1', '');
 
-    const onPasswordStrengthUpdate = useCallback((newStrength: PasswordStrength | undefined) => {
+    const onPasswordStrengthUpdate = (newStrength: PasswordStrength | undefined) => {
         setPasswordStrength(newStrength);
-    }, []);
+    };
 
     const formReady = () => {
         return isValid && !props.disabled && (passwordStrength === PasswordStrength.Strong || isWeakPasswordConfirmed);
