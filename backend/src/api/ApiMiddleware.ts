@@ -100,5 +100,5 @@ export const joiUsername = Joi.string().regex(/^[a-zа-я0-9_-]{2,30}$/i);
 export const joiPassword = Joi.string().min(6);
 export const joiFormat = Joi.valid('html', 'source').default('html');
 
-export const joiSite = Joi.string().regex(/^[a-z\d-]$/i).min(siteDomainMinLengthChars).max(siteDomainMaxLengthChars);
+export const joiSite = Joi.string().min(siteDomainMinLengthChars).max(siteDomainMaxLengthChars).regex(/^[a-z\d-]*$/i);
 export const joiSiteName = Joi.string().min(siteNameMinLengthChars).max(siteNameMaxLengthChars);

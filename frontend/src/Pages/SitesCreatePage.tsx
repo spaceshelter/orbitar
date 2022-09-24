@@ -52,6 +52,8 @@ export const SitesCreatePage = () => {
                 }
                 else if (err.code === 'site-exists') {
                     setDomainError('Такой подсайт уже существует!');
+                } else {
+                    setDomainError('Произошла ужасная ошибка!');
                 }
             }
             console.error('Create site error', err);
