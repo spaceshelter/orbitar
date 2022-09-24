@@ -40,11 +40,12 @@ input[type="submit"], .button {
   font-weight: bold;
 
   &:hover{
-    background: var(--button-hover-bg);
+    background: var(--primary);
   }
   &:disabled{
-    background: var(--button-dis-bg);
-    color: var(--button-dis-fg);
+    background: var(--primaryGhost);
+    color: var(--onAccentGhost);
+    cursor: default;
   }
 }
 
@@ -68,7 +69,8 @@ blockquote {
   background-color: var(--dim1);
   position: relative;
 
-  &::before {
+  &::before {//TODO replace icon with font
+
     /* somewhat hacky implementation for icon color, source: https://stackoverflow.com/a/42317014/1349366 */
     content: '';
     -webkit-mask: url('./Assets/quote.svg') no-repeat 50% 50%;
@@ -121,7 +123,6 @@ img.low-rating, video.low-rating, iframe.low-rating {
   from {
     background-color: transparent;
   }
-
   to {
     background-color: var(--highlight-bg);
   }

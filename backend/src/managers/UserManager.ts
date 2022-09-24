@@ -10,6 +10,9 @@ import {PushSubscription} from 'web-push';
 import {RedisClientType} from 'redis';
 import PostRepository from '../db/repositories/PostRepository';
 import CommentRepository from '../db/repositories/CommentRepository';
+import {sendResetPasswordEmail} from '../utils/Mailer';
+import {SiteConfig} from '../config';
+import {Logger} from 'winston';
 import {FeedSorting} from '../api/types/entities/common';
 
 export default class UserManager {
@@ -21,13 +24,16 @@ export default class UserManager {
     private notificationManager: NotificationManager;
     private webPushRepository: WebPushRepository;
     private readonly redis: RedisClientType;
-
+    private siteConfig: SiteConfig;
     private cacheId: Record<number, UserInfo> = {};
     private cacheUsername: Record<string, UserInfo> = {};
     private cacheLastVisit: Record<number, Date> = {};
+    private readonly logger: Logger;
+    private readonly mailLogger: Logger;
 
     constructor(credentialsRepository: UserCredentials, userRepository: UserRepository, voteRepository: VoteRepository,
-                commentRepository: CommentRepository,  postRepository: PostRepository,  webPushRepository: WebPushRepository, notificationManager: NotificationManager, redis: RedisClientType) {
+                commentRepository: CommentRepository,  postRepository: PostRepository,  webPushRepository: WebPushRepository,
+                notificationManager: NotificationManager, redis: RedisClientType, siteConfig: SiteConfig, logger: Logger) {
         this.credentialsRepository = credentialsRepository;
         this.userRepository = userRepository;
         this.voteRepository = voteRepository;
@@ -36,6 +42,9 @@ export default class UserManager {
         this.notificationManager = notificationManager;
         this.webPushRepository = webPushRepository;
         this.redis = redis;
+        this.siteConfig = siteConfig;
+        this.logger = logger;
+        this.mailLogger = logger.child({service: 'MAIL'});
     }
 
     async getById(userId: number): Promise<UserInfo | undefined> {
@@ -359,6 +368,42 @@ export default class UserManager {
             name: rawUser.name,
             registered: rawUser.registered_at,
         };
+    }
+
+    async sendResetPasswordEmail(email: string): Promise<boolean> {
+        email = email.toLowerCase();
+        const user = await this.userRepository.getUserByEmail(email);
+        if (!user) {
+            this.logger.error(`Failed to find user by email: ` + email);
+            return false;
+        }
+        const code = await this.userRepository.generateAndSavePasswordResetForUser(user.user_id);
+        if (!code) {
+            this.logger.error(`Failed to generate password reset code for email: ` + email);
+            return false;
+        }
+        return sendResetPasswordEmail(user.username, email, code, this.siteConfig, this.mailLogger);
+    }
+
+    async setNewPassword(password: string, code: string): Promise<boolean> {
+        const userId = await this.checkIfPasswordResetCodeExists(code);
+        if (!userId) {
+            return false;
+        }
+        const passwordHash = await bcrypt.hash(password, 10);
+        return (
+            await this.userRepository.updatePassword(passwordHash, userId) &&
+            await this.userRepository.clearResetPasswordCode(code, userId) &&
+            await this.userRepository.clearResetPasswordExpiredLinks()
+        );
+    }
+
+    async checkIfPasswordResetCodeExists(code: string): Promise<number | undefined> {
+        const user = await this.userRepository.getResetPasswordUserIdByResetCode(code);
+        if (!user?.user_id) {
+            return undefined;
+        }
+        return user.user_id;
     }
 
     async saveFeedSorting(site: string, feedSorting: FeedSorting, userId: number) {

@@ -1,7 +1,11 @@
 import {SubmitHandler, useForm} from 'react-hook-form';
-import React, {useRef} from 'react';
-import styles from './SignUpForm.module.css';
+import React, {useRef, useState} from 'react';
+import styles from './SignUpForm.module.scss';
 import {UserGender} from '../Types/UserInfo';
+import PasswordStrengthComponent from '../Components/PasswordStrengthComponent';
+import {PasswordStrength} from '../Types/PasswordStrength';
+import WeakPasswordConfirmation from './WeakPasswordConfirmation';
+import classNames from 'classnames';
 
 type SignUpFormValues = {
     username: string;
@@ -31,8 +35,28 @@ export default function SignUpForm(props: SignUpFormProps) {
         mode: 'onChange'
     });
 
+    const [passwordStrength, setPasswordStrength] = useState<PasswordStrength | undefined>(undefined);
+    const [isWeakPasswordConfirmed, setIsWeakPasswordConfirmed] = useState(false);
+    const [passwordShown, setPasswordShown] = useState(false);
+
     const password = useRef({});
     password.current = watch('password1', '');
+
+    const formReady = () => {
+        if (passwordStrength === PasswordStrength.TooWeak) {
+            return false;
+        }
+        return isValid && !props.disabled && (passwordStrength === PasswordStrength.Strong || isWeakPasswordConfirmed);
+    };
+
+    const weakPasswordConfirmationChanged = (e: React.FormEvent<HTMLInputElement>) => {
+        setIsWeakPasswordConfirmed(e.currentTarget.checked);
+    };
+
+    const togglePassword = () => {
+        setPasswordShown(!passwordShown);
+    };
+
     const onSubmit: SubmitHandler<SignUpFormValues> = data => {
         props.onSignUp(data.username, data.name, data.email, data.password1, UserGender.fluid);
     };
@@ -71,21 +95,27 @@ export default function SignUpForm(props: SignUpFormProps) {
                 {errors.email && <p className={styles.error}>{errors.email.message}</p>}
 
                 <label>Пароль</label>
-                <input type="password" {...register('password1', {
+                <input type={passwordShown ? 'text' : 'password'} {...register('password1', {
                     required: 'Пароль жизненно важен',
                     disabled: props.disabled
                 })} />
+                <span className={classNames('i', passwordShown ? 'i-hide' : 'i-eye', styles.togglePass)} onClick={togglePassword}></span>
                 {errors.password1 && <p className={styles.error}>{errors.password1.message}</p>}
 
                 <label>Пароль ещё раз</label>
-                <input type="password" {...register('password2', {
-                    required: true,
+                <input type={passwordShown ? 'text' : 'password'} {...register('password2', {
+                    required: 'Повторение мать учения',
                     validate: value => value === password.current || 'Пароли должны совпадать',
                     disabled: props.disabled
                 })} />
+                <span className={classNames('i', passwordShown ? 'i-hide' : 'i-eye', styles.togglePass)} onClick={togglePassword}></span>
                 {errors.password2 && <p className={styles.error}>{errors.password2.message}</p>}
 
-                <div><input type="submit" disabled={!isValid || props.disabled} value="Поехали!" /></div>
+                <div className={styles.passwordStrengthContainer}>
+                    <PasswordStrengthComponent password={password.current as string} onUpdate={setPasswordStrength} />
+                </div>
+                <WeakPasswordConfirmation onConfirmationChanged={weakPasswordConfirmationChanged} passwordStrength={passwordStrength} />
+                <div><input type="submit" disabled={!formReady()} value="Поехали!" /> </div>
                 {props.errors.submit && <p className={styles.error}>{props.errors.submit.message}</p>}
             </form>
         </div>
