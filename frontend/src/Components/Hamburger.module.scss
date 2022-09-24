@@ -1,0 +1,34 @@
+.hamburger {
+    padding-top: 2px;
+    rect {
+        display: block;
+        position: absolute;
+        fill: var(--fgSoft);
+        transition: transform 0.25s ease-in-out, fill 0.3s ease;
+        &:nth-child(1) {
+            transform-origin: 20% 34%;
+        }
+        &:nth-child(2) {
+            transform-origin: 50% 50%;
+        }
+        &:nth-child(3) {
+            transform-origin: 24% 64%;
+        }
+    }
+    &:hover rect {
+        fill: var(--primaryHover);
+    }
+    &.open {
+        rect {
+            &:nth-child(1) {
+                transform: rotate(45deg) scale(1.13, 1.6);
+            }
+            &:nth-child(2) {
+                transform: scale(0, 1);
+            }
+            &:nth-child(3) {
+                transform: rotate(-45deg) scale(1.13, 1.6);
+            }
+        }
+    }
+}

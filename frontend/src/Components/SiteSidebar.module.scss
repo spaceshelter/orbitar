@@ -8,6 +8,8 @@
     background: var(--glass);
     backdrop-filter: blur(3px);
     z-index: 99;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
 .container {
@@ -20,6 +22,8 @@
     overflow-y: auto;
     overflow-x: hidden;
     z-index: 100;
+    transform: translateX(-110%);
+    transition: transform 0.3s ease;
 
     :global {
         .fixed {
@@ -83,6 +87,20 @@
                 color: var(--linkHover);
             }
         }
+    }
+}
+
+.sidebar {
+    pointer-events: none;
+}
+
+.sidebar.open {
+    pointer-events: all;
+    .fade {
+        opacity: 1;
+    }
+    .container {
+        transform: translateX(0%);
     }
 }
 
