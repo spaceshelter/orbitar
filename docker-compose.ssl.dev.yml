@@ -17,15 +17,16 @@ services:
 
   mysql:
     platform: linux/amd64
-    build:
-      context: mysql
+    image: mysql:5.7
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
       - mysql_db:/var/lib/mysql
+      - $PWD/mysql/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
     ports:
       - "3306:3306"
+      - "33060:33060"
 
   redis:
     image: redis:7
