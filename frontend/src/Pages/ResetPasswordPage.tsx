@@ -40,10 +40,6 @@ export default function ResetPasswordPage() {
             .catch(() => setLinkInvalid(true));
     }, [code, api]);
 
-    const onPasswordStrengthUpdate = (newStrength: PasswordStrength | undefined) => {
-        setNewPasswordStrength(newStrength);
-    };
-
     const { register: registerReset, handleSubmit: handleSubmitReset, formState: { isValid: isValidReset } } = useForm<ResetPasswordForm>({
         mode: 'onChange'
     });
@@ -134,7 +130,7 @@ export default function ResetPasswordPage() {
                             })}
                             />
                             <div className={styles.passwordStrengthContainer}>
-                                <PasswordStrengthComponent password={newPassword} onUpdate={onPasswordStrengthUpdate} />
+                                <PasswordStrengthComponent password={newPassword} onUpdate={setNewPasswordStrength} />
                             </div>
                             <WeakPasswordConfirmation passwordStrength={newPasswordStrength} onConfirmationChanged={weakPasswordConfirmationChanged} />
                             <div><input type="submit" disabled={!newPasswordFormReady()} value="Поехали!" /></div>

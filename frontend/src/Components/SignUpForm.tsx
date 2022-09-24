@@ -40,10 +40,6 @@ export default function SignUpForm(props: SignUpFormProps) {
     const password = useRef({});
     password.current = watch('password1', '');
 
-    const onPasswordStrengthUpdate = (newStrength: PasswordStrength | undefined) => {
-        setPasswordStrength(newStrength);
-    };
-
     const formReady = () => {
         if (passwordStrength === PasswordStrength.TooWeak) {
             return false;
@@ -107,7 +103,7 @@ export default function SignUpForm(props: SignUpFormProps) {
                 })} />
                 {errors.password2 && <p className={styles.error}>{errors.password2.message}</p>}
                 <div className={styles.passwordStrengthContainer}>
-                    <PasswordStrengthComponent password={password.current as string} onUpdate={onPasswordStrengthUpdate} />
+                    <PasswordStrengthComponent password={password.current as string} onUpdate={setPasswordStrength} />
                 </div>
                 <WeakPasswordConfirmation onConfirmationChanged={weakPasswordConfirmationChanged} passwordStrength={passwordStrength} />
                 <div><input type="submit" disabled={!formReady()} value="Поехали!" /></div>
