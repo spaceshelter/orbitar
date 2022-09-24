@@ -30,4 +30,5 @@ export type UserRestrictionsResponse = {
     canVoteKarma: boolean;
     canInvite: boolean;
     canEditOwnContent: boolean;
+    canCreateSubsites: boolean;
 };

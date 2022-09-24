@@ -20,8 +20,7 @@ export const SitesCreatePage = () => {
         if (e.target.value && !e.target.value.match(domainValidationRegex)) {
             setDomainError(
               `Только строчные латинские буквы, цифры и минус! ` +
-              `И не более ${Conf.SITE_DOMAIN_MAX_LENGTH_CHARS} символов. ` +
-              `Да, и ещё не менее ${Conf.SITE_DOMAIN_MIN_LENGTH_CHARS} символов. `
+              `От ${Conf.SITE_DOMAIN_MIN_LENGTH_CHARS} до ${Conf.SITE_DOMAIN_MAX_LENGTH_CHARS} символов.`
             );
         }
         else if (domainError) {
