@@ -2,7 +2,7 @@ import {Router} from 'express';
 import UserManager from '../managers/UserManager';
 import rateLimit from 'express-rate-limit';
 import {Logger} from 'winston';
-import {APIRequest, APIResponse, validate} from './ApiMiddleware';
+import {APIRequest, APIResponse, joiPassword, validate} from './ApiMiddleware';
 import Joi from 'joi';
 import {UserEntity} from './types/entities/UserEntity';
 import {AuthSignInRequest, AuthSignInResponse} from './types/requests/AuthSignIn';
@@ -52,7 +52,7 @@ export default class AuthController {
         });
 
         const newPasswordSchema = Joi.object<AuthNewPasswordRequest>({
-            password: Joi.string().required(),
+            password: joiPassword.required(),
             code: Joi.string().required().min(64).max(64)
         });
 

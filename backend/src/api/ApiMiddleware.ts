@@ -91,5 +91,6 @@ export function validate<ReqBody, ResPayload>(schema: ObjectSchema<ReqBody>): AP
 }
 
 export const joiUsername = Joi.string().regex(/^[a-zа-я0-9_-]{2,30}$/i);
+export const joiPassword = Joi.string().min(6);
 export const joiFormat = Joi.valid('html', 'source').default('html');
 export const joiSite = Joi.string().regex(/^[a-z\d-]{3,10}$/i);
