@@ -9,9 +9,15 @@ interface PasswordStrengthProps {
 }
 
 export default function PasswordStrengthComponent(props: PasswordStrengthProps) {
-    const newPasswordStrength = passwordStrength(props.password);
+    let newPasswordStrength = passwordStrength(props.password).id;
+    // TODO: find a better password strength library, as this one doesn't account for passphrases https://xkcd.com/936/
+    if (newPasswordStrength === PasswordStrength.TooWeak && props.password.length >= 12 &&
+        props.password.search(/\S\s+\S/) !== -1) {
+        newPasswordStrength = PasswordStrength.Weak;
+    }
+
     useEffect(() => {
-        props.onUpdate(!props.password ? undefined : newPasswordStrength.id);
+        props.onUpdate(!props.password ? undefined : newPasswordStrength);
     });
     let meterClassName, label;
     let showHint = false;
@@ -19,22 +25,22 @@ export default function PasswordStrengthComponent(props: PasswordStrengthProps) 
         case !props.password:
             label = ' ';
             break;
-        case newPasswordStrength.id === PasswordStrength.TooWeak:
+        case newPasswordStrength === PasswordStrength.TooWeak:
             meterClassName = styles.tooWeak;
             label = 'Очень слабый пароль';
             showHint = true;
             break;
-        case newPasswordStrength.id === PasswordStrength.Weak:
+        case newPasswordStrength === PasswordStrength.Weak:
             meterClassName = styles.weak;
             label = 'Слабый пароль';
             showHint = true;
             break;
-        case newPasswordStrength.id === PasswordStrength.Medium:
+        case newPasswordStrength === PasswordStrength.Medium:
             meterClassName = styles.medium;
             label = 'Средний пароль';
             showHint = true;
             break;
-        case newPasswordStrength.id === PasswordStrength.Strong:
+        case newPasswordStrength === PasswordStrength.Strong:
             meterClassName = styles.strong;
             label = 'Это отличный пароль! Вы молодец!';
             break;
