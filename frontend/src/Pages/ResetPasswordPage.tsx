@@ -141,7 +141,7 @@ export default function ResetPasswordPage() {
                             /><span className={classNames('i', passwordShown ? 'i-hide' : 'i-eye', styles.togglePass)} onClick={togglePassword}></span>
 
                             <div className={styles.passwordStrengthContainer}>
-                                <PasswordStrengthComponent password={newPassword} onUpdate={onPasswordStrengthUpdate} />
+                                <PasswordStrengthComponent password={newPassword} onUpdate={setNewPasswordStrength} />
                             </div>
                             <WeakPasswordConfirmation passwordStrength={newPasswordStrength} onConfirmationChanged={weakPasswordConfirmationChanged} />
                             <div><input type="submit" disabled={!newPasswordFormReady()} value="Поехали!" /></div>
