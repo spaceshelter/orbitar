@@ -16,7 +16,7 @@ export default function WeakPasswordConfirmation(props: WeakPasswordConfirmation
             <div className={styles.weakPasswordConfirmationContainer}>
                 <input id="check1" type='checkbox' onChange={props.onConfirmationChanged} />
                 <label htmlFor="check1" className={styles.weakPasswordConfirmationLabel}>
-                    Я понимаю что пароль слабый, но я люблю риск, отстаньте от меня
+                    Я понимаю, что пароль слабый, но я люблю риск! Отстаньте от меня!
                 </label>
             </div>
     }
