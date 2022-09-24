@@ -4,6 +4,7 @@ import SignUpForm, {SignUpFormErrors} from '../Components/SignUpForm';
 import {useNavigate, useParams} from 'react-router-dom';
 import {APIError} from '../API/APIBase';
 import {UserGender} from '../Types/UserInfo';
+import styles from './InvitePage.module.scss';
 
 enum InviteState {
     unknown,
@@ -21,7 +22,7 @@ export default function InvitePage() {
     const {code} = useParams<{code: string}>();
     const navigate = useNavigate();
 
-    document.title = 'Вы — гений!';
+    document.title = 'Вход в луна-парк!';
 
     useEffect(() => {
         if (!code) {
@@ -89,8 +90,8 @@ export default function InvitePage() {
             { inviteStatus.state === InviteState.rateLimit && <div>Что-то вы зачастили! Попробуйте попозже.</div> }
             { inviteStatus.state === InviteState.error && <div>Произошла чудовищная ошибка! Попробуйте попозже.</div> }
             { inviteStatus.state === InviteState.active &&
-                <div>
-                    <div>Приглашение от {inviteStatus.username}</div>
+                <div className={styles.wrapper}>
+                    <div className={styles.info}>Приглашение от {inviteStatus.username}</div>
                     <SignUpForm onSignUp={handleSignUp} disabled={formDisabled} errors={formErrors} />
                 </div>
             }

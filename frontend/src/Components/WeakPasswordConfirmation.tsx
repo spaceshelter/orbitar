@@ -11,11 +11,14 @@ export default function WeakPasswordConfirmation(props: WeakPasswordConfirmation
     if (props.passwordStrength === PasswordStrength.TooWeak) {
         return <></>;
     }
-    return <div className={styles.weakPasswordConfirmationContainer}>
-        {props.passwordStrength !== PasswordStrength.Strong && props.passwordStrength !== undefined && (
-            <label className={styles.weakPasswordConfirmationLabel}>
-                <input type='checkbox' onChange={props.onConfirmationChanged} /> я понял, что пароль слаб, люблю жить опасно, отстаньте от меня
-            </label>
-        )}
-    </div>;
+    return  <>
+    {props.passwordStrength !== PasswordStrength.Strong && props.passwordStrength !== undefined &&
+            <div className={styles.weakPasswordConfirmationContainer}>
+                <input id="check1" type='checkbox' onChange={props.onConfirmationChanged} />
+                <label htmlFor="check1" className={styles.weakPasswordConfirmationLabel}>
+                    Я понимаю что пароль слабый, но я люблю риск, отстаньте от меня
+                </label>
+            </div>
+    }
+    </>;
 }

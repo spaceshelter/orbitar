@@ -16,23 +16,23 @@ export default function PasswordStrengthComponent(props: PasswordStrengthProps) 
     let meterClassName, label;
     switch (true) {
         case !props.password:
-            label = 'Без пароля никак';
+            label = ' ';
             break;
         case newPasswordStrength.id === PasswordStrength.TooWeak:
             meterClassName = styles.tooWeak;
-            label = 'Очень слабый пароль';
+            label = 'Очень слабый пароль (хороший пароль должен быть достаточно длинным, и состоять из строчных и заглавных букв, цифр и символов)';
             break;
         case newPasswordStrength.id === PasswordStrength.Weak:
             meterClassName = styles.weak;
-            label = 'Слабый пароль';
+            label = 'Слабый пароль (хороший пароль должен быть достаточно длинным, и состоять из строчных и заглавных букв, цифр и символов)';
             break;
         case newPasswordStrength.id === PasswordStrength.Medium:
             meterClassName = styles.medium;
-            label = 'Средний пароль';
+            label = 'Средний пароль (хороший пароль должен быть достаточно длинным, и состоять из строчных и заглавных букв, цифр и символов)';
             break;
         case newPasswordStrength.id === PasswordStrength.Strong:
             meterClassName = styles.strong;
-            label = 'Хороший пароль! Вы молодец!';
+            label = 'Это отличный пароль! Вы молодец!';
             break;
     }
 

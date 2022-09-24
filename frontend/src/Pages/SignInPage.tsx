@@ -1,9 +1,10 @@
 import React, {useState} from 'react';
-import styles from './SignInPage.module.css';
+import styles from './SignInPage.module.scss';
 import {useForm, SubmitHandler} from 'react-hook-form';
 import {useAPI} from '../AppState/AppState';
 import {useLocation, useNavigate, Link} from 'react-router-dom';
 import {APIError} from '../API/APIBase';
+import classNames from 'classnames';
 
 type SignInForm = {
     username: string;
@@ -16,12 +17,17 @@ export default function SignInPage() {
     const location = useLocation();
     const [isSigningIn, setSigningIn] = useState(false);
     const [error, setError] = useState<string>();
+    const [passwordShown, setPasswordShown] = useState(false);
 
     document.title = 'Вход';
 
     const { register, handleSubmit, formState: { errors, isValid } } = useForm<SignInForm>({
         mode: 'onChange'
     });
+
+    const togglePassword = () => {
+        setPasswordShown(!passwordShown);
+    };
 
     const onSubmit: SubmitHandler<SignInForm> = data => {
         setSigningIn(true);
@@ -54,9 +60,11 @@ export default function SignInPage() {
                 {errors.username && <p className={styles.error}>{errors.username.message}</p>}
 
                 <label>Пароль</label>
-                <input type="password" {...register('password', {
+                <input type={passwordShown ? 'text' : 'password'} {...register('password', {
                     required: 'Дальше вы не пройдёте, пока не покажете бумаги'
                 })} />
+                <span className={classNames('i', passwordShown ? 'i-hide' : 'i-eye', styles.togglePass)} onClick={togglePassword}></span>
+
                 {errors.password && <p className={styles.error}>{errors.password.message}</p>}
 
                 <div><input type="submit" disabled={!isValid || isSigningIn} value="Войти" /></div>

@@ -6,6 +6,7 @@ import {useAPI} from '../AppState/AppState';
 import PasswordStrengthComponent from '../Components/PasswordStrengthComponent';
 import {PasswordStrength} from '../Types/PasswordStrength';
 import WeakPasswordConfirmation from '../Components/WeakPasswordConfirmation';
+import classNames from 'classnames';
 
 type ResetPasswordForm = {
     email: string;
@@ -30,6 +31,7 @@ export default function ResetPasswordPage() {
     const [newPassword, setNewPassword] = useState<string>('');
     const [newPasswordStrength, setNewPasswordStrength] = useState<PasswordStrength | undefined>(undefined);
     const [isWeakPasswordConfirmed, setIsWeakPasswordConfirmed] = useState(false);
+    const [passwordShown, setPasswordShown] = useState(false);
 
     useEffect(() => {
         if (!code) {
@@ -42,6 +44,9 @@ export default function ResetPasswordPage() {
 
     const onPasswordStrengthUpdate = (newStrength: PasswordStrength | undefined) => {
         setNewPasswordStrength(newStrength);
+    };
+    const togglePassword = () => {
+        setPasswordShown(!passwordShown);
     };
 
     const { register: registerReset, handleSubmit: handleSubmitReset, formState: { isValid: isValidReset } } = useForm<ResetPasswordForm>({
@@ -114,16 +119,17 @@ export default function ResetPasswordPage() {
                     !isNewPasswordCreated && (
                         <form onSubmit={handleSubmitNewPassword(onNewPasswordSubmit)}>
                             <label>Пароль</label>
-                            <input type="password" {...registerNewPassword('password1', {
+                            <input type={passwordShown ? 'text' : 'password'} {...registerNewPassword('password1', {
                                 required: true
                             })}
                                 onChange={(e) => {
                                     setNewPassword(e.currentTarget.value);
                                     setNewPasswordError('');
                                 }}
-                            />
+                            /><span className={classNames('i', passwordShown ? 'i-hide' : 'i-eye', styles.togglePass)} onClick={togglePassword}></span>
+
                             <label>Пароль ещё раз</label>
-                            <input type="password" {...registerNewPassword('password2', {
+                            <input type={passwordShown ? 'text' : 'password'} {...registerNewPassword('password2', {
                                 required: true,
                                 validate: (value: string) => {
                                     if (value !== newPassword) {
@@ -132,7 +138,8 @@ export default function ResetPasswordPage() {
                                     return true;
                                 }
                             })}
-                            />
+                            /><span className={classNames('i', passwordShown ? 'i-hide' : 'i-eye', styles.togglePass)} onClick={togglePassword}></span>
+
                             <div className={styles.passwordStrengthContainer}>
                                 <PasswordStrengthComponent password={newPassword} onUpdate={onPasswordStrengthUpdate} />
                             </div>
@@ -161,25 +168,33 @@ export default function ResetPasswordPage() {
 
     return (
         <div className={styles.resetPassword}>
-            <h2>Забыли пароль? Или хотите его поменять?</h2>
-            <form onSubmit={handleSubmitReset(onResetSubmit)}>
-                <div className={styles.resetInfo}>Введите ваш емейл. На него придёт ссылка на сброс пароля</div>
-                <input type="text" placeholder="ваш e-mail адрес" {...registerReset('email', {
-                    required: 'Нужен емейл, чтобы отправить на него ссылку для сброса пароля.'
-                })} />
-                <div><input type="submit" disabled={!isValidReset || isResetting} value="Сбросить пароль"/></div>
-                {resetError && <p className={styles.error}>{resetError}</p>}
-            </form>
+            {
+                !isResetSent && <div>
+                    <h2>Забыли пароль? Или хотите его поменять?</h2>
+                    <form onSubmit={handleSubmitReset(onResetSubmit)}>
+                        <div className={styles.resetInfo}>Введите емейл с которым вы создавали свой аккаунт. На него придёт ссылка на сброс пароля.</div>
+                        <input type="text" placeholder="e-mail" {...registerReset('email', {
+                            required: 'Нужен емейл, чтобы отправить на него ссылку для сброса пароля.'
+                        })} />
+                        {resetError && <p className={styles.error}>{resetError}</p>}
+                        <div><input type="submit" disabled={!isValidReset || isResetting} value="Сбросить пароль"/></div>
+
+                    </form>
+                </div>
+            }
+            {
+                isResetSent && <div className={styles.resetSent}>
+                  <h2>Проверьте почту</h2>
+                  <p>Письмо со ссылкой на сброс пароля отправлено вам на почту. Если не пришло, проверьте папку Спам.</p>
+                  <p>Если всё ещё не пришло, и вы пользуетесь Gmail, проверьте вкладки Promotions (Промоакции) и Updates (Обновления).</p>
+                  <p>Если совсем не приходит, напишите нам на почту <a href='mailto:orbitar.space@gmail.com'>orbitar.space@gmail.com</a>, что-нибудь придумаем.</p>
+                </div>
+            }
+
             <div className={styles.resetLink}>
                 <Link to='/'>Назад к логину</Link>
             </div>
-            {
-                isResetSent && <div className={styles.resetSent}>
-                <p>Письмо со ссылкой на сброс пароля отправлено вам на почту. Если не пришло, проверьте папку Спам.</p>
-                <p>Если всё ещё не пришло, и вы пользуетесь Gmail, проверьте вкладку Promotions (Промоакции).</p>
-                <p>Если совсем не приходит, напишите нам на почту <a href='mailto:orbitar.space@gmail.com'>orbitar.space@gmail.com</a>, что-нибудь придумаем.</p>
-              </div>
-            }
+
         </div>
     );
 }
