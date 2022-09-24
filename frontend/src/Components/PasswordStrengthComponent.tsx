@@ -14,21 +14,25 @@ export default function PasswordStrengthComponent(props: PasswordStrengthProps) 
         props.onUpdate(!props.password ? undefined : newPasswordStrength.id);
     });
     let meterClassName, label;
+    let showHint = false;
     switch (true) {
         case !props.password:
             label = ' ';
             break;
         case newPasswordStrength.id === PasswordStrength.TooWeak:
             meterClassName = styles.tooWeak;
-            label = 'Очень слабый пароль (хороший пароль должен быть достаточно длинным, и состоять из строчных и заглавных букв, цифр и символов)';
+            label = 'Очень слабый пароль';
+            showHint = true;
             break;
         case newPasswordStrength.id === PasswordStrength.Weak:
             meterClassName = styles.weak;
-            label = 'Слабый пароль (хороший пароль должен быть достаточно длинным, и состоять из строчных и заглавных букв, цифр и символов)';
+            label = 'Слабый пароль';
+            showHint = true;
             break;
         case newPasswordStrength.id === PasswordStrength.Medium:
             meterClassName = styles.medium;
-            label = 'Средний пароль (хороший пароль должен быть достаточно длинным, и состоять из строчных и заглавных букв, цифр и символов)';
+            label = 'Средний пароль';
+            showHint = true;
             break;
         case newPasswordStrength.id === PasswordStrength.Strong:
             meterClassName = styles.strong;
@@ -39,5 +43,6 @@ export default function PasswordStrengthComponent(props: PasswordStrengthProps) 
     return <div className={styles.container}>
         <div className={styles.meter + ' ' + meterClassName}></div>
         <div className={styles.label}>{label}</div>
+        {showHint && <div className={styles.hint}>(хороший пароль должен быть достаточно длинным, и состоять из строчных и заглавных букв, цифр и символов)</div>}
     </div>;
 }
