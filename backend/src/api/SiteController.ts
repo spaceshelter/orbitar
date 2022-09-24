@@ -1,6 +1,6 @@
 import {Logger} from 'winston';
 import {Router} from 'express';
-import {APIRequest, APIResponse, validate} from './ApiMiddleware';
+import {APIRequest, APIResponse, joiSite, joiSiteName, validate} from './ApiMiddleware';
 import SiteManager from '../managers/SiteManager';
 import {SiteSubscribeRequest, SiteSubscribeResponse} from './types/requests/SiteSubscribe';
 import {SiteRequest, SiteResponse} from './types/requests/Site';
@@ -31,12 +31,6 @@ export default class SiteController {
         keyGenerator: (req) => String(req.session.data?.userId)
     });
 
-    // TODO: have a single source of truth with frontend/src/Conf.ts
-    private static readonly siteDomainMinLengthChars = 3;
-    private static readonly siteDomainMaxLengthChars = 15;
-    private static readonly siteNameMinLengthChars = 3;
-    private static readonly siteNameMaxLengthChars = 20;
-
     constructor(enricher: Enricher, feedManager: FeedManager, siteManager: SiteManager, userManager: UserManager, logger: Logger) {
         this.enricher = enricher;
         this.logger = logger;
@@ -56,10 +50,10 @@ export default class SiteController {
             main: Joi.boolean().default(false),
             bookmarks: Joi.boolean().default(false)
         });
-        const domainValidationRegex = new RegExp('^[a-z\\d-]{' + SiteController.siteDomainMinLengthChars + ',' + SiteController.siteDomainMaxLengthChars + '}$');
+
         const siteCreateSchema = Joi.object<SiteCreateRequest>({
-            site: Joi.string().regex(domainValidationRegex).required(),
-            name: Joi.string().min(SiteController.siteNameMinLengthChars).max(SiteController.siteNameMaxLengthChars).required()
+            site: joiSite.required(),
+            name: joiSiteName.required()
         });
 
         this.router.post('/site', validate(siteSchema), (req, res) => this.site(req, res));
