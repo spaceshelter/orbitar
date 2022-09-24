@@ -1,15 +1,17 @@
-import {useAPI} from '../AppState/AppState';
+import {useAPI, useAppState} from '../AppState/AppState';
 import React, {useEffect, useState} from 'react';
 import {toast} from 'react-toastify';
 import {SiteWithUserInfo} from '../Types/SiteInfo';
 import styles from './SitesPage.module.scss';
 import {Link} from 'react-router-dom';
 import {pluralize} from '../Utils/utils';
+import {observer} from 'mobx-react-lite';
 
-export const SitesPage = () => {
+export const SitesPage = observer(() => {
     const api = useAPI();
     const [sites, setSites] = useState<SiteWithUserInfo[]>([]);
     const [subsDisabled, setSubsDisabled] = useState(false);
+    const {userRestrictions} = useAppState();
 
     useEffect(() => {
         api.site.list(1, 1000)
@@ -18,6 +20,7 @@ export const SitesPage = () => {
                 console.error('Site list error', err);
                 toast.error('Не удалось загрузить список сайтов, увы.');
             });
+        api.user.refreshUserRestrictions();
     }, [api]);
 
     const handleSubscribe = async (site: string, value: boolean) => {
@@ -50,6 +53,7 @@ export const SitesPage = () => {
             }
             </div>
         </div>)}
-        <div><Link to='/sites/create'>Создать новый</Link></div>
+
+        {userRestrictions?.canCreateSubsites && <div><Link to="/sites/create">Создать новый</Link></div>}
     </div>;
-};
+});

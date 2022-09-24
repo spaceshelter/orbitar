@@ -90,7 +90,15 @@ export function validate<ReqBody, ResPayload>(schema: ObjectSchema<ReqBody>): AP
     };
 }
 
+// TODO: have a single source of truth with frontend/src/Conf.ts
+const siteDomainMinLengthChars = 3;
+const siteDomainMaxLengthChars = 15;
+const siteNameMinLengthChars = 3;
+const siteNameMaxLengthChars = 20;
+
 export const joiUsername = Joi.string().regex(/^[a-zа-я0-9_-]{2,30}$/i);
 export const joiPassword = Joi.string().min(6);
 export const joiFormat = Joi.valid('html', 'source').default('html');
-export const joiSite = Joi.string().regex(/^[a-z\d-]{3,10}$/i);
+
+export const joiSite = Joi.string().min(siteDomainMinLengthChars).max(siteDomainMaxLengthChars).regex(/^[a-z\d-]*$/i);
+export const joiSiteName = Joi.string().min(siteNameMinLengthChars).max(siteNameMaxLengthChars);
