@@ -184,7 +184,7 @@ export default function ResetPasswordPage() {
                   <h2>Проверьте почту</h2>
                   <p>Письмо со ссылкой на сброс пароля отправлено вам на почту. Если не пришло, проверьте папку Спам.</p>
                   <p>Если всё ещё не пришло, и вы пользуетесь Gmail, проверьте вкладки Promotions (Промоакции) и Updates (Обновления).</p>
-                  <p>Если совсем не приходит, напишите нам на почту <a href='mailto:orbitar.space@gmail.com'>orbitar.space@gmail.com</a>, что-нибудь придумаем.</p>
+                  <p>Если совсем не приходит, напишите нам на почту <a href='mailto:orbitar.help@gmail.com'>orbitar.help@gmail.com</a>, что-нибудь придумаем.</p>
                 </div>
             }
 
