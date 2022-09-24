@@ -42,9 +42,6 @@ export default function ResetPasswordPage() {
             .catch(() => setLinkInvalid(true));
     }, [code, api]);
 
-    const onPasswordStrengthUpdate = (newStrength: PasswordStrength | undefined) => {
-        setNewPasswordStrength(newStrength);
-    };
     const togglePassword = () => {
         setPasswordShown(!passwordShown);
     };
