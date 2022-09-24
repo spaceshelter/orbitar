@@ -19,7 +19,7 @@
 
 ### Разработка
 
-* [Локаьлный запуск в дебаг режиме](docs/local-develpoment.md)
+* [Локальный запуск в дебаг режиме](docs/local-develpoment.md)
 * [Организация .env переменных](docs/environment.md)
 
 
