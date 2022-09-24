@@ -7,13 +7,39 @@ on:
   pull_request:
     paths:
       - .github/workflows/build-docker-dev.yml
+      - docker-compose.dev.yml
+      - docker-compose.local.yml
+      - docker-compose.ssl.dev.yml
+      - docker-compose.ssl.local.yml
 
 jobs:
   build-docker:
     runs-on: ubuntu-latest
+    strategy:
+        matrix:
+            dc-file: [docker-compose.ssl.local.yml, docker-compose.local.yml]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
       - name: Build backend & frontend
-        run: docker-compose -f docker-compose.ssl.local.yml build --no-cache backend frontend
+        run: docker-compose -f ${{ matrix.dc-file }} build --no-cache backend frontend
+
+  validate-docker-compose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Validate docker-compose.dev.yml
+        run: docker-compose -f docker-compose.dev.yml config
+
+      - name: Validate docker-compose.ssl.dev.yml
+        run: docker-compose -f docker-compose.ssl.dev.yml config
+
+      - name: Validate docker-compose.local.yml
+        run: docker-compose -f docker-compose.local.yml config
+
+      - name: Validate docker-compose.ssl.local.yml
+        run: docker-compose -f docker-compose.ssl.local.yml config
+
