@@ -58,9 +58,7 @@ export default function InvitePage() {
                 setFormDisabled(false);
                 console.log('USE SUCCESS', result);
                 navigate('/');
-                api.init().then(() => {
-
-                });
+                api.init().then();
             })
             .catch(error => {
                 setFormDisabled(false);
