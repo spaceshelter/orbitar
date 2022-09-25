@@ -8,8 +8,9 @@ import {FeedType, useFeed} from '../API/use/useFeed';
 import {APIError} from '../API/APIBase';
 import {FeedSorting} from '../Types/FeedSortingSettings';
 import classNames from 'classnames';
+import {observer} from 'mobx-react-lite';
 
-export default function FeedPage() {
+const FeedPage = observer(() => {
     const { site, siteInfo } = useAppState();
     const api = useAPI();
 
@@ -92,6 +93,7 @@ export default function FeedPage() {
             </div>
         </div>
     );
-}
+});
 
+export default FeedPage;
 

@@ -34,6 +34,7 @@ export default function SignInPage() {
         api.auth.signIn(data.username, data.password)
             .then(() => {
                 navigate(location.pathname, {replace: true});
+                api.init().then();
             })
             .catch(error => {
                 setSigningIn(false);
