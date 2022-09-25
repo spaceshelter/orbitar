@@ -18,7 +18,9 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
 
     const api = useAPI();
     const [cachedComments, setCachedComments] = useCache<CommentInfo[]>('user-profile-comments', [props.username, page, perpage]);
+    const [cachedParentComments, setCachedParentComments] = useCache<Record<number, CommentInfo> | undefined>('user-profile-parent-comments', [props.username, page, perpage]);
     const [comments, setComments] = useState<CommentInfo[] | undefined>(cachedComments);
+    const [parentComments, setParentComments] = useState<Record<number, CommentInfo> | undefined>(cachedParentComments);
     const [loading, setLoading] = useState(true);
     const [pages, setPages] = useState(0);
     const [error, setError] = useState<string>();
@@ -28,12 +30,21 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
         setReloadIdx(reloadIdx + 1);
     };
 
+    const getParentComment = (commentId: number): CommentInfo | undefined => {
+        if (parentComments && parentComments[commentId]) {
+            return parentComments[commentId];
+        }
+        return undefined;
+    };
+
     useEffect(() => {
         api.userAPI.userComments(props.username, page, perpage).then(result => {
             setCachedComments(result.comments);
+            setCachedParentComments(result.parentComments);
             setError(undefined);
             setLoading(false);
             setComments(result.comments);
+            setParentComments(result.parentComments);
             const pages = Math.floor((result.total - 1) / perpage) + 1;
             setPages(pages);
         }).catch(error => {
@@ -49,11 +60,11 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
     return (
         <div className={styles.container}>
             <div className={styles.feed}>
-                {loading ? <div className={styles.loading}>Загрузка</div> :
+                {loading ? <div className={styles.loading}></div> :
                  <>
                     {error && <div className={styles.error}>{styles.error}</div> }
                      {comments ?
-                         comments.map(comment => <CommentComponent key={comment.id} comment={comment} showSite={comment.site !== 'main'} />)
+                         comments.map(comment => <CommentComponent idx={getParentComment(comment.parentComment) ? 1 : 0} parent={getParentComment(comment.parentComment)} key={comment.id} comment={comment} showSite={comment.site !== 'main'} />)
                          :
                          (
                              error ? <div className={styles.error}>{error}<div><button onClick={reload}>Повторить</button></div></div>

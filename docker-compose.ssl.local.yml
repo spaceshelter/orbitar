@@ -1,0 +1,66 @@
+version: '3.7'
+
+services:
+  caddy:
+    image: caddy
+    restart: unless-stopped
+    ports:
+      - "443:443"
+    environment:
+      SERVER_DOMAIN: ${SERVER_DOMAIN}
+      API_DOMAIN: ${API_DOMAIN}
+      IMGUR_CLIENT_ID: ${IMGUR_CLIENT_ID}
+    volumes:
+      - $PWD/caddy/Caddyfile.ssl.local:/etc/caddy/Caddyfile:ro
+      - $PWD/caddy/certs:/certs:ro
+      - frontend_build:/srv:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+
+  mysql:
+    platform: linux/amd64
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - mysql_db:/var/lib/mysql
+      - $PWD/mysql/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+
+  redis:
+    image: redis:7
+    restart: always
+    command: redis-server --save 20 1 --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+
+  frontend:
+    build:
+      context: frontend
+      args:
+        NODE_ENV: production
+        SERVER_DOMAIN: ${SERVER_DOMAIN}
+        API_DOMAIN: ${API_DOMAIN}
+    restart: "no"
+    volumes:
+      - frontend_build:/frontend
+
+  backend:
+    build:
+      context: backend
+    restart: always
+    environment:
+      SITE_DOMAIN: ${SERVER_DOMAIN}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      SENDING_BLUE_API_KEY: ${SENDING_BLUE_API_KEY}
+    depends_on:
+      - mysql
+
+volumes:
+  caddy_data:
+  caddy_config:
+  frontend_build:
+  mysql_db:
+  redis_data:

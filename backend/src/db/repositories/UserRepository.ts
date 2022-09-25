@@ -4,9 +4,12 @@ import {InviteRaw} from '../types/InviteRaw';
 import CodeError from '../../CodeError';
 import {OkPacket} from 'mysql2';
 import {UserGender} from '../../managers/types/UserInfo';
+import crypto from 'crypto';
+import {FeedSorting} from '../../api/types/entities/common';
 
 export default class UserRepository {
     private db: DB;
+    private passwordResetCodeLifeTime = '3 hour';
 
     constructor(db: DB) {
         this.db = db;
@@ -23,6 +26,53 @@ export default class UserRepository {
 
     async getUserByUsername(username: string): Promise<UserRaw | undefined> {
         return await this.db.fetchOne<UserRaw>('select * from users where username=:username', {username: username});
+    }
+
+    // TODO: need to decide if we want to encrypt email addresses
+    async getUserByEmail(email: string): Promise<UserRaw | undefined> {
+        return await this.db.fetchOne<UserRaw>('select * from users where email=:email', {email});
+    }
+
+    async generateAndSavePasswordResetForUser(userId: number): Promise<string | undefined> {
+        const code = crypto.createHash('sha256').update(Math.random().toString() + userId).digest('hex');
+        await this.db.insert('user_password_reset', {
+            user_id: userId.toString(),
+            code
+        });
+        return code;
+    }
+
+    async getResetPasswordUserIdByResetCode(code: string) {
+        return await this.db.fetchOne<{user_id: number}>('select user_id from user_password_reset where code=:code and generated_at > now() - interval ' + this.passwordResetCodeLifeTime, {
+            code
+        });
+    }
+
+    async updatePassword(passwordHash: string, userId: number) {
+        const result = await this.db.query('update users set password=:password_hash where user_id=:user_id', {
+            password_hash: passwordHash,
+            user_id: userId
+        }) as OkPacket;
+        if (result.affectedRows !== 1) {
+            throw 'Failed to update user password';
+        }
+        return true;
+    }
+
+    async clearResetPasswordCode(code: string, userId: number) {
+        const result = await this.db.query('delete from user_password_reset where code=:code or user_id=:user_id', {
+            code,
+            user_id: userId
+        }) as OkPacket;
+        if (result.affectedRows < 1) {
+            throw 'Failed to cleanup reset password code';
+        }
+        return true;
+    }
+
+    async clearResetPasswordExpiredLinks() {
+        await this.db.query(`delete from user_password_reset where generated_at < now() - interval ` + this.passwordResetCodeLifeTime);
+        return true;
     }
 
     async getUserParent(userId: number): Promise<UserRaw | undefined> {
@@ -95,7 +145,7 @@ export default class UserRepository {
 
     async getUserUnreadComments(forUserId: number): Promise<number> {
         const res = await this.db.fetchOne<{ cnt: string }>(`
-          select sum(p.comments - COALESCE(ub.read_comments, 0)) cnt
+          select sum(p.comments - ub.read_comments) cnt
             from
               user_bookmarks ub
               join posts p on (p.post_id = ub.post_id)
@@ -137,5 +187,21 @@ export default class UserRepository {
             where user_id = :user_id and visited_at > date_sub(now(), interval 7 day)
         `, {user_id: userId});
         return parseInt(res.cnt || '0') >= 3;
+    }
+
+    async saveFeedSorting(site: string, feedSorting: FeedSorting, userId: number) {
+        await this.db.query(`insert into feed_sorting_settings (user_id, site_id, feed_sorting) select :user_id, s.site_id, :feed_sorting from sites s where s.subdomain = :site on duplicate key update feed_sorting = :feed_sorting`, {
+            user_id: userId,
+            site: site,
+            feed_sorting: feedSorting
+        });
+    }
+
+    async getFeedSorting(userId: number, siteId: number): Promise<FeedSorting> {
+        const res = await this.db.fetchOne<{ feed_sorting: FeedSorting } | undefined>('select fss.feed_sorting from feed_sorting_settings fss where fss.user_id=:user_id and fss.site_id=:site_id', {user_id: userId, site_id: siteId});
+        if (!res) {
+            return FeedSorting.postCommentedAt;
+        }
+        return res.feed_sorting as FeedSorting;
     }
 }

@@ -8,18 +8,23 @@
     background: var(--glass);
     backdrop-filter: blur(3px);
     z-index: 99;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
 .container {
+    --sidebar-width: 200px;
     position: fixed;
-    max-width: 200px;
-    width: 200px;
+    max-width: var(--sidebar-width);
+    width: var(--sidebar-width);
     left: 0;
     top: 59px;
     bottom: 0;
     overflow-y: auto;
     overflow-x: hidden;
     z-index: 100;
+    transform: translateX(-110%);
+    transition: transform 0.3s ease;
 
     :global {
         .fixed {
@@ -72,6 +77,16 @@
             margin-top: 20px;
             overflow-y: auto;
             overflow-x: hidden;
+
+            div {
+                a {
+                    white-space: nowrap;
+                    display: inline-block;
+                    overflow: hidden;
+                    width: calc(var(--sidebar-width) - 20px);
+                    text-overflow: ellipsis;
+                }
+            }
         }
 
         .all-subsites {
@@ -83,6 +98,20 @@
                 color: var(--linkHover);
             }
         }
+    }
+}
+
+.sidebar {
+    pointer-events: none;
+}
+
+.sidebar.open {
+    pointer-events: all;
+    .fade {
+        opacity: 1;
+    }
+    .container {
+        transform: translateX(0%);
     }
 }
 

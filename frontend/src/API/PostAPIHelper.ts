@@ -4,16 +4,19 @@ import {SiteInfo} from '../Types/SiteInfo';
 import {AppState} from '../AppState/AppState';
 import {UserInfo} from '../Types/UserInfo';
 import {HistoryInfo} from '../Types/HistoryInfo';
+import {FeedSorting} from '../Types/FeedSortingSettings';
 
 type FeedPostsResult = {
     posts: PostInfo[];
     site: SiteInfo;
     total: number;
+    sorting: FeedSorting;
 };
 type FeedSubscriptionsResult = {
     posts: PostInfo[];
     sites: Record<string, SiteInfo>;
     total: number;
+    sorting: FeedSorting;
 };
 
 type PostResult = {
@@ -71,7 +74,8 @@ export default class PostAPIHelper {
         return {
             posts: this.fixPosts(response.posts, response.users),
             site: siteInfo,
-            total: response.total
+            total: response.total,
+            sorting: response.sorting
         };
     }
 
@@ -80,7 +84,8 @@ export default class PostAPIHelper {
         return {
             posts: this.fixPosts(response.posts, response.users),
             sites: response.sites,
-            total: response.total
+            total: response.total,
+            sorting: response.sorting
         };
     }
 
@@ -89,7 +94,8 @@ export default class PostAPIHelper {
         return {
             posts: this.fixPosts(response.posts, response.users),
             sites: response.sites,
-            total: response.total
+            total: response.total,
+            sorting: response.sorting
         };
     }
 
@@ -98,7 +104,8 @@ export default class PostAPIHelper {
         return {
             posts: this.fixPosts(response.posts, response.users),
             sites: response.sites,
-            total: response.total
+            total: response.total,
+            sorting: FeedSorting.postCommentedAt
         };
     }
 
@@ -114,22 +121,32 @@ export default class PostAPIHelper {
         });
     }
 
-    fixComments(comments: CommentEntity[], users: Record<number, UserInfo>): CommentInfo[] {
-        return comments.map(comment => {
-            const c: CommentInfo = { ...comment } as unknown as CommentInfo;
-            // fix fields
-            c.author = this.appState.cache.setUser(users[comment.author]);
-            c.created = this.postAPI.api.fixDate(new Date(comment.created));
-            c.postLink = {
-                id: comment.post,
-                site: comment.site
-            };
+    private fixComment(comment: CommentEntity, users: Record<number, UserInfo>): CommentInfo {
+        const c: CommentInfo = { ...comment } as unknown as CommentInfo;
+        // fix fields
+        c.author = this.appState.cache.setUser(users[comment.author]);
+        c.created = this.postAPI.api.fixDate(new Date(comment.created));
+        c.postLink = {
+            id: comment.post,
+            site: comment.site
+        };
 
-            if (comment.answers) {
-                c.answers = this.fixComments(comment.answers, users);
-            }
-            return c;
-        });
+        if (comment.answers) {
+            c.answers = this.fixComments(comment.answers, users);
+        }
+        return c;
+    }
+
+    fixCommentsRecords(comments: Record<number, CommentEntity>, users: Record<number, UserInfo>): Record<number, CommentInfo> {
+        const result: Record<number, CommentInfo> = {};
+        for (const commentId in comments) {
+            result[commentId] = this.fixComment(comments[commentId], users);
+        }
+        return result;
+    }
+
+    fixComments(comments: CommentEntity[], users: Record<number, UserInfo>): CommentInfo[] {
+        return comments.map(comment => this.fixComment(comment, users));
     }
 
     getLastCommentId(comments: CommentEntity[]): number | undefined {

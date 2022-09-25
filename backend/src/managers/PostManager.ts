@@ -122,6 +122,15 @@ export default class PostManager {
         return await this.convertRawCommentsWithPostData(forUserId, rawComments, format);
     }
 
+    async getParentCommentsForASetOfComments(comments: CommentInfoWithPostData[], forUserId: number,  format: ContentFormat): Promise<CommentInfoWithPostData[]> {
+        const commentIds = comments.flatMap(comment => comment.parentComment ? [comment.parentComment] : []);
+        if (!commentIds.length) {
+            return [];
+        }
+        const rawComments = await this.commentRepository.getComments(commentIds);
+        return await this.convertRawCommentsWithPostData(forUserId, rawComments, format);
+    }
+
     async getUserComments(userId: number, forUserId: number, page: number, perpage: number, format: ContentFormat): Promise<CommentInfoWithPostData[]> {
         const rawComments = await this.commentRepository.getUserComments(userId, forUserId, page, perpage);
         return await this.convertRawCommentsWithPostData(forUserId, rawComments, format);

@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import CodeError from '../CodeError';
 import rateLimit from 'express-rate-limit';
 import {Logger} from 'winston';
-import {APIRequest, APIResponse, joiUsername, validate} from './ApiMiddleware';
+import {APIRequest, APIResponse, joiPassword, joiUsername, validate} from './ApiMiddleware';
 import Joi from 'joi';
 import UserManager from '../managers/UserManager';
 import {UserEntity} from './types/entities/UserEntity';
@@ -14,6 +14,9 @@ import {InviteListRequest, InviteListResponse} from './types/requests/InviteList
 import {InviteEntity} from './types/entities/InviteEntity';
 import {InviteRegenerateRequest, InviteRegenerateResponse} from './types/requests/InviteRegenerate';
 import {InviteRawWithIssuer} from '../db/types/InviteRaw';
+
+// constant variables
+import { ERROR_CODES } from './utils/error-codes';
 
 export default class InviteController {
     public router = Router();
@@ -45,7 +48,7 @@ export default class InviteController {
             name: Joi.string().required(),
             email: Joi.string().email().required(),
             gender: Joi.number().valid(0, 1, 2).default(0),
-            password: Joi.string().required()
+            password: joiPassword.required()
         });
         const regenerateSchema = Joi.object<InviteCheckRequest>({
             code: Joi.string().alphanum().required()
@@ -78,11 +81,11 @@ export default class InviteController {
             const invite = await this.inviteManager.get(code);
             if (!invite || invite.left_count < 1) {
                 this.logger.warn(`Invalid or expired invite checked: ${code}`, { invite: code });
-                return response.error('invalid-code', 'Invite code not found or already used');
+                return response.error(ERROR_CODES.INVALID_CODE, 'Invite code not found or already used');
             }
 
             if (!await this.verifyInvitePermissions(invite)) {
-                return response.error('invalid-code', 'Invite code can\'t be used');
+                return response.error(ERROR_CODES.INVALID_CODE, 'Invite code can\'t be used');
             }
 
             return response.success({
@@ -106,7 +109,7 @@ export default class InviteController {
         try {
             const invite = await this.inviteManager.get(code);
             if (!invite || !await this.verifyInvitePermissions(invite)) {
-                return response.error('invalid-code', 'Invite code not found or already used');
+                return response.error(ERROR_CODES.INVALID_CODE, 'Invite code not found or already used');
             }
 
             const passwordHash = await bcrypt.hash(password, 10);

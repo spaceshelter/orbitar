@@ -102,6 +102,7 @@ export class Enricher {
                 site: rawComment.site,
                 post: rawComment.post,
                 vote: rawComment.vote,
+                parentComment: rawComment.parentComment,
                 isNew: false
             };
             if (isNew(comment)) {

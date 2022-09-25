@@ -46,6 +46,9 @@ export default class TheParser {
     }
 
     parse(text: string): ParseResult {
+        // strip newlines from the beginning and end
+        text = text.replace(/^[\r\n]+|[\r\n]+$/g, '');
+
         const doc = this.parseDocument(text, {
             decodeEntities: false
         });
@@ -54,14 +57,25 @@ export default class TheParser {
     }
 
     private parseChildNodes(doc: ChildNode[]): ParseResult {
-        return doc.reduce((p, c) => {
-            const res = this.parseNode(c);
+        const p = {text: '', mentions: [], urls: [], images: []};
+        let prevBQ = false; // if previous node was blockquote
+        for (let node of doc) {
+            if (prevBQ && node.type === 'text') {
+                // remove a single newline after blockquote, allow only a single one if multiple were present
+                node = {
+                    ...node,
+                    data: node.data.replace(/^(\r?\n|[\r\n])(\r?\n|[\r\n])?(\r?\n|[\r\n])*/, '$2')
+                } as ChildNode;
+            }
+
+            const res = this.parseNode(node);
             p.text += res.text;
             p.mentions.push(...res.mentions);
-            p.images.push(...res.images);
             p.urls.push(...res.urls);
-            return p;
-        }, { text: '', mentions: [], urls: [], images: [] });
+            p.images.push(...res.images);
+            prevBQ = node.type === 'tag' && node.tagName.toLowerCase() === 'blockquote';
+        }
+        return p;
     }
 
     private parseNode(node: ChildNode): ParseResult {

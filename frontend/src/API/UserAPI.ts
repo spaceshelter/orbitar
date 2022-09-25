@@ -42,11 +42,13 @@ type UserProfileCommentsRequest = {
 };
 type UserProfileCommentsResponse = {
     comments: CommentEntity[];
+    parentComments: Record<number, CommentEntity>;
     users: Record<number, UserInfo>;
     total: number;
 };
 type UserProfileCommentsResult = {
     comments: CommentInfo[];
+    parentComments?: Record<number, CommentInfo>
     total: number;
 };
 
@@ -73,6 +75,7 @@ export type UserRestrictionsResponse = {
     canVoteKarma: boolean;
     canInvite: boolean;
     canEditOwnContent: boolean;
+    canCreateSubsites: boolean;
 };
 
 export default class UserAPI {
@@ -104,6 +107,7 @@ export default class UserAPI {
         });
         return {
             comments: this.postAPIHelper.fixComments(result.comments, result.users),
+            parentComments: this.postAPIHelper.fixCommentsRecords(result.parentComments, result.users),
             total: result.total,
         };
     }

@@ -2,10 +2,13 @@ import {useAPI} from '../../AppState/AppState';
 import {useEffect, useMemo, useState} from 'react';
 import {PostInfo} from '../../Types/PostInfo';
 import {useCache} from './useCache';
+import {FeedSorting} from '../../Types/FeedSortingSettings';
 
 export type FeedType = 'all' | 'subscriptions' | 'site' | 'watch' | 'watch-all' | 'user-profile';
 
-export function useFeed(id: string, feedType: FeedType | undefined, page: number, perpage: number) {
+export function useFeed(id: string, feedType: FeedType | undefined, page: number, perpage: number,
+                        setSorting?: (sorting: FeedSorting) => void, sorting?: FeedSorting) {
+
     const api = useAPI();
     const [cachedPosts, setCachedPosts] = useCache<PostInfo[]>('feed', [id, feedType, page, perpage]);
 
@@ -41,6 +44,7 @@ export function useFeed(id: string, feedType: FeedType | undefined, page: number
                     setPosts(result.posts);
                     const pages = Math.floor((result.total - 1) / perpage) + 1;
                     setPages(pages);
+                    setSorting?.(result.sorting);
                 })
                 .catch(error => {
                     console.log('FEED ERROR', error);
@@ -57,6 +61,7 @@ export function useFeed(id: string, feedType: FeedType | undefined, page: number
                     setPosts(result.posts);
                     const pages = Math.floor((result.total - 1) / perpage) + 1;
                     setPages(pages);
+                    setSorting?.(result.sorting);
                 })
                 .catch(error => {
                     console.log('FEED ERROR', error);
@@ -73,6 +78,7 @@ export function useFeed(id: string, feedType: FeedType | undefined, page: number
                     setPosts(result.posts);
                     const pages = Math.floor((result.total - 1) / perpage) + 1;
                     setPages(pages);
+                    setSorting?.(result.sorting);
                 })
                 .catch(error => {
                     console.log('FEED ERROR', error);
@@ -109,7 +115,7 @@ export function useFeed(id: string, feedType: FeedType | undefined, page: number
                 setError(['Не удалось загрузить ленту постов', error]);
             });
         }
-    }, [id, feedType, page, api.post, perpage]);
+    }, [id, feedType, page, api.post, perpage, sorting]);
 
-    return { posts, loading, pages, error, updatePost };
+    return { posts, loading, pages, error, updatePost, setLoading };
 }

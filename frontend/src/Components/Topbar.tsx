@@ -4,7 +4,6 @@ import {Link} from 'react-router-dom';
 import {useAppState} from '../AppState/AppState';
 import {useTheme} from '../Theme/ThemeProvider';
 import {ReactComponent as PostIcon} from '../Assets/post.svg';
-import {ReactComponent as MenuIcon} from '../Assets/menu.svg';
 import {ReactComponent as MonsterIcon} from '../Assets/monster.svg';
 import {ReactComponent as HotIcon} from '../Assets/hot.svg';
 import {ReactComponent as NotificationIcon} from '../Assets/notification.svg';
@@ -12,6 +11,7 @@ import {ReactComponent as ProfileIcon} from '../Assets/profile.svg';
 import {ReactComponent as DarkIcon} from '../Assets/theme_dark.svg';
 import {ReactComponent as LightIcon} from '../Assets/theme_light.svg';
 import NotificationsPopup from './NotificationsPopup';
+import {Hamburger} from './Hamburger';
 import {observer} from 'mobx-react-lite';
 
 export type TopbarMenuState = 'disabled' | 'open' | 'close';
@@ -64,7 +64,9 @@ export const Topbar = observer((props: TopbarProps) => {
         <>
             <div className={styles.topbar}>
                 <div className={styles.left}>
-                    <button className={menuClasses.join(' ')} onClick={menuToggle}><MenuIcon /></button>
+                    <button className={menuClasses.join(' ')} onClick={menuToggle}>
+                        <Hamburger open={props.menuState === 'close'} />
+                    </button>
                     <Link to={`/`}><MonsterIcon /></Link>
                     <CreateButton />
                 </div>

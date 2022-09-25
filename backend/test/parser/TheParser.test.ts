@@ -50,3 +50,64 @@ test('return valid youtube url', () => {
       `<iframe width=\"500\" height=\"282\" src=\"https://www.youtube.com/embed/aboZctrHfK8\" allowfullscreen frameborder=\"0\"></iframe>`
   );
 });
+
+test('remove line breaks at the beginning and the end', () => {
+    const p = new TheParser();
+
+    expect(
+        p.parse('Hello, \n' +
+            'world'
+        ).text
+    ).toEqual(
+        'Hello, <br />\n' +
+        'world'
+    );
+
+    expect(
+        p.parse('\nHello, \n' +
+            'world' + '\n'
+        ).text).toEqual(
+        'Hello, <br />\n' +
+        'world'
+    );
+
+    expect(
+        p.parse('\n\n\nHello, \n' +
+            'world' + '\n\n\n'
+        ).text).toEqual(
+        'Hello, <br />\n' +
+        'world'
+    );
+});
+
+test('remove extra line break after blockquote tag', () => {
+    const p = new TheParser();
+
+    expect(
+        p.parse('<blockquote>Hello</blockquote>\nworld'
+        ).text
+    ).toEqual(
+        '<blockquote>Hello</blockquote>world'
+    );
+
+    expect(
+        p.parse('<blockquote>Hello</blockquote>\n\nworld'
+        ).text
+    ).toEqual(
+        '<blockquote>Hello</blockquote><br />\nworld'
+    );
+
+    expect(
+        p.parse('<blockquote>Hello</blockquote>\n\n\nworld'
+        ).text
+    ).toEqual(
+        '<blockquote>Hello</blockquote><br />\nworld'
+    );
+
+    expect(
+        p.parse('<blockquote>Hello\n<blockquote>world</blockquote>\n</blockquote>test').text
+    ).toEqual(
+        '<blockquote>Hello<br />\n<blockquote>world</blockquote></blockquote>test'
+    );
+});
+

@@ -19,14 +19,14 @@ services:
 
   mysql:
     platform: linux/amd64
-    build:
-      context: mysql
+    image: mysql:5.7
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
       - mysql_db:/var/lib/mysql
-
+      - $PWD/mysql/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+  
   redis:
     image: redis:7
     restart: always
@@ -40,6 +40,7 @@ services:
       args:
         NODE_ENV: production
         SERVER_DOMAIN: ${SERVER_DOMAIN}
+        API_DOMAIN: ${API_DOMAIN}
     restart: "no"
     volumes:
       - frontend_build:/frontend
@@ -51,6 +52,7 @@ services:
     environment:
       SITE_DOMAIN: ${SERVER_DOMAIN}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      SENDING_BLUE_API_KEY: ${SENDING_BLUE_API_KEY}
     depends_on:
       - mysql
 

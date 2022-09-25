@@ -3,6 +3,7 @@ import React, {useEffect, useState} from 'react';
 import {useAPI} from '../AppState/AppState';
 import {useNavigate} from 'react-router-dom';
 import {APIError} from '../API/APIBase';
+import Conf from '../Conf';
 
 export const SitesCreatePage = () => {
     const api = useAPI();
@@ -15,9 +16,12 @@ export const SitesCreatePage = () => {
 
     const handleSiteDomainChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSiteDomain(e.target.value);
-
-        if (e.target.value && !e.target.value.match(/^[a-z\d-]{1,10}$/)) {
-            setDomainError('Только строчные латинские буквы, цифры и минус!');
+        const domainValidationRegex = new RegExp('^[a-z\\d-]{' + Conf.SITE_DOMAIN_MIN_LENGTH_CHARS + ',' + Conf.SITE_DOMAIN_MAX_LENGTH_CHARS + '}$');
+        if (e.target.value && !e.target.value.match(domainValidationRegex)) {
+            setDomainError(
+              `Только строчные латинские буквы, цифры и минус! ` +
+              `От ${Conf.SITE_DOMAIN_MIN_LENGTH_CHARS} до ${Conf.SITE_DOMAIN_MAX_LENGTH_CHARS} символов.`
+            );
         }
         else if (domainError) {
             setDomainError(undefined);
@@ -28,7 +32,10 @@ export const SitesCreatePage = () => {
     };
 
     useEffect(() => {
-        const enabled = !creating && !domainError && siteDomain.length >= 3 && siteName.trim().length >= 3;
+        const enabled = !creating &&
+          !domainError &&
+          siteDomain.length >= Conf.SITE_DOMAIN_MIN_LENGTH_CHARS &&
+          siteName.trim().length >= Conf.SITE_NAME_MIN_LENGTH_CHARS;
         setCreateEnabled(enabled);
     }, [domainError, siteDomain, siteName, creating]);
 
@@ -45,6 +52,8 @@ export const SitesCreatePage = () => {
                 }
                 else if (err.code === 'site-exists') {
                     setDomainError('Такой подсайт уже существует!');
+                } else {
+                    setDomainError('Произошла ужасная ошибка!');
                 }
             }
             console.error('Create site error', err);
@@ -58,11 +67,11 @@ export const SitesCreatePage = () => {
         <div className={styles.container}>
             <div className='form'>
                 <div className='site'>
-                    <label className='s'>{process.env.REACT_APP_ROOT_DOMAIN}/s/</label><input className={styles.title} type="text" placeholder="site" maxLength={10} value={siteDomain} onChange={handleSiteDomainChange} />
+                    <label className='s'>{process.env.REACT_APP_ROOT_DOMAIN}/s/</label><input className={styles.title} type="text" placeholder="site" maxLength={Conf.SITE_DOMAIN_MAX_LENGTH_CHARS} value={siteDomain} onChange={handleSiteDomainChange} />
                 </div>
                 {domainError && <div className='error'>{domainError}</div>}
                 <div className='name'>
-                    <input className={styles.title} type="text" placeholder="Заголовок" maxLength={15} value={siteName} onChange={handleSiteNameChange} />
+                    <input className={styles.title} type="text" placeholder="Заголовок" maxLength={Conf.SITE_NAME_MAX_LENGTH_CHARS} value={siteName} onChange={handleSiteNameChange} />
                 </div>
                 <div className='confirm'>
                     <button className='button' disabled={!createEnabled} onClick={handleCreate}>Создать</button>

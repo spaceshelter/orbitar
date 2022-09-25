@@ -38,4 +38,5 @@ export interface CommentInfo {
     post?: number;
     site?: string;
     canEdit?: boolean;
+    parentComment: number;
 }
