@@ -139,7 +139,7 @@ img.low-rating, video.low-rating, iframe.low-rating {
 
 body.no-scroll {
   overflow: hidden;
-  margin-right: 14px;
+  margin-right: 18px;
 }
 
 ::-webkit-scrollbar {
@@ -156,6 +156,18 @@ body.no-scroll {
   }
 }
 
+
 ::-webkit-scrollbar-track {
   background: transparent;
+}
+
+body::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+}
+body::-webkit-scrollbar-thumb {
+  box-shadow: inset 0 0 14px 14px var(--fgGhost);
+  &:hover{
+    box-shadow: inset 0 0 14px 14px var(--fgSoftest);
+  }
 }
