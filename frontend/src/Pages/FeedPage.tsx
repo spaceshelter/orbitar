@@ -40,8 +40,8 @@ export default function FeedPage() {
     const perpage = 20;
     const page = parseInt(search.get('page') || '1');
 
-    const [changeSorting, setChangeSorting] = useState<FeedSorting>();
-    const {posts, loading, pages, error, updatePost, sorting, setLoading} = useFeed(site, feedType, page, perpage, changeSorting);
+    const [sorting, setSorting] = useState<FeedSorting>();
+    const {posts, loading, pages, error, updatePost, setLoading} = useFeed(site, feedType, page, perpage, setSorting, sorting);
 
     useEffect(() => {
         window.scrollTo({ top: 0 });
@@ -62,7 +62,7 @@ export default function FeedPage() {
         e.preventDefault();
         setLoading(true);
         await api.feed.saveSorting(site, newFeedSorting);
-        setChangeSorting(newFeedSorting);
+        setSorting(newFeedSorting);
         setLoading(false);
     };
 

@@ -16,7 +16,7 @@ type FeedSubscriptionsResult = {
     posts: PostInfo[];
     sites: Record<string, SiteInfo>;
     total: number;
-    sorting?: FeedSorting;
+    sorting: FeedSorting;
 };
 
 type PostResult = {
@@ -104,7 +104,8 @@ export default class PostAPIHelper {
         return {
             posts: this.fixPosts(response.posts, response.users),
             sites: response.sites,
-            total: response.total
+            total: response.total,
+            sorting: FeedSorting.postCommentedAt
         };
     }
 
