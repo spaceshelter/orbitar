@@ -1,0 +1,38 @@
+name: Backup DB
+
+concurrency: prod
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '20 1 * * *' # At 01:20 UTC every day
+
+jobs:
+  backup-db:
+    runs-on: [self-hosted, prod]
+    environment: Production
+    steps:
+      - name: Set backup name
+        run: echo "backupFileName=${HOSTNAME}_$(date +%Y-%m-%d_%H-%M-%S)_dump.sql" >> $GITHUB_ENV
+
+      - name: Dump database
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+        run: echo $MYSQL_ROOT_PASSWORD | docker-compose -f /orbitar/docker-compose.yml exec -T mysql mysqldump --default-character-set=utf8mb4 --single-transaction --add-drop-database --databases orbitar_db activity_db -u root -p > ${{ env.backupFileName }}
+      
+      - name: Compress database
+        env:
+          BACKUP_PASSWORD: ${{ secrets.BACKUP_PASSWORD }}
+        run: zip -m -P $BACKUP_PASSWORD ${{ env.backupFileName }}.zip ${{ env.backupFileName }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.backupFileName }}
+          path: ${{ env.backupFileName }}.zip
+          if-no-files-found: error
+
+      - name: Clean working directory
+        run: |
+          rm -rf ./* || true
+          rm -rf ./.??* || true
