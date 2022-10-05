@@ -1,0 +1,102 @@
+name: Restore Sanitized DB
+
+concurrency: stage
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  schedule:
+    - cron: '50 1 * * MON' # At 01:50 UTC every Monday
+
+jobs:
+  sanitize-db:
+    runs-on: ubuntu-latest
+    environment: Production
+
+    env:
+      MYSQL_ROOT_PASSWORD: root
+
+    services:
+      mysql:
+        image: mysql:5.7
+        ports:
+          - "3306:3306"
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=10s --health-retries=10
+
+    steps:
+      - name: Download DB backup
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: backup-db.yml
+          workflow_conclusion: success
+          check_artifacts: true
+
+      - name: Unzip artifact & load DB
+        env:
+          BACKUP_PASSWORD: ${{ secrets.BACKUP_PASSWORD }}
+        run: |
+          cd `ls -t | head -n 1`
+          unzip -P $BACKUP_PASSWORD `ls -t | head -n 1`
+          cat `ls -t *.sql | head -n 1` | /usr/bin/mysql -h 127.0.0.1 -u root -p$MYSQL_ROOT_PASSWORD
+
+      - name: Remove PII
+        run: |
+          cat <<EOF | /usr/bin/mysql -h 127.0.0.1 -u root -p$MYSQL_ROOT_PASSWORD --database orbitar_db
+          delete from invites;
+          delete from user_webpush;
+          update users set email='user@example.com';
+          EOF
+
+      - name: Dump database
+        run: mysqldump --host 127.0.0.1 --column-statistics=0 --default-character-set=utf8mb4 --single-transaction --add-drop-database --databases orbitar_db activity_db -u root -p$MYSQL_ROOT_PASSWORD > stage-backup.sql
+      
+      - name: Compress database
+        env:
+          BACKUP_PASSWORD: ${{ secrets.STAGING_BACKUP_PASSWORD }}
+        run: zip -m -P $BACKUP_PASSWORD stage-backup.zip stage-backup.sql
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: stage-backup
+          path: stage-backup.zip
+          if-no-files-found: error
+
+  restore-db:
+    needs: sanitize-db
+    environment: Staging
+    runs-on: [self-hosted, stage]
+    steps:
+      - name: Delete previous artifacts
+        run: |
+          rm -rf ./*.sql || true
+          rm -rf ./*.zip || true
+
+      - uses: actions/checkout@v3
+        with:
+          ref: dev
+
+      - name: Copy configuration
+        run: |
+          cp -f /opt/deployment-specific-files/chain.pem $GITHUB_WORKSPACE/caddy/certs
+          cp -f /opt/deployment-specific-files/priv.pem $GITHUB_WORKSPACE/caddy/certs
+          cp -f /opt/deployment-specific-files/.env $GITHUB_WORKSPACE/      
+      
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: stage-backup
+
+      - name: Stop backend
+        run: docker-compose -f docker-compose.ssl.local.yml stop backend
+
+      - name: Unzip & restore backup
+        env:
+          BACKUP_PASSWORD: ${{ secrets.BACKUP_PASSWORD }}
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+        run: |
+          unzip -P $BACKUP_PASSWORD -o `ls -t *.zip | head -n 1`
+          docker-compose -f docker-compose.ssl.local.yml exec -T mysql /usr/bin/mysql -u root --password=$MYSQL_ROOT_PASSWORD --default-character-set=utf8mb4 < `ls -t *.sql | head -n 1`
+
+      - name: Restart backend
+        run: docker-compose -f docker-compose.ssl.local.yml start backend
