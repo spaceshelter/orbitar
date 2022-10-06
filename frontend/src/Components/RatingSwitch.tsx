@@ -89,33 +89,39 @@ export default function RatingSwitch(props: RatingSwitchProps) {
     }, [showPopup, ratingRef, popupRef, votes, state.vote, props.id, props.type]);
 
     const handleVote = (vote: number) => {
-        const prevState = { ...state };
-        if (state.vote === vote) {
-            vote = 0;
-        }
-
-        const newRating = state.rating - (state.vote || 0) + vote;
-
-        setState({ vote: vote, rating: newRating});
-        if (props.onVote) {
-            props.onVote(newRating, vote);
-        }
-
-        api.voteAPI.vote(props.type, props.id, vote)
-            .then(result => {
-                setState({
-                    rating: result.rating,
-                    vote: result.vote
+        return (ev: React.MouseEvent) => {
+            ev.stopPropagation();
+            ev.preventDefault();
+            // unfocus a button to space button will keep scrolling the page
+            (document.activeElement as HTMLButtonElement).blur();
+            const prevState = { ...state };
+            if (state.vote === vote) {
+                vote = 0;
+            }
+    
+            const newRating = state.rating - (state.vote || 0) + vote;
+    
+            setState({ vote: vote, rating: newRating});
+            if (props.onVote) {
+                props.onVote(newRating, vote);
+            }
+    
+            api.voteAPI.vote(props.type, props.id, vote)
+                .then(result => {
+                    setState({
+                        rating: result.rating,
+                        vote: result.vote
+                    });
+    
+                    if (props.onVote) {
+                        props.onVote(result.rating, result.vote);
+                    }
+                })
+                .catch(() => {
+                    setState(prevState);
+                    toast.warn('Голос не учтён 🤬', { position: 'bottom-right' });
                 });
-
-                if (props.onVote) {
-                    props.onVote(result.rating, result.vote);
-                }
-            })
-            .catch(() => {
-                setState(prevState);
-                toast.warn('Голос не учтён 🤬', { position: 'bottom-right' });
-            });
+            };
     };
 
     const handleVoteList = (e: React.MouseEvent) => {
@@ -156,11 +162,11 @@ export default function RatingSwitch(props: RatingSwitchProps) {
     return (
         <>
             <div ref={ratingRef} className={styles.rating}>
-                {props.double && <button {...buttonExtraProps} className={minus2Styles.join(' ')} onClick={() => handleVote(-2)}></button>}
-                <button {...buttonExtraProps} className={minusStyles.join(' ')} onClick={() => handleVote(-1)}></button>
+                {props.double && <button {...buttonExtraProps} className={minus2Styles.join(' ')} onClick={handleVote(-2)}></button>}
+                <button {...buttonExtraProps} className={minusStyles.join(' ')} onClick={handleVote(-1)}></button>
                 <div onClick={handleVoteList} className={valueStyles.join(' ')}>{state.rating}</div>
-                <button {...buttonExtraProps} className={plusStyles.join(' ')} onClick={() => handleVote(1)}></button>
-                {props.double && <button {...buttonExtraProps} className={plus2Styles.join(' ')} onClick={() => handleVote(2)}></button>}
+                <button {...buttonExtraProps} className={plusStyles.join(' ')} onClick={handleVote(1)}></button>
+                {props.double && <button {...buttonExtraProps} className={plus2Styles.join(' ')} onClick={handleVote(2)}></button>}
             </div>
             {showPopup && <RatingList ref={popupRef} vote={state.vote || 0} rating={state.rating} votes={votes}></RatingList>}
         </>
