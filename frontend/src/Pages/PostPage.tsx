@@ -60,17 +60,15 @@ export default function PostPage() {
                 return;
             }
 
-            const el = document.querySelector(`[data-comment-id="${commentId}"] .commentBody`);
+            const el = document.querySelector<HTMLDivElement>(`[data-comment-id="${commentId}"] .commentBody`);
             if (el) {
-                setTimeout(() => {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    el.classList.add('highlight');
+                el.scrollIntoView({ behavior: 'auto', block: 'center' });
+                el.classList.add('highlight');
 
-                    setTimeout(() => {
-                        el.classList.remove('highlight');
-                        setScrolledToComment({postId, commentId});
-                    }, 5000);
-                }, 100);
+                setTimeout(() => {
+                    el.classList.remove('highlight');
+                    setScrolledToComment({postId, commentId});
+                }, 5000);
             }
         }
         else if (unreadOnly) {
@@ -87,7 +85,7 @@ export default function PostPage() {
                 }
 
                 setTimeout(() => {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    el.scrollIntoView({ behavior: 'auto', block: 'center' });
 
                     setTimeout(() => {
                         setScrolledToComment({postId, commentId});
