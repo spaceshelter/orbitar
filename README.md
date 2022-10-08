@@ -35,6 +35,8 @@ docker-compose -p orbitar -f docker-compose.local.yml up
 
 ### Генератор рандомного контента для тестов
 
+Для генерации контента надо запустить проект в [дебаг режиме](docs/local-develpoment.md)
+
 Использование:
 
 (в папке `backend`, перед первым запуском выполнить `npm install`)
