@@ -6,7 +6,7 @@
     ```
    mysql повиснет на стандартном 3306 порту, redis на 6379.
 
-   Веб-роутер на 80 порту - будет перенаправлять запросы с `*.orbitar.local` на `localhost:5000` (фронт), а `api.orbitar.local` на `localhost:5001` (бэк).
+   Веб-роутер на 80 порту будет перенаправлять запросы с `*.orbitar.local` на `localhost:5000` (фронт), а `api.orbitar.local` на `localhost:5001` (бэк).
 
 
 2. Запустить фронт в режиме отладки (в папке `frontend`):
@@ -38,7 +38,7 @@
 После первого запуска можно открыть приглашение http://orbitar.local/invite/initial и зарегистрировать первый юзернейм.
 
 ### Настройка загрузки изображений на imgur (опционально)
-1. Сгенерировать client_id на странице https://api.imgur.com/oauth2/addclient.
+1. Сгенерировать `client_id` на странице https://api.imgur.com/oauth2/addclient.
 
    В `Authorization type` выбрать `Anonymous usage`, в `Authorization callback URL` - любой валидный URL (он требуется для регистрации, но не используется).
 2. В корневом `.env` файле прописать полученный `client_id`
