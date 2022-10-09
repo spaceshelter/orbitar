@@ -46,7 +46,6 @@ export const UserPage = observer(() => {
         const userName = userInfo?.username;
         userName && api.userAPI.userRestrictions(userName)
             .then(result => {
-                    console.log('Restrictions response', result);
                     setRestrictions(result);
                 }
             ).catch(err => {
