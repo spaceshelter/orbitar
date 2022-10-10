@@ -60,8 +60,10 @@ export default function PostPage() {
                 return;
             }
 
-            const el = document.querySelector<HTMLDivElement>(`[data-comment-id="${commentId}"] .commentBody`);
+            const el = document.querySelector<HTMLDivElement>(`[data-comment-id="${commentId}"]`);
             if (el) {
+                el.style.overflowAnchor = 'auto';
+
                 el.scrollIntoView({ behavior: 'auto', block: 'center' });
                 el.classList.add('highlight');
 
@@ -85,7 +87,7 @@ export default function PostPage() {
                 }
 
                 setTimeout(() => {
-                    el.scrollIntoView({ behavior: 'auto', block: 'center' });
+                    el.scrollIntoView({ behavior: 'auto', block: 'start' });
 
                     setTimeout(() => {
                         setScrolledToComment({postId, commentId});
