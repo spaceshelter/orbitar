@@ -71,7 +71,7 @@ connection.query(
   'SELECT html, "comment" as type, comment_id as "item_id" FROM `comments` WHERE `html` like "%<img%" UNION ' +
   'SELECT html, "comment" as type, comment_id as "item_id" FROM `comments` WHERE `html` like "%<video%" UNION ' +
   'SELECT html, "post" as type, post_id as "item_id" FROM `posts` WHERE `html` like "%<img%" UNION ' +
-  'SELECT html, "post" as type, post_id as "item_id" FROM `posts` WHERE `html` like "%<source%"',
+  'SELECT html, "post" as type, post_id as "item_id" FROM `posts` WHERE `html` like "%<video%"',
   async function (err, results, fields) {
     if (err) {
       console.trace(err);
