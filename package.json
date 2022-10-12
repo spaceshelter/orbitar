@@ -1,0 +1,15 @@
+{
+  "name": "orbitar",
+  "version": "1.0.0",
+  "description": "Прототип коллективного блога.",
+  "workspaces": [
+    "backend/",
+    "frontend/"
+  ],
+  "scripts": {
+    "start": "./node_modules/.bin/concurrently \"cd backend && npm run start:dev\" \"cd frontend && npm run start\""
+  },
+  "devDependencies": {
+    "concurrently": "^7.4.0"
+  }
+}
