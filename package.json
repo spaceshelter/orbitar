@@ -7,9 +7,15 @@
     "frontend/"
   ],
   "scripts": {
-    "start": "./node_modules/.bin/concurrently \"cd backend && npm run start:dev\" \"cd frontend && npm run start\""
+    "start": "./node_modules/.bin/concurrently \"cd backend && npm run start:dev\" \"cd frontend && npm run start\"",
+    "prettier": "./node_modules/.bin/prettier --check ."
   },
   "devDependencies": {
-    "concurrently": "^7.4.0"
+    "concurrently": "^7.4.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "import-sort": "^6.0.0",
+    "import-sort-style-module": "^6.0.0",
+    "prettier": "^2.7.1",
+    "prettier-plugin-import-sort": "^0.0.7"
   }
 }
