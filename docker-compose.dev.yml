@@ -10,7 +10,7 @@ services:
       SERVER_DOMAIN: ${SERVER_DOMAIN}
       IMGUR_CLIENT_ID: ${IMGUR_CLIENT_ID}
     volumes:
-      - ./caddy/Caddyfile.dev:/etc/caddy/Caddyfile
+      - $PWD/caddy/Caddyfile.dev:/etc/caddy/Caddyfile
       - caddy_data:/data
       - caddy_config:/config
 
