@@ -1,5 +1,7 @@
 printWidth: 100
 semi: true
 singleQuote: true
-trailingComma: all
-parser: typescript
+trailingComma: "all"
+parser: "typescript"
+useTabs: false
+tabWidth: 4
