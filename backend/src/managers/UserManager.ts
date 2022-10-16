@@ -19,7 +19,7 @@ import {FeedSorting} from '../api/types/entities/common';
 const USER_RESTRICTIONS = {
     MIN_KARMA: -1000,
     NEG_KARMA_THRESH: -10,
-    POS_KARMA_THRESH: 1,
+    POS_KARMA_THRESH: 2,
     NEW_USER_AGE_DAYS: 3
 };
 
@@ -597,7 +597,7 @@ export default class UserManager {
         const {effectiveKarmaPart, singleVotesPart, doubleVotesPart, daysOnSitePart} = await this.getTrialProgressRaw(userId);
         const sharedPart = effectiveKarmaPart * 0.5 + daysOnSitePart * 0.5;
 
-        const progress = singleVotesPart === undefined || doubleVotesPart === undefined ? effectiveKarmaPart :
+        const progress = singleVotesPart === undefined || doubleVotesPart === undefined ? sharedPart :
             singleVotesPart * 0.25 + doubleVotesPart * 0.15 + sharedPart * 0.6;
 
         const cappedProgress = Math.min(Math.max(progress, 0), 1);
