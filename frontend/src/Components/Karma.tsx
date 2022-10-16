@@ -23,8 +23,8 @@ export function Karma(props: KarmaCalculatorProps) {
     //TODO extract the rest of coefficients to constants and comment them
 
     //content quality ratio
-    const positiveCommentsDivisor = 10; // positive comments are 10x cheaper than posts
-    const negativeCommentsDivisor = 2; // negative comments are only 2x cheaper than posts
+    const positiveCommentsDivisor = 1; // positive comments are equal to posts
+    const negativeCommentsDivisor = 0.2; // negative comments are 5 times more influential than positive
     const contentVal = (allPostsValue + allCommentsValue/(allCommentsValue>=0?positiveCommentsDivisor:negativeCommentsDivisor))/5000;
     const contentRating = (contentVal > 0 ? bipolarSigmoid(contentVal/3) : Math.max(-1, -Math.pow(contentVal,2)*7) );
 

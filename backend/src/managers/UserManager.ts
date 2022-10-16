@@ -271,8 +271,8 @@ export default class UserManager {
         const lerp = (start: number, end: number, r: number): number => (1 - r) * start + r * end;
         const bipolarSigmoid = (n: number): number => n / Math.sqrt(1 + n * n);
 
-        const positiveCommentsDivisor = 10; // positive comments are 10x cheaper than posts
-        const negativeCommentsDivisor = 2; // negative comments are only 2x cheaper than posts
+        const positiveCommentsDivisor = 1; // positive comments are equal to posts
+        const negativeCommentsDivisor = 0.2; // negative comments are 5 times more influential than positive
         const contentVal = (allPostsValue + allCommentsValue / (allCommentsValue >= 0 ? positiveCommentsDivisor : negativeCommentsDivisor)) / 5000;
         const contentRating = (contentVal > 0 ? bipolarSigmoid(contentVal / 3) : Math.max(-1, -Math.pow(contentVal, 2) * 7));
 
