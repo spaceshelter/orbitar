@@ -194,7 +194,7 @@ export default class UserRepository {
             select count(*) cnt from (select user_id, count(*) as cnt
                                       from activity_db.user_activity
                                       where visited_at > date_sub(now(), interval 7 day)
-                                      and EXISTS(select * from user_karma where voter_id = activity_db.user_activity.user_id)
+                                      and EXISTS(select * from user_karma where voter_id = activity_db.user_activity.user_id and vote != 0)
                                       group by user_id
                                       having cnt > 3) as active_users
                                       join users on (users.user_id = active_users.user_id)
