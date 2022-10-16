@@ -187,6 +187,7 @@ export default class UserController {
             const trialProgress = await this.userManager.getTrialProgressRaw(profile.id);
 
             return response.success({
+                effectiveKarma: restrictions.effectiveKarma,
                 senatePenalty: restrictions.senatePenalty,
                 activeKarmaVotes,
                 postRatingBySubsite: ratingBySubsite.postRatingBySubsite,

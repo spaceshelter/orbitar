@@ -66,6 +66,7 @@ export type TrialProgressDebugInfo = {
 };
 
 export type UserKarmaResponse = {
+    effectiveKarma: number;
     senatePenalty: number;
     activeKarmaVotes: Record<string, number>;
     postRatingBySubsite: Record<string, number>;
