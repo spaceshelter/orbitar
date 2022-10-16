@@ -19,41 +19,54 @@ jobs:
     services:
       mysql:
         image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root
         ports:
           - "3306:3306"
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=10s --health-retries=10
 
     steps:
+      - name: Init vars
+        env:
+          BACKUP_DIR: ${{ runner.temp }}/db_backup
+        run: echo "BACKUP_DIR=$BACKUP_DIR" >> $GITHUB_ENV
       - name: Download DB backup
         uses: dawidd6/action-download-artifact@v2
         with:
           workflow: backup-db.yml
           workflow_conclusion: success
           check_artifacts: true
+          path: ${{ env.BACKUP_DIR }}
 
       - name: Unzip artifact & load DB
         env:
           BACKUP_PASSWORD: ${{ secrets.BACKUP_PASSWORD }}
         run: |
+          cd "$BACKUP_DIR"
           cd `ls -t | head -n 1`
           unzip -P $BACKUP_PASSWORD `ls -t | head -n 1`
           cat `ls -t *.sql | head -n 1` | /usr/bin/mysql -h 127.0.0.1 -u root -p$MYSQL_ROOT_PASSWORD
 
+      - uses: actions/checkout@v3
+
       - name: Remove PII
         run: |
-          cat <<EOF | /usr/bin/mysql -h 127.0.0.1 -u root -p$MYSQL_ROOT_PASSWORD --database orbitar_db
-          delete from invites;
-          delete from user_webpush;
-          update users set email='user@example.com';
-          EOF
+          # execute SQL script with PII removal
+          cat $GITHUB_WORKSPACE/mysql/sanitize-db.sql | \
+             /usr/bin/mysql -h 127.0.0.1 -u root -p$MYSQL_ROOT_PASSWORD --database orbitar_db
 
       - name: Dump database
-        run: mysqldump --host 127.0.0.1 --column-statistics=0 --default-character-set=utf8mb4 --single-transaction --add-drop-database --databases orbitar_db activity_db -u root -p$MYSQL_ROOT_PASSWORD > stage-backup.sql
-      
+        run: |
+          mysqldump --host 127.0.0.1 --column-statistics=0 --default-character-set=utf8mb4 --single-transaction \
+            --add-drop-database --databases orbitar_db activity_db -u root -p$MYSQL_ROOT_PASSWORD > stage-backup.sql
+
       - name: Compress database
         env:
-          BACKUP_PASSWORD: ${{ secrets.STAGING_BACKUP_PASSWORD }}
-        run: zip -m -P $BACKUP_PASSWORD stage-backup.zip stage-backup.sql
+          STAGING_BACKUP_PASSWORD: ${{ secrets.STAGING_BACKUP_PASSWORD }}
+        run: |
+          pwd
+          ls -la
+          zip -m -P STAGING_BACKUP_PASSWORD stage-backup.zip stage-backup.sql
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
@@ -73,15 +86,13 @@ jobs:
           rm -rf ./*.zip || true
 
       - uses: actions/checkout@v3
-        with:
-          ref: dev
 
       - name: Copy configuration
         run: |
           cp -f /opt/deployment-specific-files/chain.pem $GITHUB_WORKSPACE/caddy/certs
           cp -f /opt/deployment-specific-files/priv.pem $GITHUB_WORKSPACE/caddy/certs
           cp -f /opt/deployment-specific-files/.env $GITHUB_WORKSPACE/      
-      
+
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
@@ -92,11 +103,13 @@ jobs:
 
       - name: Unzip & restore backup
         env:
-          BACKUP_PASSWORD: ${{ secrets.BACKUP_PASSWORD }}
+          STAGING_BACKUP_PASSWORD: ${{ secrets.STAGING_BACKUP_PASSWORD }}
           MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
         run: |
-          unzip -P $BACKUP_PASSWORD -o `ls -t *.zip | head -n 1`
-          docker-compose -f docker-compose.ssl.local.yml exec -T mysql /usr/bin/mysql -u root --password=$MYSQL_ROOT_PASSWORD --default-character-set=utf8mb4 < `ls -t *.sql | head -n 1`
+          unzip -P STAGING_BACKUP_PASSWORD -o `ls -t *.zip | head -n 1`
+          docker-compose -f docker-compose.ssl.local.yml exec -T mysql /usr/bin/mysql -u root --password=$MYSQL_ROOT_PASSWORD \
+            --default-character-set=utf8mb4 \
+            < `ls -t *.sql | head -n 1`
 
       - name: Restart backend
         run: docker-compose -f docker-compose.ssl.local.yml start backend
