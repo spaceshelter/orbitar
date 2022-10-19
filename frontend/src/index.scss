@@ -136,7 +136,7 @@ img.low-rating, video.low-rating, iframe.low-rating {
   /*transition: background-color 1s;*/
   animation-duration: 0.5s;
   animation-name: highlight-flash;
-  animation-iteration-count: 6;
+  animation-iteration-count: infinite;
   animation-direction: alternate;
 }
 

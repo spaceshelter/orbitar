@@ -60,17 +60,27 @@ export default function PostPage() {
                 return;
             }
 
-            const el = document.querySelector<HTMLDivElement>(`[data-comment-id="${commentId}"]`);
+            const el = document.querySelector<HTMLDivElement>(`[data-comment-id="${commentId}"] > .commentBody`);
             if (el) {
                 el.style.overflowAnchor = 'auto';
-
-                el.scrollIntoView({ behavior: 'auto', block: 'center' });
                 el.classList.add('highlight');
 
-                setTimeout(() => {
-                    el.classList.remove('highlight');
-                    setScrolledToComment({postId, commentId});
-                }, 5000);
+                const scrollIfNotInView = (wasInView: boolean) => () => {
+                    if (el.getBoundingClientRect().bottom < 0 || el.getBoundingClientRect().top > window.innerHeight) {
+                        el.scrollIntoView({behavior: 'smooth', block: 'center'});
+                        setTimeout(scrollIfNotInView(false), 2000);
+                    } else {
+                        if (wasInView) {
+                            el.classList.remove('highlight');
+                            setScrolledToComment({postId, commentId});
+                            return;
+                        } else {
+                            setTimeout(scrollIfNotInView(true), 5000);
+                        }
+                    }
+                };
+
+                scrollIfNotInView(false)();
             }
         }
         else if (unreadOnly) {
