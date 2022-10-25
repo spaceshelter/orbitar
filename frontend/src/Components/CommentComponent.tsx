@@ -81,7 +81,6 @@ export default function CommentComponent(props: CommentProps) {
     const depth = props.depth || 0;
     const maxDepth = props.maxTreeDepth || 0;
     const isFlat = depth > maxDepth;
-    console.log(props);
     return (
         <div className={styles.comment + (props.comment.isNew ? ' isNew': '') + (isFlat?' isFlat':'')} data-comment-id={props.comment.id}>
             <div className='commentBody'>
