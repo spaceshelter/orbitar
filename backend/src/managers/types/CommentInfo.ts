@@ -17,6 +17,8 @@ export type CommentInfo = CommentBaseInfo & {
     answers?: CommentInfo[];
     canEdit?: boolean;
     editFlag?: EditFlag;
+
+    language?: string;
 };
 
 export type CommentInfoWithPostData = CommentInfo & {

@@ -26,6 +26,7 @@ export default function CommentComponent(props: CommentProps) {
     const [answerOpen, setAnswerOpen] = useState(false);
     const [editingText, setEditingText] = useState<false | string>(false);
     const [showHistory, setShowHistory] = useState(false);
+    const [translation, setTranslation] = useState<string | false | undefined>(undefined);
     const api = useAPI();
 
     const handleAnswerSwitch = (e: React.MouseEvent) => {
@@ -73,11 +74,26 @@ export default function CommentComponent(props: CommentProps) {
         }
     };
 
+    const translate = () => {
+        if (translation) {
+            setTranslation(undefined);
+        } else {
+            setTranslation(false);
+            api.postAPI.translate(props.comment.id, 'comment')
+                .then(res => setTranslation(res.html))
+                .catch(() => {
+                    toast.error('Не удалось перевести');
+                });
+        }
+    };
+
     const toggleHistory = () => {
         setShowHistory(!showHistory);
     };
 
-    const {author, created, site, postLink, editFlag, content} = props.comment;
+    const {author, created, site, postLink, editFlag } = props.comment;
+    const content = translation || props.comment.content;
+
     const depth = props.depth || 0;
     const maxDepth = props.maxTreeDepth || 0;
     const isFlat = depth > maxDepth;
@@ -105,6 +121,8 @@ export default function CommentComponent(props: CommentProps) {
                         <RatingSwitch type="comment" id={props.comment.id} rating={{ vote: props.comment.vote, value: props.comment.rating }} onVote={handleVote} />
                     </div>
                     {props.comment.canEdit && props.onEdit && <div className={styles.control}><button onClick={handleEdit} className='i i-edit' /></div>}
+                    {props.comment.language !== 'ru' && <div className={styles.control}><button
+                        disabled={translation === false} onClick={translate} className={`i i-translate ${styles.translate}`}/></div>}
                     {props.onAnswer && <div className={styles.control}><button onClick={handleAnswerSwitch}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</button></div>}
                 </div>
             </div>

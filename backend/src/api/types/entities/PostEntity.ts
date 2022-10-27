@@ -18,4 +18,5 @@ export type PostEntity = PostBaseEntity & {
     canEdit?: boolean;
     editFlag?: EditFlag;
     vote?: number;
+    language?: string;
 };

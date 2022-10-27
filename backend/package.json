@@ -54,6 +54,8 @@
     "redis": "^4.0.6",
     "url-parse": "^1.5.10",
     "web-push": "^3.5.0",
-    "winston": "^3.7.2"
+    "winston": "^3.7.2",
+    "@smodin/fast-text-language-detection": "^0.2.3",
+    "string-strip-html": "^8.3.0"
   }
 }

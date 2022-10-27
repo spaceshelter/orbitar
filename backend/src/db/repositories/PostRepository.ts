@@ -167,13 +167,14 @@ export default class PostRepository {
             });
     }
 
-    async createPost(siteId: number, userId: number, title: string, source: string, html: string): Promise<PostRaw> {
+    async createPost(siteId: number, userId: number, title: string, source: string, language: string, html: string): Promise<PostRaw> {
         return await this.db.inTransaction(async (db) => {
             const postId = await db.insert('posts', {
                 site_id: siteId,
                 author_id: userId,
                 title,
                 source,
+                language,
                 html
             });
 
@@ -181,6 +182,7 @@ export default class PostRepository {
                 ref_type: 'post',
                 ref_id: postId,
                 author_id: userId,
+                title,
                 source
             });
 
@@ -222,7 +224,7 @@ export default class PostRepository {
             });
     }
 
-    async updatePostText(updateByUserId: number, postId: number, title: string, source: string, html: string, comment?: string): Promise<boolean> {
+    async updatePostText(updateByUserId: number, postId: number, title: string, source: string, language:string, html: string, comment?: string): Promise<boolean> {
         return await this.db.inTransaction(async (conn) => {
             const originalPost = await conn.fetchOne<PostRaw>(`select * from posts where post_id = :postId`, {
                 postId
@@ -243,13 +245,22 @@ export default class PostRepository {
 
             const editFlag = 1;
 
-            const result = await conn.query<ResultSetHeader>('update posts set title=:title, source=:source, html=:html, content_source_id=:contentSourceId, edit_flag=:editFlag where post_id=:postId', {
+            const result = await conn.query<ResultSetHeader>(
+                `update posts
+                 set title=:title,
+                     source=:source,
+                     html=:html,
+                     content_source_id=:contentSourceId,
+                     edit_flag=:editFlag,
+                        language=:language
+                 where post_id = :postId`, {
                 title: title || '',
                 postId,
                 source,
                 html,
                 contentSourceId,
-                editFlag
+                editFlag,
+                language
             });
 
             if (!result.changedRows) {
@@ -260,6 +271,16 @@ export default class PostRepository {
         });
     }
 
+    async getLatestContentSource(refId: number, refType: 'post' | 'comment'): Promise<ContentSourceRaw | undefined> {
+        return await this.db.fetchOne<ContentSourceRaw>(`select *
+                                                         from content_source
+                                                         where ref_id = :refId
+                                                           and ref_type = :refType
+                                                         order by content_source_id desc limit 1`, {
+            refId,
+            refType
+        });
+    }
 
     async getContentSources(refId: number, refType: string): Promise<ContentSourceRaw[]> {
         return await this.db.fetchAll<ContentSourceRaw>('select * from content_source where ref_id=:refId and ref_type=:refType order by content_source_id desc', {

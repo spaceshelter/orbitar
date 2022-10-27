@@ -74,7 +74,7 @@ export default class CommentRepository {
         }).then((res) => parseInt(res.cnt || '0'));
     }
 
-    async createComment(userId: number, postId: number, parentCommentId: number | undefined, source: string, html: string): Promise<CommentRaw> {
+    async createComment(userId: number, postId: number, parentCommentId: number | undefined, source: string, language: string, html: string): Promise<CommentRaw> {
         return await this.db.inTransaction(async conn => {
             const siteResult = await conn.fetchOne<{site_id: number}>('select site_id from posts where post_id=:post_id', { post_id: postId });
 
@@ -88,6 +88,7 @@ export default class CommentRepository {
                 parent_comment_id: parentCommentId,
                 author_id: userId,
                 source: source,
+                language: language,
                 html: html
             });
 
@@ -120,7 +121,7 @@ export default class CommentRepository {
         });
     }
 
-    async updateCommentText(updateByUserId: number, commentId: number, source: string, html: string, comment?: string): Promise<boolean> {
+    async updateCommentText(updateByUserId: number, commentId: number, source: string, language: string, html: string, comment?: string): Promise<boolean> {
         return await this.db.inTransaction(async (conn) => {
             const originalComment = await conn.fetchOne<CommentRaw>(`select * from comments where comment_id = :commentId`, {
                 commentId
@@ -140,12 +141,20 @@ export default class CommentRepository {
 
             const editFlag = 1;
 
-            const result = await conn.query<ResultSetHeader>('update comments set source=:source, html=:html, content_source_id=:contentSourceId, edit_flag=:editFlag where comment_id=:commentId', {
+            const result = await conn.query<ResultSetHeader>(
+                `update comments
+                 set source=:source,
+                     html=:html,
+                     content_source_id=:contentSourceId,
+                     edit_flag=:editFlag
+                     language=:language
+                 where comment_id = :commentId`, {
                 commentId,
                 source,
                 html,
                 contentSourceId,
-                editFlag
+                editFlag,
+                language
             });
 
             if (!result.changedRows) {

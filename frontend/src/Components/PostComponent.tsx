@@ -8,6 +8,7 @@ import {ReactComponent as OptionsIcon} from '../Assets/options.svg';
 import {ReactComponent as WatchIcon} from '../Assets/watch.svg';
 import {ReactComponent as UnwatchIcon} from '../Assets/unwatch.svg';
 import {ReactComponent as EditIcon} from '../Assets/edit.svg';
+import {ReactComponent as TranslateIcon} from '../Assets/translate.svg';
 
 import PostLink from './PostLink';
 import {useAPI} from '../AppState/AppState';
@@ -32,6 +33,7 @@ export default function PostComponent(props: PostComponentProps) {
     const [editingText, setEditingText] = useState<false | string>(false);
     const [editingTitle, setEditingTitle] = useState<string>(props.post.title || '');
     const [showHistory, setShowHistory] = useState(false);
+    const [translation, setTranslation] = useState<{title: string, html: string} | undefined>(undefined);
 
     const handleVote = useMemo(() => {
         return (value: number, vote?: number) => {
@@ -47,7 +49,9 @@ export default function PostComponent(props: PostComponentProps) {
         };
     }, [props.post]);
 
-    const { id, created, site, author, title, content, vote, rating, watch } = props.post;
+    const { id, created, site, author, vote, rating, watch } = props.post;
+    const title = translation ? translation.title : props.post.title;
+    const content = translation ? translation.html : props.post.content;
 
     const toggleOptions = () => {
         setShowOptions(!showOptions);
@@ -69,6 +73,17 @@ export default function PostComponent(props: PostComponentProps) {
             });
 
         setShowOptions(false);
+    };
+    const translate = () => {
+        if (translation) {
+            setTranslation(undefined);
+        } else {
+            api.postAPI.translate(id, 'post')
+                .then(setTranslation)
+                .catch(() => {
+                    toast.error('Не удалось перевести');
+                });
+        }
     };
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -153,6 +168,7 @@ export default function PostComponent(props: PostComponentProps) {
                 <div className={styles.control}><CommentsCount post={props.post} /></div>
                 {/*<div className={styles.control}><button disabled={true} onClick={toggleBookmark} className={bookmark ? styles.active : ''}><BookmarkIcon /><span className={styles.label}></span></button></div>*/}
                 {props.post.canEdit && props.onEdit && <div className={styles.control}><button onClick={handleEdit}><EditIcon /></button></div>}
+                {props.post.language !== 'ru' && <div className={styles.control}><button onClick={translate}><TranslateIcon /></button></div>}
                 <div className={styles.control + ' ' + styles.options}>
                     <button onClick={toggleOptions} className={showOptions ? styles.active : ''}><OptionsIcon /></button>
                     {showOptions &&
