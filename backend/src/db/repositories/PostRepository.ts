@@ -252,7 +252,7 @@ export default class PostRepository {
                      html=:html,
                      content_source_id=:contentSourceId,
                      edit_flag=:editFlag,
-                        language=:language
+                     language=:language
                  where post_id = :postId`, {
                 title: title || '',
                 postId,

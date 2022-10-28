@@ -107,7 +107,7 @@ const notificationManager = new NotificationManager(commentRepository, notificat
 const userManager = new UserManager(credentialsRepository, userRepository, voteRepository, commentRepository, postRepository, webPushRepository, notificationManager, redis.client, config.site, logger.child({ service: 'USER' }));
 const siteManager = new SiteManager(siteRepository, userManager);
 const feedManager = new FeedManager(bookmarkRepository, postRepository, userRepository, siteManager, redis.client);
-const translationManager = new TranslationManager(translationRepository, postRepository, theParser);
+const translationManager = new TranslationManager(translationRepository, postRepository, theParser, logger.child({ service: 'TRANSL' }));
 const postManager = new PostManager(bookmarkRepository, commentRepository, postRepository, feedManager, notificationManager, siteManager, userManager, translationManager, theParser);
 const voteManager = new VoteManager(voteRepository, postManager, redis.client);
 

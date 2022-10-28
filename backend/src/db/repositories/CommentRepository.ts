@@ -146,7 +146,7 @@ export default class CommentRepository {
                  set source=:source,
                      html=:html,
                      content_source_id=:contentSourceId,
-                     edit_flag=:editFlag
+                     edit_flag=:editFlag,
                      language=:language
                  where comment_id = :commentId`, {
                 commentId,

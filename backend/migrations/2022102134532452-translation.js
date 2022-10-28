@@ -21,13 +21,7 @@ exports.up = async function (db) {
         alter table posts add column language char(2)  default 'ru';
     `);
 
-    // be: Ў ў
-    await db.runSql(`
-        update comments set language = 'be' where source like '%ў%' or source like '%Ў%';
-        update posts set language = 'be' where source like '%ў%' or source like '%Ў%';
-    `);
-
-    // uk: Є є Ї ї І і
+    // uk: Є є Ї ї
     await db.runSql(`
         update comments set language = 'uk' where source like '%Є%' or source like '%є%' or source like '%Ї%' or source like '%ї%';
         update posts set language = 'uk' where source like '%Є%' or source like '%є%' or source like '%Ї%' or source like '%ї%';

@@ -13,7 +13,8 @@
     "generate-dummy-content": "NODE_ENV=development node dummy_content_generator.js",
     "lint": "npx eslint src",
     "test": "jest --coverage",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "postinstall": "patch-package"
   },
   "keywords": [],
   "author": "",
@@ -35,7 +36,8 @@
     "ts-jest": "^28.0.3",
     "@types/jest": "^27.5.1",
     "node-fetch": "^2.6.7",
-    "image-size": "^1.0.2"
+    "image-size": "^1.0.2",
+    "patch-package": "^6.5.0"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -55,7 +57,6 @@
     "url-parse": "^1.5.10",
     "web-push": "^3.5.0",
     "winston": "^3.7.2",
-    "@smodin/fast-text-language-detection": "^0.2.3",
     "string-strip-html": "^8.3.0"
   }
 }

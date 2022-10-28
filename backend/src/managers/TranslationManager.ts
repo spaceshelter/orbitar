@@ -4,8 +4,9 @@ import fetch from 'node-fetch';
 import PostRepository from '../db/repositories/PostRepository';
 import {ContentSourceRaw} from '../db/types/ContentSourceRaw';
 import TheParser from '../parser/TheParser';
-import { stripHtml } from 'string-strip-html';
-import LanguageDetection from '@smodin/fast-text-language-detection';
+import {stripHtml} from 'string-strip-html';
+import cld from 'cld';
+import {Logger} from 'winston';
 
 
 export default class TranslationManager {
@@ -13,17 +14,18 @@ export default class TranslationManager {
     private translationRepository: TranslationRepository;
     private postRepository: PostRepository;
     private parser: TheParser;
-
-    private languageDetector = new LanguageDetection();
+    private logger: Logger;
 
     constructor(
         translationRepository: TranslationRepository,
         postRepository: PostRepository,
-        parser: TheParser
+        parser: TheParser,
+        logger: Logger
     ) {
         this.translationRepository = translationRepository;
         this.postRepository = postRepository;
         this.parser = parser;
+        this.logger = logger;
     }
 
     async translateContentSource(contentSource: ContentSourceRaw, language: string): Promise<Translation> {
@@ -50,8 +52,10 @@ export default class TranslationManager {
             body: `text=${encodeURIComponent(html)}&target_lang=${language}&tag_handling=html`
         }).then(res => {
             if (res.status !== 200) {
+                this.logger.error('Translation failed', {status: res.status, contentSource});
                 throw new Error(`Translation failed with status ${res.status}`);
             }
+
             return res.json();
         });
 
@@ -90,9 +94,19 @@ export default class TranslationManager {
         if (text.length < 6) {
             return 'ru';
         }
-        const lang: { lang: string, prob: number }[] = await this.languageDetector.predict(text);
-        if (lang.length > 0 && lang[0].prob >= 0.95) {
-            return lang[0].lang;
+        const options = {
+            isHTML: true,
+            languageHint: 'RUSSIAN',
+            encodingHint: 'UTF8'
+        };
+
+        try {
+            const lang = await cld.detect(text, options);
+            if (lang.languages.length > 0) {
+                return lang.languages[0].code;
+            }
+        } catch (e) {
+            this.logger.error('Language detection failed', {error: e, title, source});
         }
         return 'ru';
     }
