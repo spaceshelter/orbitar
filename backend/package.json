@@ -9,6 +9,7 @@
     "start:production": "NODE_ENV=production node build/app.js",
     "migration:dev": "NODE_ENV=development node migrations.js",
     "migration:production": "NODE_ENV=production node migrations.js",
+    "backup:media": ". backup_media.sh",
     "generate-dummy-content": "NODE_ENV=development node dummy_content_generator.js",
     "backup-media": "NODE_ENV=development node backup_media.js ./media-backup",
     "lint": "npx eslint src",

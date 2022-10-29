@@ -29,6 +29,10 @@ const sleep = function(ms) {
 
 const download = async function(url, dest) {
   return new Promise((resolve) => {
+    if (!url.match(/^(\/\/|http:|https:)/)) {
+      resolve(false);
+      return;
+    }
     if (url.match(/^\/\//)) {
       url = 'https:' + url;
     }
@@ -90,12 +94,12 @@ const processBatch = async (offset) => {
   );
 
   if (!result[0] || !result[0].length) {
+    await connection.end();
     console.log('Done');
     process.exit(0);
   }
 
-  for (let i = 0; i < result[0].length; i++) {
-    let entry = result[0][i];
+  for (const entry of result[0]) {
     let itemType = entry.ref_type;
     let itemId = entry.ref_id;
     let entrySource = entry.source;
@@ -103,8 +107,8 @@ const processBatch = async (offset) => {
     if (!mediaItems) {
       continue;
     }
-    for (let ii = 0; ii < mediaItems.length; ii++) {
-      const check = mediaItems[ii].match(/<(img|source).+src=['"]([^'"]+)['"]/);
+    for (const mediaItem of mediaItems) {
+      const check = mediaItem.match(/<(img|source).+src=['"]([^'"]+)['"]/);
       let mediaSrc = check[2];
       let mediaType = check[1] === MEDIA_TYPE_IMG ? MEDIA_TYPE_IMG : MEDIA_TYPE_VIDEO;
       let mediaExtensionMatch = mediaSrc.match(/\.[a-z]{2,}(?:\?.+)?$/);
@@ -126,7 +130,6 @@ const processBatch = async (offset) => {
         continue;
       }
       try {
-        console.log(entrySource);
         console.log(`Downloading ${mediaSrc} to ${outputPath}`);
         if (await download(mediaSrc, outputPath)) {
           saveEntry(mediaType, outputPath, outputFilename, mediaSrc, itemType, itemId);
@@ -148,8 +151,11 @@ const processBatch = async (offset) => {
   console.log('Content sources with media: ', result[0][0].total);
   console.log('Start processing');
   await processBatch(0);
-  process.exit(0);
-})().catch((e) => {
+})().catch(async (e) => {
   console.error(e);
+  await connection.end();
   process.exit(1);
+}).finally(async () => {
+  await connection.end();
+  process.exit(0);
 });
