@@ -11,15 +11,18 @@ const SLEEP_BETWEEN_BATCHES_MS = 1000;
 const BATCH_SIZE = 1000;
 const MEDIA_DOWNLOAD_REQUEST_TIMEOUT_MS = 120000;
 
+const backupDir = (process.argv.length >= 2 && process.argv[2] || './backup-media');
+console.log(`backupDir: ${backupDir}`);
+
 const config = {
   host: process.env.MYSQL_HOST || 'localhost',
   port: parseInt(process.env.MYSQL_PORT) || 3306,
   user: 'root',
   password: process.env.MYSQL_ROOT_PASSWORD || 'orbitar',
   database: process.env.MYSQL_DATABASE || 'orbitar_db',
-  dir: './backup-media',
-  dbFile: './backup-media/index.csv',
-  lastProcessedIdFile: './backup-media/id.txt'
+  dir:  backupDir,
+  dbFile: `${backupDir}/index.csv`,
+  lastProcessedIdFile: `${backupDir}/id.txt`
 };
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -78,6 +81,18 @@ const saveEntry = (mediaType, outputPath, outputFilename, mediaSrc, itemType, it
   fs.writeFileSync(config.lastProcessedIdFile, itemId.toString());
 };
 
+// replaces part of the url with asterisks
+//  https://i.imgur.com/7IElab.jpeg =>  https://i.imgur.com/7IE***.jpeg
+const hideUrl = (url) => {
+    let parts = url.split('/');
+    let lastPart = parts[parts.length - 1];
+    let lastPartParts = lastPart.split('.');
+    lastPartParts[0] = lastPartParts[0].substr(0, 3) + '***';
+    lastPart = lastPartParts.join('.');
+    parts[parts.length - 1] = lastPart;
+    return parts.join('/');
+}
+
 const processBatch = async (startWithId) => {
   const result = await connection.promise().query(
     `select 
@@ -112,6 +127,11 @@ const processBatch = async (startWithId) => {
     for (const mediaItem of mediaItems) {
       const check = mediaItem.match(/<(img|video|source).+src=['"]([^'"]+)['"]/);
       let mediaSrc = check[2];
+      //  starts with data:
+      if (mediaSrc.match(/^data:/)) {
+        continue;
+      }
+
       let mediaType = check[1] === MEDIA_TYPE_IMG ? MEDIA_TYPE_IMG : MEDIA_TYPE_VIDEO;
       let mediaExtensionMatch = mediaSrc.match(/\.[a-z]{2,}(?:\?.+)?$/);
       let mediaExtension;
@@ -130,7 +150,7 @@ const processBatch = async (startWithId) => {
         console.log(outputPath, 'is already there');
         saveEntry(mediaType, outputPath, outputFilename, mediaSrc, itemType, itemId);
       } else {
-        console.log(`Processing media item `, mediaSrc);
+        console.log(`Processing media item `, hideUrl(mediaSrc));
         try {
           const controller = new AbortController();
           const succeeded = await Promise.race([
