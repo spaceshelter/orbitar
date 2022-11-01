@@ -166,6 +166,5 @@ const processBatch = async (offset) => {
   } finally {
     console.log(`done`);
     connection.end();
-    process.exit(0);
   }
 })();
