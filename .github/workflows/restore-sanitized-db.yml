@@ -11,7 +11,7 @@ on:
 jobs:
   sanitize-db:
     runs-on: ubuntu-latest
-    environment: Production
+    environment: ProductionRO
 
     env:
       MYSQL_ROOT_PASSWORD: root
