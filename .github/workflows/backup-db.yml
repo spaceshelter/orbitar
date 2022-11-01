@@ -10,7 +10,7 @@ on:
 jobs:
   backup-db:
     runs-on: [self-hosted, prod]
-    environment: Production
+    environment: ProductionRO
     steps:
       - name: Set backup name
         run: echo "backupFileName=${HOSTNAME}_$(date +%Y-%m-%d_%H-%M-%S)_dump.sql" >> $GITHUB_ENV
@@ -19,7 +19,7 @@ jobs:
         env:
           MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
         run: echo $MYSQL_ROOT_PASSWORD | docker-compose -f /orbitar/docker-compose.yml exec -T mysql mysqldump --default-character-set=utf8mb4 --single-transaction --add-drop-database --databases orbitar_db activity_db -u root -p > ${{ env.backupFileName }}
-      
+
       - name: Compress database
         env:
           BACKUP_PASSWORD: ${{ secrets.BACKUP_PASSWORD }}
