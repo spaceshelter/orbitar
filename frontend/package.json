@@ -17,7 +17,6 @@
     "mobx-react-lite": "^3.4.0",
     "@superwf/mobx-react-router": "^7.4.0",
     "moment": "^2.29.3",
-    "node-sass": "^7.0.1",
     "react": "^18.0.0",
     "react-app-rewired": "^2.2.1",
     "react-dom": "^18.0.0",
@@ -30,6 +29,9 @@
     "webfonts-loader": "^7.5.2",
     "react-textarea-autosize": "^8.3.4",
     "check-password-strength": "^2.0.7"
+  },
+  "devDependencies": {
+    "sass": "^1.55.0"
   },
   "scripts": {
     "start": "react-app-rewired start",
