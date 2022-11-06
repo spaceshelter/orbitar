@@ -35,8 +35,7 @@ const download = async (url, dest, signal) => {
     try {
       const response = await fetch(url, { signal });
       const responseBinary = await response.buffer();
-      let writeResult = await fs.promises.writeFile(dest, responseBinary);
-      await sleep(1000);
+      await fs.promises.writeFile(dest, responseBinary);
       console.log(`Wrote ${responseBinary.length} bytes to ${dest} for ${url}`);
       return true;
     } catch (e) {
