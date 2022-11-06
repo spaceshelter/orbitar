@@ -39,6 +39,13 @@ services:
     volumes:
       - redis_data:/data
 
+  feed:
+    build:
+      context: feed
+    restart: always
+    ports:
+      - "6767:6767"
+
 volumes:
   caddy_data:
   caddy_config:

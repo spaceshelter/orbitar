@@ -98,6 +98,10 @@ export default class SiteManager {
         return this.convertRawToInfo(sitesRaw);
     }
 
+    async getSiteSubscriptionIds(forUserId: number): Promise<number[]> {
+        return this.siteRepository.getSiteSubscriptionIds(forUserId);
+    }
+
     async getSubsites(forUserId: number, page: number, perpage: number): Promise<SiteWithUserInfo[]> {
         const sitesRaw = await this.siteRepository.getAllSitesWithUserInfo(forUserId, page, perpage);
         return this.convertRawToInfo(sitesRaw);

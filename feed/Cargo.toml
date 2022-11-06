@@ -1,0 +1,15 @@
+[package]
+name = "orbitar-index"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rand="0.8.3"
+segment-tree="2.0.0"
+priority-queue="1.2.3"
+nickel = "0.11.0"
+
+serde = "1.0.147"
+serde_json = "1.0.87"
+serde_derive = "1.0.147"
+lazy_static="1.4.0"

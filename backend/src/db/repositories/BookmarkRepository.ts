@@ -103,12 +103,11 @@ export default class BookmarkRepository {
         });
     }
 
-    async setUpdated(postId: number, userId: number, date: Date) {
-        await this.db.query(`
-            update user_bookmarks set post_updated_at=:post_updated_at where post_id=:post_id and user_id=:user_id
+    setUpdated(postId: number, date: Date) {
+        return this.db.query(`
+            update user_bookmarks set post_updated_at=:post_updated_at where post_id=:post_id
         `, {
             post_id: postId,
-            user_id: userId,
             post_updated_at: date,
         });
     }

@@ -57,6 +57,11 @@ services:
     depends_on:
       - mysql
 
+  feed:
+    build:
+      context: feed
+    restart: always
+
 volumes:
   caddy_data:
   caddy_config:

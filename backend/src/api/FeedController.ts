@@ -70,8 +70,11 @@ export default class FeedController {
 
         try {
             const sorting = await this.userManager.getFeedSorting(userId, 1);
-            const total = await this.feedManager.getSubscriptionsTotal(userId);
-            const rawPosts = await this.feedManager.getSubscriptionFeed(userId, page, perPage, format, sorting);
+            // const total = await this.feedManager.getSubscriptionsTotal(userId);
+            const {
+                total,
+                posts: rawPosts
+            } = await this.feedManager.getSubscriptionFeed(userId, page, perPage, format, sorting);
             const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts);
 
             response.success({

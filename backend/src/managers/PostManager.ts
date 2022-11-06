@@ -45,7 +45,7 @@ export default class PostManager {
     }
 
     async getPost(postId: number, forUserId: number, format: ContentFormat): Promise<PostInfo | undefined> {
-        const rawPost = await this.postRepository.getPostWithUserData(postId, forUserId);
+        const [rawPost] = await this.postRepository.getPostsWithUserData([postId], forUserId);
         return (await this.feedManager.convertRawPost(forUserId, [rawPost], format))[0];
     }
 
@@ -80,7 +80,9 @@ export default class PostManager {
         }
 
         // fan out in background
-        this.feedManager.postFanOut(postRaw.post_id).then().catch();
+        this.feedManager.postFanOut(postRaw.site_id, postRaw.post_id,
+            postRaw.created_at, postRaw.created_at
+        ).then().catch();
 
         return {
             id: postRaw.post_id,
@@ -99,7 +101,7 @@ export default class PostManager {
     }
 
     async editPost(forUserId: number, postId: number, title: string | undefined, content: string, format: ContentFormat): Promise<PostInfo> {
-        let rawPost = await this.postRepository.getPostWithUserData(postId, forUserId);
+        let [rawPost] = await this.postRepository.getPostsWithUserData([postId], forUserId);
         if (rawPost.author_id !== forUserId) {
             throw new CodeError('access-denied', 'Access denied');
         }
@@ -118,7 +120,7 @@ export default class PostManager {
             throw new CodeError('unknown', 'Could not edit comment');
         }
 
-        rawPost = await this.postRepository.getPostWithUserData(postId, forUserId);
+        [rawPost] = await this.postRepository.getPostsWithUserData([postId], forUserId);
         const [post] = await this.feedManager.convertRawPost(forUserId, [rawPost], format);
 
         return post;
@@ -205,7 +207,10 @@ export default class PostManager {
         await this.bookmarkRepository.setWatch(postId, userId, true);
 
         // fan out in background
-        this.feedManager.postFanOut(commentRaw.post_id).then().catch();
+        this.feedManager.postFanOut(commentRaw.site_id, commentRaw.post_id,
+                undefined,
+                commentRaw.created_at
+        ).then().catch();
 
         const comments = await this.convertRawCommentsWithPostData(userId, [commentRaw], format);
         return comments[0];
