@@ -33,3 +33,11 @@
     color: var(--danger);
     margin: 20px;
 }
+
+.focusing :global(.postComponent){
+    overflow-anchor: none;
+}
+
+.focusing :global(.comment) {
+    overflow-anchor: none;   
+}

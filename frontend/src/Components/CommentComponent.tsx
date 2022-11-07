@@ -101,7 +101,7 @@ export default function CommentComponent(props: CommentProps) {
     const maxDepth = props.maxTreeDepth || 0;
     const isFlat = depth > maxDepth;
     return (
-        <div className={styles.comment + (props.comment.isNew ? ' isNew': '') + (isFlat?' isFlat':'')} data-comment-id={props.comment.id}>
+        <div className={`comment ${styles.comment} ${props.comment.isNew ? ' isNew': ''} ${isFlat?' isFlat':''}`} data-comment-id={props.comment.id}>
             <div className='commentBody'>
                 <SignatureComponent showSite={props.showSite} site={site} author={author} onHistoryClick={toggleHistory}
                                     parentCommentId={props.idx && props.parent?.id} parentCommentAuthor={props.parent?.author?.username}

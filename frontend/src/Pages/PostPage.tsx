@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 import styles from './PostPage.module.css';
 import {Link, useLocation, useParams, useSearchParams} from 'react-router-dom';
 import {CommentInfo, PostInfo, PostLinkInfo} from '../Types/PostInfo';
@@ -15,7 +15,7 @@ export default function PostPage() {
     const location = useLocation();
     const [scrolledToComment, setScrolledToComment] = useState<{postId: number, commentId: number}>();
     const {site} = useAppState();
-
+    const containerRef = useRef<HTMLDivElement>(null);
     const unreadOnly = search.get('new') !== null;
     const {post, comments, postComment, editComment, editPost, error, reload, updatePost} = usePost(site, postId, unreadOnly);
 
@@ -53,60 +53,48 @@ export default function PostPage() {
             return;
         }
 
+        let scrollToComment: HTMLDivElement | null | undefined;
         if (location.hash) {
             const commentId = parseInt(location.hash.substring(1));
-
-            if (scrolledToComment && scrolledToComment.postId === postId && scrolledToComment.commentId === commentId) {
-                return;
-            }
-
-            const el = document.querySelector<HTMLDivElement>(`[data-comment-id="${commentId}"] > .commentBody`);
-            if (el) {
-                el.style.overflowAnchor = 'auto';
-                el.classList.add('highlight');
-
-                const scrollIfNotInView = (wasInView: boolean) => () => {
-                    if (el.getBoundingClientRect().bottom < 0 || el.getBoundingClientRect().top > window.innerHeight) {
-                        el.scrollIntoView({behavior: 'smooth', block: 'center'});
-                        setTimeout(scrollIfNotInView(false), 2000);
-                    } else {
-                        if (wasInView) {
-                            el.classList.remove('highlight');
-                            setScrolledToComment({postId, commentId});
-                            return;
-                        } else {
-                            setTimeout(scrollIfNotInView(true), 5000);
-                        }
-                    }
-                };
-
-                scrollIfNotInView(false)();
-            }
+            scrollToComment = document.querySelector<HTMLDivElement>(`[data-comment-id="${commentId}"]`);
         }
         else if (unreadOnly) {
-            // find new comment
-            const el = document.querySelector(`.isNew`);
-            if (el) {
-                const commentId = parseInt(el.getAttribute('data-comment-id') || '');
-                if (!commentId) {
-                    return;
-                }
+            // find first new comment
+             scrollToComment = document.querySelector<HTMLDivElement>(`.isNew`);
+        }
 
+        let timeoutId: NodeJS.Timeout;
+        // things get complicated here - we need to account for images with unspecified dimensions that
+        // are not loaded yet.
+        timeoutId = setTimeout(() => {
+            if(scrollToComment){
+                // disable anchoring for all posts and comments
+                containerRef.current?.classList.add(styles.focusing);
+                const commentId = parseInt(scrollToComment.getAttribute('data-comment-id') || '');
                 if (scrolledToComment && scrolledToComment.postId === postId && scrolledToComment.commentId === commentId) {
                     return;
                 }
-
-                setTimeout(() => {
-                    el.scrollIntoView({ behavior: 'auto', block: 'start' });
-
-                    setTimeout(() => {
-                        setScrolledToComment({postId, commentId});
-                    }, 5000);
-                }, 100);
+                // set anchor on comment
+                scrollToComment.style.overflowAnchor = 'auto';
+                // cannot use smooth here - it is too slow and element will miss the view
+                scrollToComment.scrollIntoView({behavior: 'auto', block: 'center'});
+                scrollToComment.classList.add('highlight');
+                timeoutId = setTimeout(() => {
+                    setScrolledToComment({postId, commentId});
+                    scrollToComment?.classList.remove('highlight');
+                }, 2000);
             }
+        }, 500);
+        
+        const cancelFocusing = () => containerRef.current?.classList.remove(styles.focusing);
+        document.addEventListener('load', cancelFocusing);
 
-        }
-    }, [location.hash, comments, scrolledToComment, unreadOnly]);
+        
+        return () => {
+            document.removeEventListener('load', cancelFocusing);
+            clearTimeout(timeoutId);
+        };
+    }, [location.hash, comments, scrolledToComment, unreadOnly, postId]);
 
     const handlePostEdit = async (post: PostInfo, text: string, title?: string): Promise<PostInfo | undefined> => {
         return await editPost(title || '', text);
@@ -115,7 +103,7 @@ export default function PostPage() {
     const baseRoute = site === 'main' ? '/' : `/s/${site}/`;
 
     return (
-        <div className={styles.container}>
+        <div className={styles.container} ref={containerRef}>
             <div className={styles.feed}>
                 {post ? <div>
                         <PostComponent key={post.id} post={post} onChange={(_, partial) => updatePost(partial)} onEdit={handlePostEdit} />
