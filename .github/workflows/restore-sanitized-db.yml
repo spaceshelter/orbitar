@@ -98,10 +98,10 @@ jobs:
           unzip -P $BACKUP_PASSWORD -o `ls -t *.zip | head -n 1`
           docker-compose -f docker-compose.ssl.local.yml exec -T mysql /usr/bin/mysql -u root --password=$MYSQL_ROOT_PASSWORD --default-character-set=utf8mb4 < `ls -t *.sql | head -n 1`
 
-      - name: Restart backend
-        run: docker-compose -f docker-compose.ssl.local.yml start backend
-
       - name: Flush Redis cache
         env:
           REDIS_PASSWORD: orbitar
         run: docker-compose -f docker-compose.ssl.local.yml exec -e REDISCLI_AUTH=$REDIS_PASSWORD redis redis-cli FLUSHALL
+
+      - name: Restart backend
+        run: docker-compose -f docker-compose.ssl.local.yml start backend
