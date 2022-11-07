@@ -451,7 +451,7 @@ export default class PostController {
         try {
             return response.success(await this.translationManager.translateEntity(id, type));
         } catch (err) {
-            this.logger.error('Translate error', {error: err, id});
+            this.logger.error(err);
             return response.error('error', 'Unknown error', 500);
         }
     }

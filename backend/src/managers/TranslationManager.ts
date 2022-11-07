@@ -5,9 +5,18 @@ import PostRepository from '../db/repositories/PostRepository';
 import {ContentSourceRaw} from '../db/types/ContentSourceRaw';
 import TheParser from '../parser/TheParser';
 import {stripHtml} from 'string-strip-html';
-import cld from 'cld';
 import {Logger} from 'winston';
+import {addOnPostRun, FastText, FastTextModel} from '../../langid/fasttext.js';
+import {urlRegex} from '../parser/urlregex';
 
+const fasttextModelProm: Promise<FastTextModel> = new Promise<FastText>((resolve) => {
+    addOnPostRun(() => {
+        const ft = new FastText();
+        resolve(ft);
+    });
+}).then((ft) => {
+    return ft.loadModel('./langid/lid.176.ftz');
+});
 
 export default class TranslationManager {
 
@@ -90,23 +99,27 @@ export default class TranslationManager {
     }
 
     async detectLanguage(title, source): Promise<string> {
-        const text = stripHtml(title + '\n' + source).result;
+        const text = stripHtml(title + '\n' + source)
+            .result
+            .replace(/\B(@|\/u\/)[a-zа-яе0-9_-]+/gi, '') //mentions
+            .replace(urlRegex, ''); //urls
+
         if (text.length < 6) {
             return 'ru';
         }
-        const options = {
-            isHTML: true,
-            languageHint: 'RUSSIAN',
-            encodingHint: 'UTF8'
-        };
+
+        const model = await fasttextModelProm;
 
         try {
-            const lang = await cld.detect(text, options);
-            if (lang.languages.length > 0) {
-                return lang.languages[0].code;
+            const lang = model.predict(text, 4);
+            this.logger.info('Language detected', {lang, text});
+
+            if (lang.length > 0 && lang[0][0] > 0.8) {
+                return lang[0][1];
             }
         } catch (e) {
-            this.logger.error('Language detection failed', {error: e, title, source});
+            this.logger.error('Language detection failed', {title, source});
+            this.logger.error(e);
         }
         return 'ru';
     }
