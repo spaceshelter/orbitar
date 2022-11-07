@@ -111,5 +111,10 @@ jobs:
             --default-character-set=utf8mb4 \
             < `ls -t *.sql | head -n 1`
 
+      - name: Flush Redis cache
+        env:
+          REDIS_PASSWORD: orbitar
+        run: docker-compose -f docker-compose.ssl.local.yml exec -e REDISCLI_AUTH=$REDIS_PASSWORD redis redis-cli FLUSHALL
+
       - name: Restart backend
         run: docker-compose -f docker-compose.ssl.local.yml start backend
