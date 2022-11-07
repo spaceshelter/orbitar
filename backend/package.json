@@ -9,6 +9,7 @@
     "start:production": "NODE_ENV=production node build/app.js",
     "migration:dev": "NODE_ENV=development node migrations.js",
     "migration:production": "NODE_ENV=production node migrations.js",
+    "backup:media": ". backup_media.sh",
     "generate-dummy-content": "NODE_ENV=development node dummy_content_generator.js",
     "lint": "npx eslint src",
     "test": "jest --coverage",
@@ -33,7 +34,8 @@
     "jest": "^28.1.0",
     "ts-jest": "^28.0.3",
     "@types/jest": "^27.5.1",
-    "node-fetch": "^2.6.7"
+    "node-fetch": "^2.6.7",
+    "image-size": "^1.0.2"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
