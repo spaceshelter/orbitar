@@ -1,5 +1,5 @@
 import React, {useEffect} from 'react';
-import './LoadingPage.css';
+import styles from './LoadingPage.module.css';
 
 export default function LoadingPage() {
     document.title = 'ЪУЬ';
