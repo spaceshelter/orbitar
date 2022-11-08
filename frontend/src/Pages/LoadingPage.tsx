@@ -15,6 +15,8 @@ export default function LoadingPage() {
     });
 
     return (
-        <img className="loading" alt="Loading..." src="/img/robots.gif" />
+        <div className={styles.loading} style={{opacity: 0}}>
+            <img alt="Loading..." src="/img/robots.gif" />
+        </div>
     );
 }
