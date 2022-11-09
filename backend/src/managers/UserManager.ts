@@ -121,7 +121,7 @@ export default class UserManager {
     async checkPassword(username: string, password: string): Promise<UserInfo | false> {
         const userRaw = await this.userRepository.getUserByUsername(username);
 
-        if (!await bcrypt.compare(password, userRaw.password)) {
+        if (!userRaw || !await bcrypt.compare(password, userRaw.password)) {
             return false;
         }
 
