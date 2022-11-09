@@ -74,22 +74,25 @@ export default function PostPage() {
                 if (scrolledToComment && scrolledToComment.postId === postId && scrolledToComment.commentId === commentId) {
                     return;
                 }
+                const commentBody = scrollToComment.querySelector<HTMLDivElement>('.commentBody');
+                if (!commentBody) {
+                    return;
+                }
                 // set anchor on comment
-                scrollToComment.style.overflowAnchor = 'auto';
+                commentBody.style.overflowAnchor = 'auto';
                 // cannot use smooth here - it is too slow and element will miss the view
-                scrollToComment.scrollIntoView({behavior: 'auto', block: 'center'});
-                scrollToComment.classList.add('highlight');
+                commentBody.scrollIntoView({behavior: 'auto', block: 'center'});
+                commentBody.classList.add('highlight');
                 timeoutId = setTimeout(() => {
                     setScrolledToComment({postId, commentId});
-                    scrollToComment?.classList.remove('highlight');
+                    commentBody.classList.remove('highlight');
                 }, 2000);
             }
         }, 500);
-        
+
         const cancelFocusing = () => containerRef.current?.classList.remove(styles.focusing);
         document.addEventListener('load', cancelFocusing);
 
-        
         return () => {
             document.removeEventListener('load', cancelFocusing);
             clearTimeout(timeoutId);
