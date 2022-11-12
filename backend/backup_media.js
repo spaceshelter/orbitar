@@ -11,15 +11,18 @@ const SLEEP_BETWEEN_BATCHES_MS = 1000;
 const BATCH_SIZE = 1000;
 const MEDIA_DOWNLOAD_REQUEST_TIMEOUT_MS = 120000;
 
+const backupDir = (process.argv.length >= 2 && process.argv[2] || './backup-media');
+console.log(`backupDir: ${backupDir}`);
+
 const config = {
   host: process.env.MYSQL_HOST || 'localhost',
   port: parseInt(process.env.MYSQL_PORT) || 3306,
   user: 'root',
   password: process.env.MYSQL_ROOT_PASSWORD || 'orbitar',
   database: process.env.MYSQL_DATABASE || 'orbitar_db',
-  dir: './backup-media',
-  dbFile: './backup-media/index.csv',
-  lastProcessedIdFile: './backup-media/id.txt'
+  dir:  backupDir,
+  dbFile: `${backupDir}/index.csv`,
+  lastProcessedIdFile: `${backupDir}/id.txt`
 };
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -36,7 +39,7 @@ const download = async (url, dest, signal) => {
       const response = await fetch(url, { signal });
       const responseBinary = await response.buffer();
       await fs.promises.writeFile(dest, responseBinary);
-      console.log(`Wrote ${responseBinary.length} bytes to ${dest} for ${url}`);
+      console.log(`Wrote ${responseBinary.length} bytes to ${dest} for ${hideUrl(url)}`);
       return true;
     } catch (e) {
       console.log(e);
@@ -78,6 +81,39 @@ const saveEntry = (mediaType, outputPath, outputFilename, mediaSrc, itemType, it
   fs.writeFileSync(config.lastProcessedIdFile, itemId.toString());
 };
 
+const hideUrl = (url) => {
+    try {
+        // parse url
+        const parsedUrl = new URL(url);
+
+        // replace second half of the characters in the string with asterisks
+        const hideChars = (str) => {
+            if (!str) {
+                return str;
+            }
+            const half = Math.ceil(str.length / 2);
+            return str.substring(0, half) + '*'.repeat(str.length - half);
+        }
+
+        parsedUrl.username = hideChars(parsedUrl.username);
+        parsedUrl.password = hideChars(parsedUrl.password);
+        parsedUrl.hash = hideChars(parsedUrl.hash);
+        if (parsedUrl.pathname) {
+            // preserve the extension if any
+            const ext = parsedUrl.pathname.match(/^(.*)(\.\w+)$/);
+            if (ext) {
+                parsedUrl.pathname = hideChars(ext[1]) + ext[2];
+            } else {
+                parsedUrl.pathname = hideChars(parsedUrl.pathname);
+            }
+        }
+        parsedUrl.search = hideChars(parsedUrl.search);
+        return parsedUrl.toString();
+    } catch (e) {
+        return url;
+    }
+}
+
 const processBatch = async (startWithId) => {
   const result = await connection.promise().query(
     `select 
@@ -108,10 +144,15 @@ const processBatch = async (startWithId) => {
       console.log(`No media items detected: `, entryHtml);
       continue;
     }
-    console.log(`have ${mediaItems.length} media items`);
+    console.log(`Content source id:${itemId} has ${mediaItems.length} media items`);
     for (const mediaItem of mediaItems) {
       const check = mediaItem.match(/<(img|video|source).+src=['"]([^'"]+)['"]/);
       let mediaSrc = check[2];
+      //  starts with data:
+      if (mediaSrc.match(/^data:/)) {
+        continue;
+      }
+
       let mediaType = check[1] === MEDIA_TYPE_IMG ? MEDIA_TYPE_IMG : MEDIA_TYPE_VIDEO;
       let mediaExtensionMatch = mediaSrc.match(/\.[a-z]{2,}(?:\?.+)?$/);
       let mediaExtension;
@@ -130,7 +171,7 @@ const processBatch = async (startWithId) => {
         console.log(outputPath, 'is already there');
         saveEntry(mediaType, outputPath, outputFilename, mediaSrc, itemType, itemId);
       } else {
-        console.log(`Processing media item `, mediaSrc);
+        console.log(`Processing media item `, hideUrl(mediaSrc));
         try {
           const controller = new AbortController();
           const succeeded = await Promise.race([

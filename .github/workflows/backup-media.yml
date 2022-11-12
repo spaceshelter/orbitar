@@ -1,0 +1,24 @@
+name: Backup media
+
+concurrency: stage
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  schedule:
+    - cron: '50 2 * * MON' # At 02:50 UTC every Monday
+
+jobs:
+  backup-media:
+    environment: StagingRO
+    runs-on: [self-hosted, stage]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          path: media_backup_src
+      - name: Run backup
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+        run: |
+          cd $GITHUB_WORKSPACE/media_backup_src/backend
+          ./backup_media.sh /orbitar_media_backup/
