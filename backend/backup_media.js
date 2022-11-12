@@ -39,7 +39,7 @@ const download = async (url, dest, signal) => {
       const response = await fetch(url, { signal });
       const responseBinary = await response.buffer();
       await fs.promises.writeFile(dest, responseBinary);
-      console.log(`Wrote ${responseBinary.length} bytes to ${dest} for ${url}`);
+      console.log(`Wrote ${responseBinary.length} bytes to ${dest} for ${hideUrl(url)}`);
       return true;
     } catch (e) {
       console.log(e);
@@ -81,16 +81,37 @@ const saveEntry = (mediaType, outputPath, outputFilename, mediaSrc, itemType, it
   fs.writeFileSync(config.lastProcessedIdFile, itemId.toString());
 };
 
-// replaces part of the url with asterisks
-//  https://i.imgur.com/7IElab.jpeg =>  https://i.imgur.com/7IE***.jpeg
 const hideUrl = (url) => {
-    let parts = url.split('/');
-    let lastPart = parts[parts.length - 1];
-    let lastPartParts = lastPart.split('.');
-    lastPartParts[0] = lastPartParts[0].substr(0, 3) + '***';
-    lastPart = lastPartParts.join('.');
-    parts[parts.length - 1] = lastPart;
-    return parts.join('/');
+    try {
+        // parse url
+        const parsedUrl = new URL(url);
+
+        // replace second half of the characters in the string with asterisks
+        const hideChars = (str) => {
+            if (!str) {
+                return str;
+            }
+            const half = Math.ceil(str.length / 2);
+            return str.substr(0, half) + '*'.repeat(half);
+        }
+
+        parsedUrl.username = hideChars(parsedUrl.username);
+        parsedUrl.password = hideChars(parsedUrl.password);
+        parsedUrl.hash = hideChars(parsedUrl.hash);
+        if (parsedUrl.pathname) {
+            // preserve the extension if any
+            const ext = parsedUrl.pathname.match(/^(.*)(\.\w+)$/);
+            if (ext) {
+                parsedUrl.pathname = hideChars(ext[1]) + ext[2];
+            } else {
+                parsedUrl.pathname = hideChars(parsedUrl.pathname);
+            }
+        }
+        parsedUrl.search = hideChars(parsedUrl.search);
+        return parsedUrl.toString();
+    } catch (e) {
+        return url;
+    }
 }
 
 const processBatch = async (startWithId) => {
@@ -123,7 +144,7 @@ const processBatch = async (startWithId) => {
       console.log(`No media items detected: `, entryHtml);
       continue;
     }
-    console.log(`have ${mediaItems.length} media items`);
+    console.log(`Content source id:${itemId} has ${mediaItems.length} media items`);
     for (const mediaItem of mediaItems) {
       const check = mediaItem.match(/<(img|video|source).+src=['"]([^'"]+)['"]/);
       let mediaSrc = check[2];

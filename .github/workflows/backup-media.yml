@@ -18,7 +18,7 @@ jobs:
           path: media_backup_src
       - name: Run backup
         env:
-          MYSQL_ROOT_PASSWORD: root
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
         run: |
           cd $GITHUB_WORKSPACE/media_backup_src/backend
           ./backup_media.sh /orbitar_media_backup/
