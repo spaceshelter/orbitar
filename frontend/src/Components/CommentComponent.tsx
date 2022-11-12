@@ -82,6 +82,7 @@ export default function CommentComponent(props: CommentProps) {
             api.postAPI.translate(props.comment.id, 'comment')
                 .then(res => setTranslation(res.html))
                 .catch(() => {
+                    setTranslation(undefined);
                     toast.error('Не удалось перевести');
                 });
         }
@@ -121,7 +122,7 @@ export default function CommentComponent(props: CommentProps) {
                         <RatingSwitch type="comment" id={props.comment.id} rating={{ vote: props.comment.vote, value: props.comment.rating }} onVote={handleVote} />
                     </div>
                     {props.comment.canEdit && props.onEdit && <div className={styles.control}><button onClick={handleEdit} className='i i-edit' /></div>}
-                    {props.comment.language !== 'ru' && <div className={styles.control}><button
+                    {props.comment.language && props.comment.language !== 'ru' && <div className={styles.control}><button
                         disabled={translation === false} onClick={translate} className={`i i-translate ${styles.translate}`}/></div>}
                     {props.onAnswer && <div className={styles.control}><button onClick={handleAnswerSwitch}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</button></div>}
                 </div>

@@ -8,7 +8,6 @@ import {ReactComponent as OptionsIcon} from '../Assets/options.svg';
 import {ReactComponent as WatchIcon} from '../Assets/watch.svg';
 import {ReactComponent as UnwatchIcon} from '../Assets/unwatch.svg';
 import {ReactComponent as EditIcon} from '../Assets/edit.svg';
-import {ReactComponent as TranslateIcon} from '../Assets/translate.svg';
 
 import PostLink from './PostLink';
 import {useAPI} from '../AppState/AppState';
@@ -33,7 +32,7 @@ export default function PostComponent(props: PostComponentProps) {
     const [editingText, setEditingText] = useState<false | string>(false);
     const [editingTitle, setEditingTitle] = useState<string>(props.post.title || '');
     const [showHistory, setShowHistory] = useState(false);
-    const [translation, setTranslation] = useState<{title: string, html: string} | undefined>(undefined);
+    const [translation, setTranslation] = useState<{title: string, html: string} | false | undefined>(undefined);
 
     const handleVote = useMemo(() => {
         return (value: number, vote?: number) => {
@@ -74,13 +73,16 @@ export default function PostComponent(props: PostComponentProps) {
 
         setShowOptions(false);
     };
+
     const translate = () => {
         if (translation) {
             setTranslation(undefined);
         } else {
+            setTranslation(false);
             api.postAPI.translate(id, 'post')
-                .then(setTranslation)
+                .then(res => setTranslation(res))
                 .catch(() => {
+                    setTranslation(undefined);
                     toast.error('Не удалось перевести');
                 });
         }
@@ -168,7 +170,8 @@ export default function PostComponent(props: PostComponentProps) {
                 <div className={styles.control}><CommentsCount post={props.post} /></div>
                 {/*<div className={styles.control}><button disabled={true} onClick={toggleBookmark} className={bookmark ? styles.active : ''}><BookmarkIcon /><span className={styles.label}></span></button></div>*/}
                 {props.post.canEdit && props.onEdit && <div className={styles.control}><button onClick={handleEdit}><EditIcon /></button></div>}
-                {props.post.language !== 'ru' && <div className={styles.control}><button onClick={translate}><TranslateIcon /></button></div>}
+                {props.post.language && props.post.language !== 'ru' && <div className={styles.control}><button
+                    disabled={translation === false} onClick={translate} className={`i i-translate ${styles.translate}`}/></div>}
                 <div className={styles.control + ' ' + styles.options}>
                     <button onClick={toggleOptions} className={showOptions ? styles.active : ''}><OptionsIcon /></button>
                     {showOptions &&

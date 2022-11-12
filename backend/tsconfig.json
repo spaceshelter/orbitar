@@ -5,8 +5,7 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "sourceMap": true,
-    "outDir": "build",
-    "allowJs": true,
+    "outDir": "build"
   },
   "include": [
     "src"

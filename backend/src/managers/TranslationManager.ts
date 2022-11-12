@@ -18,6 +18,15 @@ const fasttextModelProm: Promise<FastTextModel> = new Promise<FastText>((resolve
     return ft.loadModel('./langid/lid.176.ftz');
 });
 
+export async function getLanguage(text: string): Promise<{lang: string, prob: number} | undefined> {
+    const model = await fasttextModelProm;
+    const lang = model.predict(text, 4);
+
+    if (lang.length > 0) {
+        return {lang: lang[0][1], prob: lang[0][0]};
+    }
+}
+
 export default class TranslationManager {
 
     private translationRepository: TranslationRepository;
@@ -51,6 +60,9 @@ export default class TranslationManager {
             //FIXME: strip html tags from title
             html = `${contentSource.title}${uuidTag}\n` + html;
         }
+        const brUuidTag = `<br${Math.random().toString(36).substring(2, 8)}/>`;
+        // replace line breaks with brUuidTag
+        html = html.replace(/\n/g, brUuidTag);
 
         const translationResponse = await fetch('https://api-free.deepl.com/v2/translate', {
             method: 'POST',
@@ -69,6 +81,9 @@ export default class TranslationManager {
         });
 
         let translatedHtml = translationResponse.translations[0].text;
+        // replace brUuidTag with line breaks
+        translatedHtml = translatedHtml.replaceAll(brUuidTag, '\n');
+
         let translatedTitle = '';
         if (contentSource.title) {
             const titleMatch = translatedHtml.split(uuidTag);
@@ -107,15 +122,11 @@ export default class TranslationManager {
         if (text.length < 6) {
             return 'ru';
         }
-
-        const model = await fasttextModelProm;
-
         try {
-            const lang = model.predict(text, 4);
+            const {lang, prob} = await getLanguage(text);
             this.logger.info('Language detected', {lang, text});
-
-            if (lang.length > 0 && lang[0][0] > 0.8) {
-                return lang[0][1];
+            if (prob > 0.8) {
+                return lang;
             }
         } catch (e) {
             this.logger.error('Language detection failed', {title, source});
