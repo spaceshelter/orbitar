@@ -92,7 +92,7 @@ const hideUrl = (url) => {
                 return str;
             }
             const half = Math.ceil(str.length / 2);
-            return str.substr(0, half) + '*'.repeat(half);
+            return str.substring(0, half) + '*'.repeat(str.length - half);
         }
 
         parsedUrl.username = hideChars(parsedUrl.username);
