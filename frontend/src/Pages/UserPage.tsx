@@ -108,15 +108,15 @@ export const UserPage = observer(() => {
                         </div>
 
                         {showReason && <>
-                        {!!profile.trialApprovers && <>
-                            {profile.trialApprovers.find(u => u.vote > 0) && <div>Приглашение поддержали:
-                                {profile.trialApprovers.map(user => user.vote > 0 && <Username key={user.username} user={user}/>)}
-                            </div>}
-                            {profile.trialApprovers.find(u => u.vote < 0) && <div>Против приглашения были:
-                                {profile.trialApprovers.map(user => user.vote < 0 && <Username key={user.username} user={user}/>)}
-                            </div>}
-                        </>}
-                        {!!profile.invitedReason && <div className={'content'}>Причина приглашения: <ContentComponent content={profile.invitedReason}/></div>}
+                        {!!profile.invitedReason && <div className={'content'}><ContentComponent content={profile.invitedReason}/></div>}
+                            {!!profile.trialApprovers && <>
+                                {profile.trialApprovers.find(u => u.vote > 0) && <div>Приглашение поддержали:
+                                    {profile.trialApprovers.map(user => user.vote > 0 && <Username key={user.username} user={user}/>)}
+                                </div>}
+                                {profile.trialApprovers.find(u => u.vote < 0) && <div>Против приглашения были:
+                                    {profile.trialApprovers.map(user => user.vote < 0 && <Username key={user.username} user={user}/>)}
+                                </div>}
+                            </>}
                         </>}
                         {profile.invites.length > 0 && <div>
                             Пригласил: {profile.invites.map((user, idx) => {
