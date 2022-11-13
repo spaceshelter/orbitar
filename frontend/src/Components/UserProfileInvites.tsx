@@ -7,13 +7,12 @@ import karmaStyles from './UserProfileKarma.module.scss';
 import {toast} from 'react-toastify';
 import Username from './Username';
 import createPostStyles from '../Pages/CreatePostPage.module.css';
-import createCommentStyles from '../Components/CommentComponent.module.scss';
-import classNames from 'classnames';
 import CreateCommentComponent from './CreateCommentComponent';
 import {CommentInfo} from '../Types/PostInfo';
 import ContentComponent from './ContentComponent';
 import {observer} from 'mobx-react-lite';
 import moment from 'moment';
+import plural from 'plural-ru';
 
 export const UserProfileInvites = observer(() => {
     const api = useAPI();
@@ -24,8 +23,6 @@ export const UserProfileInvites = observer(() => {
     const [inactiveInvites, setInactiveInvites] = useState<InviteEntity[]>([]);
     const [invitesAvailability, setInvitesAvailability] = useState<InvitesAvailability | undefined>(undefined);
 
-    const [createNewInviteForm, setCreateNewInviteForm] = useState(false);
-    const toggleCreateNewInviteForm = () => setCreateNewInviteForm(!createNewInviteForm);
     const [refreshCount, setRefreshCount] = useState(0);
     const forceRefresh = () => setRefreshCount(refreshCount + 1);
 
@@ -53,7 +50,6 @@ export const UserProfileInvites = observer(() => {
         try {
             const result = await api.inviteAPI.create(reason);
             console.log('CREATE', result);
-            setCreateNewInviteForm(false);
             forceRefresh();
         } catch (error: any) {
             console.log('CREATE ERR', error);
@@ -101,6 +97,47 @@ export const UserProfileInvites = observer(() => {
             </div>
             :
             <div className={styles.invites}>
+                {!!invitesAvailability &&<>
+                    <div>
+                        <h2>Вам доступно {plural(invitesAvailability.invitesLeft,
+                            '%d приглашение', '%d приглашения', '%d приглашений')}</h2>
+
+                        {invitesAvailability?.daysLeftToNextAvailableInvite !== undefined &&
+                        <p>До следующего инвайта
+                            осталось ждать {moment.duration(Math.round(invitesAvailability?.daysLeftToNextAvailableInvite * 24), 'hours').humanize(true)}.
+                        </p>}
+
+                        <p>
+                            Приглашения доступны, когда за&nbsp;
+                            {plural(Math.round(invitesAvailability.inviteWaitPeriodDays),'последний', 'последние')}&nbsp;
+                            {moment.duration(Math.round(invitesAvailability.inviteWaitPeriodDays), 'days').humanize(true)}
+                            &nbsp;вы использовали не более&nbsp;
+                            {plural(invitesAvailability.invitesPerPeriod, 'одного приглашения', '%d приглашений')}.
+                        </p>
+                        <p>
+                            Чем больше хороших и активных людей вы зовете, тем больше приглашений вам доступно.
+                            Если же тот, кого вы позвали, окажется слит, то период ожидания приглашений будет увеличен.
+                        </p>
+                        <h2>Помните!</h2>
+                        <p>
+                            Вы отвечаете за тех, кого пригласили.
+                        </p>
+                    </div>
+                </>}
+
+                {!!invitesAvailability?.invitesLeft &&<div>
+                    <h2>Создать приглашение</h2>
+                    <div className={styles.createInvite}>
+                        <p>
+                            Напишите пару слов о том, кого именно вы собираетесь позвать;
+                            если было обсуждение, оставьте ссылку на него. Этот текст будет виден всем и заодно позволит вам не забыть, кому вы этот инвайт отправили.
+                        </p>
+                        <div className={createPostStyles.form}>
+                            <CreateCommentComponent open={true} onAnswer={handleCreateInvite}/>
+                        </div>
+                    </div>
+                </div>}
+
                 <h4>Ваши инвайты</h4>
                 <div className="list">
                     {!!activeInvites.length && <>
@@ -111,29 +148,6 @@ export const UserProfileInvites = observer(() => {
                     {!inactiveInvites.length && !activeInvites.length && <>Кажется, инвайтов у вас нет.</>}
                 </div>
 
-                {restrictions?.canInvite && invitesAvailability?.invitesLeft === 0 && <>Больше инвайтов пока создать нельзя.</>}
-
-                {restrictions?.canInvite && !createNewInviteForm && !!invitesAvailability?.invitesLeft &&
-                    <button onClick={toggleCreateNewInviteForm}>Создать новый инвайт
-                        ({invitesAvailability?.invitesLeft === 1 ? 'остался один' : `осталось ${invitesAvailability?.invitesLeft}`})</button>}
-
-                {restrictions?.canInvite && !createNewInviteForm && invitesAvailability?.daysLeftToNextAvailableInvite !== undefined &&
-                    <div>До следующего доступного инвайта
-                        осталось ждать {moment.duration(Math.round(invitesAvailability?.daysLeftToNextAvailableInvite * 24), 'hours').humanize(true)}.
-                        <br/>
-                        Выдается инвайтов: {invitesAvailability.invitesPerPeriod} в&nbsp;
-                        {moment.duration(Math.round(invitesAvailability.inviteWaitPeriodDays), 'days').humanize(true)}.
-                    </div>}
-
-
-                {createNewInviteForm && <div className={createPostStyles.container}>
-                    <div className={classNames(createPostStyles.createpost, createCommentStyles.content)}>
-                        <div className={createPostStyles.form}>
-                            Причина для инвайта:
-                            <CreateCommentComponent open={true} onAnswer={handleCreateInvite}/>
-                        </div>
-                    </div>
-                </div>}
 
                 {inactiveInvites.length > 0 &&
                     <>
