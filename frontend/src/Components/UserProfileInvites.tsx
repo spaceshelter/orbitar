@@ -3,6 +3,7 @@ import React, {useEffect, useState} from 'react';
 import {InviteEntity, InvitesAvailability} from '../API/InviteAPI';
 import {Link} from 'react-router-dom';
 import styles from './UserProfileInvites.module.scss';
+import karmaStyles from './UserProfileKarma.module.scss';
 import {toast} from 'react-toastify';
 import Username from './Username';
 import createPostStyles from '../Pages/CreatePostPage.module.css';
@@ -29,20 +30,24 @@ export const UserProfileInvites = observer(() => {
     const forceRefresh = () => setRefreshCount(refreshCount + 1);
 
     useEffect(() => {
-        api.inviteAPI.list()
-            .then(result => {
-                console.log('INVITES', result);
-                const activeInvites = result.active.filter(invite => !invite.restricted);
-                const restrictedInvites = result.active.filter(invite => invite.restricted);
-                setActiveInvites(activeInvites.concat(restrictedInvites));
-                setInactiveInvites(result.inactive);
-                setInvitesAvailability(result.invitesAvailability);
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error('Invite list error', err);
-            });
-    }, [api.inviteAPI, refreshCount]);
+        if (restrictions?.canInvite) {
+            api.inviteAPI.list()
+                .then(result => {
+                    console.log('INVITES', result);
+                    const activeInvites = result.active.filter(invite => !invite.restricted);
+                    const restrictedInvites = result.active.filter(invite => invite.restricted);
+                    setActiveInvites(activeInvites.concat(restrictedInvites));
+                    setInactiveInvites(result.inactive);
+                    setInvitesAvailability(result.invitesAvailability);
+                    setLoading(false);
+                })
+                .catch(err => {
+                    console.error('Invite list error', err);
+                });
+        } else {
+            setLoading(false);
+        }
+    }, [api.inviteAPI, refreshCount, restrictions?.canInvite]);
 
     const handleCreateInvite = async (reason: string): Promise<CommentInfo | undefined> => {
         try {
@@ -85,6 +90,15 @@ export const UserProfileInvites = observer(() => {
     return (
         loading ?
             <div>Загрузка...</div>
+            : !restrictions?.canInvite ?
+            <div className={karmaStyles.info}>
+                <div>
+                    <p>На текущий момент у вас нет возможности приглашать людей на орбитар.</p>
+                    <p>Детальная информация об ограничнениях доступна во вкладке&nbsp;
+                        <Link to={'/profile/karma'}>Саморегуляция</Link>.
+                    </p>
+                </div>
+            </div>
             :
             <div className={styles.invites}>
                 <h4>Ваши инвайты</h4>

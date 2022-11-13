@@ -5,12 +5,33 @@
 }
 
 div.info {
-  display: block;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: unset;
+  column-gap: 20px;
+
   margin-bottom: 12px;
   > p {
     margin: 16px 0;
     line-height: 1.4em;
   }
+}
+
+.trialProgress {
+  width: 350px;
+}
+
+:global(.CircularProgressbar .CircularProgressbar-path) {
+  stroke: var(--primary);
+}
+:global(.CircularProgressbar .CircularProgressbar-trail) {
+  stroke: var(--dim3);
+}
+:global(.CircularProgressbar .CircularProgressbar-text) {
+  fill: var(--fg);
+  font-size: 160%;
+  dominant-baseline: middle;
+  text-anchor: middle;
 }
 
 .beta {

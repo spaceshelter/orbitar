@@ -1,5 +1,5 @@
 import APIBase from './APIBase';
-import {UserInfo} from '../Types/UserInfo';
+import {UserInfo, UserProfileInfo} from '../Types/UserInfo';
 import {SiteInfo} from '../Types/SiteInfo';
 import {CommentEntity, ContentFormat, PostEntity} from './PostAPI';
 import PostAPIHelper from './PostAPIHelper';
@@ -16,7 +16,7 @@ type UseProfileRequest = {
 type UserProfileResponse = {
     profile: UserProfileEntity;
     invitedBy: UserInfo;
-    invites: UserInfo[];
+    invites: UserProfileInfo[];
 
     invitedReason?: string;
     trialProgress?: number;

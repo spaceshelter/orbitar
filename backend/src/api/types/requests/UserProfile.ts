@@ -12,7 +12,7 @@ export type UserProfileResponse = {
     trialApprovers?: VoteListItemEntity[];
     trialProgress?: number;
 
-    invites: UserBaseEntity[];
+    invites: UserProfileEntity[];
 };
 
 export type TrialProgressDebugInfo = {

@@ -84,16 +84,27 @@ export default class UserController {
             } as unknown as UserProfileEntity;
             profile.registered = profileInfo.registered.toISOString();
 
+            const enrichedInvites: UserProfileEntity[] = [];
+            for (const u of invites) {
+                const active = await this.userManager.isUserActive(u.id);
+                enrichedInvites.push({
+                    ...u,
+                    active,
+                    registered: u.registered.toISOString()
+                });
+            }
+
             return response.success({
                 profile: profile,
                 invitedBy: invitedBy,
-                invites: invites,
+                invites: enrichedInvites,
                 trialApprovers: trialApprovers.length && trialApprovers,
                 invitedReason,
                 trialProgress
             });
         } catch (error) {
-            this.logger.error('Could not get user profile', {username, error});
+            this.logger.error('Could not get user profile', {username});
+            this.logger.error(error);
             return response.error('error', 'Unknown error', 500);
         }
     }
