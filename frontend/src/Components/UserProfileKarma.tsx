@@ -3,6 +3,7 @@ import React, {useEffect, useState} from 'react';
 import Username from './Username';
 import {Karma} from './Karma';
 import {UserKarmaResponse, UserRestrictionsResponse} from '../API/UserAPI';
+import { CircularProgressbar } from 'react-circular-progressbar';
 import ratingSwitchStyles from './RatingSwitch.module.scss';
 import styles from './UserProfileKarma.module.scss';
 import {Link, useSearchParams} from 'react-router-dom';
@@ -130,22 +131,32 @@ export const UserProfileKarma = (props: UserProfileKarmaProps) => {
             сената!</>);
     }
 
+    const showTrialProgress = props.trialProgress !== undefined && (hasRestrictions || debug);
+
     return (
         <>
-            {isOwnProfile && <div className={styles.info}>
-                <div className={styles.beta}>BETA</div>
-                <p>Мы продолжаем работать над саморегуляцией.</p>
-                <p>Это самая первая версия, работающая по механизму,
-                <PostLink post={{id: 781, site: 'dev'}}> описанному тут</PostLink>.</p>
-                <p>Формула саморегуляции зависит от двух вещей — оценок другими людьми вас и вашего контента (постов и комментариев).
-                    Если коротко, ведите себя по-человечески, производите хороший контент, и все будет хорошо.</p>
+            {(isOwnProfile || showTrialProgress) && <div className={styles.info}>
+                {showTrialProgress && props.trialProgress &&
+                    <div className={styles.trialProgress}>
+                        <CircularProgressbar value={props.trialProgress * 100}
+                                             text={`${Math.round(props.trialProgress * 100)}%`}/>
+                    </div>}
+                <div>
+                    {showTrialProgress && <p>← Прогресс к полным правам.</p>}
+                    {isOwnProfile && <>
+                        <p>Это все еще сырая версия саморегуляции, работающая по механизму,
+                            <PostLink post={{id: 781, site: 'dev'}}> описанному тут</PostLink>.</p>
+                        <p>Формула саморегуляции зависит от двух вещей — оценок другими людьми вас и вашего контента
+                            (постов
+                            и комментариев).
+                            Если коротко, ведите себя по-человечески, производите хороший контент, и все будет
+                            хорошо.</p>
+                    </>}
+                </div>
             </div>}
 
             {!restrictionsResult && <div>Загрузка...</div>}
 
-            {props.trialProgress !== undefined && (hasRestrictions || debug) && <div>
-                Прогресс к полноценным правам: {Math.round(props.trialProgress * 100)}%<br/>
-            </div>}
 
             {!!restrictions?.length && <div>{restrictions.map((r, idx) =>
                 <div key={idx} className={styles.restricted}>{r}</div>)}</div>}

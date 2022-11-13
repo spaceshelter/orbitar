@@ -13,6 +13,7 @@ import {UserProfileInvites} from '../Components/UserProfileInvites';
 import {observer} from 'mobx-react-lite';
 import {UserProfileKarma} from '../Components/UserProfileKarma';
 import ContentComponent from '../Components/ContentComponent';
+import classNames from 'classnames';
 
 export const UserPage = observer(() => {
     const {userInfo, userRestrictions: restrictions} = useAppState();
@@ -61,7 +62,7 @@ export const UserPage = observer(() => {
         const user = profile.profile;
         const rating = {value: user.karma, vote: user.vote};
         const isMyProfile = userInfo && userInfo.id === user.id;
-        const base = '/u/' + user.username;
+        const base = isMyProfile ? '/profile' : '/u/' + user.username;
 
         const handleOnVote = (value: number, vote?: number, postApiCall?: boolean) => {
             if (postApiCall) {
@@ -75,17 +76,16 @@ export const UserPage = observer(() => {
                     <div className={styles.row}>
                         <div>
                             <div className={styles.username}>{user.username}</div>
-                            <div className={styles.name}>{user.name}</div>
                         </div>
+
                         <div className={styles.karma}>
+                            {user.active && <span className={styles.active} title={'Активно посещал сайт в эту неделю'}><span className={'i i-alive'}></span>&nbsp;активен</span>}
+                            {!user.active && <span className={styles.active} title={'В последнюю неделю не заходил на сайт или заходил недостаточно часто, чтобы считаться активным'}><span className={'i i-ghost'}></span>&nbsp;неактивен</span>}
+
                             <RatingSwitch rating={rating} type='user' id={user.id} double={true} votingDisabled={!restrictions?.canVoteKarma} onVote={handleOnVote}/>
                         </div>
                     </div>
-
-                    <div className={styles.registered}>#{user.id}, зарегистрирован <DateComponent date={user.registered} />
-                        {user.active && <span className={styles.active} title={'Активно посещал сайт в эту неделю'}>, <span className={'i i-alive'}></span>&nbsp;активен</span>}
-                        {!user.active && <span className={styles.active} title={'В последнюю неделю не заходил на сайт или заходил недостаточно часто, чтобы считаться активным'}>, <span className={'i i-ghost'}></span>&nbsp;неактивен</span>}
-                    </div>
+                    <div className={styles.name}>{user.name}</div>
                 </div>
 
                 <div className={styles.controls}>
@@ -93,29 +93,35 @@ export const UserPage = observer(() => {
                     <Link className={`${styles.control} ${isPosts ? styles.active : ''}`} to={base + '/posts'}>Посты</Link>
                     <Link className={`${styles.control} ${isComments ? styles.active : ''}`} to={base + '/comments'}>Комментарии</Link>
                     <Link className={`${styles.control} ${isKarma ? styles.active : ''}`} to={base + '/karma'}>Саморегуляция</Link>
-                    {isMyProfile && restrictions?.canInvite && <Link className={`${styles.control} ${isInvites ? styles.active : ''}`} to={'/profile/invites'}>Инвайты</Link>}
-
+                    {isMyProfile && <Link className={`${styles.control} ${isInvites ? styles.active : ''}`} to={'/profile/invites'}>Инвайты</Link>}
                 </div>
+
                 <div className={styles.userinfo}>
                     {isProfile && <>
-                        {profile.invitedBy && <div>
-                            Зарегистрирован по приглашению <Username user={profile.invitedBy} />
-                            {(profile.trialApprovers || profile.invitedReason) && <a href={'#'} onClick={toggleInviteReason}>?</a> }
-                        </div>}
+                        <div className={styles.registered}>#{user.id},
+                            {profile.invitedBy && <>
+                                {(profile.trialApprovers || profile.invitedReason) &&
+                                    <a href={'#'} title={'Детальный контекст приглашения'} onClick={toggleInviteReason}>приглашен</a> ||
+                                    <span>приглашен</span>}
+                                <Username user={profile.invitedBy} /></> || <span>зарегистрирован</span>}
+                             <DateComponent date={user.registered} />
+                        </div>
+
                         {showReason && <>
                         {!!profile.trialApprovers && <>
-                            {profile.trialApprovers.find(u => u.vote > 0) && <div>Принятие поддержали:
+                            {profile.trialApprovers.find(u => u.vote > 0) && <div>Приглашение поддержали:
                                 {profile.trialApprovers.map(user => user.vote > 0 && <Username key={user.username} user={user}/>)}
                             </div>}
-                            {profile.trialApprovers.find(u => u.vote < 0) && <div>Против принятия:
+                            {profile.trialApprovers.find(u => u.vote < 0) && <div>Против приглашения были:
                                 {profile.trialApprovers.map(user => user.vote < 0 && <Username key={user.username} user={user}/>)}
                             </div>}
                         </>}
                         {!!profile.invitedReason && <div className={'content'}>Причина приглашения: <ContentComponent content={profile.invitedReason}/></div>}
                         </>}
                         {profile.invites.length > 0 && <div>
-                            По его приглашениям зарегистрированы: {profile.invites.map((user, idx) => {
-                                return <Username key={idx} user={user}/>;
+                            Пригласил: {profile.invites.map((user, idx) => {
+                            return <Username key={idx} user={user}
+                                             className={classNames({[styles.inactive]: !user.active})}/>;
                             })}
                         </div>}
                         { isMyProfile && <button className={styles.logout} onClick={handleLogout}><LogoutIcon /> Выход </button> }

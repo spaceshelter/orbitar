@@ -6,7 +6,7 @@ import {VoteListItemEntity} from './VoteAPI';
 export type UserProfileResult = {
     profile: UserProfileInfo;
     invitedBy: UserInfo;
-    invites: UserInfo[];
+    invites: UserProfileInfo[];
     invitedReason?: string;
     trialProgress?: number;
     trialApprovers?: VoteListItemEntity[];

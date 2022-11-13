@@ -18,28 +18,37 @@
 
 .userinfo {
     padding-top: 40px;
+    color: var(--fg);
     >div{
         width: 100%;
         display: flex;
         flex-wrap: wrap;
         gap: 2px 8px;
-        color: var(--fg);
         padding-bottom: 16px;
     }
+
+  .inactive {
+    color: var(--fgSoft);
+  }
 }
+.active {
+  padding-right: 20px;
+}
+
 .active > span{
     font-size: 20px;
 }
 
 .karma {
     padding: 16px 0;
-    display: inline-block;
+    //display: inline-block;
+    display: flex;
     //float: right;
 }
 
 .controls {
    // padding: 10px 0;
-    margin: 0 -10px;
+    margin: 20px -10px 0;
 }
 
 .control {
@@ -52,9 +61,16 @@
     }
 }
 
+.registered {
+  color: var(--fgSoft);
+  display: flex;
+}
+
 .username {
     font-size: 40px;
 }
+
+
 .name {
     font-size: 25px;
 }
