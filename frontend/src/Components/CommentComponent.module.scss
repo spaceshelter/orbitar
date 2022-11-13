@@ -75,14 +75,15 @@
 
         font-weight: bold;
 
-        &.active {
+        &:active, &:hover {
             fill: var(--primary);
+            color: var(--primary);
             font-weight: bold;
         }
     }
     a {
          margin: 0 2px;
-        &.active {
+        &:active {
             color: var(--primary);
         }
     }

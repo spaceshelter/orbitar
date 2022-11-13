@@ -161,7 +161,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
 
     useEffect(() => {
         const answer = answerRef.current;
-        if ((props.text || props.comment) && props.open && answer) {
+        if (props.open && answer) {
             answer.focus();
             answer.selectionStart = answer.value.length;
         }

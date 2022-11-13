@@ -21,6 +21,25 @@
     color: var(--fgSoftest);
 }
 
+button.postAnswer {
+    font-size: 14px;
+    background: none;
+    margin: 0;
+    padding: 0;
+    border: none;
+    align-items: center;
+    fill: var(--fgSoftest);
+    color: var(--fgSoftest);
+    text-decoration: none;
+
+    font-weight: bold;
+
+    &:active, &:hover {
+         color: var(--primary);
+         font-weight: bold;
+    }
+}
+
 .postButtons a {
 
 }

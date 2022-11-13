@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import styles from './PostPage.module.css';
+import styles from './PostPage.module.scss';
 import {Link, useLocation, useParams, useSearchParams} from 'react-router-dom';
 import {CommentInfo, PostInfo, PostLinkInfo} from '../Types/PostInfo';
 import PostComponent from '../Components/PostComponent';
@@ -14,6 +14,7 @@ export default function PostPage() {
     const postId = params.postId ? parseInt(params.postId, 10) : 0;
     const location = useLocation();
     const [scrolledToComment, setScrolledToComment] = useState<{postId: number, commentId: number}>();
+    const [answerOpen, setAnswerOpen] = useState(false);
     const {site} = useAppState();
 
     const unreadOnly = search.get('new') !== null;
@@ -30,6 +31,11 @@ export default function PostPage() {
         document.title = docTitle;
 
     }, [post, postId]);
+
+    const handleAnswerSwitch = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setAnswerOpen(!answerOpen);
+    };
 
     const handleCommentEdit = async (text: string, comment: CommentInfo) => {
         return await editComment(text, comment.id);
@@ -109,7 +115,10 @@ export default function PostPage() {
             <div className={styles.feed}>
                 {post ? <div>
                         <PostComponent key={post.id} post={post} onChange={(_, partial) => updatePost(partial)} onEdit={handlePostEdit} />
-                        <div className={styles.postButtons}><Link to={`${baseRoute}p${post.id}`} className={unreadOnly ? '' : 'bold'}>все комментарии</Link> • <Link to={`${baseRoute}p${post.id}?new`} className={unreadOnly ? 'bold' : ''}>только новые</Link></div>
+                        <div className={styles.postButtons}><Link to={`${baseRoute}p${post.id}`} className={unreadOnly ? '' : 'bold'}>все комментарии</Link> • <Link to={`${baseRoute}p${post.id}?new`} className={unreadOnly ? 'bold' : ''}>только новые</Link>
+                            {comments && comments.length > 0 && <> • <PostAnswerButton answerOpen={answerOpen} handleAnswerSwitch={handleAnswerSwitch} /></>}
+                        </div>
+
                         <div className={styles.comments + (unreadOnly ? ' unreadOnly' : '')}>
                             {comments ?
                                 comments.map(comment => <CommentComponent maxTreeDepth={12} key={comment.id} comment={comment} onAnswer={handleAnswer} unreadOnly={unreadOnly} onEdit={handleCommentEdit} />)
@@ -120,7 +129,8 @@ export default function PostPage() {
                                 )
                             }
                         </div>
-                        <CreateCommentComponentRestricted open={true} post={post} onAnswer={handleAnswer} />
+                        <PostAnswerButton answerOpen={answerOpen} handleAnswerSwitch={handleAnswerSwitch} />
+                        <CreateCommentComponentRestricted open={answerOpen} post={post} onAnswer={handleAnswer} />
                     </div>
                     :
                     (
@@ -133,3 +143,6 @@ export default function PostPage() {
     );
 }
 
+const PostAnswerButton = (props: {answerOpen: boolean, handleAnswerSwitch: (e: React.MouseEvent) => void } ) => {
+    return <button className={styles.postAnswer} onClick={props.handleAnswerSwitch}>{!props.answerOpen ? 'Комментировать пост' : 'Не комментировать'}</button>;
+};
