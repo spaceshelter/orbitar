@@ -129,8 +129,9 @@ export const UserProfileInvites = observer(() => {
                     <h2>Создать приглашение</h2>
                     <div className={styles.createInvite}>
                         <p>
-                            Напишите пару слов о том, кого именно вы собираетесь позвать;
-                            если было обсуждение, оставьте ссылку на него. Этот текст будет виден всем и заодно позволит вам не забыть, кому вы этот инвайт отправили.
+                            Этот текст <b>будет виден всем</b>.
+                            Напишите пару слов о том, кого вы собираетесь позвать и зачем.
+                            Если было обсуждение, оставьте ссылку на него.
                         </p>
                         <div className={createPostStyles.form}>
                             <CreateCommentComponent open={true} onAnswer={handleCreateInvite}/>
