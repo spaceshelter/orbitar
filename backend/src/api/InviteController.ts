@@ -58,10 +58,13 @@ export default class InviteController {
         const createSchema = Joi.object<InviteCreateRequest>({
             reason: Joi.string().min(1).max(50000).required(),
         });
+        const listSchema = Joi.object<InviteListRequest>({
+            username: joiUsername
+        });
 
         this.router.post('/invite/check', limiter, validate(checkSchema), (req, res) => this.checkInvite(req, res));
         this.router.post('/invite/use', limiter, validate(useSchema), (req, res) => this.useInvite(req, res));
-        this.router.post('/invite/list', limiter, (req, res) => this.list(req, res));
+        this.router.post('/invite/list', limiter, validate(listSchema), (req, res) => this.list(req, res));
         this.router.post('/invite/regenerate', limiter, validate(codeSchema), (req, res) => this.regenerate(req, res));
         this.router.post('/invite/create', limiter, validate(createSchema), (req, res) => this.create(req, res));
         this.router.post('/invite/delete', limiter, validate(codeSchema), (req, res) => this.delete(req, res));
@@ -165,16 +168,20 @@ export default class InviteController {
             return response.authRequired();
         }
 
+        const {username: forUsername} = request.body;
+        const forUser = await this.userManager.getByUsername(forUsername);
+        if (!forUser) {
+            return response.error('user-not-found', 'User not found');
+        }
+
+
         const userId = request.session.data.userId;
+        const isSelf = userId === forUser.id;
+        const canInvite = (await this.userManager.getUserRestrictions(userId)).canInvite;
 
         try {
-            if (!(await this.userManager.getUserRestrictions(userId)).canInvite) {
-                this.logger.warn(`User ${userId} has no permission to list invites`, {user: userId});
-                return response.error(ERROR_CODES.NO_PERMISSION, 'No permission to list invites', 403);
-            }
-
-            const invites = await this.inviteManager.listInvites(userId);
-            const invitesAvailability = await this.inviteManager.invitesAvailability(userId);
+            const invites = await this.inviteManager.listInvites(forUser.id);
+            const invitesAvailability = isSelf && canInvite && await this.inviteManager.invitesAvailability(forUser.id);
 
             const active: InviteEntity[] = [];
             const inactive: InviteEntity[] = [];
@@ -185,8 +192,14 @@ export default class InviteController {
                 if (invite.leftCount > 0) {
                     active.push(entity);
                 }
-                else {
+                if (invite.invited.length > 0) {
                     inactive.push(entity);
+                }
+            }
+            if (!isSelf || !canInvite) {
+                active.length = 0;
+                for (const invite of inactive) {
+                    invite.code = '';
                 }
             }
 

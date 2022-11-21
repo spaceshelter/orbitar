@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect} from 'react';
 import styles from './UserPage.module.scss';
 import {Link, useLocation, useNavigate, useParams} from 'react-router-dom';
 import Username from '../Components/Username';
@@ -12,8 +12,6 @@ import UserProfileComments from '../Components/UserProfileComments';
 import {UserProfileInvites} from '../Components/UserProfileInvites';
 import {observer} from 'mobx-react-lite';
 import {UserProfileKarma} from '../Components/UserProfileKarma';
-import ContentComponent from '../Components/ContentComponent';
-import classNames from 'classnames';
 
 export const UserPage = observer(() => {
     const {userInfo, userRestrictions: restrictions} = useAppState();
@@ -23,12 +21,6 @@ export const UserPage = observer(() => {
     const page = params.page || 'profile';
 
     const [state, refreshProfile] = useUserProfile(username || '');
-    const [showReason, setShowReason] = useState(false);
-    const toggleInviteReason = (e: any) => {
-        e.preventDefault();
-        setShowReason(!showReason);
-        return false;
-    };
 
     const isPosts = page === 'posts';
     const isComments = page === 'comments';
@@ -93,43 +85,28 @@ export const UserPage = observer(() => {
                     <Link className={`${styles.control} ${isPosts ? styles.active : ''}`} to={base + '/posts'}>Посты</Link>
                     <Link className={`${styles.control} ${isComments ? styles.active : ''}`} to={base + '/comments'}>Комментарии</Link>
                     <Link className={`${styles.control} ${isKarma ? styles.active : ''}`} to={base + '/karma'}>Саморегуляция</Link>
-                    {isMyProfile && <Link className={`${styles.control} ${isInvites ? styles.active : ''}`} to={'/profile/invites'}>Инвайты</Link>}
+                    <Link className={`${styles.control} ${isInvites ? styles.active : ''}`} to={base + '/invites'}>Инвайты</Link>
                 </div>
 
                 <div className={styles.userinfo}>
                     {isProfile && <>
                         <div className={styles.registered}>#{user.id},
                             {profile.invitedBy && <>
-                                {(profile.trialApprovers || profile.invitedReason) &&
-                                    <a href={'#'} title={'Детальный контекст приглашения'} onClick={toggleInviteReason}>приглашен</a> ||
-                                    <span>приглашен</span>}
+                                <a href={`/u/${profile.invitedBy.username}/invites/#${user.username}`} title={'Детальный контекст приглашения'}>приглашен</a>
                                 <Username user={profile.invitedBy} /></> || <span>зарегистрирован</span>}
                              <DateComponent date={user.registered} />
                         </div>
-
-                        {showReason && <>
-                        {!!profile.invitedReason && <div className={'content'}><ContentComponent content={profile.invitedReason}/></div>}
-                            {!!profile.trialApprovers && <>
-                                {profile.trialApprovers.find(u => u.vote > 0) && <div>Приглашение поддержали:
-                                    {profile.trialApprovers.map(user => user.vote > 0 && <Username key={user.username} user={user}/>)}
-                                </div>}
-                                {profile.trialApprovers.find(u => u.vote < 0) && <div>Против приглашения были:
-                                    {profile.trialApprovers.map(user => user.vote < 0 && <Username key={user.username} user={user}/>)}
-                                </div>}
-                            </>}
-                        </>}
                         {profile.invites.length > 0 && <div>
                             Пригласил: {profile.invites.map((user, idx) => {
-                            return <Username key={idx} user={user}
-                                             className={classNames({[styles.inactive]: !user.active})}/>;
+                            return <Username key={idx} user={user} inactive={!user.active}/>;
                             })}
                         </div>}
                         { isMyProfile && <button className={styles.logout} onClick={handleLogout}><LogoutIcon /> Выход </button> }
                     </>}
                     {isPosts && <UserProfilePosts username={user.username} />}
                     {isComments && <UserProfileComments username={user.username} />}
-                    {isInvites && <UserProfileInvites />}
-                    {isKarma && <UserProfileKarma username={user.username} trialProgress={profile?.trialProgress} />}
+                    {isInvites && <UserProfileInvites username={user.username} />}
+                    {isKarma && <UserProfileKarma username={user.username} profile={profile} />}
                 </div>
             </div>
         );

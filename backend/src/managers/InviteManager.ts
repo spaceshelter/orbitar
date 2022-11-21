@@ -88,6 +88,15 @@ export default class InviteManager {
     }
 
     async invitesAvailability(userId: number): Promise<InvitesAvailability> {
+        const thisUserRestrictions = await this.userManager.getUserRestrictions(userId);
+        if (!thisUserRestrictions || !thisUserRestrictions.canInvite) {
+            return {
+                invitesLeft: 0,
+                inviteWaitPeriodDays: 0,
+                invitesPerPeriod: 0
+            };
+        }
+
         const gcd = (a: number, b: number): number => {
             if (!b) {
                 return a;

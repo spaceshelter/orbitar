@@ -30,7 +30,9 @@ export type InviteEntity = {
     reason?: string;
     restricted: boolean;
 };
-export type InviteListRequest = Record<string, never>;
+export type InviteListRequest = {
+    username: string;
+};
 
 export type InvitesAvailability = {
     invitesLeft: number;
@@ -40,9 +42,9 @@ export type InvitesAvailability = {
 };
 
 export type InviteListResponse = {
-    active: InviteEntity[];
+    active?: InviteEntity[];
     inactive: InviteEntity[];
-    invitesAvailability: InvitesAvailability;
+    invitesAvailability?: InvitesAvailability;
 };
 
 export type InviteRegenerateRequest = {
@@ -84,8 +86,8 @@ export default class InviteAPI {
         });
     }
 
-    async list(): Promise<InviteListResponse> {
-        return await this.api.request<InviteListRequest, InviteListResponse>('/invite/list', {});
+    async list(username: string): Promise<InviteListResponse> {
+        return await this.api.request<InviteListRequest, InviteListResponse>('/invite/list', { username });
     }
 
     async regenerate(code: string): Promise<InviteRegenerateResponse> {

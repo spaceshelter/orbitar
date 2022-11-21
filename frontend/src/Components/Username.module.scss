@@ -1,0 +1,22 @@
+.username {
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+
+  &.inactive {
+    color: var(--fgSoft);
+  }
+}
+
+.username svg {
+  fill: var(--primary);
+  opacity: .7;
+}
+
+.username:hover svg {
+  color: var(--primaryHover);
+}
+
+.username:hover svg {
+  fill: var(--primaryHover);
+}

@@ -11,6 +11,7 @@ div.info {
   column-gap: 20px;
 
   margin-bottom: 12px;
+
   > p {
     margin: 16px 0;
     line-height: 1.4em;
@@ -24,9 +25,11 @@ div.info {
 :global(.CircularProgressbar .CircularProgressbar-path) {
   stroke: var(--primary);
 }
+
 :global(.CircularProgressbar .CircularProgressbar-trail) {
   stroke: var(--dim3);
 }
+
 :global(.CircularProgressbar .CircularProgressbar-text) {
   fill: var(--fg);
   font-size: 160%;
@@ -55,12 +58,26 @@ div.info {
   display: flex;
   gap: 24px;
   align-items: center;
-  >span{font-size: 24px;}
-  p{
+
+  > span {
+    font-size: 24px;
+  }
+
+  p {
     margin: 4px 0 0;
     font-size: 0.8em;
     color: var(--fgSoft);
+
+    ul.supporters {
+      display: flex;
+      flex-wrap: wrap;
+      list-style-type: none;
+      padding: 0;
+      gap: 4px;
+      margin-top: 5px;
+    }
   }
+
 }
 
 .subsiteList {
