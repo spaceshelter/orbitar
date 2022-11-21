@@ -34,6 +34,7 @@ export default class InviteRepository {
                     left join users u on (ui.child_id = u.user_id) 
             where
                 i.issued_by = :forUserId
+            order by i.invite_id desc
         `, {
             forUserId
         });

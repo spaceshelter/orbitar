@@ -1,6 +1,8 @@
 import {InviteEntity} from '../entities/InviteEntity';
 
-export type InviteListRequest = Record<string, never>;
+export type InviteListRequest = {
+    username: string;
+};
 
 export type InvitesAvailability = {
     invitesLeft: number;
@@ -12,5 +14,5 @@ export type InvitesAvailability = {
 export type InviteListResponse = {
     active: InviteEntity[];
     inactive: InviteEntity[];
-    invitesAvailability: InvitesAvailability;
+    invitesAvailability?: InvitesAvailability;
 };

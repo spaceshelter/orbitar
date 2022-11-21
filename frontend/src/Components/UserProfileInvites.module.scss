@@ -9,26 +9,41 @@
 
     }
 
+    button {
+      border: none;
+      background: none;
+      color: var(--link);
+      margin: 0;
+      padding: 0 10px 0 0;
+
+      &:hover {
+        color: var(--linkHover);
+      }
+    }
+
     .list {
       .item {
-        display: flex;
-        flex-direction: row;
-        align-items: baseline;
         margin: 5px 0;
 
-        button {
-          border: none;
-          background: none;
-          color: var(--link);
-          margin: 0;
-          padding: 0 10px 0 0;
 
-          &:hover {
-            color: var(--linkHover);
-          }
+
+        &.invite {
+          border-radius: 4px;
+          color: var(--fg);
+          background-color: var(--dim3);
+          padding: 10px 16px 10px 24px;
+          margin-bottom: 10px;
+        }
+
+        .generated {
+          color: var(--fgSofter);
+          size: 14px;
+          margin-bottom: 10px;
         }
 
         .code {
+          margin: 10px 0;
+
           color: var(--fgSofter);
           a {
             color: var(--fgSofter);
@@ -38,7 +53,6 @@
       }
 
       .invited {
-        margin-left: 10px;
         flex-direction: row;
 
         a {
@@ -48,15 +62,37 @@
       }
 
     }
+  }
 
+  .content {
+    margin: 10px 0;
   }
 
   .createInvite {
-    width: 100%;
     border-radius: 4px;
     padding: 10px 16px 0 24px;
     color: var(--fg);
     background-color: var(--dim3);
     >span{font-size: 24px;}
   }
+
+  .highlighted {
+    /*animate background color*/
+    animation: highlight 1s ease-in-out infinite;
+
+    @keyframes highlight {
+      0% {
+        background-color: var(--bg);
+      }
+
+      50% {
+        background-color: var(--dim2);
+      }
+
+      100% {
+        background-color: var(--bg);
+      }
+    }
+  }
+
 }

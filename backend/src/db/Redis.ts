@@ -20,6 +20,7 @@ export default class Redis {
     }
 
     async connect() {
+        this.logger.verbose('Redis connecting...');
         await this.client.connect();
         this.logger.verbose('Redis connected');
     }
