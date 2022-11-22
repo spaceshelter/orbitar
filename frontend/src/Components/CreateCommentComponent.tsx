@@ -16,12 +16,14 @@ import {useAPI, useAppState} from '../AppState/AppState';
 import SlowMode from './SlowMode';
 import {observer} from 'mobx-react-lite';
 import TextareaAutosize from 'react-textarea-autosize';
+import {useDebouncedCallback} from 'use-debounce';
 
 interface CreateCommentProps {
     open: boolean;
     comment?: CommentInfo;
     post?: PostLinkInfo;
     text?: string;
+    storageKey?: string;
 
     onAnswer: (text: string, post?: PostLinkInfo, comment?: CommentInfo) => Promise<CommentInfo | undefined>;
 }
@@ -60,7 +62,8 @@ export const CreateCommentComponentRestricted = observer((props: CreateCommentPr
 
 export default function CreateCommentComponent(props: CreateCommentProps) {
     const answerRef = useRef<HTMLTextAreaElement>(null);
-    const [answerText, setAnswerText] = useState<string>(props.text || '');
+    const [answerText, setAnswerText] = useState<string>(props.text ||
+        (props.storageKey && localStorage.getItem('crCmp:' + props.storageKey)) || '');
     const [isPosting, setPosting] = useState(false);
     const [previewing, setPreviewing] = useState<string | null>(null);
     const [mediaUploaderOpen, setMediaUploaderOpen] = useState(false);
@@ -70,7 +73,18 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     const placeholderText = props.comment ? `Ваш ответ ${pronoun}` : '';
     const disabledButtons = isPosting || previewing !== null;
 
+    const setStorageValueDebounced = useDebouncedCallback((value) => {
+        if (props.storageKey) {
+            if (value) {
+                localStorage.setItem('crCmp:' + props.storageKey, value);
+            } else {
+                localStorage.removeItem('crCmp:' + props.storageKey);
+            }
+        }
+    });
+
     const handleAnswerChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setStorageValueDebounced(e.target.value);
         setAnswerText(e.target.value);
     };
 
@@ -92,6 +106,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         answer.selectionStart = start + cursor;
         answer.selectionEnd = answer.selectionStart;
 
+        setStorageValueDebounced(newValue);
         setAnswerText(newValue);
     };
 
@@ -191,6 +206,8 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         setPosting(true);
         props.onAnswer(answerText, props.post, props.comment)
             .then(() => {
+                setStorageValueDebounced('');
+                setStorageValueDebounced.flush();
                 setAnswerText('');
             })
             .catch(error => {

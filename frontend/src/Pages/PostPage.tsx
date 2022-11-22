@@ -120,7 +120,7 @@ export default function PostPage() {
                                 )
                             }
                         </div>
-                        <CreateCommentComponentRestricted open={true} post={post} onAnswer={handleAnswer} />
+                        <CreateCommentComponentRestricted open={true} post={post} onAnswer={handleAnswer} storageKey={`c:${post.id}`} />
                     </div>
                     :
                     (
