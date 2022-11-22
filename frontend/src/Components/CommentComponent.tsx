@@ -110,7 +110,9 @@ export default function CommentComponent(props: CommentProps) {
             </div>
             {(props.comment.answers || answerOpen) ?
                 <div className={styles.answers + (isFlat?' isFlat':'')}>
-                    {props.onAnswer && <CreateCommentComponentRestricted open={answerOpen} post={props.comment.postLink} comment={props.comment} onAnswer={handleAnswer} />}
+                    {props.onAnswer && <CreateCommentComponentRestricted open={answerOpen} post={props.comment.postLink}
+                                                                         comment={props.comment} onAnswer={handleAnswer}
+                                                                         storageKey={`cp:${props.comment.id}`}/>}
                     {props.comment.answers && props.onAnswer ? props.comment.answers.map( (comment, idx) =>
                         <CommentComponent maxTreeDepth={maxDepth} depth={depth+1} parent={props.comment} key={comment.id}
                                           comment={comment} onAnswer={props.onAnswer} onEdit={props.onEdit} unreadOnly={props.unreadOnly} idx={idx} />) : <></>}

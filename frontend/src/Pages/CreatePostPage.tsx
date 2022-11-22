@@ -60,7 +60,7 @@ export const CreatePostPage = observer(() => {
                     {userRestrictions?.restrictedToPostId === true && <LastPostMessage/>}
                     <input className={styles.title} type="text" placeholder="Без названия" maxLength={64} value={title}
                            onChange={handleTitleChange}/>
-                    <CreateCommentComponent open={true} onAnswer={handleAnswer}/>
+                    <CreateCommentComponent open={true} onAnswer={handleAnswer} storageKey={`np:${site}`}/>
                 </div>
             </div>
         </div>
