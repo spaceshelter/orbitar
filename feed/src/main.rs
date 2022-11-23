@@ -43,6 +43,7 @@ struct Query {
 struct QueryResponse {
     post_ids: Vec<PostId>,
     total: usize,
+    cache_is_empty: bool
 }
 
 
@@ -56,6 +57,10 @@ fn main() {
 
     server.utilize(middleware! { |req|
         println!("request: {:?}", req.origin.uri);
+    });
+
+    server.get("/ping", middleware! {
+        "pong"
     });
 
     server.post("/clear", middleware! {
@@ -107,7 +112,8 @@ fn main() {
 
         let response = QueryResponse {
             post_ids: posts,
-            total: total
+            total: total,
+            cache_is_empty: map.is_empty()
         };
         serde_json::to_string(&response).unwrap()
     });

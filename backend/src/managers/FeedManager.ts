@@ -32,6 +32,7 @@ type Query = {
 type QueryResponse = {
     post_ids: number[];
     total: number;
+    cache_is_empty: boolean;
 };
 
 export default class FeedManager {
@@ -42,6 +43,8 @@ export default class FeedManager {
     private initialized = undefined;
     /* minimal post created / updated date */
     private minDate: Date | undefined = undefined;
+    /* when true, backend expects non-empty feed cache, will repopulate if discrepancy is found */
+    private confirmedPostsExist = false;
     private readonly logger: Logger;
 
     private userSubscriptionsCache = new Map<number, number[]>();
@@ -63,14 +66,23 @@ export default class FeedManager {
         return Math.floor(Math.max(ts.getTime() - this.minDate.getTime(), 0) / 1000);
     }
 
-    private initialize() {
-        if (!this.initialized || !this.minDate) {
+    /**
+     * Populates the feed cache with posts from the db.
+     * Returns promise that resolves when the initialization is complete.
+     * @param force to force repopulation (even if already initialized)
+     * @return {Promise<number>} uuid of the initialization run
+     */
+    private initialize(force = false): Promise<number> {
+        if (!this.initialized || force) {
+            this.confirmedPostsExist = false;
+
             this.initialized = (async () => {
+                const uuid = (new Date()).getTime() * 1000 + Math.floor(Math.random() * 1000);
                 try {
 
                     this.minDate = await this.postRepository.getMinPostDate();
                     if (!this.minDate) {
-                        return;
+                        return uuid;
                     }
 
                     await fetch(`${FEED_API}/clear`,
@@ -86,6 +98,7 @@ export default class FeedManager {
                         if (batch.length === 0) {
                             break;
                         }
+                        this.confirmedPostsExist = true;
 
                         const batchesBySite: Record<string, Batch> = {};
                         const addPostToBatch = (key: string, ts: number, id: number) => {
@@ -120,6 +133,7 @@ export default class FeedManager {
                     this.logger.error(e);
                     this.initialized = undefined;
                 }
+                return uuid;
             })();
         }
         return this.initialized;
@@ -142,7 +156,7 @@ export default class FeedManager {
     async getSubscriptionFeed(forUserId: number, page: number, perpage: number, format: ContentFormat, sorting: FeedSorting):
         Promise<{total: number, posts: PostInfo[]}> {
 
-        await this.initialize();
+        const prevInitUUID = await this.initialize();
 
         const limitFrom = (page - 1) * perpage;
 
@@ -151,7 +165,7 @@ export default class FeedManager {
         this.logger.profile(`getSubscriptionFeed/subsiteKeys:${forUserId}`);
 
         this.logger.profile(`getSubscriptionFeed/query:${forUserId}`);
-        const { total, post_ids: postIds }  = await fetch(`${FEED_API}/query`, {
+        const { total, post_ids: postIds, cache_is_empty: cacheIsEmpty }  = await fetch(`${FEED_API}/query`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -163,6 +177,25 @@ export default class FeedManager {
             } as Query),
         }).then(res => res.json() as QueryResponse);
         this.logger.profile(`getSubscriptionFeed/query:${forUserId}`);
+
+        /**
+         * Discrepancy is found, repopulating feed cache:
+         * - feed cache is empty, but posts exist in db
+         *     (feed cache service was restarted)
+         * - cache initialization didn't find any posts in db, but posts were added later
+         *     (can happen once when starting from empty db)
+         *
+         *     cacheIsEmpty is true whe remote feed cache is empty
+         *     this.minDate is undefined when initialization didn't happen or didn't find any posts in db
+         */
+        if (this.confirmedPostsExist && (cacheIsEmpty || !this.minDate)) {
+            const curInitUUID = await this.initialize();
+            // double-checked locking. Needed if the repopulation was already in progress.
+            if (curInitUUID === prevInitUUID) {
+                await this.initialize(true);
+            }
+            return this.getSubscriptionFeed(forUserId, page, perpage, format, sorting);
+        }
 
         this.logger.profile(`getSubscriptionFeed/postsFetch:${forUserId}`);
         const posts: PostRawWithUserData[] =
@@ -285,7 +318,8 @@ export default class FeedManager {
     }
 
     async postFanOut(subsite_id: number, post_id: number, createdAt: Date | undefined, updatedAt: Date | undefined) {
-        if (!this.initialized) {
+        this.confirmedPostsExist = true;
+        if (!this.initialized || !this.minDate) {
             return;
         }
         const batch = [];
