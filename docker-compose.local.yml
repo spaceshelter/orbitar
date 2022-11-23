@@ -56,6 +56,8 @@ services:
       DEEPL_API_KEY: ${DEEPL_API_KEY}
     depends_on:
       - mysql
+      - redis
+      - feed
 
   feed:
     build:

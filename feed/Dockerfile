@@ -1,5 +1,5 @@
 # Tells docker to use the latest Rust official image
-FROM rust:latest as builder
+FROM rust:slim-buster as builder
 WORKDIR /feed
 # Copy the project files from your machine to the container
 COPY ./ ./
