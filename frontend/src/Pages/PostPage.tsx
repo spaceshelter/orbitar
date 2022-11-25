@@ -63,6 +63,7 @@ export default function PostPage() {
              scrollToComment = document.querySelector<HTMLDivElement>(`.isNew`);
         }
 
+        const cancelFocusing = () => containerRef.current?.classList.remove(styles.focusing);
         let timeoutId: NodeJS.Timeout;
         // things get complicated here - we need to account for images with unspecified dimensions that
         // are not loaded yet.
@@ -79,21 +80,25 @@ export default function PostPage() {
                     return;
                 }
                 // set anchor on comment
-                commentBody.style.overflowAnchor = 'auto';
+                scrollToComment.style.overflowAnchor = 'auto';
                 // cannot use smooth here - it is too slow and element will miss the view
                 commentBody.scrollIntoView({behavior: 'auto', block: 'center'});
                 commentBody.classList.add('highlight');
                 timeoutId = setTimeout(() => {
                     setScrolledToComment({postId, commentId});
                     commentBody.classList.remove('highlight');
-                }, 2000);
+                    // just in case - cancel focusing in 8 more seconds - total 10 seconds after focusing started
+                    timeoutId = setTimeout(cancelFocusing, 8000);
+
+                    }, 2000);
             }
         }, 500);
 
-        const cancelFocusing = () => containerRef.current?.classList.remove(styles.focusing);
+        // cancel early on page load
         document.addEventListener('load', cancelFocusing);
 
         return () => {
+            cancelFocusing();
             document.removeEventListener('load', cancelFocusing);
             clearTimeout(timeoutId);
         };
