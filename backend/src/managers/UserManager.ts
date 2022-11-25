@@ -282,7 +282,7 @@ export default class UserManager {
         const userRating = (profileVotingResult >= 0 ? 1 : Math.max(0, 1 - lerp(Math.pow(ratio / 100, 2), Math.pow(ratio * 2, 2), s)));
 
         // karma without punishment
-        return Math.max(-1000, ((contentRating + 1) * userRating - 1) * 1000);
+        return Math.max(USER_RESTRICTIONS.MIN_KARMA, ((contentRating + 1) * userRating - 1) * 1000);
     }
 
     /**
@@ -366,7 +366,8 @@ export default class UserManager {
 
         const postSlowModeDelay = (effectiveKarma < NEG_KARMA_THRESH ? /*12 hours */3600 * 12 : 0);
         const commentSlowModeDelay =
-            effectiveKarma <= -1000 ? /*1 hour */3600 : (effectiveKarma < NEG_KARMA_THRESH ? /*10 minutes */ 10 * 60 : 0);
+            effectiveKarma <= USER_RESTRICTIONS.MIN_KARMA ? /*1 hour */3600 :
+                (effectiveKarma < NEG_KARMA_THRESH ? /*10 minutes */ 10 * 60 : 0);
 
         if (!localCachedValue) {
             this.userRestrictionsCache.set(userId, {
@@ -484,7 +485,7 @@ export default class UserManager {
      * @param userId
      * @param threshold
      */
-    async getTrialVoters(userId: number, threshold = 2): Promise<number[]> {
+    async getTrialVoters(userId: number, threshold): Promise<number[]> {
         const voters = await this.getActiveKarmaVotes(userId);
 
         const primaryVoters = new Map<number, { user: UserInfo, vote: number }>();
@@ -552,15 +553,15 @@ export default class UserManager {
         const daysOnSitePart = clamp(daysOnSite, 0, NEW_USER_AGE_DAYS) / NEW_USER_AGE_DAYS;
 
         if (user?.ontrial) {
-            const activeUserThatCanVoteNum = Math.max(await this.getNumActiveUsersThatCanVote(), 1);
+            const activeUsersThatCanVoteNum = Math.max(await this.getNumActiveUsersThatCanVote(), 1);
             const secondaryVoters = await this.getTrialVoters(userId, 2);
             /* threshold of ratio votes/activeusers when progress reaches 1 */
             const SINGLE_VOTE_THRESHOLD = 0.5;
             const DOUBLE_VOTE_THRESHOLD = 0.3;
 
             /* both threshold should be reached */
-            const singleVotesPart = Math.min(1, (secondaryVoters[1] + secondaryVoters[2]) / (activeUserThatCanVoteNum * SINGLE_VOTE_THRESHOLD));
-            const doubleVotesPart = Math.min(1, (secondaryVoters[2]) / (activeUserThatCanVoteNum * DOUBLE_VOTE_THRESHOLD));
+            const singleVotesPart = Math.min(1, (secondaryVoters[1] + secondaryVoters[2]) / (activeUsersThatCanVoteNum * SINGLE_VOTE_THRESHOLD));
+            const doubleVotesPart = Math.min(1, (secondaryVoters[2]) / (activeUsersThatCanVoteNum * DOUBLE_VOTE_THRESHOLD));
 
             return {
                 effectiveKarmaPart,

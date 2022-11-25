@@ -6,17 +6,14 @@
   &.inactive {
     color: var(--fgSoft);
   }
-}
 
-.username svg {
-  fill: var(--primary);
-  opacity: .7;
-}
+  svg {
+    fill: var(--primary);
+    opacity: .7;
+  }
 
-.username:hover svg {
-  color: var(--primaryHover);
-}
-
-.username:hover svg {
-  fill: var(--primaryHover);
+  &:hover svg {
+    color: var(--primaryHover);
+    fill: var(--primaryHover);
+  }
 }
