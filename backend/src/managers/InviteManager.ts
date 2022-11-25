@@ -132,8 +132,8 @@ export default class InviteManager {
         inviteWaitPeriodDays /= gcdResult;
         invitesPerPeriod /= gcdResult;
 
-        const msInAnHour = 60 * 60 * 1000;
-        const currentInvitePeriodStartTs = Date.now() - inviteWaitPeriodDays * 24 * msInAnHour;
+        const msInTheDay = 24 * 60 * 60 * 1000;
+        const currentInvitePeriodStartTs = Date.now() - inviteWaitPeriodDays * msInTheDay;
         const usersInTheInvitedPeriod = invitedUsers.reduce((acc, user) =>
             user.registered.getTime() > currentInvitePeriodStartTs ? acc + 1 : acc, 0);
 
@@ -144,8 +144,9 @@ export default class InviteManager {
             //sort by registration date descending
             invitedUsers.sort((a, b) => b.registered.getTime() - a.registered.getTime());
             // number of recent invited users that delay the next available invite
-            const nextAvailableInviteTs = invitedUsers[invitesPerPeriod - 1].registered.getTime() + inviteWaitPeriodDays * 24 * msInAnHour;
-            daysLeftToNextAvailableInvite = Math.ceil((nextAvailableInviteTs - Date.now()) / (24 * msInAnHour));
+            const nextAvailableInviteTs = invitedUsers[invitesPerPeriod - 1].registered.getTime() +
+                inviteWaitPeriodDays * msInTheDay;
+            daysLeftToNextAvailableInvite = Math.ceil((nextAvailableInviteTs - Date.now()) / msInTheDay);
         }
 
         return {

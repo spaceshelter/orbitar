@@ -12,6 +12,7 @@ import UserProfileComments from '../Components/UserProfileComments';
 import {UserProfileInvites} from '../Components/UserProfileInvites';
 import {observer} from 'mobx-react-lite';
 import {UserProfileKarma} from '../Components/UserProfileKarma';
+import {UserGender} from '../Types/UserInfo';
 
 export const UserPage = observer(() => {
     const {userInfo, userRestrictions: restrictions} = useAppState();
@@ -52,6 +53,8 @@ export const UserPage = observer(() => {
     if (state.status === 'ready') {
         const profile = state.profile;
         const user = profile.profile;
+        const sheHer = user.gender === UserGender.she;
+        const a = sheHer ? 'а' : '';
         const rating = {value: user.karma, vote: user.vote};
         const isMyProfile = userInfo && userInfo.id === user.id;
         const base = isMyProfile ? '/profile' : '/u/' + user.username;
@@ -71,8 +74,12 @@ export const UserPage = observer(() => {
                         </div>
 
                         <div className={styles.karma}>
-                            {user.active && <span className={styles.active} title={'Активно посещал сайт в эту неделю'}><span className={'i i-alive'}></span>&nbsp;активен</span>}
-                            {!user.active && <span className={styles.active} title={'В последнюю неделю не заходил на сайт или заходил недостаточно часто, чтобы считаться активным'}><span className={'i i-ghost'}></span>&nbsp;неактивен</span>}
+                            {user.active && <span className={styles.active}
+                                                  title={`Активно посещал${a} сайт в эту неделю`}><span
+                                className={'i i-alive'}></span>&nbsp;{sheHer ? 'активна' : 'активен'}</span>}
+                            {!user.active && <span className={styles.active}
+                                                   title={`В последнюю неделю не заходил${a} на сайт или заходил${a} недостаточно часто, чтобы считаться ${sheHer ? 'активной' : 'активным'}`}><span
+                                className={'i i-ghost'}></span>&nbsp;{sheHer ? 'неактивна' : 'неактивен'}</span>}
 
                             <RatingSwitch rating={rating} type='user' id={user.id} double={true} votingDisabled={!restrictions?.canVoteKarma} onVote={handleOnVote}/>
                         </div>
@@ -92,12 +99,14 @@ export const UserPage = observer(() => {
                     {isProfile && <>
                         <div className={styles.registered}>#{user.id},
                             {profile.invitedBy && <>
-                                <a href={`/u/${profile.invitedBy.username}/invites/#${user.username}`} title={'Детальный контекст приглашения'}>приглашен</a>
-                                <Username user={profile.invitedBy} /></> || <span>зарегистрирован</span>}
+                                <a href={`/u/${profile.invitedBy.username}/invites/#${user.username}`}
+                                   title={'Детальный контекст приглашения'}>приглашен{a}</a>
+                                    <Username user={profile.invitedBy}/></> ||
+                                <span>зарегистрирован{a}</span>}
                              <DateComponent date={user.registered} />
                         </div>
                         {profile.invites.length > 0 && <div>
-                            Пригласил: {profile.invites.map((user, idx) => {
+                            Пригласил{a}: {profile.invites.map((user, idx) => {
                             return <Username key={idx} user={user} inactive={!user.active}/>;
                             })}
                         </div>}
