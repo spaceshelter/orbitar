@@ -206,13 +206,13 @@ const Invite = (props: {
     const {invite} = props;
 
     const handleCopyInvite = (e: React.MouseEvent) => {
+        e.preventDefault();
         if (!navigator.clipboard) {
             return;
         }
         navigator.clipboard.writeText(`https://${process.env.REACT_APP_ROOT_DOMAIN}/invite/${invite.code}`).then(() => {
             toast('В буфере!');
         }).catch();
-        e.preventDefault();
     };
 
     return <div className={classNames('item', 'invite')}>
@@ -230,7 +230,7 @@ const Invite = (props: {
             <div className="code"><Link to={`//${process.env.REACT_APP_ROOT_DOMAIN}/invite/${invite.code}`}
                                         onClick={handleCopyInvite}>{process.env.REACT_APP_ROOT_DOMAIN}/invite/{invite.code}</Link>
             </div>
-            <button onClick={() => handleCopyInvite}>Скопировать код</button>
+            <button onClick={handleCopyInvite}>Скопировать</button>
             <ConfirmButton onAction={() => props.handleRegenerate(invite.code)}
                 message={`Вы уверены, что хотите сгенерировать новый код для приглашения?`}
             >Отозвать</ConfirmButton>
