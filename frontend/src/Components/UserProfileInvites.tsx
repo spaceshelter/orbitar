@@ -72,6 +72,7 @@ export const UserProfileInvites = observer((props: UserProfileInvitesProps) => {
     };
 
     const handleRegenerate = async (code: string, idx: number | undefined) => {
+        setRegeneratedIdx(undefined);
         try {
             const result = await api.inviteAPI.regenerate(code);
             setRegeneratedIdx(idx);
@@ -233,7 +234,7 @@ const Invite = (props: {
         {!!invite.reason && <div className={classNames(commentStyles.content, styles.content)}><ContentComponent content={invite.reason}/></div>}
 
         {props.active && !!invite.code && <>
-            <div className={classNames('code', (idx === regeneratedIdx ? 'regenerated' : ''))}><Link to={`//${process.env.REACT_APP_ROOT_DOMAIN}/invite/${invite.code}`}
+            <div className={classNames('code', {'regenerated': idx === regeneratedIdx})}><Link to={`//${process.env.REACT_APP_ROOT_DOMAIN}/invite/${invite.code}`}
                                         onClick={handleCopyInvite}>{process.env.REACT_APP_ROOT_DOMAIN}/invite/{invite.code}</Link>
             </div>
             <button onClick={handleCopyInvite}>Скопировать</button>
