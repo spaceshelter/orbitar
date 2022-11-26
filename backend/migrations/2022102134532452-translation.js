@@ -16,9 +16,11 @@ exports.setup = function (options, seedLink) {
 
 exports.up = async function (db) {
     // add field language to table comments and posts
+    const defaultLang = process.env.DEFAULT_TL_LANGUAGE || 'ru';
+
     await db.runSql(`
-        alter table comments add column language char(2) default 'ru';
-        alter table posts add column language char(2)  default 'ru';
+        alter table comments add column language char(2) default '${defaultLang}';
+        alter table posts add column language char(2)  default '${defaultLang}';
     `);
 
     // uk: Є є Ї ї

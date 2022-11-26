@@ -9,7 +9,7 @@ import {Logger} from 'winston';
 import {addOnPostRun, FastText, FastTextModel} from '../../langid/fasttext.js';
 import {urlRegex} from '../parser/urlregex';
 
-const fasttextModelProm: Promise<FastTextModel> = new Promise<FastText>((resolve) => {
+const fasttextModelPromise: Promise<FastTextModel> = new Promise<FastText>((resolve) => {
     addOnPostRun(() => {
         const ft = new FastText();
         resolve(ft);
@@ -18,8 +18,10 @@ const fasttextModelProm: Promise<FastTextModel> = new Promise<FastText>((resolve
     return ft.loadModel('./langid/lid.176.ftz');
 });
 
+const defaultLanguage = process.env.DEFAULT_LANGUAGE || 'ru';
+
 export async function getLanguage(text: string): Promise<{lang: string, prob: number} | undefined> {
-    const model = await fasttextModelProm;
+    const model = await fasttextModelPromise;
     const lang = model.predict(text, 4);
 
     if (lang.length > 0) {
@@ -106,7 +108,7 @@ export default class TranslationManager {
         if (!contentSource) {
             throw new Error('ContentSource not found');
         }
-        const translation = await this.translateContentSource(contentSource, 'ru');
+        const translation = await this.translateContentSource(contentSource, defaultLanguage);
         return {
             title: translation.title,
             html: this.parser.parse(translation.html).text
@@ -120,7 +122,7 @@ export default class TranslationManager {
             .replace(urlRegex, ''); //urls
 
         if (text.length < 6) {
-            return 'ru';
+            return defaultLanguage;
         }
         try {
             const {lang, prob} = await getLanguage(text);
@@ -132,6 +134,6 @@ export default class TranslationManager {
             this.logger.error('Language detection failed', {title, source});
             this.logger.error(e);
         }
-        return 'ru';
+        return defaultLanguage;
     }
 }

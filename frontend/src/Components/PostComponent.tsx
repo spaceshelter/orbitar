@@ -17,6 +17,8 @@ import { HistoryComponent } from './HistoryComponent';
 import {SignatureComponent} from './SignatureComponent';
 import Conf from '../Conf';
 
+const defaultLanguage = process.env.DEFAULT_LANGUAGE || 'ru';
+
 interface PostComponentProps {
     post: PostInfo;
     showSite?: boolean;
@@ -170,7 +172,7 @@ export default function PostComponent(props: PostComponentProps) {
                 <div className={styles.control}><CommentsCount post={props.post} /></div>
                 {/*<div className={styles.control}><button disabled={true} onClick={toggleBookmark} className={bookmark ? styles.active : ''}><BookmarkIcon /><span className={styles.label}></span></button></div>*/}
                 {props.post.canEdit && props.onEdit && <div className={styles.control}><button onClick={handleEdit}><EditIcon /></button></div>}
-                {props.post.language && props.post.language !== 'ru' && <div className={styles.control}><button
+                {props.post.language && props.post.language !== defaultLanguage && <div className={styles.control}><button
                     disabled={translation === false} onClick={translate} className={`i i-translate ${styles.translate}`}/></div>}
                 <div className={styles.control + ' ' + styles.options}>
                     <button onClick={toggleOptions} className={showOptions ? styles.active : ''}><OptionsIcon /></button>
