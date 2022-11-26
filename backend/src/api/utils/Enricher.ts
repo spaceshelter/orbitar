@@ -48,16 +48,8 @@ export class Enricher {
             }
 
             const postResult: PostEntity = {
-                id: post.id,
-                site: post.site,
-                author: post.author,
-                created: post.created.toISOString(),
-                title: post.title,
-                content: post.content,
-                rating: post.rating,
-                comments: post.comments,
-                newComments: post.newComments,
-                vote: post.vote
+                ...post,
+                created: post.created.toISOString()
             };
 
             if (post.bookmark) {
@@ -94,16 +86,10 @@ export class Enricher {
 
         for (const rawComment of rawComments) {
             const comment: CommentEntity = {
-                id: rawComment.id,
+                ...rawComment,
                 created: rawComment.created.toISOString(),
-                author: rawComment.author,
-                content: rawComment.content,
-                rating: rawComment.rating,
-                site: rawComment.site,
-                post: rawComment.post,
-                vote: rawComment.vote,
-                parentComment: rawComment.parentComment,
-                isNew: false
+                isNew: false,
+                answers: undefined
             };
             if (isNew(comment)) {
                 comment.isNew = true;

@@ -20,5 +20,7 @@ export type CommentEntity = CommentBaseEntity & {
     isNew?: boolean;
     vote?: number;
     answers?: CommentEntity[];
+
+    language?: string;
 };
 

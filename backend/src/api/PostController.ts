@@ -23,6 +23,8 @@ import {PostEditRequest, PostEditResponse} from './types/requests/PostEdit';
 import {PostHistoryRequest, PostHistoryResponse} from './types/requests/PostHistory';
 import {HistoryEntity} from './types/entities/HistoryEntity';
 import rateLimit from 'express-rate-limit';
+import {TranslateRequest, TranslateResponse} from './types/requests/Translate';
+import TranslationManager from '../managers/TranslationManager';
 
 const commonRateLimitConfig = {
     skipSuccessfulRequests: false,
@@ -37,6 +39,7 @@ export default class PostController {
     private readonly feedManager: FeedManager;
     private readonly userManager: UserManager;
     private readonly siteManager: SiteManager;
+    private readonly translationManager: TranslationManager;
     private readonly logger: Logger;
     private readonly enricher: Enricher;
 
@@ -61,12 +64,14 @@ export default class PostController {
         ...commonRateLimitConfig
     });
 
-    constructor(enricher: Enricher, postManager: PostManager, feedManager: FeedManager, siteManager: SiteManager, userManager: UserManager, logger: Logger) {
+    constructor(enricher: Enricher, postManager: PostManager, feedManager: FeedManager, siteManager: SiteManager,
+                userManager: UserManager, translationManager: TranslationManager, logger: Logger) {
         this.enricher = enricher;
         this.postManager = postManager;
         this.userManager = userManager;
         this.siteManager = siteManager;
         this.feedManager = feedManager;
+        this.translationManager = translationManager;
         this.logger = logger;
 
         const getSchema = Joi.object<PostGetRequest>({
@@ -117,6 +122,10 @@ export default class PostController {
             content: Joi.string().min(1).max(50000).required(),
             format: joiFormat
         });
+        const translateSchema = Joi.object<TranslateRequest>({
+            id: Joi.number().required(),
+            type: Joi.string().valid('post', 'comment').required(),
+        });
         const historySchema = Joi.object<PostHistoryRequest>({
             id: Joi.number().required(),
             type: Joi.valid('post', 'comment').required(),
@@ -131,6 +140,7 @@ export default class PostController {
         this.router.post('/post/read', validate(readSchema), (req, res) => this.read(req, res));
         this.router.post('/post/bookmark', validate(bookmarkSchema), (req, res) => this.bookmark(req, res));
         this.router.post('/post/watch', validate(watchingSchema), (req, res) => this.watch(req, res));
+        this.router.post('/post/translate', validate(translateSchema), (req, res) => this.translate(req, res));
         this.router.post('/post/get-comment', validate(getCommentSchema), (req, res) => this.getComment(req, res));
         this.router.post('/post/edit-comment', this.commentRateLimiter, validate(editCommentSchema), (req, res) => this.editComment(req, res));
         this.router.post('/post/history', validate(historySchema), (req, res) => this.history(req, res));
@@ -429,6 +439,19 @@ export default class PostController {
                 return response.error('access-denied', 'Access-denied');
             }
 
+            return response.error('error', 'Unknown error', 500);
+        }
+    }
+
+    async translate(request: APIRequest<TranslateRequest>, response: APIResponse<TranslateResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+        const {id, type} = request.body;
+        try {
+            return response.success(await this.translationManager.translateEntity(id, type));
+        } catch (err) {
+            this.logger.error(err);
             return response.error('error', 'Unknown error', 500);
         }
     }

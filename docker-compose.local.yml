@@ -26,7 +26,7 @@ services:
     volumes:
       - mysql_db:/var/lib/mysql
       - $PWD/mysql/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
-  
+
   redis:
     image: redis:7
     restart: always
@@ -53,6 +53,7 @@ services:
       SITE_DOMAIN: ${SERVER_DOMAIN}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       SENDING_BLUE_API_KEY: ${SENDING_BLUE_API_KEY}
+      DEEPL_API_KEY: ${DEEPL_API_KEY}
     depends_on:
       - mysql
 
