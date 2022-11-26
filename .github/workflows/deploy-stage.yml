@@ -9,9 +9,9 @@ on:
         type: choice
         description: docker-compose additional build flag
         required: false
-        default: ""
+        default: " "
         options:
-          - ""
+          - " "
           - "--no-cache"
 
 env:
@@ -27,6 +27,14 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: dev
+      - name: Verify environment
+        run: |
+          diff -wB <(grep -vE '^\s*#' /opt/deployment-specific-files/.env | cut -d '=' -f 1 | sort) <(grep -vE '^\s*#' .env.sample | cut -d '=' -f 1 | sort)
+          if [ $? -ne 0 ]; then
+            echo "Environment variables mismatch"
+            echo "Update /opt/deployment-specific-files/.env on the host or .env.sample in your branch"
+            exit 1
+          fi
 
       - name: Copy configuration
         run: |
