@@ -19,4 +19,5 @@ export type PostInfo = PostBaseInfo & {
     watch?: boolean;
     vote?: number;
     lastReadCommentId?: number;
+    language?: string;
 };

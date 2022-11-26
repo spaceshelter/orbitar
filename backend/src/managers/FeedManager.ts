@@ -239,6 +239,7 @@ export default class FeedManager {
                 watch: !!rawPost.watch,
                 vote: rawPost.vote,
                 lastReadCommentId: rawPost.last_read_comment_id,
+                language: rawPost.language,
             };
             if (rawPost.author_id === forUserId) {
                 post.canEdit = true;

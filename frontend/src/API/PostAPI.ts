@@ -22,6 +22,7 @@ export type PostEntity = {
     newComments: number;
     editFlag?: EditFlag;
     vote?: number;
+    language?: string;
 };
 
 export type CommentEntity = {
@@ -38,6 +39,7 @@ export type CommentEntity = {
     post: number;
     site: string;
 
+    language?: string;
     answers?: CommentEntity[];
 };
 
@@ -191,6 +193,16 @@ type PostHistoryResponse = {
     history: HistoryEntity[];
 };
 
+export type TranslateRequest = {
+    id: number;
+    type: 'post' | 'comment';
+};
+
+export type TranslateResponse = {
+    title: string;
+    html: string;
+};
+
 export default class PostAPI {
     api: APIBase;
     constructor(api: APIBase) {
@@ -280,6 +292,13 @@ export default class PostAPI {
     preview(text: string): Promise<PostPreviewRequestResponse> {
         return this.api.request<PostPreviewRequestResponse, PostPreviewRequestResponse>('/post/preview', {
             content: text
+        });
+    }
+
+    translate(id: number, type: 'post' | 'comment'): Promise<TranslateResponse> {
+        return this.api.request<TranslateRequest, TranslateResponse>('/post/translate', {
+            id,
+            type
         });
     }
 

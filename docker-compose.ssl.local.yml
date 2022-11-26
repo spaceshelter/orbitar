@@ -55,6 +55,7 @@ services:
       SITE_DOMAIN: ${SERVER_DOMAIN}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       SENDING_BLUE_API_KEY: ${SENDING_BLUE_API_KEY}
+      DEEPL_API_KEY: ${DEEPL_API_KEY}
     depends_on:
       - mysql
 

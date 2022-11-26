@@ -14,6 +14,7 @@ import UserManager from './UserManager';
 import {CommentInfoWithPostData} from './types/CommentInfo';
 import {SiteInfo} from './types/SiteInfo';
 import {HistoryInfo} from './types/HistoryInfo';
+import TranslationManager from './TranslationManager';
 
 export default class PostManager {
     private bookmarkRepository: BookmarkRepository;
@@ -23,11 +24,13 @@ export default class PostManager {
     private notificationManager: NotificationManager;
     private siteManager: SiteManager;
     private userManager: UserManager;
+    private translationManager: TranslationManager;
     private parser: TheParser;
 
     constructor(
         bookmarkRepository: BookmarkRepository, commentRepository: CommentRepository, postRepository: PostRepository,
         feedManager: FeedManager, notificationManager: NotificationManager, siteManager: SiteManager, userManager: UserManager,
+        translationManager: TranslationManager,
         parser: TheParser
     ) {
         this.bookmarkRepository = bookmarkRepository;
@@ -37,6 +40,7 @@ export default class PostManager {
         this.notificationManager = notificationManager;
         this.siteManager = siteManager;
         this.userManager = userManager;
+        this.translationManager = translationManager;
         this.parser = parser;
     }
 
@@ -65,7 +69,8 @@ export default class PostManager {
         }
 
         const parseResult = this.parser.parse(content);
-        const postRaw = await this.postRepository.createPost(site.id, userId, title, content, parseResult.text);
+        const language = await this.translationManager.detectLanguage(title, parseResult.text);
+        const postRaw = await this.postRepository.createPost(site.id, userId, title, content, language, parseResult.text);
 
         await this.bookmarkRepository.setWatch(postRaw.post_id, userId, true);
 
@@ -105,8 +110,9 @@ export default class PostManager {
         }
 
         const html = (await this.parser.parse(content)).text;
+        const language = await this.translationManager.detectLanguage(title, html);
 
-        const updated = await this.postRepository.updatePostText(forUserId, postId, title, content, html);
+        const updated = await this.postRepository.updatePostText(forUserId, postId, title, content, language, html);
         if (!updated) {
             throw new CodeError('unknown', 'Could not edit comment');
         }
@@ -156,6 +162,7 @@ export default class PostManager {
                 created: raw.created_at,
                 rating: raw.rating,
                 parentComment: raw.parent_comment_id,
+                language: raw.language,
 
                 vote: raw.vote,
             };
@@ -181,8 +188,9 @@ export default class PostManager {
 
     async createComment(userId: number, postId: number, parentCommentId: number | undefined, content: string, format: ContentFormat): Promise<CommentInfoWithPostData> {
         const parseResult = this.parser.parse(content);
+        const language = await this.translationManager.detectLanguage('', parseResult.text);
 
-        const commentRaw = await this.commentRepository.createComment(userId, postId, parentCommentId, content, parseResult.text);
+        const commentRaw = await this.commentRepository.createComment(userId, postId, parentCommentId, content, language, parseResult.text);
 
         for (const mention of parseResult.mentions) {
             await this.notificationManager.sendMentionNotify(mention, userId, postId, commentRaw.comment_id);
@@ -220,8 +228,9 @@ export default class PostManager {
         }
 
         const html = (await this.parser.parse(content)).text;
+        const language = await this.translationManager.detectLanguage('', html);
 
-        const updated = await this.commentRepository.updateCommentText(forUserId, commentId, content, html);
+        const updated = await this.commentRepository.updateCommentText(forUserId, commentId, content, language, html);
         if (!updated) {
             throw new CodeError('unknown', 'Could not edit comment');
         }
