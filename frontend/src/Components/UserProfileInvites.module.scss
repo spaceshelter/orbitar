@@ -48,6 +48,29 @@
           a {
             color: var(--fgSofter);
           }
+
+          &.regenerated a {
+            @keyframes :global(highlight-regenerated) {
+              0% {
+                opacity: 0;
+                color: white;
+              }
+
+              25% {
+                opacity: 1;
+              }
+
+              50% {
+                opacity: 0;
+              }
+
+              100% {
+                opacity: 1;
+                color: var(--fgSofter);
+              }
+            }
+            animation: highlight-regenerated 2s ease-in-out 1;
+          }
         }
 
       }
