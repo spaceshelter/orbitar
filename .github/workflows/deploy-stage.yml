@@ -9,9 +9,9 @@ on:
         type: choice
         description: docker-compose additional build flag
         required: false
-        default: " "
+        default: "None"
         options:
-          - " "
+          - "None"
           - "--no-cache"
 
 env:
@@ -43,7 +43,9 @@ jobs:
           cp -f /opt/deployment-specific-files/.env $GITHUB_WORKSPACE/
 
       - name: Build backend & frontend
-        run: docker-compose -f docker-compose.ssl.local.yml build ${{ github.event.inputs.build-flag }} backend frontend
-
+        env:
+          # replace None with an empty string
+          BUILD_FLAG: ${{ github.event.inputs.build-flag != 'None' && github.event.inputs.build-flag || '' }}
+        run: docker-compose -f docker-compose.ssl.local.yml build $BUILD_FLAG backend frontend
       - name: Deploy
         run: docker-compose -f docker-compose.ssl.local.yml up -d backend frontend
