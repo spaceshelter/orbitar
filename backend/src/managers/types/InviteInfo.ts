@@ -7,6 +7,7 @@ export type InviteInfo = {
     issuedCount: number;
     leftCount: number;
     reason?: string;
+    restricted: boolean;
 };
 
 export type InviteInfoWithInvited = InviteInfo & {

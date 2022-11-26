@@ -14,19 +14,21 @@ import {InviteListRequest, InviteListResponse} from './types/requests/InviteList
 import {InviteEntity} from './types/entities/InviteEntity';
 import {InviteRegenerateRequest, InviteRegenerateResponse} from './types/requests/InviteRegenerate';
 import {InviteRawWithIssuer} from '../db/types/InviteRaw';
-
-// constant variables
 import { ERROR_CODES } from './utils/error-codes';
+import {InviteCreateRequest, InviteDeleteRequest} from './types/requests/Invite';
+import {Enricher} from './utils/Enricher';
 
 export default class InviteController {
     public router = Router();
     private inviteManager: InviteManager;
     private userManager: UserManager;
+    private enricher: Enricher;
     private logger: Logger;
 
-    constructor(inviteManager: InviteManager, userManager: UserManager, logger: Logger) {
+    constructor(inviteManager: InviteManager, userManager: UserManager, enricher: Enricher, logger: Logger) {
         this.inviteManager = inviteManager;
         this.userManager = userManager;
+        this.enricher = enricher;
 
         this.logger = logger;
 
@@ -50,14 +52,22 @@ export default class InviteController {
             gender: Joi.number().valid(0, 1, 2).default(0),
             password: joiPassword.required()
         });
-        const regenerateSchema = Joi.object<InviteCheckRequest>({
+        const codeSchema = Joi.object<InviteCheckRequest>({
             code: Joi.string().alphanum().required()
+        });
+        const createSchema = Joi.object<InviteCreateRequest>({
+            reason: Joi.string().min(1).max(50000).required(),
+        });
+        const listSchema = Joi.object<InviteListRequest>({
+            username: joiUsername
         });
 
         this.router.post('/invite/check', limiter, validate(checkSchema), (req, res) => this.checkInvite(req, res));
         this.router.post('/invite/use', limiter, validate(useSchema), (req, res) => this.useInvite(req, res));
-        this.router.post('/invite/list', limiter, (req, res) => this.list(req, res));
-        this.router.post('/invite/regenerate', limiter, validate(regenerateSchema), (req, res) => this.regenerate(req, res));
+        this.router.post('/invite/list', limiter, validate(listSchema), (req, res) => this.list(req, res));
+        this.router.post('/invite/regenerate', limiter, validate(codeSchema), (req, res) => this.regenerate(req, res));
+        this.router.post('/invite/create', limiter, validate(createSchema), (req, res) => this.create(req, res));
+        this.router.post('/invite/delete', limiter, validate(codeSchema), (req, res) => this.delete(req, res));
     }
 
     async verifyInvitePermissions(invite: InviteRawWithIssuer) {
@@ -158,39 +168,45 @@ export default class InviteController {
             return response.authRequired();
         }
 
+        const {username: forUsername} = request.body;
+        const forUser = await this.userManager.getByUsername(forUsername);
+        if (!forUser) {
+            return response.error('user-not-found', 'User not found');
+        }
+
+
         const userId = request.session.data.userId;
+        const isSelf = userId === forUser.id;
+        const canInvite = (await this.userManager.getUserRestrictions(userId)).canInvite;
 
         try {
-            if (!(await this.userManager.getUserRestrictions(userId)).canInvite) {
-                this.logger.warn(`User ${userId} has no permission to list invites`, {user: userId});
-                return response.error('no-permission', 'No permission to list invites', 403);
-            }
-
-            const invites = await this.inviteManager.listInvites(userId);
+            const invites = await this.inviteManager.listInvites(forUser.id);
+            const invitesAvailability = isSelf && canInvite && await this.inviteManager.invitesAvailability(forUser.id);
 
             const active: InviteEntity[] = [];
             const inactive: InviteEntity[] = [];
 
             for (const invite of invites) {
-                const entity: InviteEntity = {
-                    code: invite.code,
-                    issued: invite.issuedAt.toISOString(),
-                    invited: invite.invited,
-                    leftCount: invite.leftCount,
-                    reason: invite.reason
-                };
+                const entity = this.enricher.inviteToEntity(invite);
 
                 if (invite.leftCount > 0) {
                     active.push(entity);
                 }
-                else {
+                if (invite.invited.length > 0) {
                     inactive.push(entity);
+                }
+            }
+            if (!isSelf || !canInvite) {
+                active.length = 0;
+                for (const invite of inactive) {
+                    invite.code = '';
                 }
             }
 
             return response.success({
                 active,
-                inactive
+                inactive,
+                invitesAvailability
             });
         }
         catch (err) {
@@ -224,4 +240,49 @@ export default class InviteController {
         }
     }
 
+    async create(request: APIRequest<InviteCreateRequest>, response: APIResponse<InviteEntity>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+
+        const userId = request.session.data.userId;
+
+        try {
+            if (!(await this.userManager.getUserRestrictions(userId)).canInvite) {
+                this.logger.warn(`User ${userId} has no permission to create invites`, {user: userId});
+                return response.error(ERROR_CODES.NO_PERMISSION, 'No permission to create invites', 403);
+            }
+
+            // FIXME potential race condition between availability check and invite creation
+            if ((await this.inviteManager.invitesAvailability(userId)).invitesLeft === 0) {
+                this.logger.warn(`User ${userId} has no more invites left to create`, {user: userId});
+                return response.error(ERROR_CODES.NO_PERMISSION, 'No more invites left to create', 403);
+            }
+
+           const invite = await this.inviteManager.createInvite(userId, request.body.reason);
+           const entity = this.enricher.inviteToEntity(invite);
+
+            return response.success(entity);
+        }
+        catch (err) {
+            this.logger.error(`Invite creation failed`, {error: err});
+            return response.error('unknown', 'Unknown error', 500);
+        }
+    }
+
+    private delete(req: APIRequest<InviteDeleteRequest>, res: APIResponse<boolean>) {
+        if (!req.session.data.userId) {
+            return res.authRequired();
+        }
+
+        const userId = req.session.data.userId;
+        const {code} = req.body;
+
+        this.inviteManager.delete(userId, code)
+            .then(_ => res.success(_))
+            .catch(err => {
+                this.logger.error(`Invite delete failed`, {error: err});
+                return res.error('unknown', 'Unknown error', 500);
+            });
+    }
 }

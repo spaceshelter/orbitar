@@ -11,6 +11,7 @@ export type UserBaseInfo = {
 };
 
 export type UserInfo = UserBaseInfo & {
+    ontrial: boolean;
     karma: number;
     name: string;
     vote?: number;

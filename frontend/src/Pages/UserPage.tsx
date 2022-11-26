@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect} from 'react';
 import styles from './UserPage.module.scss';
 import {Link, useLocation, useNavigate, useParams} from 'react-router-dom';
 import Username from '../Components/Username';
@@ -12,17 +12,16 @@ import UserProfileComments from '../Components/UserProfileComments';
 import {UserProfileInvites} from '../Components/UserProfileInvites';
 import {observer} from 'mobx-react-lite';
 import {UserProfileKarma} from '../Components/UserProfileKarma';
-import {UserRestrictionsResponse} from '../API/UserAPI';
+import {UserGender} from '../Types/UserInfo';
 
 export const UserPage = observer(() => {
-    const {userInfo} = useAppState();
+    const {userInfo, userRestrictions: restrictions} = useAppState();
     const api = useAPI();
     const params = useParams<{username?: string, page?: string}>();
-
     const username = params.username || userInfo?.username;
     const page = params.page || 'profile';
 
-    const state = useUserProfile(username || '');
+    const [state, refreshProfile] = useUserProfile(username || '');
 
     const isPosts = page === 'posts';
     const isComments = page === 'comments';
@@ -34,8 +33,6 @@ export const UserPage = observer(() => {
 
     const isProfile = !isPosts && !isComments && !isInvites && !isKarma;
 
-    const [restrictions, setRestrictions] = useState<UserRestrictionsResponse | undefined>();
-
     useEffect(() => {
         if (state.status === 'ready') {
             document.title = state.profile.profile.username;
@@ -43,15 +40,8 @@ export const UserPage = observer(() => {
     }, [state]);
 
     useEffect(() => {
-        const userName = userInfo?.username;
-        userName && api.userAPI.userRestrictions(userName)
-            .then(result => {
-                    setRestrictions(result);
-                }
-            ).catch(err => {
-            console.error('Restrictions response error', err);
-        });
-    }, [userInfo?.username, api.userAPI]);
+        api.user.refreshUserRestrictions();
+    }, [api]);
 
     const handleLogout = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -60,13 +50,20 @@ export const UserPage = observer(() => {
         });
     };
 
-
     if (state.status === 'ready') {
         const profile = state.profile;
         const user = profile.profile;
+        const sheHer = user.gender === UserGender.she;
+        const a = sheHer ? 'а' : '';
         const rating = {value: user.karma, vote: user.vote};
         const isMyProfile = userInfo && userInfo.id === user.id;
-        const base = '/u/' + user.username;
+        const base = isMyProfile ? '/profile' : '/u/' + user.username;
+
+        const handleOnVote = (value: number, vote?: number, postApiCall?: boolean) => {
+            if (postApiCall) {
+                refreshProfile();
+            }
+        };
 
         return (
             <div className={styles.container}>
@@ -74,17 +71,20 @@ export const UserPage = observer(() => {
                     <div className={styles.row}>
                         <div>
                             <div className={styles.username}>{user.username}</div>
-                            <div className={styles.name}>{user.name}</div>
                         </div>
-                        <div className={styles.karma}>
-                            <RatingSwitch rating={rating} type='user' id={user.id} double={true} votingDisabled={!restrictions?.canVoteKarma} />
-                        </div>
-                    </div>
 
-                    <div className={styles.registered}>#{user.id}, зарегистрирован <DateComponent date={user.registered} />
-                        {user.active && <span className={styles.active} title={'Активно посещал сайт в эту неделю'}>, <span className={'i i-alive'}></span>&nbsp;активен</span>}
-                        {!user.active && <span className={styles.active} title={'В последнюю неделю не заходил на сайт или заходил недостаточно часто, чтобы считаться активным'}>, <span className={'i i-ghost'}></span>&nbsp;неактивен</span>}
+                        <div className={styles.karma}>
+                            {user.active && <span className={styles.active}
+                                                  title={`Активно посещал${a} сайт в эту неделю`}><span
+                                className={'i i-alive'}></span>&nbsp;{sheHer ? 'активна' : 'активен'}</span>}
+                            {!user.active && <span className={styles.active}
+                                                   title={`В последнюю неделю не заходил${a} на сайт или заходил${a} недостаточно часто, чтобы считаться ${sheHer ? 'активной' : 'активным'}`}><span
+                                className={'i i-ghost'}></span>&nbsp;{sheHer ? 'неактивна' : 'неактивен'}</span>}
+
+                            <RatingSwitch rating={rating} type='user' id={user.id} double={true} votingDisabled={!restrictions?.canVoteKarma} onVote={handleOnVote}/>
+                        </div>
                     </div>
+                    <div className={styles.name}>{user.name}</div>
                 </div>
 
                 <div className={styles.controls}>
@@ -92,25 +92,30 @@ export const UserPage = observer(() => {
                     <Link className={`${styles.control} ${isPosts ? styles.active : ''}`} to={base + '/posts'}>Посты</Link>
                     <Link className={`${styles.control} ${isComments ? styles.active : ''}`} to={base + '/comments'}>Комментарии</Link>
                     <Link className={`${styles.control} ${isKarma ? styles.active : ''}`} to={base + '/karma'}>Саморегуляция</Link>
-                    {isMyProfile && restrictions?.canInvite && <Link className={`${styles.control} ${isInvites ? styles.active : ''}`} to={'/profile/invites'}>Инвайты</Link>}
-
+                    <Link className={`${styles.control} ${isInvites ? styles.active : ''}`} to={base + '/invites'}>Инвайты</Link>
                 </div>
+
                 <div className={styles.userinfo}>
                     {isProfile && <>
-                        {profile.invitedBy && <div>
-                            Зарегистрирован по приглашению <Username user={profile.invitedBy} />
-                        </div>}
+                        <div className={styles.registered}>#{user.id},
+                            {profile.invitedBy && <>
+                                <a href={`/u/${profile.invitedBy.username}/invites/#${user.username}`}
+                                   title={'Детальный контекст приглашения'}>приглашен{a}</a>
+                                    <Username user={profile.invitedBy}/></> ||
+                                <span>зарегистрирован{a}</span>}
+                             <DateComponent date={user.registered} />
+                        </div>
                         {profile.invites.length > 0 && <div>
-                            По его приглашениям зарегистрированы: {profile.invites.map((user, idx) => {
-                                return <Username key={idx} user={user}/>;
+                            Пригласил{a}: {profile.invites.map((user, idx) => {
+                            return <Username key={idx} user={user} inactive={!user.active}/>;
                             })}
                         </div>}
                         { isMyProfile && <button className={styles.logout} onClick={handleLogout}><LogoutIcon /> Выход </button> }
                     </>}
                     {isPosts && <UserProfilePosts username={user.username} />}
                     {isComments && <UserProfileComments username={user.username} />}
-                    {isInvites && <UserProfileInvites />}
-                    {isKarma && <UserProfileKarma username={user.username} />}
+                    {isInvites && <UserProfileInvites username={user.username} />}
+                    {isKarma && <UserProfileKarma username={user.username} profile={profile} />}
                 </div>
             </div>
         );

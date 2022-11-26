@@ -1,4 +1,5 @@
 import {UserBaseEntity, UserProfileEntity} from '../entities/UserEntity';
+import {VoteListItemEntity} from '../entities/VoteEntity';
 
 export type UserProfileRequest = {
     username: string;
@@ -7,14 +8,27 @@ export type UserProfileRequest = {
 export type UserProfileResponse = {
     profile: UserProfileEntity;
     invitedBy?: UserBaseEntity;
-    invites: UserBaseEntity[];
+    invitedReason? : string;
+    trialApprovers?: VoteListItemEntity[];
+    trialProgress?: number;
+
+    invites: UserProfileEntity[];
+};
+
+export type TrialProgressDebugInfo = {
+    effectiveKarmaPart: number;
+    daysOnSitePart: number;
+    singleVotesPart?: number;
+    doubleVotesPart?: number
 };
 
 export type UserKarmaResponse = {
+    effectiveKarma: number;
     senatePenalty: number;
     activeKarmaVotes: Record<string, number>;
     postRatingBySubsite: Record<string, number>;
     commentRatingBySubsite: Record<string, number>;
+    trialProgress: TrialProgressDebugInfo;
 };
 
 /* see UserRestrictions */

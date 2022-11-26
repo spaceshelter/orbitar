@@ -102,24 +102,24 @@ const userRepository = new UserRepository(db);
 const webPushRepository = new WebPushRepository(db);
 const translationRepository = new TranslationRepository(db);
 
-const inviteManager = new InviteManager(inviteRepository);
 const notificationManager = new NotificationManager(commentRepository, notificationsRepository, postRepository, siteRepository, userRepository, webPushRepository, config.vapid, config.site);
 const userManager = new UserManager(credentialsRepository, userRepository, voteRepository, commentRepository, postRepository, webPushRepository, notificationManager, redis.client, config.site, logger.child({ service: 'USER' }));
+const inviteManager = new InviteManager(inviteRepository, theParser, userManager);
 const siteManager = new SiteManager(siteRepository, userManager);
 const feedManager = new FeedManager(bookmarkRepository, postRepository, userRepository, siteManager, redis.client);
 const translationManager = new TranslationManager(translationRepository, postRepository, theParser, logger.child({ service: 'TRANSL' }));
 const postManager = new PostManager(bookmarkRepository, commentRepository, postRepository, feedManager, notificationManager, siteManager, userManager, translationManager, theParser);
-const voteManager = new VoteManager(voteRepository, postManager, redis.client);
+const voteManager = new VoteManager(voteRepository, postManager, userManager, redis.client);
 
 const apiEnricher = new Enricher(siteManager, userManager);
 
 const requests = [
     new AuthController(userManager, logger.child({ service: 'AUTH' })),
-    new InviteController(inviteManager, userManager, logger.child({ service: 'INVITE' })),
+    new InviteController(inviteManager, userManager, apiEnricher, logger.child({ service: 'INVITE' })),
     new PostController(apiEnricher, postManager, feedManager, siteManager, userManager, translationManager, logger.child({ service: 'POST' })),
     new StatusController(apiEnricher, siteManager, userManager, logger.child({ service: 'STATUS' })),
     new VoteController(voteManager, userManager, logger.child({ service: 'VOTE' })),
-    new UserController(apiEnricher, userManager, postManager, voteManager, logger.child({ service: 'USER' })),
+    new UserController(apiEnricher, userManager, postManager, voteManager, inviteManager, logger.child({ service: 'USER' })),
     new FeedController(apiEnricher, feedManager, siteManager, userManager, postManager, logger.child({ service: 'FEED' })),
     new SiteController(apiEnricher, feedManager, siteManager, userManager, logger.child( { service: 'SITE' })),
     new NotificationsController(notificationManager, userManager, logger.child({ service: 'NOTIFY' })),

@@ -1,7 +1,7 @@
 import {UserRaw} from '../db/types/UserRaw';
 import {UserInfo, UserGender, UserStats, UserRatingBySubsite, UserRestrictions} from './types/UserInfo';
 import UserRepository from '../db/repositories/UserRepository';
-import VoteRepository, {UserRatingOnSubsite} from '../db/repositories/VoteRepository';
+import VoteRepository, {UserRatingOnSubsite, VoteWithUsername} from '../db/repositories/VoteRepository';
 import bcrypt from 'bcryptjs';
 import NotificationManager from './NotificationManager';
 import UserCredentials from '../db/repositories/UserCredentials';
@@ -10,10 +10,18 @@ import {PushSubscription} from 'web-push';
 import {RedisClientType} from 'redis';
 import PostRepository from '../db/repositories/PostRepository';
 import CommentRepository from '../db/repositories/CommentRepository';
+import {TrialProgressDebugInfo} from '../api/types/requests/UserProfile';
 import {sendResetPasswordEmail} from '../utils/Mailer';
 import {SiteConfig} from '../config';
 import {Logger} from 'winston';
 import {FeedSorting} from '../api/types/entities/common';
+
+const USER_RESTRICTIONS = {
+    MIN_KARMA: -1000,
+    NEG_KARMA_THRESH: -10,
+    POS_KARMA_THRESH: 2,
+    NEW_USER_AGE_DAYS: 3
+};
 
 export default class UserManager {
     private credentialsRepository: UserCredentials;
@@ -28,8 +36,22 @@ export default class UserManager {
     private cacheId: Record<number, UserInfo> = {};
     private cacheUsername: Record<string, UserInfo> = {};
     private cacheLastVisit: Record<number, Date> = {};
+    private cachedUserParents: Record<number, number | undefined | false> = {};
     private readonly logger: Logger;
     private readonly mailLogger: Logger;
+
+    private cachedNumActiveUsersThatCanVote = {
+        expirationMs: 1000 * 60 * 60 /* 1 hour */,
+        value: 0,
+        lastUpdateTs: 0
+    };
+
+    private userRestrictionsCache = new Map<number, {
+        ts: Date,
+        effectiveKarmaWOPenalty: number,
+        lastOwnPost: { post_id: number, created_at: Date } | undefined,
+        lastCommentTime: Date | undefined,
+    }>();
 
     constructor(credentialsRepository: UserCredentials, userRepository: UserRepository, voteRepository: VoteRepository,
                 commentRepository: CommentRepository,  postRepository: PostRepository,  webPushRepository: WebPushRepository,
@@ -70,6 +92,10 @@ export default class UserManager {
         }
         delete this.cacheId[userId];
         delete this.cacheUsername[cacheEntry.username];
+    }
+
+    public clearUserRestrictionsCache(userId: number) {
+        this.userRestrictionsCache.delete(userId);
     }
 
     private cache(user: UserInfo) {
@@ -183,15 +209,13 @@ export default class UserManager {
         return new Date(Math.floor(date.getTime() / truncatePeriodMs) * truncatePeriodMs);
     }
 
-    async getNumActiveUsers() {
-        const numActiveUsers = await this.redis.get('num_active_users');
-        if (!numActiveUsers) {
-            const numActiveUsers = await this.userRepository.getNumActiveUsers();
-            await this.redis.set('num_active_users', numActiveUsers);
-            await this.redis.expire('num_active_users', 60 * 60 * 6 /*6 h*/);
-            return numActiveUsers;
+    async getNumActiveUsersThatCanVote() {
+        if (this.cachedNumActiveUsersThatCanVote.lastUpdateTs + this.cachedNumActiveUsersThatCanVote.expirationMs > Date.now()) {
+            return this.cachedNumActiveUsersThatCanVote.value;
         }
-        return parseInt(numActiveUsers);
+        this.cachedNumActiveUsersThatCanVote.value = await this.userRepository.getNumActiveUsersThatCanVote();
+        this.cachedNumActiveUsersThatCanVote.lastUpdateTs = Date.now();
+        return this.cachedNumActiveUsersThatCanVote.value;
     }
 
     async isUserActive(userId: number) {
@@ -247,8 +271,8 @@ export default class UserManager {
         const lerp = (start: number, end: number, r: number): number => (1 - r) * start + r * end;
         const bipolarSigmoid = (n: number): number => n / Math.sqrt(1 + n * n);
 
-        const positiveCommentsDivisor = 10; // positive comments are 10x cheaper than posts
-        const negativeCommentsDivisor = 2; // negative comments are only 2x cheaper than posts
+        const positiveCommentsDivisor = 1; // positive comments are equal to posts
+        const negativeCommentsDivisor = 0.2; // negative comments are 5 times more influential than positive
         const contentVal = (allPostsValue + allCommentsValue / (allCommentsValue >= 0 ? positiveCommentsDivisor : negativeCommentsDivisor)) / 5000;
         const contentRating = (contentVal > 0 ? bipolarSigmoid(contentVal / 3) : Math.max(-1, -Math.pow(contentVal, 2) * 7));
 
@@ -258,7 +282,7 @@ export default class UserManager {
         const userRating = (profileVotingResult >= 0 ? 1 : Math.max(0, 1 - lerp(Math.pow(ratio / 100, 2), Math.pow(ratio * 2, 2), s)));
 
         // karma without punishment
-        return Math.ceil(((contentRating + 1) * userRating - 1) * 1000);
+        return Math.max(USER_RESTRICTIONS.MIN_KARMA, ((contentRating + 1) * userRating - 1) * 1000);
     }
 
     /**
@@ -281,7 +305,7 @@ export default class UserManager {
 
         const activeKarmaVotes: Record<string, number> = {};
         for (const vote of userVotes) {
-            if (await this.isUserActive(vote.voterId)) {
+            if (vote.vote !== 0 && await this.isUserActive(vote.voterId)) {
                 activeKarmaVotes[vote.username] = vote.vote;
             }
         }
@@ -309,15 +333,22 @@ export default class UserManager {
     }
 
     async getUserRestrictions(userId: number): Promise<UserRestrictions> {
-        const MIN_KARMA = -1000;
-        const NEG_KARMA_THRESH = -10;
-        const POS_KARMA_THRESH = 2;
+
+        let localCachedValue = this.userRestrictionsCache.get(userId);
+        if (localCachedValue && localCachedValue.ts.getTime() < Date.now() - 1000 * 60 * 30 /* 30 minutes */) {
+            localCachedValue = undefined;
+        }
+
+        const { MIN_KARMA, NEG_KARMA_THRESH, POS_KARMA_THRESH, NEW_USER_AGE_DAYS } = USER_RESTRICTIONS;
 
         // calculate days on site
-        const daysOnSite = (Date.now() - (await this.getById(userId)).registered.getTime()) / (1000 * 60 * 60 * 24);
-        const userIsNew = daysOnSite < 3;
+        const user = await this.getById(userId);
+        const daysOnSite = this.getDaysOnSite(user);
+        const userIsNew = daysOnSite < NEW_USER_AGE_DAYS;
 
-        const effectiveKarmaWOPenalty = await this.getUserEffectiveKarma(userId);
+        const onTrial = user.ontrial;
+
+        const effectiveKarmaWOPenalty = localCachedValue?.effectiveKarmaWOPenalty ?? await this.getUserEffectiveKarma(userId);
         const penalty = ~~(await this.redis.get(`karma_penalty_${userId}`)); // parses string to int or 0
         const effectiveKarma = Math.max(effectiveKarmaWOPenalty - penalty, MIN_KARMA);
 
@@ -325,15 +356,27 @@ export default class UserManager {
             await this.removeVotesWhenKarmaIsLow(userId);
         }
 
-        const lastCommentTime = await this.commentRepository.getLastUserComment(userId).then(comment => comment?.created_at);
-        const lastOwnPost = await this.postRepository.getLastUserPost(userId);
+        const lastCommentTime = localCachedValue ? localCachedValue.lastCommentTime :
+            await this.commentRepository.getLastUserComment(userId).then(comment => comment?.created_at);
+        const lastOwnPost = localCachedValue ? localCachedValue.lastOwnPost :
+            await this.postRepository.getLastUserPost(userId);
 
         const restrictedToPostId = effectiveKarma <= MIN_KARMA ? lastOwnPost?.post_id || true : false;
         const canCreatePosts = !Number.isFinite(restrictedToPostId);
 
         const postSlowModeDelay = (effectiveKarma < NEG_KARMA_THRESH ? /*12 hours */3600 * 12 : 0);
         const commentSlowModeDelay =
-            effectiveKarma <= -1000 ? /*1 hour */3600 : (effectiveKarma < NEG_KARMA_THRESH ? /*10 minutes */ 10 * 60 : 0);
+            effectiveKarma <= USER_RESTRICTIONS.MIN_KARMA ? /*1 hour */3600 :
+                (effectiveKarma < NEG_KARMA_THRESH ? /*10 minutes */ 10 * 60 : 0);
+
+        if (!localCachedValue) {
+            this.userRestrictionsCache.set(userId, {
+                ts: new Date(),
+                lastCommentTime,
+                lastOwnPost,
+                effectiveKarmaWOPenalty
+            });
+        }
 
         return {
             effectiveKarma,
@@ -341,7 +384,7 @@ export default class UserManager {
 
             postSlowModeWaitSec: canCreatePosts ? postSlowModeDelay : 0,
             postSlowModeWaitSecRemain: canCreatePosts && lastOwnPost ?
-                Math.max(lastOwnPost.created_at.getTime() / 1000 - Date.now() / 1000 + postSlowModeDelay, 0)  : 0,
+                Math.max(lastOwnPost.created_at.getTime() / 1000 - Date.now() / 1000 + postSlowModeDelay, 0) : 0,
 
             commentSlowModeWaitSec: commentSlowModeDelay,
             commentSlowModeWaitSecRemain: lastCommentTime ?
@@ -350,12 +393,12 @@ export default class UserManager {
             restrictedToPostId,
 
             canVote: effectiveKarma >= NEG_KARMA_THRESH,
-            canVoteKarma: effectiveKarma >= POS_KARMA_THRESH && !userIsNew,
+            canVoteKarma: effectiveKarma >= POS_KARMA_THRESH && !userIsNew && !onTrial,
 
-            canInvite : (effectiveKarma >= POS_KARMA_THRESH && !userIsNew) || userId <= 1 /* Orbitar, Plotva */,
+            canInvite: (effectiveKarma >= POS_KARMA_THRESH && !userIsNew && !onTrial) || userId <= 1 /* Orbitar, Plotva */,
 
-            canCreateSubsites : effectiveKarma > 0,
-            canEditOwnContent : effectiveKarma > MIN_KARMA
+            canCreateSubsites: effectiveKarma > 0,
+            canEditOwnContent: effectiveKarma > MIN_KARMA
         };
     }
 
@@ -367,6 +410,7 @@ export default class UserManager {
             karma: rawUser.karma,
             name: rawUser.name,
             registered: rawUser.registered_at,
+            ontrial: rawUser.ontrial === 1,
         };
     }
 
@@ -412,5 +456,177 @@ export default class UserManager {
 
     async getFeedSorting(userId: number, siteId: number): Promise<FeedSorting | undefined> {
         return await this.userRepository.getFeedSorting(userId, siteId);
+    }
+
+    /**
+     * Returns days passed since user registration as a float number of days
+     * @param user
+     */
+    private getDaysOnSite(user: UserInfo): number {
+        return (Date.now() - user.registered.getTime()) / (1000 * 60 * 60 * 24);
+    }
+
+    async getUserParent(userId: number): Promise<UserInfo|undefined> {
+        // check cache
+        const cachedParent = this.cachedUserParents[userId];
+        if (cachedParent === false) {
+            return undefined;
+        } else if (cachedParent) {
+            return this.getById(cachedParent);
+        }
+        const parent = await this.userRepository.getUserParent(userId);
+        this.cachedUserParents[userId] = parent !== undefined ? parent.user_id : false;
+        return this.getById(parent.user_id);
+    }
+
+    /**
+     * Returns the array of votes counts where idx is the secondary vote value i.e. 0, 1, 2, 3 .. threshold
+     *  and the value is the aggregated number of users with this vote value.
+     * @param userId
+     * @param threshold
+     */
+    async getTrialVoters(userId: number, threshold): Promise<number[]> {
+        const voters = await this.getActiveKarmaVotes(userId);
+
+        const primaryVoters = new Map<number, { user: UserInfo, vote: number }>();
+        for (const [username, vote] of Object.entries(voters)) {
+            if (vote === 0) {
+                continue;
+            }
+            const user = await this.getByUsername(username);
+            primaryVoters.set(user.id, {
+                vote,
+                user
+            });
+        }
+        const parent = await this.getUserParent(userId);
+        if (parent && parent.id > 1 /* exclude admin accounts */ && !primaryVoters.has(parent.id)) {
+            primaryVoters.set(parent.id, {
+                vote: 2,
+                user: parent
+            });
+        }
+
+        const primaryIds = Array.from(primaryVoters.values()).map(v => v.user.id);
+
+        /* includes inactive users! returns only votes that are <0 or == +2  */
+        const secondaryVoters = await this.voteRepository.getSecondaryVotes(primaryIds);
+        const secondaryVotesIdx = new Map<number, number>();
+        const activityCache = new Map<number, boolean>();
+
+        for (const {userId, voterId, vote} of secondaryVoters) {
+            let active = activityCache.get(voterId);
+            if (active === undefined) {
+                active = await this.isUserActive(voterId);
+                activityCache.set(voterId, active);
+            }
+            if (!active) {
+                continue;
+            }
+            const primaryVote = primaryVoters.get(userId).vote;
+            secondaryVotesIdx.set(voterId, (secondaryVotesIdx.get(voterId) || 0) +
+                Math.sign(vote) * Math.sign(primaryVote));
+        }
+        for (const [voterId, {vote}] of primaryVoters.entries()) {
+            /* make sure that direct votes override secondary votes */
+            secondaryVotesIdx.set(voterId, Math.sign(vote) * threshold);
+        }
+        // array of threshold elements
+        const result = new Array(threshold + 1).fill(0);
+        for (const votes of secondaryVotesIdx.values()) {
+            if (votes > 0) {
+                result[Math.min(votes, threshold)]++;
+            }
+        }
+        return result;
+    }
+
+    async getTrialProgressRaw(userId: number): Promise<TrialProgressDebugInfo> {
+        const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
+
+        const user = await this.getById(userId);
+        const effectiveKarma = (await this.getUserRestrictions(userId)).effectiveKarma;
+        const { POS_KARMA_THRESH, NEW_USER_AGE_DAYS } = USER_RESTRICTIONS;
+        const effectiveKarmaPart = clamp(effectiveKarma, 0, POS_KARMA_THRESH) / POS_KARMA_THRESH;
+
+        const daysOnSite = this.getDaysOnSite(user);
+        const daysOnSitePart = clamp(daysOnSite, 0, NEW_USER_AGE_DAYS) / NEW_USER_AGE_DAYS;
+
+        if (user?.ontrial) {
+            const activeUsersThatCanVoteNum = Math.max(await this.getNumActiveUsersThatCanVote(), 1);
+            const secondaryVoters = await this.getTrialVoters(userId, 2);
+            /* threshold of ratio votes/activeusers when progress reaches 1 */
+            const SINGLE_VOTE_THRESHOLD = 0.5;
+            const DOUBLE_VOTE_THRESHOLD = 0.3;
+
+            /* both threshold should be reached */
+            const singleVotesPart = Math.min(1, (secondaryVoters[1] + secondaryVoters[2]) / (activeUsersThatCanVoteNum * SINGLE_VOTE_THRESHOLD));
+            const doubleVotesPart = Math.min(1, (secondaryVoters[2]) / (activeUsersThatCanVoteNum * DOUBLE_VOTE_THRESHOLD));
+
+            return {
+                effectiveKarmaPart,
+                daysOnSitePart,
+                singleVotesPart,
+                doubleVotesPart,
+            };
+        } else {
+            return {
+                effectiveKarmaPart,
+                daysOnSitePart,
+                singleVotesPart: undefined,
+                doubleVotesPart: undefined,
+            };
+        }
+    }
+
+    /**
+     * Returns the progress of user trial based on the ratio of number of primary and secondary voters to all active users
+     * @param userId user id to find the trial progress for
+     * @param skipCache if true, then the cache will be skipped and the result will be recalculated
+     * @return trial progress 0..1
+     */
+    async getTrialProgress(userId: number, skipCache = false) {
+        // check redis cache
+        const cacheKey = `trial_progress_${userId}`;
+        if (!skipCache) {
+            const cached = await this.redis.get(cacheKey);
+            if (cached) {
+                return Number(cached);
+            }
+        }
+
+        const {effectiveKarmaPart, singleVotesPart, doubleVotesPart, daysOnSitePart} = await this.getTrialProgressRaw(userId);
+        const sharedPart = effectiveKarmaPart * 0.5 + daysOnSitePart * 0.5;
+
+        const progress = singleVotesPart === undefined || doubleVotesPart === undefined ? sharedPart :
+            singleVotesPart * 0.25 + doubleVotesPart * 0.15 + sharedPart * 0.6;
+
+        const cappedProgress = Math.min(Math.max(progress, 0), 1);
+
+        await this.redis.set(cacheKey, cappedProgress);
+        await this.redis.expire(cacheKey, 30 * 60 /* 30 minutes */);
+        return cappedProgress;
+    }
+
+    /**
+     * Checks if the user has enough votes to end the trial period and if so, ends it
+     * @param userId
+     * @param skipCache
+     * @return number (trial progress 0..1) or undefined if trial ended
+     */
+    async tryEndTrial(userId: number, skipCache = false): Promise<number | undefined> {
+        const trialProgress = await this.getTrialProgress(userId, skipCache);
+
+        if (trialProgress >= 1 && (await this.getById(userId))?.ontrial) {
+            await this.userRepository.endTrial(userId);
+            this.clearCache(userId);
+            this.clearUserRestrictionsCache(userId);
+            return;
+        }
+        return trialProgress;
+    }
+
+    getTrialApprovers(userId: number): Promise<VoteWithUsername[]> {
+        return this.voteRepository.getTrialsApprovers(userId);
     }
 }

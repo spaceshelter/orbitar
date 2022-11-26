@@ -34,11 +34,11 @@ export default class InviteRepository {
                     left join users u on (ui.child_id = u.user_id) 
             where
                 i.issued_by = :forUserId
+            order by i.invite_id desc
         `, {
             forUserId
         });
     }
-
 
     async updateCode(code: string, newCode: string) {
         const result = await this.db.query<ResultSetHeader>('update invites set code=:newCode where code=:code', {
@@ -48,4 +48,47 @@ export default class InviteRepository {
 
         return result.changedRows > 0;
     }
+
+    getInviteReason(userId: number): Promise<string | undefined> {
+        return this.db.fetchOne<{reason: string}>(
+            `select reason
+             from user_invites ui
+                      left join invites i
+                                on (i.invite_id = ui.invite_id)
+             where ui.child_id = :user_id limit 1`,
+            {
+                user_id: userId
+            }).then(_ => _?.reason);
+    }
+
+    async createInvite(forUserId: number, code: string, reason: string, restricted=true) {
+        await this.db.query<ResultSetHeader>(
+            'insert into invites (code, issued_by, issued_at, issued_count, left_count, reason, restricted) values (:code, :forUserId, now(), 1, 1, :reason, :restricted)', {
+            code,
+            forUserId,
+            reason,
+            restricted
+        });
+    }
+
+    deleteInvite(userId: number, code: string): Promise<boolean> {
+        return this.db.query<ResultSetHeader>(
+            'delete from invites where issued_by = :user_id and code = :code and NOT EXISTS (select * from user_invites where invite_id = invites.invite_id)', {
+                user_id: userId,
+                code
+            }).then(_ => _.affectedRows > 0);
+    }
+
+    async getInvitesCount(userId: number, used: boolean, restricted?: boolean): Promise<number> {
+        return await this.db.fetchOne<{ count: number }>(
+            `select count(*) count
+             from invites
+             where issued_by = :user_id 
+               ${restricted !== undefined ? 'and restricted = ' + (restricted ? '1' : '0') : ''}
+               and ((left_count = 0) = :used)`, {
+                user_id: userId,
+                used
+            }).then(_ => _.count);
+    }
+
 }

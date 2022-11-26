@@ -2,15 +2,19 @@ import {useAPI, useAppState} from '../AppState/AppState';
 import React, {useEffect, useState} from 'react';
 import Username from './Username';
 import {Karma} from './Karma';
-import {UserKarmaResponse, UserRestrictionsResponse} from '../API/UserAPI';
+import {UserKarmaResponse} from '../API/UserAPI';
+import { CircularProgressbar } from 'react-circular-progressbar';
 import ratingSwitchStyles from './RatingSwitch.module.scss';
 import styles from './UserProfileKarma.module.scss';
 import {Link, useSearchParams} from 'react-router-dom';
 import PostLink from './PostLink';
 import moment from 'moment';
+import {useRestrictions} from '../API/use/useRestrictions';
+import {UserProfileResult} from '../API/UserAPIHelper';
 
 type UserProfileKarmaProps = {
     username: string;
+    profile?: UserProfileResult
 };
 
 const formatTimeSec = (sec: number) => {
@@ -21,9 +25,8 @@ export const UserProfileKarma = (props: UserProfileKarmaProps) => {
     const api = useAPI();
     const {userInfo} = useAppState();
     const [karmaResult, setKarmaResult] = useState<UserKarmaResponse | undefined>();
-    const [restrictionsResult, setRestrictionsResult] = useState<UserRestrictionsResponse | undefined>();
-
     const debug = useSearchParams()[0].get('debug') !== null;
+    const restrictionsResult = useRestrictions(props.username);
 
     const isOwnProfile = props.username === userInfo?.username;
 
@@ -36,14 +39,7 @@ export const UserProfileKarma = (props: UserProfileKarmaProps) => {
             .catch(err => {
                 console.error('Karma response error', err);
             });
-        api.userAPI.userRestrictions(props.username)
-            .then(result => {
-                    console.log('Restrictions response', result);
-                    setRestrictionsResult(result);
-                }
-            ).catch(err => {
-            console.error('Restrictions response error', err);
-        });
+
     }, [api.userAPI, debug, props.username]);
 
 
@@ -117,8 +113,26 @@ export const UserProfileKarma = (props: UserProfileKarmaProps) => {
         </>,
     ].filter(Boolean);
 
+    const hasRestrictions = restrictions && restrictions.length !== 0;
+
     if (restrictions && restrictions.length === 0) {
-        restrictions.push(<><span className={'i i-thumbs-up'}></span>Ура! Права не ограничены!</>);
+        restrictions.push(<><span className={'i i-thumbs-up'}></span>
+            <div>Ура! Права не ограничены!
+            {!!props.profile?.trialApprovers && <>
+                {props.profile.trialApprovers.find(u => u.vote > 0) && <p>Выдачу прав поддержали:
+                    <ul className={styles.supporters}>
+                        {props.profile.trialApprovers.map(user => user.vote > 0 &&
+                            <li key={user.username}><Username user={user}/></li>)}
+                    </ul>
+                </p>}
+                {props.profile.trialApprovers.find(u => u.vote < 0) && <p>Против были:
+                    <ul className={styles.supporters}>
+                        {props.profile.trialApprovers.map(user => user.vote < 0 &&
+                            <li key={user.username}><Username user={user}/></li>)}
+                    </ul>
+                </p>}
+            </>}
+            </div></>);
     }
 
     if (restrictions && restrictionsResult.senatePenalty > 0) {
@@ -127,22 +141,44 @@ export const UserProfileKarma = (props: UserProfileKarmaProps) => {
             сената!</>);
     }
 
+    const showTrialProgress = props.profile?.trialProgress !== undefined && (hasRestrictions || debug);
+
     return (
         <>
-            {isOwnProfile && <div className={styles.info}>
-                <div className={styles.beta}>BETA</div>
-                <p>Мы продолжаем работать над саморегуляцией.</p>
-                <p>Это самая первая версия, работающая по механизму,
-                <PostLink post={{id: 781, site: 'dev'}}> описанному тут</PostLink>.</p>
-                <p>Формула саморегуляции зависит от двух вещей — оценок другими людьми вас и вашего контента (постов и комментариев).
-                    Если коротко, ведите себя по-человечески, производите хороший контент, и все будет хорошо.</p>
+            {(isOwnProfile || showTrialProgress) && <div className={styles.info}>
+                {showTrialProgress && props.profile?.trialProgress &&
+                    <div className={styles.trialProgress}>
+                        <CircularProgressbar value={props?.profile.trialProgress * 100}
+                                             text={`${Math.round(props.profile?.trialProgress * 100)}%`}/>
+                    </div>}
+                <div>
+                    {showTrialProgress && <p>← Прогресс к полным правам.</p>}
+                    {isOwnProfile && <>
+                        <p>Это все еще сырая версия саморегуляции, работающая по механизму,
+                            <PostLink post={{id: 781, site: 'dev'}}> описанному тут</PostLink>.</p>
+                        <p>Формула саморегуляции зависит от двух вещей — оценок другими людьми вас и вашего контента
+                            (постов
+                            и комментариев).
+                            Если коротко, ведите себя по-человечески, производите хороший контент, и все будет
+                            хорошо.</p>
+                    </>}
+                </div>
             </div>}
 
             {!restrictionsResult && <div>Загрузка...</div>}
+
+
             {!!restrictions?.length && <div>{restrictions.map((r, idx) =>
                 <div key={idx} className={styles.restricted}>{r}</div>)}</div>}
 
             {karmaResult && <>
+                <div>
+                    Прогресс прав:
+                    <pre>
+                        {JSON.stringify(karmaResult.trialProgress, null, 2)}
+                    </pre>
+                </div>
+
                 <div className={styles.container}>
                     <Karma commentsSumRating={sumCommentRating} postsSumRating={sumPostRating}
                            profileVotesCount={activeKarmaVotesCount} profileVotesSum={activeKarmaVotesSum}
