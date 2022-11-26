@@ -1,9 +1,10 @@
 import APIBase from './APIBase';
-import {UserInfo} from '../Types/UserInfo';
+import {UserInfo, UserProfileInfo} from '../Types/UserInfo';
 import {SiteInfo} from '../Types/SiteInfo';
 import {CommentEntity, ContentFormat, PostEntity} from './PostAPI';
 import PostAPIHelper from './PostAPIHelper';
 import {CommentInfo, PostInfo} from '../Types/PostInfo';
+import {VoteListItemEntity} from './VoteAPI';
 
 export type UserProfileEntity = UserInfo & {
     registered: string;
@@ -15,7 +16,12 @@ type UseProfileRequest = {
 type UserProfileResponse = {
     profile: UserProfileEntity;
     invitedBy: UserInfo;
-    invites: UserInfo[];
+    invites: UserProfileInfo[];
+
+    invitedReason?: string;
+    trialProgress?: number;
+    daysLeftOnTrial?: number;
+    trialApprovers?: VoteListItemEntity[];
 };
 type UserProfilePostsRequest = {
     username: string;
@@ -52,11 +58,20 @@ type UserProfileCommentsResult = {
     total: number;
 };
 
+export type TrialProgressDebugInfo = {
+    effectiveKarmaPart: number;
+    daysOnSitePart: number;
+    singleVotesPart?: number;
+    doubleVotesPart?: number
+};
+
 export type UserKarmaResponse = {
+    effectiveKarma: number;
     senatePenalty: number;
     activeKarmaVotes: Record<string, number>;
     postRatingBySubsite: Record<string, number>;
     commentRatingBySubsite: Record<string, number>;
+    trialProgress: TrialProgressDebugInfo;
 };
 
 /* see UserRestrictions */

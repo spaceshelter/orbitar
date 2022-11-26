@@ -187,10 +187,23 @@ export default class VoteRepository {
         return await this.db.fetchAll(`select u.username, v.vote, v.user_id as userId, v.voter_id as voterId
                                        from user_karma v
                                                 join users u on (v.voter_id = u.user_id)
-                                       where v.user_id = :user_id
+                                       where v.user_id = :user_id and v.vote != 0
                                        order by voted_at desc`, {
             user_id: userId
         });
+    }
+
+    async getSecondaryVotes(primaryVoters: number[]): Promise<VoteWithUsername[]> {
+        if (primaryVoters.length === 0) {
+            return [];
+        }
+        return await this.db.fetchAll(
+            `select u.username, v.vote as vote, v.user_id as userId, v.voter_id as voterId
+             from user_karma v join users u on (v.voter_id = u.user_id)
+             where v.user_id in (:primary_voters) and (v.vote != 0)
+             `, {
+                primary_voters: primaryVoters
+            });
     }
 
     /**
@@ -215,5 +228,14 @@ export default class VoteRepository {
              where user_id = :user_id`, {
                 user_id: userId
             });
+    }
+
+    getTrialsApprovers(userId: number): Promise<VoteWithUsername[]>  {
+        return this.db.fetchAll(`select u.username, v.vote, v.user_id as userId, v.voter_id as voterId
+                                       from user_trial_approvers v
+                                                join users u on (v.voter_id = u.user_id)
+                                       where v.user_id = :user_id`, {
+            user_id: userId
+        });
     }
 }

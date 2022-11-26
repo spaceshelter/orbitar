@@ -14,7 +14,7 @@ type RatingSwitchProps = {
     type: 'post' | 'comment' | 'user';
     id: number;
     double?: boolean;
-    onVote?: (value: number, vote?: number) => void;
+    onVote?: (value: number, vote?: number, postApiCall?: boolean) => void;
     votingDisabled?: boolean;
 };
 
@@ -98,23 +98,23 @@ export default function RatingSwitch(props: RatingSwitchProps) {
             if (state.vote === vote) {
                 vote = 0;
             }
-    
+
             const newRating = state.rating - (state.vote || 0) + vote;
-    
+
             setState({ vote: vote, rating: newRating});
             if (props.onVote) {
-                props.onVote(newRating, vote);
+            props.onVote(newRating, vote, false);
             }
-    
+
             api.voteAPI.vote(props.type, props.id, vote)
                 .then(result => {
                     setState({
                         rating: result.rating,
                         vote: result.vote
                     });
-    
+
                     if (props.onVote) {
-                        props.onVote(result.rating, result.vote);
+                    props.onVote(result.rating, result.vote, true);
                     }
                 })
                 .catch(() => {

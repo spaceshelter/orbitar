@@ -6,4 +6,5 @@ export type InviteEntity = {
     invited: UserBaseEntity[];
     leftCount: number;
     reason?: string;
+    restricted: boolean;
 };
