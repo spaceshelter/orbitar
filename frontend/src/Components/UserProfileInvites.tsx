@@ -38,6 +38,7 @@ export const UserProfileInvites = observer((props: UserProfileInvitesProps) => {
     const usernameFilter = location.hash.length > 1 && location.hash.substring(1) || undefined;
 
     const [refreshCount, setRefreshCount] = useState(0);
+    const [regeneratedIdx, setRegeneratedIdx] = useState<number | undefined>(undefined);
     const forceRefresh = () => setRefreshCount(refreshCount + 1);
 
     useEffect(() => {
@@ -70,9 +71,10 @@ export const UserProfileInvites = observer((props: UserProfileInvitesProps) => {
         return;
     };
 
-    const handleRegenerate = async (code: string) => {
+    const handleRegenerate = async (code: string, idx: number | undefined) => {
         try {
             const result = await api.inviteAPI.regenerate(code);
+            setRegeneratedIdx(idx);
             console.log('REGENERATE', result);
             forceRefresh();
         } catch (error: any) {
@@ -166,6 +168,8 @@ export const UserProfileInvites = observer((props: UserProfileInvitesProps) => {
                     <div className="list">
                         {activeInvites.map((invite, idx) =>
                             <Invite invite={invite} key={idx}
+                                    idx={idx}
+                                    regeneratedIdx={regeneratedIdx}
                                     active={true}
                                     handleRegenerate={handleRegenerate}
                                     handleDelete={handleDelete}/>)}
@@ -199,11 +203,13 @@ export const UserProfileInvites = observer((props: UserProfileInvitesProps) => {
 const Invite = (props: {
     invite: InviteEntity,
     active: boolean,
-    handleRegenerate: (code: string) => void,
+    handleRegenerate: (code: string, idx: number | undefined) => void,
     handleDelete: (code: string) => void,
-    usernameFilter?: string
+    usernameFilter?: string,
+    idx?: number,
+    regeneratedIdx?: number
 }) => {
-    const {invite} = props;
+    const {invite, idx, regeneratedIdx} = props;
 
     const handleCopyInvite = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -227,11 +233,11 @@ const Invite = (props: {
         {!!invite.reason && <div className={classNames(commentStyles.content, styles.content)}><ContentComponent content={invite.reason}/></div>}
 
         {props.active && !!invite.code && <>
-            <div className="code"><Link to={`//${process.env.REACT_APP_ROOT_DOMAIN}/invite/${invite.code}`}
+            <div className={classNames('code', (idx === regeneratedIdx ? 'regenerated' : ''))}><Link to={`//${process.env.REACT_APP_ROOT_DOMAIN}/invite/${invite.code}`}
                                         onClick={handleCopyInvite}>{process.env.REACT_APP_ROOT_DOMAIN}/invite/{invite.code}</Link>
             </div>
             <button onClick={handleCopyInvite}>Скопировать</button>
-            <ConfirmButton onAction={() => props.handleRegenerate(invite.code)}
+            <ConfirmButton onAction={() => props.handleRegenerate(invite.code, props.idx)}
                 message={`Вы уверены, что хотите сгенерировать новый код для приглашения?`}
             >Отозвать</ConfirmButton>
             {invite.restricted && props.active && !invite.invited?.length &&
