@@ -1,0 +1,18 @@
+.loading {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: fadein 1s ease-in;
+    animation-fill-mode: forwards;
+    animation-delay: 0.5s;
+}
+
+.loading img {
+    box-shadow: 0 0 100px 18px rgba(0,0,0,0.6);
+}
+
+@keyframes fadein {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
