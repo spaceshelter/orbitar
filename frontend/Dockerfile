@@ -1,4 +1,4 @@
-FROM node:16 as build
+FROM node:18 as build
 WORKDIR /frontend-build
 COPY package*.json ./
 RUN npm install
@@ -13,6 +13,6 @@ RUN npm run build && cp -r build/ /build
 WORKDIR /build
 RUN rm -rf /frontend-build
 
-FROM node:16
+FROM node:18
 COPY --from=build /build /build
 CMD rm -rf /frontend/* && cp -r /build/. /frontend/ && ls /frontend
