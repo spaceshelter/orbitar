@@ -14,6 +14,8 @@ services:
       - $PWD/caddy/certs:/certs
       - caddy_data:/data
       - caddy_config:/config
+    # Default caddy command borrowed from https://github.com/caddyserver/caddy-docker/blob/master/Dockerfile.tmpl
+    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile", "--watch"] 
 
   mysql:
     platform: linux/amd64
