@@ -27,9 +27,11 @@
     }
   }
 
-  root * /srv
-  file_server
-  try_files {path} /index.html
+  handle {
+    root * /srv
+    file_server
+    try_files {path} /index.html
+  }
 }
 
 {$API_DOMAIN} {

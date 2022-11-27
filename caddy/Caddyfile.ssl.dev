@@ -17,7 +17,9 @@
     }
   }
 
-  reverse_proxy http://host.docker.internal:5000
+  handle {
+    reverse_proxy http://host.docker.internal:5000
+  }
 }
 
 *.{$SERVER_DOMAIN} {
