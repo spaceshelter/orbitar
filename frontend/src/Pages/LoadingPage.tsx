@@ -1,5 +1,5 @@
 import React, {useEffect} from 'react';
-import styles from './LoadingPage.module.css';
+import './LoadingPage.css';
 
 export default function LoadingPage() {
     document.title = 'ЪУЬ';
@@ -15,8 +15,6 @@ export default function LoadingPage() {
     });
 
     return (
-        <div className={styles.loading} style={{opacity: 0}}>
-            <img alt="Loading..." src="/img/robots.gif" />
-        </div>
+        <img className="loading" alt="Loading..." src="/img/robots.gif" />
     );
 }
