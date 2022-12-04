@@ -39,6 +39,10 @@ function updateVideo(video: HTMLVideoElement) {
 }
 
 function updateImg(img: HTMLImageElement) {
+    if (img.naturalWidth > 500 || img.naturalHeight > 500) {
+        img.classList.add('image-large');
+    }
+
     let el: HTMLElement | null = img;
     while (el) {
         if (el.tagName.toUpperCase() === 'A') {
