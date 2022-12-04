@@ -34,6 +34,7 @@ export type SiteConfig = {
 };
 
 export type FeedConfig = {
+    host: string;
     port: number;
 };
 
@@ -62,6 +63,7 @@ export const config: Config = {
         http: process.env.SITE_HTTP === 'true',
     },
     feed: {
+        host: process.env.FEED_INDEX_HOST || 'feed',
         port: parseInt(process.env.FEED_INDEX_PORT) || 6767,
     }
 };
