@@ -102,6 +102,9 @@ img.image-preview {
   max-height: none;
   cursor: zoom-out;
 }
+img.image-large {
+  display: block;
+}
 img.low-rating, video.low-rating, iframe.low-rating {
   opacity: 0.5;
   /*blur*/

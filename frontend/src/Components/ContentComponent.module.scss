@@ -1,12 +1,12 @@
 .content {
   max-height: fit-content;
-  
+
   iframe, video {
       max-width: 100%;
       aspect-ratio: 16 / 9;
       height: auto;
   }
-  
+
   &.cut {
     max-height: 650px;
     overflow: hidden;
@@ -15,6 +15,11 @@
   }
   b, i, u, strike, blockquote{
     color: var(--fg);
+  }
+
+  img {
+    max-width: 100%;
+    max-height: 500px;
   }
 }
 
