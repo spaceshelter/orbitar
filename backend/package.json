@@ -33,7 +33,6 @@
     "jest": "^28.1.0",
     "ts-jest": "^28.0.3",
     "@types/jest": "^27.5.1",
-    "node-fetch": "^2.6.7",
     "image-size": "^1.0.2"
   },
   "dependencies": {
@@ -55,6 +54,7 @@
     "url-parse": "^1.5.10",
     "web-push": "^3.5.0",
     "winston": "^3.7.2",
+    "node-fetch": "^2.6.7",
     "string-strip-html": "^8.3.0"
   }
 }

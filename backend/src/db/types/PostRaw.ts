@@ -1,19 +1,22 @@
-export type PostRaw = {
+export type PostBareBonesRaw = {
     post_id: number;
     site_id: number;
+    created_at: Date;
+    commented_at: Date;
+};
+
+export type PostRaw = {
     author_id: number;
     rating: number;
     title: string;
     source: string;
     html: string;
-    created_at: Date;
-    commented_at: Date;
     edit_flag?: number;
     comments: number;
     gold: number;
     language: string;
     content_source_id: number;
-};
+} & PostBareBonesRaw;
 
 export type PostRawWithUserData = PostRaw & {
     vote?: number;

@@ -1,61 +1,228 @@
-import {RedisClientType} from 'redis';
 import PostRepository from '../db/repositories/PostRepository';
 import {PostRawWithUserData} from '../db/types/PostRaw';
 import UserRepository from '../db/repositories/UserRepository';
 import CodeError from '../CodeError';
-import ExclusiveTask, {TaskState} from '../utils/ExclusiveTask';
 import BookmarkRepository from '../db/repositories/BookmarkRepository';
 import {PostInfo} from './types/PostInfo';
 import {ContentFormat} from './types/common';
 import {SiteInfo} from './types/SiteInfo';
 import SiteManager from './SiteManager';
 import {FeedSorting} from '../api/types/entities/common';
+import {Logger} from 'winston';
+import fetch from 'node-fetch';
+import {config} from '../config';
+
+const FEED_API = `http://localhost:${config.feed.port}`;
+
+type Post = {
+    ts: number;
+    id: number;
+};
+
+type Batch = {
+    subsite: string;
+    posts: Post[];
+};
+
+type Query = {
+    subsites: string[];
+    offset: number;
+    limit: number;
+};
+type QueryResponse = {
+    post_ids: number[];
+    total: number;
+    cache_is_empty: boolean;
+};
 
 export default class FeedManager {
     private readonly bookmarkRepository: BookmarkRepository;
     private readonly postRepository: PostRepository;
     private readonly userRepository: UserRepository;
     private readonly siteManager: SiteManager;
-    private readonly redis: RedisClientType;
+    private initialized = undefined;
+    /* minimal post created / updated date */
+    private minDate: Date | undefined = undefined;
+    /* when true, backend expects non-empty feed cache, will repopulate if discrepancy is found */
+    private confirmedPostsExist = false;
+    private readonly logger: Logger;
 
-    constructor(bookmarkRepository: BookmarkRepository, postRepository: PostRepository, userRepository: UserRepository, siteManager: SiteManager, redis: RedisClientType) {
+    private userSubscriptionsCache = new Map<number, number[]>();
+
+    constructor(bookmarkRepository: BookmarkRepository, postRepository: PostRepository, userRepository: UserRepository,
+                siteManager: SiteManager, logger: Logger) {
         this.bookmarkRepository = bookmarkRepository;
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.siteManager = siteManager;
-        this.redis = redis;
+        this.logger = logger;
     }
 
-    private getRedisKey(forUserId: number, sorting: FeedSorting = FeedSorting.postCommentedAt, suffix = ''): string {
-        const createdAt = sorting === FeedSorting.postCommentedAt ? '' : ':created_at';
-        return `subscriptions:${forUserId}${createdAt}${suffix}`;
+    private offsetPostTs(ts: Date): number {
+        if (!this.minDate) {
+            return 0;
+        }
+        // should never be negative, but just in case
+        return Math.floor(Math.max(ts.getTime() - this.minDate.getTime(), 0) / 1000);
     }
 
-    async getSubscriptionFeed(forUserId: number, page: number, perpage: number, format: ContentFormat, sorting: FeedSorting): Promise<PostInfo[]> {
+    /**
+     * Populates the feed cache with posts from the db.
+     * Returns promise that resolves when the initialization is complete.
+     * @param force to force repopulation (even if already initialized)
+     * @return {Promise<number>} uuid of the initialization run
+     */
+    private initialize(force = false): Promise<number> {
+        if (!this.initialized || force) {
+            this.confirmedPostsExist = false;
+
+            this.initialized = (async () => {
+                const uuid = (new Date()).getTime() * 1000 + Math.floor(Math.random() * 1000);
+                try {
+
+                    this.minDate = await this.postRepository.getMinPostDate();
+                    if (!this.minDate) {
+                        return uuid;
+                    }
+
+                    await fetch(`${FEED_API}/clear`,
+                        {method: 'POST'}
+                    );
+
+                    let sinceId = -1;
+                    const batchSize = 1000;
+
+                    // eslint-disable-next-line no-constant-condition
+                    while (true) {
+                        const batch = await this.postRepository.getPostIdsAndSites(sinceId, batchSize);
+                        if (batch.length === 0) {
+                            break;
+                        }
+                        this.confirmedPostsExist = true;
+
+                        const batchesBySite: Record<string, Batch> = {};
+                        const addPostToBatch = (key: string, ts: number, id: number) => {
+                            if (!batchesBySite[key]) {
+                                batchesBySite[key] = {
+                                    subsite: key,
+                                    posts: [],
+                                };
+                            }
+                            batchesBySite[key].posts.push({ts, id});
+                        };
+
+                        for (const post of batch) {
+                            addPostToBatch(`${post.site_id}:new`,
+                                this.offsetPostTs(post.created_at),
+                                post.post_id);
+                            addPostToBatch(`${post.site_id}:live`,
+                                this.offsetPostTs(post.commented_at),
+                                post.post_id);
+                            sinceId = Math.max(sinceId, post.post_id);
+                        }
+
+                        await fetch(`${FEED_API}/update`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(Object.values(batchesBySite)),
+                        });
+                    }
+                } catch (e) {
+                    this.logger.error(e);
+                    this.initialized = undefined;
+                }
+                return uuid;
+            })();
+        }
+        return this.initialized;
+    }
+
+    async getSubscriptions(forUserId: number): Promise<number[]> {
+        let userSubscriptions = this.userSubscriptionsCache.get(forUserId);
+        if (!userSubscriptions) {
+            userSubscriptions = await this.siteManager.getSiteSubscriptionIds(forUserId);
+            this.userSubscriptionsCache.set(forUserId, userSubscriptions);
+        }
+        return userSubscriptions;
+    }
+
+    async getSubsiteKeys(forUserId: number, feedSorting: FeedSorting): Promise<string[]> {
+        const subscriptions = await this.getSubscriptions(forUserId);
+        return subscriptions.map(sub => `${sub}:${feedSorting == FeedSorting.postCreatedAt ? 'new' : 'live'}`);
+    }
+
+    async getSubscriptionFeed(forUserId: number, page: number, perpage: number, format: ContentFormat, sorting: FeedSorting):
+        Promise<{total: number, posts: PostInfo[]}> {
+
+        const prevInitUUID = await this.initialize();
+
         const limitFrom = (page - 1) * perpage;
 
-        // check if fanned out
-        const result = await this.redis.get(this.getRedisKey(forUserId, sorting, ':fanned'));
-        if (!result) {
-            // pull if not fanned out yet
-            await this.pullSubscriptionsFeed(forUserId);
+        this.logger.profile(`getSubscriptionFeed/subsiteKeys:${forUserId}`);
+        const keys = await this.getSubsiteKeys(forUserId, sorting);
+        this.logger.profile(`getSubscriptionFeed/subsiteKeys:${forUserId}`);
+
+        this.logger.profile(`getSubscriptionFeed/query:${forUserId}`);
+        const { total, post_ids: postIds, cache_is_empty: cacheIsEmpty }  = await fetch(`${FEED_API}/query`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                subsites: keys,
+                offset: limitFrom,
+                limit: perpage,
+            } as Query),
+        }).then(res => res.json() as QueryResponse);
+        this.logger.profile(`getSubscriptionFeed/query:${forUserId}`);
+
+        /**
+         * Discrepancy is found, repopulating feed cache:
+         * - feed cache is empty, but posts exist in db
+         *     (feed cache service was restarted)
+         * - cache initialization didn't find any posts in db, but posts were added later
+         *     (can happen once when starting from empty db)
+         *
+         *     cacheIsEmpty is true whe remote feed cache is empty
+         *     this.minDate is undefined when initialization didn't happen or didn't find any posts in db
+         */
+        if (this.confirmedPostsExist && (cacheIsEmpty || !this.minDate)) {
+            const curInitUUID = await this.initialize();
+            // double-checked locking. Needed if the repopulation was already in progress.
+            if (curInitUUID === prevInitUUID) {
+                await this.initialize(true);
+            }
+            return this.getSubscriptionFeed(forUserId, page, perpage, format, sorting);
         }
 
-        // get post ids from redis
-        const redisFeedName = this.getRedisKey(forUserId, sorting);
-        const postIds = await this.redis.zRange(redisFeedName, '+inf', 0, { REV: true, BY: 'SCORE', LIMIT: { offset: limitFrom, count: perpage } });
+        this.logger.profile(`getSubscriptionFeed/postsFetch:${forUserId}`);
+        const posts: PostRawWithUserData[] =
+            await this.postRepository.getPostsWithUserData(postIds, forUserId);
 
-        const posts: PostRawWithUserData[] = [];
-        for (const postId of postIds) {
-            const post = await this.postRepository.getPostWithUserData(parseInt(postId), forUserId);
-            posts.push(post);
-        }
+        // sort by the order of ids in the query
+        posts.sort((a, b) =>
+            postIds.indexOf(a.post_id) - postIds.indexOf(b.post_id));
 
-        return await this.convertRawPost(forUserId, posts, format);
+        this.logger.profile(`getSubscriptionFeed/postsFetch:${forUserId}`);
+
+        return {
+            total,
+            posts: await this.convertRawPost(forUserId, posts, format)
+        };
     }
 
     async getSubscriptionsTotal(forUserId: number): Promise<number> {
-        return await this.redis.zCount(this.getRedisKey(forUserId), 0, '+inf');
+        await this.initialize();
+
+        return await fetch(`${FEED_API}/total`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(await this.getSubsiteKeys(forUserId, FeedSorting.postCreatedAt))
+        }).then(res => res.json());
     }
 
     async getAllPosts(forUserId: number, page: number, perpage: number, format: ContentFormat, sorting: FeedSorting): Promise<PostInfo[]> {
@@ -86,133 +253,6 @@ export default class FeedManager {
         return await this.postRepository.getPostsTotal(siteId);
     }
 
-    async pullSubscriptionsFeed(forUserId: number) {
-        // TODO: check for simultaneous pulls
-
-        // set fanout flag
-        await this.redis.set(this.getRedisKey(forUserId, FeedSorting.postCreatedAt, ':fanned'), 'true');
-        await this.redis.set(this.getRedisKey(forUserId, FeedSorting.postCommentedAt, ':fanned'), 'true');
-
-        const sites = await this.userRepository.getUserMainSubscriptions(forUserId);
-
-        for (const site of sites) {
-            await this.siteFanOut(forUserId, site.site_id);
-        }
-    }
-
-    private postFanOutTasks: Record<number, ExclusiveTask<boolean, never>> = {};
-    async postFanOut(postId: number) {
-        let task = this.postFanOutTasks[postId];
-        if (task) {
-            await task.run();
-            return;
-        }
-
-        task = new ExclusiveTask<boolean, never>(async (state) => {
-            await this.postFanOutRun(postId, state);
-            return true;
-        });
-        this.postFanOutTasks[postId] = task;
-        await task.run();
-        delete this.postFanOutTasks[postId];
-    }
-
-    private async postFanOutRun(postId: number, state: TaskState) {
-        // get post data
-        const post = await this.postRepository.getPost(postId);
-        if (!post) {
-            throw new CodeError('fanout-no-post', `Could not load post ${postId}`);
-        }
-
-        if (state.cancelled) throw new Error('Fanout cancelled');
-
-        // get all subscribed users
-        const strPostId = `${postId}`;
-        const users = await this.userRepository.getMainSubscriptionsUsers(post.site_id);
-
-        for (const {user_id} of users) {
-            if (state.cancelled) {
-                throw new Error('Fanout cancelled');
-            }
-
-            if (await this.redis.exists(this.getRedisKey(user_id, FeedSorting.postCommentedAt, ':fanned'))) {
-                await this.redis.zAdd(this.getRedisKey(user_id, FeedSorting.postCommentedAt), [{
-                    score: post.commented_at.getTime(),
-                    value: strPostId
-                }]);
-            }
-            if (await this.redis.exists(this.getRedisKey(user_id, FeedSorting.postCreatedAt, ':fanned'))) {
-                await this.redis.zAdd(this.getRedisKey(user_id, FeedSorting.postCreatedAt), [{
-                    score: post.created_at.getTime(),
-                    value: strPostId
-                }]);
-            }
-
-            // TODO: use redis for update bookmarks
-            await this.bookmarkRepository.setUpdated(postId, user_id, post.commented_at);
-        }
-    }
-
-    private siteFanOutTasks: Record<string, ExclusiveTask<boolean, never>> = {};
-    async siteFanOut(forUserId: number, siteId: number, remove = false) {
-        const fanOutId = `${siteId}:${forUserId}`;
-        let task = this.siteFanOutTasks[fanOutId];
-        if (task) {
-            task.cancel().then();
-        }
-
-        task = new ExclusiveTask<boolean, never>(async (state) => {
-            await this.siteFanOutRun(forUserId, siteId, remove, state);
-            return true;
-        });
-        this.siteFanOutTasks[fanOutId] = task;
-        await task.run();
-        delete this.siteFanOutTasks[fanOutId];
-    }
-
-    async siteFanOutRun(forUserId: number, siteId: number, remove, state: TaskState) {
-        // console.log('Fanout site', siteId);
-        let posts: { post_id: number, commented_at: Date, created_at: Date }[];
-        let last_post_id = 0;
-        do {
-            posts = await this.postRepository.getSitePostUpdateDates(forUserId, siteId, last_post_id, 100);
-
-            if (state.cancelled) {
-                throw new Error('Fanout cancelled');
-            }
-
-            if (posts.length < 1) {
-                break;
-            }
-
-            last_post_id = posts[posts.length - 1].post_id;
-
-            if (remove) {
-                const redisValues = posts.map(post => `${post.post_id}`);
-                await this.redis.zRem(this.getRedisKey(forUserId, FeedSorting.postCreatedAt), redisValues);
-                await this.redis.zRem(this.getRedisKey(forUserId, FeedSorting.postCommentedAt), redisValues);
-            }
-            else {
-                const redisValuesSortedByPostCreated = [];
-                const redisValuesSortedByPostCommented = [];
-                for (let i = 0; i < posts.length; i++) {
-                    const post = posts[i];
-                    redisValuesSortedByPostCreated.push({
-                        score: post.created_at.getTime(),
-                        value: post.post_id
-                    });
-                    redisValuesSortedByPostCommented.push({
-                        score: post.commented_at.getTime(),
-                        value: post.post_id
-                    });
-                }
-                await this.redis.zAdd(this.getRedisKey(forUserId, FeedSorting.postCommentedAt), redisValuesSortedByPostCommented);
-                await this.redis.zAdd(this.getRedisKey(forUserId, FeedSorting.postCreatedAt), redisValuesSortedByPostCreated);
-            }
-        } while (posts.length > 0);
-
-        // console.log('Fanout complete', siteId);
-    }
 
     async convertRawPost(forUserId: number, rawPosts: PostRawWithUserData[], format: ContentFormat): Promise<PostInfo[]> {
         const siteById: Record<number, SiteInfo> = {};
@@ -255,14 +295,11 @@ export default class FeedManager {
 
     }
 
-
     async siteSubscribe(userId: number, siteName: string, main: boolean, bookmarks: boolean) {
         const site = await this.siteManager.getSiteByName(siteName);
         if (!site) {
             throw new CodeError('no-site', 'Site not found');
         }
-
-        const siteId = site.id;
 
         const existingSubscription = await this.siteManager.getSubscription(userId, site.id);
         if (existingSubscription && !!existingSubscription.feed_main === main &&
@@ -272,9 +309,45 @@ export default class FeedManager {
 
         await this.siteManager.siteSubscribe(userId, site.id, main, bookmarks);
 
-        // fanout in background
-        this.siteFanOut(userId, siteId, !main).then().catch();
+        if ((!!existingSubscription.feed_main) !== main) {
+            this.logger.info(`Clearing feed cache for user ${userId} after subscribing to ${siteName}`);
+            this.userSubscriptionsCache.delete(userId);
+        }
 
         return { main, bookmarks };
     }
+
+    async postFanOut(subsite_id: number, post_id: number, createdAt: Date | undefined, updatedAt: Date | undefined) {
+        this.confirmedPostsExist = true;
+        if (!this.initialized || !this.minDate) {
+            return;
+        }
+        const batch = [];
+        let dbUpdateJob;
+
+        if (createdAt) {
+            batch.push({subsite: `${subsite_id}:new`, posts: [{id: post_id, ts: this.offsetPostTs(createdAt)}]});
+        }
+        if (updatedAt) {
+            batch.push({subsite: `${subsite_id}:live`, posts: [{id: post_id, ts: this.offsetPostTs(updatedAt)}]});
+            dbUpdateJob = (async () => {
+                this.logger.profile(`postFanOut/setUpdated:${post_id}`);
+                await this.bookmarkRepository.setUpdated(post_id, updatedAt);
+                this.logger.profile(`postFanOut/setUpdated:${post_id}`);
+            })();
+        }
+        if (batch.length > 0) {
+            await fetch(`${FEED_API}/update`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(batch),
+            });
+        }
+        if (dbUpdateJob) {
+            await dbUpdateJob;
+        }
+    }
+
 }

@@ -1,5 +1,5 @@
 import DB from '../DB';
-import {PostRaw, PostRawWithUserData} from '../types/PostRaw';
+import {PostBareBonesRaw, PostRaw, PostRawWithUserData} from '../types/PostRaw';
 import CodeError from '../../CodeError';
 import {ResultSetHeader} from 'mysql2';
 import {ContentSourceRaw} from '../types/ContentSourceRaw';
@@ -12,15 +12,38 @@ export default class PostRepository {
         this.db = db;
     }
 
-    async getPostWithUserData(postId: number, forUserId: number): Promise<PostRawWithUserData | undefined> {
-        return await this.db.fetchOne<PostRawWithUserData>(`
+    /**
+     * fetch min created_at and min commented_at
+     */
+    getMinPostDate(): Promise<Date> {
+        return this.db.fetchOne<{min_date: Date}>(`
+            SELECT LEAST(MIN(created_at), MIN(commented_at)) AS min_date
+            FROM posts
+        `).then(_ => _?.min_date);
+    }
+
+    async getPostIdsAndSites(sincePostId: number, limit: number): Promise<PostBareBonesRaw[]> {
+        return await this.db.query(`
+            select post_id, site_id, created_at, commented_at
+            from posts
+            where post_id > :since_post_id
+            order by post_id asc
+            limit :limit
+        `, {since_post_id: sincePostId, limit: limit});
+    }
+
+    async getPostsWithUserData(postId: number[], forUserId: number): Promise<PostRawWithUserData[]> {
+        if (!postId.length) {
+            return [];
+        }
+        return this.db.fetchAll<PostRawWithUserData>(`
             select p.*, v.vote, b.read_comments, b.bookmark, b.last_read_comment_id, b.watch
             from posts p
                 left join post_votes v on (v.post_id = p.post_id and v.voter_id=:user_id)
                 left join user_bookmarks b on (b.post_id = p.post_id and b.user_id=:user_id)
-            where p.post_id=:post_id
+            where p.post_id in (:post_ids)
         `, {
-            post_id: postId,
+            post_ids: postId,
             user_id: forUserId
         });
     }
