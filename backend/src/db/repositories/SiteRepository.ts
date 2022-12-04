@@ -149,4 +149,18 @@ export default class SiteRepository {
                 site_id: siteId
             });
     }
+
+    async getSiteSubscriptionIds(forUserId: number): Promise<number[]> {
+        return await this.db.fetchAll<{site_id: number}>(`
+                select
+                    site_id
+                from user_sites
+                where
+                    user_id = :user_id
+                    and feed_main = 1 
+            `,
+            {
+                user_id: forUserId
+            }).then((rows) => rows.map((row) => row.site_id));
+    }
 }

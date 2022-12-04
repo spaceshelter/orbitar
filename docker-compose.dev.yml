@@ -28,7 +28,7 @@ services:
     ports:
       - "3306:3306"
       - "33060:33060"
-      
+
   redis:
     image: redis:7
     restart: always
@@ -37,6 +37,13 @@ services:
     command: redis-server --save 20 1 --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
+
+  feed:
+    build:
+      context: feed
+    restart: always
+    ports:
+      - "6767:6767"
 
 volumes:
   caddy_data:

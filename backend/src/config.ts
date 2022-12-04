@@ -5,6 +5,7 @@ type Config = {
     redis: RedisConfig;
     vapid: VapidConfig;
     site: SiteConfig;
+    feed: FeedConfig;
 };
 
 export type MysqlConfig = {
@@ -32,6 +33,10 @@ export type SiteConfig = {
     http: boolean;
 };
 
+export type FeedConfig = {
+    port: number;
+};
+
 export const config: Config = {
     port: parseInt(process.env.SERVER_PORT) || 5001,
     logLevel: process.env.LOG_LEVEL || 'info',
@@ -55,5 +60,8 @@ export const config: Config = {
     site: {
         domain: process.env.SITE_DOMAIN || 'idiod.local',
         http: process.env.SITE_HTTP === 'true',
+    },
+    feed: {
+        port: parseInt(process.env.FEED_INDEX_PORT) || 6767,
     }
 };
