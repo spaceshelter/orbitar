@@ -12,7 +12,7 @@ import {Logger} from 'winston';
 import fetch from 'node-fetch';
 import {config} from '../config';
 
-const FEED_API = `http://localhost:${config.feed.port}`;
+const FEED_API = `http://${config.feed.host}:${config.feed.port}`;
 
 type Post = {
     ts: number;
