@@ -108,16 +108,16 @@ export default class SearchManager {
             });
         }
 
-        let sort = [];
+        const sort = [];
 
         if (sortByDate) {
-            let direction = sortDirection ? sortDirection : SearchSortingDirection.Desc;
+            const direction = sortDirection ? sortDirection : SearchSortingDirection.Desc;
             sort.push({
                 created_at: {'order': direction, 'format': 'epoch_millis'}
-            })
+            });
         }
 
-        let query = {
+        const query = {
             index: 'orbitar',
             body: {
                 query: {
@@ -141,7 +141,7 @@ export default class SearchManager {
             }
         };
         if (mustTerms.length) {
-            query.body.query.bool.must.push()
+            query.body.query.bool.must.push();
         }
         return query;
     }
@@ -160,7 +160,8 @@ export default class SearchManager {
       searchDirection?: SearchSortingDirection
     ): Promise<SearchResponse> {
         try {
-            let results = [], authorId = null, responseToId = null, siteId = null;
+            const results = [];
+            let authorId = null, responseToId = null, siteId = null;
             if (author) {
                 const authorItem = await this.userManager.getByUsername(author);
                 authorId = authorItem?.id;
@@ -196,7 +197,7 @@ export default class SearchManager {
 
                 let parentCommentAuthor;
                 if (hit._source.parent_comment_author_id) {
-                    parentCommentAuthor = await this.userManager.getById(hit._source.parent_comment_author_id)
+                    parentCommentAuthor = await this.userManager.getById(hit._source.parent_comment_author_id);
                 }
                 results.push({
                     highlight_title: hit.highlight.title,
