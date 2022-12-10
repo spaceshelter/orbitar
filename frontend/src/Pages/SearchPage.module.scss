@@ -1,0 +1,52 @@
+.search {
+  text-align: right;
+  input[type='text'] {
+    width: 100%;
+    display: block;
+    box-sizing: border-box;
+    padding: 5px;
+    font-size: 24px;
+    margin-bottom: 16px;
+  }
+
+  .error {
+    color: var(--danger);
+    &::before {
+      display: inline;
+      content: "⚠ ";
+    }
+  }
+
+  .results {
+    text-align: left !important;
+  }
+
+  .stats {
+    margin-bottom: 20px;
+  }
+
+  .resultItem {
+    margin-bottom: 40px;
+
+    h3 {
+      margin-bottom: 0;
+    }
+
+    p {
+      margin: 0;
+    }
+
+    .meta {
+      font-size: smaller;
+      display: flex;
+
+      :global(.i-user) {
+        margin-right: 10px;
+      }
+
+      .date {
+        margin-right: 10px;
+      }
+    }
+  }
+}

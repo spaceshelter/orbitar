@@ -34,6 +34,24 @@ services:
     volumes:
       - redis_data:/data
 
+  elasticsearch:
+    image: elasticsearch:7.17.5
+    restart: always
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - node.name=es-node01
+      - cluster.name=es-cluster
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms128m -Xmx128m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elasticsearch_data:/usr/share/elastic-setup/data
+
   frontend:
     build:
       context: frontend
@@ -70,3 +88,4 @@ volumes:
   frontend_build:
   mysql_db:
   redis_data:
+  elasticsearch_data:
