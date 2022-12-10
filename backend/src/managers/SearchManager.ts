@@ -1,6 +1,6 @@
 import { Logger } from 'winston';
 import { SearchResponse, SearchScope, SearchSorting, SearchSortingDirection } from '../api/SearchController';
-import { Client } from '@elastic/elasticsearch'
+import { Client } from '@elastic/elasticsearch';
 import UserManager from './UserManager';
 import SiteManager from './SiteManager';
 
@@ -32,7 +32,7 @@ export default class SearchManager {
       sortByDate?: boolean,
       sortDirection?: SearchSortingDirection
     ) {
-        let mustTerms = [
+        const mustTerms = [
             {
                 multi_match: {
                     query: term,
@@ -44,7 +44,7 @@ export default class SearchManager {
             }
         ];
 
-        let filters = [];
+        const filters = [];
 
         if (scope) {
             filters.push({
@@ -79,7 +79,7 @@ export default class SearchManager {
         }
 
         if (createdAtFrom || createdAtTo) {
-            let range = {};
+            const range = {};
             if (createdAtFrom) {
                 range['gte'] = createdAtFrom;
             }
@@ -90,11 +90,11 @@ export default class SearchManager {
                 range: {
                     created_at: range
                 }
-            })
+            });
         }
 
         if (ratingFrom || ratingTo) {
-            let range = {};
+            const range = {};
             if (ratingFrom) {
                 range['gte'] = ratingFrom;
             }
@@ -105,7 +105,7 @@ export default class SearchManager {
                 range: {
                     rating: range
                 }
-            })
+            });
         }
 
         let sort = [];

@@ -27,7 +27,7 @@ export type SearchRequest = {
     rating_to: number;
     search_by_date: boolean;
     search_direction: SearchSortingDirection.Asc | SearchSortingDirection.Desc;
-}
+};
 
 export type SearchResultEntity = {
     highlight_title: string;
@@ -41,7 +41,7 @@ export type SearchResultEntity = {
     comment_id: number;
     comment_post_id: number;
     parent_comment_author: string;
-}
+};
 
 export enum SearchSorting {
     Relevance = 'relevance',
@@ -51,14 +51,14 @@ export enum SearchSorting {
 export type TotalInfo = {
     value: number;
     relation: 'eq' | 'gte';
-}
+};
 
 export type SearchResponse = {
     results: SearchResultEntity[];
     total: TotalInfo;
     sorting: SearchSorting;
     sortingDirection: SearchSortingDirection;
-}
+};
 
 export default class SearchController {
     public router = Router();
