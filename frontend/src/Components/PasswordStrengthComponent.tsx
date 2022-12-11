@@ -11,7 +11,7 @@ interface PasswordStrengthProps {
 export default function PasswordStrengthComponent(props: PasswordStrengthProps) {
     let newPasswordStrength = passwordStrength(props.password).id;
     // TODO: find a better password strength library, as this one doesn't account for passphrases https://xkcd.com/936/
-    if (newPasswordStrength === PasswordStrength.TooWeak && props.password.length >= 12 &&
+    if (newPasswordStrength === PasswordStrength.TooWeak && (props.password?.length || 0) >= 12 &&
         props.password.search(/\S\s+\S/) !== -1) {
         newPasswordStrength = PasswordStrength.Weak;
     }
