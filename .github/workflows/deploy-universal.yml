@@ -1,0 +1,102 @@
+name: Deployment (Universal)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'stage'
+        type: choice
+        options: ['stage', 'prod']
+      delete-volumes:
+        description: 'Delete volumes?'
+        type: boolean
+        default: false
+      restore-db:
+        description: 'Restore DB?'
+        type: boolean
+        default: false
+      flush-redis:
+        description: 'Clear redis?'
+        type: boolean
+        default: false
+      build-flag:
+        type: choice
+        description: docker-compose additional build flag
+        default: "None"
+        options:
+          - "None"
+          - "--no-cache"
+
+jobs:
+  deployment:
+    concurrency: ${{ github.event.inputs.environment }}
+    runs-on: [self-hosted, "${{ github.event.inputs.environment }}"]
+    environment: ${{ github.event.inputs.environment == 'stage' && 'Staging' || 'Production' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Verify environment
+        run: |
+          (diff -wB <(grep -vE '^\s*#' /opt/deployment-specific-files/.env | cut -d '=' -f 1 | sort) \
+          <(grep -vE '^\s*#' .env.sample | cut -d '=' -f 1 | sort)) ||\
+          (echo "Environment variables mismatch" &&\
+          echo "Update /opt/deployment-specific-files/.env on the host or .env.sample in your branch" &&\
+          exit 1)
+
+      - name: Copy configuration
+        run: |
+          cp -f /opt/deployment-specific-files/chain.pem ./caddy/certs
+          cp -f /opt/deployment-specific-files/priv.pem ./caddy/certs
+          cp -f /opt/deployment-specific-files/.env ./
+
+      - name: Build
+        env:
+          # replace None with an empty string
+          BUILD_FLAG: ${{ github.event.inputs.build-flag != 'None' && github.event.inputs.build-flag || '' }}
+        run: docker-compose -f docker-compose.ssl.local.yml build $BUILD_FLAG
+
+      - name: Download DB dump
+        id: get-db
+        if: ${{ github.event.inputs.restore-db }}
+        uses: ./.github/actions/get-db
+        with:
+          workflow: ${{ github.event.inputs.environment == 'stage' && 'restore-sanitized-db.yml' || 'backup-db.yml' }}
+          zip-password: ${{ github.event.inputs.environment == 'stage' && secrets.STAGING_BACKUP_PASSWORD || secrets.BACKUP_PASSWORD }}
+
+      - name: Copy everything to /orbitar
+        run: |
+          mkdir -p /orbitar
+          rm -rf /orbitar/*
+          cp -r ./* /orbitar/
+          cd /orbitar
+
+      - name: Delete volumes
+        if : ${{ github.event.inputs.delete-volumes }}
+        run: docker-compose -f docker-compose.ssl.local.yml down -v
+
+      - name: Restore DB
+        if : ${{ github.event.inputs.restore-db }}
+        run: |
+          docker-compose -f docker-compose.ssl.local.yml stop backend
+          docker-compose -f docker-compose.ssl.local.yml up -d mysql --wait
+          
+          docker-compose -f docker-compose.ssl.local.yml exec -T mysql /usr/bin/mysql \
+            -u root --password=${{ secrets.MYSQL_ROOT_PASSWORD }} --default-character-set=utf8mb4 \
+            < ${{ steps.get-db.outputs.db-dump-file }}
+          
+          rm -rf ${{ steps.get-db.outputs.db-dump-path }}
+
+      - name: Flush redis
+        if : ${{ github.event.inputs.flush-redis }}
+        env:
+          REDIS_PASSWORD: orbitar
+        run: |
+          docker-compose -f docker-compose.ssl.local.yml stop backend
+          docker-compose -f docker-compose.ssl.local.yml up -d redis --wait
+          docker-compose -f docker-compose.ssl.local.yml exec -e REDISCLI_AUTH=$REDIS_PASSWORD redis redis-cli FLUSHALL
+
+      - name: Deploy
+        run: docker-compose -f docker-compose.ssl.local.yml up -d
