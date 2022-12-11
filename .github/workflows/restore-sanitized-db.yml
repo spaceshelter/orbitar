@@ -26,26 +26,20 @@ jobs:
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=10s --health-retries=10
 
     steps:
-      - name: Init vars
-        env:
-          BACKUP_DIR: ${{ runner.temp }}/db_backup
-        run: echo "BACKUP_DIR=$BACKUP_DIR" >> $GITHUB_ENV
+      - name: Checkout
+        uses: actions/checkout@v3
+
       - name: Download DB backup
-        uses: dawidd6/action-download-artifact@v2
+        id: get-db
+        uses: ./.github/actions/get-db
         with:
           workflow: backup-db.yml
-          workflow_conclusion: success
-          check_artifacts: true
-          path: ${{ env.BACKUP_DIR }}
+          zip-password: ${{ secrets.BACKUP_PASSWORD }}
 
-      - name: Unzip artifact & load DB
-        env:
-          BACKUP_PASSWORD: ${{ secrets.BACKUP_PASSWORD }}
+      - name: Load DB
         run: |
-          cd "$BACKUP_DIR"
-          cd `ls -t | head -n 1`
-          unzip -P $BACKUP_PASSWORD `ls -t | head -n 1`
-          cat `ls -t *.sql | head -n 1` | /usr/bin/mysql -h 127.0.0.1 -u root -p$MYSQL_ROOT_PASSWORD
+          cat ${{ steps.get-db.outputs.db-dump-file }} | /usr/bin/mysql -h 127.0.0.1 -u root -p$MYSQL_ROOT_PASSWORD
+          rm -rf ${{ steps.get-db.outputs.db-dump-path }}
 
       - uses: actions/checkout@v3
 
@@ -61,12 +55,10 @@ jobs:
             --add-drop-database --databases orbitar_db activity_db -u root -p$MYSQL_ROOT_PASSWORD > stage-backup.sql
 
       - name: Compress database
-        env:
-          STAGING_BACKUP_PASSWORD: ${{ secrets.STAGING_BACKUP_PASSWORD }}
         run: |
           pwd
           ls -la
-          zip -m -P STAGING_BACKUP_PASSWORD stage-backup.zip stage-backup.sql
+          zip -m -P ${{ secrets.STAGING_BACKUP_PASSWORD }} stage-backup.zip stage-backup.sql
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
@@ -93,23 +85,21 @@ jobs:
           cp -f /opt/deployment-specific-files/priv.pem $GITHUB_WORKSPACE/caddy/certs
           cp -f /opt/deployment-specific-files/.env $GITHUB_WORKSPACE/      
 
-      - name: Download artifact
-        uses: actions/download-artifact@v3
+      - name: Download DB backup
+        uses: ./.github/actions/get-db
+        id: get-db
         with:
-          name: stage-backup
+          zip-password: ${{ secrets.STAGING_BACKUP_PASSWORD }}
 
       - name: Stop backend
         run: docker-compose -f docker-compose.ssl.local.yml stop backend
 
-      - name: Unzip & restore backup
-        env:
-          STAGING_BACKUP_PASSWORD: ${{ secrets.STAGING_BACKUP_PASSWORD }}
-          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+      - name: Restore backup
         run: |
-          unzip -P STAGING_BACKUP_PASSWORD -o `ls -t *.zip | head -n 1`
-          docker-compose -f docker-compose.ssl.local.yml exec -T mysql /usr/bin/mysql -u root --password=$MYSQL_ROOT_PASSWORD \
-            --default-character-set=utf8mb4 \
-            < `ls -t *.sql | head -n 1`
+          docker-compose -f docker-compose.ssl.local.yml exec -T mysql /usr/bin/mysql \
+            -u root --password=${{ secrets.MYSQL_ROOT_PASSWORD }} --default-character-set=utf8mb4 \
+            < ${{ steps.get-db.outputs.db-dump-file }}
+          rm -rf ${{ steps.get-db.outputs.db-dump-path }}
 
       - name: Flush Redis cache
         env:
