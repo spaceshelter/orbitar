@@ -69,9 +69,8 @@ jobs:
 
       - name: Copy everything to /orbitar
         run: |
-          mkdir -p /orbitar
-          rm -rf /orbitar/*
-          cp -r ./* /orbitar/
+          rm -rf /orbitar
+          cp -r . /orbitar
 
       - name: Delete volumes
         if: github.event.inputs.delete-volumes  == 'true'
