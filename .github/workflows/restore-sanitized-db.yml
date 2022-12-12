@@ -37,9 +37,7 @@ jobs:
           zip-password: ${{ secrets.BACKUP_PASSWORD }}
 
       - name: Load DB
-        run: |
-          cat ${{ steps.get-db.outputs.db-dump-file }} | /usr/bin/mysql -h 127.0.0.1 -u root -p$MYSQL_ROOT_PASSWORD
-          rm -rf ${{ steps.get-db.outputs.db-dump-path }}
+        run: cat ${{ steps.get-db.outputs.db-dump-file }} | /usr/bin/mysql -h 127.0.0.1 -u root -p$MYSQL_ROOT_PASSWORD
 
       - uses: actions/checkout@v3
 
@@ -55,10 +53,12 @@ jobs:
             --add-drop-database --databases orbitar_db activity_db -u root -p$MYSQL_ROOT_PASSWORD > stage-backup.sql
 
       - name: Compress database
+        env:
+          STAGING_BACKUP_PASSWORD: ${{ secrets.STAGING_BACKUP_PASSWORD }}
         run: |
           pwd
           ls -la
-          zip -m -P ${{ secrets.STAGING_BACKUP_PASSWORD }} stage-backup.zip stage-backup.sql
+          zip -m -P $STAGING_BACKUP_PASSWORD stage-backup.zip stage-backup.sql
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
@@ -72,11 +72,6 @@ jobs:
     environment: Staging
     runs-on: [self-hosted, stage]
     steps:
-      - name: Delete previous artifacts
-        run: |
-          rm -rf ./*.sql || true
-          rm -rf ./*.zip || true
-
       - uses: actions/checkout@v3
 
       - name: Copy configuration
@@ -95,11 +90,12 @@ jobs:
         run: docker-compose -f docker-compose.ssl.local.yml stop backend
 
       - name: Restore backup
+        env:
+            MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
         run: |
           docker-compose -f docker-compose.ssl.local.yml exec -T mysql /usr/bin/mysql \
-            -u root --password=${{ secrets.MYSQL_ROOT_PASSWORD }} --default-character-set=utf8mb4 \
+            -u root --password=$MYSQL_ROOT_PASSWORD --default-character-set=utf8mb4 \
             < ${{ steps.get-db.outputs.db-dump-file }}
-          rm -rf ${{ steps.get-db.outputs.db-dump-path }}
 
       - name: Flush Redis cache
         env:
