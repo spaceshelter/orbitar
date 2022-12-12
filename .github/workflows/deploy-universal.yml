@@ -69,9 +69,14 @@ jobs:
       - name: Copy everything to /orbitar
         run: |
           mkdir -p /orbitar
+
+          # Include dot files in *
+          shopt -s dotglob         
+
           rm -rf /orbitar/*
-          cp -r ./* /orbitar/
-          cd /orbitar
+          cp -r ./* /orbitar
+
+          shopt -u dotglob
 
       - name: Delete volumes
         if : ${{ github.event.inputs.delete-volumes }}
