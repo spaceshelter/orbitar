@@ -1,0 +1,51 @@
+name: "Get DB Backup"
+description: "Fetch and unzip a DB dump from specific workflow run"
+
+inputs:
+  workflow:
+    description: "Workflow name, if not specified, the current workflow is used"
+    required: false
+    default: ""
+  zip-password:
+    description: "Password for the zip file"
+    required: true
+
+outputs:
+  db-dump-file:
+    description: "Path to the DB dump file (sql)"
+    value: ${{ steps.get-db.outputs.db-dump-file }}
+
+
+runs:
+  using: composite
+  steps:
+    - name: Init vars
+      env:
+        BACKUP_DIR: ${{ runner.temp }}/${{ github.run_id }}_db_backup
+      shell: bash
+      run: echo "BACKUP_DIR=$BACKUP_DIR" >> $GITHUB_ENV
+
+    - name: Download DB backup
+      if: ${{ inputs.workflow != '' }}
+      uses: dawidd6/action-download-artifact@v2
+      with:
+        workflow: ${{ inputs.workflow }}
+        check_artifacts: true
+        path: ${{ env.BACKUP_DIR }}
+
+    - name: Download DB backup
+      if: ${{ inputs.workflow == '' }}
+      uses: actions/download-artifact@v3
+      with:
+        path: ${{ env.BACKUP_DIR }}
+
+    - name: Unzip artifact & load DB
+      id: get-db
+      env:
+        BACKUP_PASSWORD: ${{ inputs.zip-password }}
+      shell: bash
+      run: |
+        cd "$BACKUP_DIR"
+        cd `ls -t | head -n 1`
+        unzip -P $BACKUP_PASSWORD `ls -t | head -n 1`
+        echo "db-dump-file=`pwd`/`ls -t *.sql | head -n 1`" >> $GITHUB_OUTPUT
