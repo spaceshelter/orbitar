@@ -70,12 +70,14 @@ jobs:
       - name: Copy everything to /orbitar
         run: |
           mkdir -p /orbitar
-          
-          # remove everything from /orbitar (including hidden files)
-          rm -rf /orbitar/{,.[!.],..?}*
-          
-          # copy everything from the current directory to /orbitar 
-          cp -r ./. /orbitar
+
+          # Include dot files in *
+          shopt -s dotglob         
+
+          rm -rf /orbitar/*
+          cp -r ./* /orbitar
+
+          shopt -u dotglob
 
       - name: Delete volumes
         if: github.event.inputs.delete-volumes  == 'true'
