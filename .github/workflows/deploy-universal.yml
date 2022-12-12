@@ -30,7 +30,33 @@ on:
           - "--no-cache"
 
 jobs:
+  info:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Info
+        run: |
+            if [ "${{ github.event.inputs.environment }}" = "prod" ]; then
+              echo "::warning::Deploying to PRODUCTION!"
+            elif [ "${{ github.event.inputs.environment }}" = "stage" ]; then
+              echo "::notice::Deploying to STAGE"
+            fi
+            # warn if flags are set
+            if [ "${{ github.event.inputs.delete-volumes }}" = "true" ]; then
+              echo "::warning::Deleting volumes!"
+            fi
+            if [ "${{ github.event.inputs.restore-db }}" = "true" ]; then
+              echo "::warning::Restoring DB!"
+            fi
+            if [ "${{ github.event.inputs.flush-redis }}" = "true" ]; then
+              echo "::warning::Flushing redis!"
+            fi
+            if [ "${{ github.event.inputs.build-flag }}" != "None" ]; then
+              echo "::notice::Build flag: ${{ github.event.inputs.build-flag }}"
+            fi
+
+
   deployment:
+    needs: info
     concurrency: ${{ github.event.inputs.environment }}
     runs-on: [self-hosted, "${{ github.event.inputs.environment }}"]
     environment: ${{ github.event.inputs.environment == 'stage' && 'Staging' || 'Production' }}
