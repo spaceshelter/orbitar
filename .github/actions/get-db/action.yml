@@ -11,9 +11,6 @@ inputs:
     required: true
 
 outputs:
-  db-dump-path:
-    description: "Path to the DB dump directory"
-    value: ${{ steps.get-db.outputs.db-dump-path }}
   db-dump-file:
     description: "Path to the DB dump file (sql)"
     value: ${{ steps.get-db.outputs.db-dump-file }}
@@ -52,4 +49,3 @@ runs:
         cd `ls -t | head -n 1`
         unzip -P $BACKUP_PASSWORD `ls -t | head -n 1`
         echo "db-dump-file=`pwd`/`ls -t *.sql | head -n 1`" >> $GITHUB_OUTPUT
-        echo "db-dump-path=$BACKUP_DIR" >> $GITHUB_OUTPUT

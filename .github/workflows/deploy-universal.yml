@@ -60,9 +60,10 @@ jobs:
 
       - name: Download DB dump
         id: get-db
-        if: ${{ github.event.inputs.restore-db }}
+        if: github.event.inputs.restore-db == 'true'
         uses: ./.github/actions/get-db
         with:
+          # taking the dump file from different workflows: full dump for prod and sanitized for stage
           workflow: ${{ github.event.inputs.environment == 'stage' && 'restore-sanitized-db.yml' || 'backup-db.yml' }}
           zip-password: ${{ github.event.inputs.environment == 'stage' && secrets.STAGING_BACKUP_PASSWORD || secrets.BACKUP_PASSWORD }}
 
@@ -79,23 +80,26 @@ jobs:
           shopt -u dotglob
 
       - name: Delete volumes
-        if : ${{ github.event.inputs.delete-volumes }}
+        if: github.event.inputs.delete-volumes  == 'true'
+        working-directory: /orbitar
         run: docker-compose -f docker-compose.ssl.local.yml down -v
 
       - name: Restore DB
-        if : ${{ github.event.inputs.restore-db }}
+        if: github.event.inputs.restore-db == 'true'
+        working-directory: /orbitar
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
         run: |
           docker-compose -f docker-compose.ssl.local.yml stop backend
           docker-compose -f docker-compose.ssl.local.yml up -d mysql --wait
           
           docker-compose -f docker-compose.ssl.local.yml exec -T mysql /usr/bin/mysql \
-            -u root --password=${{ secrets.MYSQL_ROOT_PASSWORD }} --default-character-set=utf8mb4 \
+            -u root --password=$MYSQL_ROOT_PASSWORD --default-character-set=utf8mb4 \
             < ${{ steps.get-db.outputs.db-dump-file }}
-          
-          rm -rf ${{ steps.get-db.outputs.db-dump-path }}
 
       - name: Flush redis
-        if : ${{ github.event.inputs.flush-redis }}
+        if: github.event.inputs.flush-redis == 'true'
+        working-directory: /orbitar
         env:
           REDIS_PASSWORD: orbitar
         run: |
@@ -104,4 +108,5 @@ jobs:
           docker-compose -f docker-compose.ssl.local.yml exec -e REDISCLI_AUTH=$REDIS_PASSWORD redis redis-cli FLUSHALL
 
       - name: Deploy
+        working-directory: /orbitar
         run: docker-compose -f docker-compose.ssl.local.yml up -d
