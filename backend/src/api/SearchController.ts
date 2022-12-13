@@ -21,12 +21,12 @@ export type SearchRequest = {
     author?: string;
     response_to?: string;
     site?: string;
-    created_at_from: number;
-    created_at_to: number;
-    rating_from: number;
-    rating_to: number;
-    search_by_date: boolean;
-    search_direction: SearchSortingDirection.Asc | SearchSortingDirection.Desc;
+    created_at_from?: number;
+    created_at_to?: number;
+    rating_from?: number;
+    rating_to?: number;
+    search_by_date?: boolean;
+    search_direction?: SearchSortingDirection.Asc | SearchSortingDirection.Desc;
 };
 
 export type SearchResultEntity = {

@@ -133,7 +133,8 @@ export default class SearchManager {
                     fields: {
                         title: {},
                         source: {}
-                    }
+                    },
+                    number_of_fragments: 0
                 },
                 size: 1000,
                 from: 0,

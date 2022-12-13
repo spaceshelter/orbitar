@@ -46,18 +46,19 @@ services:
     ports:
       - "6767:6767"
 
-  elasticsearch:
-    image: elasticsearch:7.17.5
+  search:
+    build:
+      context: search
     restart: always
     ports:
       - "9200:9200"
       - "9300:9300"
     environment:
-      - node.name=es-node01
-      - cluster.name=es-cluster
-      - discovery.type=single-node
-      - "ES_JAVA_OPTS=-Xms128m -Xmx128m"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
       memlock:
         soft: -1
         hard: -1

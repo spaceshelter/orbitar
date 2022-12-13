@@ -1,40 +1,16 @@
 import React, {useEffect, useState} from 'react';
 import styles from './SearchPage.module.scss';
+import feedStyles from './FeedPage.module.scss';
 import {useForm, SubmitHandler} from 'react-hook-form';
 import {useAPI} from '../AppState/AppState';
 import {useSearchParams} from 'react-router-dom';
 import Username from '../Components/Username';
 import DateComponent from '../Components/DateComponent';
 import PostLink from '../Components/PostLink';
+import {SearchResponse, SearchResultEntity} from '../API/SearchApi';
 
 type SearchForm = {
     term: string;
-};
-
-type SearchResultEntity = {
-    highlight_title: string;
-    highlight_source: string;
-    author: string;
-    site_name: string;
-    site: string;
-    created_at: Date;
-    doc_type: 'post' | 'comment';
-    post_id: number;
-    comment_id: number;
-    comment_post_id: number;
-    parent_comment_author: string;
-};
-
-type TotalInfo = {
-    value: number;
-    relation: 'eq' | 'gte';
-};
-
-type SearchResponse = {
-    results: SearchResultEntity[];
-    total: TotalInfo;
-    sorting: 'relevance' | 'created_at';
-    sortingDirection: 'asc' | 'desc';
 };
 
 function SearchResult(props: {
@@ -52,10 +28,10 @@ function SearchResult(props: {
                 i++;
                 return <div className={styles.resultItem} key={i}>
                     {
-                        resultItem.highlight_title && <h3 dangerouslySetInnerHTML={{__html: '…' + resultItem.highlight_title + '…'}}></h3>
+                        resultItem.highlight_title && <h3 dangerouslySetInnerHTML={{__html: resultItem.highlight_title}}></h3>
                     }
                     {
-                        resultItem.highlight_source && <p dangerouslySetInnerHTML={{__html: '…' +resultItem.highlight_source + '…'}}></p>
+                        resultItem.highlight_source && <p dangerouslySetInnerHTML={{__html: resultItem.highlight_source}}></p>
                     }
                     <div className={styles.meta}>
                         <Username user={{username: resultItem.author}}/>
@@ -98,17 +74,18 @@ export default function SearchPage() {
             }).finally(() => setSearching(false));
     };
 
+    const { register, handleSubmit, formState: { errors }, setFocus } = useForm<SearchForm>({
+        mode: 'onSubmit'
+    });
+
     useEffect(() => {
         if (defaultSearch) {
             doSearch(defaultSearch);
         }
+        setFocus('term');
     }, []);
 
-    document.title = 'Поиск';
-
-    const { register, handleSubmit, formState: { errors } } = useForm<SearchForm>({
-        mode: 'onSubmit'
-    });
+    document.title = (searchParams.get('term') ? ('Поиск: ' + searchParams.get('term')) : 'Поиск');
 
     const onSubmit: SubmitHandler<SearchForm> = async data => {
         doSearch(data.term);
@@ -116,14 +93,15 @@ export default function SearchPage() {
 
     return (
         <div className={styles.search}>
+            {isSearching && <div className={feedStyles.loading}></div>}
             <form onSubmit={handleSubmit(onSubmit)}>
                 <input type="text" {...register('term', {
-                    required: 'Чтобы что-нибудь найти, надо что-нибудь искать'
+                    required: ''
                 })} defaultValue={defaultSearch} />
                 <input type="submit" disabled={isSearching} value="Искать" />
-                {errors.term && <p className={styles.error}>{errors.term.message}</p>}
-                {error && <p className={styles.error}>{error}</p>}
             </form>
+            {errors.term && <p className={styles.error}>{errors.term.message}</p>}
+            {error && <p className={styles.error}>{error}</p>}
             <div className={styles.results}>
                 {result && <SearchResult result={result} />}
             </div>

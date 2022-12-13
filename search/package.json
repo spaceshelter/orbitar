@@ -1,0 +1,14 @@
+{
+  "name": "orbitar-search",
+  "main": "index.js",
+  "scripts": {
+    "index": "docker exec -it orbitar-dev-search-1 /bin/bash -c 'cd /app && node index.js 1000'",
+    "re-index": "docker exec -it orbitar-dev-search-1 /bin/bash -c 'cd /app && node index.js 1000 yes'"
+  },
+  "dependencies": {
+    "@elastic/elasticsearch": "^7.17.0",
+    "dotenv-flow": "^3.2.0",
+    "mysql2": "^2.3.3",
+    "string-strip-html": "^8.3.0"
+  }
+}

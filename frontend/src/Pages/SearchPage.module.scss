@@ -1,12 +1,19 @@
 .search {
   text-align: right;
+  margin-top: 16px;
+
+  form {
+    display: flex;
+    margin-bottom: 16px;
+  }
+
   input[type='text'] {
     width: 100%;
     display: block;
     box-sizing: border-box;
     padding: 5px;
     font-size: 24px;
-    margin-bottom: 16px;
+    margin-right: 8px;
   }
 
   .error {
@@ -34,6 +41,8 @@
 
     p {
       margin: 0;
+      white-space: break-spaces;
+      overflow-wrap: break-word;
     }
 
     .meta {

@@ -1,0 +1,7 @@
+bootstrap.memory_lock: true
+network.host: 0.0.0.0
+node.name: es-node01
+cluster.name: es-cluster
+discovery.type: single-node
+http.cors.enabled: true
+http.cors.allow-origin: "*"

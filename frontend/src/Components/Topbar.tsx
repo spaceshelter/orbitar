@@ -10,6 +10,7 @@ import {ReactComponent as NotificationIcon} from '../Assets/notification.svg';
 import {ReactComponent as ProfileIcon} from '../Assets/profile.svg';
 import {ReactComponent as DarkIcon} from '../Assets/theme_dark.svg';
 import {ReactComponent as LightIcon} from '../Assets/theme_light.svg';
+import {ReactComponent as SearchIcon} from '../Assets/search.svg';
 import NotificationsPopup from './NotificationsPopup';
 import {Hamburger} from './Hamburger';
 import {observer} from 'mobx-react-lite';
@@ -72,6 +73,7 @@ export const Topbar = observer((props: TopbarProps) => {
                 </div>
 
                 <div className={styles.right}>
+                    <Link to={`/search`}><SearchIcon /></Link>
                     <button onClick={toggleTheme}>{theme === 'dark' ? <LightIcon /> : <DarkIcon />}</button>
                     <WatchButton />
                     <NotificationsButton onClick={handleNotificationsToggle} />
