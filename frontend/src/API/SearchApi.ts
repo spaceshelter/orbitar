@@ -58,7 +58,7 @@ export default class SearchApi {
     }
 
     async search(term: string): Promise<SearchResponse> {
-        return await this.api.request<SearchRequest, any>('/search', {
+        return await this.api.request<SearchRequest, SearchResponse>('/search', {
             term
         });
     }
