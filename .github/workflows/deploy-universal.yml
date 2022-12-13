@@ -120,7 +120,7 @@ jobs:
           dir2=$(dirname "$dir1")
           ls -al $dir1
           ls -al $dir2
-          cp ${{ steps.get-db.outputs.db-dump-file }} .
+          cp ${{ steps.get-db.outputs.db-dump-file }} /orbitar
 
       - name: Restore DB
         if: github.event.inputs.restore-db == 'true'
