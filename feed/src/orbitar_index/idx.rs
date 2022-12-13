@@ -51,7 +51,7 @@ impl Index {
     pub fn remove(&mut self, post: &Post) {
         if let Some(key) = self.posts.remove(&post.1) {
             self.counts.modify(Index::day_of_year(key), -1);
-            self.posts_by_day.remove(&post);
+            self.posts_by_day.remove(&(key, post.1));
         }
     }
 
@@ -295,6 +295,51 @@ mod tests {
                            "len_days: {}, i: {}", len_days, i);
             }
         }
+    }
+
+    #[test]
+    fn test_update() {
+        // test after mutatiion of index we get correct results
+        let mut indexes = Vec::new();
+        indexes.push(Index::new(0));
+        indexes.push(Index::new(0));
+
+        let indexes = indexes.iter().map(|idx| idx).collect::<Vec<_>>();
+        let eta = vec![
+            (gen_ts(0, 0), 0, 1),
+            (gen_ts(0, 1), 1, 2),
+            (gen_ts(0, 2), 0, 3),
+            (gen_ts(0, 3), 1, 4),
+            (gen_ts(0, 4), 1, 5)];
+
+
+        // update indexes with eta
+        let mut indexes = indexes.into_iter().map(|idx| idx.clone()).collect::<Vec<_>>();
+        for (ts, ss_id, post_id) in eta {
+            indexes[ss_id].add((ts, post_id));
+        }
+        let indexes = indexes.iter().map(|idx| idx).collect::<Vec<_>>();
+        // check that we get correct results
+        assert_eq!(get_posts_for_offset(&indexes, 0, 10), vec![5, 4, 3, 2, 1]);
+        assert_eq!(get_posts_for_offset(&indexes, 1, 10), vec![4, 3, 2, 1]);
+
+        // mutate date
+        let eta = vec![
+            (gen_ts(0, 0), 1, 2),
+            (gen_ts(0, 1), 0, 1),
+            (gen_ts(0, 2), 1, 4),
+            (gen_ts(0, 3), 0, 3),
+            (gen_ts(0, 4), 1, 5)];
+
+        // update indexes with eta
+        let mut indexes = indexes.into_iter().map(|idx| idx.clone()).collect::<Vec<_>>();
+        for (ts, ss_id, post_id) in eta {
+            indexes[ss_id].add((ts, post_id));
+        }
+        let indexes = indexes.iter().map(|idx| idx).collect::<Vec<_>>();
+        // check that we get correct results
+        assert_eq!(get_posts_for_offset(&indexes, 0, 10), vec![5, 3, 4, 1, 2]);
+        assert_eq!(get_posts_for_offset(&indexes, 1, 10), vec![3, 4, 1, 2]);
     }
 
     #[bench]
