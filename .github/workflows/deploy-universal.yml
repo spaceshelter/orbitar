@@ -116,6 +116,10 @@ jobs:
         env:
           MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
         run: |
+          dir1 = $(dirname "${{ steps.get-db.outputs.db-dump-file }}")
+          dir2 = $(dirname "$dir1")
+          ls -al $dir1
+          ls -al $dir2
           cp ${{ steps.get-db.outputs.db-dump-file }} .
           echo "[client]\npassword=$MYSQL_ROOT_PASSWORD\n" > .my.cnf
 
