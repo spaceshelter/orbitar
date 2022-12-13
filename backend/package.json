@@ -13,9 +13,7 @@
     "generate-dummy-content": "NODE_ENV=development node dummy_content_generator.js",
     "lint": "npx eslint src",
     "test": "jest --coverage",
-    "test:watch": "jest --watch",
-    "elasticsearch:setup": ". search/index_elastic_setup.sh",
-    "elasticsearch:index": ". search/index_data_to_elastic.sh"
+    "test:watch": "jest --watch"
   },
   "keywords": [],
   "author": "",
