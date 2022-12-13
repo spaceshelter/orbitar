@@ -110,6 +110,16 @@ jobs:
         working-directory: /orbitar
         run: docker-compose -f docker-compose.ssl.local.yml down -v
 
+      - name: Debug Dump
+        if: github.event.inputs.restore-db == 'true'
+        working-directory: /orbitar
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+        run: |
+          cp ${{ steps.get-db.outputs.db-dump-file }} .
+          echo "[client]\npassword=$MYSQL_ROOT_PASSWORD\n" > .my.cnf
+
+
       - name: Restore DB
         if: github.event.inputs.restore-db == 'true'
         working-directory: /orbitar
@@ -120,7 +130,7 @@ jobs:
           docker-compose -f docker-compose.ssl.local.yml up -d mysql --wait
           
           docker-compose -f docker-compose.ssl.local.yml exec -T mysql /usr/bin/mysql \
-            -u root --password=$MYSQL_ROOT_PASSWORD --default-character-set=utf8mb4 \
+            -u root --password=MYSQL_ROOT_PASSWORD --default-character-set=utf8mb4 \
             < ${{ steps.get-db.outputs.db-dump-file }}
 
       - name: Flush redis
