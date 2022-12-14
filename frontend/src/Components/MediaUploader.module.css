@@ -68,6 +68,9 @@
     color: var(--button-fg);
     padding: 8px;
     cursor: pointer;
+    align-items: center;
+    display: flex;
+    font-weight: 700;
 }
 .choose:hover {
     background: var(--button-hover-bg);
