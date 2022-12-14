@@ -18,7 +18,9 @@ jobs:
       - name: Dump database
         env:
           MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
-        run: echo $MYSQL_ROOT_PASSWORD | docker-compose -f /orbitar/docker-compose.yml exec -T mysql mysqldump --default-character-set=utf8mb4 --single-transaction --add-drop-database --databases orbitar_db activity_db -u root -p > ${{ env.backupFileName }}
+        run: echo $MYSQL_ROOT_PASSWORD | docker-compose -f /orbitar/docker-compose.ssl.local.yml \
+            exec -T mysql mysqldump --default-character-set=utf8mb4 --single-transaction --add-drop-database \
+            --databases orbitar_db activity_db -u root -p > ${{ env.backupFileName }}
 
       - name: Compress database
         env:
