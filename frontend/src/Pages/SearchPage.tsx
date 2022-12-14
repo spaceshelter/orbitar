@@ -28,10 +28,10 @@ function SearchResult(props: {
                 i++;
                 return <div className={styles.resultItem} key={i}>
                     {
-                        resultItem.highlight_title && <h3 dangerouslySetInnerHTML={{__html: resultItem.highlight_title}}></h3>
+                        resultItem.highlight_title && <h3 dangerouslySetInnerHTML={{__html: resultItem.highlight_title.join('&nbsp;&nbsp;&nbsp;…&nbsp;&nbsp;&nbsp;')}}></h3>
                     }
                     {
-                        resultItem.highlight_source && <p dangerouslySetInnerHTML={{__html: resultItem.highlight_source}}></p>
+                        resultItem.highlight_source && <p dangerouslySetInnerHTML={{__html: resultItem.highlight_source.join('&nbsp;&nbsp;&nbsp;…&nbsp;&nbsp;&nbsp;')}}></p>
                     }
                     <div className={styles.meta}>
                         <Username user={{username: resultItem.author}}/>

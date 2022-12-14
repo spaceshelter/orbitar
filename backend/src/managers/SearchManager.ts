@@ -134,7 +134,8 @@ export default class SearchManager {
                         title: {},
                         source: {}
                     },
-                    number_of_fragments: 0
+                    number_of_fragments: 10,
+                    fragment_size: 300
                 },
                 size: 1000,
                 from: 0,
