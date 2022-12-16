@@ -44,6 +44,7 @@ export default class UserController {
         const postsOrCommentsSchema = Joi.object<UserPostsRequest>({
             username: joiUsername.required(),
             format: joiFormat,
+            filter: Joi.string().max(120).allow(null, ''),
             page: Joi.number().default(1),
             perpage: Joi.number().min(1).max(50).default(10),
         });
@@ -115,7 +116,7 @@ export default class UserController {
         }
 
         const userId = request.session.data.userId;
-        const {username, format, page, perpage} = request.body;
+        const {username, format, page, perpage, filter} = request.body;
 
         try {
             const profile = await this.userManager.getByUsername(username);
@@ -124,8 +125,8 @@ export default class UserController {
                 return response.error(ERROR_CODES.NOT_FOUND, 'User not found', 404);
             }
 
-            const total = await this.postManager.getPostsByUserTotal(profile.id);
-            const rawPosts = await this.postManager.getPostsByUser(profile.id, userId, page || 1, perpage || 20, format);
+            const total = await this.postManager.getPostsByUserTotal(profile.id, filter);
+            const rawPosts = await this.postManager.getPostsByUser(profile.id, userId, filter, page || 1, perpage || 20, format);
             const {posts, users} = await this.enricher.enrichRawPosts(rawPosts);
 
             response.success({
@@ -146,7 +147,7 @@ export default class UserController {
         }
 
         const userId = request.session.data.userId;
-        const {username, format, page, perpage} = request.body;
+        const {username, format, page, perpage, filter} = request.body;
 
         try {
             const profile = await this.userManager.getByUsername(username);
@@ -155,8 +156,8 @@ export default class UserController {
                 return response.error(ERROR_CODES.NOT_FOUND, 'User not found', 404);
             }
 
-            const total = await this.postManager.getUserCommentsTotal(profile.id);
-            const rawComments = await this.postManager.getUserComments(profile.id, userId, page || 1, perpage || 20, format);
+            const total = await this.postManager.getUserCommentsTotal(profile.id, filter);
+            const rawComments = await this.postManager.getUserComments(profile.id, userId, filter, page || 1, perpage || 20, format);
             const rawParentComments = await this.postManager.getParentCommentsForASetOfComments(rawComments, userId, format);
             const {allComments, users} = await this.enricher.enrichRawComments(rawComments, {}, format, (_) => false);
             const {allComments:parentCommentsList} = await this.enricher.enrichRawComments(rawParentComments, users, format, (_) => false);

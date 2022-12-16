@@ -6,15 +6,21 @@ import {useSearchParams} from 'react-router-dom';
 import {useCache} from '../API/use/useCache';
 import {CommentInfo} from '../Types/PostInfo';
 import CommentComponent from './CommentComponent';
+import {SubmitHandler, useForm} from 'react-hook-form';
 
 type UserProfileCommentsProps = {
   username: string;
 };
 
+type FilterForm = {
+    filter: string;
+};
+
 export default function UserProfileComments(props: UserProfileCommentsProps) {
-    const [search] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const perpage = 20;
-    const page = parseInt(search.get('page') || '1');
+    const page = parseInt(searchParams.get('page') || '1');
+    const defaultFilter = searchParams.get('filter') as string;
 
     const api = useAPI();
     const [cachedComments, setCachedComments] = useCache<CommentInfo[]>('user-profile-comments', [props.username, page, perpage]);
@@ -25,6 +31,11 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
     const [pages, setPages] = useState(0);
     const [error, setError] = useState<string>();
     const [reloadIdx, setReloadIdx] = useState(0);
+    const [filter, setFilter] = useState(defaultFilter || '');
+
+    const {register, handleSubmit} = useForm<FilterForm>({
+        mode: 'onSubmit'
+    });
 
     const reload = () => {
         setReloadIdx(reloadIdx + 1);
@@ -38,7 +49,7 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
     };
 
     useEffect(() => {
-        api.userAPI.userComments(props.username, page, perpage).then(result => {
+        api.userAPI.userComments(props.username, filter, page, perpage).then(result => {
             setCachedComments(result.comments);
             setCachedParentComments(result.parentComments);
             setError(undefined);
@@ -51,14 +62,31 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
             console.log('USER PROFILE COMMENTS ERROR', error);
             setError('Не удалось загрузить ленту комментариев пользователя');
         });
-    }, [page, reloadIdx]);
+    }, [page, reloadIdx, filter]);
 
     useEffect(() => {
         window.scrollTo({ top: 0 });
     }, [page]);
 
+    const doFilter = (filter: string) => {
+        setSearchParams({filter});
+        setFilter(filter);
+    };
+
+    const onSubmit: SubmitHandler<FilterForm> = async data => {
+        doFilter(data.filter);
+    };
+
     return (
         <div className={styles.container}>
+            <div className={styles.filter}>
+                <form onSubmit={handleSubmit(onSubmit)}>
+                    <input type="text" {...register('filter', {
+                        required: ''
+                    })} defaultValue={defaultFilter } />
+                    <input type="submit" disabled={loading} value="фильтровать" />
+                </form>
+            </div>
             <div className={styles.feed}>
                 {loading ? <div className={styles.loading}></div> :
                  <>

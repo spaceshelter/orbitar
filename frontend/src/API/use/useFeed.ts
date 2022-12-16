@@ -7,7 +7,7 @@ import {FeedSorting} from '../../Types/FeedSortingSettings';
 export type FeedType = 'all' | 'subscriptions' | 'site' | 'watch' | 'watch-all' | 'user-profile';
 
 export function useFeed(id: string, feedType: FeedType | undefined, page: number, perpage: number,
-                        setSorting?: (sorting: FeedSorting) => void, sorting?: FeedSorting) {
+                        setSorting?: (sorting: FeedSorting) => void, sorting?: FeedSorting, filter?: string) {
 
     const api = useAPI();
     const [cachedPosts, setCachedPosts] = useCache<PostInfo[]>('feed', [id, feedType, page, perpage]);
@@ -102,7 +102,7 @@ export function useFeed(id: string, feedType: FeedType | undefined, page: number
                 });
         }
         else if (feedType === 'user-profile') {
-            api.userAPI.userPosts(id, page, perpage).then( result => {
+            api.userAPI.userPosts(id, filter, page, perpage).then( result => {
                 setCachedPosts(result.posts);
 
                 setError(undefined);
@@ -115,7 +115,7 @@ export function useFeed(id: string, feedType: FeedType | undefined, page: number
                 setError(['Не удалось загрузить ленту постов', error]);
             });
         }
-    }, [id, feedType, page, api.post, perpage, sorting]);
+    }, [id, feedType, page, api.post, perpage, sorting, filter]);
 
     return { posts, loading, pages, error, updatePost, setLoading };
 }

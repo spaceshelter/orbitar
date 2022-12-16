@@ -43,9 +43,9 @@ export default class CommentRepository {
             });
     }
 
-    async getUserComments(userId: number, forUserId: number, page: number, perPage: number): Promise<CommentRawWithUserData[]> {
+    async getUserComments(userId: number, forUserId: number, filter: string, page: number, perPage: number): Promise<CommentRawWithUserData[]> {
         const limitFrom = (page - 1) * perPage;
-        return await this.db.query(`
+        let query = `
                 select c.*, v.vote
                     from comments c
                       left join comment_votes v on (v.comment_id = c.comment_id and v.voter_id = :for_user_id)
@@ -53,13 +53,26 @@ export default class CommentRepository {
                       c.author_id = :user_id and c.deleted = 0
                     order by c.created_at desc
                     limit :limit_from, :limit_count
-            `,
-            {
-                user_id: userId,
-                for_user_id: forUserId,
-                limit_from: limitFrom,
-                limit_count: perPage
-            });
+            `;
+          const params = {
+              user_id: userId,
+              for_user_id: forUserId,
+              limit_from: limitFrom,
+              limit_count: perPage
+          };
+        if (filter) {
+            query = `
+                select c.*, v.vote
+                    from comments c
+                      left join comment_votes v on (v.comment_id = c.comment_id and v.voter_id = :for_user_id)
+                    where
+                      c.author_id = :user_id and c.deleted = 0 and c.source like :filter
+                    order by c.created_at desc
+                    limit :limit_from, :limit_count
+            `;
+            params['filter'] = '%' + filter + '%';
+        }
+        return await this.db.query(query, params);
     }
 
     async getLastUserComment(userId: number): Promise<CommentRaw | undefined> {
@@ -68,10 +81,14 @@ export default class CommentRepository {
         });
     }
 
-    async getUserCommentsTotal(userId: number): Promise<number> {
-        return this.db.fetchOne<{ cnt: string }>('select count(*) cnt from comments where author_id = :user_id and deleted = 0', {
-            user_id: userId
-        }).then((res) => parseInt(res.cnt || '0'));
+    async getUserCommentsTotal(userId: number, filter: string): Promise<number> {
+        let query = 'select count(*) cnt from comments where author_id = ? and deleted = 0';
+        const params: Array<number | string> = [userId];
+        if (filter) {
+            query = 'select count(*) cnt from comments where author_id = ? and deleted = 0 and source like ?';
+            params.push('%' + filter + '%');
+        }
+        return this.db.fetchOne<{ cnt: string }>(query, params).then((res) => parseInt(res.cnt || '0'));
     }
 
     async createComment(userId: number, postId: number, parentCommentId: number | undefined, source: string, language: string, html: string): Promise<CommentRaw> {
