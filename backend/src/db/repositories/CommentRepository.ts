@@ -45,12 +45,12 @@ export default class CommentRepository {
 
     async getUserComments(userId: number, forUserId: number, filter: string, page: number, perPage: number): Promise<CommentRawWithUserData[]> {
         const limitFrom = (page - 1) * perPage;
-        let query = `
+        const query = `
                 select c.*, v.vote
                     from comments c
                       left join comment_votes v on (v.comment_id = c.comment_id and v.voter_id = :for_user_id)
                     where
-                      c.author_id = :user_id and c.deleted = 0
+                      c.author_id = :user_id and c.deleted = 0 ${filter ? ' and c.source like :filter ' : ''}
                     order by c.created_at desc
                     limit :limit_from, :limit_count
             `;
@@ -61,15 +61,6 @@ export default class CommentRepository {
               limit_count: perPage
           };
         if (filter) {
-            query = `
-                select c.*, v.vote
-                    from comments c
-                      left join comment_votes v on (v.comment_id = c.comment_id and v.voter_id = :for_user_id)
-                    where
-                      c.author_id = :user_id and c.deleted = 0 and c.source like :filter
-                    order by c.created_at desc
-                    limit :limit_from, :limit_count
-            `;
             params['filter'] = '%' + filter + '%';
         }
         return await this.db.query(query, params);
@@ -82,10 +73,9 @@ export default class CommentRepository {
     }
 
     async getUserCommentsTotal(userId: number, filter: string): Promise<number> {
-        let query = 'select count(*) cnt from comments where author_id = ? and deleted = 0';
+        const query = `select count(*) cnt from comments where author_id = ? and deleted = 0 ${filter ? '  and source like ? ' : ''}`;
         const params: Array<number | string> = [userId];
         if (filter) {
-            query = 'select count(*) cnt from comments where author_id = ? and deleted = 0 and source like ?';
             params.push('%' + filter + '%');
         }
         return this.db.fetchOne<{ cnt: string }>(query, params).then((res) => parseInt(res.cnt || '0'));

@@ -5,14 +5,7 @@
 .filter {
     width: 100%;
 
-    form {
-        display: flex;
-        margin-bottom: 16px;
-    }
-
-    input[type='text'],
-    input[type='submit']
-    {
+    input[type='search'] {
         width: 100%;
         display: block;
         box-sizing: border-box;
@@ -20,11 +13,6 @@
         font-size: 16px;
         margin-right: 8px;
         flex-grow: 1;
-    }
-
-    input[type='submit'] {
-        width: auto;
-        font-size: 14px;
     }
 }
 

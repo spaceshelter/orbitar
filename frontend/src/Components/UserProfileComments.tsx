@@ -1,19 +1,15 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {useAPI} from '../AppState/AppState';
 import styles from '../Pages/FeedPage.module.scss';
 import Paginator from '../Components/Paginator';
-import {useSearchParams} from 'react-router-dom';
+import {useLocation, useSearchParams} from 'react-router-dom';
 import {useCache} from '../API/use/useCache';
 import {CommentInfo} from '../Types/PostInfo';
 import CommentComponent from './CommentComponent';
-import {SubmitHandler, useForm} from 'react-hook-form';
+import {useDebouncedCallback} from 'use-debounce';
 
 type UserProfileCommentsProps = {
   username: string;
-};
-
-type FilterForm = {
-    filter: string;
 };
 
 export default function UserProfileComments(props: UserProfileCommentsProps) {
@@ -32,13 +28,20 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
     const [error, setError] = useState<string>();
     const [reloadIdx, setReloadIdx] = useState(0);
     const [filter, setFilter] = useState(defaultFilter || '');
+    const {search} = useLocation();
+    const filterInputRef = useRef<HTMLInputElement>(null);
 
-    const {register, handleSubmit} = useForm<FilterForm>({
-        mode: 'onSubmit'
-    });
+    const setDebouncedFilter = useDebouncedCallback((value: string) => {
+        setFilter(value);
+        setSearchParams({filter: value});
+    }, 1000);
 
     const reload = () => {
         setReloadIdx(reloadIdx + 1);
+    };
+
+    const handleFilterChange = (e: React.FormEvent<HTMLInputElement>) => {
+        setDebouncedFilter(e.currentTarget.value);
     };
 
     const getParentComment = (commentId: number): CommentInfo | undefined => {
@@ -47,6 +50,15 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
         }
         return undefined;
     };
+
+    useEffect(() => {
+        const newSearchParams = new URLSearchParams(search);
+        const newFilterValue = newSearchParams.get('filter') as string;
+        setFilter(newFilterValue);
+        if (filterInputRef.current) {
+            filterInputRef.current.value = newFilterValue;
+        }
+    }, [search]);
 
     useEffect(() => {
         api.userAPI.userComments(props.username, filter, page, perpage).then(result => {
@@ -68,24 +80,10 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
         window.scrollTo({ top: 0 });
     }, [page]);
 
-    const doFilter = (filter: string) => {
-        setSearchParams({filter});
-        setFilter(filter);
-    };
-
-    const onSubmit: SubmitHandler<FilterForm> = async data => {
-        doFilter(data.filter);
-    };
-
     return (
         <div className={styles.container}>
             <div className={styles.filter}>
-                <form onSubmit={handleSubmit(onSubmit)}>
-                    <input type="text" {...register('filter', {
-                        required: ''
-                    })} defaultValue={defaultFilter } />
-                    <input type="submit" disabled={loading} value="фильтровать" />
-                </form>
+                <input ref={filterInputRef} onKeyUp={handleFilterChange} onChange={handleFilterChange} placeholder={'фильтровать'} type="search" defaultValue={defaultFilter} />
             </div>
             <div className={styles.feed}>
                 {loading ? <div className={styles.loading}></div> :
