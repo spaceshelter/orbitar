@@ -1,4 +1,4 @@
-version: '3.7'
+version: '3.9'
 
 services:
   caddy:
@@ -46,24 +46,6 @@ services:
       timeout: 20s
       retries: 10
 
-  search:
-    build:
-      context: search
-    environment:
-      - node.name=es-node01
-      - cluster.name=es-cluster
-      - discovery.type=single-node
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-      nofile:
-        soft: 65536
-        hard: 65536
-    volumes:
-      - elasticsearch_data:/usr/share/elastic-setup/data
-
   frontend:
     build:
       context: frontend
@@ -88,11 +70,60 @@ services:
       - mysql
       - redis
       - feed
+      - elasticsearch-setup
 
   feed:
     build:
       context: feed
     restart: always
+
+  elasticsearch:
+    image: elasticsearch:7.17.8
+    restart: always
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test: curl -s -f http://localhost:9200/_cluster/health?wait_for_status=green >/dev/null || exit 1
+      interval: 10s
+      timeout: 30s
+      retries: 10
+    volumes:
+      - elasticsearch_data:/usr/share/elastic-setup/data
+      - $PWD/search/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+
+  # performs initial setup of elasticsearch and exits
+  elasticsearch-setup:
+    image: curlimages/curl
+    restart: "no"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    volumes:
+      - $PWD/search/setup.sh:/setup.sh:ro
+    entrypoint: /bin/sh
+    command: /setup.sh
+
+  # performs periodic indexing of elasticsearch
+  elasticsearch-indexer:
+    build:
+      context: search
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_started # TODO change to service_healthy when we have a healthcheck (in dev branch)
+      elasticsearch:
+        condition: service_healthy
+      elasticsearch-setup:
+        condition: service_completed_successfully
+      backend:
+        condition: service_started # TODO change to service_healthy when we have a healthcheck
 
 volumes:
   caddy_data:

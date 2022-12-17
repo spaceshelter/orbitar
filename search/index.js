@@ -3,7 +3,7 @@ const mysql = require('mysql2/promise');
 const {Client} = require('@elastic/elasticsearch');
 const {stripHtml} = require("string-strip-html");
 const client = new Client({
-  node: 'http://localhost:9200'
+  node: 'http://elasticsearch:9200'
 });
 
 const args = process.argv.slice(2);
@@ -88,26 +88,47 @@ async function main() {
   });
   console.log(`Start ${doReindex ? 're-indexing' : 'indexing'}, batch size ${batchSize}`);
 
+  // intercept SIGTERM and SIGINT to close the connection
+  const signals = ['SIGTERM', 'SIGINT'];
+  signals.forEach(signal => {
+      process.on(signal, async () => {
+          console.log(`Got ${signal}, closing connection`);
+          await connection.end();
+          process.exit(0);
+      });
+  });
+
   try {
-    let offset = 0;
-    while (true) {
-      let processedItemsIds = await processBatch(offset);
-      if (processedItemsIds.length) {
-        console.log(`Batch of ${processedItemsIds.length} is done`);
-        const updateMysqlResult = await connection.query(`UPDATE content_source SET indexed = 1 WHERE content_source_id IN (?)`, [processedItemsIds]);
-        console.log('Rows marked as indexed:', updateMysqlResult[0].info);
-      } else {
-        break;
+      while (!doReindex) {
+          try {
+              let offset = 0;
+              while (true) {
+                  let processedItemsIds = await processBatch(offset);
+                  if (processedItemsIds.length) {
+                      console.log(`Batch of ${processedItemsIds.length} is done`);
+                      const updateMysqlResult = await connection.query(
+                          `UPDATE content_source
+                           SET indexed = 1
+                           WHERE content_source_id IN (?)`, [processedItemsIds]);
+                      console.log('Rows marked as indexed:', updateMysqlResult[0].info);
+                  } else {
+                      break;
+                  }
+                  offset += processedItemsIds.length;
+                  console.log(`new offset: ${offset}`);
+              }
+          } catch (e) {
+              console.error(e);
+          } finally {
+              console.log(`done`);
+          }
+
+          // sleep for 1 minute
+          console.log('Sleeping for 1 minute');
+          await new Promise(resolve => setTimeout(resolve, 60000));
       }
-      offset += processedItemsIds.length;
-      console.log(`new offset: ${offset}`);
-    }
-  } catch (e) {
-    console.error(e);
   } finally {
-    console.log(`done`);
-    connection.end();
-    process.exit();
+        connection.end();
   }
 }
 

@@ -1,7 +1,10 @@
 bootstrap.memory_lock: true
 network.host: 0.0.0.0
-node.name: es-node01
+node.name: elasticsearch
 cluster.name: es-cluster
 discovery.type: single-node
 http.cors.enabled: true
 http.cors.allow-origin: "*"
+xpack.security.enabled: false
+xpack.security.transport.ssl.enabled: false
+xpack.security.http.ssl.enabled: false
