@@ -1,4 +1,4 @@
-version: '3.7'
+version: '3.9'
 
 services:
   caddy:
@@ -14,7 +14,7 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     # Default caddy command borrowed from https://github.com/caddyserver/caddy-docker/blob/master/Dockerfile.tmpl
-    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile", "--watch"] 
+    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile", "--watch"]
 
   mysql:
     platform: linux/amd64
@@ -45,9 +45,8 @@ services:
     ports:
       - "6767:6767"
 
-  search:
-    build:
-      context: search
+  elasticsearch:
+    image: elasticsearch:7.17.8
     restart: always
     ports:
       - "9200:9200"
@@ -61,8 +60,42 @@ services:
       memlock:
         soft: -1
         hard: -1
+    healthcheck:
+      test: curl -s -f http://localhost:9200/_cluster/health?wait_for_status=green >/dev/null || exit 1
+      interval: 10s
+      timeout: 30s
+      retries: 10
     volumes:
       - elasticsearch_data:/usr/share/elastic-setup/data
+      - $PWD/search/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+
+  # performs initial setup of elasticsearch and exits
+  # backend should depend on this service for prod configs
+  elasticsearch-setup:
+    image: curlimages/curl
+    restart: "no"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    volumes:
+      - $PWD/search/setup.sh:/setup.sh:ro
+    entrypoint: /bin/sh
+    command: /setup.sh
+
+  # performs periodic indexing of elasticsearch
+  # should depend on the backend (for db migration) on prod configs
+  elasticsearch-indexer:
+    build:
+      context: search
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_started # TODO change to service_healthy when we have a healthcheck (in dev branch)
+      elasticsearch:
+        condition: service_healthy
+      elasticsearch-setup:
+        condition: service_completed_successfully
+      # backend: for prod configs
 
 volumes:
   caddy_data:

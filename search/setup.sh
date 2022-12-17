@@ -1,5 +1,6 @@
 #!/bin/bash
-curl -X PUT "localhost:9200/orbitar?pretty" -H 'Content-Type: application/json' -d '{
+
+curl -X PUT "elasticsearch:9200/orbitar?pretty" -H 'Content-Type: application/json' -d '{
   "settings": {
     "index": {
       "number_of_shards": 1,
