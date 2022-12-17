@@ -223,7 +223,7 @@ export default class SearchManager {
                 sortingDirection: SearchSortingDirection.Desc
             };
         } catch (e) {
-            console.error(e);
+            this.logger.error(e.message);
             return;
         }
     }
