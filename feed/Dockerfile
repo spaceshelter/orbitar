@@ -1,9 +1,9 @@
 # Tells docker to use the latest Rust official image
-FROM rust:slim-buster as builder
+FROM rust:1.64-slim-buster as builder
 WORKDIR /feed
 # first create a cached layer with the dependencies
 RUN mkdir -p ./src && echo 'fn main() { panic!("Dummy Image Called!") }' > ./src/main.rs
-COPY ["Cargo.toml", "Cargo.lock",  "./"]
+COPY ["Cargo.toml", "Cargo.lock", "rust-toolchain.toml",  "./"]
 RUN cargo build --release
 RUN rm -rf ./src
 # Copy the project files from your machine to the container
