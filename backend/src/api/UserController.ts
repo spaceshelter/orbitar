@@ -20,7 +20,7 @@ import {UserRatingBySubsite} from '../managers/types/UserInfo';
 // constant variables
 import {ERROR_CODES} from './utils/error-codes';
 import InviteManager from '../managers/InviteManager';
-import rateLimit from "express-rate-limit";
+import rateLimit from 'express-rate-limit';
 
 export default class UserController {
     public readonly router = Router();
