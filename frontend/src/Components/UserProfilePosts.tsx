@@ -26,7 +26,13 @@ export default function UserProfilePosts(props: UserProfilePostsProps) {
     }, 1000);
 
     const handleFilterChange = (e: React.FormEvent<HTMLInputElement>) => {
-        setDebouncedFilter(e.currentTarget.value);
+        if (e.nativeEvent instanceof KeyboardEvent && e.nativeEvent.key === 'Enter') {
+            const value = e.currentTarget.value;
+            setFilter(value);
+            setSearchParams({filter: value});
+        } else {
+            setDebouncedFilter(e.currentTarget.value);
+        }
     };
 
     useEffect(() => {

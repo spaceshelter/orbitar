@@ -175,6 +175,7 @@ export default class UserController {
             });
         } catch (error) {
             this.logger.error('Could not get user comments', {username, error});
+            this.logger.error(error);
             return response.error('error', `Could not get comments for user ${username}`, 500);
         }
     }

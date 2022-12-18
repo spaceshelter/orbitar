@@ -2,6 +2,7 @@ import DB from '../DB';
 import {CommentRaw, CommentRawWithUserData} from '../types/PostRaw';
 import CodeError from '../../CodeError';
 import {ResultSetHeader} from 'mysql2';
+import {escapePercent} from '../../utils/MySqlUtils';
 
 export default class CommentRepository {
     private db: DB;
@@ -45,25 +46,22 @@ export default class CommentRepository {
 
     async getUserComments(userId: number, forUserId: number, filter: string, page: number, perPage: number): Promise<CommentRawWithUserData[]> {
         const limitFrom = (page - 1) * perPage;
-        const query = `
-                select c.*, v.vote
-                    from comments c
-                      left join comment_votes v on (v.comment_id = c.comment_id and v.voter_id = :for_user_id)
-                    where
-                      c.author_id = :user_id and c.deleted = 0 ${filter ? ' and c.source like :filter ' : ''}
-                    order by c.created_at desc
-                    limit :limit_from, :limit_count
-            `;
-          const params = {
-              user_id: userId,
-              for_user_id: forUserId,
-              limit_from: limitFrom,
-              limit_count: perPage
-          };
-        if (filter) {
-            params['filter'] = '%' + filter + '%';
-        }
-        return await this.db.query(query, params);
+        return await this.db.query(`
+            select c.*, v.vote
+            from comments c
+                     left join comment_votes v on (v.comment_id = c.comment_id and v.voter_id = :for_user_id)
+            where
+                c.author_id = :user_id
+              and c.deleted = 0 ${filter ? ' and c.source like :filter ' : ''}
+            order by c.created_at desc
+            limit :limit_from, :limit_count
+        `, {
+            user_id: userId,
+            for_user_id: forUserId,
+            limit_from: limitFrom,
+            limit_count: perPage,
+            filter: filter && ('%' + escapePercent(filter) + '%')
+        });
     }
 
     async getLastUserComment(userId: number): Promise<CommentRaw | undefined> {
@@ -73,12 +71,15 @@ export default class CommentRepository {
     }
 
     async getUserCommentsTotal(userId: number, filter: string): Promise<number> {
-        const query = `select count(*) cnt from comments where author_id = ? and deleted = 0 ${filter ? '  and source like ? ' : ''}`;
-        const params: Array<number | string> = [userId];
-        if (filter) {
-            params.push('%' + filter + '%');
-        }
-        return this.db.fetchOne<{ cnt: string }>(query, params).then((res) => parseInt(res.cnt || '0'));
+        return this.db.fetchOne<{ cnt: string }>(`
+            select count(*) cnt 
+            from comments 
+            where author_id = :user_id and deleted = 0 
+            ${filter ? '  and source like :filter ' : ''}`,
+            {
+                user_id: userId,
+                filter: filter && ('%' + escapePercent(filter) + '%')
+            }).then((res) => parseInt(res.cnt || '0'));
     }
 
     async createComment(userId: number, postId: number, parentCommentId: number | undefined, source: string, language: string, html: string): Promise<CommentRaw> {
