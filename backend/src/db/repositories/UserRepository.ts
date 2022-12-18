@@ -24,8 +24,21 @@ export default class UserRepository {
         return await this.db.fetchOne<UserRaw>('select * from users where user_id=:user_id', {user_id: userId});
     }
 
-    async getUserByUsername(username: string): Promise<UserRaw | undefined> {
-        return await this.db.fetchOne<UserRaw>('select * from users where username=:username', {username: username});
+    async getUserByUsername(username: string, getBio = false): Promise<UserRaw | undefined> {
+        return await this.db.fetchOne<UserRaw>(
+          `select 
+                user_id,
+                username,
+                password,
+                email,
+                twofactor,
+                gender,
+                karma,
+                name,
+                registered_at,
+                ontrial
+                ${getBio ? ', bio_source, bio_html' : ''} 
+           from users where username=:username`, {username: username});
     }
 
     // TODO: need to decide if we want to encrypt email addresses
@@ -226,5 +239,13 @@ export default class UserRepository {
             return FeedSorting.postCommentedAt;
         }
         return res.feed_sorting as FeedSorting;
+    }
+
+    async saveBio(bio: string, bioHtml: string, userId: number): Promise<boolean> {
+        return this.db.query(`update users set bio_source = :bio, bio_html = :bio_html where user_id = :user_id`, {
+            user_id: userId,
+            bio: bio,
+            bio_html: bioHtml
+        });
     }
 }

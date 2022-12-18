@@ -27,6 +27,16 @@
         padding-bottom: 16px;
     }
 }
+
+.userinfo .bio {
+    margin-top: 30px;
+    width: 100%;
+}
+
+.userinfo .bio p {
+    width: 100%;
+}
+
 .active {
   padding-right: 20px;
 }
@@ -71,8 +81,9 @@
     font-size: 25px;
 }
 
-.logout{
-    margin-top: 80px;
+.logout,
+.theme {
+    margin-top: 20px;
     background: var(--dim1);
     color: var(--fgSoft);
     border: none;

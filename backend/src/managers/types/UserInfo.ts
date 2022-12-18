@@ -15,6 +15,8 @@ export type UserInfo = UserBaseInfo & {
     karma: number;
     name: string;
     vote?: number;
+    bio_source?: string;
+    bio_html?: string;
     registered: Date;
 };
 

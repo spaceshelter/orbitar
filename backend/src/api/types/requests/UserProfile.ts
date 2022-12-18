@@ -46,3 +46,11 @@ export type UserRestrictionsResponse = {
     canEditOwnContent: boolean;
     canCreateSubsites: boolean;
 };
+
+export type UserSaveBioRequest = {
+    bio: string;
+};
+
+export type UserSaveBioResponse = {
+    bio: string | boolean;
+};

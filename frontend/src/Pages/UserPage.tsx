@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import styles from './UserPage.module.scss';
 import {Link, useLocation, useNavigate, useParams} from 'react-router-dom';
 import Username from '../Components/Username';
@@ -6,6 +6,7 @@ import RatingSwitch from '../Components/RatingSwitch';
 import DateComponent from '../Components/DateComponent';
 import {useUserProfile} from '../API/use/useUserProfile';
 import {ReactComponent as LogoutIcon} from '../Assets/logout.svg';
+import {ReactComponent as ThemeIcon} from '../Assets/theme_dark.svg';
 import {useAPI, useAppState} from '../AppState/AppState';
 import UserProfilePosts from '../Components/UserProfilePosts';
 import UserProfileComments from '../Components/UserProfileComments';
@@ -13,6 +14,11 @@ import {UserProfileInvites} from '../Components/UserProfileInvites';
 import {observer} from 'mobx-react-lite';
 import {UserProfileKarma} from '../Components/UserProfileKarma';
 import {UserGender} from '../Types/UserInfo';
+import {useTheme} from '../Theme/ThemeProvider';
+import createPostStyles from './CreatePostPage.module.css';
+import CreateCommentComponent from '../Components/CreateCommentComponent';
+import {CommentInfo} from '../Types/PostInfo';
+import {toast} from 'react-toastify';
 
 export const UserPage = observer(() => {
     const {userInfo, userRestrictions: restrictions} = useAppState();
@@ -31,7 +37,11 @@ export const UserPage = observer(() => {
     const navigate = useNavigate();
     const location = useLocation();
 
+    const {theme, setTheme} = useTheme();
+
     const isProfile = !isPosts && !isComments && !isInvites && !isKarma;
+
+    const [newBio, setNewBio] = useState('');
 
     useEffect(() => {
         if (state.status === 'ready') {
@@ -48,6 +58,33 @@ export const UserPage = observer(() => {
         api.auth.signOut().then(() => {
             navigate(location.pathname);
         });
+    };
+
+    const toggleTheme = (e: React.MouseEvent) => {
+        e.preventDefault();
+        if (theme === 'dark') {
+            setTheme('light');
+        }
+        else {
+            if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
+                if (theme === 'light') { setTheme('debugTheme'); return;  }
+            }
+            setTheme('dark');
+        }
+    };
+
+    const handleUpdateBio = async (bio: string): Promise<CommentInfo | undefined | string> => {
+        try {
+            const newBio = await api.userAPI.saveBio(bio);
+            if (newBio) {
+                setNewBio(newBio.bio as string);
+                toast.success('Сохранено!', {autoClose: 1000});
+                return newBio.bio as string;
+            }
+        } catch (error: any) {
+            toast.error(error?.message || 'Не удалось сохранить.');
+            throw error;
+        }
     };
 
     if (state.status === 'ready') {
@@ -110,7 +147,30 @@ export const UserPage = observer(() => {
                             return <Username key={idx} user={user} inactive={!user.active}/>;
                             })}
                         </div>}
-                        { isMyProfile && <button className={styles.logout} onClick={handleLogout}><LogoutIcon /> Выход </button> }
+                        {isMyProfile && <div>
+                            <div className={styles.bio}>
+                                <p>
+                                    Этот текст <b>будет виден всем</b>.
+                                    Напишите пару слов о себе.
+                                </p>
+                                <div className={createPostStyles.form}>
+                                    <CreateCommentComponent
+                                      staticEditor={true}
+                                      defaultPreview={newBio || state.profile.profile.bio_html}
+                                      text={state.profile.profile.bio_source}
+                                      open={true}
+                                      onAnswer={handleUpdateBio}
+                                    />
+                                </div>
+                            </div>
+                        </div>}
+                        {!isMyProfile && profile.profile.bio_html && <div className={styles.bio}>
+                            <p dangerouslySetInnerHTML={{__html: profile.profile.bio_html}}></p>
+                        </div>}
+                        {isMyProfile && <div className={styles.buttons}>
+                            <button className={styles.logout} onClick={handleLogout}><LogoutIcon /> Выход </button>
+                            <button className={styles.theme} onClick={toggleTheme}><ThemeIcon /> Тема </button>
+                        </div>}
                     </>}
                     {isPosts && <UserProfilePosts username={user.username} />}
                     {isComments && <UserProfileComments username={user.username} />}

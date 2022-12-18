@@ -24,8 +24,9 @@ interface CreateCommentProps {
     post?: PostLinkInfo;
     text?: string;
     storageKey?: string;
-
-    onAnswer: (text: string, post?: PostLinkInfo, comment?: CommentInfo) => Promise<CommentInfo | undefined>;
+    defaultPreview?: string;
+    staticEditor?: boolean;
+    onAnswer: (text: string, post?: PostLinkInfo, comment?: CommentInfo, html?: string) => Promise<CommentInfo | undefined | string>;
 }
 
 // same as CreateCommentComponent, but with slow mode and other restrictions
@@ -65,7 +66,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     const [answerText, setAnswerText] = useState<string>(props.text ||
         (props.storageKey && localStorage.getItem('crCmp:' + props.storageKey)) || '');
     const [isPosting, setPosting] = useState(false);
-    const [previewing, setPreviewing] = useState<string | null>(null);
+    const [previewing, setPreviewing] = useState<string | null>(props.defaultPreview || null);
     const [mediaUploaderOpen, setMediaUploaderOpen] = useState(false);
     const api = useAPI();
 
@@ -205,16 +206,22 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     const handleAnswer = () => {
         setPosting(true);
         props.onAnswer(answerText, props.post, props.comment)
-            .then(() => {
+            .then((response: string | CommentInfo | undefined) => {
                 setStorageValueDebounced('');
                 setStorageValueDebounced.flush();
-                setAnswerText('');
+                if (!props.staticEditor) {
+                    setAnswerText('');
+                } else {
+                    if (response && typeof response === 'string') {
+                        setPreviewing(response);
+                    }
+                }
             })
             .catch(error => {
                 console.log('onAnswer ERR', error);
             })
             .finally(() => {
-                setPreviewing(null);
+                //setPreviewing(null);
                 setPosting(false);
             });
     };

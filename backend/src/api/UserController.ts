@@ -7,7 +7,9 @@ import {
     UserKarmaResponse,
     UserProfileRequest,
     UserProfileResponse,
-    UserRestrictionsResponse
+    UserRestrictionsResponse,
+    UserSaveBioRequest,
+    UserSaveBioResponse
 } from './types/requests/UserProfile';
 import {UserPostsRequest, UserPostsResponse} from './types/requests/UserPosts';
 import PostManager from '../managers/PostManager';
@@ -47,6 +49,9 @@ export default class UserController {
             page: Joi.number().default(1),
             perpage: Joi.number().min(1).max(50).default(10),
         });
+        const bioSchema = Joi.object<UserSaveBioRequest>({
+            bio: Joi.string().required().max(1024)
+        });
 
         this.router.post('/user/profile', validate(profileSchema), (req, res) => this.profile(req, res));
         this.router.post('/user/posts', validate(postsOrCommentsSchema), (req, res) => this.posts(req, res));
@@ -54,6 +59,7 @@ export default class UserController {
         this.router.post('/user/karma', validate(profileSchema), (req, res) => this.karma(req, res));
         this.router.post('/user/clearCache', validate(profileSchema), (req, res) => this.clearCache(req, res));
         this.router.post('/user/restrictions', validate(profileSchema), (req, res) => this.restrictions(req, res));
+        this.router.post('/user/savebio', validate(bioSchema), (req, res) => this.saveBio(req, res));
     }
 
     async profile(request: APIRequest<UserProfileRequest>, response: APIResponse<UserProfileResponse>) {
@@ -65,7 +71,7 @@ export default class UserController {
         const {username} = request.body;
 
         try {
-            const profileInfo = await this.userManager.getByUsernameWithVote(username, userId);
+            const profileInfo = await this.userManager.getByUsernameWithVoteAndBio(username, userId);
 
             if (!profileInfo) {
                 return response.error(ERROR_CODES.NOT_FOUND, 'User not found', 404);
@@ -209,6 +215,24 @@ export default class UserController {
         catch (error) {
             this.logger.error('Could not get user karma', { username, error });
             return response.error('error', `Could not get karma for user ${username}`, 500);
+        }
+    }
+
+    async saveBio(request: APIRequest<UserSaveBioRequest>, response: APIResponse<UserSaveBioResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+        const {bio} = request.body;
+        try {
+            const newBioPreview = await this.userManager.saveBio(bio, request.session.data.userId);
+            if (newBioPreview === false) {
+                return response.error('error', `Could not update bio`, 500);
+            }
+            this.userManager.clearCache(request.session.data.userId);
+            return response.success({bio: newBioPreview});
+        } catch (error) {
+            this.logger.error('Could not update user bio', { error });
+            return response.error('error', `Could not update bio`, 500);
         }
     }
 

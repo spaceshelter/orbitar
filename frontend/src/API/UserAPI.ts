@@ -135,4 +135,7 @@ export default class UserAPI {
         return this.api.request<{username: string}, UserRestrictionsResponse>('/user/restrictions', {username});
     }
 
+    async saveBio(bio: string): Promise<{bio: string | boolean}> {
+        return this.api.request<{bio: string}, {bio: string | boolean}>('/user/savebio', {bio});
+    }
 }

@@ -103,7 +103,7 @@ const webPushRepository = new WebPushRepository(db);
 const translationRepository = new TranslationRepository(db);
 
 const notificationManager = new NotificationManager(commentRepository, notificationsRepository, postRepository, siteRepository, userRepository, webPushRepository, config.vapid, config.site);
-const userManager = new UserManager(credentialsRepository, userRepository, voteRepository, commentRepository, postRepository, webPushRepository, notificationManager, redis.client, config.site, logger.child({ service: 'USER' }));
+const userManager = new UserManager(credentialsRepository, userRepository, voteRepository, commentRepository, postRepository, webPushRepository, theParser, notificationManager, redis.client, config.site, logger.child({ service: 'USER' }));
 const inviteManager = new InviteManager(inviteRepository, theParser, userManager);
 const siteManager = new SiteManager(siteRepository, userManager);
 const feedManager = new FeedManager(bookmarkRepository, postRepository, userRepository, siteManager, logger.child({ service: 'FEED' }));
