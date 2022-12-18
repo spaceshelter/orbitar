@@ -20,6 +20,7 @@ import {UserRatingBySubsite} from '../managers/types/UserInfo';
 // constant variables
 import {ERROR_CODES} from './utils/error-codes';
 import InviteManager from '../managers/InviteManager';
+import rateLimit from 'express-rate-limit';
 
 export default class UserController {
     public readonly router = Router();
@@ -44,13 +45,19 @@ export default class UserController {
         const postsOrCommentsSchema = Joi.object<UserPostsRequest>({
             username: joiUsername.required(),
             format: joiFormat,
+            filter: Joi.string().max(120).allow(null, ''),
             page: Joi.number().default(1),
             perpage: Joi.number().min(1).max(50).default(10),
         });
 
+        const userCommentsAndPostsLimiter = rateLimit({
+            windowMs: 1000,
+            max: 1
+        });
+
         this.router.post('/user/profile', validate(profileSchema), (req, res) => this.profile(req, res));
-        this.router.post('/user/posts', validate(postsOrCommentsSchema), (req, res) => this.posts(req, res));
-        this.router.post('/user/comments', validate(postsOrCommentsSchema), (req, res) => this.comments(req, res));
+        this.router.post('/user/posts', userCommentsAndPostsLimiter, validate(postsOrCommentsSchema), (req, res) => this.posts(req, res));
+        this.router.post('/user/comments', userCommentsAndPostsLimiter, validate(postsOrCommentsSchema), (req, res) => this.comments(req, res));
         this.router.post('/user/karma', validate(profileSchema), (req, res) => this.karma(req, res));
         this.router.post('/user/clearCache', validate(profileSchema), (req, res) => this.clearCache(req, res));
         this.router.post('/user/restrictions', validate(profileSchema), (req, res) => this.restrictions(req, res));
@@ -115,7 +122,7 @@ export default class UserController {
         }
 
         const userId = request.session.data.userId;
-        const {username, format, page, perpage} = request.body;
+        const {username, format, page, perpage, filter} = request.body;
 
         try {
             const profile = await this.userManager.getByUsername(username);
@@ -124,8 +131,8 @@ export default class UserController {
                 return response.error(ERROR_CODES.NOT_FOUND, 'User not found', 404);
             }
 
-            const total = await this.postManager.getPostsByUserTotal(profile.id);
-            const rawPosts = await this.postManager.getPostsByUser(profile.id, userId, page || 1, perpage || 20, format);
+            const total = await this.postManager.getPostsByUserTotal(profile.id, filter);
+            const rawPosts = await this.postManager.getPostsByUser(profile.id, userId, filter, page || 1, perpage || 20, format);
             const {posts, users} = await this.enricher.enrichRawPosts(rawPosts);
 
             response.success({
@@ -146,7 +153,7 @@ export default class UserController {
         }
 
         const userId = request.session.data.userId;
-        const {username, format, page, perpage} = request.body;
+        const {username, format, page, perpage, filter} = request.body;
 
         try {
             const profile = await this.userManager.getByUsername(username);
@@ -155,8 +162,8 @@ export default class UserController {
                 return response.error(ERROR_CODES.NOT_FOUND, 'User not found', 404);
             }
 
-            const total = await this.postManager.getUserCommentsTotal(profile.id);
-            const rawComments = await this.postManager.getUserComments(profile.id, userId, page || 1, perpage || 20, format);
+            const total = await this.postManager.getUserCommentsTotal(profile.id, filter);
+            const rawComments = await this.postManager.getUserComments(profile.id, userId, filter, page || 1, perpage || 20, format);
             const rawParentComments = await this.postManager.getParentCommentsForASetOfComments(rawComments, userId, format);
             const {allComments, users} = await this.enricher.enrichRawComments(rawComments, {}, format, (_) => false);
             const {allComments:parentCommentsList} = await this.enricher.enrichRawComments(rawParentComments, users, format, (_) => false);
@@ -174,6 +181,7 @@ export default class UserController {
             });
         } catch (error) {
             this.logger.error('Could not get user comments', {username, error});
+            this.logger.error(error);
             return response.error('error', `Could not get comments for user ${username}`, 500);
         }
     }

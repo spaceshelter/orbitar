@@ -49,8 +49,8 @@ export default class PostManager {
         return (await this.feedManager.convertRawPost(forUserId, [rawPost], format))[0];
     }
 
-    async getPostsByUser(userId: number, forUserId: number, page: number, perpage: number, format: ContentFormat): Promise<PostInfo[]> {
-        const posts = await this.postRepository.getPostsByUser(userId, forUserId, page, perpage);
+    async getPostsByUser(userId: number, forUserId: number, filter: string, page: number, perpage: number, format: ContentFormat): Promise<PostInfo[]> {
+        const posts = await this.postRepository.getPostsByUser(userId, forUserId, filter, page, perpage);
         return await this.feedManager.convertRawPost(forUserId, posts, format);
     }
 
@@ -58,8 +58,8 @@ export default class PostManager {
         return this.postRepository.getPost(postId);
     }
 
-    getPostsByUserTotal(userId: number): Promise<number> {
-        return this.postRepository.getPostsByUserTotal(userId);
+    getPostsByUserTotal(userId: number, filter: string): Promise<number> {
+        return this.postRepository.getPostsByUserTotal(userId, filter);
     }
 
     async createPost(siteName: string, userId: number, title: string, content: string, format: ContentFormat): Promise<PostInfo> {
@@ -140,8 +140,8 @@ export default class PostManager {
         return await this.convertRawCommentsWithPostData(forUserId, rawComments, format);
     }
 
-    async getUserComments(userId: number, forUserId: number, page: number, perpage: number, format: ContentFormat): Promise<CommentInfoWithPostData[]> {
-        const rawComments = await this.commentRepository.getUserComments(userId, forUserId, page, perpage);
+    async getUserComments(userId: number, forUserId: number, filter: string, page: number, perpage: number, format: ContentFormat): Promise<CommentInfoWithPostData[]> {
+        const rawComments = await this.commentRepository.getUserComments(userId, forUserId, filter, page, perpage);
         return await this.convertRawCommentsWithPostData(forUserId, rawComments, format);
     }
 
@@ -185,8 +185,8 @@ export default class PostManager {
         return comments;
     }
 
-    getUserCommentsTotal(userId: number): Promise<number> {
-        return this.commentRepository.getUserCommentsTotal(userId);
+    getUserCommentsTotal(userId: number, filter = ''): Promise<number> {
+        return this.commentRepository.getUserCommentsTotal(userId, filter);
     }
 
     async createComment(userId: number, postId: number, parentCommentId: number | undefined, content: string, format: ContentFormat): Promise<CommentInfoWithPostData> {

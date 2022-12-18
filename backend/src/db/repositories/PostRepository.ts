@@ -4,6 +4,7 @@ import CodeError from '../../CodeError';
 import {ResultSetHeader} from 'mysql2';
 import {ContentSourceRaw} from '../types/ContentSourceRaw';
 import {FeedSorting} from '../../api/types/entities/common';
+import {escapePercent} from '../../utils/MySqlUtils';
 
 export default class PostRepository {
     private db: DB;
@@ -83,28 +84,34 @@ export default class PostRepository {
             });
     }
 
-    async getPostsByUser(userId: number, forUserId: number, page: number, perPage: number): Promise<PostRawWithUserData[]> {
+    async getPostsByUser(userId: number, forUserId: number, filter: string, page: number, perPage: number): Promise<PostRawWithUserData[]> {
         const limitFrom = (page - 1) * perPage;
-
         return await this.db.query(`
-                select p.*, v.vote, b.read_comments, b.bookmark, b.last_read_comment_id, b.watch
-                from posts p
-                         left join post_votes v on (v.post_id = p.post_id and v.voter_id = :for_user_id)
-                         left join user_bookmarks b on (b.post_id = p.post_id and b.user_id = :for_user_id)
-                where p.author_id = :user_id
-                order by created_at desc
-                    limit :limit_from, :limit_count
-            `,
-            {
-                user_id: userId,
-                for_user_id: forUserId,
-                limit_from: limitFrom,
-                limit_count: perPage
-            });
+            select p.*, v.vote, b.read_comments, b.bookmark, b.last_read_comment_id, b.watch
+            from posts p
+                     left join post_votes v on (v.post_id = p.post_id and v.voter_id = :for_user_id)
+                     left join user_bookmarks b on (b.post_id = p.post_id and b.user_id = :for_user_id)
+            where p.author_id = :user_id
+                ${filter ? ' and (p.source like :filter or p.title like :filter) ' : ''}
+            order by created_at desc
+            limit :limit_from, :limit_count
+        `, {
+            user_id: userId,
+            for_user_id: forUserId,
+            limit_from: limitFrom,
+            limit_count: perPage,
+            filter: filter && ('%' + escapePercent(filter) + '%')
+        });
     }
 
-    async getPostsByUserTotal(userId: number): Promise<number> {
-        const result = await this.db.fetchOne<{ cnt: string }>(`select count(*) as cnt from posts where author_id = :user_id`, {user_id: userId});
+    async getPostsByUserTotal(userId: number, filter: string): Promise<number> {
+        const result = await this.db.fetchOne<{ cnt: string }>(
+            `select count(*) as cnt
+             from posts
+             where author_id = :user_id ${filter ? ' and (source like :filter or title like :filter) ' : ''}`, {
+                user_id: userId,
+                filter: filter && ('%' + escapePercent(filter) + '%')
+            });
         if (!result) {
             return 0;
         }
