@@ -40,7 +40,12 @@ function updateVideo(video: HTMLVideoElement) {
 
 function updateImg(img: HTMLImageElement) {
     if (img.naturalWidth > 500 || img.naturalHeight > 500) {
-        img.classList.add('image-large');
+        // will be displayed as block if not immediately surrounded by <br>
+        const nextBr = !img.nextSibling || img.nextSibling.nodeName === 'BR';
+        const prevBr = !img.previousSibling || img.previousSibling.nodeName === 'BR';
+        if (!nextBr || !prevBr) {
+            img.classList.add('image-large');
+        }
     }
 
     let el: HTMLElement | null = img;
