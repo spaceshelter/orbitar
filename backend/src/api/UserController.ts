@@ -20,6 +20,7 @@ import {UserRatingBySubsite} from '../managers/types/UserInfo';
 // constant variables
 import {ERROR_CODES} from './utils/error-codes';
 import InviteManager from '../managers/InviteManager';
+import rateLimit from "express-rate-limit";
 
 export default class UserController {
     public readonly router = Router();
@@ -49,9 +50,14 @@ export default class UserController {
             perpage: Joi.number().min(1).max(50).default(10),
         });
 
+        const userCommentsAndPostsLimiter = rateLimit({
+            windowMs: 1000,
+            max: 1
+        });
+
         this.router.post('/user/profile', validate(profileSchema), (req, res) => this.profile(req, res));
-        this.router.post('/user/posts', validate(postsOrCommentsSchema), (req, res) => this.posts(req, res));
-        this.router.post('/user/comments', validate(postsOrCommentsSchema), (req, res) => this.comments(req, res));
+        this.router.post('/user/posts', userCommentsAndPostsLimiter, validate(postsOrCommentsSchema), (req, res) => this.posts(req, res));
+        this.router.post('/user/comments', userCommentsAndPostsLimiter, validate(postsOrCommentsSchema), (req, res) => this.comments(req, res));
         this.router.post('/user/karma', validate(profileSchema), (req, res) => this.karma(req, res));
         this.router.post('/user/clearCache', validate(profileSchema), (req, res) => this.clearCache(req, res));
         this.router.post('/user/restrictions', validate(profileSchema), (req, res) => this.restrictions(req, res));
