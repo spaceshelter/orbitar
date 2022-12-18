@@ -1,0 +1,39 @@
+version: '3.7'
+
+services:
+  caddy:
+    volumes:
+      - $PWD/caddy/Caddyfile.local:/etc/caddy/Caddyfile
+      - frontend_build:/srv
+    depends_on:
+      - backend
+    # Default caddy command borrowed from https://github.com/caddyserver/caddy-docker/blob/master/Dockerfile.tmpl
+    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
+
+  frontend:
+    build:
+      context: frontend
+      args:
+        NODE_ENV: production
+        SERVER_DOMAIN: ${SERVER_DOMAIN}
+        API_DOMAIN: ${API_DOMAIN}
+    restart: "no"
+    volumes:
+      - frontend_build:/frontend
+
+  backend:
+    build:
+      context: backend
+    restart: always
+    environment:
+      SITE_DOMAIN: ${SERVER_DOMAIN}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      SENDING_BLUE_API_KEY: ${SENDING_BLUE_API_KEY}
+      DEEPL_API_KEY: ${DEEPL_API_KEY}
+    depends_on:
+      - mysql
+      - redis
+      - feed
+
+volumes:
+  frontend_build:

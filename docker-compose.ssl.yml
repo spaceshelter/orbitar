@@ -1,0 +1,7 @@
+services:
+  caddy:
+    ports:
+      - "443:443"
+    volumes:
+      - $PWD/caddy/Caddyfile.ssl.dev:/etc/caddy/Caddyfile:ro
+      - $PWD/caddy/certs:/certs:ro

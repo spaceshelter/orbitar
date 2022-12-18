@@ -1,0 +1,18 @@
+services:
+  caddy:
+    ports:
+      - "80:80"
+
+  mysql:
+    ports:
+      - "3306:3306"
+      - "33060:33060"
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  feed:
+    ports:
+      - "6767:6767"
+
