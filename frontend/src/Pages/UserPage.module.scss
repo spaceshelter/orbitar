@@ -31,6 +31,29 @@
 .userinfo .bio {
     margin-top: 30px;
     width: 100%;
+    border-radius: 4px;
+    padding: 0px 16px 0 24px;
+    color: var(--fg);
+    background-color: var(--dim3);
+    >span{font-size: 24px;}
+
+    >div {
+        width: 100%;
+    }
+
+    p {
+
+    }
+
+    .bioForm {
+        >div {
+            margin-bottom: 0;
+        }
+    }
+
+    .CreateCommentComponent .answer {
+        margin-bottom: 0;
+    }
 }
 
 .userinfo .bio p {

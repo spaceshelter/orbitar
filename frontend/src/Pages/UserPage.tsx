@@ -19,6 +19,7 @@ import createPostStyles from './CreatePostPage.module.css';
 import CreateCommentComponent from '../Components/CreateCommentComponent';
 import {CommentInfo} from '../Types/PostInfo';
 import {toast} from 'react-toastify';
+import classNames from 'classnames';
 
 export const UserPage = observer(() => {
     const {userInfo, userRestrictions: restrictions} = useAppState();
@@ -147,23 +148,25 @@ export const UserPage = observer(() => {
                             return <Username key={idx} user={user} inactive={!user.active}/>;
                             })}
                         </div>}
-                        {isMyProfile && <div>
-                            <div className={styles.bio}>
-                                <p>
-                                    Этот текст <b>будет виден всем</b>.
-                                    Напишите пару слов о себе.
-                                </p>
-                                <div className={createPostStyles.form}>
-                                    <CreateCommentComponent
-                                      staticEditor={true}
-                                      defaultPreview={newBio || state.profile.profile.bio_html}
-                                      text={state.profile.profile.bio_source}
-                                      open={true}
-                                      onAnswer={handleUpdateBio}
-                                    />
-                                </div>
-                            </div>
-                        </div>}
+                        {
+                            isMyProfile && <>
+                              <div className={styles.bio}>
+                                  <p>
+                                      Напишите пару слов о себе.
+                                      Этот текст <b>будет виден всем</b>.
+                                  </p>
+                                  <div className={classNames(createPostStyles.form, styles.bioForm)}>
+                                      <CreateCommentComponent
+                                        staticEditor={true}
+                                        defaultPreview={newBio || state.profile.profile.bio_html}
+                                        text={state.profile.profile.bio_source}
+                                        open={true}
+                                        onAnswer={handleUpdateBio}
+                                      />
+                                  </div>
+                              </div>
+                          </>
+                        }
                         {!isMyProfile && profile.profile.bio_html && <div className={styles.bio}>
                             <p dangerouslySetInnerHTML={{__html: profile.profile.bio_html}}></p>
                         </div>}
