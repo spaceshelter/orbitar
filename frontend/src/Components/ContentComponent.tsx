@@ -23,6 +23,10 @@ function updateContent(div: HTMLDivElement) {
     div.querySelectorAll('video').forEach(video => {
         updateVideo(video);
     });
+
+    div.querySelectorAll('span.spoiler').forEach(spoiler => {
+        updateSpoiler(spoiler as HTMLSpanElement);
+    });    
 }
 
 function updateVideo(video: HTMLVideoElement) {
@@ -69,6 +73,12 @@ function updateImg(img: HTMLImageElement) {
             img.classList.add('image-preview');
         };
     }
+}
+
+function updateSpoiler(spoiler: HTMLSpanElement) {
+    spoiler.onclick = () => {
+        spoiler.classList.toggle('spoiler');
+    };
 }
 
 export default function ContentComponent(props: ContentComponentProps) {
