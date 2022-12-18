@@ -221,7 +221,9 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 console.log('onAnswer ERR', error);
             })
             .finally(() => {
-                //setPreviewing(null);
+                if (!props.staticEditor) {
+                    setPreviewing(null);
+                }
                 setPosting(false);
             });
     };

@@ -8,8 +8,6 @@ export type UserBaseInfo = {
     id: number;
     username: string;
     gender: UserGender;
-    bio_source: string;
-    bio_html: string;
 };
 
 export type UserInfo = UserBaseInfo & {
@@ -21,5 +19,7 @@ export type UserInfo = UserBaseInfo & {
 export type UserProfileInfo = UserInfo & {
     registered: Date;
     active: boolean;
+    bio_source: string;
+    bio_html: string;
 };
 
