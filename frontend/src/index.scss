@@ -62,6 +62,32 @@ a {
   color: var(--danger);
 }
 
+.spoiler {
+  background-color: var(--fgHard);  
+  opacity: 0.2;
+  /* blur to text */
+  filter: blur(4px);
+  -webkit-filter: blur(4px);
+
+  /* more blur to img video etc */
+  & > img, video {
+    filter: blur(16px);
+    -webkit-filter: blur(16px);
+  }
+
+  &:hover {
+    background-color: inherit;    
+    opacity: 1.0;
+    filter: none;
+    -webkit-filter: none;
+
+    & > img, video {
+      filter: none;
+      -webkit-filter: none;
+    }
+  }
+}
+
 blockquote {
   border-radius: 4px;
   padding: 0.5em 0.5em 0.5em 2em;

@@ -30,6 +30,7 @@ export default class TheParser {
             a: (node) => this.parseA(node),
             img: (node) => this.parseImg(node),
             irony: (node) => this.parseIrony(node),
+            spoiler: (node) => this.parseSpoiler(node),
             video: (node) => this.parseVideo(node),
             blockquote: true,
             b: true,
@@ -299,6 +300,12 @@ export default class TheParser {
     parseIrony(node: Element): ParseResult {
         const result = this.parseChildNodes(node.children);
         const text = `<span class="irony">${result.text}</span>`;
+        return { ...result, text };
+    }
+
+    parseSpoiler(node: Element): ParseResult {
+        const result = this.parseChildNodes(node.children);
+        const text = `<span class="spoiler">${result.text}</span>`;
         return { ...result, text };
     }
 
