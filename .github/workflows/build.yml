@@ -1,34 +1,14 @@
-name: build
+name: Build and Lint
 on: [pull_request]
 
 jobs:
-  build-backend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
-        with:
-          node-version: "18"
-      - name: Cache dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.npm
-          key: npm-backend-${{ hashFiles('./backend/package.json') }}
-          restore-keys: npm-backend-
-      - name: install_dependencies
-        working-directory: "backend"
-        run: npm install
-      - name: run build
-        working-directory: "backend"
-        run: npm run build
-      - name: test
-        working-directory: "backend"
-        run: npm run test
-
-  build-frontend:
+  build-lint:
     runs-on: ubuntu-latest
     env:
-      CI: '' # hack to allow build with warnings. FIXME: fix warnings are remove in the future
+      CI: '' # hack to allow build with warnings. FIXME: fix warnings and remove in the future
+    strategy:
+      matrix:
+        module: [backend, frontend]
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v1
@@ -38,11 +18,18 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.npm
-          key: npm-frontend-${{ hashFiles('./frontend/package.json') }}
-          restore-keys: npm-frontend-
+          key: npm-${{matrix.module}}-${{ hashFiles(format('./{0}/package.json', matrix.module)) }}
+          restore-keys: npm-${{matrix.module}}-
       - name: install_dependencies
-        working-directory: "frontend"
+        working-directory: ${{matrix.module}}
         run: npm install
+      - name: run linter
+        working-directory: ${{matrix.module}}
+        run: npm run lint
       - name: run build
-        working-directory: "frontend"
+        working-directory: ${{matrix.module}}
         run: npm run build
+      - name: test
+        working-directory: ${{matrix.module}}
+        if: matrix.module == 'backend'
+        run: npm run test
