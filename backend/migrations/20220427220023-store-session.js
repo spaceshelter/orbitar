@@ -21,6 +21,7 @@ exports.up = async function(db) {
     used: { type: 'datetime', notNull: true, defaultValue: new String('CURRENT_TIMESTAMP') },
   });
   await db.runSql(`grant delete on ${process.env.MYSQL_DATABASE}.* to '${process.env.MYSQL_USER}'@'%';`);
+  await db.runSql(`flush privileges;`);
   return null;
 };
 
