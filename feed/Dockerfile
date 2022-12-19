@@ -1,5 +1,5 @@
 # Tells docker to use the latest Rust official image
-FROM rust:1.64-slim-buster as builder
+FROM rustlang/rust:nightly-buster-slim as builder
 WORKDIR /feed
 # first create a cached layer with the dependencies
 RUN mkdir -p ./src && echo 'fn main() { panic!("Dummy Image Called!") }' > ./src/main.rs
@@ -14,8 +14,8 @@ RUN touch -a -m ./src/main.rs
 RUN cargo build --release
 
 FROM debian:buster-slim
-COPY --from=builder /feed /feed
+COPY --from=builder /feed/target/release/orbitar-index /feed/orbitar-index
 WORKDIR /feed
 EXPOSE 6767
 # Run the binary built inside the container
-CMD ["./target/release/orbitar-index"]
+CMD ["./orbitar-index"]
