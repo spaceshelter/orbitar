@@ -1,6 +1,6 @@
 import React, {useState} from 'react';
 import styles from './Topbar.module.scss';
-import {Link} from 'react-router-dom';
+import {Link, useLocation} from 'react-router-dom';
 import {useAppState} from '../AppState/AppState';
 import {useTheme} from '../Theme/ThemeProvider';
 import {ReactComponent as PostIcon} from '../Assets/post.svg';
@@ -73,7 +73,7 @@ export const Topbar = observer((props: TopbarProps) => {
                 </div>
 
                 <div className={styles.right}>
-                    <Link to={`/search`}><SearchIcon /></Link>
+                    <SearchButton/>
                     <button onClick={toggleTheme}>{theme === 'dark' ? <LightIcon /> : <DarkIcon />}</button>
                     <WatchButton />
                     <NotificationsButton onClick={handleNotificationsToggle} />
@@ -84,6 +84,12 @@ export const Topbar = observer((props: TopbarProps) => {
         </>
     );
 });
+
+const SearchButton = () => {
+    const location = useLocation();
+    const isSearch = location.pathname === '/search';
+    return (isSearch ? <></> : <Link to={`/search`}><SearchIcon /></Link>);
+};
 
 const CreateButton = observer(() => {
     const {site} = useAppState();
