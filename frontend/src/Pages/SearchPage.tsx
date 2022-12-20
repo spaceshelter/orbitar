@@ -21,7 +21,7 @@ function SearchResult(props: {
     let i = 0;
     return <div>
         <div className={styles.stats}>
-            Найдено: {total.value}
+            Найдено: {total.value > 1000 ? 'более 1000' : total.value}
         </div>
         <div>
             {results.map((resultItem: SearchResultEntity) => {
