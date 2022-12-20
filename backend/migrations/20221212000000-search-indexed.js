@@ -18,7 +18,7 @@ exports.up = async function(db) {
     await db.runSql(`
     alter table content_source
       add column indexed tinyint(1) not null default 0,
-      add index idx_indexed (indexed);  
+      add index idx_indexed_content_source_id (indexed, content_source_id);  
   `);
     return null;
 };
@@ -27,7 +27,7 @@ exports.down = async function(db) {
     await db.runSql(`
     alter table content_source
       drop column indexed,
-      drop index idx_indexed;     
+      drop index idx_indexed_content_source_id;     
   `);
     return null;
 };

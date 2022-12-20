@@ -40,7 +40,7 @@ async function main() {
     left join posts p on p.post_id = cs.ref_id and cs.ref_type = 'post'
     left join comments c on c.comment_id = cs.ref_id and cs.ref_type = 'comment'
     left join comments cc on c.parent_comment_id = cc.comment_id
-    ${doReindex ? '' : ' where cs.indexed != 1'}
+    ${doReindex ? '' : ' where cs.indexed = 0'}
     order by cs.content_source_id asc
     limit ${doReindex ? (offset + ',') : ''} ${batchSize}
   `);
