@@ -2,6 +2,12 @@
   text-align: right;
   margin-top: 16px;
 
+  @media only screen and (min-width: 1180px) {
+    & {
+      margin-top: -64px;
+    }
+  }
+
   form {
     display: flex;
     margin-bottom: 16px;
@@ -29,7 +35,7 @@
   }
 
   .stats {
-    margin-bottom: 20px;
+    margin-bottom: 40px;
   }
 
   .resultItem {

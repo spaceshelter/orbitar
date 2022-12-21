@@ -22,6 +22,7 @@ interface CommentProps {
     maxTreeDepth?: number
     idx?: number
     unreadOnly?: boolean
+    hideRating?: boolean
 }
 
 export default function CommentComponent(props: CommentProps) {
@@ -120,9 +121,10 @@ export default function CommentComponent(props: CommentProps) {
                 }
 
                 <div className={styles.controls}>
+                    {!props.hideRating &&
                     <div className={styles.control}>
                         <RatingSwitch type="comment" id={props.comment.id} rating={{ vote: props.comment.vote, value: props.comment.rating }} onVote={handleVote} />
-                    </div>
+                    </div>}
                     {props.comment.canEdit && props.onEdit && <div className={styles.control}><button onClick={handleEdit} className='i i-edit' /></div>}
                     {props.comment.language && props.comment.language !== defaultLanguage && <div className={styles.control}><button
                         disabled={translation === false} onClick={translate} className={`i i-translate ${styles.translate}`}/></div>}

@@ -4,10 +4,11 @@ import feedStyles from './FeedPage.module.scss';
 import {useForm, SubmitHandler} from 'react-hook-form';
 import {useAPI} from '../AppState/AppState';
 import {useSearchParams} from 'react-router-dom';
-import Username from '../Components/Username';
-import DateComponent from '../Components/DateComponent';
-import PostLink from '../Components/PostLink';
 import {SearchResponse, SearchResultEntity} from '../API/SearchApi';
+import CommentComponent from '../Components/CommentComponent';
+import PostComponent from '../Components/PostComponent';
+import {UserGender} from '../Types/UserInfo';
+import classNames from 'classnames';
 
 type SearchForm = {
     term: string;
@@ -18,36 +19,47 @@ function SearchResult(props: {
 }) {
     const total = props.result.total;
     const results = props.result.results;
-    let i = 0;
-    return <div>
+    return <>
         <div className={styles.stats}>
             Найдено: {total.value} {total.value > 250 && <>(показано: 250)</>}
         </div>
-        <div>
-            {results.map((resultItem: SearchResultEntity) => {
-                i++;
-                return <div className={styles.resultItem} key={i}>
-                    {
-                        resultItem.highlight_title && <h3 dangerouslySetInnerHTML={{__html: resultItem.highlight_title.join('&nbsp;&nbsp;&nbsp;…&nbsp;&nbsp;&nbsp;')}}></h3>
-                    }
-                    {
-                        resultItem.highlight_source && <p dangerouslySetInnerHTML={{__html: resultItem.highlight_source.join('&nbsp;&nbsp;&nbsp;…&nbsp;&nbsp;&nbsp;')}}></p>
-                    }
-                    <div className={styles.meta}>
-                        <Username user={{username: resultItem.author}}/>
-                        <div className={styles.date}><DateComponent date={resultItem.created_at} /></div>
-                        <div>
-                            {resultItem.doc_type === 'post' &&
-                                <PostLink target='_blank' post={{id: resultItem.post_id, site: resultItem.site}}>пост</PostLink>}
-                            {resultItem.doc_type === 'comment' &&
-                                <PostLink target='_blank' commentId={resultItem.comment_id} post={{id: resultItem.comment_post_id, site: resultItem.site}}>комментарий</PostLink>}
-                        &nbsp;на {resultItem.site === 'main' ? 'главной' : resultItem.site}
-                        </div>
-                    </div>
-                </div>;
-            })}
-        </div>
-    </div>;
+
+        {results.map((resultItem: SearchResultEntity) => {
+            const author = {username: resultItem.author, id: 0, gender: UserGender.fluid};
+            const content = resultItem.highlight_source?.join('&nbsp;&nbsp;&nbsp;…&nbsp;&nbsp;&nbsp;');
+            const date = resultItem.created_at;
+
+            return resultItem.doc_type === 'post' ?
+                <PostComponent key={`p${resultItem.post_id}`}
+                               post={{
+                                   id: resultItem.post_id,
+                                   title: resultItem.highlight_title?.join('&nbsp;&nbsp;&nbsp;…&nbsp;&nbsp;&nbsp;'),
+                                   author,
+                                   content,
+                                   site: resultItem.site,
+                                   created: date,
+                                   rating: 0,
+                                   comments: 0,
+                                   newComments: 0,
+                               }}
+                               showSite={true} autoCut={true} dangerousHtmlTitle={true} hideRating={true}/> :
+                <CommentComponent key={resultItem.comment_id}
+                                  comment={{
+                                      id: resultItem.comment_id,
+                                      author,
+                                      content,
+                                      created: date,
+                                      rating: 0,
+                                      parentComment: 0,
+                                      postLink: {
+                                          id: resultItem.comment_post_id,
+                                          site: resultItem.site,
+                                      }
+                                  }}
+                                  showSite={true} hideRating={true}/>;
+
+        })}
+    </>;
 }
 
 export default function SearchPage() {
@@ -74,7 +86,7 @@ export default function SearchPage() {
             }).finally(() => setSearching(false));
     };
 
-    const { register, handleSubmit, formState: { errors }, setFocus } = useForm<SearchForm>({
+    const {register, handleSubmit, formState: {errors}, setFocus} = useForm<SearchForm>({
         mode: 'onSubmit'
     });
 
@@ -94,16 +106,21 @@ export default function SearchPage() {
     return (
         <div className={styles.search}>
             {isSearching && <div className={feedStyles.loading}></div>}
-            <form onSubmit={handleSubmit(onSubmit)}>
-                <input type="text" {...register('term', {
-                    required: ''
-                })} defaultValue={defaultSearch} />
-                <input type="submit" disabled={isSearching} value="Искать" />
-            </form>
-            {errors.term && <p className={styles.error}>{errors.term.message}</p>}
-            {error && <p className={styles.error}>{error}</p>}
-            <div className={styles.results}>
-                {result && <SearchResult result={result} />}
+
+            <div className={feedStyles.container}>
+                <div className={feedStyles.feed}>
+                    <form onSubmit={handleSubmit(onSubmit)}>
+                        <input type="text" {...register('term', {
+                            required: ''
+                        })} defaultValue={defaultSearch}/>
+                        <input type="submit" disabled={isSearching} value="Искать"/>
+                    </form>
+                    {errors.term && <p className={styles.error}>{errors.term.message}</p>}
+                    {error && <p className={styles.error}>{error}</p>}
+                    <div className={classNames(styles.results, 'searchResults')}>
+                        {result && <SearchResult result={result}/>}
+                    </div>
+                </div>
             </div>
         </div>
     );
