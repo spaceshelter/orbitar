@@ -111,7 +111,7 @@ export default function SearchPage() {
             <div className={feedStyles.container}>
                 <div className={feedStyles.feed}>
                     <form onSubmit={handleSubmit(onSubmit)}>
-                        <input type="text" {...register('term', {
+                        <input type="search" {...register('term', {
                             required: ''
                         })} defaultValue={defaultSearch}/>
                         <input type="submit" disabled={isSearching} value="Искать"/>
