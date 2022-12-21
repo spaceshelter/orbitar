@@ -21,7 +21,8 @@ function SearchResult(props: {
     const results = props.result.results;
     return <>
         <div className={styles.stats}>
-            Найдено: {total.value} {total.value > 250 && <>(показано: 250)</>}
+            {!total.value ? 'Ничего не найдено' :
+                <>{total.value} найдено {total.value > 250 && <>(250 показано)</>}</>}
         </div>
 
         {results.map((resultItem: SearchResultEntity) => {
