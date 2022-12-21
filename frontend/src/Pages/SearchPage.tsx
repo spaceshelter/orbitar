@@ -9,6 +9,7 @@ import CommentComponent from '../Components/CommentComponent';
 import PostComponent from '../Components/PostComponent';
 import {UserGender} from '../Types/UserInfo';
 import classNames from 'classnames';
+import {useCache} from '../API/use/useCache';
 
 type SearchForm = {
     term: string;
@@ -67,22 +68,24 @@ export default function SearchPage() {
     const api = useAPI();
     const [isSearching, setSearching] = useState(false);
     const [error, setError] = useState<string>();
-    const [result, setResult] = useState<SearchResponse | null>();
     const [searchParams, setSearchParams] = useSearchParams();
     const defaultSearch = searchParams.get('term') as string;
+    const [cachedResult, setCachedResult] = useCache<SearchResponse>('search', [defaultSearch]);
+    const [result, setResult] = useState<SearchResponse | undefined>(cachedResult);
 
     const doSearch = (term: string) => {
         if (!term) {
             return;
         }
         setSearching(true);
-        setResult(null);
         setSearchParams({term});
         api.searchApi.search(term)
             .then((result) => {
                 setResult(result);
+                setCachedResult(result);
             })
             .catch(_ => {
+                setResult(undefined);
                 setError('Произошла чудовищная ошибка, попробуйте позже.');
             }).finally(() => setSearching(false));
     };
@@ -94,9 +97,10 @@ export default function SearchPage() {
     useEffect(() => {
         if (defaultSearch) {
             doSearch(defaultSearch);
+        } else {
+            setFocus('term');
         }
-        setFocus('term');
-    }, []);
+    }, [defaultSearch]);
 
     document.title = (searchParams.get('term') ? ('Поиск: ' + searchParams.get('term')) : 'Поиск');
 
