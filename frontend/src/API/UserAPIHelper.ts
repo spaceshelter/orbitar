@@ -10,6 +10,9 @@ export type UserProfileResult = {
     invitedReason?: string;
     trialProgress?: number;
     trialApprovers?: VoteListItemEntity[];
+    numberOfPosts: number;
+    numberOfComments: number;
+    numberOfInvitesAvailable?: number;
 };
 
 export default class UserAPIHelper {

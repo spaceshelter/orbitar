@@ -1,11 +1,10 @@
 import React, {useEffect} from 'react';
 import styles from './UserPage.module.scss';
-import {Link, useLocation, useNavigate, useParams} from 'react-router-dom';
+import {Link, useParams} from 'react-router-dom';
 import Username from '../Components/Username';
 import RatingSwitch from '../Components/RatingSwitch';
 import DateComponent from '../Components/DateComponent';
 import {useUserProfile} from '../API/use/useUserProfile';
-import {ReactComponent as LogoutIcon} from '../Assets/logout.svg';
 import {useAPI, useAppState} from '../AppState/AppState';
 import UserProfilePosts from '../Components/UserProfilePosts';
 import UserProfileComments from '../Components/UserProfileComments';
@@ -13,6 +12,7 @@ import {UserProfileInvites} from '../Components/UserProfileInvites';
 import {observer} from 'mobx-react-lite';
 import {UserProfileKarma} from '../Components/UserProfileKarma';
 import {UserGender} from '../Types/UserInfo';
+import UserProfileSettings from '../Components/UserProfileSettings';
 
 export const UserPage = observer(() => {
     const {userInfo, userRestrictions: restrictions} = useAppState();
@@ -27,11 +27,9 @@ export const UserPage = observer(() => {
     const isComments = page === 'comments';
     const isInvites = page === 'invites';
     const isKarma = page === 'karma';
+    const isSettings = page === 'settings';
 
-    const navigate = useNavigate();
-    const location = useLocation();
-
-    const isProfile = !isPosts && !isComments && !isInvites && !isKarma;
+    const isProfile = !isPosts && !isComments && !isInvites && !isKarma && !isSettings;
 
     useEffect(() => {
         if (state.status === 'ready') {
@@ -42,13 +40,6 @@ export const UserPage = observer(() => {
     useEffect(() => {
         api.user.refreshUserRestrictions();
     }, [api]);
-
-    const handleLogout = (e: React.MouseEvent) => {
-        e.preventDefault();
-        api.auth.signOut().then(() => {
-            navigate(location.pathname);
-        });
-    };
 
     if (state.status === 'ready') {
         const profile = state.profile;
@@ -89,19 +80,20 @@ export const UserPage = observer(() => {
 
                 <div className={styles.controls}>
                     <Link className={`${styles.control} ${isProfile ? styles.active : ''}`} to={base}>Профиль</Link>
-                    <Link className={`${styles.control} ${isPosts ? styles.active : ''}`} to={base + '/posts'}>Посты</Link>
-                    <Link className={`${styles.control} ${isComments ? styles.active : ''}`} to={base + '/comments'}>Комментарии</Link>
+                    <Link className={`${styles.control} ${isPosts ? styles.active : ''}`} to={base + '/posts'}>Посты ({profile.numberOfPosts.toLocaleString()})</Link>
+                    <Link className={`${styles.control} ${isComments ? styles.active : ''}`} to={base + '/comments'}>Комментарии ({profile.numberOfComments.toLocaleString()})</Link>
                     <Link className={`${styles.control} ${isKarma ? styles.active : ''}`} to={base + '/karma'}>Саморегуляция</Link>
-                    <Link className={`${styles.control} ${isInvites ? styles.active : ''}`} to={base + '/invites'}>Инвайты</Link>
+                    <Link className={`${styles.control} ${isInvites ? styles.active : ''}`} to={base + '/invites'}>Инвайты {isMyProfile && profile.numberOfInvitesAvailable ? ('(' + profile.numberOfInvitesAvailable.toLocaleString() + ')') : '' }</Link>
+                    <Link className={`${styles.control} ${isSettings ? styles.active : ''}`} to={base + '/settings'}>Настройки</Link>
                 </div>
 
                 <div className={styles.userinfo}>
                     {isProfile && <>
                         <div className={styles.registered}>#{user.id},
-                            {profile.invitedBy && <>
+                            {(profile.invitedBy && <>
                                 <a href={`/u/${profile.invitedBy.username}/invites/#${user.username}`}
                                    title={'Детальный контекст приглашения'}>приглашен{a}</a>
-                                    <Username user={profile.invitedBy}/></> ||
+                                    <Username user={profile.invitedBy}/></>) ||
                                 <span>зарегистрирован{a}</span>}
                              <DateComponent date={user.registered} />
                         </div>
@@ -110,12 +102,12 @@ export const UserPage = observer(() => {
                             return <Username key={idx} user={user} inactive={!user.active}/>;
                             })}
                         </div>}
-                        { isMyProfile && <button className={styles.logout} onClick={handleLogout}><LogoutIcon /> Выход </button> }
                     </>}
                     {isPosts && <UserProfilePosts username={user.username} />}
                     {isComments && <UserProfileComments username={user.username} />}
                     {isInvites && <UserProfileInvites username={user.username} />}
                     {isKarma && <UserProfileKarma username={user.username} profile={profile} />}
+                    {isSettings && <UserProfileSettings />}
                 </div>
             </div>
         );
