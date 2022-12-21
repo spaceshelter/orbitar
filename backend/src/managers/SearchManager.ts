@@ -137,7 +137,7 @@ export default class SearchManager {
                     number_of_fragments: 10,
                     fragment_size: 300
                 },
-                size: 1000,
+                size: 250,
                 from: 0,
                 sort: sort
             }
