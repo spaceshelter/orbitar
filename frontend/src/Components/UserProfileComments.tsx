@@ -41,7 +41,13 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
     };
 
     const handleFilterChange = (e: React.FormEvent<HTMLInputElement>) => {
-        setDebouncedFilter(e.currentTarget.value);
+        if (e.nativeEvent instanceof KeyboardEvent && e.nativeEvent.key === 'Enter') {
+            const value = e.currentTarget.value;
+            setFilter(value);
+            setSearchParams({filter: value});
+        } else {
+            setDebouncedFilter(e.currentTarget.value);
+        }
     };
 
     const getParentComment = (commentId: number): CommentInfo | undefined => {
