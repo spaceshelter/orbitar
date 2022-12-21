@@ -115,7 +115,7 @@ services:
     restart: always
     depends_on:
       mysql:
-        condition: service_started # TODO change to service_healthy when we have a healthcheck (in dev branch)
+        condition: service_healthy
       elasticsearch:
         condition: service_healthy
       elasticsearch-setup:

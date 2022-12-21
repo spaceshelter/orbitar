@@ -29,10 +29,10 @@ services:
       - mysql_db:/var/lib/mysql
       - $PWD/mysql/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
     healthcheck:
-        test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
-        interval: 5s
-        timeout: 20s
-        retries: 10
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 20s
+      retries: 10
 
   redis:
     image: redis:7
@@ -117,7 +117,7 @@ services:
     restart: always
     depends_on:
       mysql:
-        condition: service_started # TODO change to service_healthy when we have a healthcheck (in dev branch)
+        condition: service_healthy
       elasticsearch:
         condition: service_healthy
       elasticsearch-setup:
