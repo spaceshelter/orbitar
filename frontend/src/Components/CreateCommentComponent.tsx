@@ -5,6 +5,7 @@ import postStyles from '../Pages/CreatePostPage.module.css';
 import commentStyles from './CommentComponent.module.scss';
 import {ReactComponent as IronyIcon} from '../Assets/irony.svg';
 import {ReactComponent as ImageIcon} from '../Assets/image.svg';
+import {ReactComponent as SpoilerIcon} from '../Assets/spoiler.svg';
 import {ReactComponent as LinkIcon} from '../Assets/link.svg';
 import {ReactComponent as QuoteIcon} from '../Assets/quote.svg';
 import {ReactComponent as SendIcon} from '../Assets/send.svg';
@@ -254,6 +255,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('u')} className={styles.underline}>U</button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('strike')} className={styles.strike}>S</button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('irony')}><IronyIcon /></button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('spoiler')}><SpoilerIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('blockquote')}><QuoteIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('img')}><ImageIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('a')}><LinkIcon /></button></div>

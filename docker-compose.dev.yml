@@ -29,7 +29,7 @@ services:
       - "3306:3306"
       - "33060:33060"
     healthcheck:
-        test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+        test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
         interval: 5s
         timeout: 20s
         retries: 10

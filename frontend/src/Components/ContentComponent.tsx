@@ -23,6 +23,10 @@ function updateContent(div: HTMLDivElement) {
     div.querySelectorAll('video').forEach(video => {
         updateVideo(video);
     });
+
+    div.querySelectorAll('span.spoiler').forEach(spoiler => {
+        updateSpoiler(spoiler as HTMLSpanElement);
+    });
 }
 
 function updateVideo(video: HTMLVideoElement) {
@@ -69,6 +73,14 @@ function updateImg(img: HTMLImageElement) {
             img.classList.add('image-preview');
         };
     }
+}
+
+function updateSpoiler(spoiler: HTMLSpanElement) {
+    const spoilerOnClickHandler = () => {
+        spoiler.classList.remove('spoiler');
+        spoiler.removeEventListener('click', spoilerOnClickHandler);
+    };
+    spoiler.addEventListener('click', spoilerOnClickHandler);
 }
 
 export default function ContentComponent(props: ContentComponentProps) {
