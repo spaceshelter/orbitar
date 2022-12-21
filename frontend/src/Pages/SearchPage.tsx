@@ -34,7 +34,7 @@ function SearchResult(props: {
                 <PostComponent key={`p${resultItem.post_id}`}
                                post={{
                                    id: resultItem.post_id,
-                                   title: resultItem.highlight_title?.join('&nbsp;&nbsp;&nbsp;…&nbsp;&nbsp;&nbsp;'),
+                                   title: resultItem.highlight_title?.join('&nbsp;&nbsp;&nbsp;…&nbsp;&nbsp;&nbsp;') || resultItem.post_title,
                                    author,
                                    content,
                                    site: resultItem.site,

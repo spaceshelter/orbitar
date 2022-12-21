@@ -205,6 +205,7 @@ export default class SearchManager {
                     highlight_title: hit.highlight.title,
                     highlight_source: hit.highlight.source,
                     author: author?.username,
+                    post_title: hit._source.title,
                     site_name: site?.name,
                     site: site?.site,
                     created_at: new Date(hit._source.created_at).toISOString(),

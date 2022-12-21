@@ -32,6 +32,7 @@ export type SearchRequest = {
 export type SearchResultEntity = {
     highlight_title: string[];
     highlight_source: string[];
+    post_title?: string;
     author: string;
     site_name: string;
     site: string;
