@@ -13,8 +13,8 @@ const doReindex = args[1] || false;
 const config = {
   host: 'mysql',
   port: 3306,
-  user: 'root',
-  password: process.env.MYSQL_ROOT_PASSWORD || 'orbitar',
+  user: process.env.MYSQL_USER || 'orbitar',
+  password: process.env.MYSQL_PASSWORD || 'orbitar',
   database: process.env.MYSQL_DATABASE || 'orbitar_db'
 };
 
