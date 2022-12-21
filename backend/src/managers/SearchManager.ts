@@ -109,13 +109,13 @@ export default class SearchManager {
         }
 
         const sort = [];
-
         if (sortByDate) {
             const direction = sortDirection ? sortDirection : SearchSortingDirection.Desc;
             sort.push({
                 created_at: {'order': direction, 'format': 'epoch_millis'}
             });
         }
+        sort.push({'_score': {'order': 'desc'}});
 
         const query = {
             index: 'orbitar',
