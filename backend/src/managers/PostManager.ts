@@ -27,8 +27,8 @@ export default class PostManager {
     private translationManager: TranslationManager;
     private parser: TheParser;
 
-    private numberOfPostsCache: Record<number, Record<string, number> | undefined> = {};
-    private numberOfCommentsCache: Record<number, Record<string, number> | undefined> = {};
+    private numberOfPostsCache: Record<number, [string, number] | undefined> = {};
+    private numberOfCommentsCache: Record<number, [string, number] | undefined> = {};
 
     constructor(
         bookmarkRepository: BookmarkRepository, commentRepository: CommentRepository, postRepository: PostRepository,
@@ -62,12 +62,11 @@ export default class PostManager {
     }
 
     async getPostsByUserTotal(userId: number, filter: string): Promise<number> {
-        if (this.numberOfPostsCache[userId] && this.numberOfPostsCache[userId][filter]) {
-            return this.numberOfPostsCache[userId][filter];
+        if (this.numberOfPostsCache[userId] && this.numberOfPostsCache[userId][0] === filter) {
+            return this.numberOfPostsCache[userId][1];
         }
         const numberOfPosts = await this.postRepository.getPostsByUserTotal(userId, filter);
-        this.numberOfPostsCache[userId] = {};
-        this.numberOfPostsCache[userId][filter] = numberOfPosts;
+        this.numberOfPostsCache[userId] = [filter, numberOfPosts];
         return numberOfPosts;
     }
 
@@ -197,12 +196,11 @@ export default class PostManager {
     }
 
     async getUserCommentsTotal(userId: number, filter = ''): Promise<number> {
-        if (this.numberOfCommentsCache[userId] && this.numberOfCommentsCache[userId][filter]) {
-            return this.numberOfCommentsCache[userId][filter];
+        if (this.numberOfCommentsCache[userId] && this.numberOfCommentsCache[userId][0] === filter) {
+            return this.numberOfCommentsCache[userId][1];
         }
         const numberOfComments = await this.commentRepository.getUserCommentsTotal(userId, filter);
-        this.numberOfCommentsCache[userId] = {};
-        this.numberOfCommentsCache[userId][filter] = numberOfComments;
+        this.numberOfCommentsCache[userId] = [filter, numberOfComments];
         return numberOfComments;
     }
 
