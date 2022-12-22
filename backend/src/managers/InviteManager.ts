@@ -12,7 +12,7 @@ export default class InviteManager {
     private inviteRepository: InviteRepository;
     private parser: TheParser;
     private userManager: UserManager;
-    private invitesAvailabilityCacheLifeTime = 60 * 60 * 24 * 1000; // one day
+    private invitesAvailabilityCacheLifeTimeMs = 60 * 60 * 1000; // one hour
     private invitesAvailabilityCache = new Map<number, {
         ts: Date,
         value: InvitesAvailability
@@ -94,15 +94,14 @@ export default class InviteManager {
         return this.inviteRepository.deleteInvite(userId, code);
     }
 
-    async getInvitesAvailability(userId: number): Promise<InvitesAvailability> {
+    async getInvitesAvailability(userId: number, skipCache=false): Promise<InvitesAvailability> {
         if (
-          this.invitesAvailabilityCache[userId] &&
-          (this.invitesAvailabilityCache[userId].ts + this.invitesAvailabilityCacheLifeTime) > Date.now()
+            !skipCache &&
+            this.invitesAvailabilityCache[userId] &&
+            (this.invitesAvailabilityCache[userId].ts + this.invitesAvailabilityCacheLifeTimeMs) > Date.now()
         ) {
-            console.log(`CACHE HIT: ${this.invitesAvailabilityCache[userId].ts}`);
             return this.invitesAvailabilityCache[userId].value;
         }
-        console.log(`CACHE MISS`);
         const thisUserRestrictions = await this.userManager.getUserRestrictions(userId);
         if (!thisUserRestrictions || !thisUserRestrictions.canInvite) {
             return {
