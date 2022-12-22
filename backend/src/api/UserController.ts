@@ -90,7 +90,7 @@ export default class UserController {
             // if viewing own profile, get available invites number
             let numberOfInvitesAvailable = 0;
             if (profileInfo.id === userId) {
-                numberOfInvitesAvailable = (await this.inviteManager.invitesAvailability(profileInfo.id)).invitesLeft;
+                numberOfInvitesAvailable = (await this.inviteManager.getInvitesAvailability(profileInfo.id)).invitesLeft;
             }
 
             // FIXME: converter needed

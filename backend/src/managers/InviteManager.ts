@@ -12,6 +12,11 @@ export default class InviteManager {
     private inviteRepository: InviteRepository;
     private parser: TheParser;
     private userManager: UserManager;
+    private invitesAvailabilityCacheLifeTime = 60 * 60 * 24 * 1000; // one day
+    private invitesAvailabilityCache = new Map<number, {
+        ts: Date,
+        value: InvitesAvailability
+    }>();
 
     constructor(inviteRepository: InviteRepository, parser: TheParser, userManager: UserManager) {
         this.inviteRepository = inviteRepository;
@@ -76,6 +81,7 @@ export default class InviteManager {
         const code = crypto.randomBytes(16).toString('hex');
         await this.inviteRepository.createInvite(forUserId, code, reasonParseResult.text, true);
         const invite = await this.inviteRepository.getInviteWithIssuer(code);
+        delete this.invitesAvailabilityCache[forUserId];
         return this.mapInvite(invite);
     }
 
@@ -84,10 +90,19 @@ export default class InviteManager {
     }
 
     delete(userId: number, code: string) {
+        delete this.invitesAvailabilityCache[userId];
         return this.inviteRepository.deleteInvite(userId, code);
     }
 
-    async invitesAvailability(userId: number): Promise<InvitesAvailability> {
+    async getInvitesAvailability(userId: number): Promise<InvitesAvailability> {
+        if (
+          this.invitesAvailabilityCache[userId] &&
+          (this.invitesAvailabilityCache[userId].ts + this.invitesAvailabilityCacheLifeTime) > Date.now()
+        ) {
+            console.log(`CACHE HIT: ${this.invitesAvailabilityCache[userId].ts}`);
+            return this.invitesAvailabilityCache[userId].value;
+        }
+        console.log(`CACHE MISS`);
         const thisUserRestrictions = await this.userManager.getUserRestrictions(userId);
         if (!thisUserRestrictions || !thisUserRestrictions.canInvite) {
             return {
@@ -149,11 +164,16 @@ export default class InviteManager {
             daysLeftToNextAvailableInvite = Math.ceil((nextAvailableInviteTs - Date.now()) / msInTheDay);
         }
 
-        return {
+        const value = {
             invitesLeft,
             daysLeftToNextAvailableInvite,
             inviteWaitPeriodDays,
             invitesPerPeriod
         };
+        this.invitesAvailabilityCache[userId] = {
+            value,
+            ts: Date.now()
+        };
+        return value;
     }
 }

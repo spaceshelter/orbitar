@@ -27,7 +27,7 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
     const [pages, setPages] = useState(0);
     const [error, setError] = useState<string>();
     const [reloadIdx, setReloadIdx] = useState(0);
-    const [filter, setFilter] = useState(defaultFilter || '');
+    const [filter, setFilter] = useState(defaultFilter || null);
     const {search} = useLocation();
     const filterInputRef = useRef<HTMLInputElement>(null);
 
@@ -67,7 +67,7 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
     }, [search]);
 
     useEffect(() => {
-        api.userAPI.userComments(props.username, filter, page, perpage).then(result => {
+        api.userAPI.userComments(props.username, filter || '', page, perpage).then(result => {
             setCachedComments(result.comments);
             setCachedParentComments(result.parentComments);
             setError(undefined);

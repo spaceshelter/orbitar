@@ -56,6 +56,10 @@ export const UserPage = observer(() => {
             }
         };
 
+        const handleInvitesChange = () => {
+            refreshProfile();
+        };
+
         return (
             <div className={styles.container}>
                 <div className={styles.header}>
@@ -105,7 +109,7 @@ export const UserPage = observer(() => {
                     </>}
                     {isPosts && <UserProfilePosts username={user.username} />}
                     {isComments && <UserProfileComments username={user.username} />}
-                    {isInvites && <UserProfileInvites username={user.username} />}
+                    {isInvites && <UserProfileInvites username={user.username} onInvitesChange={handleInvitesChange} />}
                     {isKarma && <UserProfileKarma username={user.username} profile={profile} />}
                     {isSettings && <UserProfileSettings />}
                 </div>

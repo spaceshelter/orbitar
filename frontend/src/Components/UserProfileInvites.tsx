@@ -21,7 +21,8 @@ import classNames from 'classnames';
 import DateComponent from './DateComponent'; // Import css
 
 type UserProfileInvitesProps = {
-    username: string
+    username: string;
+    onInvitesChange: () => void;
 };
 
 export const UserProfileInvites = observer((props: UserProfileInvitesProps) => {
@@ -63,6 +64,7 @@ export const UserProfileInvites = observer((props: UserProfileInvitesProps) => {
             const result = await api.inviteAPI.create(reason);
             console.log('CREATE', result);
             forceRefresh();
+            props.onInvitesChange();
             // eslint-disable-next-line
         } catch (error: any) {
             console.log('CREATE ERR', error);
@@ -92,6 +94,7 @@ export const UserProfileInvites = observer((props: UserProfileInvitesProps) => {
             const result = await api.inviteAPI.delete(code);
             console.log('DELETE', result);
             forceRefresh();
+            props.onInvitesChange();
             // eslint-disable-next-line
         } catch (error: any) {
             console.log('DELETE ERR', error);

@@ -27,6 +27,9 @@ export default class PostManager {
     private translationManager: TranslationManager;
     private parser: TheParser;
 
+    private numberOfPostsCache: Record<number, Record<string, number> | undefined> = {};
+    private numberOfCommentsCache: Record<number, Record<string, number> | undefined> = {};
+
     constructor(
         bookmarkRepository: BookmarkRepository, commentRepository: CommentRepository, postRepository: PostRepository,
         feedManager: FeedManager, notificationManager: NotificationManager, siteManager: SiteManager, userManager: UserManager,
@@ -58,8 +61,14 @@ export default class PostManager {
         return this.postRepository.getPost(postId);
     }
 
-    getPostsByUserTotal(userId: number, filter: string): Promise<number> {
-        return this.postRepository.getPostsByUserTotal(userId, filter);
+    async getPostsByUserTotal(userId: number, filter: string): Promise<number> {
+        if (this.numberOfPostsCache[userId] && this.numberOfPostsCache[userId][filter]) {
+            return this.numberOfPostsCache[userId][filter];
+        }
+        const numberOfPosts = await this.postRepository.getPostsByUserTotal(userId, filter);
+        this.numberOfPostsCache[userId] = {};
+        this.numberOfPostsCache[userId][filter] = numberOfPosts;
+        return numberOfPosts;
     }
 
     async createPost(siteName: string, userId: number, title: string, content: string, format: ContentFormat): Promise<PostInfo> {
@@ -83,6 +92,8 @@ export default class PostManager {
         this.feedManager.postFanOut(postRaw.site_id, postRaw.post_id,
             postRaw.created_at, postRaw.created_at
         ).then().catch();
+
+        delete this.numberOfPostsCache[userId];
 
         return {
             id: postRaw.post_id,
@@ -185,8 +196,14 @@ export default class PostManager {
         return comments;
     }
 
-    getUserCommentsTotal(userId: number, filter = ''): Promise<number> {
-        return this.commentRepository.getUserCommentsTotal(userId, filter);
+    async getUserCommentsTotal(userId: number, filter = ''): Promise<number> {
+        if (this.numberOfCommentsCache[userId] && this.numberOfCommentsCache[userId][filter]) {
+            return this.numberOfCommentsCache[userId][filter];
+        }
+        const numberOfComments = await this.commentRepository.getUserCommentsTotal(userId, filter);
+        this.numberOfCommentsCache[userId] = {};
+        this.numberOfCommentsCache[userId][filter] = numberOfComments;
+        return numberOfComments;
     }
 
     async createComment(userId: number, postId: number, parentCommentId: number | undefined, content: string, format: ContentFormat): Promise<CommentInfoWithPostData> {
@@ -213,6 +230,7 @@ export default class PostManager {
         ).then().catch();
 
         const comments = await this.convertRawCommentsWithPostData(userId, [commentRaw], format);
+        delete this.numberOfCommentsCache[userId];
         return comments[0];
     }
 
