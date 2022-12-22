@@ -65,7 +65,6 @@ export const UserProfileInvites = observer((props: UserProfileInvitesProps) => {
             console.log('CREATE', result);
             forceRefresh();
             props.onInvitesChange();
-            // eslint-disable-next-line
         } catch (error: any) {
             console.log('CREATE ERR', error);
             toast.error(error?.message || 'Не удалось создать инвайт.');
@@ -81,7 +80,6 @@ export const UserProfileInvites = observer((props: UserProfileInvitesProps) => {
             setRegeneratedIdx(idx);
             console.log('REGENERATE', result);
             forceRefresh();
-            // eslint-disable-next-line
         } catch (error: any) {
             console.log('REGENERATE ERR', error);
             toast.error(error?.message || 'Не удалось создать инвайт.');
@@ -95,7 +93,6 @@ export const UserProfileInvites = observer((props: UserProfileInvitesProps) => {
             console.log('DELETE', result);
             forceRefresh();
             props.onInvitesChange();
-            // eslint-disable-next-line
         } catch (error: any) {
             console.log('DELETE ERR', error);
             toast.error(error?.message || 'Не удалось удалить инвайт.');
