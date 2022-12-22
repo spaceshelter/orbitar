@@ -22,6 +22,9 @@ type UserProfileResponse = {
     trialProgress?: number;
     daysLeftOnTrial?: number;
     trialApprovers?: VoteListItemEntity[];
+    numberOfPosts: number;
+    numberOfComments: number;
+    numberOfInvitesAvailable?: number;
 };
 type UserProfilePostsRequest = {
     username: string;

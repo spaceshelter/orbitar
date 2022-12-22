@@ -2,14 +2,11 @@ import React, {useState} from 'react';
 import styles from './Topbar.module.scss';
 import {Link, useLocation} from 'react-router-dom';
 import {useAppState} from '../AppState/AppState';
-import {useTheme} from '../Theme/ThemeProvider';
 import {ReactComponent as PostIcon} from '../Assets/post.svg';
 import {ReactComponent as MonsterIcon} from '../Assets/monster.svg';
 import {ReactComponent as HotIcon} from '../Assets/hot.svg';
 import {ReactComponent as NotificationIcon} from '../Assets/notification.svg';
 import {ReactComponent as ProfileIcon} from '../Assets/profile.svg';
-import {ReactComponent as DarkIcon} from '../Assets/theme_dark.svg';
-import {ReactComponent as LightIcon} from '../Assets/theme_light.svg';
 import {ReactComponent as SearchIcon} from '../Assets/search.svg';
 import NotificationsPopup from './NotificationsPopup';
 import {Hamburger} from './Hamburger';
@@ -24,25 +21,11 @@ type TopbarProps = {
 
 export const Topbar = observer((props: TopbarProps) => {
     const {userInfo} = useAppState();
-    const {theme, setTheme} = useTheme();
     const [showNotifications, setShowNotifications] = useState(false);
 
     if (!userInfo) {
         return <></>;
     }
-
-    const toggleTheme = (e: React.MouseEvent) => {
-        e.preventDefault();
-        if (theme === 'dark') {
-            setTheme('light');
-        }
-        else {
-            if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
-                if (theme === 'light') { setTheme('debugTheme'); return;  }
-            }
-            setTheme('dark');
-        }
-    };
 
     const menuToggle = () => {
         props.onMenuToggle();
@@ -74,7 +57,6 @@ export const Topbar = observer((props: TopbarProps) => {
 
                 <div className={styles.right}>
                     <SearchButton/>
-                    <button onClick={toggleTheme}>{theme === 'dark' ? <LightIcon /> : <DarkIcon />}</button>
                     <WatchButton />
                     <NotificationsButton onClick={handleNotificationsToggle} />
                     <Link to={'/profile'}><ProfileIcon /></Link>

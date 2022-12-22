@@ -84,6 +84,14 @@ export default class UserController {
             const trialApprovers = await this.userManager.getTrialApprovers(profileInfo.id);
             const invitedReason = await this.inviteManager.getInviteReason(profileInfo.id);
             const trialProgress = await this.userManager.tryEndTrial(profileInfo.id, false);
+            const numberOfPosts = await this.postManager.getPostsByUserTotal(profileInfo.id, '') || 0;
+            const numberOfComments = await this.postManager.getUserCommentsTotal(profileInfo.id, '') || 0;
+
+            // if viewing own profile, get available invites number
+            let numberOfInvitesAvailable = 0;
+            if (profileInfo.id === userId) {
+                numberOfInvitesAvailable = (await this.inviteManager.getInvitesAvailability(profileInfo.id)).invitesLeft;
+            }
 
             // FIXME: converter needed
             const profile: UserProfileEntity = {
@@ -107,7 +115,10 @@ export default class UserController {
                 invites: enrichedInvites,
                 trialApprovers: trialApprovers.length && trialApprovers,
                 invitedReason,
-                trialProgress
+                trialProgress,
+                numberOfPosts,
+                numberOfComments,
+                numberOfInvitesAvailable
             });
         } catch (error) {
             this.logger.error('Could not get user profile', {username});

@@ -16,7 +16,7 @@ export default function UserProfilePosts(props: UserProfilePostsProps) {
     const perpage = 20;
     const page = parseInt(searchParams.get('page') || '1');
     const defaultFilter = searchParams.get('filter') as string;
-    const [filter, setFilter] = useState(defaultFilter || '');
+    const [filter, setFilter] = useState(defaultFilter || null);
     const {search} = useLocation();
     const filterInputRef = useRef<HTMLInputElement>(null);
 
@@ -44,7 +44,7 @@ export default function UserProfilePosts(props: UserProfilePostsProps) {
       }
     }, [search]);
 
-  const { posts, loading, pages, error, updatePost } = useFeed(props.username, 'user-profile', page, perpage, undefined, undefined, filter);
+  const { posts, loading, pages, error, updatePost } = useFeed(props.username, 'user-profile', page, perpage, undefined, undefined, filter || '');
     useEffect(() => {
         window.scrollTo({ top: 0 });
     }, [page]);
