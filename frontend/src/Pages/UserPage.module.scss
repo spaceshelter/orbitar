@@ -70,26 +70,3 @@
 .name {
     font-size: 25px;
 }
-
-.logout,
-.theme {
-    margin-top: 80px;
-    background: var(--dim1);
-    color: var(--fgSoft);
-    border: none;
-    display: flex;
-    padding: 8px 16px;
-    border-radius: 4px;
-    font-weight: bold;
-    align-items: center;
-    gap: 8px;
-    fill: var(--fgSoft);
-
-    &:hover{
-       fill: var(--fg);
-       color: var(--fg);
-       background: var(--dim3);
-    }
-
-}
-
