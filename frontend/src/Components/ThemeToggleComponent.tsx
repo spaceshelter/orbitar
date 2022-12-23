@@ -1,5 +1,5 @@
 import buttonStyles from '../Components/Buttons.module.scss';
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {ReactComponent as DarkIcon} from '../Assets/theme_dark.svg';
 import {ReactComponent as LightIcon} from '../Assets/theme_light.svg';
 import {useTheme} from '../Theme/ThemeProvider';
@@ -13,15 +13,13 @@ interface ThemeToggleComponentProps {
 
 export default function ThemeToggleComponent(props: ThemeToggleComponentProps) {
   const {theme, setTheme} = useTheme();
-  let initialTheme: string;
+  const [initialTheme] = useState(theme);
 
   useEffect(() => {
     if (theme) {
-      initialTheme = theme;
       return () => {
         if (props.resetOnOnmount) {
-          setTheme(initialTheme);
-          console.log(`Resetting to `, initialTheme);
+          setTheme(initialTheme || 'light');
         }
       };
     }
