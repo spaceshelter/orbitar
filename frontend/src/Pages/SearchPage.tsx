@@ -23,7 +23,7 @@ function SearchResult(props: {
     return <>
         <div className={styles.stats}>
             {!total.value ? 'Ничего не найдено' :
-                <>{total.value} найдено {total.value > 250 && <>(250 показано)</>}</>}
+                <>{total.value.toLocaleString()} найдено {total.value > 250 && <>(250 показано)</>}</>}
         </div>
 
         {results.map((resultItem: SearchResultEntity) => {
