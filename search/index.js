@@ -67,7 +67,7 @@ async function main() {
         comment_post_id: entry.comment_post_id,
         gold: entry.gold,
         rating: entry.rating,
-        title: stripHtml(entry.title),
+        title: stripHtml(entry.title).result,
         source: stripHtml(entry.source).result
       });
     }
