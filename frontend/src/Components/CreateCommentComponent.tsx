@@ -18,6 +18,7 @@ import SlowMode from './SlowMode';
 import {observer} from 'mobx-react-lite';
 import TextareaAutosize from 'react-textarea-autosize';
 import {useDebouncedCallback} from 'use-debounce';
+import ThemeToggleComponent from './ThemeToggleComponent';
 
 interface CreateCommentProps {
     open: boolean;
@@ -269,6 +270,9 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 :  <div className={classNames(commentStyles.content, styles.preview, postStyles.preview)} onClick={handlePreview}><ContentComponent content={previewing} /></div>
             }
             <div className={styles.final}>
+                {previewing && (
+                  <ThemeToggleComponent buttonLabel='Превью с другой темой' resetOnOnmount={true} />
+                )}
                 <button disabled={isPosting || !answerText} className={styles.buttonPreview} onClick={handlePreview}>{(previewing === null) ? 'Превью' : 'Редактор'}</button>
                 <button disabled={isPosting || !answerText} className={styles.buttonSend} onClick={handleAnswer}><SendIcon /></button>
                 {mediaUploaderOpen && <MediaUploader onSuccess={handleMediaUpload} onCancel={handleMediaUploadCancel} />}

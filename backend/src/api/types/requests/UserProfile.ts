@@ -11,6 +11,9 @@ export type UserProfileResponse = {
     invitedReason? : string;
     trialApprovers?: VoteListItemEntity[];
     trialProgress?: number;
+    numberOfPosts: number;
+    numberOfComments: number;
+    numberOfInvitesAvailable?: number;
 
     invites: UserProfileEntity[];
 };

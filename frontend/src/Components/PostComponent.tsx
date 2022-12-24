@@ -26,6 +26,8 @@ interface PostComponentProps {
     onChange?: (id: number, post: Partial<PostInfo>) => void;
     autoCut?: boolean;
     onEdit?: (post: PostInfo, text: string, title?: string) => Promise<PostInfo | undefined>;
+    dangerousHtmlTitle?: boolean;
+    hideRating?: boolean;
 }
 
 export default function PostComponent(props: PostComponentProps) {
@@ -150,7 +152,9 @@ export default function PostComponent(props: PostComponentProps) {
                         (showHistory
                             ? <HistoryComponent initial={{ title, content, date: created }} history={{ id: props.post.id, type: 'post' }} onClose={toggleHistory} />
                             : <>
-                                    {title && <div className={styles.title}><PostLink post={props.post}>{title}</PostLink></div>}
+                                    {title && <div className={styles.title}><PostLink post={props.post}>{
+                                        props.dangerousHtmlTitle ? <span dangerouslySetInnerHTML={{__html: title}} /> : title
+                                    }</PostLink></div>}
                                     <div className={styles.content}>
                                         <ContentComponent className={styles.content} content={content} autoCut={props.autoCut} lowRating={rating <= Conf.POST_LOW_RATING_THRESHOLD} />
                                     </div>
@@ -166,9 +170,9 @@ export default function PostComponent(props: PostComponentProps) {
                 </div>
             </div>
             <div className={styles.controls}>
-                <div className={styles.control}>
+                {!props.hideRating && <div className={styles.control}>
                     <RatingSwitch type='post' id={id} rating={{ vote, value: rating }} onVote={handleVote} />
-                </div>
+                </div>}
                 <div className={styles.control}><CommentsCount post={props.post} /></div>
                 {/*<div className={styles.control}><button disabled={true} onClick={toggleBookmark} className={bookmark ? styles.active : ''}><BookmarkIcon /><span className={styles.label}></span></button></div>*/}
                 {props.post.canEdit && props.onEdit && <div className={styles.control}><button onClick={handleEdit}><EditIcon /></button></div>}

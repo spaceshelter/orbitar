@@ -36,6 +36,7 @@
     "image-size": "^1.0.2"
   },
   "dependencies": {
+    "@elastic/elasticsearch": "^7.17.0",
     "typescript": "^4.6.3",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
