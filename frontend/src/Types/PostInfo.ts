@@ -1,4 +1,4 @@
-import {UserInfo} from './UserInfo';
+import {UserBaseInfo} from './UserInfo';
 import {EditFlag} from '../API/PostAPI';
 
 export type PostLinkInfo = {
@@ -9,7 +9,7 @@ export type PostLinkInfo = {
 export interface PostInfo extends PostLinkInfo {
     id: number;
     site: string;
-    author: UserInfo;
+    author: UserBaseInfo;
     created: Date;
     title?: string;
     content: string;
@@ -27,7 +27,7 @@ export interface PostInfo extends PostLinkInfo {
 export interface CommentInfo {
     id: number;
     created: Date;
-    author: UserInfo;
+    author: UserBaseInfo;
     deleted?: boolean;
     content: string;
     rating: number;

@@ -17,6 +17,10 @@ on:
         description: 'Restore DB?'
         type: boolean
         default: false
+      reindex-elastic:
+        description: 'Reindex elasticsearch?'
+        type: boolean
+        default: false
       flush-redis:
         description: 'Clear redis?'
         type: boolean
@@ -49,6 +53,9 @@ jobs:
             fi
             if [ "${{ github.event.inputs.flush-redis }}" = "true" ]; then
               echo "::warning::Flushing redis!"
+            fi
+            if [ "${{ github.event.inputs.reindex-elastic }}" = "true" ]; then
+              echo "::warning::Reindexing elasticsearch!"
             fi
             if [ "${{ github.event.inputs.build-flag }}" != "None" ]; then
               echo "::notice::Build flag: ${{ github.event.inputs.build-flag }}"
@@ -122,6 +129,14 @@ jobs:
           docker-compose -f docker-compose.ssl.local.yml exec -T mysql /usr/bin/mysql \
             -u root --password=$MYSQL_ROOT_PASSWORD --default-character-set=utf8mb4 \
             < ${{ steps.get-db.outputs.db-dump-file }}
+
+      - name: Reindex ElasticSearch
+        if: github.event.inputs.reindex-elastic == 'true'
+        working-directory: /orbitar
+        run: |
+          docker-compose -f docker-compose.ssl.local.yml up -d mysql --wait
+          echo "update orbitar_db.content_source set indexed = 0;" | \
+            docker-compose -f docker-compose.ssl.local.yml exec -T mysql /usr/bin/mysql -u root --password=$MYSQL_ROOT_PASSWORD
 
       - name: Flush redis
         if: github.event.inputs.flush-redis == 'true'

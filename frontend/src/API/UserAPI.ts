@@ -22,9 +22,13 @@ type UserProfileResponse = {
     trialProgress?: number;
     daysLeftOnTrial?: number;
     trialApprovers?: VoteListItemEntity[];
+    numberOfPosts: number;
+    numberOfComments: number;
+    numberOfInvitesAvailable?: number;
 };
 type UserProfilePostsRequest = {
     username: string;
+    filter?: string;
     format?: ContentFormat;
     page?: number;
     perpage?: number;
@@ -43,6 +47,7 @@ type UserProfilePostsResult = {
 type UserProfileCommentsRequest = {
     username: string;
     format?: ContentFormat;
+    filter?: string;
     page?: number;
     perpage?: number;
 };
@@ -106,9 +111,9 @@ export default class UserAPI {
         return this.api.request<UseProfileRequest, UserProfileResponse>('/user/profile', {username});
     }
 
-    async userPosts(username: string, page: number, perpage: number): Promise<UserProfilePostsResult> {
+    async userPosts(username: string, filter: string | undefined, page: number, perpage: number): Promise<UserProfilePostsResult> {
         const result = await this.api.request<UserProfilePostsRequest, UserProfilePostsResponse>('/user/posts', {
-            username, format: 'html', page, perpage
+            username, format: 'html', page, perpage, filter
         });
         return {
             posts: this.postAPIHelper.fixPosts(result.posts, result.users),
@@ -116,9 +121,9 @@ export default class UserAPI {
         };
     }
 
-    async userComments(username: string, page: number, perpage: number): Promise<UserProfileCommentsResult> {
+    async userComments(username: string, filter: string, page: number, perpage: number): Promise<UserProfileCommentsResult> {
         const result = await this.api.request<UserProfileCommentsRequest, UserProfileCommentsResponse>('/user/comments', {
-            username, format: 'html', page, perpage
+            username, format: 'html', page, perpage, filter
         });
         return {
             comments: this.postAPIHelper.fixComments(result.comments, result.users),

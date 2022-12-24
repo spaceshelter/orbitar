@@ -5,6 +5,7 @@ import {UserEntity} from '../entities/UserEntity';
 export type UserPostsRequest = {
     username: string;
     format: ContentFormat;
+    filter?: string;
     page?: number;
     perpage?: number;
 };

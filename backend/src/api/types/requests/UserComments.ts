@@ -5,6 +5,7 @@ import {CommentEntity} from '../entities/CommentEntity';
 export type UserCommentsRequest = {
     username: string;
     format: ContentFormat;
+    filter?: string;
     page?: number;
     perpage?: number;
 };

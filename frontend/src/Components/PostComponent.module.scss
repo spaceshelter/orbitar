@@ -2,6 +2,10 @@
     margin-bottom: 64px;
 }
 
+:global(.searchResults) .post {
+  margin-bottom: 32px;
+}
+
 .title, .title a {
     color: var(--fgHard);
     font-size: 24px;

@@ -41,6 +41,8 @@ import WebPushRepository from './db/repositories/WebPushRepository';
 import {Enricher} from './api/utils/Enricher';
 import TranslationManager from './managers/TranslationManager';
 import TranslationRepository from './db/repositories/TranslationRepository';
+import SearchController from './api/SearchController';
+import SearchManager from './managers/SearchManager';
 
 const app = express();
 
@@ -110,6 +112,7 @@ const feedManager = new FeedManager(bookmarkRepository, postRepository, userRepo
 const translationManager = new TranslationManager(translationRepository, postRepository, theParser, logger.child({ service: 'TRANSL' }));
 const postManager = new PostManager(bookmarkRepository, commentRepository, postRepository, feedManager, notificationManager, siteManager, userManager, translationManager, theParser);
 const voteManager = new VoteManager(voteRepository, postManager, userManager, redis.client);
+const searchManager = new SearchManager(userManager, siteManager, logger.child({ service: 'SEARCH' }));
 
 const apiEnricher = new Enricher(siteManager, userManager);
 
@@ -123,6 +126,7 @@ const requests = [
     new FeedController(apiEnricher, feedManager, siteManager, userManager, postManager, logger.child({ service: 'FEED' })),
     new SiteController(apiEnricher, feedManager, siteManager, userManager, logger.child( { service: 'SITE' })),
     new NotificationsController(notificationManager, userManager, logger.child({ service: 'NOTIFY' })),
+    new SearchController(userManager, searchManager, logger.child({ service: 'SEARCH' })),
 ];
 
 const filterLog = winston.format((info) => {

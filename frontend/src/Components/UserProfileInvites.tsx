@@ -21,7 +21,8 @@ import classNames from 'classnames';
 import DateComponent from './DateComponent'; // Import css
 
 type UserProfileInvitesProps = {
-    username: string
+    username: string;
+    onInvitesChange: () => void;
 };
 
 export const UserProfileInvites = observer((props: UserProfileInvitesProps) => {
@@ -35,7 +36,7 @@ export const UserProfileInvites = observer((props: UserProfileInvitesProps) => {
     const isMyProfile = props.username === useAppState().userInfo?.username;
     const location = useLocation();
 
-    const usernameFilter = location.hash.length > 1 && location.hash.substring(1) || undefined;
+    const usernameFilter = (location.hash.length > 1 && location.hash.substring(1)) || undefined;
 
     const [refreshCount, setRefreshCount] = useState(0);
     const [regeneratedIdx, setRegeneratedIdx] = useState<number | undefined>(undefined);
@@ -63,6 +64,7 @@ export const UserProfileInvites = observer((props: UserProfileInvitesProps) => {
             const result = await api.inviteAPI.create(reason);
             console.log('CREATE', result);
             forceRefresh();
+            props.onInvitesChange();
         } catch (error: any) {
             console.log('CREATE ERR', error);
             toast.error(error?.message || 'Не удалось создать инвайт.');
@@ -90,6 +92,7 @@ export const UserProfileInvites = observer((props: UserProfileInvitesProps) => {
             const result = await api.inviteAPI.delete(code);
             console.log('DELETE', result);
             forceRefresh();
+            props.onInvitesChange();
         } catch (error: any) {
             console.log('DELETE ERR', error);
             toast.error(error?.message || 'Не удалось удалить инвайт.');
