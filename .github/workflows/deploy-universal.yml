@@ -133,6 +133,8 @@ jobs:
       - name: Reindex ElasticSearch
         if: github.event.inputs.reindex-elastic == 'true'
         working-directory: /orbitar
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
         run: |
           docker-compose -f docker-compose.ssl.local.yml up -d mysql --wait
           echo "update orbitar_db.content_source set indexed = 0;" | \
