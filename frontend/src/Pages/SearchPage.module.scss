@@ -5,15 +5,6 @@
   @media only screen and (min-width: 1180px) {
     & {
       margin-top: -64px;
-      input[type='submit'],
-      input[type='search'], {
-        z-index: 100;
-      }
-    }
-
-    .stats {
-      z-index: 100;
-      position: relative;
     }
   }
 
@@ -22,9 +13,7 @@
     margin-bottom: 16px;
   }
 
-  input[type='text'],
-  input[type='search']
-  {
+  input[type='text'] {
     width: 100%;
     display: block;
     box-sizing: border-box;
