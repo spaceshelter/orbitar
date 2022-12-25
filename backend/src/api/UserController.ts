@@ -9,7 +9,9 @@ import {
     UserProfileResponse,
     UserRestrictionsResponse,
     UserSaveBioRequest,
-    UserSaveBioResponse, UserSaveGenderRequest, UserSaveGenderResponse
+    UserSaveBioResponse,
+    UserSaveGenderRequest,
+    UserSaveGenderResponse
 } from './types/requests/UserProfile';
 import {UserPostsRequest, UserPostsResponse} from './types/requests/UserPosts';
 import PostManager from '../managers/PostManager';
@@ -65,14 +67,19 @@ export default class UserController {
             gender: Joi.number().required().allow(UserGender.fluid, UserGender.he, UserGender.she)
         });
 
+        const settingsSaveLimiter = rateLimit({
+            windowMs: 1000 * 60,
+            max: 10
+        });
+
         this.router.post('/user/profile', validate(profileSchema), (req, res) => this.profile(req, res));
         this.router.post('/user/posts', userCommentsAndPostsLimiter, validate(postsOrCommentsSchema), (req, res) => this.posts(req, res));
         this.router.post('/user/comments', userCommentsAndPostsLimiter, validate(postsOrCommentsSchema), (req, res) => this.comments(req, res));
         this.router.post('/user/karma', validate(profileSchema), (req, res) => this.karma(req, res));
         this.router.post('/user/clearCache', validate(profileSchema), (req, res) => this.clearCache(req, res));
         this.router.post('/user/restrictions', validate(profileSchema), (req, res) => this.restrictions(req, res));
-        this.router.post('/user/savebio', validate(bioSchema), (req, res) => this.saveBio(req, res));
-        this.router.post('/user/savegender', validate(genderSchema), (req, res) => this.saveGender(req, res));
+        this.router.post('/user/savebio', settingsSaveLimiter, validate(bioSchema), (req, res) => this.saveBio(req, res));
+        this.router.post('/user/savegender', settingsSaveLimiter, validate(genderSchema), (req, res) => this.saveGender(req, res));
     }
 
     async profile(request: APIRequest<UserProfileRequest>, response: APIResponse<UserProfileResponse>) {
