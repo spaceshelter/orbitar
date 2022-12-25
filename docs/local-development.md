@@ -71,13 +71,13 @@
     ```
     npx web-push generate-vapid-keys
     ```
-3. Сгенерированные ключи прописать в `backend/.env.local` и указать ваш контактный адрес (email или url):
+3. Сгенерированные ключи прописать в `backend/.env.development` и указать ваш контактный адрес (email или url):
     ```
     VAPID_PUBLIC_KEY=<Public Key>
     VAPID_PRIVATE_KEY=<Private Key>
     VAPID_CONTACT=<email@email.com>
     ```
-4. В `frontend/.env.local` добавить публичный ключ:
+4. В `frontend/.env.development` добавить публичный ключ:
    ```
    REACT_APP_VAPID_PUBLIC_KEY=<Public Key>
    ```
