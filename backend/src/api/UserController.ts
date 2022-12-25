@@ -91,7 +91,7 @@ export default class UserController {
         const {username} = request.body;
 
         try {
-            const profileInfo = await this.userManager.getByUsernameWithVoteAndBio(username, userId);
+            const profileInfo = await this.userManager.getByUsernameWithVote(username, userId);
 
             if (!profileInfo) {
                 return response.error(ERROR_CODES.NOT_FOUND, 'User not found', 404);

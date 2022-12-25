@@ -48,6 +48,7 @@ export default class StatusController {
             });
         }
         catch (err) {
+            this.logger.error(err);
             return response.error('error', 'Unknown error', 500);
         }
     }

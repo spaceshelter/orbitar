@@ -14,7 +14,7 @@ import {CommentBaseInfo} from './types/CommentInfo';
 import webpush from 'web-push';
 import {SiteConfig, VapidConfig} from '../config';
 import WebPushRepository from '../db/repositories/WebPushRepository';
-
+import {UserCache} from './UserCache';
 
 
 export default class NotificationManager {
@@ -24,13 +24,14 @@ export default class NotificationManager {
     private readonly siteRepository: SiteRepository;
     private readonly userRepository: UserRepository;
     private readonly webPushRepository: WebPushRepository;
+    private readonly userCache: UserCache;
     private couldSendWebPush = false;
     private siteConfig: SiteConfig;
 
     constructor(
         commentRepository: CommentRepository, notificationsRepository: NotificationsRepository,
         postRepository: PostRepository, siteRepository: SiteRepository,
-        userRepository: UserRepository, webPushRepository: WebPushRepository,
+        userCache: UserCache, webPushRepository: WebPushRepository,
         vapidConfig: VapidConfig,
         siteConfig: SiteConfig
     ) {
@@ -38,7 +39,7 @@ export default class NotificationManager {
         this.notificationsRepository = notificationsRepository;
         this.postRepository = postRepository;
         this.siteRepository = siteRepository;
-        this.userRepository = userRepository;
+        this.userCache = userCache;
         this.webPushRepository = webPushRepository;
         this.siteConfig = siteConfig;
 
@@ -170,12 +171,12 @@ export default class NotificationManager {
             return false;
         }
 
-        const user = await this.userRepository.getUserByUsername(username);
+        const user = await this.userCache.getByUsername(username);
         if (!user) {
             return false;
         }
 
-        if (user.user_id === byUserId) {
+        if (user.id === byUserId) {
             return false;
         }
 
@@ -189,7 +190,7 @@ export default class NotificationManager {
             }
         };
 
-        await this.sendNotification(user.user_id, notification);
+        await this.sendNotification(user.id, notification);
 
         return true;
     }

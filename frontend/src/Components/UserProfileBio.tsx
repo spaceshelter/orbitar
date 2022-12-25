@@ -7,14 +7,14 @@ import {ReactComponent as EditIcon} from '../Assets/edit.svg';
 import {useAPI} from '../AppState/AppState';
 import {toast} from 'react-toastify';
 
-type UserProfileCommentsProps = {
+type UserProfileBioProps = {
   username: string;
   bio_source: string;
   bio_html: string;
   mine: boolean;
 };
 
-export default function UserProfileBio(props: UserProfileCommentsProps) {
+export default function UserProfileBio(props: UserProfileBioProps) {
   const [editing, setEditing] = useState(false);
   const [source, setSource] = useState(props.bio_source);
   const [html, setHtml] = useState(props.bio_html);
