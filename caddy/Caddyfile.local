@@ -1,3 +1,7 @@
+{
+  debug
+}
+
 http://{$SERVER_DOMAIN} {
   # CORS headers for *.svg
   @cors {
@@ -41,6 +45,21 @@ http://*.{$SERVER_DOMAIN} {
   redir / http://{$SERVER_DOMAIN}/s/{http.request.host.labels.2}
 }
 
-http://api.{$SERVER_DOMAIN} {
+http://{$API_DOMAIN} {
+  @cors {
+    header Origin http://{$SERVER_DOMAIN}
+  }
+  header @cors {
+    Access-Control-Allow-Origin .* "{header.Origin}"
+    X-Cors-Matched YES
+    Vary Origin
+  }
+
+  header {
+    Access-Control-Allow-Origin * "http://{$SERVER_DOMAIN}"
+    Vary Origin
+    ?X-Cors-Matched NO
+  }
+
   reverse_proxy http://backend:5001
 }

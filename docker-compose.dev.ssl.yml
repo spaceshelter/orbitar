@@ -1,0 +1,20 @@
+services:
+  caddy:
+    ports:
+      - "443:443"
+    volumes:
+      - $PWD/caddy/Caddyfile.ssl.dev:/etc/caddy/Caddyfile:ro
+      - $PWD/caddy/certs:/certs:ro
+
+  mysql:
+    ports:
+      - "3306:3306"
+      - "33060:33060"
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  feed:
+    ports:
+      - "6767:6767"

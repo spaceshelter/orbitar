@@ -3,7 +3,6 @@ version: '3.7'
 services:
   caddy:
     volumes:
-      - $PWD/caddy/Caddyfile.local:/etc/caddy/Caddyfile
       - frontend_build:/srv
     depends_on:
       - backend

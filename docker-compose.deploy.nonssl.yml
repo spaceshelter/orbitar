@@ -1,0 +1,8 @@
+version: '3.7'
+
+services:
+  caddy:
+    ports:
+      - "80:80"
+    volumes:
+      - $PWD/caddy/Caddyfile.local:/etc/caddy/Caddyfile

@@ -1,0 +1,9 @@
+version: '3.7'
+
+services:
+  caddy:
+    ports:
+      - "443:443"
+    volumes:
+      - $PWD/caddy/Caddyfile.ssl.local:/etc/caddy/Caddyfile
+      - $PWD/caddy/certs:/certs:ro
