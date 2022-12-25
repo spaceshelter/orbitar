@@ -29,8 +29,8 @@ export default class SiteAPIHelper {
         }
     }
 
-    async list(page: number, perpage: number): Promise<SiteWithUserInfo[]> {
-        const result = await this.api.list(page, perpage);
+    async list(includeMain: boolean, page: number, perpage: number): Promise<SiteWithUserInfo[]> {
+        const result = await this.api.list(includeMain, page, perpage);
         return result.sites;
     }
 }

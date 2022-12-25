@@ -16,6 +16,7 @@ export type PostEntity = {
     author: number;
     created: string;
     title?: string;
+    main: boolean,
     content: string;
     rating: number;
     comments: number;
@@ -46,6 +47,7 @@ export type CommentEntity = {
 type PostCreateRequest = {
     site: string;
     title?: string;
+    main: boolean;
     content: string;
     format?: ContentFormat;
 };
@@ -137,6 +139,8 @@ type PostEditRequest = {
     id: number;
     title: string;
     content: string;
+    site: string;
+    main: boolean;
     format?: ContentFormat;
 };
 type PostEditResponse = {
@@ -209,10 +213,11 @@ export default class PostAPI {
         this.api = api;
     }
 
-    create(site: string, title: string | undefined, content: string): Promise<PostCreateResponse> {
+    create(site: string, title: string | undefined, content: string, main: boolean): Promise<PostCreateResponse> {
         return this.api.request<PostCreateRequest, PostCreateResponse>('/post/create', {
             site,
             title,
+            main,
             content
         });
     }
@@ -281,11 +286,13 @@ export default class PostAPI {
         });
     }
 
-    editPost(postId: number, title: string, content: string): Promise<PostEditResponse> {
+    editPost(postId: number, title: string, content: string, site: string, main: boolean): Promise<PostEditResponse> {
         return this.api.request<PostEditRequest, PostEditResponse>('/post/edit', {
             id: postId,
             title,
-            content
+            content,
+            site,
+            main
         });
     }
 

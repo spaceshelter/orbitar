@@ -8,6 +8,7 @@ export type PostBaseInfo = {
 };
 
 export type PostInfo = PostBaseInfo & {
+    main: boolean;
     author: number;
     created: Date;
     editFlag?: EditFlag;

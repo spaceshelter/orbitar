@@ -44,7 +44,7 @@ struct Query {
 struct QueryResponse {
     post_ids: Vec<PostId>,
     total: usize,
-    cache_is_empty: bool
+    cache_is_empty: bool,
 }
 
 
@@ -88,12 +88,15 @@ fn main() {
     });
 
     server.post("/remove", middleware! { |request|
-        let batch: Batch = request.json_as().unwrap();
+        let batches: Vec<Batch> = request.json_as().unwrap();
+        println!("batches: {:?}", batches);
         {
             let mut map = RWLOCK.write().unwrap();
-            if let Some(index) = map.get_mut(&batch.subsite) {
-                for post in batch.posts {
-                    index.remove(&(post.ts, post.id));
+            for batch in batches {
+                if let Some(index) = map.get_mut(&batch.subsite) {
+                    for post in batch.posts {
+                        index.remove(&(post.ts, post.id));
+                    }
                 }
             }
         }

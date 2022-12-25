@@ -137,12 +137,31 @@ export default class UserRepository {
         });
     }
 
-    async getUserMainSubscriptions(userId: number): Promise<UserSiteRaw[]> {
-        return await this.db.fetchAll<UserSiteRaw>(`select * from user_sites where user_id=:user_id and feed_main=1`, { user_id: userId });
+    getUserMainSubscriptions(userId: number): Promise<UserSiteRaw[]> {
+        return this.db.fetchAll<UserSiteRaw>(`select * from user_sites where user_id=:user_id and feed_main=1`, { user_id: userId });
     }
 
-    async getMainSubscriptionsUsers(siteId: number): Promise<{ user_id: number }[]> {
-        return await this.db.fetchAll<{ user_id: number }>('select user_id from user_sites where site_id=:site_id and feed_main=1', { site_id: siteId });
+    getMainSubscriptionsUsers(siteId: number[]): Promise<{ user_id: number }[]> {
+        if (!siteId.length) {
+            return Promise.resolve([]);
+        }
+        return this.db.fetchAll<{ user_id: number }>('select user_id from user_sites where site_id in (:site_id) and feed_main=1', { site_id: siteId });
+    }
+
+    getOldSubscriptionUsers(oldSiteIds: number[], newSiteIds:number[]): Promise<{ user_id: number }[]> {
+        if (oldSiteIds.length === 0) {
+            return Promise.resolve([]);
+        }
+        return this.db.fetchAll<{ user_id: number }>(`
+          select user_id
+            from user_sites
+            where site_id in (:old_site_ids)
+              and user_id not in (select user_id from user_sites where site_id in (:new_site_ids) and feed_main=1)
+              and feed_main=1
+        `, {
+            old_site_ids: oldSiteIds,
+            new_site_ids: (newSiteIds.length ? newSiteIds : [-1])
+        });
     }
 
     async getUserUnreadComments(forUserId: number): Promise<number> {
@@ -226,5 +245,12 @@ export default class UserRepository {
             return FeedSorting.postCommentedAt;
         }
         return res.feed_sorting as FeedSorting;
+    }
+
+    async isSubscribedToSite(userId: number, siteId: number) {
+        const res = await this.db.fetchOne<{ cnt: string }>(`
+            select count(*) as cnt from user_sites where user_id = :user_id and site_id = :site_id and feed_main = 1
+        `, {user_id: userId, site_id: siteId});
+        return parseInt(res.cnt) > 0;
     }
 }

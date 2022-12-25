@@ -110,7 +110,7 @@ export default class SiteRepository {
         });
     }
 
-    async getAllSitesWithUserInfo(forUserId: number, page: number, perpage: number): Promise<SiteWithUserInfoRaw[]> {
+    async getAllSitesWithUserInfo(forUserId: number, includeMain: boolean, page: number, perpage: number): Promise<SiteWithUserInfoRaw[]> {
         const limitFrom = (page - 1) * perpage;
 
         return await this.db.fetchAll<SiteWithUserInfoRaw>(`
@@ -121,8 +121,9 @@ export default class SiteRepository {
                 from sites s 
                     left join user_sites u on (u.site_id = s.site_id and u.user_id = :forUserId)
                 where
-                    s.site_id <> 1
+                    ${includeMain ? '1' : 's.site_id <> 1'}
                 order by
+                    s.site_id = 1 desc,
                     s.subscribers desc
                 limit
                     :limitFrom, :limit 

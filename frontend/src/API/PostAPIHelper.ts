@@ -175,8 +175,8 @@ export default class PostAPIHelper {
         };
     }
 
-    async editPost(postId: number, title: string, content: string): Promise<PostEditResult> {
-        const response = await this.postAPI.editPost(postId, title, content);
+    async editPost(postId: number, title: string, content: string, site: string, main: boolean): Promise<PostEditResult> {
+        const response = await this.postAPI.editPost(postId, title, content, site, main);
 
         const [post] = this.fixPosts([response.post], response.users);
 

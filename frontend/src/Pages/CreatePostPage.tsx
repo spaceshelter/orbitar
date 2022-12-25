@@ -1,26 +1,25 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect} from 'react';
 import styles from './CreatePostPage.module.css';
 import createCommentStyles from '../Components/CommentComponent.module.scss';
 import {useAPI, useAppState} from '../AppState/AppState';
 import {useNavigate} from 'react-router-dom';
-import CreateCommentComponent from '../Components/CreateCommentComponent';
-import {CommentInfo} from '../Types/PostInfo';
 import {toast} from 'react-toastify';
 import classNames from 'classnames';
 import SlowMode from '../Components/SlowMode';
 import {observer} from 'mobx-react-lite';
+import PostEditComponent from '../Components/PostEditComponent';
+
 
 export const CreatePostPage = observer(() => {
     const api = useAPI();
     const {site, userRestrictions} = useAppState();
-    const [title, setTitle] = useState('');
     const navigate = useNavigate();
 
-    const handleAnswer = async (text: string): Promise<CommentInfo | undefined> => {
+    const handleAnswer = async (text: string, title: string, site: string, main: boolean) => {
         console.log('post', title, text);
 
         try {
-            const result = await api.postAPI.create(site, title, text);
+            const result = await api.postAPI.create(site, title, text, main);
             console.log('CREATE', result);
             navigate((site !== 'main' ? `/s/${site}` : '') + `/p${result.post.id}`);
         } catch (error) {
@@ -49,18 +48,13 @@ export const CreatePostPage = observer(() => {
         />;
     }
 
-    const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setTitle(e.target.value);
-    };
 
     return (
         <div className={styles.container}>
             <div className={classNames(styles.createpost, createCommentStyles.content)}>
                 <div className={styles.form}>
                     {userRestrictions?.restrictedToPostId === true && <LastPostMessage/>}
-                    <input className={styles.title} type="text" placeholder="Без названия" maxLength={64} value={title}
-                           onChange={handleTitleChange}/>
-                    <CreateCommentComponent open={true} onAnswer={handleAnswer} storageKey={`np:${site}`}/>
+                    <PostEditComponent title="" content="" site={site} main={true} onEdit={handleAnswer} storageKey={`np:${site}`}/>
                 </div>
             </div>
         </div>

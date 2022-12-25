@@ -197,7 +197,7 @@ export default class PostRepository {
             });
     }
 
-    async createPost(siteId: number, userId: number, title: string, source: string, language: string, html: string): Promise<PostRaw> {
+    async createPost(siteId: number, userId: number, title: string, source: string, language: string, html: string, main:boolean): Promise<PostRaw> {
         return await this.db.inTransaction(async (db) => {
             const postId = await db.insert('posts', {
                 site_id: siteId,
@@ -205,7 +205,8 @@ export default class PostRepository {
                 title,
                 source,
                 language,
-                html
+                html,
+                main: main ? 1 : 0
             });
 
             const contentSourceId = await db.insert('content_source', {
@@ -213,6 +214,7 @@ export default class PostRepository {
                 ref_id: postId,
                 author_id: userId,
                 title,
+                main: main ? 1 : 0,
                 source
             });
 
@@ -234,29 +236,15 @@ export default class PostRepository {
         });
     }
 
-    async getSitePostUpdateDates(forUserId: number, siteId: number, afterPostId: number, limit: number): Promise<{ post_id: number, commented_at: Date, created_at: Date }[]> {
-        return await this.db.fetchAll(`
-                    select p.post_id, p.commented_at, p.created_at
-                    from posts p 
-                    where
-                        p.site_id=:site_id and
-                        p.post_id>:last_post_id 
-                    order by
-                        post_id
-                    limit
-                        :limit
-                `,
-            {
-                site_id: siteId,
-                user_id: forUserId,
-                last_post_id: afterPostId,
-                limit: limit
-            });
-    }
-
-    async updatePostText(updateByUserId: number, postId: number, title: string, source: string, language:string, html: string, comment?: string): Promise<boolean> {
+    async updatePostText(updateByUserId: number, postId: number, title: string, source: string, language: string,
+                         html: string,
+                         siteId: number,
+                         main: boolean,
+                         comment?: string): Promise<boolean> {
         return await this.db.inTransaction(async (conn) => {
-            const originalPost = await conn.fetchOne<PostRaw>(`select * from posts where post_id = :postId`, {
+            const originalPost = await conn.fetchOne<PostRaw>(`select *
+                                                               from posts
+                                                               where post_id = :postId`, {
                 postId
             });
 
@@ -269,6 +257,8 @@ export default class PostRepository {
                 ref_id: postId,
                 author_id: updateByUserId,
                 title,
+                main: main ? 1 : 0,
+                site_id: siteId,
                 source,
                 comment
             });
@@ -282,16 +272,20 @@ export default class PostRepository {
                      html=:html,
                      content_source_id=:contentSourceId,
                      edit_flag=:editFlag,
-                     language=:language
+                     language=:language,
+                     main=:main,
+                     site_id=:siteId
                  where post_id = :postId`, {
-                title: title || '',
-                postId,
-                source,
-                html,
-                contentSourceId,
-                editFlag,
-                language
-            });
+                    title: title || '',
+                    postId,
+                    source,
+                    html,
+                    contentSourceId,
+                    editFlag,
+                    language,
+                    main: main ? 1 : 0,
+                    siteId
+                });
 
             if (!result.changedRows) {
                 throw new CodeError('unknown', 'Could not update post');
@@ -302,14 +296,16 @@ export default class PostRepository {
     }
 
     async getLatestContentSource(refId: number, refType: 'post' | 'comment'): Promise<ContentSourceRaw | undefined> {
-        return await this.db.fetchOne<ContentSourceRaw>(`select *
-                                                         from content_source
-                                                         where ref_id = :refId
-                                                           and ref_type = :refType
-                                                         order by content_source_id desc limit 1`, {
-            refId,
-            refType
-        });
+        return await this.db.fetchOne<ContentSourceRaw>(
+            `select *
+             from content_source
+             where ref_id = :refId
+               and ref_type = :refType
+             order by content_source_id desc
+             limit 1`, {
+                refId,
+                refType
+            });
     }
 
     async getContentSources(refId: number, refType: string): Promise<ContentSourceRaw[]> {

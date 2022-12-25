@@ -12,10 +12,11 @@ import {ReactComponent as EditIcon} from '../Assets/edit.svg';
 import PostLink from './PostLink';
 import {useAPI} from '../AppState/AppState';
 import {toast} from 'react-toastify';
-import CreateCommentComponent from './CreateCommentComponent';
 import { HistoryComponent } from './HistoryComponent';
 import {SignatureComponent} from './SignatureComponent';
 import Conf from '../Conf';
+import PostEditComponent from './PostEditComponent';
+import {PostEntity} from '../API/PostAPI';
 
 const defaultLanguage = process.env.DEFAULT_LANGUAGE || 'ru';
 
@@ -25,7 +26,7 @@ interface PostComponentProps {
     buttons?: React.ReactNode;
     onChange?: (id: number, post: Partial<PostInfo>) => void;
     autoCut?: boolean;
-    onEdit?: (post: PostInfo, text: string, title?: string) => Promise<PostInfo | undefined>;
+    onEdit?: (post: PostInfo, text: string, title: string, site: string, main: boolean) => Promise<PostInfo | undefined>;
     dangerousHtmlTitle?: boolean;
     hideRating?: boolean;
 }
@@ -33,8 +34,7 @@ interface PostComponentProps {
 export default function PostComponent(props: PostComponentProps) {
     const api = useAPI();
     const [showOptions, setShowOptions] = useState(false);
-    const [editingText, setEditingText] = useState<false | string>(false);
-    const [editingTitle, setEditingTitle] = useState<string>(props.post.title || '');
+    const [editing, setEditing] = useState<PostEntity | undefined>(undefined);
     const [showHistory, setShowHistory] = useState(false);
     const [translation, setTranslation] = useState<{title: string, html: string} | false | undefined>(undefined);
 
@@ -110,10 +110,10 @@ export default function PostComponent(props: PostComponentProps) {
             });
     };
 
-    const handleEditComplete = async (text: string) => {
+    const handleEditComplete = async (text: string, title: string, site: string, main: boolean) => {
         try {
-            await props.onEdit?.(props.post, text, editingTitle);
-            setEditingText(false);
+            await props.onEdit?.(props.post, text, title, site, main);
+            setEditing(undefined);
             // return res;
             return undefined;
         }
@@ -127,16 +127,12 @@ export default function PostComponent(props: PostComponentProps) {
     const handleEdit = async () => {
         try {
             const post = await api.postAPI.get(props.post.id, 'source', true);
-            setEditingText(post.post.content);
+            setEditing(post.post);
         }
         catch (e) {
             console.log('Get comment error:', e);
             toast.error('Не удалось включить редактирование');
         }
-    };
-
-    const handleEditingTitle = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setEditingTitle(e.target.value);
     };
 
     const toggleHistory = () => {
@@ -148,7 +144,7 @@ export default function PostComponent(props: PostComponentProps) {
             <div className={styles.header}>
                 <SignatureComponent showSite={props.showSite} site={site} author={author} onHistoryClick={toggleHistory} postLink={props.post} date={created} editFlag={props.post.editFlag} />
                 <div className={styles.contentContainer}>
-                    {editingText === false ?
+                    {!editing ?
                         (showHistory
                             ? <HistoryComponent initial={{ title, content, date: created }} history={{ id: props.post.id, type: 'post' }} onClose={toggleHistory} />
                             : <>
@@ -160,12 +156,7 @@ export default function PostComponent(props: PostComponentProps) {
                                     </div>
                                 </>
                         )
-
-                        :
-                        <>
-                            <input className={styles.title} type="text" placeholder="Без названия" maxLength={64} value={editingTitle} onChange={handleEditingTitle} />
-                            <CreateCommentComponent open={true} text={editingText} onAnswer={handleEditComplete} />
-                        </>
+                        : <PostEditComponent title={editing.title || ''} content={editing.content} site={editing.site} main={editing.main} onEdit={handleEditComplete} />
                     }
                 </div>
             </div>

@@ -28,6 +28,7 @@ type SiteCreateResponse = {
 };
 
 type SiteListRequest = {
+    main: boolean,
     page: number;
     perpage: number;
 };
@@ -63,9 +64,9 @@ export default class SiteAPI {
         });
     }
 
-    async list(page: number, perpage: number): Promise<SiteListResponse> {
+    async list(includeMain: boolean, page: number, perpage: number): Promise<SiteListResponse> {
         return await this.api.request<SiteListRequest, SiteListResponse>('/site/list', {
-            page, perpage
+            main: includeMain, page, perpage
         });
     }
 }

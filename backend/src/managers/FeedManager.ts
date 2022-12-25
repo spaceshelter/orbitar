@@ -112,12 +112,15 @@ export default class FeedManager {
                         };
 
                         for (const post of batch) {
-                            addPostToBatch(`${post.site_id}:new`,
-                                this.offsetPostTs(post.created_at),
-                                post.post_id);
-                            addPostToBatch(`${post.site_id}:live`,
-                                this.offsetPostTs(post.commented_at),
-                                post.post_id);
+                            const keys = this.getKeysForSubsite(post.site_id, post.main === 1);
+                            for (const key of keys) {
+                                addPostToBatch(`${key}:new`,
+                                    this.offsetPostTs(post.created_at),
+                                    post.post_id);
+                                addPostToBatch(`${key}:live`,
+                                    this.offsetPostTs(post.commented_at),
+                                    post.post_id);
+                            }
                             sinceId = Math.max(sinceId, post.post_id);
                         }
 
@@ -150,11 +153,14 @@ export default class FeedManager {
 
     async getSubsiteKeys(forUserId: number, feedSorting: FeedSorting): Promise<string[]> {
         const subscriptions = await this.getSubscriptions(forUserId);
-        return subscriptions.map(sub => `${sub}:${feedSorting == FeedSorting.postCreatedAt ? 'new' : 'live'}`);
+        const hasMain = subscriptions.includes(1);
+        const prefix = hasMain ? 'nm' : '';
+        const suffix = feedSorting == FeedSorting.postCreatedAt ? 'new' : 'live';
+        return subscriptions.map(sub => `${sub === 1 ? '1' : `${sub}${prefix}`}:${suffix}`);
     }
 
     async getSubscriptionFeed(forUserId: number, page: number, perpage: number, format: ContentFormat, sorting: FeedSorting):
-        Promise<{total: number, posts: PostInfo[]}> {
+        Promise<{ total: number, posts: PostInfo[] }> {
 
         const prevInitUUID = await this.initialize();
 
@@ -165,7 +171,7 @@ export default class FeedManager {
         this.logger.profile(`getSubscriptionFeed/subsiteKeys:${forUserId}`);
 
         this.logger.profile(`getSubscriptionFeed/query:${forUserId}`);
-        const { total, post_ids: postIds, cache_is_empty: cacheIsEmpty }  = await fetch(`${FEED_API}/query`, {
+        const {total, post_ids: postIds, cache_is_empty: cacheIsEmpty} = await fetch(`${FEED_API}/query`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -278,6 +284,7 @@ export default class FeedManager {
                 bookmark: !!rawPost.bookmark,
                 watch: !!rawPost.watch,
                 vote: rawPost.vote,
+                main: rawPost.main === 1,
                 lastReadCommentId: rawPost.last_read_comment_id,
                 language: rawPost.language,
             };
@@ -292,7 +299,6 @@ export default class FeedManager {
         }
 
         return posts;
-
     }
 
     async siteSubscribe(userId: number, siteName: string, main: boolean, bookmarks: boolean) {
@@ -304,7 +310,7 @@ export default class FeedManager {
         const existingSubscription = await this.siteManager.getSubscription(userId, site.id);
         if (existingSubscription && !!existingSubscription.feed_main === main &&
             !!existingSubscription.feed_bookmarks === bookmarks) {
-            return { main, bookmarks };
+            return {main, bookmarks};
         }
 
         await this.siteManager.siteSubscribe(userId, site.id, main, bookmarks);
@@ -314,10 +320,22 @@ export default class FeedManager {
             this.userSubscriptionsCache.delete(userId);
         }
 
-        return { main, bookmarks };
+        return {main, bookmarks};
     }
 
-    async postFanOut(subsite_id: number, post_id: number, createdAt: Date | undefined, updatedAt: Date | undefined) {
+    getKeysForSubsite(subsiteId: number, main: boolean) {
+        return subsiteId === 1 ? [
+            '1'
+        ] : main ? [
+            `${subsiteId}`,
+            `1`,
+        ] : [
+            `${subsiteId}`,
+            `${subsiteId}nm`, /* key for posts belonging to a subsite that   */
+        ];
+    }
+
+    async postFanOut(subsiteId: number, main: boolean, postId: number, createdAt: Date | undefined, updatedAt: Date | undefined) {
         this.confirmedPostsExist = true;
         if (!this.initialized || !this.minDate) {
             return;
@@ -325,15 +343,21 @@ export default class FeedManager {
         const batch = [];
         let dbUpdateJob;
 
+        const keys = this.getKeysForSubsite(subsiteId, main);
+
         if (createdAt) {
-            batch.push({subsite: `${subsite_id}:new`, posts: [{id: post_id, ts: this.offsetPostTs(createdAt)}]});
+            keys.forEach(key =>
+                batch.push({subsite: `${key}:new`, posts: [{id: postId, ts: this.offsetPostTs(createdAt)}]})
+            );
         }
         if (updatedAt) {
-            batch.push({subsite: `${subsite_id}:live`, posts: [{id: post_id, ts: this.offsetPostTs(updatedAt)}]});
+            keys.forEach(key =>
+                batch.push({subsite: `${key}:live`, posts: [{id: postId, ts: this.offsetPostTs(updatedAt)}]})
+            );
             dbUpdateJob = (async () => {
-                this.logger.profile(`postFanOut/setUpdated:${post_id}`);
-                await this.bookmarkRepository.setUpdated(post_id, updatedAt);
-                this.logger.profile(`postFanOut/setUpdated:${post_id}`);
+                this.logger.profile(`postFanOut/setUpdated:${postId}`);
+                await this.bookmarkRepository.setUpdated(postId, updatedAt);
+                this.logger.profile(`postFanOut/setUpdated:${postId}`);
             })();
         }
         if (batch.length > 0) {
@@ -350,4 +374,19 @@ export default class FeedManager {
         }
     }
 
+    async removePostFromFeed(subsiteId: number, main: boolean, postId: number) {
+        const keys = this.getKeysForSubsite(subsiteId, main);
+        const batch = [];
+        const posts = [{id: postId, ts: 0}];
+
+        keys.forEach(key => batch.push({subsite: `${key}:new`, posts}));
+        keys.forEach(key => batch.push({subsite: `${key}:live`, posts}));
+        await fetch(`${FEED_API}/remove`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(batch),
+        });
+    }
 }

@@ -54,19 +54,6 @@ export class Enricher {
                 created: post.created.toISOString()
             };
 
-            if (post.bookmark) {
-                postResult.bookmark = post.bookmark;
-            }
-            if (post.watch) {
-                postResult.watch = post.watch;
-            }
-            if (post.canEdit) {
-                postResult.canEdit = post.canEdit;
-            }
-            if (post.editFlag) {
-                postResult.editFlag = post.editFlag;
-            }
-
             posts.push(postResult);
         }
 

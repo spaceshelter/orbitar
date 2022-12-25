@@ -4,6 +4,7 @@ import {ContentFormat} from '../entities/common';
 export type PostCreateRequest = {
     site: string;
     title: string;
+    main: boolean;
     content: string;
     format?: ContentFormat;
 };

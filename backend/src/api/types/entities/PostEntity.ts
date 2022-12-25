@@ -3,6 +3,7 @@ import {EditFlag} from './common';
 export type PostBaseEntity = {
     id: number;
     site: string;
+    main: boolean;
     title?: string;
 };
 

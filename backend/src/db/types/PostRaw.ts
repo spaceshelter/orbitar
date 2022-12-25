@@ -1,6 +1,7 @@
 export type PostBareBonesRaw = {
     post_id: number;
     site_id: number;
+    main: number;
     created_at: Date;
     commented_at: Date;
 };

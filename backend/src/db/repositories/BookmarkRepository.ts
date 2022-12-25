@@ -111,4 +111,17 @@ export default class BookmarkRepository {
             post_updated_at: date,
         });
     }
+
+    setUpdatedMulti(postId: number, userIds: number[], date: Date) {
+        if (!userIds.length) {
+            return;
+        }
+        return this.db.query(`
+            update user_bookmarks set post_updated_at=:post_updated_at where post_id=:post_id and user_id in (:user_ids)
+        `, {
+            post_id: postId,
+            user_ids: userIds,
+            post_updated_at: date,
+        });
+    }
 }

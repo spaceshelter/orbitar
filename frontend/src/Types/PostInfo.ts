@@ -12,6 +12,7 @@ export interface PostInfo extends PostLinkInfo {
     author: UserBaseInfo;
     created: Date;
     title?: string;
+    main: boolean,
     content: string;
     rating: number;
     comments: number;
