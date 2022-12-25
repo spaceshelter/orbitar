@@ -575,18 +575,13 @@ export default class UserManager {
         return this.voteRepository.getTrialsApprovers(userId);
     }
 
-    async saveBio(bio: string, userId: number): Promise<string | boolean> {
+    async saveBio(bio: string, userId: number): Promise<string> {
         const parseResult = this.parser.parse(bio);
-        if (await this.userRepository.saveBio(bio, parseResult.text, userId)) {
-            return parseResult.text;
-        }
-        return false;
+        await this.userRepository.saveBio(bio, parseResult.text, userId);
+        return parseResult.text;
     }
 
-    async saveGender(gender: UserGender, userId: number): Promise<UserGender | boolean> {
-        if (await this.userRepository.saveGender(gender, userId)) {
-            return gender;
-        }
-        return false;
+    async saveGender(gender: UserGender, userId: number): Promise<void> {
+        await this.userRepository.saveGender(gender, userId);
     }
 }

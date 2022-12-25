@@ -6,6 +6,7 @@ import {useAPI} from '../AppState/AppState';
 import {useLocation, useNavigate} from 'react-router-dom';
 import ThemeToggleComponent from './ThemeToggleComponent';
 import {UserGender} from '../Types/UserInfo';
+import {toast} from 'react-toastify';
 
 type UserProfileSettingsProps = {
   onChange: any;
@@ -45,6 +46,8 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
     }
     api.userAPI.saveGender(gender).then((data) => {
       props.onChange();
+    }).catch((error) => {
+        toast.error(error?.message || 'Не удалось сохранить.');
     });
   };
 

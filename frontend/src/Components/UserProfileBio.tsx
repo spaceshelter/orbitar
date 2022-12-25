@@ -29,13 +29,10 @@ export default function UserProfileBio(props: UserProfileBioProps) {
   const handleUpdateBio = async (bio: string): Promise<string | undefined> => {
     try {
       const newBio = await api.userAPI.saveBio(bio);
-      if (newBio) {
-        toast.success('Сохранено!', {autoClose: 1000});
-        setEditing(false);
-        setSource(bio);
-        setHtml(bio);
-        return newBio.bio as unknown as string;
-      }
+      setEditing(false);
+      setSource(bio);
+      setHtml(newBio.bio);
+      return newBio.bio as unknown as string;
     } catch (error: any) {
       toast.error(error?.message || 'Не удалось сохранить.');
       throw error;

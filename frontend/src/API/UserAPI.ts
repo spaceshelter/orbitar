@@ -140,11 +140,11 @@ export default class UserAPI {
         return this.api.request<{username: string}, UserRestrictionsResponse>('/user/restrictions', {username});
     }
 
-    async saveBio(bio: string): Promise<{bio: string | boolean}> {
-        return this.api.request<{bio: string}, {bio: string | boolean}>('/user/savebio', {bio});
+    async saveBio(bio: string): Promise<{bio: string}> {
+        return this.api.request<{bio: string}, {bio: string}>('/user/savebio', {bio});
     }
 
-    async saveGender(gender: UserGender): Promise<{gender: UserGender | boolean}> {
-        return this.api.request<{gender: UserGender}, {gender: UserGender | boolean}>('/user/savegender', {gender});
+    async saveGender(gender: UserGender): Promise<{gender: UserGender}> {
+        return this.api.request<{gender: UserGender}, {gender: UserGender}>('/user/savegender', {gender});
     }
 }

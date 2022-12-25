@@ -69,7 +69,11 @@ export default class UserController {
 
         const settingsSaveLimiter = rateLimit({
             windowMs: 1000 * 60,
-            max: 10
+            max: 20,
+            skipSuccessfulRequests: false,
+            standardHeaders: false,
+            legacyHeaders: false,
+            keyGenerator: (req) => String(req.session.data?.userId)
         });
 
         this.router.post('/user/profile', validate(profileSchema), (req, res) => this.profile(req, res));
@@ -304,10 +308,7 @@ export default class UserController {
         }
         const {gender} = request.body;
         try {
-            const newGender = await this.userManager.saveGender(gender, request.session.data.userId);
-            if (newGender === false) {
-                return response.error('error', `Could not update gender`, 500);
-            }
+            await this.userManager.saveGender(gender, request.session.data.userId);
             this.userManager.clearCache(request.session.data.userId);
             return response.success({gender});
         } catch (error) {
@@ -323,9 +324,6 @@ export default class UserController {
         const {bio} = request.body;
         try {
             const newBioPreview = await this.userManager.saveBio(bio, request.session.data.userId);
-            if (newBioPreview === false) {
-                return response.error('error', `Could not update bio`, 500);
-            }
             this.userManager.clearCache(request.session.data.userId);
             return response.success({bio: newBioPreview});
         } catch (error) {

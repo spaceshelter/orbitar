@@ -55,7 +55,7 @@ export type UserSaveBioRequest = {
 };
 
 export type UserSaveBioResponse = {
-    bio: string | boolean;
+    bio: string;
 };
 
 export type UserSaveGenderRequest = {
