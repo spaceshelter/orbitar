@@ -8,10 +8,14 @@ services:
       - "80:80"
     environment:
       SERVER_DOMAIN: ${SERVER_DOMAIN}
+      API_DOMAIN: ${API_DOMAIN}
       IMGUR_CLIENT_ID: ${IMGUR_CLIENT_ID}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      VAPID_CONTACT: ${VAPID_CONTACT}
     volumes:
-      - $PWD/caddy/Caddyfile.local:/etc/caddy/Caddyfile
-      - frontend_build:/srv
+      - $PWD/caddy/Caddyfile.local:/etc/caddy/Caddyfile:ro
+      - frontend_build:/srv:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
@@ -51,6 +55,7 @@ services:
         NODE_ENV: production
         SERVER_DOMAIN: ${SERVER_DOMAIN}
         API_DOMAIN: ${API_DOMAIN}
+        VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
     restart: "no"
     volumes:
       - frontend_build:/frontend
