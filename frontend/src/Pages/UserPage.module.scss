@@ -29,6 +29,7 @@
 }
 .active {
   padding-right: 20px;
+  pointer-events: none;
 }
 
 .active > span{
@@ -66,7 +67,20 @@
     font-size: 40px;
 }
 
-
 .name {
     font-size: 25px;
+}
+
+.userinfo .bio {
+    margin-top: 80px;
+    display: block;
+
+    .controls {
+        margin-top: 20px;
+    }
+
+    svg {
+        margin-left: 12px;
+        margin-right: 4px;
+    }
 }

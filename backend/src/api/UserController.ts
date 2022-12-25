@@ -7,7 +7,9 @@ import {
     UserKarmaResponse,
     UserProfileRequest,
     UserProfileResponse,
-    UserRestrictionsResponse
+    UserRestrictionsResponse,
+    UserSaveBioRequest,
+    UserSaveBioResponse, UserSaveGenderRequest, UserSaveGenderResponse
 } from './types/requests/UserProfile';
 import {UserPostsRequest, UserPostsResponse} from './types/requests/UserPosts';
 import PostManager from '../managers/PostManager';
@@ -15,7 +17,7 @@ import {Enricher} from './utils/Enricher';
 import {UserCommentsRequest, UserCommentsResponse} from './types/requests/UserComments';
 import {UserProfileEntity} from './types/entities/UserEntity';
 import VoteManager from '../managers/VoteManager';
-import {UserRatingBySubsite} from '../managers/types/UserInfo';
+import {UserGender, UserRatingBySubsite} from '../managers/types/UserInfo';
 
 // constant variables
 import {ERROR_CODES} from './utils/error-codes';
@@ -55,12 +57,22 @@ export default class UserController {
             max: 1
         });
 
+        const bioSchema = Joi.object<UserSaveBioRequest>({
+            bio: Joi.string().required().max(1024)
+        });
+
+        const genderSchema = Joi.object<UserSaveGenderRequest>({
+            gender: Joi.number().required().allow(UserGender.fluid, UserGender.he, UserGender.she)
+        });
+
         this.router.post('/user/profile', validate(profileSchema), (req, res) => this.profile(req, res));
         this.router.post('/user/posts', userCommentsAndPostsLimiter, validate(postsOrCommentsSchema), (req, res) => this.posts(req, res));
         this.router.post('/user/comments', userCommentsAndPostsLimiter, validate(postsOrCommentsSchema), (req, res) => this.comments(req, res));
         this.router.post('/user/karma', validate(profileSchema), (req, res) => this.karma(req, res));
         this.router.post('/user/clearCache', validate(profileSchema), (req, res) => this.clearCache(req, res));
         this.router.post('/user/restrictions', validate(profileSchema), (req, res) => this.restrictions(req, res));
+        this.router.post('/user/savebio', validate(bioSchema), (req, res) => this.saveBio(req, res));
+        this.router.post('/user/savegender', validate(genderSchema), (req, res) => this.saveGender(req, res));
     }
 
     async profile(request: APIRequest<UserProfileRequest>, response: APIResponse<UserProfileResponse>) {
@@ -72,7 +84,7 @@ export default class UserController {
         const {username} = request.body;
 
         try {
-            const profileInfo = await this.userManager.getByUsernameWithVote(username, userId);
+            const profileInfo = await this.userManager.getByUsernameWithVoteAndBio(username, userId);
 
             if (!profileInfo) {
                 return response.error(ERROR_CODES.NOT_FOUND, 'User not found', 404);
@@ -276,6 +288,42 @@ export default class UserController {
         catch (error) {
             this.logger.error('Something went wrong', { username, error });
             return response.error('error', `Could not get restrictions for user ${username}`, 500);
+        }
+    }
+
+    async saveGender(request: APIRequest<UserSaveGenderRequest>, response: APIResponse<UserSaveGenderResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+        const {gender} = request.body;
+        try {
+            const newGender = await this.userManager.saveGender(gender, request.session.data.userId);
+            if (newGender === false) {
+                return response.error('error', `Could not update gender`, 500);
+            }
+            this.userManager.clearCache(request.session.data.userId);
+            return response.success({gender});
+        } catch (error) {
+            this.logger.error('Could not update user gender', { error });
+            return response.error('error', `Could not update gender`, 500);
+        }
+    }
+
+    async saveBio(request: APIRequest<UserSaveBioRequest>, response: APIResponse<UserSaveBioResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+        const {bio} = request.body;
+        try {
+            const newBioPreview = await this.userManager.saveBio(bio, request.session.data.userId);
+            if (newBioPreview === false) {
+                return response.error('error', `Could not update bio`, 500);
+            }
+            this.userManager.clearCache(request.session.data.userId);
+            return response.success({bio: newBioPreview});
+        } catch (error) {
+            this.logger.error('Could not update user bio', { error });
+            return response.error('error', `Could not update bio`, 500);
         }
     }
 }

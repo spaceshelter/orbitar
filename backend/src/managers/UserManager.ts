@@ -15,6 +15,7 @@ import {sendResetPasswordEmail} from '../utils/Mailer';
 import {SiteConfig} from '../config';
 import {Logger} from 'winston';
 import {FeedSorting} from '../api/types/entities/common';
+import TheParser from '../parser/TheParser';
 
 const USER_RESTRICTIONS = {
     MIN_KARMA: -1000,
@@ -39,6 +40,7 @@ export default class UserManager {
     private cachedUserParents: Record<number, number | undefined | false> = {};
     private readonly logger: Logger;
     private readonly mailLogger: Logger;
+    private readonly parser: TheParser;
 
     private cachedNumActiveUsersThatCanVote = {
         expirationMs: 1000 * 60 * 60 /* 1 hour */,
@@ -55,7 +57,7 @@ export default class UserManager {
 
     constructor(credentialsRepository: UserCredentials, userRepository: UserRepository, voteRepository: VoteRepository,
                 commentRepository: CommentRepository,  postRepository: PostRepository,  webPushRepository: WebPushRepository,
-                notificationManager: NotificationManager, redis: RedisClientType, siteConfig: SiteConfig, logger: Logger) {
+                parser: TheParser, notificationManager: NotificationManager, redis: RedisClientType, siteConfig: SiteConfig, logger: Logger) {
         this.credentialsRepository = credentialsRepository;
         this.userRepository = userRepository;
         this.voteRepository = voteRepository;
@@ -67,6 +69,7 @@ export default class UserManager {
         this.siteConfig = siteConfig;
         this.logger = logger;
         this.mailLogger = logger.child({service: 'MAIL'});
+        this.parser = parser;
     }
 
     async getById(userId: number): Promise<UserInfo | undefined> {
@@ -103,12 +106,12 @@ export default class UserManager {
         this.cacheUsername[user.username] = user;
     }
 
-    async getByUsername(username: string): Promise<UserInfo | undefined> {
+    async getByUsername(username: string, getBio = false): Promise<UserInfo | undefined> {
         if (this.cacheUsername[username]) {
             return this.cacheUsername[username];
         }
 
-        const rawUser = await this.userRepository.getUserByUsername(username);
+        const rawUser = await this.userRepository.getUserByUsername(username, getBio);
 
         if (!rawUser) {
             return;
@@ -119,8 +122,8 @@ export default class UserManager {
         return user;
     }
 
-    async getByUsernameWithVote(username: string, forUserId: number): Promise<UserInfo | undefined> {
-        const infoWithoutVote = await this.getByUsername(username);
+    async getByUsernameWithVoteAndBio(username: string, forUserId: number): Promise<UserInfo | undefined> {
+        const infoWithoutVote = await this.getByUsername(username, true);
         if (!infoWithoutVote) {
             return;
         }
@@ -411,6 +414,10 @@ export default class UserManager {
             name: rawUser.name,
             registered: rawUser.registered_at,
             ontrial: rawUser.ontrial === 1,
+            ...(rawUser.bio_source !== undefined && {
+                bio_source: rawUser.bio_source,
+                bio_html: rawUser.bio_html
+            })
         };
     }
 
@@ -628,5 +635,20 @@ export default class UserManager {
 
     getTrialApprovers(userId: number): Promise<VoteWithUsername[]> {
         return this.voteRepository.getTrialsApprovers(userId);
+    }
+
+    async saveBio(bio: string, userId: number): Promise<string | boolean> {
+        const parseResult = this.parser.parse(bio);
+        if (await this.userRepository.saveBio(bio, parseResult.text, userId)) {
+            return parseResult.text;
+        }
+        return false;
+    }
+
+    async saveGender(gender: UserGender, userId: number): Promise<UserGender | boolean> {
+        if (await this.userRepository.saveGender(gender, userId)) {
+            return gender;
+        }
+        return false;
     }
 }
