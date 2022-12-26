@@ -116,10 +116,10 @@ export default function SearchPage() {
             <div className={feedStyles.container}>
                 <div className={feedStyles.feed}>
                     <form onSubmit={handleSubmit(onSubmit)}>
-                        <input type="search" {...register('term', {
+                        <span className={classNames('i i-search', styles.icon)}></span>
+                        <input type="search" placeholder="Да это поиск!" {...register('term', {
                             required: ''
                         })} defaultValue={defaultSearch}/>
-                        <input type="submit" disabled={isSearching} value="Искать"/>
                     </form>
                     {errors.term && <p className={styles.error}>{errors.term.message}</p>}
                     {error && <p className={styles.error}>{error}</p>}

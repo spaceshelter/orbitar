@@ -2,24 +2,68 @@
   text-align: right;
   margin-top: 16px;
 
-  @media only screen and (min-width: 1180px) {
+  @media only screen and (max-width: 600px) {
     & {
       margin-top: -64px;
     }
   }
 
+  mark{
+    color: var(--fg);
+    background-color:var(--primaryGhost);
+  }
+
   form {
     display: flex;
     margin-bottom: 16px;
+    margin-top: 80px;
+    position: relative;
   }
 
   input[type='search'] {
     width: 100%;
     display: block;
     box-sizing: border-box;
-    padding: 5px;
+    padding: 5px 16px 5px 48px;
+    line-height: 36px;
+    font-size: 22px;
+    border: none;
+    border-radius: 50px;
+    &::placeholder{
+      opacity: .8;
+      font-size: 16px;
+    }
+  }
+
+  .icon{
     font-size: 24px;
-    margin-right: 8px;
+    position: absolute;
+    top: 12px;
+    left: 16px;
+  }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus{
+    transition: all 0s 50000s;
+    -webkit-text-fill-color: var(--fg);
+  }
+
+
+  input[type="search"]::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    height: 16px;
+    width: 16px;
+    background: var(--fg) no-repeat 50% 50% ;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z' fill='white'/%3E%3C/svg%3E%0A");
+    mask-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z' fill='white'/%3E%3C/svg%3E%0A");
+    background-size: contain;
+    opacity: 0;
+    pointer-events: none;
+  }
+  input[type="search"]:focus::-webkit-search-cancel-button {
+    opacity: .9;
+    pointer-events: all;
   }
 
   .error {
@@ -35,7 +79,7 @@
   }
 
   .stats {
-    margin-bottom: 40px;
+    margin-bottom: 80px;
     color: var(--fgSofter);
   }
 }
