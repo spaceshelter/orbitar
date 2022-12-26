@@ -78,6 +78,7 @@ export default function SearchPage() {
             return;
         }
         setSearching(true);
+        setError('');
         setSearchParams({term});
         api.searchApi.search(term)
             .then((result) => {
