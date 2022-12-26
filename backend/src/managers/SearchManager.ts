@@ -1,6 +1,6 @@
-import { Logger } from 'winston';
-import { SearchResponse, SearchScope, SearchSorting, SearchSortingDirection } from '../api/SearchController';
-import { Client } from '@elastic/elasticsearch';
+import {Logger} from 'winston';
+import {SearchResponse, SearchScope, SearchSorting, SearchSortingDirection} from '../api/SearchController';
+import {Client} from '@elastic/elasticsearch';
 import UserManager from './UserManager';
 import SiteManager from './SiteManager';
 
@@ -32,12 +32,21 @@ export default class SearchManager {
       sortByDate?: boolean,
       sortDirection?: SearchSortingDirection
     ) {
-        const mustTerms = [
+        const shouldTerms = [
             {
                 query_string: {
                     query: term,
-                    fields: ['title^2', 'source'],
+                    fields: ['title^102', 'source^100'],
                     default_operator: 'and'
+                }
+            },
+            {
+                multi_match: {
+                    query: term,
+                    fields: [
+                        'title^2',
+                        'source'
+                    ]
                 }
             }
         ];
@@ -115,15 +124,15 @@ export default class SearchManager {
         }
         sort.push({'_score': {'order': 'desc'}});
 
-        const query = {
+        return {
             index: 'orbitar',
             body: {
                 query: {
                     bool: {
-                        must: mustTerms,
-                        filter: filters
+                        should: shouldTerms,
+                        filter: filters,
+                        minimum_should_match: 1
                     }
-
                 },
                 highlight: {
                     pre_tags: ['<mark>'],
@@ -137,13 +146,9 @@ export default class SearchManager {
                 },
                 size: 250,
                 from: 0,
-                sort: sort
+                sort
             }
         };
-        if (mustTerms.length) {
-            query.body.query.bool.must.push();
-        }
-        return query;
     }
 
     async search(
