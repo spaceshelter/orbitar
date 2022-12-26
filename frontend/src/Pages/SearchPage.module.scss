@@ -31,38 +31,11 @@
   }
 
   .results {
-    text-align: left !important;
+    text-align: left;
   }
 
   .stats {
     margin-bottom: 40px;
     color: var(--fgSofter);
-  }
-
-  .resultItem {
-    margin-bottom: 40px;
-
-    h3 {
-      margin-bottom: 0;
-    }
-
-    p {
-      margin: 0;
-      white-space: break-spaces;
-      overflow-wrap: break-word;
-    }
-
-    .meta {
-      font-size: smaller;
-      display: flex;
-
-      :global(.i-user) {
-        margin-right: 10px;
-      }
-
-      .date {
-        margin-right: 10px;
-      }
-    }
   }
 }
