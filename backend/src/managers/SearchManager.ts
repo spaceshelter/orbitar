@@ -34,13 +34,10 @@ export default class SearchManager {
     ) {
         const mustTerms = [
             {
-                multi_match: {
+                query_string: {
                     query: term,
-                    type: "phrase",
-                    fields: [
-                        'title^2',
-                        'source'
-                    ]
+                    fields: ['title^2', 'source'],
+                    default_operator: 'and'
                 }
             }
         ];
@@ -129,8 +126,8 @@ export default class SearchManager {
 
                 },
                 highlight: {
-                    pre_tags: ['<b><i>'],
-                    post_tags: ['</i></b>'],
+                    pre_tags: ['<mark>'],
+                    post_tags: ['</mark>'],
                     fields: {
                         title: {},
                         source: {}
