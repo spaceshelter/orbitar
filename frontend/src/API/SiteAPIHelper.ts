@@ -29,6 +29,12 @@ export default class SiteAPIHelper {
         }
     }
 
+    async subscriptons(): Promise<SiteWithUserInfo[]> {
+        const result = await this.api.subscriptions();
+        this.appState.setSubscriptions(result.subscriptions);
+        return result.subscriptions;
+    }
+
     async list(page: number, perpage: number): Promise<SiteWithUserInfo[]> {
         const result = await this.api.list(page, perpage);
         return result.sites;

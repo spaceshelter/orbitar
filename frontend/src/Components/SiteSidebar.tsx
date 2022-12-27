@@ -44,6 +44,14 @@ export const SiteSidebar = observer((props: SidebarProps) => {
         }
     }, [siteInfo, api.site]);
 
+    useEffect(() => {
+        if (subscriptions === undefined) {
+            api.site.subscriptons().then().catch(
+                () => toast.error('Не удалось получить список подписок!'),
+            );
+        }
+    });
+
     return (
         <div className={classNames(styles.sidebar, {
             [styles.open]: props.menuState === 'close',
@@ -62,7 +70,7 @@ export const SiteSidebar = observer((props: SidebarProps) => {
                     </div>}
                     {siteInfo?.siteInfo && <div className='site-info'>{siteInfo.siteInfo}</div>}
                     <div className='subsites'>
-                        { subscriptions.map(site => {
+                        { subscriptions && subscriptions.map(site => {
                             return <div key={site.site}><Link onClick={menuToggle} to={site.site === 'main' ? '/' : `/s/${site.site}`}>{site.name}</Link></div>;
                         }) }
                     </div>

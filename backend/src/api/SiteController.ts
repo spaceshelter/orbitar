@@ -12,6 +12,7 @@ import {SiteCreateRequest, SiteCreateResponse} from './types/requests/SiteCreate
 import CodeError from '../CodeError';
 import rateLimit from 'express-rate-limit';
 import UserManager from '../managers/UserManager';
+import {SubscriptionsRequest, SubscriptionsResponse} from './types/requests/Subscriptions';
 
 export default class SiteController {
     public readonly router = Router();
@@ -58,6 +59,7 @@ export default class SiteController {
 
         this.router.post('/site', validate(siteSchema), (req, res) => this.site(req, res));
         this.router.post('/site/subscribe', this.subscribeRateLimiter, validate(siteSubscribeSchema), (req, res) => this.subscribe(req, res));
+        this.router.post('/site/subscriptions', (req, res) => this.subscriptions(req, res));
         this.router.post('/site/list', validate(siteListSchema), (req, res) => this.list(req, res));
         this.router.post('/site/create', validate(siteCreateSchema), (req, res) => this.create(req, res));
     }
@@ -105,6 +107,23 @@ export default class SiteController {
         }
         catch (error) {
             this.logger.error('Could not change subscription', { site, main, bookmarks, error });
+            return response.error('error', 'Unknown error', 500);
+        }
+    }
+
+    async subscriptions(request: APIRequest<SubscriptionsRequest>, response: APIResponse<SubscriptionsResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+        const userId = request.session.data.userId;
+        try {
+            const subscriptions = await this.siteManager.getSubscriptions(userId);
+            response.success({
+                subscriptions: subscriptions.map(site => this.enricher.siteInfoToEntity(site)),
+            });
+        }
+        catch (error) {
+            this.logger.error('Could not get subscriptions', { error });
             return response.error('error', 'Unknown error', 500);
         }
     }

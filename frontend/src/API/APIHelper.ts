@@ -67,7 +67,6 @@ export default class APIHelper {
             this.appState.setWatchCommentsCount(status.watch.comments);
             this.appState.setUnreadNotificationsCount(status.notifications.unread);
             this.appState.setVisibleNotificationsCount(status.notifications.visible);
-            this.appState.setSubscriptions(status.subscriptions);
             this.appState.setAppLoadingState(AppLoadingState.authorized);
 
             // start fetch status update
@@ -112,7 +111,6 @@ export default class APIHelper {
             this.appState.setWatchCommentsCount(status.watch.comments);
             this.appState.setUnreadNotificationsCount(status.notifications.unread);
             this.appState.setVisibleNotificationsCount(status.notifications.visible);
-            this.appState.setSubscriptions(status.subscriptions);
             this.appState.setAppLoadingState(AppLoadingState.authorized);
         }
         finally {

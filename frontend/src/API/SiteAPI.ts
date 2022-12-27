@@ -36,6 +36,11 @@ type SiteListResponse = {
     sites: SiteWithUserInfo[];
 };
 
+type SubscriptionsRequest = {};
+type SubscriptionsResponse = {
+    subscriptions: SiteWithUserInfo[];
+};
+
 export default class SiteAPI {
     private api: APIBase;
 
@@ -61,6 +66,10 @@ export default class SiteAPI {
             main,
             bookmarks
         });
+    }
+
+    async subscriptions(): Promise<SubscriptionsResponse> {
+        return await this.api.request<SubscriptionsRequest, SubscriptionsResponse>('/site/subscriptions', {});
     }
 
     async list(page: number, perpage: number): Promise<SiteListResponse> {

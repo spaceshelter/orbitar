@@ -1,5 +1,4 @@
 import {UserEntity} from '../entities/UserEntity';
-import {SiteWithUserInfoEntity} from '../entities/SiteEntity';
 
 export type StatusRequest = {};
 
@@ -13,5 +12,4 @@ export type StatusResponse = {
         unread: number;
         visible: number;
     }
-    subscriptions: SiteWithUserInfoEntity[];
 };

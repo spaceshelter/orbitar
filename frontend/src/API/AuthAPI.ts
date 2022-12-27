@@ -1,6 +1,5 @@
 import APIBase from './APIBase';
 import {UserInfo} from '../Types/UserInfo';
-import {SiteWithUserInfo} from '../Types/SiteInfo';
 
 type StatusRequest = {};
 type StatusResponse = {
@@ -13,7 +12,6 @@ type StatusResponse = {
         unread: number;
         visible: number;
     }
-    subscriptions: SiteWithUserInfo[];
 };
 
 type SignInRequest = Record<string, unknown>;

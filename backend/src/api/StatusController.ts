@@ -30,7 +30,6 @@ export default class StatusController {
             const userId = request.session.data.userId;
             const user = await this.userManager.getById(userId);
             const stats = await this.userManager.getUserStats(userId);
-            const subscriptions = await this.siteManager.getSubscriptions(userId);
 
             if (!user) {
                 // Something wrong, user should exist!
@@ -39,7 +38,6 @@ export default class StatusController {
 
             return response.success({
                 user,
-                subscriptions: subscriptions.map(site => this.enricher.siteInfoToEntity(site)),
                 ...stats
             });
         }
