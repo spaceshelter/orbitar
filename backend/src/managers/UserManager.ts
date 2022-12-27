@@ -37,6 +37,7 @@ export default class UserManager {
     private readonly redis: RedisClientType;
     private siteConfig: SiteConfig;
     private cacheLastVisit: Record<number, Date> = {};
+    private userStatsCache = new Map<number, UserStats>();
     private readonly logger: Logger;
     private readonly mailLogger: Logger;
     private readonly parser: TheParser;
@@ -127,16 +128,30 @@ export default class UserManager {
     }
 
     async getUserStats(forUserId: number): Promise<UserStats> {
+        if (this.userStatsCache.has(forUserId)) {
+            return this.userStatsCache.get(forUserId);
+        }
+
         const unreadComments = await this.userRepository.getUserUnreadComments(forUserId);
         const notifications = await this.notificationManager.getNotificationsCounts(forUserId);
 
-        return {
+        const stats = {
             notifications,
             watch: {
                 comments: unreadComments,
                 posts: 0
             }
-        };
+        }
+
+        this.userStatsCache.set(forUserId, stats);
+        return stats;
+    }
+
+    deleteUserStatsCache(forUserId: number) {
+        this.userStatsCache.delete(forUserId);
+    }
+    clearUserStatsCache() {
+        this.userStatsCache.clear();
     }
 
     async setCredentials<T>(forUserId: number, type: string, value: T) {

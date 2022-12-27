@@ -46,6 +46,4 @@ export default class StatusController {
             return response.error('error', 'Unknown error', 500);
         }
     }
-
-
 }

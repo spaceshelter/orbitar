@@ -322,13 +322,9 @@ export default class PostController {
         const { post_id: postId, comments, last_comment_id: lastCommentId } = request.body;
 
         const readUpdated = await this.postManager.setRead(postId, userId, comments, lastCommentId);
-            // update in background
-            // .then()
-            // .catch(err => {
-            //     this.logger.error(`Read update failed`, { error: err, user_id: userId, post_id: postId, comments: comments, last_comment_id: lastCommentId });
-            // });
 
         if (readUpdated) {
+            this.userManager.deleteUserStatsCache(userId);
             const status = await this.userManager.getUserStats(userId);
             return response.success({
                 notifications: status.notifications,
@@ -367,6 +363,7 @@ export default class PostController {
 
         try {
             await this.postManager.setWatch(postId, userId, watch);
+            this.userManager.deleteUserStatsCache(userId);
             response.success({watch});
         }
         catch (err) {
