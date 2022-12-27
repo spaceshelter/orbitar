@@ -317,4 +317,19 @@ export default class PostRepository {
             refId, refType
         });
     }
+
+    async updateHtmlAndParserVersion(batch: { id: number; html: string }[], parserVersion: number) {
+        if (!batch.length) {
+            return;
+        }
+        await this.db.inTransaction(async (conn) => {
+            for (const item of batch) {
+                await conn.query('update posts set html=:html, parser_version=:parserVersion where post_id=:postId', {
+                    html: item.html,
+                    parserVersion,
+                    postId: item.id
+                });
+            }
+        });
+    }
 }

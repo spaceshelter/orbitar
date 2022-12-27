@@ -51,6 +51,14 @@ test('return valid youtube url', () => {
   );
 });
 
+test('idiod video preview', () => {
+    const p = new TheParser();
+
+    expect(p.parse('https://idiod.video/8feuw2.mp4').text).toEqual(
+        `<video  preload="none" poster="https://idiod.video/preview/8feuw2.mp4" controls="" width="500"><source src="https://idiod.video/8feuw2.mp4" type="video/mp4"></video>`
+    );
+});
+
 test('remove line breaks at the beginning and the end', () => {
     const p = new TheParser();
 

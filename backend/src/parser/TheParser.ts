@@ -25,6 +25,10 @@ class ParserExtended extends Parser {
 export default class TheParser {
     private readonly allowedTags: Record<string, ((node: Element) => ParseResult) | boolean>;
 
+    // Bump this version when introducing breaking changes to the parser.
+    // Content will be re-parsed and saved on access when this version changes.
+    static readonly VERSION = 1;
+
     constructor() {
         this.allowedTags = {
             a: (node) => this.parseA(node),
@@ -295,13 +299,14 @@ export default class TheParser {
         const imgurPoster = () => {
             const match = url.match(/https?:\/\/i.imgur.com\/([^.]+).mp4$/);
             return match && `poster="https://i.imgur.com/${encodeURI(match[1])}.jpg"`;
-        }
+        };
         const idiodPoster = () => {
             const match = url.match(/https?:\/\/idiod.video\/([^.]+\.mp4)$/);
             return match && `poster="https://idiod.video/preview/${encodeURI(match[1])}"`;
-        }
+        };
         const poster = imgurPoster() || idiodPoster() || '';
-        return `<video ${loop ? 'loop=""' : ''} preload="metadata" ${poster} controls="" width="500"><source src="${encodeURI(url)}" type="video/mp4"></video>`;
+        const preload = poster ? 'preload="none"' : 'preload="metadata"';
+        return `<video ${loop ? 'loop=""' : ''} ${preload} ${poster} controls="" width="500"><source src="${encodeURI(url)}" type="video/mp4"></video>`;
     }
 
     parseIrony(node: Element): ParseResult {

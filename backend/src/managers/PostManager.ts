@@ -154,15 +154,30 @@ export default class PostManager {
         return await this.convertRawCommentsWithPostData(forUserId, rawComments, format);
     }
 
+    private async updateCommentHtmlAndParserVersionInBatches(toUpdate:{id: number, html: string}[]) {
+        const batchSize = 100;
+        for (let i = 0; i < toUpdate.length; i += batchSize) {
+            const batch = toUpdate.slice(i, i + batchSize);
+            await this.commentRepository.updateCommentsHtmlAndParserVersion(batch, TheParser.VERSION);
+        }
+    }
+
     private async convertRawCommentsWithPostData(forUserId: number, rawComments: CommentRawWithUserData[], format: ContentFormat): Promise<CommentInfoWithPostData[]> {
         const siteById: Record<number, SiteInfo> = {};
         const comments: CommentInfoWithPostData[] = [];
+        const toUpdateHtmlAndParserVersion: {id: number, html: string}[] = [];
 
         for (const raw of rawComments) {
             let site = siteById[raw.site_id];
             if (!site) {
                 site = await this.siteManager.getSiteById(raw.site_id);
                 siteById[raw.site_id] = site;
+            }
+
+            if (raw.parser_version !== TheParser.VERSION) {
+                raw.html = this.parser.parse(raw.source).text;
+                raw.parser_version = TheParser.VERSION;
+                toUpdateHtmlAndParserVersion.push({id: raw.comment_id, html: raw.html});
             }
 
             const comment: CommentInfoWithPostData = {
@@ -189,6 +204,12 @@ export default class PostManager {
             }
 
             comments.push(comment);
+        }
+
+        if (toUpdateHtmlAndParserVersion.length) {
+            // update in background
+            this.updateCommentHtmlAndParserVersionInBatches(toUpdateHtmlAndParserVersion)
+                .then().catch();
         }
 
         return comments;

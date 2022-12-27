@@ -11,6 +11,7 @@ import {FeedSorting} from '../api/types/entities/common';
 import {Logger} from 'winston';
 import fetch from 'node-fetch';
 import {config} from '../config';
+import TheParser from '../parser/TheParser';
 
 const FEED_API = `http://${config.feed.host}:${config.feed.port}`;
 
@@ -45,16 +46,18 @@ export default class FeedManager {
     private minDate: Date | undefined = undefined;
     /* when true, backend expects non-empty feed cache, will repopulate if discrepancy is found */
     private confirmedPostsExist = false;
+    private readonly parser: TheParser;
     private readonly logger: Logger;
 
     private userSubscriptionsCache = new Map<number, number[]>();
 
     constructor(bookmarkRepository: BookmarkRepository, postRepository: PostRepository, userRepository: UserRepository,
-                siteManager: SiteManager, logger: Logger) {
+                siteManager: SiteManager, parser: TheParser, logger: Logger) {
         this.bookmarkRepository = bookmarkRepository;
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.siteManager = siteManager;
+        this.parser = parser;
         this.logger = logger;
     }
 
@@ -257,12 +260,23 @@ export default class FeedManager {
     async convertRawPost(forUserId: number, rawPosts: PostRawWithUserData[], format: ContentFormat): Promise<PostInfo[]> {
         const siteById: Record<number, SiteInfo> = {};
         const posts: PostInfo[] = [];
+        const toUpdateHtmlAndParserVersion: {id: number, html: string}[] = [];
 
         for (const rawPost of rawPosts) {
             let site = siteById[rawPost.site_id];
             if (!site) {
                 site = await this.siteManager.getSiteById(rawPost.site_id);
                 siteById[rawPost.site_id] = site;
+            }
+
+            if (rawPost.parser_version !== TheParser.VERSION) {
+                const parseResult = this.parser.parse(rawPost.source);
+                rawPost.html = parseResult.text;
+                rawPost.parser_version = TheParser.VERSION;
+                toUpdateHtmlAndParserVersion.push({
+                    id: rawPost.post_id,
+                    html: rawPost.html,
+                });
             }
 
             const post: PostInfo = {
@@ -291,8 +305,13 @@ export default class FeedManager {
             posts.push(post);
         }
 
-        return posts;
+        if (toUpdateHtmlAndParserVersion.length) {
+            // update in background
+            await this.postRepository.updateHtmlAndParserVersion(toUpdateHtmlAndParserVersion, TheParser.VERSION)
+                .then().catch();
+        }
 
+        return posts;
     }
 
     async siteSubscribe(userId: number, siteName: string, main: boolean, bookmarks: boolean) {
