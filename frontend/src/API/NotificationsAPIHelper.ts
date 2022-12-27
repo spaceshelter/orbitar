@@ -5,6 +5,7 @@ export type NotificationInfo = {
     id: number;
     type: 'answer' | 'mention';
     date: Date;
+    read: boolean;
     source: {
         byUser: UserBaseEntity;
         post: PostBaseEntity;
@@ -22,12 +23,19 @@ export default class NotificationsAPIHelper {
     }
 
     async read(id: number) {
-        return await this.api.read(id);
+        await this.api.read(id);
+    }
+
+    async hide(id: number) {
+        await this.api.hide(id);
     }
 
     async readAll() {
-        this.appState.setNotificationsCount(0);
         return await this.api.readAll();
+    }
+
+    async hideAll() {
+        return await this.api.hideAll();
     }
 
     async list(auth?: string): Promise<{ webPushRegistered: boolean, notifications: NotificationInfo[] }> {

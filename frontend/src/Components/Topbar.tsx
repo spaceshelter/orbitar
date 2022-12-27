@@ -89,8 +89,15 @@ const WatchButton = observer(() => {
 });
 
 const NotificationsButton = observer((props: React.ComponentPropsWithRef<'button'>) => {
-    const {notificationsCount} = useAppState();
+    const {unreadNotificationsCount, visibleNotificationsCount} = useAppState();
     return (
-        <button {...props} disabled={notificationsCount === 0} className={notificationsCount > 0 ? styles.active : ''}><NotificationIcon /><span className={styles.label}>{notificationsCount > 0 ? notificationsCount : ''}</span></button>
+        <button {...props} disabled={visibleNotificationsCount === 0}
+                className={unreadNotificationsCount > 0 ? styles.active : ''}><NotificationIcon />
+            <span className={styles.label}>
+                {visibleNotificationsCount > 0 ?
+                 unreadNotificationsCount > 0  && unreadNotificationsCount !== visibleNotificationsCount ?
+                     `${unreadNotificationsCount}/${visibleNotificationsCount}` :
+                        visibleNotificationsCount : ''}
+            </span></button>
     );
 });

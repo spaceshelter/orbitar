@@ -5,7 +5,6 @@ import {
     UserNotificationMention
 } from './types/UserNotification';
 import NotificationsRepository from '../db/repositories/NotificationsRepository';
-import UserRepository from '../db/repositories/UserRepository';
 import CommentRepository from '../db/repositories/CommentRepository';
 import {NotificationRaw} from '../db/types/NotificationRaw';
 import PostRepository from '../db/repositories/PostRepository';
@@ -22,7 +21,6 @@ export default class NotificationManager {
     private readonly notificationsRepository: NotificationsRepository;
     private readonly postRepository: PostRepository;
     private readonly siteRepository: SiteRepository;
-    private readonly userRepository: UserRepository;
     private readonly webPushRepository: WebPushRepository;
     private readonly userCache: UserCache;
     private couldSendWebPush = false;
@@ -49,8 +47,10 @@ export default class NotificationManager {
         }
     }
 
-    async getNotificationsCount(forUserId: number) {
-        return await this.notificationsRepository.getUnreadNotificationsCount(forUserId);
+    async getNotificationsCounts(forUserId: number): Promise<{ unread: number, visible: number }> {
+        const unread = this.notificationsRepository.getUnreadNotificationsCount(forUserId);
+        const visible = this.notificationsRepository.getVisibleNotificationsCount(forUserId);
+        return {unread: await unread, visible: await visible};
     }
 
     async getNotifications(forUserId: number): Promise<UserNotificationExpanded[]> {
@@ -75,12 +75,12 @@ export default class NotificationManager {
             switch (data.type) {
                 case 'answer':
                 case 'mention': {
-                    const byUserRaw = await this.userRepository.getUserById(data.source.byUserId);
+                    const byUserRaw = await this.userCache.getById(data.source.byUserId);
                     if (!byUserRaw) {
                         return;
                     }
                     const byUser = {
-                        id: byUserRaw.user_id,
+                        id: byUserRaw.id,
                         username: byUserRaw.username,
                         gender: byUserRaw.gender
                     };
@@ -110,6 +110,7 @@ export default class NotificationManager {
                         id: notification.notification_id,
                         type: data.type,
                         date: notification.created_at,
+                        read: notification.read === 1,
                         source: {
                             byUser,
                             post,
@@ -199,12 +200,20 @@ export default class NotificationManager {
         await this.notificationsRepository.setRead(forUserId, notificationId);
     }
 
+    async setReadAndHidden(userId: number, hideId: number) {
+        await this.notificationsRepository.setReadAndHidden(userId, hideId);
+    }
+
     async setReadForPost(forUserId: number, postId: number) {
         return await this.notificationsRepository.setReadForPost(forUserId, postId);
     }
 
     async setReadAll(forUserId: number) {
         await this.notificationsRepository.setReadAll(forUserId);
+    }
+
+    async setHiddenAll(forUserId: number) {
+        await this.notificationsRepository.setReadAndHideAll(forUserId);
     }
 
     private async sendWebPush(forUserId: number, notification: UserNotification) {
@@ -221,7 +230,7 @@ export default class NotificationManager {
             return;
         }
 
-        const sender = await this.userRepository.getUserById(notification.source.byUserId);
+        const sender = await this.userCache.getById(notification.source.byUserId);
         const comment = await this.commentRepository.getComment(notification.source.commentId);
         const site = await this.siteRepository.getSiteById(comment.site_id);
 

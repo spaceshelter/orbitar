@@ -26,6 +26,7 @@ export type UserNotificationExpanded = UserNotificationMentionExpanded | UserNot
 export type UserNotificationSourceExpanded = {
     id: number;
     date: Date;
+    read: boolean;
     source: {
         byUser: UserBaseInfo;
         post: PostBaseInfo;
