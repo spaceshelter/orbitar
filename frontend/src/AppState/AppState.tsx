@@ -39,7 +39,10 @@ export class AppState {
     userRestrictions: UserRestrictionsResponse | undefined;
 
     @observable
-    notificationsCount = 0;
+    unreadNotificationsCount = 0;
+
+    @observable
+    visibleNotificationsCount = 0;
 
     @observable
     watchCommentsCount = 0;
@@ -102,8 +105,12 @@ export class AppState {
     }
 
     @action
-    setNotificationsCount(value: number) {
-        this.notificationsCount = value;
+    setUnreadNotificationsCount(value: number) {
+        this.unreadNotificationsCount = value;
+    }
+    @action
+    setVisibleNotificationsCount(value: number) {
+        this.visibleNotificationsCount = value;
     }
 
     @action
@@ -125,7 +132,7 @@ export const AppStateProvider = (props: {children: ReactNode}) => {
             if (!link) {
                 return;
             }
-            if (appState.notificationsCount > 0) {
+            if (appState.unreadNotificationsCount > 0) {
                 link.href = '//' + process.env.REACT_APP_ROOT_DOMAIN + '/favicon-badge.png';
             }
             else {

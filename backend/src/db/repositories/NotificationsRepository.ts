@@ -13,16 +13,18 @@ export default class NotificationsRepository {
         const result = await this.db.fetchOne<{cnt: string}>('select count(*) cnt from notifications where user_id=:user_id and `read`=0', {
             user_id: forUserId
         });
+        return parseInt(result?.cnt || '0');
+    }
 
-        if (result) {
-            return parseInt(result.cnt);
-        }
-
-        return 0;
+    async getVisibleNotificationsCount(forUserId: number): Promise<number> {
+        const result = await this.db.fetchOne<{cnt: string}>('select count(*) cnt from notifications where user_id=:user_id and hidden=0', {
+            user_id: forUserId
+        });
+        return parseInt(result?.cnt || '0');
     }
 
     async getNotifications(forUserId: number, limit = 20): Promise<NotificationRaw[]> {
-        return await this.db.fetchAll<NotificationRaw>('select * from notifications where user_id=:user_id and `read`=0 order by notification_id desc limit :limit', {
+        return await this.db.fetchAll<NotificationRaw>('select * from notifications where user_id=:user_id and hidden=0 order by notification_id desc limit :limit', {
             user_id: forUserId,
             limit
         });
@@ -46,6 +48,13 @@ export default class NotificationsRepository {
         });
     }
 
+    async setReadAndHidden(forUserId: number, hideId: number) {
+        await this.db.query('update notifications set hidden=1, `read` = 1 where user_id=:user_id and notification_id=:notification_id', {
+            user_id: forUserId,
+            notification_id: hideId
+        });
+    }
+
     async setReadForPost(forUserId: number, postId: number): Promise<boolean> {
         const result = await this.db.query<ResultSetHeader>('update notifications set `read`=1 where user_id=:user_id and post_id=:post_id', {
             user_id: forUserId,
@@ -57,6 +66,12 @@ export default class NotificationsRepository {
 
     async setReadAll(forUserId: number) {
         await this.db.query('update notifications set `read`=1 where user_id=:user_id', {
+            user_id: forUserId
+        });
+    }
+
+    async setReadAndHideAll(forUserId: number) {
+        await this.db.query('update notifications set hidden=1, `read`=1 where user_id=:user_id', {
             user_id: forUserId
         });
     }

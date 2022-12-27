@@ -128,7 +128,7 @@ export default class UserManager {
 
     async getUserStats(forUserId: number): Promise<UserStats> {
         const unreadComments = await this.userRepository.getUserUnreadComments(forUserId);
-        const notifications = await this.notificationManager.getNotificationsCount(forUserId);
+        const notifications = await this.notificationManager.getNotificationsCounts(forUserId);
 
         return {
             notifications,

@@ -65,7 +65,8 @@ export default class APIHelper {
 
             this.appState.setUserInfo(status.user);
             this.appState.setWatchCommentsCount(status.watch.comments);
-            this.appState.setNotificationsCount(status.notifications);
+            this.appState.setUnreadNotificationsCount(status.notifications.unread);
+            this.appState.setVisibleNotificationsCount(status.notifications.visible);
             this.appState.setSubscriptions(status.subscriptions);
             if (status.site) {
                 this.appState.setSiteInfo(status.site);
@@ -112,7 +113,8 @@ export default class APIHelper {
 
             this.appState.setUserInfo(status.user);
             this.appState.setWatchCommentsCount(status.watch.comments);
-            this.appState.setNotificationsCount(status.notifications);
+            this.appState.setUnreadNotificationsCount(status.notifications.unread);
+            this.appState.setVisibleNotificationsCount(status.notifications.visible);
             this.appState.setSubscriptions(status.subscriptions);
             if (status.site) {
                 this.appState.setSiteInfo(status.site);
