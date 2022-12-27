@@ -12,7 +12,10 @@ type StatusResponse = {
         posts: number;
         comments: number;
     };
-    notifications: number;
+    notifications: {
+        unread: number;
+        visible: number;
+    }
     subscriptions: SiteWithUserInfo[];
 };
 

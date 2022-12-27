@@ -150,7 +150,10 @@ type PostReadRequest = {
     last_comment_id?: number;
 };
 type PostReadResponse = {
-    notifications?: number;
+    notifications?: {
+        unread: number,
+        visible: number
+    };
     watch?: {
         comments: number;
         posts: number;
