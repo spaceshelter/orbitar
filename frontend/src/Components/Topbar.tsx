@@ -92,7 +92,7 @@ const NotificationsButton = observer((props: React.ComponentPropsWithRef<'button
     const {unreadNotificationsCount, visibleNotificationsCount} = useAppState();
     return (
         <button {...props} disabled={visibleNotificationsCount === 0}
-                className={unreadNotificationsCount > 0 ? styles.active : ''}><NotificationIcon />
+                className={classNames({[styles.active]: unreadNotificationsCount})><NotificationIcon />
             <span className={styles.label}>
                 {visibleNotificationsCount > 0 ?
                  unreadNotificationsCount > 0  && unreadNotificationsCount !== visibleNotificationsCount ?
