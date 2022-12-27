@@ -292,8 +292,15 @@ export default class TheParser {
     }
 
     renderVideoTag(url: string, loop: boolean) {
-        const match = url.match(/https?:\/\/i.imgur.com\/([^.]+).mp4$/);
-        const poster = match ? `poster="https://i.imgur.com/${encodeURI(match[1])}.jpg"` : '';
+        const imgurPoster = () => {
+            const match = url.match(/https?:\/\/i.imgur.com\/([^.]+).mp4$/);
+            return match && `poster="https://i.imgur.com/${encodeURI(match[1])}.jpg"`;
+        }
+        const idiodPoster = () => {
+            const match = url.match(/https?:\/\/idiod.video\/([^.]+\.mp4)$/);
+            return match && `poster="https://idiod.video/preview/${encodeURI(match[1])}"`;
+        }
+        const poster = imgurPoster() || idiodPoster() || '';
         return `<video ${loop ? 'loop=""' : ''} preload="metadata" ${poster} controls="" width="500"><source src="${encodeURI(url)}" type="video/mp4"></video>`;
     }
 
