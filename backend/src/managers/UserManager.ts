@@ -15,6 +15,8 @@ import {sendResetPasswordEmail} from '../utils/Mailer';
 import {SiteConfig} from '../config';
 import {Logger} from 'winston';
 import {FeedSorting} from '../api/types/entities/common';
+import TheParser from '../parser/TheParser';
+import {UserCache} from './UserCache';
 
 const USER_RESTRICTIONS = {
     MIN_KARMA: -1000,
@@ -24,6 +26,7 @@ const USER_RESTRICTIONS = {
 };
 
 export default class UserManager {
+    private userCache: UserCache;
     private credentialsRepository: UserCredentials;
     private userRepository: UserRepository;
     private voteRepository: VoteRepository;
@@ -33,12 +36,10 @@ export default class UserManager {
     private webPushRepository: WebPushRepository;
     private readonly redis: RedisClientType;
     private siteConfig: SiteConfig;
-    private cacheId: Record<number, UserInfo> = {};
-    private cacheUsername: Record<string, UserInfo> = {};
     private cacheLastVisit: Record<number, Date> = {};
-    private cachedUserParents: Record<number, number | undefined | false> = {};
     private readonly logger: Logger;
     private readonly mailLogger: Logger;
+    private readonly parser: TheParser;
 
     private cachedNumActiveUsersThatCanVote = {
         expirationMs: 1000 * 60 * 60 /* 1 hour */,
@@ -55,7 +56,8 @@ export default class UserManager {
 
     constructor(credentialsRepository: UserCredentials, userRepository: UserRepository, voteRepository: VoteRepository,
                 commentRepository: CommentRepository,  postRepository: PostRepository,  webPushRepository: WebPushRepository,
-                notificationManager: NotificationManager, redis: RedisClientType, siteConfig: SiteConfig, logger: Logger) {
+                userCache: UserCache,
+                parser: TheParser, notificationManager: NotificationManager, redis: RedisClientType, siteConfig: SiteConfig, logger: Logger) {
         this.credentialsRepository = credentialsRepository;
         this.userRepository = userRepository;
         this.voteRepository = voteRepository;
@@ -63,60 +65,29 @@ export default class UserManager {
         this.postRepository = postRepository;
         this.notificationManager = notificationManager;
         this.webPushRepository = webPushRepository;
+        this.userCache = userCache;
         this.redis = redis;
         this.siteConfig = siteConfig;
         this.logger = logger;
         this.mailLogger = logger.child({service: 'MAIL'});
+        this.parser = parser;
     }
 
-    async getById(userId: number): Promise<UserInfo | undefined> {
-        if (this.cacheId[userId]) {
-            return this.cacheId[userId];
-        }
-
-        const rawUser = await this.userRepository.getUserById(userId);
-
-        if (!rawUser) {
-            return;
-        }
-
-        const user = this.mapUserRaw(rawUser);
-        this.cache(user);
-        return user;
+    // TODO migrate all usage to direct calls to userCache
+    public async getById(userId: number): Promise<UserInfo | undefined> {
+        return this.userCache.getById(userId);
     }
 
     public clearCache(userId: number) {
-        const cacheEntry = this.cacheId[userId];
-        if (!cacheEntry) {
-            return;
-        }
-        delete this.cacheId[userId];
-        delete this.cacheUsername[cacheEntry.username];
+        this.userCache.clearCache(userId);
     }
 
     public clearUserRestrictionsCache(userId: number) {
         this.userRestrictionsCache.delete(userId);
     }
 
-    private cache(user: UserInfo) {
-        this.cacheId[user.id] = user;
-        this.cacheUsername[user.username] = user;
-    }
-
     async getByUsername(username: string): Promise<UserInfo | undefined> {
-        if (this.cacheUsername[username]) {
-            return this.cacheUsername[username];
-        }
-
-        const rawUser = await this.userRepository.getUserByUsername(username);
-
-        if (!rawUser) {
-            return;
-        }
-
-        const user = this.mapUserRaw(rawUser);
-        this.cache(user);
-        return user;
+        return this.userCache.getByUsername(username);
     }
 
     async getByUsernameWithVote(username: string, forUserId: number): Promise<UserInfo | undefined> {
@@ -129,13 +100,7 @@ export default class UserManager {
     }
 
     async getInvitedBy(userId: number): Promise<UserInfo | undefined> {
-        const invitedByRaw = await this.userRepository.getUserParent(userId);
-
-        if (!invitedByRaw) {
-            return;
-        }
-
-        return this.mapUserRaw(invitedByRaw);
+        return this.userCache.getUserParent(userId);
     }
 
     async getInvites(userId: number): Promise<UserInfo[]> {
@@ -145,13 +110,14 @@ export default class UserManager {
     }
 
     async checkPassword(username: string, password: string): Promise<UserInfo | false> {
-        const userRaw = await this.userRepository.getUserByUsername(username);
+        const user = await this.getByUsername(username);
+        const passwordHash = user && await this.userRepository.getPasswordHashByUserId(user.id);
 
-        if (!userRaw || !await bcrypt.compare(password, userRaw.password)) {
+        if (!passwordHash || !await bcrypt.compare(password, passwordHash)) {
             return false;
         }
 
-        return this.mapUserRaw(userRaw);
+        return user;
     }
 
     async registerByInvite(inviteCde: string, username: string, name: string, email: string, passwordHash: string, gender: UserGender): Promise<UserInfo> {
@@ -403,15 +369,7 @@ export default class UserManager {
     }
 
     private mapUserRaw(rawUser: UserRaw): UserInfo {
-        return {
-            id: rawUser.user_id,
-            username: rawUser.username,
-            gender: rawUser.gender,
-            karma: rawUser.karma,
-            name: rawUser.name,
-            registered: rawUser.registered_at,
-            ontrial: rawUser.ontrial === 1,
-        };
+       return this.userCache.mapUserRaw(rawUser);
     }
 
     async sendResetPasswordEmail(email: string): Promise<boolean> {
@@ -466,19 +424,6 @@ export default class UserManager {
         return (Date.now() - user.registered.getTime()) / (1000 * 60 * 60 * 24);
     }
 
-    async getUserParent(userId: number): Promise<UserInfo|undefined> {
-        // check cache
-        const cachedParent = this.cachedUserParents[userId];
-        if (cachedParent === false) {
-            return undefined;
-        } else if (cachedParent) {
-            return this.getById(cachedParent);
-        }
-        const parent = await this.userRepository.getUserParent(userId);
-        this.cachedUserParents[userId] = parent !== undefined ? parent.user_id : false;
-        return this.getById(parent.user_id);
-    }
-
     /**
      * Returns the array of votes counts where idx is the secondary vote value i.e. 0, 1, 2, 3 .. threshold
      *  and the value is the aggregated number of users with this vote value.
@@ -499,7 +444,7 @@ export default class UserManager {
                 user
             });
         }
-        const parent = await this.getUserParent(userId);
+        const parent = await this.userCache.getUserParent(userId);
         if (parent && parent.id > 1 /* exclude admin accounts */ && !primaryVoters.has(parent.id)) {
             primaryVoters.set(parent.id, {
                 vote: 2,
@@ -628,5 +573,15 @@ export default class UserManager {
 
     getTrialApprovers(userId: number): Promise<VoteWithUsername[]> {
         return this.voteRepository.getTrialsApprovers(userId);
+    }
+
+    async saveBio(bio: string, userId: number): Promise<string> {
+        const parseResult = this.parser.parse(bio);
+        await this.userRepository.saveBio(bio, parseResult.text, userId);
+        return parseResult.text;
+    }
+
+    async saveGender(gender: UserGender, userId: number): Promise<void> {
+        await this.userRepository.saveGender(gender, userId);
     }
 }

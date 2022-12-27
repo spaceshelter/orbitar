@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import styles from './UserPage.module.scss';
 import {Link, useParams} from 'react-router-dom';
 import Username from '../Components/Username';
@@ -11,8 +11,9 @@ import UserProfileComments from '../Components/UserProfileComments';
 import {UserProfileInvites} from '../Components/UserProfileInvites';
 import {observer} from 'mobx-react-lite';
 import {UserProfileKarma} from '../Components/UserProfileKarma';
-import {UserGender} from '../Types/UserInfo';
+import {UserGender, UserProfileInfo} from '../Types/UserInfo';
 import UserProfileSettings from '../Components/UserProfileSettings';
+import UserProfileBio from '../Components/UserProfileBio';
 
 export const UserPage = observer(() => {
     const {userInfo, userRestrictions: restrictions} = useAppState();
@@ -20,8 +21,11 @@ export const UserPage = observer(() => {
     const params = useParams<{username?: string, page?: string}>();
     const username = params.username || userInfo?.username;
     const page = params.page || 'profile';
-
+    const cutInvitesListInvitesNumber = 10;
+    const cutInvitesListToNumber = 5;
     const [state, refreshProfile] = useUserProfile(username || '');
+
+    const [inviteListTruncated, setInviteListTruncated] = useState(true);
 
     const isPosts = page === 'posts';
     const isComments = page === 'comments';
@@ -41,6 +45,10 @@ export const UserPage = observer(() => {
         api.user.refreshUserRestrictions();
     }, [api]);
 
+    useEffect(() => {
+        return () => setInviteListTruncated(true);
+    }, [page]);
+
     if (state.status === 'ready') {
         const profile = state.profile;
         const user = profile.profile;
@@ -49,6 +57,25 @@ export const UserPage = observer(() => {
         const rating = {value: user.karma, vote: user.vote};
         const isMyProfile = userInfo && userInfo.id === user.id;
         const base = isMyProfile ? '/profile' : '/u/' + user.username;
+        const invitesFullList = profile.invites.slice().sort((a: UserProfileInfo, b: UserProfileInfo) => {
+            if (a.active === b.active) {
+                return a.registered > b.registered ? 1 : -1;
+            }
+            return a.active ? -1 : 1;
+        });
+        const invitesCutList = (invitesFullList.length > cutInvitesListInvitesNumber) ? invitesFullList.slice(0, cutInvitesListToNumber) : invitesFullList;
+
+        const showInvitesList = (listToShow: UserProfileInfo[]) => {
+            return <>
+                {listToShow.map((user, idx) => {
+                    return <Username key={idx} user={user} inactive={!user.active}/>;
+                })}
+                {invitesFullList.length > cutInvitesListInvitesNumber && inviteListTruncated && <>
+                    ... <Link to={''} onClick={() => setInviteListTruncated(false)}>показать остальных</Link>
+                </>}
+                {!inviteListTruncated && <Link to={base + '/invites'}>История приглашений</Link>}
+            </>;
+        };
 
         const handleOnVote = (value: number, vote?: number, postApiCall?: boolean) => {
             if (postApiCall) {
@@ -88,7 +115,7 @@ export const UserPage = observer(() => {
                     <Link className={`${styles.control} ${isComments ? styles.active : ''}`} to={base + '/comments'}>Комментарии ({profile.numberOfComments.toLocaleString()})</Link>
                     <Link className={`${styles.control} ${isKarma ? styles.active : ''}`} to={base + '/karma'}>Саморегуляция</Link>
                     <Link className={`${styles.control} ${isInvites ? styles.active : ''}`} to={base + '/invites'}>Инвайты {isMyProfile && profile.numberOfInvitesAvailable ? ('(' + profile.numberOfInvitesAvailable.toLocaleString() + ')') : '' }</Link>
-                    <Link className={`${styles.control} ${isSettings ? styles.active : ''}`} to={base + '/settings'}>Настройки</Link>
+                    {isMyProfile && <Link className={`${styles.control} ${isSettings ? styles.active : ''}`} to={base + '/settings'}>Настройки</Link>}
                 </div>
 
                 <div className={styles.userinfo}>
@@ -102,16 +129,17 @@ export const UserPage = observer(() => {
                              <DateComponent date={user.registered} />
                         </div>
                         {profile.invites.length > 0 && <div>
-                            Пригласил{a}: {profile.invites.map((user, idx) => {
-                            return <Username key={idx} user={user} inactive={!user.active}/>;
-                            })}
+                            Пригласил{a}:
+                                {inviteListTruncated && showInvitesList(invitesCutList)}
+                                {!inviteListTruncated && showInvitesList(invitesFullList)}
                         </div>}
                     </>}
+                    {isProfile && <UserProfileBio username={user.username} mine={!!isMyProfile} bio_source={profile.profile.bio_source} bio_html={profile.profile.bio_html} />}
                     {isPosts && <UserProfilePosts username={user.username} />}
                     {isComments && <UserProfileComments username={user.username} />}
                     {isInvites && <UserProfileInvites username={user.username} onInvitesChange={handleInvitesChange} />}
                     {isKarma && <UserProfileKarma username={user.username} profile={profile} />}
-                    {isSettings && <UserProfileSettings />}
+                    {isSettings && <UserProfileSettings gender={user.gender} onChange={refreshProfile} />}
                 </div>
             </div>
         );

@@ -1,4 +1,4 @@
-import {UserBaseEntity, UserProfileEntity} from '../entities/UserEntity';
+import {UserBaseEntity, UserGender, UserProfileEntity} from '../entities/UserEntity';
 import {VoteListItemEntity} from '../entities/VoteEntity';
 
 export type UserProfileRequest = {
@@ -48,4 +48,20 @@ export type UserRestrictionsResponse = {
     canInvite: boolean;
     canEditOwnContent: boolean;
     canCreateSubsites: boolean;
+};
+
+export type UserSaveBioRequest = {
+    bio: string;
+};
+
+export type UserSaveBioResponse = {
+    bio: string;
+};
+
+export type UserSaveGenderRequest = {
+    gender: UserGender;
+};
+
+export type UserSaveGenderResponse = {
+    gender: UserGender;
 };
