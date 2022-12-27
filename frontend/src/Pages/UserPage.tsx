@@ -73,7 +73,7 @@ export const UserPage = observer(() => {
                 {invitesFullList.length > cutInvitesListInvitesNumber && inviteListTruncated && <>
                     ... <Link to={''} onClick={() => setInviteListTruncated(false)}>показать остальных</Link>
                 </>}
-                {!inviteListTruncated && <Link to={base + '/invites'}>подробнее</Link>}
+                {!inviteListTruncated && <Link to={base + '/invites'}>История приглашений</Link>}
             </>;
         };
 
