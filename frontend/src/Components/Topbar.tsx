@@ -11,6 +11,7 @@ import {ReactComponent as SearchIcon} from '../Assets/search.svg';
 import NotificationsPopup from './NotificationsPopup';
 import {Hamburger} from './Hamburger';
 import {observer} from 'mobx-react-lite';
+import classNames from 'classnames';
 
 export type TopbarMenuState = 'disabled' | 'open' | 'close';
 
@@ -90,14 +91,19 @@ const WatchButton = observer(() => {
 
 const NotificationsButton = observer((props: React.ComponentPropsWithRef<'button'>) => {
     const {unreadNotificationsCount, visibleNotificationsCount} = useAppState();
+
+    let label = '';
+    if (visibleNotificationsCount > 0) {
+        if (unreadNotificationsCount > 0  && unreadNotificationsCount !== visibleNotificationsCount) {
+            label = `${unreadNotificationsCount}/${visibleNotificationsCount}`;
+        } else {
+            label = `${visibleNotificationsCount}`;
+        }
+    }
+
     return (
         <button {...props} disabled={visibleNotificationsCount === 0}
-                className={classNames({[styles.active]: unreadNotificationsCount})><NotificationIcon />
-            <span className={styles.label}>
-                {visibleNotificationsCount > 0 ?
-                 unreadNotificationsCount > 0  && unreadNotificationsCount !== visibleNotificationsCount ?
-                     `${unreadNotificationsCount}/${visibleNotificationsCount}` :
-                        visibleNotificationsCount : ''}
-            </span></button>
+                className={classNames({[styles.active]: unreadNotificationsCount})}><NotificationIcon />
+            <span className={styles.label}>{label}</span></button>
     );
 });
