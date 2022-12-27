@@ -35,7 +35,7 @@ export default class APIHelper {
     private baseAPI: APIBase;
     private initRetryCount = 0;
     private appState: AppState;
-    private updateInterval: number = parseInt(process.env.REACT_APP_STATUS_UPDATE_INTERVAL || '60');
+    private updateInterval: number = parseInt(process.env.REACT_APP_STATUS_UPDATE_INTERVAL || '30');
 
     constructor(api: APIBase, appState: AppState) {
         this.baseAPI = api;
