@@ -110,14 +110,14 @@ export default function SearchPage() {
     };
 
     return (
-        <div className={styles.search}>
+        <div className={classNames(styles.search, {[styles.empty]: !defaultSearch })}>
             {isSearching && <div className={feedStyles.loading}></div>}
 
             <div className={feedStyles.container}>
                 <div className={feedStyles.feed}>
                     <form onSubmit={handleSubmit(onSubmit)}>
                         <span className={classNames('i i-search', styles.icon)}></span>
-                        <input type="search" placeholder="Да это поиск!" {...register('term', {
+                        <input type="search" placeholder="Да это же поиск!" {...register('term', {
                             required: ''
                         })} defaultValue={defaultSearch}/>
                     </form>
