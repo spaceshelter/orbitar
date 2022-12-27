@@ -61,16 +61,13 @@ export default class APIHelper {
         try {
             this.appState.appLoadingState = AppLoadingState.loading;
 
-            const status = await this.authAPI.status(this.appState.site);
+            const status = await this.authAPI.status();
 
             this.appState.setUserInfo(status.user);
             this.appState.setWatchCommentsCount(status.watch.comments);
             this.appState.setUnreadNotificationsCount(status.notifications.unread);
             this.appState.setVisibleNotificationsCount(status.notifications.visible);
             this.appState.setSubscriptions(status.subscriptions);
-            if (status.site) {
-                this.appState.setSiteInfo(status.site);
-            }
             this.appState.setAppLoadingState(AppLoadingState.authorized);
 
             // start fetch status update
@@ -109,16 +106,13 @@ export default class APIHelper {
 
     async fetchStatusUpdate() {
         try {
-            const status = await this.authAPI.status(this.appState.site);
+            const status = await this.authAPI.status();
 
             this.appState.setUserInfo(status.user);
             this.appState.setWatchCommentsCount(status.watch.comments);
             this.appState.setUnreadNotificationsCount(status.notifications.unread);
             this.appState.setVisibleNotificationsCount(status.notifications.visible);
             this.appState.setSubscriptions(status.subscriptions);
-            if (status.site) {
-                this.appState.setSiteInfo(status.site);
-            }
             this.appState.setAppLoadingState(AppLoadingState.authorized);
         }
         finally {

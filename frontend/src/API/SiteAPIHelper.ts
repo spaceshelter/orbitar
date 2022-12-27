@@ -33,4 +33,13 @@ export default class SiteAPIHelper {
         const result = await this.api.list(page, perpage);
         return result.sites;
     }
+
+    async updateSiteInfo() {
+        if (this.appState.site) {
+            const result = await this.api.site(this.appState.site);
+            if (result && result.site.site === this.appState.site) {
+                this.appState.setSiteInfo(result.site);
+            }
+        }
+    }
 }

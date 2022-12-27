@@ -26,12 +26,9 @@ export default class StatusController {
             return response.authRequired();
         }
 
-        const siteName = request.body.site;
-
         try {
             const userId = request.session.data.userId;
             const user = await this.userManager.getById(userId);
-            const site = siteName ? await this.siteManager.getSiteByNameWithUserInfo(userId, siteName) : undefined;
             const stats = await this.userManager.getUserStats(userId);
             const subscriptions = await this.siteManager.getSubscriptions(userId);
 
@@ -42,7 +39,6 @@ export default class StatusController {
 
             return response.success({
                 user,
-                site: site ? this.enricher.siteInfoToEntity(site) : undefined,
                 subscriptions: subscriptions.map(site => this.enricher.siteInfoToEntity(site)),
                 ...stats
             });

@@ -1,10 +1,10 @@
 import styles from './SiteSidebar.module.scss';
 import {Link} from 'react-router-dom';
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {useAPI, useAppState} from '../AppState/AppState';
 import {toast} from 'react-toastify';
 import {observer} from 'mobx-react-lite';
-import {TopbarMenuState} from '../Components/Topbar';
+import {TopbarMenuState} from './Topbar';
 import classNames from 'classnames';
 
 type SidebarProps = {
@@ -35,6 +35,14 @@ export const SiteSidebar = observer((props: SidebarProps) => {
                 toast.error('Настройки подписки не изменены!');
             });
     };
+
+    useEffect(() => {
+        if (!siteInfo) {
+            api.site.updateSiteInfo().then().catch(
+                () => toast.error('Не удалось обновить информацию о сайте!'),
+            );
+        }
+    }, [siteInfo, api.site]);
 
     return (
         <div className={classNames(styles.sidebar, {
