@@ -36,7 +36,7 @@ type SiteListResponse = {
     sites: SiteWithUserInfo[];
 };
 
-type SubscriptionsRequest = {};
+type SubscriptionsRequest = Record<string, never>;
 type SubscriptionsResponse = {
     subscriptions: SiteWithUserInfo[];
 };

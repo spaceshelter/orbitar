@@ -141,7 +141,7 @@ export default class UserManager {
                 comments: unreadComments,
                 posts: 0
             }
-        }
+        };
 
         this.userStatsCache.set(forUserId, stats);
         return stats;

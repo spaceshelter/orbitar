@@ -1,7 +1,7 @@
 import APIBase from './APIBase';
 import {UserInfo} from '../Types/UserInfo';
 
-type StatusRequest = {};
+type StatusRequest = Record<string, never>;
 type StatusResponse = {
     user: UserInfo;
     watch: {

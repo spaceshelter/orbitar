@@ -1,6 +1,6 @@
 import {UserEntity} from '../entities/UserEntity';
 
-export type StatusRequest = {};
+export type StatusRequest = Record<string, never>;
 
 export type StatusResponse = {
     user: UserEntity;
