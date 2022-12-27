@@ -27,7 +27,7 @@ interface CreateCommentProps {
     text?: string;
     storageKey?: string;
 
-    onAnswer: (text: string, post?: PostLinkInfo, comment?: CommentInfo) => Promise<CommentInfo | undefined>;
+    onAnswer: (text: string, post?: PostLinkInfo, comment?: CommentInfo) => Promise<CommentInfo | string| undefined>;
 }
 
 // same as CreateCommentComponent, but with slow mode and other restrictions

@@ -43,6 +43,7 @@ import TranslationManager from './managers/TranslationManager';
 import TranslationRepository from './db/repositories/TranslationRepository';
 import SearchController from './api/SearchController';
 import SearchManager from './managers/SearchManager';
+import {UserCache} from './managers/UserCache';
 
 const app = express();
 
@@ -104,8 +105,10 @@ const userRepository = new UserRepository(db);
 const webPushRepository = new WebPushRepository(db);
 const translationRepository = new TranslationRepository(db);
 
-const notificationManager = new NotificationManager(commentRepository, notificationsRepository, postRepository, siteRepository, userRepository, webPushRepository, config.vapid, config.site);
-const userManager = new UserManager(credentialsRepository, userRepository, voteRepository, commentRepository, postRepository, webPushRepository, notificationManager, redis.client, config.site, logger.child({ service: 'USER' }));
+const userCache = new UserCache(userRepository);
+const notificationManager = new NotificationManager(commentRepository, notificationsRepository, postRepository, siteRepository, userCache, webPushRepository, config.vapid, config.site);
+const userManager = new UserManager(credentialsRepository, userRepository, voteRepository, commentRepository, postRepository, webPushRepository,
+    userCache, theParser, notificationManager, redis.client, config.site, logger.child({ service: 'USER' }));
 const inviteManager = new InviteManager(inviteRepository, theParser, userManager);
 const siteManager = new SiteManager(siteRepository, userManager);
 const feedManager = new FeedManager(bookmarkRepository, postRepository, userRepository, siteManager, logger.child({ service: 'FEED' }));
