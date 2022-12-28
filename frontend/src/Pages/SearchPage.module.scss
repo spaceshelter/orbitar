@@ -1,8 +1,18 @@
+.search.empty {
+  margin-top: 80px;
+
+  @media only screen and (max-width: 600px) {
+    & {
+      margin-top: 16px;
+    }
+  }
+}
+
 .search {
   text-align: right;
   margin-top: 16px;
 
-  @media only screen and (max-width: 600px) {
+  @media only screen and (min-width: 1180px) {
     & {
       margin-top: -64px;
     }
@@ -16,7 +26,6 @@
   form {
     display: flex;
     margin-bottom: 16px;
-    margin-top: 80px;
     position: relative;
   }
 
@@ -79,7 +88,7 @@
   }
 
   .stats {
-    margin-bottom: 80px;
+    margin-bottom: 40px;
     color: var(--fgSofter);
   }
 }
