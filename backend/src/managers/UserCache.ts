@@ -4,6 +4,7 @@ import {UserRaw} from '../db/types/UserRaw';
 
 export class UserCache {
     private userRepository: UserRepository;
+    private initialized: Promise<void> | true | false = false;
     private cacheId: Record<number, UserInfo> = {};
     private cacheUsername: Record<string, UserInfo> = {};
     private cachedUserParents: Record<number, number | undefined | false> = {};
@@ -12,7 +13,27 @@ export class UserCache {
         this.userRepository = userRepository;
     }
 
+    private initialize() {
+        if (this.initialized === true) {
+            return Promise.resolve();
+        }
+        if (this.initialized) {
+            return this.initialized;
+        }
+        this.initialized = (async () => {
+            const users = await this.userRepository.getLastActiveUsers();
+            for (const user of users) {
+                this.cache(this.mapUserRaw(user));
+            }
+            this.initialized = true;
+        })();
+    }
+
     public async getById(userId: number): Promise<UserInfo | undefined> {
+        if (this.initialized !== true) {
+            await this.initialize();
+        }
+
         if (this.cacheId[userId]) {
             return this.cacheId[userId];
         }
