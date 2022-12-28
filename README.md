@@ -2,7 +2,7 @@
 
 Прототип коллективного блога.
 
-![Build badge](https://github.com/mugabe/orbitar/actions/workflows/build.yml/badge.svg?event=push&branch=main) ![Lint badge](https://github.com/mugabe/orbitar/actions/workflows/lint.yml/badge.svg?event=push&branch=main)
+![Build badge](https://github.com/spaceshelter/orbitar/actions/workflows/build.yml/badge.svg?event=push&branch=main)
 
 **ДИСКЛЕЙМЕР**: целью было быстро сделать прототип. Писалось всё быстро и на коленке, код дурно пахнет и на 100% подлежит переписыванию.
 
