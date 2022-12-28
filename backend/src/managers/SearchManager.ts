@@ -36,7 +36,7 @@ export default class SearchManager {
             {
                 multi_match: {
                     query: term,
-                    type: "phrase",
+                    type: 'phrase',
                     fields: ['title^2', 'source']
                 }
             },
