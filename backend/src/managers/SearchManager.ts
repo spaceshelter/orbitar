@@ -34,19 +34,16 @@ export default class SearchManager {
     ) {
         const shouldTerms = [
             {
-                query_string: {
+                multi_match: {
                     query: term,
-                    fields: ['title^102', 'source^100'],
-                    default_operator: 'and'
+                    type: "phrase",
+                    fields: ['title^2', 'source']
                 }
             },
             {
                 multi_match: {
                     query: term,
-                    fields: [
-                        'title^2',
-                        'source'
-                    ]
+                    fields: ['title^2', 'source']
                 }
             }
         ];
