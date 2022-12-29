@@ -3,6 +3,8 @@ import {useEffect, useMemo, useState} from 'react';
 import {PostInfo} from '../../Types/PostInfo';
 import {useCache} from './useCache';
 import {FeedSorting} from '../../Types/FeedSortingSettings';
+import {useConditional} from './useConditional';
+import {usePrevious} from './usePrevious';
 
 export type FeedType = 'all' | 'subscriptions' | 'site' | 'watch' | 'watch-all' | 'user-profile';
 
@@ -16,6 +18,9 @@ export function useFeed(id: string, feedType: FeedType | undefined, page: number
     const [loading, setLoading] = useState(true);
     const [pages, setPages] = useState(0);
     const [error, setError] = useState<[string, Error]>();
+    const prevSorting = usePrevious(sorting);
+    // handles initial load when sorting is undefined and initialized for the first time
+    const sortingChanged = useConditional(prevSorting !== undefined && prevSorting !== sorting);
 
     const updatePost = useMemo(() => {
         return (id: number, partial: Partial<PostInfo>) => {
@@ -115,7 +120,7 @@ export function useFeed(id: string, feedType: FeedType | undefined, page: number
                 setError(['Не удалось загрузить ленту постов', error]);
             });
         }
-    }, [id, feedType, page, api.post, perpage, sorting, filter]);
+    }, [id, feedType, page, api.post, perpage, sortingChanged, filter]);
 
     return { posts, loading, pages, error, updatePost, setLoading };
 }
