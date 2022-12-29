@@ -332,4 +332,14 @@ export default class PostRepository {
             }
         });
     }
+
+    async updateParserVersion(postIds: number[], parserVersion: number) {
+        if (!postIds.length) {
+            return;
+        }
+        await this.db.query('update posts set parser_version=:parserVersion where post_id in (:postIds)', {
+            parserVersion,
+            postIds
+        });
+    }
 }

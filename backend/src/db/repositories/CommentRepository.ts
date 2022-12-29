@@ -205,4 +205,18 @@ export default class CommentRepository {
             }
         });
     }
+
+    async updateCommentsParserVersion(commentIds: number[], parserVersion: number) {
+        if (!commentIds.length) {
+            return;
+        }
+        return await this.db.query(`
+            update comments
+            set parser_version=:parserVersion
+            where comment_id in (:commentIds)
+        `, {
+            commentIds,
+            parserVersion
+        });
+    }
 }

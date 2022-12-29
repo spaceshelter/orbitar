@@ -155,7 +155,17 @@ export default class PostManager {
     }
 
     private async updateCommentHtmlAndParserVersionInBatches(toUpdate:{id: number, html: string}[]) {
-        const batchSize = 100;
+        const batchSize = 128;
+
+        const updateIdsOnly = toUpdate.filter(comment => comment.html === undefined)
+            .map(comment => comment.id);
+        for (let i = 0; i < updateIdsOnly.length; i += batchSize) {
+            const batch = updateIdsOnly.slice(i, i + batchSize);
+            await this.commentRepository.updateCommentsParserVersion(batch, TheParser.VERSION);
+        }
+
+        toUpdate = toUpdate.filter(comment => comment.html !== undefined);
+
         for (let i = 0; i < toUpdate.length; i += batchSize) {
             const batch = toUpdate.slice(i, i + batchSize);
             await this.commentRepository.updateCommentsHtmlAndParserVersion(batch, TheParser.VERSION);
@@ -175,9 +185,13 @@ export default class PostManager {
             }
 
             if (raw.parser_version !== TheParser.VERSION) {
-                raw.html = this.parser.parse(raw.source).text;
+                const html = this.parser.parse(raw.source).text;
                 raw.parser_version = TheParser.VERSION;
-                toUpdateHtmlAndParserVersion.push({id: raw.comment_id, html: raw.html});
+                toUpdateHtmlAndParserVersion.push({
+                    id: raw.comment_id,
+                    html: raw.html !== html ? html : undefined
+                });
+                raw.html = html;
             }
 
             const comment: CommentInfoWithPostData = {

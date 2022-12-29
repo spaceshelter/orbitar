@@ -271,12 +271,12 @@ export default class FeedManager {
 
             if (rawPost.parser_version !== TheParser.VERSION) {
                 const parseResult = this.parser.parse(rawPost.source);
-                rawPost.html = parseResult.text;
-                rawPost.parser_version = TheParser.VERSION;
                 toUpdateHtmlAndParserVersion.push({
                     id: rawPost.post_id,
-                    html: rawPost.html,
+                    html: rawPost.html !== parseResult.text ? parseResult.text : undefined,
                 });
+                rawPost.html = parseResult.text;
+                rawPost.parser_version = TheParser.VERSION;
             }
 
             const post: PostInfo = {
@@ -305,11 +305,11 @@ export default class FeedManager {
             posts.push(post);
         }
 
-        if (toUpdateHtmlAndParserVersion.length) {
-            // update in background
-            await this.postRepository.updateHtmlAndParserVersion(toUpdateHtmlAndParserVersion, TheParser.VERSION)
-                .then().catch();
-        }
+        this.postRepository.updateHtmlAndParserVersion(toUpdateHtmlAndParserVersion.filter(x => x.html !== undefined),
+            TheParser.VERSION).then().catch();
+        this.postRepository.updateParserVersion(
+            toUpdateHtmlAndParserVersion.filter(x => x.html === undefined).map(x => x.id),
+            TheParser.VERSION).then().catch();
 
         return posts;
     }
