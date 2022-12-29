@@ -47,7 +47,7 @@ test('return valid youtube url', () => {
       p.parse('https://www.youtube.com/watch?v=aboZctrHfK8'
       ).text
   ).toEqual(
-      `<iframe width=\"500\" height=\"282\" src=\"https://www.youtube.com/embed/aboZctrHfK8\" allowfullscreen frameborder=\"0\"></iframe>`
+      `<a class="youtube-embed" href="https://www.youtube.com/watch?v=aboZctrHfK8" target="_blank"><img src="https://img.youtube.com/vi/aboZctrHfK8/0.jpg" alt="" data-youtube="https://www.youtube.com/embed/aboZctrHfK8"/></a>`
   );
 });
 

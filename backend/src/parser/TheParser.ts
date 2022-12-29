@@ -241,8 +241,8 @@ export default class TheParser {
             urlStr += '&t=' + startTime;
         }
 
-        return `<a class="youtube-embed" href="${encodeURI(urlStr)}" target="_blank">
-                <img src="${encodeURI(thumbnail)}" alt="" data-youtube="${encodeURI(embed)}"/></a>`;
+        return `<a class="youtube-embed" href="${encodeURI(urlStr)}" target="_blank">`+
+            `<img src="${encodeURI(thumbnail)}" alt="" data-youtube="${encodeURI(embed)}"/></a>`;
     }
 
     parseAllowedTag(node: Element): ParseResult {
