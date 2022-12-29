@@ -195,6 +195,16 @@ export default class UserRepository {
         `, {user_id: userId, visited_at: dateToInsert});
     }
 
+    getLastActiveUsers(): Promise<UserRaw[]> {
+        return this.db.fetchAll(`
+            select * from users
+            where user_id in (select distinct user_id
+                              from activity_db.user_activity
+                              where visited_at > subdate(now(), interval 30 day)
+                              ) limit 1000
+        `);
+    }
+
     /**
      * Returns the number of active users that are not on trial.
      */

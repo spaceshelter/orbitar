@@ -4,6 +4,13 @@ import {UserRaw} from '../db/types/UserRaw';
 
 export class UserCache {
     private userRepository: UserRepository;
+    /**
+     * Cache initialized state:
+     * - false: not initialized
+     * - Promise<void>: initializing, wait for it
+     * - true: initialized
+     */
+    private initializedState: Promise<void> | boolean = false;
     private cacheId: Record<number, UserInfo> = {};
     private cacheUsername: Record<string, UserInfo> = {};
     private cachedUserParents: Record<number, number | undefined | false> = {};
@@ -13,7 +20,24 @@ export class UserCache {
         this.userRepository = userRepository;
     }
 
+    private initialize() {
+        if (!this.initializedState) {
+            this.initializedState = (async () => {
+                const users = await this.userRepository.getLastActiveUsers();
+                for (const user of users) {
+                    this.cache(this.mapUserRaw(user));
+                }
+                this.initializedState = true;
+            })();
+        }
+        return this.initializedState;
+    }
+
     public async getById(userId: number): Promise<UserInfo | undefined> {
+        if (this.initializedState !== true) {
+            await this.initialize();
+        }
+
         if (this.cacheId[userId]) {
             return this.cacheId[userId];
         }
