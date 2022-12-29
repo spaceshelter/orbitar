@@ -131,6 +131,7 @@ export default class NotificationManager {
     async sendNotification(forUserId: number, notification: UserNotification) {
         const json = JSON.stringify(notification);
         await this.notificationsRepository.addNotification(forUserId, notification.type, notification.source.byUserId, notification.source.postId, notification.source.commentId, json);
+        this.userCache.deleteUserStatsCache(forUserId);
 
         // send push in background
         this.sendWebPush(forUserId, notification).then().catch();

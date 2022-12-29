@@ -48,7 +48,7 @@ export class AppState {
     watchCommentsCount = 0;
 
     @observable.struct
-    subscriptions: SiteWithUserInfo[] = [];
+    subscriptions: SiteWithUserInfo[] | undefined = undefined;
 
     browserHistory = createBrowserHistory();
     router = new RouterStore(this.browserHistory);

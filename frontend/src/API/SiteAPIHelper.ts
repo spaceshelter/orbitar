@@ -29,8 +29,23 @@ export default class SiteAPIHelper {
         }
     }
 
+    async subscriptons(): Promise<SiteWithUserInfo[]> {
+        const result = await this.api.subscriptions();
+        this.appState.setSubscriptions(result.subscriptions);
+        return result.subscriptions;
+    }
+
     async list(page: number, perpage: number): Promise<SiteWithUserInfo[]> {
         const result = await this.api.list(page, perpage);
         return result.sites;
+    }
+
+    async updateSiteInfo() {
+        if (this.appState.site) {
+            const result = await this.api.site(this.appState.site);
+            if (result && result.site.site === this.appState.site) {
+                this.appState.setSiteInfo(result.site);
+            }
+        }
     }
 }
