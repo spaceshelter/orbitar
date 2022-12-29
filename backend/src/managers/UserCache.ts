@@ -4,7 +4,13 @@ import {UserRaw} from '../db/types/UserRaw';
 
 export class UserCache {
     private userRepository: UserRepository;
-    private initialized: Promise<void> | true | false = false;
+    /**
+     * Cache initialized state:
+     * - false: not initialized
+     * - Promise<void>: initializing, wait for it
+     * - true: initialized
+     */
+    private initializedState: Promise<void> | boolean = false;
     private cacheId: Record<number, UserInfo> = {};
     private cacheUsername: Record<string, UserInfo> = {};
     private cachedUserParents: Record<number, number | undefined | false> = {};
@@ -14,23 +20,20 @@ export class UserCache {
     }
 
     private initialize() {
-        if (this.initialized === true) {
-            return Promise.resolve();
+        if (!this.initializedState) {
+            this.initializedState = (async () => {
+                const users = await this.userRepository.getLastActiveUsers();
+                for (const user of users) {
+                    this.cache(this.mapUserRaw(user));
+                }
+                this.initializedState = true;
+            })();
         }
-        if (this.initialized) {
-            return this.initialized;
-        }
-        this.initialized = (async () => {
-            const users = await this.userRepository.getLastActiveUsers();
-            for (const user of users) {
-                this.cache(this.mapUserRaw(user));
-            }
-            this.initialized = true;
-        })();
+        return this.initializedState;
     }
 
     public async getById(userId: number): Promise<UserInfo | undefined> {
-        if (this.initialized !== true) {
+        if (this.initializedState !== true) {
             await this.initialize();
         }
 
