@@ -218,6 +218,7 @@ export default class PostManager {
         }
 
         await this.bookmarkRepository.setWatch(postId, userId, true);
+        this.userManager.clearUserStatsCache();
 
         // fan out in background
         this.feedManager.postFanOut(commentRaw.site_id, commentRaw.post_id,

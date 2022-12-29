@@ -127,16 +127,31 @@ export default class UserManager {
     }
 
     async getUserStats(forUserId: number): Promise<UserStats> {
+        const cached = this.userCache.getUserStatsCache(forUserId);
+        if (cached) {
+            return cached;
+        }
+
         const unreadComments = await this.userRepository.getUserUnreadComments(forUserId);
         const notifications = await this.notificationManager.getNotificationsCounts(forUserId);
 
-        return {
+        const stats = {
             notifications,
             watch: {
                 comments: unreadComments,
                 posts: 0
             }
         };
+
+        this.userCache.cacheUserStats(forUserId, stats);
+        return stats;
+    }
+
+    deleteUserStatsCache(forUserId: number) {
+        this.userCache.deleteUserStatsCache(forUserId);
+    }
+    clearUserStatsCache() {
+        this.userCache.clearUserStatsCache();
     }
 
     async setCredentials<T>(forUserId: number, type: string, value: T) {

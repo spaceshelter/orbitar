@@ -1,4 +1,4 @@
-import {UserInfo} from './types/UserInfo';
+import {UserInfo, UserStats} from './types/UserInfo';
 import UserRepository from '../db/repositories/UserRepository';
 import {UserRaw} from '../db/types/UserRaw';
 
@@ -7,6 +7,7 @@ export class UserCache {
     private cacheId: Record<number, UserInfo> = {};
     private cacheUsername: Record<string, UserInfo> = {};
     private cachedUserParents: Record<number, number | undefined | false> = {};
+    private userStatsCache = new Map<number, UserStats>();
 
     constructor(userRepository: UserRepository) {
         this.userRepository = userRepository;
@@ -85,4 +86,19 @@ export class UserCache {
         };
     }
 
+    getUserStatsCache(forUserId: number): UserStats | undefined {
+        return this.userStatsCache.get(forUserId);
+    }
+
+    cacheUserStats(forUserId: number, stats: UserStats) {
+        this.userStatsCache.set(forUserId, stats);
+    }
+
+    deleteUserStatsCache(forUserId: number) {
+        this.userStatsCache.delete(forUserId);
+    }
+
+    clearUserStatsCache() {
+        this.userStatsCache.clear();
+    }
 }
