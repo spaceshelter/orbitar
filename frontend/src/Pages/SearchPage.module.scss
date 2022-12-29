@@ -1,21 +1,9 @@
-.search.empty {
-  margin-top: 80px;
+.search {
+  margin-top: 40px;
+  transition: margin-top ease-in-out 500ms 200ms;
 
   @media only screen and (max-width: 600px) {
-    & {
-      margin-top: 16px;
-    }
-  }
-}
-
-.search {
-  text-align: right;
-  margin-top: 16px;
-
-  @media only screen and (min-width: 1180px) {
-    & {
-      margin-top: -64px;
-    }
+    margin-top: 16px;
   }
 
   mark{
@@ -42,22 +30,39 @@
       opacity: .8;
       font-size: 16px;
     }
+    transition: all ease-in-out 500ms 200ms;
   }
 
   .icon{
-    font-size: 24px;
-    position: absolute;
-    top: 12px;
-    left: 16px;
+     font-size: 24px;
+     position: absolute;
+     top: 12px;
+     left: 16px;
+     transition: all ease-in-out 500ms 200ms;
+  }
+
+  @media only screen and (min-width: 1180px) and ( max-height: 900px ) {
+    &:not(.empty) {
+      margin-top: -64px;
+      input[type='search'] {
+        padding: 5px 8px 5px 44px;
+        line-height: 28px;
+        font-size: 16px;
+        width: 80%;
+      }
+      .icon{
+        top: 8px;
+        left: 12px;
+      }
+    }
   }
 
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
   input:-webkit-autofill:focus{
-    transition: all 0s 50000s;
+    transition: background-color 0s 50000s;
     -webkit-text-fill-color: var(--fg);
   }
-
 
   input[type="search"]::-webkit-search-cancel-button {
     -webkit-appearance: none;
@@ -88,7 +93,10 @@
   }
 
   .stats {
-    margin-bottom: 40px;
+    margin-bottom: 72px;
     color: var(--fgSofter);
+    @media only screen and (max-width: 600px) {
+      margin-bottom: 64px;
+    }
   }
 }
