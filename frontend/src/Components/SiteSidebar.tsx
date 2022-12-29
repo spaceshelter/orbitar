@@ -50,7 +50,7 @@ export const SiteSidebar = observer((props: SidebarProps) => {
                 () => toast.error('Не удалось получить список подписок!'),
             );
         }
-    });
+    }, [subscriptions]);
 
     return (
         <div className={classNames(styles.sidebar, {
