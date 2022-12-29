@@ -60,7 +60,7 @@
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
   input:-webkit-autofill:focus{
-    transition: all 0s 50000s;
+    transition: background-color 0s 50000s;
     -webkit-text-fill-color: var(--fg);
   }
 
