@@ -4,7 +4,7 @@
   "description": "",
   "main": "dist/app.js",
   "scripts": {
-    "start:dev": "npx tsc && node build/app.js",
+    "start:dev": "npx tsc && NODE_ENV=development node build/app.js",
     "build": "npx tsc",
     "start:production": "NODE_ENV=production node build/app.js",
     "migration:dev": "NODE_ENV=development node migrations.js",
