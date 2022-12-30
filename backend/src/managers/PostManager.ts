@@ -49,12 +49,12 @@ export default class PostManager {
 
     async getPost(postId: number, forUserId: number, format: ContentFormat): Promise<PostInfo | undefined> {
         const [rawPost] = await this.postRepository.getPostsWithUserData([postId], forUserId);
-        return (await this.feedManager.convertRawPost(forUserId, [rawPost], format))[0];
+        return (await this.feedManager.convertRawPosts(forUserId, [rawPost], format))[0];
     }
 
     async getPostsByUser(userId: number, forUserId: number, filter: string, page: number, perpage: number, format: ContentFormat): Promise<PostInfo[]> {
         const posts = await this.postRepository.getPostsByUser(userId, forUserId, filter, page, perpage);
-        return await this.feedManager.convertRawPost(forUserId, posts, format);
+        return await this.feedManager.convertRawPosts(forUserId, posts, format);
     }
 
     getPostWithoutUserData(postId: number): Promise<PostRaw | undefined> {
@@ -117,7 +117,7 @@ export default class PostManager {
 
         if (rawPost.source === content && rawPost.title === title) {
             // nothing changed
-            const [post] = await this.feedManager.convertRawPost(forUserId, [rawPost], format);
+            const [post] = await this.feedManager.convertRawPosts(forUserId, [rawPost], format);
             return post;
         }
 
@@ -130,7 +130,7 @@ export default class PostManager {
         }
 
         [rawPost] = await this.postRepository.getPostsWithUserData([postId], forUserId);
-        const [post] = await this.feedManager.convertRawPost(forUserId, [rawPost], format);
+        const [post] = await this.feedManager.convertRawPosts(forUserId, [rawPost], format);
 
         return post;
     }
@@ -154,15 +154,44 @@ export default class PostManager {
         return await this.convertRawCommentsWithPostData(forUserId, rawComments, format);
     }
 
+    private async updateCommentsHtmlAndParserVersionInBatches(toUpdate:{id: number, html: string}[]) {
+        const batchSize = 128;
+
+        const updateIdsOnly = toUpdate.filter(comment => comment.html === undefined)
+            .map(comment => comment.id);
+        for (let i = 0; i < updateIdsOnly.length; i += batchSize) {
+            const batch = updateIdsOnly.slice(i, i + batchSize);
+            await this.commentRepository.updateCommentsParserVersion(batch, TheParser.VERSION);
+        }
+
+        toUpdate = toUpdate.filter(comment => comment.html !== undefined);
+
+        for (let i = 0; i < toUpdate.length; i += batchSize) {
+            const batch = toUpdate.slice(i, i + batchSize);
+            await this.commentRepository.updateCommentsHtmlAndParserVersion(batch, TheParser.VERSION);
+        }
+    }
+
     private async convertRawCommentsWithPostData(forUserId: number, rawComments: CommentRawWithUserData[], format: ContentFormat): Promise<CommentInfoWithPostData[]> {
         const siteById: Record<number, SiteInfo> = {};
         const comments: CommentInfoWithPostData[] = [];
+        const postsToUpdateHtmlAndParserVersion: {id: number, html: string}[] = [];
 
         for (const raw of rawComments) {
             let site = siteById[raw.site_id];
             if (!site) {
                 site = await this.siteManager.getSiteById(raw.site_id);
                 siteById[raw.site_id] = site;
+            }
+
+            if (raw.parser_version !== TheParser.VERSION) {
+                const html = this.parser.parse(raw.source).text;
+                raw.parser_version = TheParser.VERSION;
+                postsToUpdateHtmlAndParserVersion.push({
+                    id: raw.comment_id,
+                    html: raw.html !== html ? html : undefined
+                });
+                raw.html = html;
             }
 
             const comment: CommentInfoWithPostData = {
@@ -189,6 +218,12 @@ export default class PostManager {
             }
 
             comments.push(comment);
+        }
+
+        if (postsToUpdateHtmlAndParserVersion.length) {
+            // update in background
+            this.updateCommentsHtmlAndParserVersionInBatches(postsToUpdateHtmlAndParserVersion)
+                .then().catch();
         }
 
         return comments;
