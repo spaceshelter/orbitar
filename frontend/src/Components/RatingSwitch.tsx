@@ -222,7 +222,7 @@ const RatingList = React.forwardRef((props: RatingListProps, ref: ForwardedRef<H
 
     function renderVotes(votes: VoteType[]) {
         if(votes.length === 0) {
-            return 'Пусто. Совсем ничего.';
+            return <span className={styles.listEmpty}>Пусто. Совсем ничего.</span>;
         }
 
         return votes.map((v) => {

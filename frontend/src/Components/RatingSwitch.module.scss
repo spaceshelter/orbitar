@@ -93,6 +93,10 @@ a.username {
     font-size: 13px;
 }
 
+.listEmpty {
+  color: var(--fgGhost);
+}
+
 .listDown {
     display: flex;
     overflow: auto;
