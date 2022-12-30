@@ -77,8 +77,7 @@ export default function RatingSwitch(props: RatingSwitchProps) {
         const clickHandler = (e: MouseEvent) => {
             e.stopPropagation();
             e.preventDefault();
-            setShowPopup(false);
-            setVotes(undefined);
+            hide();
             return false;
         };
         document.addEventListener('mousedown', clickHandler);
@@ -86,7 +85,12 @@ export default function RatingSwitch(props: RatingSwitchProps) {
             document.removeEventListener('mousedown', clickHandler);
         };
 
-    }, [showPopup, ratingRef, popupRef, votes, state.vote, props.id, props.type]);
+    }, [showPopup, ratingRef, popupRef, votes, state.vote, props.id, props.type, api.voteAPI]);
+
+    const hide = () => {
+        setShowPopup(false);
+        setVotes(undefined);
+    };
 
     const handleVote = (vote: number) => {
         return (ev: React.MouseEvent) => {
@@ -168,7 +172,7 @@ export default function RatingSwitch(props: RatingSwitchProps) {
                 <button {...buttonExtraProps} className={plusStyles.join(' ')} onClick={handleVote(1)}></button>
                 {props.double && <button {...buttonExtraProps} className={plus2Styles.join(' ')} onClick={handleVote(2)}></button>}
             </div>
-            {showPopup && <RatingList ref={popupRef} vote={state.vote || 0} rating={state.rating} votes={votes}></RatingList>}
+            {showPopup && <RatingList ref={popupRef} vote={state.vote || 0} rating={state.rating} votes={votes} hidePopup={hide}></RatingList>}
         </>
     );
 }
@@ -177,6 +181,7 @@ type RatingListProps = {
     rating: number;
     vote: number;
     votes?: VoteType[];
+    hidePopup: () => void
 };
 
 const RatingList = React.forwardRef((props: RatingListProps, ref: ForwardedRef<HTMLDivElement>) => {
@@ -215,6 +220,21 @@ const RatingList = React.forwardRef((props: RatingListProps, ref: ForwardedRef<H
         e.stopPropagation();
     };
 
+    function renderVotes(votes: VoteType[]) {
+        if(votes.length === 0) {
+            return <span className={styles.listEmpty}>Пусто. Совсем ничего.</span>;
+        }
+
+        return votes.map((v) => {
+            return (
+                <div key={v.username} onClick={props.hidePopup}>
+                    <Username className={styles.username} user={ {username: v.username} } />
+                    {v.vote > 0 ? `+${v.vote}`: v.vote}
+                </div>
+            );
+        });
+    }
+
     return (
         <div ref={ref} className={styles.list} onMouseDown={popupMouseDownHandler}>
             <div className={styles.listUp}>
@@ -230,10 +250,10 @@ const RatingList = React.forwardRef((props: RatingListProps, ref: ForwardedRef<H
                 <div className={styles.listScrollContainer}>
                     {voteList ? <>
                         <div className={styles.listMinus}>
-                            {voteList.votes[0].length > 0 ? voteList.votes[0].map((v) => <div key={v.username}><Username className={styles.username} user={ {username: v.username} } /> {v.vote}</div>) : 'пусто'}
+                            {renderVotes(voteList.votes[0])}
                         </div>
                         <div className={styles.listPlus}>
-                            {voteList.votes[1].length > 0 ? voteList.votes[1].map((v) => <div key={v.username}><Username className={styles.username} user={ {username: v.username} } /> +{v.vote}</div>) : 'пусто'}
+                            {renderVotes(voteList.votes[1])}
                         </div>
                     </>
                     : <>...</>}
