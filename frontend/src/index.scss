@@ -140,32 +140,6 @@ img.low-rating, video.low-rating, iframe.low-rating {
   max-width: 48px;
 }
 
-/*br {*/
-/*  content: "";*/
-/*  padding: 2em;*/
-/*  margin: -2em;*/
-/*  display: block;*/
-/*  font-size: 25%;*/
-/*}*/
-
-@keyframes highlight-flash {
-  from {
-    background-color: transparent;
-  }
-  to {
-    background-color: var(--highlight-bg);
-  }
-}
-
-.highlight {
-  /*background: var(--highlight-bg);*/
-  /*transition: background-color 1s;*/
-  animation-duration: 0.5s;
-  animation-name: highlight-flash;
-  animation-iteration-count: 6;
-  animation-direction: alternate;
-}
-
 body.no-scroll {
   overflow: hidden;
   margin-right: 18px;
