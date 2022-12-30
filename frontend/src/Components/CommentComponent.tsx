@@ -9,6 +9,7 @@ import {toast} from 'react-toastify';
 import {SignatureComponent} from './SignatureComponent';
 import {HistoryComponent} from './HistoryComponent';
 import Conf from '../Conf';
+import classNames from 'classnames';
 
 const defaultLanguage = process.env.DEFAULT_LANGUAGE || 'ru';
 
@@ -101,9 +102,13 @@ export default function CommentComponent(props: CommentProps) {
     const depth = props.depth || 0;
     const maxDepth = props.maxTreeDepth || 0;
     const isFlat = depth > maxDepth;
+
+    const margin = Math.min(depth, maxDepth) * 15;
+
     return (
-        <div className={styles.comment + (props.comment.isNew ? ' isNew': '') + (isFlat?' isFlat':'')} data-comment-id={props.comment.id}>
-            <div className='commentBody'>
+        <>
+            <div className={classNames('commentBody', styles.comment, {'isNew': props.comment.isNew, 'isFlat' : isFlat })} data-comment-id={props.comment.id}
+                    style={{marginLeft: margin}}>
                 <SignatureComponent showSite={props.showSite} site={site} author={author} onHistoryClick={toggleHistory}
                                     parentCommentId={props.idx && props.parent?.id} parentCommentAuthor={props.parent?.author?.username}
                                     postLink={postLink} commentId={props.comment.id} postLinkIsNew={props.unreadOnly} date={created} editFlag={editFlag} />
@@ -132,17 +137,16 @@ export default function CommentComponent(props: CommentProps) {
                 </div>
             </div>
             {(props.comment.answers || answerOpen) ?
-                <div className={styles.answers + (isFlat?' isFlat':'')}>
-                    {props.onAnswer && <CreateCommentComponentRestricted open={answerOpen} post={props.comment.postLink}
+                <>
+                    {props.onAnswer && <div style={{marginLeft: (margin + 15)}}>
+                        <CreateCommentComponentRestricted open={answerOpen} post={props.comment.postLink}
                                                                          comment={props.comment} onAnswer={handleAnswer}
-                                                                         storageKey={`cp:${props.comment.id}`}/>}
+                                                                         storageKey={`cp:${props.comment.id}`}/></div>}
                     {props.comment.answers && props.onAnswer ? props.comment.answers.map( (comment, idx) =>
                         <CommentComponent maxTreeDepth={maxDepth} depth={depth+1} parent={props.comment} key={comment.id}
                                           comment={comment} onAnswer={props.onAnswer} onEdit={props.onEdit} unreadOnly={props.unreadOnly} idx={idx} />) : <></>}
-                </div>
+                </>
                 : <></>}
-
-        </div>
+        </>
     );
 }
-

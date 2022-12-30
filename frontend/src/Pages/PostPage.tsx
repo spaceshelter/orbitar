@@ -60,7 +60,8 @@ export default function PostPage() {
                 return;
             }
 
-            const el = document.querySelector(`[data-comment-id="${commentId}"] .commentBody`);
+            const el = document.querySelector(`[data-comment-id="${commentId}"].commentBody`);
+            console.log('Scrolling to comment', commentId, el);
             if (el) {
                 setTimeout(() => {
                     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
