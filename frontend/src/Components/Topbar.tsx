@@ -62,7 +62,7 @@ export const Topbar = observer((props: TopbarProps) => {
 
     return (
         <>
-            <div className={styles.topbar}>
+            <div id="topbar" className={styles.topbar}>
                 <div className={styles.left}>
                     <button className={menuClasses.join(' ')} onClick={menuToggle}>
                         <Hamburger open={props.menuState === 'close'} />
