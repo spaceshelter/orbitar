@@ -43,6 +43,26 @@ function updateVideo(video: HTMLVideoElement) {
 }
 
 function updateImg(img: HTMLImageElement) {
+    // if has class youtube-embed convert to iframe on click
+    const ytUrl = img.dataset.youtube;
+    if (ytUrl && !img.classList.contains('youtube-embed-processed')) {
+        img.classList.add('youtube-embed-processed');
+        img.addEventListener('click', (e) => {
+            e.preventDefault();
+            const iframe = document.createElement('iframe');
+            iframe.src = ytUrl + '?autoplay=1';
+            iframe.width = img.width.toString();
+            iframe.height = img.height.toString();
+            iframe.allowFullscreen = true;
+            iframe.frameBorder = '0';
+            iframe.allow = 'autoplay; clipboard-write; encrypted-media; picture-in-picture';
+            img.parentElement?.replaceWith(iframe);
+        });
+    }
+    if (ytUrl) {
+        return;
+    }
+
     if (img.naturalWidth > 500 || img.naturalHeight > 500) {
         // will be displayed as block if not immediately surrounded by <br>
         const nextBr = !img.nextSibling || img.nextSibling.nodeName === 'BR';

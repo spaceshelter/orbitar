@@ -25,6 +25,10 @@ class ParserExtended extends Parser {
 export default class TheParser {
     private readonly allowedTags: Record<string, ((node: Element) => ParseResult) | boolean>;
 
+    // Bump this version when introducing breaking changes to the parser.
+    // Content will be re-parsed and saved on access when this version changes.
+    static readonly VERSION = 1;
+
     constructor() {
         this.allowedTags = {
             a: (node) => this.parseA(node),
@@ -230,12 +234,15 @@ export default class TheParser {
         }
 
         let embed = `https://www.youtube.com/embed/${videoId}`;
+        const thumbnail = `https://img.youtube.com/vi/${videoId}/0.jpg`;
+        let urlStr = `https://www.youtube.com/watch?v=${videoId}`;
         if (startTime) {
             embed += '?start=' + startTime;
+            urlStr += '&t=' + startTime;
         }
 
-        // noinspection HtmlDeprecatedAttribute
-        return `<iframe width="500" height="282" src="${encodeURI(embed)}" allowfullscreen frameborder="0"></iframe>`;
+        return `<a class="youtube-embed" href="${encodeURI(urlStr)}" target="_blank">`+
+            `<img src="${encodeURI(thumbnail)}" alt="" data-youtube="${encodeURI(embed)}"/></a>`;
     }
 
     parseAllowedTag(node: Element): ParseResult {
@@ -292,9 +299,21 @@ export default class TheParser {
     }
 
     renderVideoTag(url: string, loop: boolean) {
-        const match = url.match(/https?:\/\/i.imgur.com\/([^.]+).mp4$/);
-        const poster = match ? `poster="https://i.imgur.com/${encodeURI(match[1])}.jpg"` : '';
-        return `<video ${loop ? 'loop=""' : ''} preload="metadata" ${poster} controls="" width="500"><source src="${encodeURI(url)}" type="video/mp4"></video>`;
+        const imgurPoster = () => {
+            const match = url.match(/https?:\/\/i.imgur.com\/([^.]+).mp4$/);
+            return match && `poster="https://i.imgur.com/${encodeURI(match[1])}.jpg"`;
+        };
+        const idiodPoster = () => {
+            const match = url.match(/https?:\/\/idiod.video\/([^.]+\.mp4)$/);
+            return match && `poster="https://idiod.video/preview/${encodeURI(match[1])}"`;
+        };
+        const dumpVideoPoster = () => {
+            const match = url.match(/https?:\/\/dump.video\/i\/([^.]+)\.mp4$/);
+            return match && `poster="https://dump.video/i/${encodeURI(match[1])}.jpg"`;
+        };
+        const poster = imgurPoster() || idiodPoster() || dumpVideoPoster() || '';
+        const preload = poster ? 'preload="none"' : 'preload="metadata"';
+        return `<video ${loop ? 'loop=""' : ''} ${preload} ${poster} controls="" width="500"><source src="${encodeURI(url)}" type="video/mp4"></video>`;
     }
 
     parseIrony(node: Element): ParseResult {

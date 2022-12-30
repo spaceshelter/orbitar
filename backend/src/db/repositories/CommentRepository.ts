@@ -172,4 +172,38 @@ export default class CommentRepository {
             return true;
         });
     }
+
+    async updateCommentsHtmlAndParserVersion(batch: { id: number; html: string }[], parserVersion: number) {
+        if (!batch.length) {
+            return;
+        }
+        return await this.db.inTransaction(async (conn) => {
+            for (const { id, html } of batch) {
+                await conn.query<ResultSetHeader>(`
+                    update comments
+                    set html=:html,
+                        parser_version=:parserVersion
+                    where comment_id = :id and parser_version < :parserVersion
+                `, {
+                    id,
+                    html,
+                    parserVersion
+                });
+            }
+        });
+    }
+
+    async updateCommentsParserVersion(commentIds: number[], parserVersion: number) {
+        if (!commentIds.length) {
+            return;
+        }
+        return await this.db.query(`
+            update comments
+            set parser_version=:parserVersion
+            where comment_id in (:commentIds)
+        `, {
+            commentIds,
+            parserVersion
+        });
+    }
 }
