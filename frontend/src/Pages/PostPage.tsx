@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef} from 'react';
 import styles from './PostPage.module.css';
 import {Link, useLocation, useParams, useSearchParams} from 'react-router-dom';
 import {CommentInfo, PostInfo, PostLinkInfo} from '../Types/PostInfo';
@@ -13,9 +13,8 @@ export default function PostPage() {
     const [search] = useSearchParams();
     const postId = params.postId ? parseInt(params.postId, 10) : 0;
     const location = useLocation();
-    const [scrolledToComment, setScrolledToComment] = useState<{postId: number, commentId: number}>();
     const {site} = useAppState();
-
+    const containerRef = useRef<HTMLDivElement>(null);
     const unreadOnly = search.get('new') !== null;
     const {post, comments, postComment, editComment, editPost, error, reload, updatePost} = usePost(site, postId, unreadOnly);
 
@@ -53,50 +52,45 @@ export default function PostPage() {
             return;
         }
 
+        let scrollToComment: HTMLDivElement | null | undefined;
         if (location.hash) {
             const commentId = parseInt(location.hash.substring(1));
-
-            if (scrolledToComment && scrolledToComment.postId === postId && scrolledToComment.commentId === commentId) {
-                return;
-            }
-
-            const el = document.querySelector(`[data-comment-id="${commentId}"] .commentBody`);
-            if (el) {
-                setTimeout(() => {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    el.classList.add('highlight');
-
-                    setTimeout(() => {
-                        el.classList.remove('highlight');
-                        setScrolledToComment({postId, commentId});
-                    }, 5000);
-                }, 100);
-            }
+            scrollToComment = document.querySelector<HTMLDivElement>(`[data-comment-id="${commentId}"]`);
         }
         else if (unreadOnly) {
-            // find new comment
-            const el = document.querySelector(`.isNew`);
-            if (el) {
-                const commentId = parseInt(el.getAttribute('data-comment-id') || '');
-                if (!commentId) {
-                    return;
-                }
-
-                if (scrolledToComment && scrolledToComment.postId === postId && scrolledToComment.commentId === commentId) {
-                    return;
-                }
-
-                setTimeout(() => {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-                    setTimeout(() => {
-                        setScrolledToComment({postId, commentId});
-                    }, 5000);
-                }, 100);
-            }
-
+            // find first new comment
+             scrollToComment = document.querySelector<HTMLDivElement>(`.isNew`);
         }
-    }, [location.hash, comments, scrolledToComment, unreadOnly]);
+        // do nothing if element is focused already
+        if(!scrollToComment || scrollToComment.className.indexOf(styles.focusing) >= 0) {
+            return;
+        }
+
+        const commentBody = scrollToComment.querySelector<HTMLDivElement>('.commentBody');
+        if (!commentBody) {
+            return;
+        }
+        const containerNode = containerRef.current;
+        // disable anchoring for all post&comments and anchor the comment
+        containerNode?.classList.add(styles.focusing);
+        scrollToComment.classList.add(styles.focused);
+        commentBody.classList.add(styles.highlight);
+
+        // do not use `smooth` here - it is too slow and element won't focus into view correctly
+        commentBody.scrollIntoView({behavior: 'auto', block: 'start'});
+        // compensate for topbar height - otherwise element will be partially covered
+        const topbarHeight = document.getElementById('topbar')?.clientHeight;
+
+        if(topbarHeight) {
+            window.scrollBy({top: -topbarHeight - 10});
+        }
+
+        return () => {
+            commentBody.classList.remove(styles.highlight);
+            containerNode?.classList.remove(styles.focusing);
+            scrollToComment?.classList.remove(styles.focused);
+        };
+    }, [location.hash, comments, unreadOnly, postId]);
 
     const handlePostEdit = async (post: PostInfo, text: string, title?: string): Promise<PostInfo | undefined> => {
         return await editPost(title || '', text);
@@ -105,7 +99,7 @@ export default function PostPage() {
     const baseRoute = site === 'main' ? '/' : `/s/${site}/`;
 
     return (
-        <div className={styles.container}>
+        <div className={styles.container} ref={containerRef}>
             <div className={styles.feed}>
                 {post ? <div>
                         <PostComponent key={post.id} post={post} onChange={(_, partial) => updatePost(partial)} onEdit={handlePostEdit} />

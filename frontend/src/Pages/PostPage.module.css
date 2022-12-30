@@ -33,3 +33,31 @@
     color: var(--danger);
     margin: 20px;
 }
+
+@keyframes highlight-flash {
+    from {
+        background-color: transparent;
+    }
+    to {
+        background-color: var(--highlight-bg);
+    }
+}
+
+.highlight {
+    animation-duration: 0.5s;
+    animation-name: highlight-flash;
+    animation-iteration-count: 10;
+    animation-direction: alternate;
+}
+
+.focused :global(.commentBody) {
+    overflow-anchor: auto !important;
+}
+
+.focusing :global(.postComponent){
+    overflow-anchor: none;
+}
+
+.focusing :global(.commentBody) {
+    overflow-anchor: none;
+}
