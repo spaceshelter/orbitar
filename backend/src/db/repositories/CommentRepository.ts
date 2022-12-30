@@ -173,19 +173,6 @@ export default class CommentRepository {
         });
     }
 
-    async updateCommentHtml(postId: number, html: string, parserVersion: number) {
-        return await this.db.query<ResultSetHeader>(`
-            update comments
-            set html=:html,
-                parser_version=:parserVersion
-            where post_id = :postId
-        `, {
-            postId,
-            html,
-            parserVersion
-        });
-    }
-
     async updateCommentsHtmlAndParserVersion(batch: { id: number; html: string }[], parserVersion: number) {
         if (!batch.length) {
             return;

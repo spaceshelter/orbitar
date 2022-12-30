@@ -212,7 +212,7 @@ export default class FeedManager {
 
         return {
             total,
-            posts: await this.convertRawPost(forUserId, posts, format)
+            posts: await this.convertRawPosts(forUserId, posts, format)
         };
     }
 
@@ -230,7 +230,7 @@ export default class FeedManager {
 
     async getAllPosts(forUserId: number, page: number, perpage: number, format: ContentFormat, sorting: FeedSorting): Promise<PostInfo[]> {
         const rawPosts = await this.postRepository.getAllPosts(forUserId, page, perpage, sorting);
-        return this.convertRawPost(forUserId, rawPosts, format);
+        return this.convertRawPosts(forUserId, rawPosts, format);
     }
 
     async getAllPostsTotal(): Promise<number> {
@@ -239,7 +239,7 @@ export default class FeedManager {
 
     async getWatchFeed(forUserId: number, page: number, perpage: number, all = false, format: ContentFormat = 'html'): Promise<PostInfo[]> {
         const rawPosts = await this.postRepository.getWatchPosts(forUserId, page, perpage, all);
-        return await this.convertRawPost(forUserId, rawPosts, format);
+        return await this.convertRawPosts(forUserId, rawPosts, format);
     }
 
     async getWatchTotal(forUserId: number, all = false): Promise<number> {
@@ -249,7 +249,7 @@ export default class FeedManager {
 
     async getSiteFeed(forUserId: number, siteId: number, page: number, perpage: number, format: ContentFormat, sorting: FeedSorting): Promise<PostInfo[]> {
         const rawPosts = await this.postRepository.getPosts(siteId, forUserId, page, perpage, sorting);
-        return this.convertRawPost(forUserId, rawPosts, format);
+        return this.convertRawPosts(forUserId, rawPosts, format);
     }
 
     async getSiteTotal(siteId: number): Promise<number> {
@@ -257,10 +257,10 @@ export default class FeedManager {
     }
 
 
-    async convertRawPost(forUserId: number, rawPosts: PostRawWithUserData[], format: ContentFormat): Promise<PostInfo[]> {
+    async convertRawPosts(forUserId: number, rawPosts: PostRawWithUserData[], format: ContentFormat): Promise<PostInfo[]> {
         const siteById: Record<number, SiteInfo> = {};
         const posts: PostInfo[] = [];
-        const toUpdateHtmlAndParserVersion: {id: number, html: string}[] = [];
+        const commentsToUpdateHtmlAndParserVersion: {id: number, html: string}[] = [];
 
         for (const rawPost of rawPosts) {
             let site = siteById[rawPost.site_id];
@@ -271,7 +271,7 @@ export default class FeedManager {
 
             if (rawPost.parser_version !== TheParser.VERSION) {
                 const parseResult = this.parser.parse(rawPost.source);
-                toUpdateHtmlAndParserVersion.push({
+                commentsToUpdateHtmlAndParserVersion.push({
                     id: rawPost.post_id,
                     html: rawPost.html !== parseResult.text ? parseResult.text : undefined,
                 });
@@ -305,10 +305,10 @@ export default class FeedManager {
             posts.push(post);
         }
 
-        this.postRepository.updateHtmlAndParserVersion(toUpdateHtmlAndParserVersion.filter(x => x.html !== undefined),
+        this.postRepository.updateHtmlAndParserVersion(commentsToUpdateHtmlAndParserVersion.filter(x => x.html !== undefined),
             TheParser.VERSION).then().catch();
         this.postRepository.updateParserVersion(
-            toUpdateHtmlAndParserVersion.filter(x => x.html === undefined).map(x => x.id),
+            commentsToUpdateHtmlAndParserVersion.filter(x => x.html === undefined).map(x => x.id),
             TheParser.VERSION).then().catch();
 
         return posts;
