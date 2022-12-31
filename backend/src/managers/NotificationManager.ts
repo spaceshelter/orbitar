@@ -199,22 +199,28 @@ export default class NotificationManager {
 
     async setRead(forUserId: number, notificationId: number) {
         await this.notificationsRepository.setRead(forUserId, notificationId);
+        this.userCache.deleteUserStatsCache(forUserId);
     }
 
     async setReadAndHidden(userId: number, hideId: number) {
         await this.notificationsRepository.setReadAndHidden(userId, hideId);
+        this.userCache.deleteUserStatsCache(userId);
     }
 
     async setReadForPost(forUserId: number, postId: number) {
-        return await this.notificationsRepository.setReadForPost(forUserId, postId);
+        const res = await this.notificationsRepository.setReadForPost(forUserId, postId);
+        this.userCache.deleteUserStatsCache(forUserId);
+        return res;
     }
 
     async setReadAll(forUserId: number) {
         await this.notificationsRepository.setReadAll(forUserId);
+        this.userCache.deleteUserStatsCache(forUserId);
     }
 
     async setHiddenAll(forUserId: number) {
         await this.notificationsRepository.setReadAndHideAll(forUserId);
+        this.userCache.deleteUserStatsCache(forUserId);
     }
 
     private async sendWebPush(forUserId: number, notification: UserNotification) {

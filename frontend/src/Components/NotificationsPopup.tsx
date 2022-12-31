@@ -81,7 +81,7 @@ export default function NotificationsPopup(props: NotificationsPopupProps) {
             });
     }, [fetchNotifications, subscribe]);
 
-    const handleNotificationClick = (ntInfo: NotificationInfo) => (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const handleNotificationClick = (ntInfo: NotificationInfo) => () => {
         api.notifications.read(ntInfo.id)
             .then()
             .catch(() => toast.error('Не удалось пометить уведомление как прочитанное'));
@@ -139,7 +139,7 @@ export default function NotificationsPopup(props: NotificationsPopupProps) {
                             post={{ id: ntInfo.source.post.id, site: ntInfo.source.post.site }}
                             commentId={ntInfo.source.comment?.id}
                             onClick={handleNotificationClick(ntInfo)}
-                            onlyNew={true}
+                            onlyNew={!ntInfo.read}
                         >
                             <div className={styles.type}>{ntInfo.type === 'answer' ? <CommentIcon /> : <MentionIcon />}</div>
                             <div className={styles.content}>
