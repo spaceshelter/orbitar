@@ -42,9 +42,10 @@ function updateVideo(video: HTMLVideoElement) {
     });
 }
 
-function updateImg(img: HTMLImageElement) {
+function processYtEmbed(img: HTMLImageElement) {
     // if has class youtube-embed convert to iframe on click
     const ytUrl = img.dataset.youtube;
+
     if (ytUrl && !img.classList.contains('youtube-embed-processed')) {
         img.classList.add('youtube-embed-processed');
         img.addEventListener('click', (e) => {
@@ -59,7 +60,34 @@ function updateImg(img: HTMLImageElement) {
             img.parentElement?.replaceWith(iframe);
         });
     }
-    if (ytUrl) {
+    return !!ytUrl;
+}
+
+/**
+ * Convert mp4 video embeds into video elements
+ */
+function processVideoEmbed(img: HTMLImageElement) {
+    const videoUrl = img.dataset.video;
+
+    if (videoUrl && !img.classList.contains('video-embed-processed')) {
+        img.classList.add('video-embed-processed');
+        img.addEventListener('click', (e) => {
+            e.preventDefault();
+            const video = document.createElement('video');
+            video.src = videoUrl;
+            video.controls = true;
+            video.autoplay = true;
+            video.loop = !!img.dataset.loop;
+            video.style.width = img.width.toString() + 'px';
+            video.style.height = img.height.toString() + 'px';
+            img.parentElement?.replaceWith(video);
+        });
+    }
+    return !!videoUrl;
+}
+
+function updateImg(img: HTMLImageElement) {
+    if (processYtEmbed(img) || processVideoEmbed(img)) {
         return;
     }
 
