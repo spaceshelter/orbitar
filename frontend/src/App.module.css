@@ -27,6 +27,12 @@
   height: 50px;
   width: 50px
 }
+
+.monsterNy {
+    height:60px;
+    width: 50px
+}
+
 @media only screen and (max-width: 600px) {
   .monster {  display: none; }
 }

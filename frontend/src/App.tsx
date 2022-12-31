@@ -17,6 +17,7 @@ import styles from './App.module.css';
 import './index.scss';
 import 'react-toastify/dist/ReactToastify.css';
 import {ReactComponent as MonsterIcon} from './Assets/monster_large.svg';
+import {ReactComponent as MonsterIconNy} from './Assets/monster_large_ny.svg';
 import {useTheme} from './Theme/ThemeProvider';
 import {SiteSidebar} from './Components/SiteSidebar';
 import WatchPage from './Pages/WatchPage';
@@ -27,6 +28,7 @@ import {SitesCreatePage} from './Pages/SitesCreatePage';
 import KarmaCalculatorPage from './Pages/KarmaCalculatorPage';
 import ResetPasswordPage from './Pages/ResetPasswordPage';
 import SearchPage from './Pages/SearchPage';
+import classNames from 'classnames';
 
 export const App = observer(() => {
     const {appLoadingState} = useAppState();
@@ -85,6 +87,11 @@ const ReadyContainer = observer(() => {
         }
     };
 
+    // New Year holidays: from 26 Dec to 7 Jan
+    const isNewYear =
+        new Date().getMonth() === 11 && new Date().getDate() >= 26 ||
+        new Date().getMonth() === 0 && new Date().getDate() <= 7;
+
     return (
         <>
             <Topbar menuState={menuState} onMenuToggle={handleMenuToggle} />
@@ -97,7 +104,9 @@ const ReadyContainer = observer(() => {
                     <Outlet />
                 </div>
             </div>
-            <div className={styles.monster}><MonsterIcon /></div>
+
+            {isNewYear && <div className={classNames(styles.monster, styles.monsterNy)}><MonsterIconNy /></div>}
+            {!isNewYear && <div className={styles.monster}><MonsterIcon /></div>}
             <ToastContainer theme={theme as Theme} />
         </>
     );
