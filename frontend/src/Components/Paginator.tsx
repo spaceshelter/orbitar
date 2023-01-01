@@ -6,6 +6,7 @@ interface PaginatorProps {
     page: number;
     pages: number;
     base: string;
+    queryStringParams?: Record<string, string>;
 }
 
 export default function Paginator(props: PaginatorProps) {
@@ -15,10 +16,12 @@ export default function Paginator(props: PaginatorProps) {
         if (i === props.page) {
             classes.push(styles.current);
         }
-        let search = '';
-        if (i > 1) {
-            search = 'page=' + i;
+        const params = new URLSearchParams(props.queryStringParams || {});
+        if (i > 1 || (params && Object.keys(params).length)) {
+            params.set('page', i.toString());
         }
+        const search = params.toString();
+        console.log(search);
 
         pages.push(<Link key={i} className={classes.join(' ')} to={{pathname: props.base, search}}>{i}</Link>);
     }
