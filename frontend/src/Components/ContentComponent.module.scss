@@ -17,7 +17,7 @@
     color: var(--fg);
   }
 
-  img, :global(a.video-embed) img {
+  img, :global(a.youtube-embed) img, :global(a.video-embed) img {
     max-width: 100%;
     max-height: 500px;
   }
