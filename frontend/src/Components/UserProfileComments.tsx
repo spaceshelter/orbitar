@@ -86,6 +86,8 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
         window.scrollTo({ top: 0 });
     }, [page]);
 
+    const params = filter ? {filter} : undefined;
+
     return (
         <div className={styles.container}>
             <div className={styles.filter}>
@@ -103,7 +105,7 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
                                  : <div className={styles.loading}>Загрузка...</div>
                          )
                      }
-                    <Paginator page={page} pages={pages} base={`/u/${props.username}/comments`} />
+                    <Paginator page={page} pages={pages} base={`/u/${props.username}/comments`} queryStringParams={params} />
                 </>}
             </div>
         </div>

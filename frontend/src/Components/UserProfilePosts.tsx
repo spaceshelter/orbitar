@@ -49,6 +49,7 @@ export default function UserProfilePosts(props: UserProfilePostsProps) {
         window.scrollTo({ top: 0 });
     }, [page]);
 
+    const params = filter ? {filter} : undefined;
     return (
         <div className={styles.container}>
           <div className={feedStyles.filter}>
@@ -61,7 +62,7 @@ export default function UserProfilePosts(props: UserProfilePostsProps) {
                     {posts && <div className={styles.posts}>
                         {posts.map(post => <PostComponent key={post.id} post={post} showSite={true} onChange={updatePost} autoCut={true} />)}
                     </div>}
-                    <Paginator page={page} pages={pages} base={`/u/${props.username}/posts`} />
+                    <Paginator page={page} pages={pages} base={`/u/${props.username}/posts`} queryStringParams={params} />
                 </>}
             </div>
         </div>
