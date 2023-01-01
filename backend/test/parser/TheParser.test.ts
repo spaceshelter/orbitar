@@ -51,11 +51,19 @@ test('return valid youtube url', () => {
   );
 });
 
-test('idiod video preview', () => {
+test('idiod video embed', () => {
     const p = new TheParser();
 
     expect(p.parse('https://idiod.video/8feuw2.mp4').text).toEqual(
-        `<video  preload="none" poster="https://idiod.video/preview/8feuw2.mp4" controls="" width="500"><source src="https://idiod.video/8feuw2.mp4" type="video/mp4"></video>`
+        `<a class="video-embed" href="https://idiod.video/8feuw2.mp4" target="_blank"><img src="https://idiod.video/preview/8feuw2.mp4" alt="" data-video="https://idiod.video/8feuw2.mp4" data-loop="false"/></a>`
+    );
+});
+
+test('mp4 video element', () => {
+    const p = new TheParser();
+
+    expect(p.parse('<video src="https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_1MB.mp4">').text).toEqual(
+        `<video  preload="metadata" controls="" width="500"><source src="https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_1MB.mp4" type="video/mp4"></video>`
     );
 });
 

@@ -27,7 +27,7 @@ export default class TheParser {
 
     // Bump this version when introducing breaking changes to the parser.
     // Content will be re-parsed and saved on access when this version changes.
-    static readonly VERSION = 1;
+    static readonly VERSION = 2;
 
     constructor() {
         this.allowedTags = {
@@ -301,19 +301,22 @@ export default class TheParser {
     renderVideoTag(url: string, loop: boolean) {
         const imgurPoster = () => {
             const match = url.match(/https?:\/\/i.imgur.com\/([^.]+).mp4$/);
-            return match && `poster="https://i.imgur.com/${encodeURI(match[1])}.jpg"`;
+            return match && `https://i.imgur.com/${encodeURI(match[1])}.jpg`;
         };
         const idiodPoster = () => {
             const match = url.match(/https?:\/\/idiod.video\/([^.]+\.mp4)$/);
-            return match && `poster="https://idiod.video/preview/${encodeURI(match[1])}"`;
+            return match && `https://idiod.video/preview/${encodeURI(match[1])}`;
         };
         const dumpVideoPoster = () => {
             const match = url.match(/https?:\/\/dump.video\/i\/([^.]+)\.mp4$/);
-            return match && `poster="https://dump.video/i/${encodeURI(match[1])}.jpg"`;
+            return match && `https://dump.video/i/${encodeURI(match[1])}.jpg`;
         };
-        const poster = imgurPoster() || idiodPoster() || dumpVideoPoster() || '';
-        const preload = poster ? 'preload="none"' : 'preload="metadata"';
-        return `<video ${loop ? 'loop=""' : ''} ${preload} ${poster} controls="" width="500"><source src="${encodeURI(url)}" type="video/mp4"></video>`;
+        const posterUrl = imgurPoster() || idiodPoster() || dumpVideoPoster();
+        if (posterUrl) {
+            return `<a class="video-embed" href="${encodeURI(url)}" target="_blank">` +
+                `<img src="${encodeURI(posterUrl)}" alt="" data-video="${encodeURI(url)}" data-loop="${loop}"/></a>`;
+        }
+        return `<video ${loop ? 'loop=""' : ''} preload="metadata" controls="" width="500"><source src="${encodeURI(url)}" type="video/mp4"></video>`;
     }
 
     parseIrony(node: Element): ParseResult {
