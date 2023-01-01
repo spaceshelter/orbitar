@@ -21,7 +21,6 @@ export default function Paginator(props: PaginatorProps) {
             params.set('page', i.toString());
         }
         const search = params.toString();
-        console.log(search);
 
         pages.push(<Link key={i} className={classes.join(' ')} to={{pathname: props.base, search}}>{i}</Link>);
     }
