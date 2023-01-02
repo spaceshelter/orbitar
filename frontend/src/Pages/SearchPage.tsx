@@ -101,7 +101,7 @@ export default function SearchPage() {
         } else {
             setFocus('term');
         }
-    }, [defaultSearch]);
+    }, []);
 
     document.title = (searchParams.get('term') ? ('Поиск: ' + searchParams.get('term')) : 'Поиск');
 
