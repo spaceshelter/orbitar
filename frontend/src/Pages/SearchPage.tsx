@@ -9,7 +9,6 @@ import CommentComponent from '../Components/CommentComponent';
 import PostComponent from '../Components/PostComponent';
 import {UserGender} from '../Types/UserInfo';
 import classNames from 'classnames';
-import {useCache} from '../API/use/useCache';
 
 type SearchForm = {
     term: string;
@@ -69,57 +68,48 @@ export default function SearchPage() {
     const [isSearching, setSearching] = useState(false);
     const [error, setError] = useState<string>();
     const [searchParams, setSearchParams] = useSearchParams();
-    const defaultSearch = searchParams.get('term') as string;
-    const [cachedResult, setCachedResult] = useCache<SearchResponse>('search', [defaultSearch]);
-    const [result, setResult] = useState<SearchResponse | undefined>(cachedResult);
+    const [result, setResult] = useState<SearchResponse | undefined>(undefined);
 
-    const doSearch = (term: string) => {
-        if (!term) {
-            return;
-        }
-        setSearching(true);
-        setError('');
-        setSearchParams({term});
-        api.searchApi.search(term)
-            .then((result) => {
-                setResult(result);
-                setCachedResult(result);
-            })
-            .catch(_ => {
-                setResult(undefined);
-                setError('Произошла чудовищная ошибка, попробуйте позже.');
-            }).finally(() => setSearching(false));
-    };
+    const searchTermFromUrl = searchParams.get('term') as string;
 
     const {register, handleSubmit, formState: {errors}, setFocus} = useForm<SearchForm>({
         mode: 'onSubmit'
     });
 
     useEffect(() => {
-        if (defaultSearch) {
-            doSearch(defaultSearch);
-        } else {
+        if (!searchTermFromUrl) {
             setFocus('term');
+            return;
         }
-    }, []);
+        setSearching(true);
+        api.searchApi.search(searchTermFromUrl)
+            .then((result) => {
+                setResult(result);
+            })
+            .catch(_ => {
+                setResult(undefined);
+                setError('Произошла чудовищная ошибка, попробуйте позже.');
+            }).finally(() => setSearching(false));
+    }, [searchTermFromUrl, api.searchApi, setFocus]);
 
-    document.title = (searchParams.get('term') ? ('Поиск: ' + searchParams.get('term')) : 'Поиск');
+    document.title = (searchTermFromUrl ? ('Поиск: ' + searchTermFromUrl) : 'Поиск');
 
     const onSubmit: SubmitHandler<SearchForm> = async data => {
-        doSearch(data.term);
+        if (!data.term) {
+            return;
+        }
+        setSearchParams({term: data.term});
     };
 
     return (
-        <div className={classNames(styles.search, {[styles.empty]: !defaultSearch })}>
+        <div className={classNames(styles.search)}>
             {isSearching && <div className={feedStyles.loading}></div>}
 
             <div className={feedStyles.container}>
                 <div className={feedStyles.feed}>
                     <form onSubmit={handleSubmit(onSubmit)}>
                         <span className={classNames('i i-search', styles.icon)}></span>
-                        <input type="search" placeholder="Да это же поиск!" {...register('term', {
-                            required: ''
-                        })} defaultValue={defaultSearch}/>
+                        <input type="search" placeholder="Да это же поиск!" {...register('term')} defaultValue={searchTermFromUrl} />
                     </form>
                     {errors.term && <p className={styles.error}>{errors.term.message}</p>}
                     {error && <p className={styles.error}>{error}</p>}
