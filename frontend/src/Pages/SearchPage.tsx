@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import styles from './SearchPage.module.scss';
 import feedStyles from './FeedPage.module.scss';
 import {useForm, SubmitHandler} from 'react-hook-form';
@@ -64,8 +64,6 @@ function SearchResult(props: {
     </>;
 }
 
-let latestSearchTerm = '';
-
 export default function SearchPage() {
     const api = useAPI();
     const [isSearching, setSearching] = useState(false);
@@ -75,6 +73,7 @@ export default function SearchPage() {
     const [cachedResult, setCachedResult] = useCache<SearchResponse | undefined>('search', [searchTermFromUrl]);
     const [result, setResult] = useState<SearchResponse | undefined>(cachedResult);
 
+    const searchTerm = useRef(searchTermFromUrl);
     const {register, handleSubmit, formState: {errors}, setFocus} = useForm<SearchForm>({
         mode: 'onSubmit'
     });
@@ -84,10 +83,11 @@ export default function SearchPage() {
             setFocus('term');
             return;
         }
-        if (latestSearchTerm === searchTermFromUrl) {
+        console.log(searchTerm.current, searchTermFromUrl);
+        if (searchTerm.current === searchTermFromUrl) {
             return;
         }
-        latestSearchTerm = searchTermFromUrl;
+        searchTerm.current = searchTermFromUrl;
         setSearching(true);
         api.searchApi.search(searchTermFromUrl)
             .then((result) => {
