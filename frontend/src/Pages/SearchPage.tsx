@@ -83,7 +83,6 @@ export default function SearchPage() {
             setFocus('term');
             return;
         }
-        console.log(searchTerm.current, searchTermFromUrl);
         if (searchTerm.current === searchTermFromUrl) {
             return;
         }
