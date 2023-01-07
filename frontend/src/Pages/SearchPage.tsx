@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import styles from './SearchPage.module.scss';
 import feedStyles from './FeedPage.module.scss';
 import {useForm, SubmitHandler} from 'react-hook-form';
@@ -9,6 +9,7 @@ import CommentComponent from '../Components/CommentComponent';
 import PostComponent from '../Components/PostComponent';
 import {UserGender} from '../Types/UserInfo';
 import classNames from 'classnames';
+import {useCache} from '../API/use/useCache';
 
 type SearchForm = {
     term: string;
@@ -63,14 +64,16 @@ function SearchResult(props: {
     </>;
 }
 
+let latestSearchTerm = '';
+
 export default function SearchPage() {
     const api = useAPI();
     const [isSearching, setSearching] = useState(false);
     const [error, setError] = useState<string>();
     const [searchParams, setSearchParams] = useSearchParams();
-    const [result, setResult] = useState<SearchResponse | undefined>(undefined);
-
     const searchTermFromUrl = searchParams.get('term') as string;
+    const [cachedResult, setCachedResult] = useCache<SearchResponse | undefined>('search', [searchTermFromUrl]);
+    const [result, setResult] = useState<SearchResponse | undefined>(cachedResult);
 
     const {register, handleSubmit, formState: {errors}, setFocus} = useForm<SearchForm>({
         mode: 'onSubmit'
@@ -81,16 +84,22 @@ export default function SearchPage() {
             setFocus('term');
             return;
         }
+        if (latestSearchTerm === searchTermFromUrl) {
+            return;
+        }
+        latestSearchTerm = searchTermFromUrl;
         setSearching(true);
         api.searchApi.search(searchTermFromUrl)
             .then((result) => {
                 setResult(result);
+                setCachedResult(result);
             })
             .catch(_ => {
                 setResult(undefined);
+                setCachedResult(undefined);
                 setError('Произошла чудовищная ошибка, попробуйте позже.');
             }).finally(() => setSearching(false));
-    }, [searchTermFromUrl, api.searchApi, setFocus]);
+    }, [api.searchApi, searchTermFromUrl, setCachedResult, setFocus]);
 
     document.title = (searchTermFromUrl ? ('Поиск: ' + searchTermFromUrl) : 'Поиск');
 
