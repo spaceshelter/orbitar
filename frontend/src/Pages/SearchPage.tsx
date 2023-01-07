@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import styles from './SearchPage.module.scss';
 import feedStyles from './FeedPage.module.scss';
 import {useForm, SubmitHandler} from 'react-hook-form';
@@ -69,57 +69,55 @@ export default function SearchPage() {
     const [isSearching, setSearching] = useState(false);
     const [error, setError] = useState<string>();
     const [searchParams, setSearchParams] = useSearchParams();
-    const defaultSearch = searchParams.get('term') as string;
-    const [cachedResult, setCachedResult] = useCache<SearchResponse>('search', [defaultSearch]);
+    const searchTermFromUrl = searchParams.get('term') as string;
+    const [cachedResult, setCachedResult] = useCache<SearchResponse | undefined>('search', [searchTermFromUrl]);
     const [result, setResult] = useState<SearchResponse | undefined>(cachedResult);
 
-    const doSearch = (term: string) => {
-        if (!term) {
+    const searchTerm = useRef(searchTermFromUrl);
+    const {register, handleSubmit, formState: {errors}, setFocus} = useForm<SearchForm>({
+        mode: 'onSubmit'
+    });
+
+    useEffect(() => {
+        if (!searchTermFromUrl) {
+            setFocus('term');
             return;
         }
+        if (searchTerm.current === searchTermFromUrl) {
+            return;
+        }
+        searchTerm.current = searchTermFromUrl;
         setSearching(true);
-        setError('');
-        setSearchParams({term});
-        api.searchApi.search(term)
+        api.searchApi.search(searchTermFromUrl)
             .then((result) => {
                 setResult(result);
                 setCachedResult(result);
             })
             .catch(_ => {
                 setResult(undefined);
+                setCachedResult(undefined);
                 setError('Произошла чудовищная ошибка, попробуйте позже.');
             }).finally(() => setSearching(false));
-    };
+    }, [api.searchApi, searchTermFromUrl, setCachedResult, setFocus]);
 
-    const {register, handleSubmit, formState: {errors}, setFocus} = useForm<SearchForm>({
-        mode: 'onSubmit'
-    });
-
-    useEffect(() => {
-        if (defaultSearch) {
-            doSearch(defaultSearch);
-        } else {
-            setFocus('term');
-        }
-    }, [defaultSearch]);
-
-    document.title = (searchParams.get('term') ? ('Поиск: ' + searchParams.get('term')) : 'Поиск');
+    document.title = (searchTermFromUrl ? ('Поиск: ' + searchTermFromUrl) : 'Поиск');
 
     const onSubmit: SubmitHandler<SearchForm> = async data => {
-        doSearch(data.term);
+        if (!data.term) {
+            return;
+        }
+        setSearchParams({term: data.term});
     };
 
     return (
-        <div className={classNames(styles.search, {[styles.empty]: !defaultSearch })}>
+        <div className={classNames(styles.search)}>
             {isSearching && <div className={feedStyles.loading}></div>}
 
             <div className={feedStyles.container}>
                 <div className={feedStyles.feed}>
                     <form onSubmit={handleSubmit(onSubmit)}>
                         <span className={classNames('i i-search', styles.icon)}></span>
-                        <input type="search" placeholder="Да это же поиск!" {...register('term', {
-                            required: ''
-                        })} defaultValue={defaultSearch}/>
+                        <input type="search" placeholder="Да это же поиск!" {...register('term')} defaultValue={searchTermFromUrl} />
                     </form>
                     {errors.term && <p className={styles.error}>{errors.term.message}</p>}
                     {error && <p className={styles.error}>{error}</p>}
