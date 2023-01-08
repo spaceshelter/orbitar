@@ -173,7 +173,7 @@ export default class TheParser {
     }
 
     processImage(url: Url<string>) {
-        if (url.pathname.match(/\.(jpg|gif|png|webp|jpeg)$/)) {
+        if (url.pathname.match(/\.(jpg|gif|png|webp|jpeg|svg)$/)) {
             return `<img src="${encodeURI(url.toString())}" alt=""/>`;
         }
 
