@@ -77,7 +77,7 @@ function processVideoEmbed(img: HTMLImageElement) {
             video.src = videoUrl;
             video.controls = true;
             video.autoplay = true;
-            video.loop = !!img.dataset.loop;
+            video.loop = !!img.dataset.loop && img.dataset.loop !== 'false';
             video.style.width = img.width.toString() + 'px';
             video.style.height = img.height.toString() + 'px';
             img.parentElement?.replaceWith(video);
