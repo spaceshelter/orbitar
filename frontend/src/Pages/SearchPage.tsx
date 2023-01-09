@@ -110,7 +110,7 @@ export default function SearchPage() {
     };
 
     return (
-        <div className={classNames(styles.search)}>
+        <div className={classNames(styles.search, {[styles.empty]: !searchTermFromUrl })}>
             {isSearching && <div className={feedStyles.loading}></div>}
 
             <div className={feedStyles.container}>
