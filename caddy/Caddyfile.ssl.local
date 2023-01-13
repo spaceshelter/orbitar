@@ -11,11 +11,11 @@
     Vary Origin
   }
 
-  # idiod.video proxy
+  # pictshare proxy
   handle_path /upload {
     rewrite * /api/upload.php
-    reverse_proxy https://idiod.video {
-      header_up Host idiod.video
+    reverse_proxy http://pictshare {
+      header_up Host localhost
       header_up -origin
       header_up -referer
       header_up -sec-ch-ua
@@ -24,6 +24,16 @@
       header_up -sec-fetch-dest
       header_up -sec-fetch-mode
       header_up -sec-fetch-site
+    }
+  }
+
+  handle_path /media/* {
+    # rewrite to http://pictshare/*
+    uri strip_prefix /media
+    reverse_proxy http://pictshare {
+      header_up Host localhost
+      header_up -origin
+      header_up -referer
     }
   }
 
@@ -40,6 +50,6 @@
   header {
     Access-Control-Allow-Origin .* "{header.Origin}"
   }
-  
+
   reverse_proxy http://backend:5001
 }

@@ -106,9 +106,20 @@ services:
       elasticsearch-setup:
         condition: service_completed_successfully
 
+
+  pictshare:
+    image: hascheksolutions/pictshare
+    volumes:
+      - pictshare_data:/var/www/data
+    environment:
+      MAX_UPLOAD_SIZE: 100
+      AUTO_UPDATE: "false"
+      ALLOW_BLOATING: "false"
+
 volumes:
   caddy_data:
   caddy_config:
   mysql_db:
   redis_data:
   elasticsearch_data:
+  pictshare_data:

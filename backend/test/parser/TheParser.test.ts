@@ -1,9 +1,10 @@
 
 import TheParser from "../../src/parser/TheParser";
 
-test('parse A tag', () => {
-    const p = new TheParser();
+const p = new TheParser('orbitar.local');
 
+
+test('parse A tag', () => {
     // already encoded
     expect(
         p.parse('<a href="https://ru.wikipedia.org/wiki/%D0%A1%D0%BB%D0%B0%D0%B2%D0%B0_%D0%A3%D0%BA%D1%80%D0%B0%D0%B8%D0%BD%D0%B5">тест</a>').text
@@ -26,8 +27,6 @@ test('parse A tag', () => {
 });
 
 test('detect url in text', () => {
-    const p = new TheParser();
-
     expect(
         p.parse('Hello, \n' +
             'http://hello.world test\n' +
@@ -41,8 +40,6 @@ test('detect url in text', () => {
 });
 
 test('return valid youtube url', () => {
-  const p = new TheParser();
-
   expect(
       p.parse('https://www.youtube.com/watch?v=aboZctrHfK8'
       ).text
@@ -52,24 +49,24 @@ test('return valid youtube url', () => {
 });
 
 test('idiod video embed', () => {
-    const p = new TheParser();
-
     expect(p.parse('https://idiod.video/8feuw2.mp4').text).toEqual(
         `<a class="video-embed" href="https://idiod.video/8feuw2.mp4" target="_blank"><img src="https://idiod.video/preview/8feuw2.mp4" alt="" data-video="https://idiod.video/8feuw2.mp4" data-loop="false"/></a>`
     );
 });
 
-test('mp4 video element', () => {
-    const p = new TheParser();
+test('orbitar video embed', () => {
+    expect(p.parse('https://orbitar.local/media/8feuw2.mp4').text).toEqual(
+        `<a class="video-embed" href="https://orbitar.local/media/8feuw2.mp4/raw" target="_blank"><img src="https://orbitar.local/media/preview/8feuw2.mp4" alt="" data-video="https://orbitar.local/media/8feuw2.mp4/raw" data-loop="false"/></a>`
+    );
+});
 
+test('mp4 video element', () => {
     expect(p.parse('<video src="https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_1MB.mp4">').text).toEqual(
         `<video  preload="metadata" controls="" width="500"><source src="https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_1MB.mp4" type="video/mp4"></video>`
     );
 });
 
 test('remove line breaks at the beginning and the end', () => {
-    const p = new TheParser();
-
     expect(
         p.parse('Hello, \n' +
             'world'
@@ -97,8 +94,6 @@ test('remove line breaks at the beginning and the end', () => {
 });
 
 test('remove extra line break after blockquote tag', () => {
-    const p = new TheParser();
-
     expect(
         p.parse('<blockquote>Hello</blockquote>\nworld'
         ).text

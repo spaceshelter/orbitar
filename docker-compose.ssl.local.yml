@@ -129,6 +129,16 @@ services:
       backend:
         condition: service_started # TODO change to service_healthy when we have a healthcheck
 
+  pictshare:
+    image: hascheksolutions/pictshare
+    volumes:
+      - pictshare_data:/var/www/data
+    environment:
+      MAX_UPLOAD_SIZE: 100
+      AUTO_UPDATE: "false"
+      ALLOW_BLOATING: "false"
+
+
 volumes:
   caddy_data:
   caddy_config:
@@ -136,3 +146,4 @@ volumes:
   mysql_db:
   redis_data:
   elasticsearch_data:
+  pictshare_data:

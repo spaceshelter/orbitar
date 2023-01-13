@@ -28,8 +28,10 @@ export default class TheParser {
     // Bump this version when introducing breaking changes to the parser.
     // Content will be re-parsed and saved on access when this version changes.
     static readonly VERSION = 2;
+    readonly domain;
 
-    constructor() {
+    constructor(domain = 'orbitar.local') {
+        this.domain = domain;
         this.allowedTags = {
             a: (node) => this.parseA(node),
             img: (node) => this.parseImg(node),
@@ -301,20 +303,25 @@ export default class TheParser {
     renderVideoTag(url: string, loop: boolean) {
         const imgurPoster = () => {
             const match = url.match(/https?:\/\/i.imgur.com\/([^.]+).mp4$/);
-            return match && `https://i.imgur.com/${encodeURI(match[1])}.jpg`;
+            return match && [`https://i.imgur.com/${encodeURI(match[1])}.jpg`, url];
         };
         const idiodPoster = () => {
             const match = url.match(/https?:\/\/idiod.video\/([^.]+\.mp4)$/);
-            return match && `https://idiod.video/preview/${encodeURI(match[1])}`;
+            return match && [`https://idiod.video/preview/${encodeURI(match[1])}`, url];
+        };
+        const orbitarPoster = () => {
+            const match = url.match(/(https?):\/\/([^/]+)\/media\/([^.]+\.mp4)$/);
+            return match && match[2] === this.domain &&
+                [`${match[1]}://${this.domain}/media/preview/${encodeURI(match[3])}`, url + '/raw'];
         };
         const dumpVideoPoster = () => {
             const match = url.match(/https?:\/\/dump.video\/i\/([^.]+)\.mp4$/);
-            return match && `https://dump.video/i/${encodeURI(match[1])}.jpg`;
+            return match && [`https://dump.video/i/${encodeURI(match[1])}.jpg`, url];
         };
-        const posterUrl = imgurPoster() || idiodPoster() || dumpVideoPoster();
-        if (posterUrl) {
-            return `<a class="video-embed" href="${encodeURI(url)}" target="_blank">` +
-                `<img src="${encodeURI(posterUrl)}" alt="" data-video="${encodeURI(url)}" data-loop="${loop}"/></a>`;
+        const poster = imgurPoster() || idiodPoster() || dumpVideoPoster() || orbitarPoster();
+        if (poster) {
+            return `<a class="video-embed" href="${encodeURI(poster[1])}" target="_blank">` +
+                `<img src="${encodeURI(poster[0])}" alt="" data-video="${encodeURI(poster[1])}" data-loop="${loop}"/></a>`;
         }
         return `<video ${loop ? 'loop=""' : ''} preload="metadata" controls="" width="500"><source src="${encodeURI(url)}" type="video/mp4"></video>`;
     }
