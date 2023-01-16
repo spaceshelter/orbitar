@@ -8,7 +8,8 @@ services:
       - "443:443"
     environment:
       SERVER_DOMAIN: ${SERVER_DOMAIN}
-      IMGUR_CLIENT_ID: ${IMGUR_CLIENT_ID}
+      MEDIA_HOSTING_URL: ${MEDIA_HOSTING_URL}
+      MEDIA_HOSTING_CLIENT_ID: ${MEDIA_HOSTING_CLIENT_ID}
     volumes:
       - $PWD/caddy/Caddyfile.ssl.dev:/etc/caddy/Caddyfile
       - $PWD/caddy/certs:/certs

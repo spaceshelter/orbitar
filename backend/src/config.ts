@@ -5,6 +5,7 @@ type Config = {
     redis: RedisConfig;
     vapid: VapidConfig;
     site: SiteConfig;
+    mediaHosting: MediaHostingConfig;
     feed: FeedConfig;
 };
 
@@ -32,6 +33,11 @@ export type SiteConfig = {
     domain: string;
     http: boolean;
 };
+
+export type MediaHostingConfig = {
+    url: string;
+    dimsAesKey: string;
+}
 
 export type FeedConfig = {
     host: string;
@@ -61,6 +67,10 @@ export const config: Config = {
     site: {
         domain: process.env.SITE_DOMAIN || 'idiod.local',
         http: process.env.SITE_HTTP === 'true',
+    },
+    mediaHosting: {
+        url: process.env.MEDIA_HOSTING_URL || 'https://orbitar.media',
+        dimsAesKey: process.env.MEDIA_HOSTING_DIMS_AES_KEY || ''
     },
     feed: {
         host: process.env.FEED_INDEX_HOST || 'feed',

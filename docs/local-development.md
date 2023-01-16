@@ -37,18 +37,14 @@
 
 После первого запуска можно открыть приглашение http://orbitar.local/invite/initial и зарегистрировать первый юзернейм.
 
-### Настройка загрузки изображений на imgur (опционально)
-1. Сгенерировать `client_id` на странице https://api.imgur.com/oauth2/addclient.
+### Настройка загрузки изображений на orbitar.media (опционально)
 
-   В `Authorization type` выбрать `Anonymous usage`, в `Authorization callback URL` - любой валидный URL (он требуется для регистрации, но не используется).
-2. В корневом `.env` файле прописать полученный `client_id`
-   ```
-    IMGUR_CLIENT_ID=<client_id>
-   ```
-3. Перезапустить caddy
-   ```
-   docker-compose -p orbitar-dev -f docker-compose.dev.yml up -d caddy
-   ```
+Указать в .env, frontend/.env.development, backend/.env.development файле правильные:
+
+1. MEDIA_HOSTING_URL - адрес хостинга изображений: e.g. https://orbitar.media
+2. MEDIA_HOSTING_CLIENT_ID - авторизация загрузки
+3. MEDIA_HOSTING_DIMS_AES_KEY - ключ для расшифровки размеров изображений
+
 
 ### Настройка локального https (опционально)
 1. В `frontend/.env.local` добавить `WDS_SOCKET_PORT=0`
