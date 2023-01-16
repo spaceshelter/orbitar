@@ -37,7 +37,7 @@ export type SiteConfig = {
 export type MediaHostingConfig = {
     url: string;
     dimsAesKey: string;
-}
+};
 
 export type FeedConfig = {
     host: string;
