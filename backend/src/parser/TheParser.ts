@@ -5,6 +5,7 @@ import escapeHTML from 'escape-html';
 import Url from 'url-parse';
 import qs from 'qs';
 import {urlRegex, urlRegexExact} from './urlregex';
+import {MediaHostingConfig} from '../config';
 
 export type ParseResult = {
     text: string;
@@ -29,7 +30,10 @@ export default class TheParser {
     // Content will be re-parsed and saved on access when this version changes.
     static readonly VERSION = 2;
 
-    constructor() {
+    private readonly mediaHostingConfig: MediaHostingConfig;
+
+    constructor(mediaHosting: MediaHostingConfig) {
+        this.mediaHostingConfig = mediaHosting;
         this.allowedTags = {
             a: (node) => this.parseA(node),
             img: (node) => this.parseImg(node),
@@ -301,20 +305,30 @@ export default class TheParser {
     renderVideoTag(url: string, loop: boolean) {
         const imgurPoster = () => {
             const match = url.match(/https?:\/\/i.imgur.com\/([^.]+).mp4$/);
-            return match && `https://i.imgur.com/${encodeURI(match[1])}.jpg`;
+            return match && [`https://i.imgur.com/${encodeURI(match[1])}.jpg`, url];
         };
         const idiodPoster = () => {
             const match = url.match(/https?:\/\/idiod.video\/([^.]+\.mp4)$/);
-            return match && `https://idiod.video/preview/${encodeURI(match[1])}`;
+            return match && [`https://idiod.video/preview/${encodeURI(match[1])}`,
+                `https://idiod.video/${encodeURI(match[1])}`];
+        };
+        const orbitarMediaPoster = () => {
+            if (url.startsWith(this.mediaHostingConfig.url)) {
+                const match = url.match(/.*\/([^.]+\.mp4)$/);
+                return match && [`${this.mediaHostingConfig.url}/preview/${encodeURI(match[1])}`,
+                    `${this.mediaHostingConfig.url}/${encodeURI(match[1])}/raw`];
+            }
         };
         const dumpVideoPoster = () => {
             const match = url.match(/https?:\/\/dump.video\/i\/([^.]+)\.mp4$/);
-            return match && `https://dump.video/i/${encodeURI(match[1])}.jpg`;
+            return match && [`https://dump.video/i/${encodeURI(match[1])}.jpg`,
+                `https://dump.video/i/${encodeURI(match[1])}.mp4`];
         };
-        const posterUrl = imgurPoster() || idiodPoster() || dumpVideoPoster();
+        const posterUrl = imgurPoster() || idiodPoster() || dumpVideoPoster() || orbitarMediaPoster();
         if (posterUrl) {
+            const [poster, video] = posterUrl;
             return `<a class="video-embed" href="${encodeURI(url)}" target="_blank">` +
-                `<img src="${encodeURI(posterUrl)}" alt="" data-video="${encodeURI(url)}" data-loop="${loop}"/></a>`;
+                `<img src="${encodeURI(poster)}" alt="" data-video="${encodeURI(video)}"${loop?' data-loop="true"':''}/></a>`;
         }
         return `<video ${loop ? 'loop=""' : ''} preload="metadata" controls="" width="500"><source src="${encodeURI(url)}" type="video/mp4"></video>`;
     }
