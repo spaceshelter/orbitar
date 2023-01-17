@@ -448,6 +448,10 @@ export default class TheParser {
             const match = path.match('(.*)/([^/.]*)\\.([^.]*)$');
             if (match) {
                 const [, , hash, ext] = match;
+                if (hash.length > 64) {
+                    // protect against maliciously long hash
+                    return null;
+                }
                 const metadata = decryptMetadata(hash, this.mediaHostingConfig.dimsAesKey);
                 const metadataMath = metadata.match(/(\d+):(\d+):(.*)/);
                 if (metadataMath && metadataMath.length === 4 && ext === metadataMath[3]) {
