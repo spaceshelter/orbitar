@@ -33,6 +33,7 @@
     "jest": "^28.1.0",
     "ts-jest": "^28.0.3",
     "@types/jest": "^27.5.1",
+    "@types/crypto-js": "^4.1.1",
     "image-size": "^1.0.2"
   },
   "dependencies": {
@@ -56,6 +57,7 @@
     "web-push": "^3.5.0",
     "winston": "^3.7.2",
     "node-fetch": "^2.6.7",
+    "crypto-js": "^4.1.1",
     "string-strip-html": "^8.3.0"
   }
 }
