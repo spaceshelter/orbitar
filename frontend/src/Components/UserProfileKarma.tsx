@@ -43,10 +43,6 @@ export const UserProfileKarma = (props: UserProfileKarmaProps) => {
     }, [api.userAPI, debug, props.username]);
 
 
-    const sumPostRating = !karmaResult ? 0 :
-        Object.keys(karmaResult.postRatingBySubsite)
-            .reduce((acc, key) => acc + karmaResult.postRatingBySubsite[key], 0);
-
     const activeKarmaVotesSum = !karmaResult ? 0 :
         Object.keys(karmaResult.activeKarmaVotes)
             .reduce((acc, key) => acc + karmaResult.activeKarmaVotes[key], 0);
@@ -190,7 +186,7 @@ export const UserProfileKarma = (props: UserProfileKarmaProps) => {
                 </div>
 
                 <div className={styles.container}>
-                    <Karma contentSumRating={karmaResult.totalNormalizedContentRating} postsSumRating={sumPostRating}
+                    <Karma contentSumRating={karmaResult.totalNormalizedContentRating}
                            profileVotesCount={activeKarmaVotesCount} profileVotesSum={activeKarmaVotesSum}
                            senatePenalty={karmaResult.senatePenalty} />
 

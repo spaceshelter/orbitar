@@ -3,7 +3,6 @@ import './KarmaCalculator.scss';
 
 type KarmaCalculatorProps = {
     senatePenalty?: number;
-    postsSumRating?: number;
     contentSumRating?: number;
     profileVotesCount?: number;
     profileVotesSum?: number;
