@@ -230,19 +230,28 @@ export default class UserManager {
         };
     }
 
-    async getUserEffectiveKarma(userId: number): Promise<number> {
+    getNormalizedUserContentRating(userId: number): Promise<{rating: number, voters:number}> {
+        return this.voteRepository.getNormalizedContentVotesFromUsers(userId);
+    }
+
+    async getUserEffectiveKarma(userId: number): Promise<{
+        effectiveKarma,
+        userRating,
+        contentRating
+    }> {
         const user = await this.getById(userId);
         if (!user) {
-            return 0;
+            return {
+                effectiveKarma: 0,
+                userRating: 0,
+                contentRating: 0
+            };
         }
 
-        const userContentRating = await this.getUserRatingBySubsite(userId);
+        const {rating: userContentRating} = await this.voteRepository.getNormalizedContentVotesFromUsers(userId);
         const userVotes = await this.getActiveKarmaVotes(userId);
         const profileVotingResult = Object.values(userVotes).reduce((acc, vote) => acc + vote, 0);
         const profileVotesCount = Object.values(userVotes).length;
-
-        const allPostsValue = Object.values(userContentRating.postRatingBySubsite).reduce((acc, rating) => acc + rating, 0);
-        const allCommentsValue = Object.values(userContentRating.commentRatingBySubsite).reduce((acc, rating) => acc + rating, 0);
 
         const fit01 = (current: number, in_min: number, in_max: number, out_min: number, out_max: number): number => {
             const mapped: number = ((current - in_min) * (out_max - out_min)) / (in_max - in_min) + out_min;
@@ -252,10 +261,10 @@ export default class UserManager {
         const lerp = (start: number, end: number, r: number): number => (1 - r) * start + r * end;
         const bipolarSigmoid = (n: number): number => n / Math.sqrt(1 + n * n);
 
-        const positiveCommentsDivisor = 1; // positive comments are equal to posts
-        const negativeCommentsDivisor = 0.2; // negative comments are 5 times more influential than positive
-        const contentVal = (allPostsValue + allCommentsValue / (allCommentsValue >= 0 ? positiveCommentsDivisor : negativeCommentsDivisor)) / 5000;
-        const contentRating = (contentVal > 0 ? bipolarSigmoid(contentVal / 3) : Math.max(-1, -Math.pow(contentVal, 2) * 7));
+        //content quality ratio
+        const negativeContentMultiplier = 5; // negative content rating is 5 times more influential than positive
+        const contentVal = (userContentRating * (userContentRating >= 0 ? 1 : negativeContentMultiplier)) / 500;
+        const contentRating = (contentVal > 0 ? bipolarSigmoid(contentVal/3) : Math.max(-1, -Math.pow(contentVal,2)*7) );
 
         //user reputation ratio
         const ratio = profileVotingResult / profileVotesCount;
@@ -263,7 +272,11 @@ export default class UserManager {
         const userRating = (profileVotingResult >= 0 ? 1 : Math.max(0, 1 - lerp(Math.pow(ratio / 100, 2), Math.pow(ratio * 2, 2), s)));
 
         // karma without punishment
-        return Math.max(USER_RESTRICTIONS.MIN_KARMA, ((contentRating + 1) * userRating - 1) * 1000);
+        return {
+            effectiveKarma: Math.max(USER_RESTRICTIONS.MIN_KARMA, ((contentRating + 1) * userRating - 1) * 1000),
+            userRating,
+            contentRating
+        };
     }
 
     /**
@@ -329,7 +342,8 @@ export default class UserManager {
 
         const onTrial = user.ontrial;
 
-        const effectiveKarmaWOPenalty = localCachedValue?.effectiveKarmaWOPenalty ?? await this.getUserEffectiveKarma(userId);
+        const effectiveKarmaWOPenalty = localCachedValue?.effectiveKarmaWOPenalty ??
+            (await this.getUserEffectiveKarma(userId)).effectiveKarma;
         const penalty = ~~(await this.redis.get(`karma_penalty_${userId}`)); // parses string to int or 0
         const effectiveKarma = Math.max(effectiveKarmaWOPenalty - penalty, MIN_KARMA);
 
