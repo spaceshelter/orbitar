@@ -88,12 +88,12 @@ export class UserCache {
         const cachedParent = this.cachedUserParents[userId];
         if (cachedParent === false) {
             return undefined;
-        } else if (cachedParent) {
+        } else if (typeof cachedParent === 'number') {
             return this.getById(cachedParent);
         }
         const parent = await this.userRepository.getUserParent(userId);
-        this.cachedUserParents[userId] = parent !== undefined ? parent.user_id : false;
-        return this.getById(parent.user_id);
+        this.cachedUserParents[userId] = parent ? parent.user_id : false;
+        return parent ? this.getById(parent.user_id) : undefined;
     }
 
     public mapUserRaw(rawUser: UserRaw): UserInfo {
