@@ -4,37 +4,36 @@ import './KarmaCalculator.scss';
 type KarmaCalculatorProps = {
     senatePenalty?: number;
     postsSumRating?: number;
-    commentsSumRating?: number;
+    contentSumRating?: number;
     profileVotesCount?: number;
     profileVotesSum?: number;
 };
 
 export function Karma(props: KarmaCalculatorProps) {
-    const [allPostsValue, setP] = useState(props.postsSumRating || 0); // sum of votes for all posts
-    const [allCommentsValue, setC] = useState(props.commentsSumRating || 0); // sum of votes for all comments
-    const [profileVotesCount, setUCount] = useState(props.profileVotesCount || 0); //count of votes in profile
-    const [profileVotingResult, setU] = useState(props.profileVotesSum || 0); // sum of votes in profile
+    const [allContentSum, setAllContentSum] = useState(props.contentSumRating || 0); // sum of votes for all comments
+    const [profileVotesCount, setProfileVotesCount] = useState(props.profileVotesCount || 0); //count of votes in profile
+    const [profileVotesSum, setProfileVotesSum] = useState(props.profileVotesSum || 0); // sum of votes in profile
     const [punishment, setPunishment] = useState(props.senatePenalty || 0); // penalty set by moderator
 
     useEffect(() => {
-         setU( clamp(profileVotingResult, -profileVotesCount * 2, profileVotesCount * 2));
-    },[profileVotesCount, profileVotingResult]);
+         setProfileVotesSum( clamp(profileVotesSum, -profileVotesCount * 2, profileVotesCount * 2));
+    },[profileVotesCount, profileVotesSum]);
 
     //TODO extract the rest of coefficients to constants and comment them
 
     //content quality ratio
-    const positiveCommentsDivisor = 1; // positive comments are equal to posts
-    const negativeCommentsDivisor = 0.2; // negative comments are 5 times more influential than positive
-    const contentVal = (allPostsValue + allCommentsValue/(allCommentsValue>=0?positiveCommentsDivisor:negativeCommentsDivisor))/5000;
+    const negativeContentMultiplier = 5; // negative content rating is 5 times more influential than positive
+    const contentVal = (allContentSum * (allContentSum >= 0 ? 1 : negativeContentMultiplier)) / 500;
     const contentRating = (contentVal > 0 ? bipolarSigmoid(contentVal/3) : Math.max(-1, -Math.pow(contentVal,2)*7) );
 
     //user reputation ratio
-    const ratio = profileVotingResult / profileVotesCount;
+    const ratio = profileVotesSum / profileVotesCount;
     const s = fit01(profileVotesCount, 10, 200, 0 ,1);
-    const userRating = ( profileVotingResult >= 0 ? 1 : Math.max(0, 1 - lerp(Math.pow(ratio/100, 2), Math.pow(ratio*2, 2), s)));
+    const userRating = ( profileVotesSum >= 0 ? 1 : Math.max(0, 1 - lerp(Math.pow(ratio/100, 2), Math.pow(ratio*2, 2), s)));
 
+    console.log(contentRating, userRating, punishment);
     // karma without punishment
-    const rawKarma = Math.ceil(((contentRating + 1) * userRating - 1) * 1000 * 100) / 100;
+    const rawKarma = Math.round(((contentRating + 1) * userRating - 1) * 1000 * 100) / 100;
 
     // karma with punishment
     const karma = Math.max(-1000, rawKarma - punishment);
@@ -43,29 +42,31 @@ export function Karma(props: KarmaCalculatorProps) {
         <div id='karmaCalculator'>
             <h1>Калькулятор</h1>
             <h2>Входные данные</h2>
-                <label className="slider">Суммарный рейтинг всех постов: {allPostsValue}<br/>
-                        <input type="range" min="-3000" max="3000" value={allPostsValue} step="2" onChange={e => setP( +e.target.value) } />
-                </label>
-                <label className="slider">Суммарный рейтинг всех комментов: {allCommentsValue}<br/>
-                        <input type="range" min="-3000" max="3000" value={allCommentsValue} step="2" onChange={e => setC( +e.target.value) } />
+                <label className="slider">Нормализованный рейтинг контента: {Math.round(allContentSum)}<br/>
+                        <input type="range" min="-500" max="500" value={allContentSum} step="2" onChange={e => setAllContentSum( +e.target.value) } />
+                    <div>
+                        Суммы голосов за контент от каждого уникального пользователя
+                        нелинейно приводятся к диапазону значений от -2 до 2 (как у голосов в карму)
+                        и затем еще раз суммируются.
+                    </div>
                 </label>
                 <label className="slider">Количество голосов в профиле: {profileVotesCount}<br/>
-                        <input type="range" min="0" max="250" value={profileVotesCount.toString()} step="1" onChange={e => setUCount( +e.target.value) } />
+                        <input type="range" min="0" max="250" value={profileVotesCount.toString()} step="1" onChange={e => setProfileVotesCount( +e.target.value) } />
                 </label>
-                <label className="slider">Сумма всех голосов в профиле: {profileVotingResult}<br/>
-                        <input type="range" min={-profileVotesCount * 2} max={profileVotesCount * 2} value={profileVotingResult} step="1" onChange={e => setU( +e.target.value) } />
+                <label className="slider">Сумма всех голосов в профиле: {profileVotesSum}<br/>
+                        <input type="range" min={-profileVotesCount * 2} max={profileVotesCount * 2} value={profileVotesSum} step="1" onChange={e => setProfileVotesSum( +e.target.value) } />
                 </label>
-                <label className="slider">Кармический штраф наложенный сенатом: {punishment}<br/>
+                <label className="slider">Кармический штраф, наложенный сенатом: {punishment}<br/>
                         <input type="range" min="0" max="2000" value={punishment} step="100" onChange={e => setPunishment( +e.target.value) } />
                 </label>
 
                 <div>
                     <h2>-------------------------------------</h2>
                     <h2>Формула саморегуляции:</h2>
-                    <p> Рейтинг контента: {contentRating}</p>
-                    <p> Рейтинг юзера: {userRating}</p>
-                    <p> Сырой результат: {rawKarma}</p>
-                    <p> Результат: {karma}</p>
+                    <p> Рейтинг контента: {contentRating?.toFixed(2)}</p>
+                    <p> Рейтинг юзера: {userRating?.toFixed(2)}</p>
+                    <p> Сырой результат: {rawKarma?.toFixed(2)}</p>
+                    <p> Результат: {karma?.toFixed(2)}</p>
                 </div>
         </div>
     );

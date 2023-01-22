@@ -47,10 +47,6 @@ export const UserProfileKarma = (props: UserProfileKarmaProps) => {
         Object.keys(karmaResult.postRatingBySubsite)
             .reduce((acc, key) => acc + karmaResult.postRatingBySubsite[key], 0);
 
-    const sumCommentRating = !karmaResult ? 0 :
-        Object.keys(karmaResult.commentRatingBySubsite)
-            .reduce((acc, key) => acc + karmaResult.commentRatingBySubsite[key], 0);
-
     const activeKarmaVotesSum = !karmaResult ? 0 :
         Object.keys(karmaResult.activeKarmaVotes)
             .reduce((acc, key) => acc + karmaResult.activeKarmaVotes[key], 0);
@@ -173,14 +169,28 @@ export const UserProfileKarma = (props: UserProfileKarmaProps) => {
 
             {karmaResult && <>
                 <div>
-                    Прогресс прав:
+                    <div>
+                    <h3>Детали кармы:</h3>
+                    <pre>
+                        {JSON.stringify({
+                            effectiveKarma: karmaResult.effectiveKarma,
+                            userRating: karmaResult.effectiveKarmaUserRating,
+                            contentRating: karmaResult.effectiveKarmaContentRating,
+                            totalNormalizedContentRating: karmaResult.totalNormalizedContentRating,
+                            contentVotersNum: karmaResult.contentVotersNum,
+                        }, null, 2)}
+                    </pre>
+                    </div>
+                    <div>
+                    <h3>Прогресс прав:</h3>
                     <pre>
                         {JSON.stringify(karmaResult.trialProgress, null, 2)}
                     </pre>
+                    </div>
                 </div>
 
                 <div className={styles.container}>
-                    <Karma commentsSumRating={sumCommentRating} postsSumRating={sumPostRating}
+                    <Karma contentSumRating={karmaResult.totalNormalizedContentRating} postsSumRating={sumPostRating}
                            profileVotesCount={activeKarmaVotesCount} profileVotesSum={activeKarmaVotesSum}
                            senatePenalty={karmaResult.senatePenalty} />
 

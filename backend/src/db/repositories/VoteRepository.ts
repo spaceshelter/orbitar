@@ -125,6 +125,26 @@ export default class VoteRepository {
                     delta: vote - prevVote
                 });
 
+            // lock the row to prevent concurrent updates
+            await conn.query(
+                `select ${userSiteRatingField}
+                 from user_user_rating
+                 where user_id = :user_id
+                   and voter_id = :voter_id
+                     FOR UPDATE` /*locks the row*/, {
+                    user_id: authorId,
+                    voter_id: userId
+                });
+
+            await conn.query(`update user_user_rating
+                    set ${userSiteRatingField}=${userSiteRatingField} + :delta
+                    where user_id = :user_id
+                      and voter_id = :voter_id`, {
+                    user_id: authorId,
+                    voter_id: userId,
+                    delta: vote - prevVote
+                });
+
             return prevRating + vote - prevVote;
         });
     }
@@ -228,6 +248,19 @@ export default class VoteRepository {
              where user_id = :user_id`, {
                 user_id: userId
             });
+    }
+
+    getNormalizedContentVotesFromUsers(userId: number): Promise<{ rating: number, voters: number }> {
+        return this.db.fetchOne<{ rating: number, voters: number }>(
+            `select sum(rating) as rating, count(*) as voters
+             from (SELECT (4 / (1 + EXP(LEAST(50, -0.1 * sum(comment_rating + post_rating))))) - 2 AS rating
+                   FROM user_user_rating
+                   WHERE user_user_rating.user_id = :user_id
+                     and exists(select 1 from user_karma where user_karma.voter_id = user_user_rating.voter_id and vote != 0)
+                   group by voter_id
+                  ) t`, {
+                user_id: userId
+            }).then(r => ({ rating: r.rating || 0, voters: r.voters || 0 }));
     }
 
     getTrialsApprovers(userId: number): Promise<VoteWithUsername[]>  {

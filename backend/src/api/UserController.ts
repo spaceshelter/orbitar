@@ -234,18 +234,25 @@ export default class UserController {
                 return response.error(ERROR_CODES.NOT_FOUND, 'User not found', 404);
             }
 
+            const effectiveKarmaDebug = await this.userManager.getUserEffectiveKarma(profile.id);
             const restrictions = await this.userManager.getUserRestrictions(profile.id);
+            const {rating: totalNormalizedContentRating, voters: contentVotersNum} =
+                await this.userManager.getNormalizedUserContentRating(profile.id);
             const ratingBySubsite: UserRatingBySubsite = await this.userManager.getUserRatingBySubsite(profile.id);
             const activeKarmaVotes = await this.userManager.getActiveKarmaVotes(profile.id);
             const trialProgress = await this.userManager.getTrialProgressRaw(profile.id);
 
             return response.success({
-                effectiveKarma: restrictions.effectiveKarma,
+                effectiveKarma: effectiveKarmaDebug.effectiveKarma,
+                effectiveKarmaUserRating: effectiveKarmaDebug.userRating,
+                effectiveKarmaContentRating: effectiveKarmaDebug.contentRating,
                 senatePenalty: restrictions.senatePenalty,
                 activeKarmaVotes,
                 postRatingBySubsite: ratingBySubsite.postRatingBySubsite,
                 commentRatingBySubsite: ratingBySubsite.commentRatingBySubsite,
-                trialProgress
+                trialProgress,
+                totalNormalizedContentRating,
+                contentVotersNum
             });
         }
         catch (error) {
