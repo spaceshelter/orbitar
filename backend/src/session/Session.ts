@@ -2,6 +2,7 @@ import {Request, RequestHandler, Response} from 'express';
 import * as crypto from 'crypto';
 import DB from '../db/DB';
 import {Logger} from 'winston';
+import {config} from '../config';
 
 const sessionStorage: Record<string, { created: Date, data: SessionData}> = {};
 
@@ -74,6 +75,10 @@ export default class Session {
         if (!this.created) return 0;
         const now = new Date();
         return now.getTime() - this.created.getTime();
+    }
+
+    public isBarmalini() {
+        return config.barmalini.userId && this.data?.userId === config.barmalini.userId;
     }
 
     private async generate(): Promise<string> {
@@ -156,10 +161,9 @@ export function session(db: DB, logger: Logger): RequestHandler {
         return (async () => {
             try {
                 await req.session.restore();
-                // TODO: implement session timeout
-                // if (req.session.getAgeMillis() > 3600000 /*1 hour*/) {
-                //     await req.session.destroy();
-                // }
+                if (req.session.isBarmalini() && req.session.getAgeMillis() > /*1 hour*/ 60 * 60 * 1000) {
+                    await req.session.destroy();
+                }
                 next();
             }
             catch (error) {

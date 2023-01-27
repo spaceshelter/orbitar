@@ -17,6 +17,7 @@ import {Logger} from 'winston';
 import {FeedSorting} from '../api/types/entities/common';
 import TheParser from '../parser/TheParser';
 import {UserCache} from './UserCache';
+import {config} from '../config';
 
 const USER_RESTRICTIONS = {
     MIN_KARMA: -1000,
@@ -248,6 +249,8 @@ export default class UserManager {
             };
         }
 
+        const isBarmalini = config.barmalini.userId && userId === config.barmalini.userId;
+
         const {rating: userContentRating} = await this.voteRepository.getNormalizedContentVotesFromUsers(userId);
         const userVotes = await this.getActiveKarmaVotes(userId);
         const profileVotingResult = Object.values(userVotes).reduce((acc, vote) => acc + vote, 0);
@@ -271,9 +274,14 @@ export default class UserManager {
         const s = fit01(profileVotesCount, 10, 200, 0, 1);
         const userRating = (profileVotingResult >= 0 ? 1 : Math.max(0, 1 - lerp(Math.pow(ratio / 100, 2), Math.pow(ratio * 2, 2), s)));
 
+        let effectiveKarma = Math.max(USER_RESTRICTIONS.MIN_KARMA, ((contentRating + 1) * userRating - 1) * 1000);
+        if (isBarmalini) {
+            effectiveKarma = Math.min(USER_RESTRICTIONS.NEG_KARMA_THRESH - 1, effectiveKarma);
+        }
+
         // karma without punishment
         return {
-            effectiveKarma: Math.max(USER_RESTRICTIONS.MIN_KARMA, ((contentRating + 1) * userRating - 1) * 1000),
+            effectiveKarma,
             userRating,
             contentRating
         };

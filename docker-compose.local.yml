@@ -73,6 +73,8 @@ services:
       DEEPL_API_KEY: ${DEEPL_API_KEY}
       MEDIA_HOSTING_URL: ${MEDIA_HOSTING_URL}
       MEDIA_HOSTING_DIMS_AES_KEY: ${MEDIA_HOSTING_DIMS_AES_KEY}
+      BARMALINI_USER_ID: ${BARMALINI_USER_ID}
+      BARMALINI_KEY: ${BARMALINI_KEY}
     depends_on:
       - mysql
       - redis
