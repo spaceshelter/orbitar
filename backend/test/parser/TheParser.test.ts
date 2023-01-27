@@ -173,3 +173,69 @@ test('mentions', () => {
         '<a href="/u/test" target="_blank" class="mention">test</a>'
     );
 });
+
+test('parse html comment', () => {
+    // returns escaped html comment as text
+    expect(
+        p.parse('<!-- test -->').text
+    ).toEqual('&lt;!-- test --&gt;');
+
+    expect(
+        p.parse('<!-- test -->test').text
+    ).toEqual('&lt;!-- test --&gt;test');
+
+    expect(
+        p.parse('test<!-- test -->').text
+    ).toEqual('test&lt;!-- test --&gt;');
+
+    expect(
+        p.parse('test<!-- test -->test').text
+    ).toEqual('test&lt;!-- test --&gt;test');
+
+    expect(
+        p.parse('test<!-- test -->test<!-- test -->test').text
+    ).toEqual('test&lt;!-- test --&gt;test&lt;!-- test --&gt;test');
+
+});
+
+test('parse html comment with html tags', () => {
+    expect(
+        p.parse('<!-- <a href="http://test.com">test</a> -->').text
+    ).toEqual('&lt;!-- &lt;a href=&quot;http://test.com&quot;&gt;test&lt;/a&gt; --&gt;');
+});
+
+test('parse html directive', () => {
+    // returns escaped html directive as text
+    expect(
+        p.parse('<!DOCTYPE html>').text
+    ).toEqual('&lt;!DOCTYPE html&gt;');
+
+    expect(
+        p.parse('<!DOCTYPE html>test').text
+    ).toEqual('&lt;!DOCTYPE html&gt;test');
+
+    expect(
+        p.parse('test<!DOCTYPE html>').text
+    ).toEqual('test&lt;!DOCTYPE html&gt;');
+
+    expect(
+        p.parse('test<!DOCTYPE html>test').text
+    ).toEqual('test&lt;!DOCTYPE html&gt;test');
+
+    expect(
+        p.parse('test<!DOCTYPE html>test<!DOCTYPE html>test').text
+    ).toEqual('test&lt;!DOCTYPE html&gt;test&lt;!DOCTYPE html&gt;test');
+
+    expect(
+        p.parse('<?xml version="1.0" encoding="UTF-8"?>').text
+    ).toEqual('&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;');
+
+    expect(
+        p.parse('<?xml version="1.0" encoding="UTF-8"?>test').text
+    ).toEqual('&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;test');
+
+    expect(
+        p.parse('test<?xml version="1.0" encoding="UTF-8"?>').text
+    ).toEqual('test&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;');
+
+});

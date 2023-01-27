@@ -111,11 +111,11 @@ export default class TheParser {
         }
 
         if (node.type === 'directive') {
-            return escapeHTML(`<${node.data}>`);
+            return {text: escapeHTML(`<${node.data}>`), mentions: [], urls: [], images: []};
         }
 
         if (node.type === 'comment') {
-            return escapeHTML(`<!-- ${node.data} -->`);
+            return {text: escapeHTML(`<!--${node.data}-->`), mentions: [], urls: [], images: []};
         }
 
         return { text: '', mentions: [], urls: [], images: [] };
