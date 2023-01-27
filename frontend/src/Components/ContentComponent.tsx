@@ -51,7 +51,7 @@ function processYtEmbed(img: HTMLImageElement) {
         img.addEventListener('click', (e) => {
             e.preventDefault();
             const iframe = document.createElement('iframe');
-            iframe.src = ytUrl + '?autoplay=1';
+            iframe.src = ytUrl + (ytUrl.indexOf('?') === -1 ? '?' : '&') + 'autoplay=1';
             iframe.width = img.width.toString();
             iframe.height = img.height.toString();
             iframe.allowFullscreen = true;
