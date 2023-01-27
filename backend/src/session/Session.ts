@@ -3,7 +3,7 @@ import * as crypto from 'crypto';
 import DB from '../db/DB';
 import {Logger} from 'winston';
 
-const sessionStorage: Record<string, SessionData> = {};
+const sessionStorage: Record<string, { created: Date, data: SessionData}> = {};
 
 export default class Session {
     private request: Request;
@@ -13,6 +13,7 @@ export default class Session {
     private static SESSION_HEADER = 'X-Session-Id';
     public id?: string;
     public data?: SessionData;
+    public created: Date;
 
     constructor(db: DB, logger: Logger, request: Request, response: Response) {
         this.request = request;
@@ -29,14 +30,18 @@ export default class Session {
             return;
         }
 
-        const data = sessionStorage[this.id];
-        if (data) {
-            this.data = data;
+        const cached = sessionStorage[this.id];
+        if (cached) {
+            this.data = cached.data;
+            this.created = cached.created;
             this.response.setHeader(Session.SESSION_HEADER, this.id);
             return;
         }
 
-        const storedData = await this.db.fetchOne<{ data: string }>('select data from sessions where id=:id', {
+        const storedData = await this.db.fetchOne<{
+            data: string,
+            used: Date
+        }>('select used, data from sessions where id=:id', {
             id: this.id
         });
         if (storedData) {
@@ -45,7 +50,11 @@ export default class Session {
                 const parsedData = JSON.parse(storedData.data);
                 if (parsedData.userId) {
                     this.data = new SessionData(this.id, parsedData.userId);
-                    sessionStorage[this.id] = this.data;
+                    this.created = storedData.used;
+                    sessionStorage[this.id] = {
+                        created: this.created,
+                        data: this.data
+                    };
                     this.response.setHeader(Session.SESSION_HEADER, this.id);
                     return;
                 }
@@ -61,6 +70,12 @@ export default class Session {
         this.data = new SessionData('');
     }
 
+    public getAgeMillis() {
+        if (!this.created) return 0;
+        const now = new Date();
+        return now.getTime() - this.created.getTime();
+    }
+
     private async generate(): Promise<string> {
         return new Promise((resolve, reject) => {
             crypto.randomBytes(32, (err, buffer) => {
@@ -71,7 +86,6 @@ export default class Session {
                 resolve(buffer.toString('hex'));
             });
         });
-
     }
 
     async init() {
@@ -81,7 +95,8 @@ export default class Session {
 
         this.id = await this.generate();
         this.data = new SessionData(this.id);
-        sessionStorage[this.id] = this.data;
+        this.created = new Date();
+        sessionStorage[this.id] = {created: this.created, data: this.data};
 
         this.response.setHeader(Session.SESSION_HEADER, this.id);
 
@@ -138,14 +153,20 @@ export class SessionData {
 export function session(db: DB, logger: Logger): RequestHandler {
     return (req, res, next) => {
         req.session = new Session(db, logger, req, res);
-        req.session.restore()
-            .then(() => {
+        return (async () => {
+            try {
+                await req.session.restore();
+                // TODO: implement session timeout
+                // if (req.session.getAgeMillis() > 3600000 /*1 hour*/) {
+                //     await req.session.destroy();
+                // }
                 next();
-            })
-            .catch(error => {
+            }
+            catch (error) {
                 logger.error('Could not restore session', { error: error });
                 res.error('error', 'Unknown error', 500);
-            });
+            }
+        })();
     };
 }
 
