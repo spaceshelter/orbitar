@@ -7,10 +7,12 @@ import {useLocation, useNavigate} from 'react-router-dom';
 import ThemeToggleComponent from './ThemeToggleComponent';
 import {UserGender} from '../Types/UserInfo';
 import {toast} from 'react-toastify';
+import {observer} from 'mobx-react-lite';
 
 type UserProfileSettingsProps = {
   onChange: any;
   gender: UserGender;
+  barmaliniAccess?: boolean;
 };
 
 export default function UserProfileSettings(props: UserProfileSettingsProps) {
@@ -51,17 +53,65 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
     });
   };
 
-  return (
-    <div>
-      {gender !== undefined && <button className={buttonStyles.logoutButton} onClick={handleGenderChange}><UserIcon /> Пол: {
-        gender === UserGender.fluid ? 'не указан' : (
-          gender === UserGender.she ? 'женщина' : (
-            'мужчина'
-          )
-        )
-      } </button>}
-      {<ThemeToggleComponent dynamic={true} buttonLabel='Сменить тему' /> }
-      {<button className={buttonStyles.logoutButton} onClick={handleLogout}><LogoutIcon /> Выйти </button> }
-    </div>
-  );
+    return (
+        <>
+            {props.barmaliniAccess && <BarmaliniAccess/>}
+            <div>
+                {gender !== undefined &&
+                    <button className={buttonStyles.logoutButton} onClick={handleGenderChange}><UserIcon/> Пол: {
+                        gender === UserGender.fluid ? 'не указан' : (
+                            gender === UserGender.she ? 'женщина' : (
+                                'мужчина'
+                            )
+                        )
+                    } </button>}
+                {<ThemeToggleComponent dynamic={true} buttonLabel="Сменить тему"/>}
+                {<button className={buttonStyles.logoutButton} onClick={handleLogout}><LogoutIcon/> Выйти </button>}
+            </div>
+        </>
+    );
 }
+
+
+/**
+ * Component that displays the button, when clicked,
+ * the button turns into a div with the password/token (got from the server via userAPi.getBarmaliniPassword)
+ * and the "copy" button.
+ */
+const BarmaliniAccess = observer(() => {
+    const api = useAPI();
+    const [password, setPassword] = React.useState('');
+    const [showPassword, setShowPassword] = React.useState(false);
+
+    const handleCopy = (e: React.MouseEvent) => {
+        e.preventDefault();
+        navigator.clipboard?.writeText(password)
+            ?.then(() => toast('В буфере!'))?.catch();
+    };
+
+    const handleShowPassword = (e: React.MouseEvent) => {
+        e.preventDefault();
+        if (password === '') {
+            api.userAPI.getBarmaliniPassword().then((data) => {
+                setPassword(data.password);
+                setShowPassword(true);
+            }).catch((error) => {
+                toast.error(error?.message || 'Не удалось получить пароль.');
+            });
+        } else {
+            setShowPassword(!showPassword);
+        }
+    };
+
+    return (
+        <div>
+            {!showPassword && <button className={buttonStyles.logoutButton} onClick={handleShowPassword}>
+                 Бармалинить</button>}
+            {showPassword && <div>
+                <div className={buttonStyles.password}>
+                    {password}<button  onClick={handleCopy}>в буфер</button>
+                </div>
+            </div>}
+        </div>
+    );
+});

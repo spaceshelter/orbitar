@@ -152,4 +152,8 @@ export default class UserAPI {
     async saveGender(gender: UserGender): Promise<{gender: UserGender}> {
         return this.api.request<{gender: UserGender}, {gender: UserGender}>('/user/savegender', {gender});
     }
+
+    async getBarmaliniPassword(): Promise<{password: string}> {
+        return this.api.request<Record<string, unknown>, {password: string}>('/user/barmalini', {});
+    }
 }

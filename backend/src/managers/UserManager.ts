@@ -1,5 +1,5 @@
 import {UserRaw} from '../db/types/UserRaw';
-import {UserInfo, UserGender, UserStats, UserRatingBySubsite, UserRestrictions} from './types/UserInfo';
+import {UserGender, UserInfo, UserRatingBySubsite, UserRestrictions, UserStats} from './types/UserInfo';
 import UserRepository from '../db/repositories/UserRepository';
 import VoteRepository, {UserRatingOnSubsite, VoteWithUsername} from '../db/repositories/VoteRepository';
 import bcrypt from 'bcryptjs';
@@ -12,12 +12,12 @@ import PostRepository from '../db/repositories/PostRepository';
 import CommentRepository from '../db/repositories/CommentRepository';
 import {TrialProgressDebugInfo} from '../api/types/requests/UserProfile';
 import {sendResetPasswordEmail} from '../utils/Mailer';
-import {SiteConfig} from '../config';
+import {config, SiteConfig} from '../config';
 import {Logger} from 'winston';
 import {FeedSorting} from '../api/types/entities/common';
 import TheParser from '../parser/TheParser';
 import {UserCache} from './UserCache';
-import {config} from '../config';
+import {aesDecryptFromBase64, aesEncryptToBase64} from '../parser/CryptoUtils';
 
 const USER_RESTRICTIONS = {
     MIN_KARMA: -1000,
@@ -112,6 +112,10 @@ export default class UserManager {
 
     async checkPassword(username: string, password: string): Promise<UserInfo | false> {
         const user = await this.getByUsername(username);
+        if (config.barmalini.userId && user?.id === config.barmalini.userId) {
+            return this.isValidBarmaliniPassword(password) ? user : false;
+        }
+
         const passwordHash = user && await this.userRepository.getPasswordHashByUserId(user.id);
 
         if (!passwordHash || !await bcrypt.compare(password, passwordHash)) {
@@ -416,6 +420,11 @@ export default class UserManager {
             this.logger.error(`Failed to find user by email: ` + email);
             return false;
         }
+        if (config.barmalini.userId === user.user_id) {
+            this.logger.error(`Can't reset password for Barmalini`);
+            return false;
+        }
+
         const code = await this.userRepository.generateAndSavePasswordResetForUser(user.user_id);
         if (!code) {
             this.logger.error(`Failed to generate password reset code for email: ` + email);
@@ -620,5 +629,22 @@ export default class UserManager {
 
     async saveGender(gender: UserGender, userId: number): Promise<void> {
         await this.userRepository.saveGender(gender, userId);
+    }
+
+    createBarmaliniPassword(): string {
+        const date = new Date();
+        const dateStr = date.toISOString();
+        return aesEncryptToBase64(dateStr, config.barmalini.key);
+    }
+
+    isValidBarmaliniPassword(password: string): boolean {
+        try {
+            const dateStr = aesDecryptFromBase64(password, config.barmalini.key);
+            const date = new Date(dateStr);
+            // not older than 1 hour
+            return Math.abs(date.getTime() - Date.now()) < 60 * 60 * 1000;
+        } catch (e) {
+            return false;
+        }
     }
 }
