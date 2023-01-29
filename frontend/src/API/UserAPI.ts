@@ -1,5 +1,5 @@
 import APIBase from './APIBase';
-import {UserGender, UserInfo, UserProfileInfo} from '../Types/UserInfo';
+import {BarmaliniAccessResult, UserGender, UserInfo, UserProfileInfo} from '../Types/UserInfo';
 import {SiteInfo} from '../Types/SiteInfo';
 import {CommentEntity, ContentFormat, PostEntity} from './PostAPI';
 import PostAPIHelper from './PostAPIHelper';
@@ -153,7 +153,7 @@ export default class UserAPI {
         return this.api.request<{gender: UserGender}, {gender: UserGender}>('/user/savegender', {gender});
     }
 
-    async getBarmaliniPassword(): Promise<{password: string}> {
-        return this.api.request<Record<string, unknown>, {password: string}>('/user/barmalini', {});
+    async getBarmaliniAccess(): Promise<BarmaliniAccessResult> {
+        return this.api.request<Record<string, unknown>, BarmaliniAccessResult>('/user/barmalini', {});
     }
 }

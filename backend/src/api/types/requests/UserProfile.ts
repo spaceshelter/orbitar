@@ -73,5 +73,6 @@ export type UserSaveGenderResponse = {
 export type BarmaliniPasswordRequest = Record<string, unknown>;
 
 export type BarmaliniPasswordResponse = {
+    login: string;
     password: string;
 };
