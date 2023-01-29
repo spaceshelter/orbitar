@@ -122,7 +122,9 @@ const BarmaliniAccess = observer(() => {
     return (
         <div className={styles.barmalini}>
             {access && <div>
-                <div><span className={styles.label}>Логин:</span> {access.login}</div>
+                <div>
+                Счастливого бармаления. Пароль истекает через час.<br />
+                <span className={styles.label}>Логин:</span> {access.login}</div>
                 <div><span className={styles.label}>Пароль:</span>&nbsp;
                     <span className={styles.password} onClick={selectText}>{access.password}</span>
                     &nbsp;<button className={buttonStyles.linkButton} onClick={handleCopy}>скопировать</button>
