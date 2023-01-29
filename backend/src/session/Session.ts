@@ -158,19 +158,21 @@ export class SessionData {
 export function session(db: DB, logger: Logger): RequestHandler {
     return (req, res, next) => {
         req.session = new Session(db, logger, req, res);
-        return (async () => {
+        // create async block to encapsulate async logic
+        const asyncBlock = async () => {
             try {
                 await req.session.restore();
                 if (req.session.isBarmalini() && req.session.getAgeMillis() > /*1 hour*/ 60 * 60 * 1000) {
                     await req.session.destroy();
                 }
                 next();
-            }
-            catch (error) {
-                logger.error('Could not restore session', { error: error });
+            } catch (error) {
+                logger.error('Could not restore session', {error: error});
                 res.error('error', 'Unknown error', 500);
             }
-        })();
+        };
+        // call the async block (returns a promise)
+        return asyncBlock();
     };
 }
 

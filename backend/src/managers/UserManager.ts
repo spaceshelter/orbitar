@@ -112,7 +112,7 @@ export default class UserManager {
 
     async checkPassword(username: string, password: string): Promise<UserInfo | false> {
         const user = await this.getByUsername(username);
-        if (config.barmalini.userId && user?.id === config.barmalini.userId) {
+        if (this.isBarmaliniUser(user.id)) {
             return this.isValidBarmaliniPassword(password) ? user : false;
         }
 
@@ -253,7 +253,7 @@ export default class UserManager {
             };
         }
 
-        const isBarmalini = config.barmalini.userId && userId === config.barmalini.userId;
+        const isBarmalini = this.isBarmaliniUser(userId);
 
         const {rating: userContentRating} = await this.voteRepository.getNormalizedContentVotesFromUsers(userId);
         const userVotes = await this.getActiveKarmaVotes(userId);
@@ -420,7 +420,7 @@ export default class UserManager {
             this.logger.error(`Failed to find user by email: ` + email);
             return false;
         }
-        if (config.barmalini.userId === user.user_id) {
+        if (this.isBarmaliniUser(user.user_id)) {
             this.logger.error(`Can't reset password for Barmalini`);
             return false;
         }
@@ -629,6 +629,18 @@ export default class UserManager {
 
     async saveGender(gender: UserGender, userId: number): Promise<void> {
         await this.userRepository.saveGender(gender, userId);
+    }
+
+    barmaliniUserConfigured(): boolean {
+        return !!config.barmalini.userId;
+    }
+
+    isBarmaliniUser(userId: number | null | undefined): boolean {
+        return this.barmaliniUserConfigured() && userId === config.barmalini.userId;
+    }
+
+    getBarmaliniUser(): Promise<UserInfo | undefined> {
+        return this.barmaliniUserConfigured() ? this.getById(config.barmalini.userId) : undefined;
     }
 
     createBarmaliniPassword(): string {

@@ -26,7 +26,6 @@ import {UserGender, UserRatingBySubsite} from '../managers/types/UserInfo';
 import {ERROR_CODES} from './utils/error-codes';
 import InviteManager from '../managers/InviteManager';
 import rateLimit from 'express-rate-limit';
-import {config} from '../config';
 
 export default class UserController {
     public readonly router = Router();
@@ -343,7 +342,7 @@ export default class UserController {
     }
 
     async barmaliniPassword(request: APIRequest<BarmaliniPasswordRequest>, response: APIResponse<BarmaliniPasswordResponse>) {
-        if (!config.barmalini.userId) {
+        if (!this.userManager.barmaliniUserConfigured()) {
             return response.error('error', `Barmalini is not configured`, 500);
         }
 
@@ -353,11 +352,11 @@ export default class UserController {
         const userId = request.session.data.userId;
         try {
             const restrictions = await this.userManager.getUserRestrictions(userId);
-            if (!restrictions.canVoteKarma) {
+            if (this.userManager.isBarmaliniUser(userId) || !restrictions.canVoteKarma) {
                 return response.error('error', `Not enough permissions`, 403);
             }
 
-            const barmaliniUser = await this.userManager.getById(config.barmalini.userId);
+            const barmaliniUser = await this.userManager.getBarmaliniUser();
 
             return response.success({
                 login: barmaliniUser.username,

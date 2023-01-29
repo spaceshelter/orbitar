@@ -123,12 +123,12 @@ const BarmaliniAccess = observer(() => {
         <div className={styles.barmalini}>
             {access && <div>
                 <div>
-                Счастливого бармаления. Пароль истекает через час.<br />
                 <span className={styles.label}>Логин:</span> {access.login}</div>
                 <div><span className={styles.label}>Пароль:</span>&nbsp;
                     <span className={styles.password} onClick={selectText}>{access.password}</span>
                     &nbsp;<button className={buttonStyles.linkButton} onClick={handleCopy}>скопировать</button>
                 </div>
+                <div><span className={styles.label}>Счастливого бармаления. Пароль истекает через час.</span></div>
             </div> || <button className={buttonStyles.linkButton} onClick={handleShowPassword}>
                 Бармалинить</button>}
         </div>
