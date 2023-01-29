@@ -59,6 +59,11 @@ export default class VoteRepository {
             site_id: entitySite,
         });
 
+        await this.db.query(`insert ignore into user_user_rating (user_id, voter_id ) values ( :user_id, :voter_id )`, {
+            user_id: authorId,
+            voter_id: userId,
+        });
+
         return await this.db.inTransaction(async conn => {
             // Important! transaction must start with locking the most "coarse" table first (entity table)
             // to prevent deadlocks
