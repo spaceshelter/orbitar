@@ -1,0 +1,22 @@
+{
+  "name": "media-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "build/app.js",
+  "scripts": {
+    "build": "npx tsc",
+    "start:dev": "npx tsc && NODE_ENV=development node build/app.js",
+    "start:production": "NODE_ENV=production node build/app.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@types/image-size": "^0.8.0",
+    "@types/mysql": "^2.15.21",
+    "@types/node-fetch": "^2.6.2",
+    "image-size": "^1.0.2",
+    "mysql2": "^2.3.3",
+    "node-fetch": "^2.6.7",
+    "typescript": "^4.9.4"
+  }
+}
