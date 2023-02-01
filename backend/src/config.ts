@@ -7,6 +7,7 @@ type Config = {
     site: SiteConfig;
     mediaHosting: MediaHostingConfig;
     feed: FeedConfig;
+    barmalini: BarmaliniConfig;
 };
 
 export type MysqlConfig = {
@@ -44,6 +45,11 @@ export type FeedConfig = {
     port: number;
 };
 
+export type BarmaliniConfig = {
+    userId: number | undefined;
+    key: string;
+};
+
 export const config: Config = {
     port: parseInt(process.env.SERVER_PORT) || 5001,
     logLevel: process.env.LOG_LEVEL || 'info',
@@ -75,5 +81,9 @@ export const config: Config = {
     feed: {
         host: process.env.FEED_INDEX_HOST || 'feed',
         port: parseInt(process.env.FEED_INDEX_PORT) || 6767,
+    },
+    barmalini: {
+        userId: process.env.BARMALINI_USER_ID ? parseInt(process.env.BARMALINI_USER_ID) : undefined,
+        key: process.env.BARMALINI_KEY || '',
     }
 };

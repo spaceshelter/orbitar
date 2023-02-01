@@ -1,5 +1,5 @@
 import {UserRaw} from '../db/types/UserRaw';
-import {UserInfo, UserGender, UserStats, UserRatingBySubsite, UserRestrictions} from './types/UserInfo';
+import {UserGender, UserInfo, UserRatingBySubsite, UserRestrictions, UserStats} from './types/UserInfo';
 import UserRepository from '../db/repositories/UserRepository';
 import VoteRepository, {UserRatingOnSubsite, VoteWithUsername} from '../db/repositories/VoteRepository';
 import bcrypt from 'bcryptjs';
@@ -12,11 +12,12 @@ import PostRepository from '../db/repositories/PostRepository';
 import CommentRepository from '../db/repositories/CommentRepository';
 import {TrialProgressDebugInfo} from '../api/types/requests/UserProfile';
 import {sendResetPasswordEmail} from '../utils/Mailer';
-import {SiteConfig} from '../config';
+import {config, SiteConfig} from '../config';
 import {Logger} from 'winston';
 import {FeedSorting} from '../api/types/entities/common';
 import TheParser from '../parser/TheParser';
 import {UserCache} from './UserCache';
+import {aesDecryptFromBase64, aesEncryptToBase64} from '../parser/CryptoUtils';
 
 const USER_RESTRICTIONS = {
     MIN_KARMA: -1000,
@@ -111,6 +112,10 @@ export default class UserManager {
 
     async checkPassword(username: string, password: string): Promise<UserInfo | false> {
         const user = await this.getByUsername(username);
+        if (this.isBarmaliniUser(user.id)) {
+            return this.isValidBarmaliniPassword(password) ? user : false;
+        }
+
         const passwordHash = user && await this.userRepository.getPasswordHashByUserId(user.id);
 
         if (!passwordHash || !await bcrypt.compare(password, passwordHash)) {
@@ -248,6 +253,8 @@ export default class UserManager {
             };
         }
 
+        const isBarmalini = this.isBarmaliniUser(userId);
+
         const {rating: userContentRating} = await this.voteRepository.getNormalizedContentVotesFromUsers(userId);
         const userVotes = await this.getActiveKarmaVotes(userId);
         const profileVotingResult = Object.values(userVotes).reduce((acc, vote) => acc + vote, 0);
@@ -271,9 +278,14 @@ export default class UserManager {
         const s = fit01(profileVotesCount, 10, 200, 0, 1);
         const userRating = (profileVotingResult >= 0 ? 1 : Math.max(0, 1 - lerp(Math.pow(ratio / 100, 2), Math.pow(ratio * 2, 2), s)));
 
+        let effectiveKarma = Math.max(USER_RESTRICTIONS.MIN_KARMA, ((contentRating + 1) * userRating - 1) * 1000);
+        if (isBarmalini) {
+            effectiveKarma = Math.min(USER_RESTRICTIONS.NEG_KARMA_THRESH - 1, effectiveKarma);
+        }
+
         // karma without punishment
         return {
-            effectiveKarma: Math.max(USER_RESTRICTIONS.MIN_KARMA, ((contentRating + 1) * userRating - 1) * 1000),
+            effectiveKarma,
             userRating,
             contentRating
         };
@@ -408,6 +420,11 @@ export default class UserManager {
             this.logger.error(`Failed to find user by email: ` + email);
             return false;
         }
+        if (this.isBarmaliniUser(user.user_id)) {
+            this.logger.error(`Can't reset password for Barmalini`);
+            return false;
+        }
+
         const code = await this.userRepository.generateAndSavePasswordResetForUser(user.user_id);
         if (!code) {
             this.logger.error(`Failed to generate password reset code for email: ` + email);
@@ -612,5 +629,34 @@ export default class UserManager {
 
     async saveGender(gender: UserGender, userId: number): Promise<void> {
         await this.userRepository.saveGender(gender, userId);
+    }
+
+    barmaliniUserConfigured(): boolean {
+        return !!config.barmalini.userId;
+    }
+
+    isBarmaliniUser(userId: number | null | undefined): boolean {
+        return this.barmaliniUserConfigured() && userId === config.barmalini.userId;
+    }
+
+    getBarmaliniUser(): Promise<UserInfo | undefined> {
+        return this.barmaliniUserConfigured() ? this.getById(config.barmalini.userId) : undefined;
+    }
+
+    createBarmaliniPassword(): string {
+        const date = new Date();
+        const dateStr = date.toISOString();
+        return aesEncryptToBase64(dateStr, config.barmalini.key);
+    }
+
+    isValidBarmaliniPassword(password: string): boolean {
+        try {
+            const dateStr = aesDecryptFromBase64(password, config.barmalini.key);
+            const date = new Date(dateStr);
+            // not older than 1 hour
+            return Math.abs(date.getTime() - Date.now()) < 60 * 60 * 1000;
+        } catch (e) {
+            return false;
+        }
     }
 }
