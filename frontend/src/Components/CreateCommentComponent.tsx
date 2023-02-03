@@ -251,15 +251,15 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     return (
         <div className={styles.answer}>
             <div className={styles.controls}>
-                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('b')} className={styles.bold}>B</button></div>
-                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('i')} className={styles.italic}>I</button></div>
-                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('u')} className={styles.underline}>U</button></div>
-                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('strike')} className={styles.strike}>S</button></div>
-                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('irony')}><IronyIcon /></button></div>
-                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('spoiler')}><SpoilerIcon /></button></div>
-                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('blockquote')}><QuoteIcon /></button></div>
-                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('img')}><ImageIcon /></button></div>
-                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('a')}><LinkIcon /></button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('b')} title="Болд" className={styles.bold}>B</button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('i')} title="Италик" className={styles.italic}>I</button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('u')} title="Подчеркнуть" className={styles.underline}>U</button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('strike')} title="Перечеркнуть" className={styles.strike}>S</button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('irony')} title="Ирония"><IronyIcon /></button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('spoiler')} title="Спойлер"><SpoilerIcon /></button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('blockquote')} title="Цитировать"><QuoteIcon /></button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('img')} title="Вставить картинку/видео"><ImageIcon /></button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('a')} title="Вставить ссылку"><LinkIcon /></button></div>
             </div>
             {
                 (previewing === null )
