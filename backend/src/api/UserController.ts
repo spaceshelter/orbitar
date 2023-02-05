@@ -4,6 +4,7 @@ import {APIRequest, APIResponse, joiFormat, joiUsername, validate} from './ApiMi
 import Joi from 'joi';
 import {Logger} from 'winston';
 import {
+    BarmaliniPasswordRequest, BarmaliniPasswordResponse,
     UserKarmaResponse,
     UserProfileRequest,
     UserProfileResponse,
@@ -84,6 +85,7 @@ export default class UserController {
         this.router.post('/user/restrictions', validate(profileSchema), (req, res) => this.restrictions(req, res));
         this.router.post('/user/savebio', settingsSaveLimiter, validate(bioSchema), (req, res) => this.saveBio(req, res));
         this.router.post('/user/savegender', settingsSaveLimiter, validate(genderSchema), (req, res) => this.saveGender(req, res));
+        this.router.post('/user/barmalini', settingsSaveLimiter, (req, res) => this.barmaliniPassword(req, res));
     }
 
     async profile(request: APIRequest<UserProfileRequest>, response: APIResponse<UserProfileResponse>) {
@@ -336,6 +338,35 @@ export default class UserController {
         } catch (error) {
             this.logger.error('Could not update user bio', { error });
             return response.error('error', `Could not update bio`, 500);
+        }
+    }
+
+    async barmaliniPassword(request: APIRequest<BarmaliniPasswordRequest>, response: APIResponse<BarmaliniPasswordResponse>) {
+        if (!this.userManager.barmaliniUserConfigured()) {
+            return response.error('error', `Barmalini is not configured`, 500);
+        }
+
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+        const userId = request.session.data.userId;
+        try {
+            const restrictions = await this.userManager.getUserRestrictions(userId);
+            if (this.userManager.isBarmaliniUser(userId) || !restrictions.canVoteKarma) {
+                return response.error('error', `Not enough permissions`, 403);
+            }
+
+            const barmaliniUser = await this.userManager.getBarmaliniUser();
+
+            return response.success({
+                login: barmaliniUser.username,
+                password: this.userManager.createBarmaliniPassword()
+            });
+        }
+        catch (error) {
+            this.logger.error('Could not create barmalini password', { error });
+            this.logger.error(error);
+            return response.error('error', `Could not create barmalini password`, 500);
         }
     }
 }
