@@ -12,6 +12,7 @@ export type ParseResult = {
     mentions: string[];
     urls: string[];
     images: string[];
+    mediaUrls?: string[];
 };
 
 class ParserExtended extends Parser {
@@ -66,7 +67,7 @@ export default class TheParser {
     }
 
     private parseChildNodes(doc: ChildNode[]): ParseResult {
-        const p = {text: '', mentions: [], urls: [], images: []};
+        const p = {text: '', mentions: [], urls: [], images: [], mediaUrls: []};
         let prevBQ = false; // if previous node was blockquote
         for (let node of doc) {
             if (prevBQ && node.type === 'text') {
@@ -82,6 +83,7 @@ export default class TheParser {
             p.mentions.push(...res.mentions);
             p.urls.push(...res.urls);
             p.images.push(...res.images);
+            p.mediaUrls.push(...res.mediaUrls);
             prevBQ = node.type === 'tag' && node.tagName.toLowerCase() === 'blockquote';
         }
         return p;
@@ -117,11 +119,10 @@ export default class TheParser {
             return escapeHTML(`<!-- ${node.data} -->`);
         }
 
-        return { text: '', mentions: [], urls: [], images: [] };
+        return { text: '', mentions: [], urls: [], images: [], mediaUrls: [] };
     }
 
     private parseText(text: string): ParseResult {
-
         const tokens: { type: string; data: string }[] = [];
 
         let sText = text;
@@ -141,6 +142,7 @@ export default class TheParser {
 
         const mentions = [];
         const urls = [];
+        const mediaUrls = [];
 
         let escaped = tokens
             .map((token) => {
@@ -153,13 +155,16 @@ export default class TheParser {
                     return htmlEscape(token.data);
                 } else if (token.type === 'url') {
                     urls.push(token.data);
+                    if (token.data.match(/(jpg|gif|png|webp|jpeg|svg|mp4|webm)$/i)) {
+                        mediaUrls.push(token.data);
+                    }
                     return this.processUrl(token.data);
                 }
             })
             .join('');
 
         escaped = escaped.replace(/\r\n|\r|\n/g, '<br />\n');
-        return { text: escaped, mentions, urls, images: [] };
+        return { text: escaped, mentions, urls, mediaUrls, images: [] };
     }
 
     processUrl(url: string) {
@@ -290,7 +295,7 @@ export default class TheParser {
             return this.parseDisallowedTag(node);
         }
 
-        return { text: `<img src="${encodeURI(url)}" alt=""/>`, mentions: [], urls: [], images: [url] };
+        return { text: `<img src="${encodeURI(url)}" alt=""/>`, mentions: [], urls: [], mediaUrls: [url], images: [url] };
     }
 
     parseVideo(node: Element): ParseResult {
@@ -299,7 +304,7 @@ export default class TheParser {
             return this.parseDisallowedTag(node);
         }
         const text = this.renderVideoTag(url, node.attribs['loop'] !== undefined);
-        return { text, mentions: [], urls: [], images: [url] };
+        return { text, mentions: [], urls: [], mediaUrls: [url], images: [url] };
     }
 
     renderVideoTag(url: string, loop: boolean) {

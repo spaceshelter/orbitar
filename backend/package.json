@@ -34,7 +34,8 @@
     "ts-jest": "^28.0.3",
     "@types/jest": "^27.5.1",
     "@types/crypto-js": "^4.1.1",
-    "image-size": "^1.0.2"
+    "image-size": "^1.0.2",
+    "@types/ip": "^1.1.0"
   },
   "dependencies": {
     "@elastic/elasticsearch": "^7.17.0",
@@ -58,6 +59,7 @@
     "winston": "^3.7.2",
     "node-fetch": "^2.6.7",
     "crypto-js": "^3.3.0",
-    "string-strip-html": "^8.3.0"
+    "string-strip-html": "^8.3.0",
+    "ip": "^1.1.8"
   }
 }

@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import mysql, { RowDataPacket } from 'mysql2/promise';
 import sizeOf from 'image-size';
 import fetch from 'node-fetch';
+const http = require('http');
 
 const MEDIA_DOWNLOAD_REQUEST_TIMEOUT_MS = 120000;
 
@@ -131,6 +132,7 @@ const download = async (
       `select
         cs.content_source_id,
         coalesce(p.html, c.html) as html,
+        coalesce(p.source, c.source) as source,
         cs.ref_type,
         cs.ref_id
       from
@@ -143,69 +145,132 @@ const download = async (
       order by cs.content_source_id asc
       limit ${config.batchSize}`
     );
+    console.log(`${Date.now()} Fetched ${rows.length} records...`);
 
     let itemId = startWithId;
     for (const entry of rows) {
       itemId = entry.content_source_id;
+      console.log(`${Date.now()} working with item ${itemId}`);
       let itemType = entry.ref_type as ItemType;
-      let entryHtml = entry.html;
-      const mediaItems = entryHtml.match(/<(img|video|source).+src=['"]([^'"]+)['"]/g);
-      if (!mediaItems) {
-        console.log(`No media items detected: `, entryHtml);
-        continue;
-      }
-      console.log(`Content source id:${itemId} has ${mediaItems.length} media items`);
-      for (const mediaItem of mediaItems) {
-        const check = mediaItem.match(/<(img|video|source).+src=['"]([^'"]+)['"]/);
-        let mediaSrc = check[2];
-        //  starts with data:
-        if (mediaSrc.match(/^data:/)) {
-          continue;
-        }
-        let mediaType = check[1] as MediaType;
-        let mediaExtensionMatch = mediaSrc.match(/\.[a-z]{2,}(?:\?.+)?$/);
-        let mediaExtension;
-        if (!mediaExtensionMatch) {
-          if (mediaType === MediaType.IMG) {
-            mediaExtension = '.jpg';
-          } else {
-            mediaExtension = '.mp4';
-          }
-        } else {
-          mediaExtension = mediaExtensionMatch[0].replace(/\?.+?$/, '');
-        }
-        const outputFilename = crypto.createHash('sha256').update(mediaSrc).digest('hex') + mediaExtension;
-        const outputPath = '/app/data/' + outputFilename;
+      let content = entry.source;
 
-        if (fs.existsSync(outputPath)) {
-          console.log(outputPath, 'is already there');
-          saveEntry(mediaType, outputPath, outputFilename, mediaSrc, itemType, itemId);
-        } else {
-          console.log(`Processing media item `, hideUrl(mediaSrc));
-          try {
-            const controller = new AbortController();
-            const succeeded = await Promise.race([
-              download(mediaSrc, outputPath, controller.signal),
-              sleep(MEDIA_DOWNLOAD_REQUEST_TIMEOUT_MS)
-            ]);
-            if (succeeded) {
-              console.log(`Done processing media item!`);
-              saveEntry(mediaType, outputPath, outputFilename, mediaSrc, itemType, itemId);
-            } else {
-              console.log(`Timeout processing media item!`);
-              controller.abort();
-            }
-          } catch (e) {
-            console.error(e);
-          }
-        }
+      try {
+        http.globalAgent.maxSockets = 1024;
+        const parserResponse = await fetch('http://host.docker.internal:5001/api/v1/post/preview', {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            content,
+            details: true
+          })
+        });
+        const result = await parserResponse.json();
+        console.log(`${Date.now()} entry ${itemId} has ${result.payload.content.mediaUrls.length} media URLs`);
+
+        // const postData = JSON.stringify({
+        //   content,
+        //   details: true
+        // });
+        //
+        // const options = {
+        //   hostname: 'host.docker.internal',
+        //   port: 5001,
+        //   path: '/api/v1/post/preview',
+        //   method: 'POST',
+        //   headers: {
+        //     'Content-Type': 'application/json',
+        //     'Content-Length': Buffer.byteLength(postData)
+        //   }
+        // };
+        //
+        // const req = http.request(options, (res) => {
+        //   console.log(`statusCode: ${res.statusCode}`);
+        //
+        //   res.on('data', (chunk) => {
+        //     console.log(`Body: ${chunk}`);
+        //   });
+        // });
+        //
+        // req.on('error', (error) => {
+        //   console.error(error);
+        // });
+        //
+        // req.write(postData);
+        // req.end();
+
+      } catch (e) {
+        console.trace(e);
       }
+
+      // let entryHtml = entry.html;
+      // const mediaItems = entryHtml.match(/<(img|video|source).+src=['"]([^'"]+)['"]/g);
+      // if (!mediaItems) {
+      //   console.log(`No media items detected: `, entryHtml);
+      //   continue;
+      // }
+      // console.log(`Content source id:${itemId} has ${mediaItems.length} media items`);
+
+      // for (const mediaItem of mediaItems) {
+      //   const check = mediaItem.match(/<(img|video|source).+src=['"]([^'"]+)['"]/);
+      //   let mediaSrc = check[2];
+      //
+      //   //  starts with data:
+      //   if (mediaSrc.match(/^data:/)) {
+      //     continue;
+      //   }
+      //
+      //   // starts with orbitar.media
+      //   if (mediaSrc.match(/^HTTPS?:\/\/(www\.)?orbitar.media/)) {
+      //     console.log(`Ignoring orbitar.media URL`)
+      //     continue;
+      //   }
+      //
+      //   let mediaType = check[1] as MediaType;
+      //   let mediaExtensionMatch = mediaSrc.match(/\.[a-z]{2,}(?:\?.+)?$/);
+      //   let mediaExtension;
+      //   if (!mediaExtensionMatch) {
+      //     if (mediaType === MediaType.IMG) {
+      //       mediaExtension = '.jpg';
+      //     } else {
+      //       mediaExtension = '.mp4';
+      //     }
+      //   } else {
+      //     mediaExtension = mediaExtensionMatch[0].replace(/\?.+?$/, '');
+      //   }
+      //   const outputFilename = crypto.createHash('sha256').update(mediaSrc).digest('hex') + mediaExtension;
+      //   const outputPath = '/app/data/' + outputFilename;
+      //
+      //
+      //
+      //   // if (fs.existsSync(outputPath)) {
+      //   //   console.log(outputPath, 'is already there');
+      //   //   saveEntry(mediaType, outputPath, outputFilename, mediaSrc, itemType, itemId);
+      //   // } else {
+      //   //   console.log(`Processing media item `, hideUrl(mediaSrc));
+      //   //   try {
+      //   //     const controller = new AbortController();
+      //   //     const succeeded = await Promise.race([
+      //   //       download(mediaSrc, outputPath, controller.signal),
+      //   //       sleep(MEDIA_DOWNLOAD_REQUEST_TIMEOUT_MS)
+      //   //     ]);
+      //   //     if (succeeded) {
+      //   //       console.log(`Done processing media item!`);
+      //   //       saveEntry(mediaType, outputPath, outputFilename, mediaSrc, itemType, itemId);
+      //   //     } else {
+      //   //       console.log(`Timeout processing media item!`);
+      //   //       controller.abort();
+      //   //     }
+      //   //   } catch (e) {
+      //   //     console.error(e);
+      //   //   }
+      //   // }
+      // }
     }
-    setTimeout(() => {
-      handler(itemId);
+    setTimeout(async () => {
+      await handler(itemId);
     }, config.intervalMs);
   }
-  setTimeout(() => {
-    handler(lastProcessedId);
-  }, config.intervalMs);
+  await handler(lastProcessedId);
 })();

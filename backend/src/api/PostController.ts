@@ -25,6 +25,7 @@ import {HistoryEntity} from './types/entities/HistoryEntity';
 import rateLimit from 'express-rate-limit';
 import {TranslateRequest, TranslateResponse} from './types/requests/Translate';
 import TranslationManager from '../managers/TranslationManager';
+import { isPrivate } from 'ip';
 
 const commonRateLimitConfig = {
     skipSuccessfulRequests: false,
@@ -98,6 +99,7 @@ export default class PostController {
         });
         const previewSchema = Joi.object<PostPreviewRequest>({
             content: Joi.string().min(1).max(50000).required(),
+            details: Joi.boolean()
         });
         const bookmarkSchema = Joi.object<PostBookmarkRequest>({
             post_id: Joi.number().required(),
@@ -260,13 +262,20 @@ export default class PostController {
 
     preview(request: APIRequest<PostPreviewRequest>, response: APIResponse<PostPreviewResponse>) {
         const userId = request.session.data.userId;
-        if (!userId) {
+        // allow access from private IPs with no session id
+        if (!userId && !isPrivate(request.ip)) {
             return response.authRequired();
         }
         const content = request.body.content;
+        const detailedResponseRequested = request.body.details;
         try {
-            const result = this.postManager.preview(content);
-            response.success({ content : result });
+            let result;
+            if (detailedResponseRequested) {
+                result = this.postManager.previewWithDetails(content);
+                return response.success({content: result});
+            }
+            result = this.postManager.preview(content);
+            return response.success({ content : result });
         } catch (err) {
             this.logger.error('Comment create failed', { error: err, user_id: userId, content });
             return response.error('error', 'Unknown error', 500);

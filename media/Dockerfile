@@ -9,4 +9,4 @@ FROM node:18
 COPY --from=build /app /app
 WORKDIR /app
 
-CMD npm run start:production
+CMD node build/app.js

@@ -303,6 +303,10 @@ export default class PostManager {
         return changedNotifications || changedBookmarks;
     }
 
+    previewWithDetails(content: string) {
+        return this.parser.parse(content);
+    }
+
     preview(content: string): string {
         return this.parser.parse(content).text;
     }
