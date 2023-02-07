@@ -88,6 +88,51 @@ a {
   }
 }
 
+details.cut {
+  background-color: var(--dim1);
+  border-radius: 4px;
+  padding: 0.5em;
+  margin: 0.5em 0;
+
+  & > summary {
+    color: var(--fg);
+    font-weight: bold;
+    list-style-type: none;
+    cursor: pointer;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    &::before {
+      content: "\f108";
+      font-family: "icons";
+      padding-right: 0.5em;
+      vertical-align: bottom;
+    }
+  }
+
+  &[open] > summary::before {
+    content: "\f107";
+  }
+
+  & > div[role="button"] {
+    color: var(--fg);
+    background-color: inherit;
+    display: block;
+    border: none;
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
+
+    &::before{
+      content: "\f109";
+      font-family: "icons";
+      padding-right: 0.5em;
+    }
+  }
+}
+
 blockquote {
   border-radius: 4px;
   padding: 0.5em 0.5em 0.5em 2em;

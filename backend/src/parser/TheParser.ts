@@ -39,6 +39,7 @@ export default class TheParser {
             img: (node) => this.parseImg(node),
             irony: (node) => this.parseIrony(node),
             spoiler: (node) => this.parseSpoiler(node),
+            cut: (node) => this.parseCut(node),
             video: (node) => this.parseVideo(node),
             blockquote: true,
             b: true,
@@ -343,6 +344,15 @@ export default class TheParser {
         const result = this.parseChildNodes(node.children);
         const text = `<span class="spoiler">${result.text}</span>`;
         return { ...result, text };
+    }
+
+    parseCut(node: Element): ParseResult {
+        const title = node.attribs['title'] || 'Тони, открой собаку';
+
+        const result = this.parseChildNodes(node.children);
+        const text = `<details class="cut"><summary>${htmlEscape(title)}</summary>${result.text}<div role="button"></div></details>`;
+
+        return { ...result, text } ;
     }
 
     validUrl(url: string) {

@@ -27,6 +27,10 @@ function updateContent(div: HTMLDivElement) {
     div.querySelectorAll('span.spoiler').forEach(spoiler => {
         updateSpoiler(spoiler as HTMLSpanElement);
     });
+
+    div.querySelectorAll('details.cut').forEach(cut => {
+        updateCut(cut as HTMLDetailsElement);
+    });
 }
 
 function updateVideo(video: HTMLVideoElement) {
@@ -129,6 +133,16 @@ function updateSpoiler(spoiler: HTMLSpanElement) {
         spoiler.removeEventListener('click', spoilerOnClickHandler);
     };
     spoiler.addEventListener('click', spoilerOnClickHandler);
+}
+
+function updateCut(cut: HTMLDetailsElement) {
+    const cutClose = cut.querySelector('div[role="button"]');
+
+    if (cutClose) {
+        cutClose.addEventListener('click', () => {
+            cut.open = false;
+        });
+    }
 }
 
 export default function ContentComponent(props: ContentComponentProps) {
