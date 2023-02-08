@@ -88,7 +88,7 @@ a {
   }
 }
 
-details.cut {
+details.expand {
   background-color: var(--dim1);
   border-radius: 4px;
   padding: 0.5em;
@@ -104,8 +104,16 @@ details.cut {
       display: none;
     }
 
+    &::-moz-list-bullet{
+      list-style-type:none;
+    }
+
+    &::marker{
+      display:none;
+    }
+
     &::before {
-      content: "\f108";
+      content: "\f10c";
       font-family: "icons";
       padding-right: 0.5em;
       vertical-align: bottom;
@@ -113,23 +121,17 @@ details.cut {
   }
 
   &[open] > summary::before {
-    content: "\f107";
+    content: "\f10b";
   }
 
   & > div[role="button"] {
-    color: var(--fg);
-    background-color: inherit;
+    background-color: var(--dim1);
     display: block;
+    height: 0.5em;
     border: none;
     padding: 0;
     text-align: left;
     cursor: pointer;
-
-    &::before{
-      content: "\f109";
-      font-family: "icons";
-      padding-right: 0.5em;
-    }
   }
 }
 

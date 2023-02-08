@@ -28,8 +28,8 @@ function updateContent(div: HTMLDivElement) {
         updateSpoiler(spoiler as HTMLSpanElement);
     });
 
-    div.querySelectorAll('details.cut').forEach(cut => {
-        updateCut(cut as HTMLDetailsElement);
+    div.querySelectorAll('details.expand').forEach(expand => {
+        updateExpand(expand as HTMLDetailsElement);
     });
 }
 
@@ -135,12 +135,12 @@ function updateSpoiler(spoiler: HTMLSpanElement) {
     spoiler.addEventListener('click', spoilerOnClickHandler);
 }
 
-function updateCut(cut: HTMLDetailsElement) {
-    const cutClose = cut.querySelector('div[role="button"]');
+function updateExpand(expand: HTMLDetailsElement) {
+    const expandClose = expand.querySelector('div[role="button"]');
 
-    if (cutClose) {
-        cutClose.addEventListener('click', () => {
-            cut.open = false;
+    if (expandClose) {
+        expandClose.addEventListener('click', () => {
+            expand.open = false;
         });
     }
 }
