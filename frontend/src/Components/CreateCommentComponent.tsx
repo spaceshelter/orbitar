@@ -6,7 +6,7 @@ import commentStyles from './CommentComponent.module.scss';
 import {ReactComponent as IronyIcon} from '../Assets/irony.svg';
 import {ReactComponent as ImageIcon} from '../Assets/image.svg';
 import {ReactComponent as SpoilerIcon} from '../Assets/spoiler.svg';
-import {ReactComponent as ExpandIcon} from '../Assets/expand-open.svg';
+import {ReactComponent as ExpandIcon} from '../Assets/expand.svg';
 import {ReactComponent as LinkIcon} from '../Assets/link.svg';
 import {ReactComponent as QuoteIcon} from '../Assets/quote.svg';
 import {ReactComponent as SendIcon} from '../Assets/send.svg';
