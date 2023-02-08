@@ -95,6 +95,9 @@ details.expand {
   margin: 0.5em 0;
 
   & > summary {
+    display: block;
+    position: relative;
+    padding-left: 1.5em;
     color: var(--fg);
     font-weight: bold;
     list-style-type: none;
@@ -113,24 +116,34 @@ details.expand {
     }
 
     &::before {
-      content: "\f10c";
-      font-family: "icons";
-      padding-right: 0.5em;
-      vertical-align: bottom;
+      left: 0;
+      top: .25em;
+      color: var(--fg);
+      content: '';
+      -webkit-mask: url('./Assets/expand.svg') no-repeat 50% 50%;
+      mask: url('./Assets/expand.svg') no-repeat 50% 50%;
+      -webkit-mask-size: contain;
+      mask-size: contain;
+      background-color: var(--button-dis-fg);
+      width: 20px;
+      height: 20px;
+      position: absolute;
+      transition: transform .25s;
     }
   }
 
+  &[open] > summary {
+    margin-bottom: .5em;
+  }
+
   &[open] > summary::before {
-    content: "\f10b";
+    transform: rotateZ(90deg);
   }
 
   & > div[role="button"] {
-    background-color: var(--dim1);
     display: block;
+    background-color: var(--dim1);
     height: 0.5em;
-    border: none;
-    padding: 0;
-    text-align: left;
     cursor: pointer;
   }
 }

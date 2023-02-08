@@ -347,7 +347,7 @@ export default class TheParser {
     }
 
     parseExpand(node: Element): ParseResult {
-        const title = node.attribs['title'] || '';
+        const title = node.attribs['title'] || 'Открой меня';
 
         const result = this.parseChildNodes(node.children);
         const text = `<details class="expand"><summary>${htmlEscape(title)}</summary>${result.text}<div role="button"></div></details>`;
