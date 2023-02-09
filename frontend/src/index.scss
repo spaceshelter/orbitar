@@ -117,13 +117,10 @@ details.expand {
 
     &::before {
       left: 0;
-      top: .25em;
-      color: var(--fg);
+      top: 0;
       content: '';
       -webkit-mask: url('./Assets/expand.svg') no-repeat 50% 50%;
       mask: url('./Assets/expand.svg') no-repeat 50% 50%;
-      -webkit-mask-size: contain;
-      mask-size: contain;
       background-color: var(--button-dis-fg);
       width: 20px;
       height: 20px;
