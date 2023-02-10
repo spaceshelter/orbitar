@@ -113,7 +113,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         setAnswerText(newValue);
     };
 
-    const applyTag = (tag: string) => {
+    const applyTag = (tag: string, attrs?: {[name: string]: string}) => {
         if (isPosting) {
             return;
         }
@@ -168,7 +168,8 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 break;
             }
             default: {
-                newValue = `<${tag}>${oldValue}</${tag}>`;
+                const textAttrs = !attrs ? '' : Object.keys(attrs).reduce((_, name) => `${_} ${name}="${attrs[name]}"`, '');
+                newValue = `<${tag}${textAttrs}>${oldValue}</${tag}>`;
                 newPos = oldValue ? newValue.length : newValue.length - `</${tag}>`.length;
             }
 
@@ -258,7 +259,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('strike')} title="Перечеркнуть" className={styles.strike}>S</button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('irony')} title="Ирония"><IronyIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('spoiler')} title="Спойлер"><SpoilerIcon /></button></div>
-                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('expand')} title="Свернуть/Развернуть"><ExpandIcon /></button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('expand', {'title':''})} title="Свернуть/Развернуть"><ExpandIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('blockquote')} title="Цитировать"><QuoteIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('img')} title="Вставить картинку/видео"><ImageIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('a')} title="Вставить ссылку"><LinkIcon /></button></div>
