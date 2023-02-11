@@ -343,6 +343,15 @@ export default class PostManager {
 
         return sources;
     }
+
+    /**
+     * Returns the user id that should be used for the given post.
+     * (anonymous posts mechanism)
+     * @param postId
+     */
+    getUserIdOverride(postId: number): Promise<number | undefined> {
+        return this.postRepository.getUserIdOverride(postId);
+    }
 }
 
 class ContentNumberCache {

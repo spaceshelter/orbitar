@@ -24,6 +24,7 @@ type PostResult = {
     comments: CommentInfo[];
     site: SiteInfo;
     lastCommentId: number;
+    anonymousUser?: UserInfo;
 };
 
 type PostCommentResult = {
@@ -64,7 +65,8 @@ export default class PostAPIHelper {
             post: post,
             comments: comments,
             site: siteInfo,
-            lastCommentId: lastCommentId
+            lastCommentId: lastCommentId,
+            anonymousUser: response.anonymousUser && this.appState.cache.setUser(response.anonymousUser)
         };
     }
 
