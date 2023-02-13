@@ -61,3 +61,7 @@
 .focusing :global(.commentBody) {
     overflow-anchor: none;
 }
+
+.anon > * {
+    display: inline !important; /* FIXME it's a hack to override flex in UserName component styles. */
+}

@@ -186,11 +186,15 @@ export default class PostController {
                 comments = rootComments;
             }
 
+            const userIdOverride = await this.postManager.getUserIdOverride(postId);
+            const userIdOverrideEntity = userIdOverride && await this.userManager.getById(userIdOverride);
+
             response.success({
                 post: post,
                 site: this.enricher.siteInfoToEntity(site),
                 comments: comments,
-                users: users
+                users: users,
+                anonymousUser: userIdOverrideEntity
             });
         }
         catch (err) {
@@ -282,8 +286,6 @@ export default class PostController {
         const { post_id: postId, comment_id: parentCommentId, format, content } = request.body;
 
         try {
-            const users: Record<number, UserEntity> = {[userId]: await this.userManager.getById(userId)};
-
             const userRestrictions = await this.userManager.getUserRestrictions(userId);
             if (userRestrictions.commentSlowModeWaitSecRemain > 0) {
                 return response.error('slow-mode', `Slow mode, time left ${userRestrictions.commentSlowModeWaitSecRemain} sec`, 403);
@@ -293,13 +295,18 @@ export default class PostController {
                 return response.error('restricted', `Commenting restricted ${rid === true ? 'to own posts' : `to post #${rid}`}`, 403);
             }
 
-            const commentInfo = await this.postManager.createComment(userId, postId, parentCommentId, content, format);
-            const { allComments : [comment] } = await this.enricher.enrichRawComments([commentInfo], {}, format, () => true);
+            const overrideUserId = (await this.postManager.getUserIdOverride(postId)) || userId;
 
-            this.logger.info(`Comment created by #${userId} @${users[userId].username}`, {
+            const commentInfo = await this.postManager.createComment(overrideUserId, postId, parentCommentId, content, format);
+            const { allComments : [comment] } = await this.enricher.enrichRawComments([commentInfo], {}, format, () => true);
+            comment.canEdit = overrideUserId === userId;
+
+            const users: Record<number, UserEntity> = {[overrideUserId]: await this.userManager.getById(overrideUserId)};
+
+            this.logger.info(`Comment created by #${overrideUserId} @${users[overrideUserId].username}`, {
                 comment: content,
-                username: users[userId].username,
-                user_id: userId
+                username: users[overrideUserId].username,
+                user_id: overrideUserId
             });
 
             response.success({
@@ -309,6 +316,7 @@ export default class PostController {
         }
         catch (err) {
             this.logger.error('Comment create failed', { error: err, user_id: userId, format, content, post_id: postId });
+            this.logger.error(err);
             return response.error('error', 'Unknown error', 500);
         }
     }

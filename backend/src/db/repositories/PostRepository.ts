@@ -342,4 +342,10 @@ export default class PostRepository {
             postIds
         });
     }
+
+    getUserIdOverride(postId: number): Promise<number | undefined> {
+        return this.db.fetchOne<{ user_id: number }>('select user_id from anonymous_posts where post_id=:postId', {
+            postId
+        }).then((row) => row?.user_id);
+    }
 }
