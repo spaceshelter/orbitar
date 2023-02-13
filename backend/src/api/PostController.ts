@@ -2,7 +2,7 @@ import {Router} from 'express';
 import PostManager from '../managers/PostManager';
 import UserManager from '../managers/UserManager';
 import SiteManager from '../managers/SiteManager';
-import {error, Logger} from 'winston';
+import {Logger} from 'winston';
 import Joi from 'joi';
 import {APIRequest, APIResponse, joiFormat, validate} from './ApiMiddleware';
 import FeedManager from '../managers/FeedManager';
@@ -316,7 +316,7 @@ export default class PostController {
         }
         catch (err) {
             this.logger.error('Comment create failed', { error: err, user_id: userId, format, content, post_id: postId });
-            this.logger.error(error);
+            this.logger.error(err);
             return response.error('error', 'Unknown error', 500);
         }
     }

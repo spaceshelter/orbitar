@@ -66,7 +66,7 @@ export default class PostAPIHelper {
             comments: comments,
             site: siteInfo,
             lastCommentId: lastCommentId,
-            anonymousUser: response.anonymousUser && this.appState.cache.setUser(response.anonymousUser)
+            anonymousUser: response.anonymousUser
         };
     }
 
