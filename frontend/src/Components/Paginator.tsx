@@ -11,61 +11,65 @@ interface PaginatorProps {
 }
 
 export default function Paginator(props: PaginatorProps) {
-    const {page, base, queryStringParams} = props;
-    let {pages} = props;
+    const {page, base, queryStringParams, pages} = props;
 
-    const range = 5;
+    const range = 7;
+
+    if (pages <= 1) {
+        return null;
+    }
+
+    let pageMin = Math.max(1, page - Math.floor(range / 2));
+    let pageMax = Math.min(page + Math.floor(range / 2 - (range + 1) % 2), pages);
+    if (pageMax - pageMin + 1 < range) {
+        if (pageMin === 1) {
+            pageMax = Math.min(range, pages);
+        } else {
+            pageMin = Math.max(pageMax - range + 1, 1);
+        }
+    }
+
+    const commonProps = {base, params: queryStringParams || {}, currentPage: page};
+
     const links = [];
+    links.push(<Page key={-2} disabled={page === 1} page={1} {...commonProps}>⇤</Page>);
+    links.push(<Page key={-1} disabled={page === 1} page={page-1} {...commonProps}>←</Page>);
 
-    const rangeMin = (range % 2 === 0) ? (range / 2) - 1 : (range - 1) / 2;
-    const rangeMax = (range % 2 === 0) ? rangeMin + 1 : rangeMin;
-    let pageMin = page - rangeMin;
-    let pageMax = page + rangeMax;
-
-    const params = new URLSearchParams(queryStringParams || {});
-    let search = params.toString();
-
-    pageMin = (pageMin < 1) ? 1 : pageMin;
-    pageMax = (pageMax < (pageMin + range - 1)) ? pageMin + range - 1 : pageMax;
-    if (pageMax > pages) {
-        pageMin = (pageMin > 1) ? pages - range + 1 : 1;
-        pageMax = pages;
+    if (pageMin > 1) {
+        links.push(<span className={styles.ellipsis}>…</span>);
     }
-
-    pageMin = (pageMin < 1) ? 1 : pageMin;
-
-    if (isNaN(pageMin))
-        pageMin = 0;
-    if (isNaN(pages))
-        pages = 0;
-    if (isNaN(pageMax))
-        pageMax = 0;
-
-    links.push(<Link key={-2} className={classNames(styles.page, styles.control, {[styles.disabled]: page === 1})} to={{pathname: base, search}}>⇤</Link>);
-
-    if (page - 1 !== 1) {
-        params.set('page', (page - 1).toString());
-    }
-    search = params.toString();
-    links.push(<Link key={-1} className={classNames(styles.page, styles.control, {[styles.disabled]: page === 1})} to={{pathname: base, search}}>←</Link>);
 
     for (let i = pageMin; i <= pageMax; i++) {
-        params.set('page', i.toString());
-        search = params.toString();
-        links.push(<Link key={i} className={classNames(styles.page, {[styles.disabled]: i === page, [styles.current]: i === page})} to={{pathname: base, search}}>{i}</Link>);
+        links.push(<Page key={i} disabled={i === page}  current={i === page} page={i} {...commonProps}>{i}</Page>);
     }
 
-    if (page + 1 !== pages) {
-        params.set('page', (page + 1).toString());
+    if (pageMax < pages) {
+        links.push(<span className={styles.ellipsis}>…</span>);
     }
-    search = params.toString();
-    links.push(<Link key={pages + 1} className={classNames(styles.page, styles.control, {[styles.disabled]: page === pages})} to={{pathname: base, search}}>→</Link>);
 
-    params.set('page', pages.toString());
-    search = params.toString();
-    links.push(<Link key={pages + 2} className={classNames(styles.page, styles.control, {[styles.disabled]: page === pages})} to={{pathname: base, search}}>⇥</Link>);
+    links.push(<Page key={pages + 1} disabled={page === pages} page={page+1} {...commonProps}>→</Page>);
+    links.push(<Page key={pages + 2} disabled={page === pages} page={pages} {...commonProps}>⇥</Page>);
 
     return (
       <div className={styles.paginator}>{links}</div>
     );
+}
+
+interface PageProps {
+    disabled?: boolean;
+    children: React.ReactNode;
+    base: string;
+    params: Record<string, string>;
+    page: number;
+    current?: boolean;
+}
+
+function Page(props: PageProps) {
+    const {disabled, children, base, params, page, current} = props;
+    const search = new URLSearchParams(params);
+    if (page !== 1) {
+        search.set('page', page.toString());
+    }
+    return <Link className={classNames(styles.page, {[styles.disabled]: disabled, [styles.current]: current})}
+                 to={{pathname: base, search: search.toString()}}>{children}</Link>;
 }

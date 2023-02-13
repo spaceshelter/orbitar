@@ -2,20 +2,23 @@
 
 }
 
-.page {
-    border-radius: 4px;
-    padding: 6px;
-    @media only screen and (max-width: 600px) { padding: 2px; }
+.ellipsis, .page {
+  border-radius: 4px;
+  padding: 6px;
+  @media only screen and (max-width: 600px) { padding: 2px; }
 
-    min-width: 20px;
-    display: inline-block;
-    text-align: center;
-    margin: 0 5px;
-    text-decoration: none;
+  min-width: 20px;
+  display: inline-block;
+  text-align: center;
+  margin: 0 5px;
+  text-decoration: none;
+}
+
+.page {
     color: var(--fgSofter);
 }
 
-.current, .page:hover {
+.page.current, .page:hover {
     color: var(--primary);
     font-weight: bold;
 }
@@ -26,4 +29,9 @@
 
 .page.control.disabled {
     opacity: 0.5;
+}
+
+.ellipsis {
+  color: var(--fgSoftest);
+  cursor: default;
 }
