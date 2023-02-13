@@ -27,6 +27,10 @@ function updateContent(div: HTMLDivElement) {
     div.querySelectorAll('span.spoiler').forEach(spoiler => {
         updateSpoiler(spoiler as HTMLSpanElement);
     });
+
+    div.querySelectorAll('details.expand').forEach(expand => {
+        updateExpand(expand as HTMLDetailsElement);
+    });
 }
 
 function updateVideo(video: HTMLVideoElement) {
@@ -51,12 +55,13 @@ function processYtEmbed(img: HTMLImageElement) {
         img.addEventListener('click', (e) => {
             e.preventDefault();
             const iframe = document.createElement('iframe');
-            iframe.src = ytUrl + (ytUrl.indexOf('?') === -1 ? '?' : '&') + 'autoplay=1';
+            iframe.src = ytUrl + (ytUrl.indexOf('?') === -1 ? '?' : '&') + 'autoplay=1&enablejsapi=1';
             iframe.width = img.width.toString();
             iframe.height = img.height.toString();
             iframe.allowFullscreen = true;
             iframe.frameBorder = '0';
             iframe.allow = 'autoplay; clipboard-write; encrypted-media; picture-in-picture';
+            iframe.classList.add('youtube-embed');
             img.parentElement?.replaceWith(iframe);
         });
     }
@@ -129,6 +134,33 @@ function updateSpoiler(spoiler: HTMLSpanElement) {
         spoiler.removeEventListener('click', spoilerOnClickHandler);
     };
     spoiler.addEventListener('click', spoilerOnClickHandler);
+}
+
+function updateExpand(expand: HTMLDetailsElement) {
+    expand.addEventListener('toggle', () => {
+        if (!expand.open) {
+            stopVideo(expand);
+        }
+    });
+
+    const expandClose = expand.querySelector('div[role="button"]');
+
+    if (expandClose) {
+        expandClose.addEventListener('click', () => {
+            expand.open = false;
+        });
+    }
+}
+
+function stopVideo(el: HTMLElement) {
+    el.querySelectorAll('video').forEach(video => {
+        video.pause();
+    });
+
+    el.querySelectorAll('iframe.youtube-embed').forEach(iframe => {
+        const iframeYt = iframe as HTMLIFrameElement;
+        iframeYt.contentWindow?.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+    });
 }
 
 export default function ContentComponent(props: ContentComponentProps) {

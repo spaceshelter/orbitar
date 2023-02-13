@@ -88,6 +88,63 @@ a {
   }
 }
 
+details.expand {
+  background-color: var(--dim1);
+  border-radius: 4px;
+  padding: 0.5em;
+  margin: 0.5em 0;
+
+  & > summary {
+    display: block;
+    position: relative;
+    padding-left: 1.5em;
+    color: var(--fg);
+    font-weight: bold;
+    list-style-type: none;
+    cursor: pointer;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    &::-moz-list-bullet{
+      list-style-type:none;
+    }
+
+    &::marker{
+      display:none;
+    }
+
+    &::before {
+      left: 0;
+      top: 0;
+      content: '';
+      -webkit-mask: url('./Assets/expand.svg') no-repeat 50% 50%;
+      mask: url('./Assets/expand.svg') no-repeat 50% 50%;
+      background-color: var(--button-dis-fg);
+      width: 20px;
+      height: 20px;
+      position: absolute;
+      transition: transform .25s;
+    }
+  }
+
+  &[open] > summary {
+    margin-bottom: .5em;
+  }
+
+  &[open] > summary::before {
+    transform: rotateZ(90deg);
+  }
+
+  & > div[role="button"] {
+    display: block;
+    background-color: var(--dim1);
+    height: 0.5em;
+    cursor: pointer;
+  }
+}
+
 blockquote {
   border-radius: 4px;
   padding: 0.5em 0.5em 0.5em 2em;
