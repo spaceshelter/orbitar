@@ -62,28 +62,38 @@ a {
   color: var(--danger);
 }
 
-.spoiler {
-  background-color: var(--fgHard);  
-  opacity: 0.2;
-  /* blur to text */
-  filter: blur(4px);
-  -webkit-filter: blur(4px);
+svg#spoiler-mask {
+  /* hide svg */
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  /* Firefox fix */
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
+}
 
+.spoiler {
+  background-color: var(--fg);
+  filter: blur(2px);
+  opacity: .8;
   /* more blur to img video etc */
-  & > img, video {
-    filter: blur(16px);
-    -webkit-filter: blur(16px);
+  & > * {
+    filter: url('#spoiler-mask-filter');
   }
 
   &:hover {
-    background-color: inherit;    
-    opacity: 1.0;
+    background-color: inherit;
     filter: none;
-    -webkit-filter: none;
-
-    & > img, video {
+    opacity: 1;
+    & > * {
       filter: none;
-      -webkit-filter: none;
     }
   }
 }
