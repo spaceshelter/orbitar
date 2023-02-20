@@ -387,7 +387,7 @@ export default class UserController {
             return response.success({usernames});
         } catch (error) {
             this.logger.error('Could not get usernames suggestions', { error });
-            return response.error('error', `Could not update bio`, 500);
+            return response.error('error', `Could not get usernames suggestions`, 500);
         }
     }
 }
