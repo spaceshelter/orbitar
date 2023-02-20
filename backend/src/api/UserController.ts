@@ -386,7 +386,7 @@ export default class UserController {
             const usernames = await this.userManager.getUsernameSuggestions(start);
             return response.success({usernames});
         } catch (error) {
-            this.logger.error('Could not update user bio', { error });
+            this.logger.error('Could not get usernames suggestions', { error });
             return response.error('error', `Could not update bio`, 500);
         }
     }
