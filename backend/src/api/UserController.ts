@@ -21,6 +21,7 @@ import {UserCommentsRequest, UserCommentsResponse} from './types/requests/UserCo
 import {UserProfileEntity} from './types/entities/UserEntity';
 import VoteManager from '../managers/VoteManager';
 import {UserGender, UserRatingBySubsite} from '../managers/types/UserInfo';
+import {SuggestUsernameRequest, SuggestUsernameResponse} from './types/requests/UsernameSuggest';
 
 // constant variables
 import {ERROR_CODES} from './utils/error-codes';
@@ -77,6 +78,11 @@ export default class UserController {
             keyGenerator: (req) => String(req.session.data?.userId)
         });
 
+        const suggestUsernameLimiter = rateLimit({
+            windowMs: 1000,
+            max: 10,
+        });
+
         this.router.post('/user/profile', validate(profileSchema), (req, res) => this.profile(req, res));
         this.router.post('/user/posts', userCommentsAndPostsLimiter, validate(postsOrCommentsSchema), (req, res) => this.posts(req, res));
         this.router.post('/user/comments', userCommentsAndPostsLimiter, validate(postsOrCommentsSchema), (req, res) => this.comments(req, res));
@@ -86,6 +92,7 @@ export default class UserController {
         this.router.post('/user/savebio', settingsSaveLimiter, validate(bioSchema), (req, res) => this.saveBio(req, res));
         this.router.post('/user/savegender', settingsSaveLimiter, validate(genderSchema), (req, res) => this.saveGender(req, res));
         this.router.post('/user/barmalini', settingsSaveLimiter, (req, res) => this.barmaliniPassword(req, res));
+        this.router.post('/user/suggest-username', suggestUsernameLimiter, (req, res) => this.suggestUsername(req, res));
     }
 
     async profile(request: APIRequest<UserProfileRequest>, response: APIResponse<UserProfileResponse>) {
@@ -367,6 +374,20 @@ export default class UserController {
             this.logger.error('Could not create barmalini password', { error });
             this.logger.error(error);
             return response.error('error', `Could not create barmalini password`, 500);
+        }
+    }
+    
+    async suggestUsername(request: APIRequest<SuggestUsernameRequest>, response: APIResponse<SuggestUsernameResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+        const {start} = request.body;
+        try {
+            const usernames = await this.userManager.getUsernameSuggestions(start);
+            return response.success({usernames});
+        } catch (error) {
+            this.logger.error('Could not update user bio', { error });
+            return response.error('error', `Could not update bio`, 500);
         }
     }
 }

@@ -84,6 +84,34 @@ button.strike {
 
 .editor {
     display: flex;
+
+    :global(.textarea-suggest) {
+        width: 100%;
+        position: relative;
+
+        :global(.textarea-suggest__results) {
+            margin-left: 5px;
+            padding: 4px;
+            border-radius: 2px;
+            background-color: var(--popup-bg);
+            width: auto !important;
+            max-width: 200px;
+            max-height: 300px;
+            overflow: auto;
+
+            :global(.textarea-suggest-item) {
+                cursor: pointer;
+                max-width: 190px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+
+                &:hover,
+                &:global(.textarea-suggest-item_selected) {
+                    filter: invert(0.6);
+                }
+            }
+        }
+    }
 }
 
 .final {

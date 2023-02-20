@@ -14,6 +14,7 @@ export class UserCache {
     private cacheId: Record<number, UserInfo> = {};
     private cacheUsername: Record<string, UserInfo> = {};
     private cachedUserParents: Record<number, number | undefined | false> = {};
+    private cachedUsernameSuggestions = new Map<string, string[]>();
     private userStatsCache = new Map<number, UserStats>();
 
     constructor(userRepository: UserRepository) {
@@ -124,5 +125,17 @@ export class UserCache {
 
     clearUserStatsCache() {
         this.userStatsCache.clear();
+    }
+
+    saveUsernameSuggestion(startsWith: string, records: string[]) {
+        this.cachedUsernameSuggestions.set(startsWith.toLowerCase(), records);
+    }
+
+    getUsernameSuggestion(startsWith) {
+        return this.cachedUsernameSuggestions.get(startsWith.toLowerCase());
+    }
+
+    clearUsernameSuggestionCache() {
+        this.cachedUsernameSuggestions.clear();
     }
 }

@@ -127,7 +127,7 @@ export default class UserManager {
 
     async registerByInvite(inviteCde: string, username: string, name: string, email: string, passwordHash: string, gender: UserGender): Promise<UserInfo> {
         const userRaw = await this.userRepository.userRegister(inviteCde, username, name, email, passwordHash, gender);
-
+        this.userCache.clearUsernameSuggestionCache();
         return this.mapUserRaw(userRaw);
     }
 
@@ -658,5 +658,14 @@ export default class UserManager {
         } catch (e) {
             return false;
         }
+    }
+
+    async getUsernameSuggestions(startsWith: string): Promise<string[]> {
+        const cached = this.userCache.getUsernameSuggestion(startsWith);
+        if (cached) {
+            return cached;
+        }
+        const result = await this.userRepository.getUsernameSuggestions(startsWith);
+        this.userCache.saveUsernameSuggestion(startsWith, result);
     }
 }

@@ -6,6 +6,7 @@ import {OkPacket} from 'mysql2';
 import {UserGender} from '../../managers/types/UserInfo';
 import crypto from 'crypto';
 import {FeedSorting} from '../../api/types/entities/common';
+import {escapePercent} from '../../utils/MySqlUtils';
 
 export default class UserRepository {
     private db: DB;
@@ -260,5 +261,12 @@ export default class UserRepository {
             user_id: userId,
             gender
         });
+    }
+
+    async getUsernameSuggestions(start: string): Promise<string[]> {
+        return await this.db.fetchAll<string>(
+          `select username from users where username like :filter order by username limit 10`,
+          { filter: (escapePercent(start) + '%') }
+        );
     }
 }
