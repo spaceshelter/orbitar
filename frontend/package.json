@@ -29,7 +29,6 @@
     "react-icons": "^4.3.1",
     "react-router-dom": "^6.3.0",
     "react-scripts": "5.0.0",
-    "react-textarea-autosize": "^8.3.4",
     "react-textarea-with-suggest": "pazoozoo42/react-textarea-with-suggest#support-forwarded-ref",
     "react-toastify": "^8.2.0",
     "textarea-caret": "^3.1.0",
