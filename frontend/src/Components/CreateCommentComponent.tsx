@@ -206,6 +206,29 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         }
     };
 
+    const handleClosePreview = async (e: React.MouseEvent) => {
+        if (isPosting) {
+            return;
+        }
+        const el = e.target as HTMLElement;
+        if (el.tagName === 'A') {
+            return;
+        }
+        if (el.tagName === 'SUMMARY') {
+            return;
+        }
+        if (el.getAttribute('role') === 'button') {
+            return;
+        }
+        if (el.classList.contains('image-scalable')) {
+            return;
+        }
+        if (el.tagName === 'VIDEO') {
+            return;
+        }
+        setPreviewing(null);
+    };
+
     const handleAnswer = () => {
         setPosting(true);
         props.onAnswer(answerText, props.post, props.comment)
@@ -270,7 +293,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                         <TextareaAutosize ref={answerRef} disabled={isPosting} placeholder={placeholderText} value={answerText}
                                       onChange={handleAnswerChange} onKeyDown={handleKeyDown} maxRows={25}/>
                     </div>
-                :  <div className={classNames(commentStyles.content, styles.preview, postStyles.preview)} onClick={handlePreview}><ContentComponent content={previewing} /></div>
+                :  <div className={classNames(commentStyles.content, styles.preview, postStyles.preview)} onClick={handleClosePreview}><ContentComponent content={previewing} /></div>
             }
             <div className={styles.final}>
                 {previewing && (
