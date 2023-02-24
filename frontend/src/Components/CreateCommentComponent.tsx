@@ -19,7 +19,7 @@ import SlowMode from './SlowMode';
 import {observer} from 'mobx-react-lite';
 import {useDebouncedCallback} from 'use-debounce';
 import ThemeToggleComponent from './ThemeToggleComponent';
-import Textarea from 'react-textarea-with-suggest';
+import Textarea, {AutoHighlightFirstItemValues} from 'react-textarea-with-suggest';
 import getCaretCoordinates from 'textarea-caret';
 
 interface CreateCommentProps {
@@ -276,11 +276,11 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         }
         try {
             const result = await api.userAPI.getUsernameSuggestions(startsWith);
-            setSuggestResults(result.usernames.flatMap((item) => item.username));
+            setSuggestResults(result.usernames);
         } catch (_) {
             setSuggestResults([]);
         }
-    }, 100);
+    }, 50);
 
     if (!props.open) {
         return <></>;
@@ -315,6 +315,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                         suggestList={suggestResults}
                         autosizable={true}
                         maxRows={25}
+                        autoHighlightFirstItem={AutoHighlightFirstItemValues.OnlySingleItem}
                       />
                     </div>
                 :  <div className={classNames(commentStyles.content, styles.preview, postStyles.preview)} onClick={handlePreview}><ContentComponent content={previewing} /></div>

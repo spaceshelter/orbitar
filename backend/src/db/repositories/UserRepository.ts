@@ -263,10 +263,10 @@ export default class UserRepository {
         });
     }
 
-    async getUsernameSuggestions(start: string): Promise<string[]> {
-        return await this.db.fetchAll<string>(
-          `select username from users where username like :filter order by username limit 10`,
-          { filter: (escapePercent(start) + '%') }
+    async getUsernames(offset: number): Promise<{username: string}[]> {
+        return await this.db.fetchAll<{username: string}>(
+            `select username from users order by username limit 1000 offset :offset`,
+            { offset }
         );
     }
 }

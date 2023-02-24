@@ -29,5 +29,5 @@ export type BarmaliniAccessResult = {
 };
 
 export type UsernameSuggestResult = {
-    usernames: {username: string}[];
+    usernames: string[];
 };

@@ -27,6 +27,7 @@ import {SuggestUsernameRequest, SuggestUsernameResponse} from './types/requests/
 import {ERROR_CODES} from './utils/error-codes';
 import InviteManager from '../managers/InviteManager';
 import rateLimit from 'express-rate-limit';
+import {UserCache} from '../managers/UserCache';
 
 export default class UserController {
     public readonly router = Router();
@@ -36,13 +37,15 @@ export default class UserController {
     private readonly inviteManager: InviteManager;
     private readonly logger: Logger;
     private readonly enricher: Enricher;
+    private readonly userCache: UserCache;
 
-    constructor(enricher: Enricher, userManager: UserManager, postManager: PostManager, voteManager: VoteManager, inviteManager: InviteManager, logger: Logger) {
+    constructor(enricher: Enricher, userManager: UserManager, postManager: PostManager, voteManager: VoteManager, inviteManager: InviteManager, userCache: UserCache, logger: Logger) {
         this.enricher = enricher;
         this.userManager = userManager;
         this.postManager = postManager;
         this.voteManager = voteManager;
         this.inviteManager = inviteManager;
+        this.userCache = userCache;
         this.logger = logger;
 
         const profileSchema = Joi.object<UserProfileRequest>({
@@ -79,8 +82,9 @@ export default class UserController {
         });
 
         const suggestUsernameLimiter = rateLimit({
-            windowMs: 1000,
-            max: 10,
+            windowMs: 1000 * 60 * 10,
+            max: 120,
+            keyGenerator: (req) => String(req.session.data?.userId)
         });
 
         this.router.post('/user/profile', validate(profileSchema), (req, res) => this.profile(req, res));
@@ -376,15 +380,15 @@ export default class UserController {
             return response.error('error', `Could not create barmalini password`, 500);
         }
     }
-    
-    async suggestUsername(request: APIRequest<SuggestUsernameRequest>, response: APIResponse<SuggestUsernameResponse>) {
+
+    suggestUsername(request: APIRequest<SuggestUsernameRequest>, response: APIResponse<SuggestUsernameResponse>) {
         if (!request.session.data.userId) {
             return response.authRequired();
         }
         const {start} = request.body;
         try {
-            const usernames = await this.userManager.getUsernameSuggestions(start);
-            return response.success({usernames});
+            const usernames = this.userCache.getUsernameSuggestion(start);
+            return response.success({usernames: usernames.flatMap((item) => { return item.v; })});
         } catch (error) {
             this.logger.error('Could not get usernames suggestions', { error });
             return response.error('error', `Could not get usernames suggestions`, 500);
