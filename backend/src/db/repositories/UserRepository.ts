@@ -6,7 +6,6 @@ import {OkPacket} from 'mysql2';
 import {UserGender} from '../../managers/types/UserInfo';
 import crypto from 'crypto';
 import {FeedSorting} from '../../api/types/entities/common';
-import {escapePercent} from '../../utils/MySqlUtils';
 
 export default class UserRepository {
     private db: DB;
