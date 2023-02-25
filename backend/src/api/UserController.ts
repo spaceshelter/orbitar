@@ -82,8 +82,8 @@ export default class UserController {
         });
 
         const suggestUsernameLimiter = rateLimit({
-            windowMs: 1000 * 60 * 10,
-            max: 120,
+            windowMs: 1000 * 60 * 5,
+            max: 100,
             keyGenerator: (req) => String(req.session.data?.userId)
         });
 

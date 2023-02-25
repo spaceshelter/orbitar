@@ -21,6 +21,7 @@ import {useDebouncedCallback} from 'use-debounce';
 import ThemeToggleComponent from './ThemeToggleComponent';
 import Textarea, {AutoHighlightFirstItemValues} from 'react-textarea-with-suggest';
 import getCaretCoordinates from 'textarea-caret';
+import {toast} from 'react-toastify';
 
 interface CreateCommentProps {
     open: boolean;
@@ -112,7 +113,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
 
         setStorageValueDebounced(newValue);
         setAnswerText(newValue);
-        
+
         setTimeout(() => {
             answer.selectionStart = start + cursor;
             answer.selectionEnd = answer.selectionStart;
@@ -270,6 +271,10 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         setMediaUploaderOpen(false);
     };
 
+    const debounceSuggestError = useDebouncedCallback((error: string) => {
+        toast(error, {type: 'error'});
+    }, 5000, {leading: true, trailing: false, maxWait: 10000});
+
     const onSuggestSearch = useDebouncedCallback(async (startsWith: string) => {
         if (!answerRef.current) {
             return;
@@ -277,7 +282,8 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         try {
             const result = await api.userAPI.getUsernameSuggestions(startsWith);
             setSuggestResults(result.usernames);
-        } catch (_) {
+        } catch (e) {
+            debounceSuggestError((e as any).message);
             setSuggestResults([]);
         }
     }, 50);

@@ -105,9 +105,12 @@ button.strike {
                 overflow: hidden;
                 text-overflow: ellipsis;
 
-                &:hover,
                 &:global(.textarea-suggest-item_selected) {
-                    filter: invert(0.6);
+                    background-color: var(--primary);
+                    color: var(--popup-bg);
+                }
+                &:hover:not(:global(.textarea-suggest-item_selected)) {
+                  color: var(--primary);
                 }
             }
         }
