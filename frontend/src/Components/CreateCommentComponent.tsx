@@ -206,24 +206,14 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         }
     };
 
+    const previewIgnoredTagNames = ['A', 'SUMMARY', 'VIDEO'];
     const handleClosePreview = async (e: React.MouseEvent) => {
-        if (isPosting) {
-            return;
-        }
         const el = e.target as HTMLElement;
-        if (el.tagName === 'A') {
-            return;
-        }
-        if (el.tagName === 'SUMMARY') {
-            return;
-        }
-        if (el.getAttribute('role') === 'button') {
-            return;
-        }
-        if (el.classList.contains('image-scalable')) {
-            return;
-        }
-        if (el.tagName === 'VIDEO') {
+        if (isPosting ||
+            previewIgnoredTagNames.includes(el.tagName) ||
+            el.getAttribute('role') === 'button' ||
+            el.classList.contains('image-scalable')
+        ) {
             return;
         }
         setPreviewing(null);
