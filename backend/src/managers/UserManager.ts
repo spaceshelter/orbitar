@@ -659,4 +659,11 @@ export default class UserManager {
             return false;
         }
     }
+
+    getUsernameSuggestions(usernamePrefix: string): string[] {
+        const usernames = this.userCache.getUsernameSuggestion(usernamePrefix);
+        return usernames.map((item) => {
+            return item.v;
+        });
+    }
 }

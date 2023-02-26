@@ -27,7 +27,6 @@ import {SuggestUsernameRequest, SuggestUsernameResponse} from './types/requests/
 import {ERROR_CODES} from './utils/error-codes';
 import InviteManager from '../managers/InviteManager';
 import rateLimit from 'express-rate-limit';
-import {UserCache} from '../managers/UserCache';
 
 export default class UserController {
     public readonly router = Router();
@@ -37,15 +36,13 @@ export default class UserController {
     private readonly inviteManager: InviteManager;
     private readonly logger: Logger;
     private readonly enricher: Enricher;
-    private readonly userCache: UserCache;
 
-    constructor(enricher: Enricher, userManager: UserManager, postManager: PostManager, voteManager: VoteManager, inviteManager: InviteManager, userCache: UserCache, logger: Logger) {
+    constructor(enricher: Enricher, userManager: UserManager, postManager: PostManager, voteManager: VoteManager, inviteManager: InviteManager, logger: Logger) {
         this.enricher = enricher;
         this.userManager = userManager;
         this.postManager = postManager;
         this.voteManager = voteManager;
         this.inviteManager = inviteManager;
-        this.userCache = userCache;
         this.logger = logger;
 
         const profileSchema = Joi.object<UserProfileRequest>({
@@ -387,8 +384,7 @@ export default class UserController {
         }
         const {start} = request.body;
         try {
-            const usernames = this.userCache.getUsernameSuggestion(start);
-            return response.success({usernames: usernames.flatMap((item) => { return item.v; })});
+            return response.success({usernames: this.userManager.getUsernameSuggestions(start)});
         } catch (error) {
             this.logger.error('Could not get usernames suggestions', { error });
             return response.error('error', `Could not get usernames suggestions`, 500);
