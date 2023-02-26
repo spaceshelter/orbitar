@@ -321,7 +321,8 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                         suggestList={suggestResults}
                         autosizable={true}
                         maxRows={25}
-                        autoHighlightFirstItem={AutoHighlightFirstItemValues.OnlySingleItem}
+                        autoHighlightFirstItem={AutoHighlightFirstItemValues.Always}
+                        searchRegexp={/@([a-zа-я\d\-_.]+[a-zа-я\d\-_.])/gim}
                       />
                     </div>
                 :  <div className={classNames(commentStyles.content, styles.preview, postStyles.preview)} onClick={handlePreview}><ContentComponent content={previewing} /></div>
