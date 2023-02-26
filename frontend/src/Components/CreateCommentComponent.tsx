@@ -322,7 +322,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                         autosizable={true}
                         maxRows={25}
                         autoHighlightFirstItem={AutoHighlightFirstItemValues.Always}
-                        searchRegexp={/@([a-zа-я\d\-_.]+[a-zа-я\d\-_.])/gim}
+                        searchRegexp={/@([a-zа-я0-9_-]{2,})/gim}
                       />
                     </div>
                 :  <div className={classNames(commentStyles.content, styles.preview, postStyles.preview)} onClick={handlePreview}><ContentComponent content={previewing} /></div>
