@@ -27,3 +27,7 @@ export type BarmaliniAccessResult = {
     login: string;
     password: string;
 };
+
+export type UsernameSuggestResult = {
+    usernames: string[];
+};

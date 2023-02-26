@@ -261,4 +261,11 @@ export default class UserRepository {
             gender
         });
     }
+
+    async getUsernames(offset: number): Promise<{username: string}[]> {
+        return await this.db.fetchAll<{username: string}>(
+            `select username from users order by username limit 1000 offset :offset`,
+            { offset }
+        );
+    }
 }

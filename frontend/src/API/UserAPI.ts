@@ -1,5 +1,5 @@
 import APIBase from './APIBase';
-import {BarmaliniAccessResult, UserGender, UserInfo, UserProfileInfo} from '../Types/UserInfo';
+import {BarmaliniAccessResult, UserGender, UserInfo, UsernameSuggestResult, UserProfileInfo} from '../Types/UserInfo';
 import {SiteInfo} from '../Types/SiteInfo';
 import {CommentEntity, ContentFormat, PostEntity} from './PostAPI';
 import PostAPIHelper from './PostAPIHelper';
@@ -155,5 +155,9 @@ export default class UserAPI {
 
     async getBarmaliniAccess(): Promise<BarmaliniAccessResult> {
         return this.api.request<Record<string, unknown>, BarmaliniAccessResult>('/user/barmalini', {});
+    }
+
+    async getUsernameSuggestions(start: string): Promise<UsernameSuggestResult> {
+        return this.api.request<{start: string}, UsernameSuggestResult>('/user/suggest-username', {start});
     }
 }

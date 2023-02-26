@@ -17,9 +17,11 @@ import {UserGender} from '../Types/UserInfo';
 import {useAPI, useAppState} from '../AppState/AppState';
 import SlowMode from './SlowMode';
 import {observer} from 'mobx-react-lite';
-import TextareaAutosize from 'react-textarea-autosize';
 import {useDebouncedCallback} from 'use-debounce';
 import ThemeToggleComponent from './ThemeToggleComponent';
+import Textarea, {AutoHighlightFirstItemValues} from 'react-textarea-with-suggest';
+import getCaretCoordinates from 'textarea-caret';
+import {toast} from 'react-toastify';
 
 interface CreateCommentProps {
     open: boolean;
@@ -65,12 +67,15 @@ export const CreateCommentComponentRestricted = observer((props: CreateCommentPr
 
 export default function CreateCommentComponent(props: CreateCommentProps) {
     const answerRef = useRef<HTMLTextAreaElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     const [answerText, setAnswerText] = useState<string>(props.text ||
         (props.storageKey && localStorage.getItem('crCmp:' + props.storageKey)) || '');
     const [isPosting, setPosting] = useState(false);
     const [previewing, setPreviewing] = useState<string | null>(null);
     const [mediaUploaderOpen, setMediaUploaderOpen] = useState(false);
     const api = useAPI();
+    const [suggestResults, setSuggestResults] = useState<string[]>([]);
+    const suggestedResultsString = suggestResults.join(',');
 
     const pronoun = props?.comment?.author?.gender === UserGender.he ? 'ему' : props?.comment?.author?.gender===UserGender.she ? 'ей' : '';
     const placeholderText = props.comment ? `Ваш ответ ${pronoun}` : '';
@@ -106,11 +111,13 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         const newValue = text1 + text + text2;
         answer.value = newValue;
 
-        answer.selectionStart = start + cursor;
-        answer.selectionEnd = answer.selectionStart;
-
         setStorageValueDebounced(newValue);
         setAnswerText(newValue);
+
+        setTimeout(() => {
+            answer.selectionStart = start + cursor;
+            answer.selectionEnd = answer.selectionStart;
+        });
     };
 
     const applyTag = (tag: string, attrs?: {[name: string]: string}) => {
@@ -186,6 +193,24 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         }
     }, [props.open, props.comment]);
 
+    useEffect(() => {
+        if (
+          !suggestedResultsString ||
+          !answerRef.current ||
+          !containerRef.current
+        ) {
+            return;
+        }
+        const {top, left} = getCaretCoordinates(answerRef.current, answerRef.current.selectionEnd);
+        const suggestResults = containerRef.current?.querySelector('.textarea-suggest__results ') as HTMLDivElement;
+        if (!suggestResults) {
+            setSuggestResults([]);
+            return;
+        }
+        suggestResults.style.setProperty('top', top.toString() + 'px');
+        suggestResults.style.setProperty('left', left.toString() + 'px');
+    });
+
     const handlePreview = async () => {
         if (isPosting) {
             return;
@@ -259,6 +284,23 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         setMediaUploaderOpen(false);
     };
 
+    const debounceSuggestError = useDebouncedCallback((error: string) => {
+        toast(error, {type: 'error'});
+    }, 5000, {leading: true, trailing: false, maxWait: 10000});
+
+    const onSuggestSearch = useDebouncedCallback(async (startsWith: string) => {
+        if (!answerRef.current) {
+            return;
+        }
+        try {
+            const result = await api.userAPI.getUsernameSuggestions(startsWith);
+            setSuggestResults(result.usernames);
+        } catch (e) {
+            debounceSuggestError((e as any).message);
+            setSuggestResults([]);
+        }
+    }, 50);
+
     if (!props.open) {
         return <></>;
     }
@@ -279,9 +321,22 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             </div>
             {
                 (previewing === null )
-                ?  <div className={styles.editor}>
-                        <TextareaAutosize ref={answerRef} disabled={isPosting} placeholder={placeholderText} value={answerText}
-                                      onChange={handleAnswerChange} onKeyDown={handleKeyDown} maxRows={25}/>
+                ?  <div className={styles.editor} ref={containerRef}>
+                      <Textarea
+                        forwardedRef={answerRef}
+                        disabled={isPosting}
+                        onChange={handleAnswerChange}
+                        onKeyDown={handleKeyDown}
+                        placeholder={placeholderText}
+                        value={answerText}
+                        className={styles.Textarea}
+                        onSearch={onSuggestSearch}
+                        suggestList={suggestResults}
+                        autosizable={true}
+                        maxRows={25}
+                        autoHighlightFirstItem={AutoHighlightFirstItemValues.Always}
+                        searchRegexp={/@([a-zа-я0-9_-]{2,})/gim}
+                      />
                     </div>
                 :  <div className={classNames(commentStyles.content, styles.preview, postStyles.preview)} onClick={handleClosePreview}><ContentComponent content={previewing} /></div>
             }

@@ -1,6 +1,7 @@
 import {UserInfo, UserStats} from './types/UserInfo';
 import UserRepository from '../db/repositories/UserRepository';
 import {UserRaw} from '../db/types/UserRaw';
+import TrieSearch from 'trie-search';
 
 export class UserCache {
     private userRepository: UserRepository;
@@ -14,10 +15,30 @@ export class UserCache {
     private cacheId: Record<number, UserInfo> = {};
     private cacheUsername: Record<string, UserInfo> = {};
     private cachedUserParents: Record<number, number | undefined | false> = {};
+    private usernamesSuggestionsCache = new TrieSearch('k', {min: 1});
     private userStatsCache = new Map<number, UserStats>();
+
 
     constructor(userRepository: UserRepository) {
         this.userRepository = userRepository;
+        (async () => {
+            await this.createUsernamesSuggestionsCache();
+        })();
+    }
+
+    private async createUsernamesSuggestionsCache() {
+        const usersCount = await this.userRepository.getUserCount();
+        for (let i = 0; i < usersCount; i += 1000) {
+            const usernames = await this.userRepository.getUsernames(i);
+            const entries = [];
+            usernames.map((user) => {
+                entries.push({
+                    k: user.username.toLowerCase(),
+                    v: user.username
+                });
+            });
+            this.usernamesSuggestionsCache.addAll(entries);
+        }
     }
 
     private initialize() {
@@ -124,5 +145,13 @@ export class UserCache {
 
     clearUserStatsCache() {
         this.userStatsCache.clear();
+    }
+
+    getUsernameSuggestion(startsWith): {k: string, v: string}[] {
+        return this.usernamesSuggestionsCache.search(startsWith.toLowerCase());
+    }
+
+    addUsernameSuggestion(username) {
+        return this.usernamesSuggestionsCache.add({k: username.toLowerCase(), v: username});
     }
 }

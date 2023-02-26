@@ -127,7 +127,7 @@ export default class UserManager {
 
     async registerByInvite(inviteCde: string, username: string, name: string, email: string, passwordHash: string, gender: UserGender): Promise<UserInfo> {
         const userRaw = await this.userRepository.userRegister(inviteCde, username, name, email, passwordHash, gender);
-
+        this.userCache.addUsernameSuggestion(username);
         return this.mapUserRaw(userRaw);
     }
 
@@ -658,5 +658,12 @@ export default class UserManager {
         } catch (e) {
             return false;
         }
+    }
+
+    getUsernameSuggestions(usernamePrefix: string): string[] {
+        const usernames = this.userCache.getUsernameSuggestion(usernamePrefix);
+        return usernames.map((item) => {
+            return item.v;
+        });
     }
 }
