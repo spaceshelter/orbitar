@@ -29,7 +29,7 @@
     "react-icons": "^4.3.1",
     "react-router-dom": "^6.3.0",
     "react-scripts": "5.0.0",
-    "react-textarea-with-suggest": "pazoozoo42/react-textarea-with-suggest#auto-highlight-first-item",
+    "react-textarea-with-suggest": "pazoozoo42/react-textarea-with-suggest#0219a8f5f7f7e2c2f716e0398d5ecfbb2bb2c40b",
     "react-toastify": "^8.2.0",
     "textarea-caret": "^3.1.0",
     "typescript": "^4.6.3",
