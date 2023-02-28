@@ -1,4 +1,4 @@
-import {urlRegex, urlRegexExact} from "../../src/parser/urlregex";
+import {urlRegex, urlRegexExact, mentionsRegex} from "../../src/parser/regexprs";
 
 test('valid ULR parsing', () => {
     const validUrls = [
@@ -121,4 +121,58 @@ test('URL extraction', () => {
     expect(urlRegex.exec("http://test.com?q=123,blabla")[0]).toEqual("http://test.com?q=123,blabla");
     urlRegex.lastIndex = 0;
     expect(urlRegex.exec("https://i.imgur.com/LEv7f25.mp4")[0]).toEqual("https://i.imgur.com/LEv7f25.mp4");
+});
+
+test('mention extraction', () => {
+    // baseline
+    mentionsRegex.lastIndex = 0;
+    expect(mentionsRegex.exec("@test")[0]).toEqual("@test");
+
+    // start of the mention must be clearly separated from the text
+    mentionsRegex.lastIndex = 0;
+    expect(mentionsRegex.test("a@test")).toBe(false);
+
+    mentionsRegex.lastIndex = 0;
+    expect(mentionsRegex.exec(".@test as")[0]).toEqual("@test");
+
+    mentionsRegex.lastIndex = 0;
+    expect(mentionsRegex.exec("a @test as")[0]).toEqual("@test");
+
+    mentionsRegex.lastIndex = 0;
+    expect(mentionsRegex.exec("(@test)")[0]).toEqual("@test");
+
+    mentionsRegex.lastIndex = 0;
+    expect(mentionsRegex.exec("[@test]")[0]).toEqual("@test");
+
+    // cyrillic
+    mentionsRegex.lastIndex = 0;
+    expect(mentionsRegex.exec("@тест")[0]).toEqual("@тест");
+
+    //case insensitive
+    mentionsRegex.lastIndex = 0;
+    expect(mentionsRegex.exec("@TEST")[0]).toEqual("@TEST");
+
+    // cyrillic case insensitive
+    mentionsRegex.lastIndex = 0;
+    expect(mentionsRegex.exec("@ТЕСТ")[0]).toEqual("@ТЕСТ");
+
+    // numbers
+    mentionsRegex.lastIndex = 0;
+    expect(mentionsRegex.exec("@test123")[0]).toEqual("@test123");
+
+    // underscore
+    mentionsRegex.lastIndex = 0;
+    expect(mentionsRegex.exec("@test_123")[0]).toEqual("@test_123");
+
+    // dash
+    mentionsRegex.lastIndex = 0;
+    expect(mentionsRegex.exec("@test-123")[0]).toEqual("@test-123");
+
+    // dot delimiter
+    mentionsRegex.lastIndex = 0;
+    expect(mentionsRegex.exec('@test.123')[0]).toEqual('@test');
+
+    // first group
+    mentionsRegex.lastIndex = 0;
+    expect(mentionsRegex.exec('@test.123')[1]).toEqual('test');
 });
