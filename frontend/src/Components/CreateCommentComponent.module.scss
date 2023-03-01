@@ -85,13 +85,14 @@ button.strike {
 .editor {
     display: flex;
 
-    :global(.textarea-suggest) {
+    :global(.rta) {
         width: 100%;
         position: relative;
 
-        :global(.textarea-suggest__results) {
-            margin-left: 5px;
-            padding: 4px;
+        :global(.rta__autocomplete) {
+            position: absolute;
+            margin-left: 4px;
+            padding: 0;
             border-radius: 2px;
             background-color: var(--popup-bg);
             width: auto !important;
@@ -99,18 +100,21 @@ button.strike {
             max-height: 300px;
             overflow: auto;
 
-            :global(.textarea-suggest-item) {
-                cursor: pointer;
-                max-width: 190px;
-                overflow: hidden;
-                text-overflow: ellipsis;
+            ul {
+                list-style-type: none;
+                margin: 0;
+                padding: 0;
 
-                &:global(.textarea-suggest-item_selected) {
+                li {
+                    cursor: pointer;
+                    max-width: 190px;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+
+                :global(.rta__item--selected) {
                     background-color: var(--primary);
                     color: var(--popup-bg);
-                }
-                &:hover:not(:global(.textarea-suggest-item_selected)) {
-                  color: var(--primary);
                 }
             }
         }
