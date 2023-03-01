@@ -19,9 +19,11 @@ import SlowMode from './SlowMode';
 import {observer} from 'mobx-react-lite';
 import {useDebouncedCallback} from 'use-debounce';
 import ThemeToggleComponent from './ThemeToggleComponent';
-import Textarea, {AutoHighlightFirstItemValues} from 'react-textarea-with-suggest';
 import getCaretCoordinates from 'textarea-caret';
 import {toast} from 'react-toastify';
+import ReactTextareaAutocomplete from '@webscopeio/react-textarea-autocomplete';
+import TextareaAutosize from 'react-textarea-autosize';
+import debouncePromise from 'debounce-promise';
 
 interface CreateCommentProps {
     open: boolean;
@@ -65,8 +67,12 @@ export const CreateCommentComponentRestricted = observer((props: CreateCommentPr
     }}/>;
 });
 
+const Item = (item: { entity: string }) => {
+    return <div>{`${item.entity}`}</div>;
+};
+
 export default function CreateCommentComponent(props: CreateCommentProps) {
-    const answerRef = useRef<HTMLTextAreaElement>(null);
+    const answerRef = useRef<HTMLTextAreaElement>();
     const containerRef = useRef<HTMLDivElement>(null);
     const [answerText, setAnswerText] = useState<string>(props.text ||
         (props.storageKey && localStorage.getItem('crCmp:' + props.storageKey)) || '');
@@ -74,8 +80,6 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     const [previewing, setPreviewing] = useState<string | null>(null);
     const [mediaUploaderOpen, setMediaUploaderOpen] = useState(false);
     const api = useAPI();
-    const [suggestResults, setSuggestResults] = useState<string[]>([]);
-    const suggestedResultsString = suggestResults.join(',');
 
     const pronoun = props?.comment?.author?.gender === UserGender.he ? 'ему' : props?.comment?.author?.gender===UserGender.she ? 'ей' : '';
     const placeholderText = props.comment ? `Ваш ответ ${pronoun}` : '';
@@ -115,6 +119,9 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         setAnswerText(newValue);
 
         setTimeout(() => {
+            if (!answer) {
+                return;
+            }
             answer.selectionStart = start + cursor;
             answer.selectionEnd = answer.selectionStart;
         });
@@ -124,7 +131,6 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         if (isPosting) {
             return;
         }
-
         const answer = answerRef.current;
         if (!answer) {
             return;
@@ -186,17 +192,15 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     };
 
     useEffect(() => {
-        const answer = answerRef.current;
-        if ((props.text || props.comment) && props.open && answer) {
-            answer.focus();
-            answer.selectionStart = answer.value.length;
+        if ((props.text || props.comment) && props.open && answerRef.current) {
+            answerRef.current.focus();
+            answerRef.current.selectionStart = answerRef.current.value.length;
         }
     }, [props.open, props.comment]);
 
     useEffect(() => {
         if (
-          !suggestedResultsString ||
-          !answerRef.current ||
+            !answerRef.current ||
           !containerRef.current
         ) {
             return;
@@ -204,7 +208,6 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         const {top, left} = getCaretCoordinates(answerRef.current, answerRef.current.selectionEnd);
         const suggestResults = containerRef.current?.querySelector('.textarea-suggest__results ') as HTMLDivElement;
         if (!suggestResults) {
-            setSuggestResults([]);
             return;
         }
         suggestResults.style.setProperty('top', top.toString() + 'px');
@@ -288,22 +291,33 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         toast(error, {type: 'error'});
     }, 5000, {leading: true, trailing: false, maxWait: 10000});
 
-    const onSuggestSearch = useDebouncedCallback(async (startsWith: string) => {
-        if (!answerRef.current) {
-            return;
-        }
+    const fetchUsernameSuggestions = async (startsWith: string) => {
         try {
             const result = await api.userAPI.getUsernameSuggestions(startsWith);
-            setSuggestResults(result.usernames);
+            return result.usernames;
         } catch (e) {
             debounceSuggestError((e as any).message);
-            setSuggestResults([]);
+            return [];
         }
-    }, 50);
+    };
 
     if (!props.open) {
         return <></>;
     }
+
+    const fetchUsernameSuggestionsDebounced = debouncePromise(fetchUsernameSuggestions, 50);
+    const suggestTrigger = {
+        '@': {
+            dataProvider: async (startsWith: string) => {
+                if (!answerRef.current) {
+                    return [];
+                }
+                return fetchUsernameSuggestionsDebounced(startsWith);
+            },
+            component: Item,
+            output: (item: string) => '@' + item
+        }
+    };
 
     return (
         <div className={styles.answer}>
@@ -322,21 +336,22 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             {
                 (previewing === null )
                 ?  <div className={styles.editor} ref={containerRef}>
-                      <Textarea
-                        forwardedRef={answerRef}
-                        disabled={isPosting}
-                        onChange={handleAnswerChange}
-                        onKeyDown={handleKeyDown}
-                        placeholder={placeholderText}
-                        value={answerText}
-                        className={styles.Textarea}
-                        onSearch={onSuggestSearch}
-                        suggestList={suggestResults}
-                        autosizable={true}
-                        maxRows={25}
-                        autoHighlightFirstItem={AutoHighlightFirstItemValues.Always}
-                        searchRegexp={/@([a-zа-я0-9_-]{2,})/gim}
-                      />
+                        <ReactTextareaAutocomplete<string>
+                            placeholder={placeholderText}
+                            innerRef={(el: HTMLTextAreaElement) => { answerRef.current = el; }}
+                            dropdownClassName={styles.textareaSuggestContainer}
+                            loadingComponent={() => <></>}
+                            minChar={1}
+                            disabled={isPosting}
+                            onChange={handleAnswerChange}
+                            onKeyDown={handleKeyDown}
+                            value={answerText}
+                            // @ts-expect-error -- types of react-textarea-autosize and react-textarea-autocomplete are incompatible with their latest versions
+                            textAreaComponent={TextareaAutosize}
+                            maxRows={25}
+                            movePopupAsYouType={true}
+                            trigger={suggestTrigger}
+                        />
                     </div>
                 :  <div className={classNames(commentStyles.content, styles.preview, postStyles.preview)} onClick={handleClosePreview}><ContentComponent content={previewing} /></div>
             }
