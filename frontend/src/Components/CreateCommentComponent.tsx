@@ -70,14 +70,9 @@ export const CreateCommentComponentRestricted = observer((props: CreateCommentPr
 const Item = (item: { entity: string }) => {
     return <div>{`${item.entity}`}</div>;
 };
-let answer: HTMLTextAreaElement | undefined = undefined;
 
 export default function CreateCommentComponent(props: CreateCommentProps) {
     const answerRef = useRef<HTMLTextAreaElement>();
-    if (!answer) {
-        answer = answerRef.current;
-    }
-
     const containerRef = useRef<HTMLDivElement>(null);
     const [answerText, setAnswerText] = useState<string>(props.text ||
         (props.storageKey && localStorage.getItem('crCmp:' + props.storageKey)) || '');
@@ -106,6 +101,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     };
 
     const replaceText = (text: string, cursor: number) => {
+        const answer = answerRef.current;
         if (!answer) {
             return;
         }
@@ -135,7 +131,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         if (isPosting) {
             return;
         }
-
+        const answer = answerRef.current;
         if (!answer) {
             return;
         }
@@ -196,20 +192,20 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     };
 
     useEffect(() => {
-        if ((props.text || props.comment) && props.open && answer) {
-            answer.focus();
-            answer.selectionStart = answer.value.length;
+        if ((props.text || props.comment) && props.open && answerRef.current) {
+            answerRef.current.focus();
+            answerRef.current.selectionStart = answerRef.current.value.length;
         }
     }, [props.open, props.comment]);
 
     useEffect(() => {
         if (
-          !answer ||
+            !answerRef.current ||
           !containerRef.current
         ) {
             return;
         }
-        const {top, left} = getCaretCoordinates(answer, answer.selectionEnd);
+        const {top, left} = getCaretCoordinates(answerRef.current, answerRef.current.selectionEnd);
         const suggestResults = containerRef.current?.querySelector('.textarea-suggest__results ') as HTMLDivElement;
         if (!suggestResults) {
             return;
@@ -313,7 +309,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     const suggestTrigger = {
         '@': {
             dataProvider: async (startsWith: string) => {
-                if (!answer) {
+                if (!answerRef.current) {
                     return [];
                 }
                 return fetchUsernameSuggestionsDebounced(startsWith);
@@ -342,7 +338,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 ?  <div className={styles.editor} ref={containerRef}>
                         <ReactTextareaAutocomplete<string>
                             placeholder={placeholderText}
-                            innerRef={(el: HTMLTextAreaElement) => { answer = el; }}
+                            innerRef={(el: HTMLTextAreaElement) => { answerRef.current = el; }}
                             dropdownClassName={styles.textareaSuggestContainer}
                             loadingComponent={() => <></>}
                             minChar={1}
