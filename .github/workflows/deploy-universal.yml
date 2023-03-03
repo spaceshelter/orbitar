@@ -17,6 +17,10 @@ on:
         description: 'Restore DB?'
         type: boolean
         default: false
+      manual-sql:
+        description: 'SQL intervention file path'
+        type: string
+        default: ''
       reindex-elastic:
         description: 'Reindex elasticsearch?'
         type: boolean
@@ -51,6 +55,9 @@ jobs:
             if [ "${{ github.event.inputs.restore-db }}" = "true" ]; then
               echo "::warning::Restoring DB!"
             fi
+            if [ "${{ github.event.inputs.manual-sql }}" != "" ]; then
+              echo "::warning::SQL to be run: ${{ github.event.inputs.manual-sql }}"
+            fi
             if [ "${{ github.event.inputs.flush-redis }}" = "true" ]; then
               echo "::warning::Flushing redis!"
             fi
@@ -78,6 +85,14 @@ jobs:
           (echo "Environment variables mismatch" &&\
           echo "Update /opt/deployment-specific-files/.env on the host or .env.sample in your branch" &&\
           exit 1)
+
+      - name: Verify manual interventions
+        if: github.event.inputs.manual-sql != ''
+        run: |
+          if [ ! -r "${{ github.event.inputs.manual-sql }}" ]; then
+            echo "File ${{ github.event.inputs.manual-sql }} does not exist or is not readable"
+            exit 1
+          fi
 
       - name: Copy configuration
         run: |
@@ -129,6 +144,20 @@ jobs:
           docker-compose -f docker-compose.ssl.local.yml exec -T mysql /usr/bin/mysql \
             -u root --password=$MYSQL_ROOT_PASSWORD --default-character-set=utf8mb4 \
             < ${{ steps.get-db.outputs.db-dump-file }}
+
+      - name: Run manual SQL interventions
+        working-directory: /orbitar
+        if: github.event.inputs.manual-sql != ''
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+        run: |
+          set -ex
+          docker-compose -f docker-compose.ssl.local.yml stop backend
+          docker-compose -f docker-compose.ssl.local.yml up -d mysql --wait
+          
+          docker-compose -f docker-compose.ssl.local.yml exec -T mysql /usr/bin/mysql \
+            -u root --password=$MYSQL_ROOT_PASSWORD --default-character-set=utf8mb4 orbitar_db \
+            < ${{ github.event.inputs.manual-sql }}
 
       - name: Reindex ElasticSearch
         if: github.event.inputs.reindex-elastic == 'true'
