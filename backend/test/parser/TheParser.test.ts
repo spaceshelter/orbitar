@@ -68,6 +68,12 @@ test('mp4 video element', () => {
     );
 });
 
+test('strip leading and trailing non-printable chars', () => {
+    const orig = Buffer.from([0x00, 0x01, 0x20, 0x34, 0x32, 0x16, 0x20, 0x0D, 0x0A]).toString('utf8');
+    const parsed = p.parse(orig).text;
+    expect(parsed).toEqual('42');
+});
+
 test('remove line breaks at the beginning and the end', () => {
     expect(
         p.parse('Hello, \n' +

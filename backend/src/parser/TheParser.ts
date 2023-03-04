@@ -56,8 +56,10 @@ export default class TheParser {
     }
 
     parse(text: string): ParseResult {
-        // strip newlines from the beginning and end
-        text = text.replace(/^[\r\n]+|[\r\n]+$/g, '');
+        // strip non-printable characters from the beginning and the end (including newlines and spaces)
+        // see https://stackoverflow.com/questions/1176904/how-to-remove-all-non-printable-characters-in-a-string
+        // eslint-disable-next-line no-control-regex
+        text = text.replace(/^[\x00-\x20\x7F-\xA0\xAD]+|[\x00-\x20\x7F-\xA0\xAD]+$/ug, '');
 
         const doc = this.parseDocument(text, {
             decodeEntities: false
