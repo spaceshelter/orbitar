@@ -1,10 +1,10 @@
 import {DomHandler, DomHandlerOptions, Parser, ParserOptions} from 'htmlparser2';
-import {ChildNode, Document, Element} from 'domhandler';
-import {escape as htmlEscape} from 'html-escaper';
+import { Document, Element, ChildNode } from 'domhandler';
+import { escape as htmlEscape } from 'html-escaper';
 import escapeHTML from 'escape-html';
 import Url from 'url-parse';
 import qs from 'qs';
-import {mentionsRegex, urlRegex, urlRegexExact} from './regexprs';
+import {urlRegex, urlRegexExact} from './urlregex';
 import {MediaHostingConfig} from '../config';
 
 export type ParseResult = {
@@ -123,45 +123,24 @@ export default class TheParser {
         return { text: '', mentions: [], urls: [], images: [] };
     }
 
-    private extractMentions(text: string): { type: 'text' | 'mention', data: string }[] {
-        const tokens: { type: 'text' | 'mention', data: string }[] = [];
-
-        let sText = text;
-        mentionsRegex.lastIndex = 0;
-        let match = mentionsRegex.exec(sText);
-        while (match) {
-            const mention = match[0];
-            const pText = sText.substring(0, match.index);
-            if (pText) {
-                tokens.push({type: 'text', data: pText});
-            }
-            sText = sText.substring(match.index + mention.length);
-            tokens.push({ type: 'mention', data: match[1] });
-            mentionsRegex.lastIndex = 0;
-            match = mentionsRegex.exec(sText);
-        }
-        if (sText) {
-            tokens.push({ type: 'text', data: sText });
-        }
-        return tokens;
-    }
-
     private parseText(text: string): ParseResult {
-        const tokens: { type: 'text' | 'url' | 'mention'; data: string }[] = [];
+
+        const tokens: { type: string; data: string }[] = [];
 
         let sText = text;
         urlRegex.lastIndex = 0;
         let match = urlRegex.exec(sText);
         while (match) {
             const url = match[0];
-            tokens.push(...this.extractMentions(sText.substring(0, match.index)));
+            const pText = sText.substring(0, match.index);
+            tokens.push({ type: 'text', data: pText });
             sText = sText.substring(match.index + url.length);
             tokens.push({ type: 'url', data: url });
             urlRegex.lastIndex = 0; //match.index + url.length;
 
             match = urlRegex.exec(sText);
         }
-        tokens.push(...this.extractMentions(sText));
+        tokens.push({ type: 'text', data: sText });
 
         const mentions = [];
         const urls = [];
@@ -169,13 +148,15 @@ export default class TheParser {
         let escaped = tokens
             .map((token) => {
                 if (token.type === 'text') {
+                    // check for mentions
+                    const mentionRes = token.data.match(/\B(?:@|\/u\/)([a-zа-яе0-9_-]+)/gi);
+                    if (mentionRes) {
+                        mentions.push(...mentionRes);
+                    }
                     return htmlEscape(token.data);
                 } else if (token.type === 'url') {
                     urls.push(token.data);
                     return this.processUrl(token.data);
-                } else if (token.type === 'mention') {
-                    mentions.push(token.data);
-                    return `<a href="${encodeURI(`/u/${token.data}`)}" target="_blank" class="mention">${htmlEscape(token.data)}</a>`;
                 }
             })
             .join('');
@@ -301,9 +282,6 @@ export default class TheParser {
         }
 
         const result = this.parseChildNodes(node.children);
-        if (result.urls.length > 0 || result.mentions.length > 0) {
-            return result;
-        }
         const text = `<a href="${encodeURI(decodeURI(url))}" target="_blank">${result.text}</a>`;
 
         return { ...result, text, urls: [ ...result.urls, url ] } ;

@@ -97,4 +97,3 @@ function getRegex(path = '\\S*') {
 
 export const urlRegex = new RegExp('\\b' + getRegex('(?:[^\\s.,:;!()\\[\\]{}]|[.,:;!]+\\b)*'), 'gi');
 export const urlRegexExact = new RegExp('^' + getRegex() + '$', 'i');
-export const mentionsRegex = new RegExp('\\B@([a-zа-я0-9_-]+)', 'gi');
