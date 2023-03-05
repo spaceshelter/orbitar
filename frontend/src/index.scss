@@ -98,13 +98,6 @@ svg#spoiler-mask {
   }
 }
 
-a.mention:before {
-  content: '@';
-  color: transparent;
-  background: url('./Assets/user.svg') no-repeat -1px 2px;
-  background-size: 16px 16px;
-}
-
 details.expand {
   background-color: var(--dim1);
   border-radius: 4px;
