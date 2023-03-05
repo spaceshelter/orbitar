@@ -147,36 +147,41 @@ test('unwrap nested links', () => {
 test('mentions', () => {
     // `<a href="${encodeURI(`/u/${token.data}`)}" target="_blank" class="mention">${htmlEscape(token.data)}</a>`;
 
+    function parse(text) {
+        const res = p.parse(text);
+        return [res.text, res.mentions];
+    }
+
     expect(
-        p.parse('@test').text
+        parse('@test')
     ).toEqual(
-        '<a href="/u/test" target="_blank" class="mention">test</a>'
+        ['<a href="/u/test" target="_blank" class="mention">test</a>', ['test']]
     );
 
     expect(
-        p.parse('@test test').text
+        parse('@test test')
     ).toEqual(
-        '<a href="/u/test" target="_blank" class="mention">test</a> test'
+        ['<a href="/u/test" target="_blank" class="mention">test</a> test', ['test']]
     );
 
     expect(
-        p.parse('@test test @test').text
+        parse('@test test @test')
     ).toEqual(
-        '<a href="/u/test" target="_blank" class="mention">test</a> test <a href="/u/test" target="_blank" class="mention">test</a>'
+        ['<a href="/u/test" target="_blank" class="mention">test</a> test <a href="/u/test" target="_blank" class="mention">test</a>', ['test', 'test']]
     );
 
     // urls, text, mentions
     expect(
-        p.parse('https://test.com @test test').text
+        parse('https://test.com @test test')
     ).toEqual(
-        '<a href="https://test.com" target="_blank">https://test.com</a> <a href="/u/test" target="_blank" class="mention">test</a> test'
+        ['<a href="https://test.com" target="_blank">https://test.com</a> <a href="/u/test" target="_blank" class="mention">test</a> test', ['test']]
     );
 
     // mentions in links take precedence
     expect(
-        p.parse('<a href="https://test.com">@test</a>').text
+        parse('<a href="https://test.com">@test</a>')
     ).toEqual(
-        '<a href="/u/test" target="_blank" class="mention">test</a>'
+        ['<a href="/u/test" target="_blank" class="mention">test</a>', ['test']]
     );
 });
 
