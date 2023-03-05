@@ -8,6 +8,13 @@ interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
     lowRating?: boolean;
 }
 
+declare global {
+    interface Window {
+        YT: typeof YT;
+        onYouTubeIframeAPIReady: () => void;
+    }
+}
+
 function updateContent(div: HTMLDivElement) {
     div.querySelectorAll('img').forEach(img => {
         if (img.complete) {
@@ -34,6 +41,7 @@ function updateContent(div: HTMLDivElement) {
 }
 
 function updateVideo(video: HTMLVideoElement) {
+    video.addEventListener('play', () => stopVideo(document.body, video));
     if (video.dataset.aspectRatioProcessed) {
         return;
     }
@@ -63,9 +71,33 @@ function processYtEmbed(img: HTMLImageElement) {
             iframe.allow = 'autoplay; clipboard-write; encrypted-media; picture-in-picture';
             iframe.classList.add('youtube-embed');
             img.parentElement?.replaceWith(iframe);
+            loadYTPlayer(iframe);
         });
     }
     return !!ytUrl;
+}
+
+function loadYTPlayer(iframe: HTMLIFrameElement) {
+    const attachYTPlayer = () => {
+        new YT.Player(iframe as HTMLIFrameElement,    {
+            events: {
+                onStateChange: (event) => {
+                    if (event.data === YT.PlayerState.PLAYING) {
+                        stopVideo(document.body, iframe);
+                    }
+                },
+            }
+        });
+    };
+
+    if (window.YT) {
+        attachYTPlayer();
+    } else {
+        const tag = document.createElement('script');
+        tag.src = 'https://www.youtube.com/player_api';
+        window.onYouTubeIframeAPIReady = attachYTPlayer;
+        document.head.append(tag);
+    }
 }
 
 /**
@@ -86,6 +118,7 @@ function processVideoEmbed(img: HTMLImageElement) {
             video.style.width = img.width.toString() + 'px';
             video.style.height = img.height.toString() + 'px';
             img.parentElement?.replaceWith(video);
+            video.addEventListener('play', () => stopVideo(document.body, video));
         });
     }
     return !!videoUrl;
@@ -152,12 +185,16 @@ function updateExpand(expand: HTMLDetailsElement) {
     }
 }
 
-function stopVideo(el: HTMLElement) {
+function stopVideo(el: HTMLElement, exept?: HTMLElement) {
+    console.log('--');
     el.querySelectorAll('video').forEach(video => {
+        if (video === exept)
+            return;
         video.pause();
     });
-
     el.querySelectorAll('iframe.youtube-embed').forEach(iframe => {
+        if (iframe === exept)
+            return;
         const iframeYt = iframe as HTMLIFrameElement;
         iframeYt.contentWindow?.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
     });
