@@ -248,5 +248,21 @@ test('parse html directive', () => {
     expect(
         p.parse('test<?xml version="1.0" encoding="UTF-8"?>').text
     ).toEqual('test&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;');
+});
 
+test('parse spoiler tag', () => {
+    expect(p.parse('<spoiler>Hello</spoiler>').text).toEqual(
+        '<span class="spoiler">Hello</span>'
+    );
+});
+
+test('parse expand tag', () => {
+    // title
+    expect(p.parse('<expand title="Hello">world</expand>').text).toEqual(
+        '<details class="expand"><summary>Hello</summary>world<div role="button"></div></details>'
+    );
+    // empty title
+    expect(p.parse('<expand>Hello world</expand>').text).toEqual(
+        '<details class="expand"><summary>Открой меня</summary>Hello world<div role="button"></div></details>'
+    );
 });
