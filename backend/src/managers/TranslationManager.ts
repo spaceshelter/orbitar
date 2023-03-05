@@ -7,7 +7,7 @@ import TheParser from '../parser/TheParser';
 import {stripHtml} from 'string-strip-html';
 import {Logger} from 'winston';
 import {addOnPostRun, FastText, FastTextModel} from '../../langid/fasttext.js';
-import {urlRegex} from '../parser/urlregex';
+import {urlRegex} from '../parser/regexprs';
 
 const fasttextModelPromise: Promise<FastTextModel> = new Promise<FastText>((resolve) => {
     addOnPostRun(() => {

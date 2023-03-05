@@ -164,9 +164,8 @@ export default class NotificationManager {
         let username;
         if (mention.substring(0, 1) === '@') {
             username = mention.substring(1);
-        }
-        else if (mention.substring(0, 3) === '/u/') {
-            username = mention.substring(3);
+        } else {
+            username = mention;
         }
 
         if (!username) {

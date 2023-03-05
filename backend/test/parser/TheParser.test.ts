@@ -130,6 +130,61 @@ test('remove extra line break after blockquote tag', () => {
     );
 });
 
+test('unwrap nested links', () => {
+    expect(
+        p.parse('<a href="https://test.com"><a href="https://test.com">test</a></a>').text
+    ).toEqual(
+        '<a href="https://test.com" target="_blank">test</a>'
+    );
+
+    expect(
+        p.parse('<a href="https://test.com">https://test2.com</a> test').text
+    ).toEqual(
+        '<a href="https://test2.com" target="_blank">https://test2.com</a> test'
+    );
+});
+
+test('mentions', () => {
+    // `<a href="${encodeURI(`/u/${token.data}`)}" target="_blank" class="mention">${htmlEscape(token.data)}</a>`;
+
+    function parse(text) {
+        const res = p.parse(text);
+        return [res.text, res.mentions];
+    }
+
+    expect(
+        parse('@test')
+    ).toEqual(
+        ['<a href="/u/test" target="_blank" class="mention">test</a>', ['test']]
+    );
+
+    expect(
+        parse('@test test')
+    ).toEqual(
+        ['<a href="/u/test" target="_blank" class="mention">test</a> test', ['test']]
+    );
+
+    expect(
+        parse('@test test @test')
+    ).toEqual(
+        ['<a href="/u/test" target="_blank" class="mention">test</a> test <a href="/u/test" target="_blank" class="mention">test</a>', ['test', 'test']]
+    );
+
+    // urls, text, mentions
+    expect(
+        parse('https://test.com @test test')
+    ).toEqual(
+        ['<a href="https://test.com" target="_blank">https://test.com</a> <a href="/u/test" target="_blank" class="mention">test</a> test', ['test']]
+    );
+
+    // mentions in links take precedence
+    expect(
+        parse('<a href="https://test.com">@test</a>')
+    ).toEqual(
+        ['<a href="/u/test" target="_blank" class="mention">test</a>', ['test']]
+    );
+});
+
 test('parse html comment', () => {
     // returns escaped html comment as text
     expect(
