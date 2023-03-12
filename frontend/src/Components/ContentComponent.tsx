@@ -186,7 +186,6 @@ function updateExpand(expand: HTMLDetailsElement) {
 }
 
 function stopVideo(el: HTMLElement, exept?: HTMLElement) {
-    console.log('--');
     el.querySelectorAll('video').forEach(video => {
         if (video === exept)
             return;
