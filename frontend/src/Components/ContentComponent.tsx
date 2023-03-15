@@ -1,6 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import classNames from 'classnames';
 import styles from './ContentComponent.module.scss';
+import {createObserverService, observeOnHidden} from '../Services/ObserverService';
 
 interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
     content: string;
@@ -41,7 +42,8 @@ function updateContent(div: HTMLDivElement) {
 }
 
 function updateVideo(video: HTMLVideoElement) {
-    video.addEventListener('play', () => stopVideo(document.body, video));
+    video.addEventListener('play', () => stopInnerVideos(document.body, video));
+    observeOnHidden(video, () => stopVideo(video));
     if (video.dataset.aspectRatioProcessed) {
         return;
     }
@@ -72,6 +74,7 @@ function processYtEmbed(img: HTMLImageElement) {
             iframe.classList.add('youtube-embed');
             img.parentElement?.replaceWith(iframe);
             loadYTPlayer(iframe);
+            observeOnHidden(iframe, () => stopVideo(iframe));
         });
     }
     return !!ytUrl;
@@ -83,7 +86,7 @@ function loadYTPlayer(iframe: HTMLIFrameElement) {
             events: {
                 onStateChange: (event) => {
                     if (event.data === YT.PlayerState.PLAYING) {
-                        stopVideo(document.body, iframe);
+                        stopInnerVideos(document.body, iframe);
                     }
                 },
             }
@@ -118,7 +121,8 @@ function processVideoEmbed(img: HTMLImageElement) {
             video.style.width = img.width.toString() + 'px';
             video.style.height = img.height.toString() + 'px';
             img.parentElement?.replaceWith(video);
-            video.addEventListener('play', () => stopVideo(document.body, video));
+            video.addEventListener('play', () => stopInnerVideos(document.body, video));
+            observeOnHidden(video, () => stopVideo(video));
         });
     }
     return !!videoUrl;
@@ -172,7 +176,7 @@ function updateSpoiler(spoiler: HTMLSpanElement) {
 function updateExpand(expand: HTMLDetailsElement) {
     expand.addEventListener('toggle', () => {
         if (!expand.open) {
-            stopVideo(expand);
+            stopInnerVideos(expand);
         }
     });
 
@@ -185,17 +189,29 @@ function updateExpand(expand: HTMLDetailsElement) {
     }
 }
 
-function stopVideo(el: HTMLElement, exept?: HTMLElement) {
+function stopVideo(el: HTMLVideoElement | HTMLIFrameElement) {
+    if (el instanceof HTMLVideoElement) {
+        (el as HTMLVideoElement).pause();
+        return;
+    }
+    if (el instanceof HTMLIFrameElement && el.classList.contains('youtube-embed')) {
+        (el as HTMLIFrameElement).contentWindow?.postMessage(
+            '{"event":"command","func":"pauseVideo","args":""}', '*'
+        );
+        return;
+    }
+}
+
+function stopInnerVideos(el: Element, exept?: HTMLVideoElement | HTMLIFrameElement) {
     el.querySelectorAll('video').forEach(video => {
         if (video === exept)
             return;
-        video.pause();
+        stopVideo(video);
     });
     el.querySelectorAll('iframe.youtube-embed').forEach(iframe => {
         if (iframe === exept)
             return;
-        const iframeYt = iframe as HTMLIFrameElement;
-        iframeYt.contentWindow?.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+        stopVideo(iframe as HTMLIFrameElement);
     });
 }
 
@@ -209,6 +225,7 @@ export default function ContentComponent(props: ContentComponentProps) {
             return;
         }
 
+        createObserverService();
         updateContent(content);
 
         if (props.autoCut) {
