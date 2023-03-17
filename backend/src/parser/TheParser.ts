@@ -70,10 +70,11 @@ export default class TheParser {
 
     private parseChildNodes(doc: ChildNode[]): ParseResult {
         const p = {text: '', mentions: [], urls: [], images: []};
-        let prevBQ = false; // if previous node was blockquote
+        let prevIsBlock = false; // if previous node was block tag
+        const blockTags = ['blockquote', 'expand'];
         for (let node of doc) {
-            if (prevBQ && node.type === 'text') {
-                // remove a single newline after blockquote, allow only a single one if multiple were present
+            if (prevIsBlock && node.type === 'text') {
+                // remove a single newline after block tags, allow only a single one if multiple were present
                 node = {
                     ...node,
                     data: node.data.replace(/^(\r?\n|[\r\n])(\r?\n|[\r\n])?(\r?\n|[\r\n])*/, '$2')
@@ -85,7 +86,7 @@ export default class TheParser {
             p.mentions.push(...res.mentions);
             p.urls.push(...res.urls);
             p.images.push(...res.images);
-            prevBQ = node.type === 'tag' && node.tagName.toLowerCase() === 'blockquote';
+            prevIsBlock = node.type === 'tag' && blockTags.includes(node.tagName.toLowerCase());
         }
         return p;
     }
