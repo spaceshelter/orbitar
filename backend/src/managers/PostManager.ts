@@ -251,6 +251,7 @@ export default class PostManager {
             parentAuthor = await this.userManager.getById(parentComment.author_id);
         }
         for (const mention of new Set(parseResult.mentions)) {
+            // if author of parent comment/post was mentioned - do not send notifications - they are already notified about answer to their comment
             if (mention.toLowerCase() === parentAuthor?.username.toLowerCase()) {
                 continue;
             }
