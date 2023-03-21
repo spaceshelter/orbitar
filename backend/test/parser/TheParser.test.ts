@@ -167,7 +167,13 @@ test('mentions', () => {
     expect(
         parse('@test test @test')
     ).toEqual(
-        ['<a href="/u/test" target="_blank" class="mention">test</a> test <a href="/u/test" target="_blank" class="mention">test</a>', ['test', 'test']]
+        ['<a href="/u/test" target="_blank" class="mention">test</a> test <a href="/u/test" target="_blank" class="mention">test</a>', ['test']]
+    );
+
+    expect(
+        parse('@test test @test1')
+    ).toEqual(
+        ['<a href="/u/test" target="_blank" class="mention">test</a> test <a href="/u/test1" target="_blank" class="mention">test1</a>', ['test', 'test1']]
     );
 
     // urls, text, mentions
