@@ -83,7 +83,7 @@ export default class PostManager {
 
         await this.bookmarkRepository.setWatch(postRaw.post_id, userId, true);
 
-        for (const mention of new Set(parseResult.mentions)) {
+        for (const mention of parseResult.mentions) {
             await this.notificationManager.sendMentionNotify(mention, userId, postRaw.post_id);
         }
 
@@ -250,9 +250,10 @@ export default class PostManager {
             const parentComment = await this.commentRepository.getComment(parentCommentId);
             parentAuthor = await this.userManager.getById(parentComment.author_id);
         }
-        for (const mention of new Set(parseResult.mentions)) {
-            // if author of parent comment/post was mentioned - do not send notifications - they are already notified about answer to their comment
-            if (mention.toLowerCase() === parentAuthor?.username.toLowerCase()) {
+        for (const mention of parseResult.mentions) {
+            // if author of parent comment/post was mentioned - do not send notifications:
+            // they are already notified about answer to their comment
+            if (mention === parentAuthor?.username.toLowerCase()) {
                 continue;
             }
             await this.notificationManager.sendMentionNotify(mention, userId, postId, commentRaw.comment_id);

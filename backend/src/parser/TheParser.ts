@@ -65,7 +65,9 @@ export default class TheParser {
             decodeEntities: false
         });
 
-        return this.parseChildNodes(doc.childNodes);
+        const parseResult = this.parseChildNodes(doc.childNodes);
+        parseResult.mentions = [...new Set(parseResult.mentions)];
+        return parseResult;
     }
 
     private parseChildNodes(doc: ChildNode[]): ParseResult {
@@ -175,7 +177,7 @@ export default class TheParser {
                     urls.push(token.data);
                     return this.processUrl(token.data);
                 } else if (token.type === 'mention') {
-                    mentions.push(token.data);
+                    mentions.push(token.data.toLowerCase());
                     return `<a href="${encodeURI(`/u/${token.data}`)}" target="_blank" class="mention">${htmlEscape(token.data)}</a>`;
                 }
             })
