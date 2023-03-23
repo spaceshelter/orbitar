@@ -130,6 +130,37 @@ test('remove extra line break after blockquote tag', () => {
     );
 });
 
+test('remove extra line break after expand tag', () => {
+    expect(
+        p.parse('<expand title="Brave">New</expand>\nWorld'
+        ).text
+    ).toEqual(
+        '<details class="expand"><summary>Brave</summary>New<div role="button"></div></details>World'
+    );
+
+    expect(
+        p.parse('<expand title="Brave">New</expand>\n\nWorld'
+        ).text
+    ).toEqual(
+        '<details class="expand"><summary>Brave</summary>New<div role="button"></div></details><br />\nWorld'
+    );
+
+    expect(
+        p.parse('<expand title="Brave">New</expand>\n\n\nWorld'
+        ).text
+    ).toEqual(
+        '<details class="expand"><summary>Brave</summary>New<div role="button"></div></details><br />\nWorld'
+    );
+
+    expect(
+        p.parse('<expand title="Hello">World\n<expand title="Brave">New</expand>\n</expand>World'
+        ).text
+    ).toEqual(
+        '<details class="expand"><summary>Hello</summary>World<br />\n<details class="expand"><summary>Brave</summary>New<div role="button"></div></details><div role="button"></div></details>World'
+    );
+
+});
+
 test('unwrap nested links', () => {
     expect(
         p.parse('<a href="https://test.com"><a href="https://test.com">test</a></a>').text
