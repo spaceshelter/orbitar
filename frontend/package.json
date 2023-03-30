@@ -11,6 +11,7 @@
     "@types/react-dom": "^17.0.14",
     "@types/textarea-caret": "^3.0.1",
     "@types/webscopeio__react-textarea-autocomplete": "^4.7.2",
+    "@types/youtube": "^0.0.47",
     "@webscopeio/react-textarea-autocomplete": "^4.9.2",
     "check-password-strength": "^2.0.7",
     "classnames": "^2.3.1",
