@@ -51,7 +51,7 @@
 
     .control {
         margin-right: 25px;
-        color: var(--fgSofter);
+        color: var(--fgSoftest);
         display: flex;
         align-items: center;
     }
@@ -91,11 +91,14 @@
         color: var(--fgSoftest);
         text-decoration: none;
 
-        font-weight: bold;
+        font-weight: normal;
 
         &.active {
             fill: var(--primary);
-            font-weight: bold;
+            font-weight: normal;
+        }
+        &:hover {
+            color: var(--primary);
         }
     }
     a {
