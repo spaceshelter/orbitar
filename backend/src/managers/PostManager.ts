@@ -15,6 +15,7 @@ import {CommentInfoWithPostData} from './types/CommentInfo';
 import {SiteInfo} from './types/SiteInfo';
 import {HistoryInfo} from './types/HistoryInfo';
 import TranslationManager from './TranslationManager';
+import {UserInfo} from './types/UserInfo';
 
 export default class PostManager {
     private bookmarkRepository: BookmarkRepository;
@@ -244,12 +245,22 @@ export default class PostManager {
         const commentRaw = await this.commentRepository.createComment(userId, postId, parentCommentId, content, language, parseResult.text);
         this.userManager.clearUserRestrictionsCache(userId);
 
+        let parentAuthor: UserInfo | undefined;
+        if (parentCommentId) {
+            const parentComment = await this.commentRepository.getComment(parentCommentId);
+            parentAuthor = await this.userManager.getById(parentComment.author_id);
+        }
         for (const mention of parseResult.mentions) {
+            // if author of parent comment/post was mentioned - do not send notifications:
+            // they are already notified about answer to their comment
+            if (mention === parentAuthor?.username.toLowerCase()) {
+                continue;
+            }
             await this.notificationManager.sendMentionNotify(mention, userId, postId, commentRaw.comment_id);
         }
 
-        if (parentCommentId) {
-            await this.notificationManager.sendAnswerNotify(parentCommentId, userId, postId, commentRaw.comment_id);
+        if (parentAuthor) {
+            await this.notificationManager.sendAnswerNotify(parentAuthor.id, userId, postId, commentRaw.comment_id);
         }
 
         await this.bookmarkRepository.setWatch(postId, userId, true);
