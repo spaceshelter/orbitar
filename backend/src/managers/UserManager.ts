@@ -240,9 +240,9 @@ export default class UserManager {
     }
 
     async getUserEffectiveKarma(userId: number): Promise<{
-        effectiveKarma,
-        userRating,
-        contentRating
+        effectiveKarma: number,
+        userRating : number,
+        contentRating: number
     }> {
         const user = await this.getById(userId);
         if (!user) {
@@ -574,9 +574,15 @@ export default class UserManager {
      * Returns the progress of user trial based on the ratio of number of primary and secondary voters to all active users
      * @param userId user id to find the trial progress for
      * @param skipCache if true, then the cache will be skipped and the result will be recalculated
-     * @return trial progress 0..1
+     * @return trial progress -1..1
      */
     async getTrialProgress(userId: number, skipCache = false) {
+        const {effectiveKarma} = await this.getUserEffectiveKarma(userId);
+        if (effectiveKarma <= USER_RESTRICTIONS.NEG_KARMA_THRESH) {
+            // map MIN_KARMA .. 0 to -1 .. 0
+            return Math.max(effectiveKarma / Math.abs(USER_RESTRICTIONS.MIN_KARMA), -1);
+        }
+
         // check redis cache
         const cacheKey = `trial_progress_${userId}`;
         if (!skipCache) {
@@ -603,7 +609,7 @@ export default class UserManager {
      * Checks if the user has enough votes to end the trial period and if so, ends it
      * @param userId
      * @param skipCache
-     * @return number (trial progress 0..1) or undefined if trial ended
+     * @return number (trial progress -1..1) or undefined if trial ended
      */
     async tryEndTrial(userId: number, skipCache = false): Promise<number | undefined> {
         const trialProgress = await this.getTrialProgress(userId, skipCache);
