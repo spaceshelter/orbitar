@@ -101,6 +101,7 @@ type PostGetResponse = {
     site: SiteInfo;
     comments: CommentEntity[];
     users: Record<number, UserInfo>;
+    anonymousUser?: UserInfo;
 };
 
 type CommentGetRequest = {

@@ -15,4 +15,5 @@ export type PostGetResponse = {
     site: SiteWithUserInfoEntity;
     comments: CommentEntity[];
     users: Record<number, UserEntity>;
+    anonymousUser?: UserEntity;
 };

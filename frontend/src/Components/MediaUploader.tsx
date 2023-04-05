@@ -179,7 +179,8 @@ export default function MediaUploader(props: MediaUploaderProps) {
                         .then(data => {
                             if (data.status === 'ok') {
                                 console.log('UPLOAD COMPLETE', data);
-                                props.onSuccess('https://idiod.video/' + data.url, uploadData.type);
+                                props.onSuccess(process.env.REACT_APP_MEDIA_HOSTING_URL +
+                                    '/' + data.url, uploadData.type);
                             } else {
                                 console.log('UPLOAD FAILED: no link', data, file.type);
                                 toast.error('Произошла ошибка при загрузке 🥺');

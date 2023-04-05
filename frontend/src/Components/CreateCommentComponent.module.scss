@@ -84,6 +84,41 @@ button.strike {
 
 .editor {
     display: flex;
+
+    :global(.rta) {
+        width: 100%;
+        position: relative;
+
+        :global(.rta__autocomplete) {
+            position: absolute;
+            margin-left: 4px;
+            padding: 0;
+            border-radius: 2px;
+            background-color: var(--popup-bg);
+            width: auto !important;
+            max-width: 200px;
+            max-height: 300px;
+            overflow: auto;
+
+            ul {
+                list-style-type: none;
+                margin: 0;
+                padding: 0;
+
+                li {
+                    cursor: pointer;
+                    max-width: 190px;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+
+                :global(.rta__item--selected) {
+                    background-color: var(--primary);
+                    color: var(--popup-bg);
+                }
+            }
+        }
+    }
 }
 
 .final {

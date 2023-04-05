@@ -62,29 +62,103 @@ a {
   color: var(--danger);
 }
 
-.spoiler {
-  background-color: var(--fgHard);  
-  opacity: 0.2;
-  /* blur to text */
-  filter: blur(4px);
-  -webkit-filter: blur(4px);
+svg#spoiler-mask {
+  /* hide svg */
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  /* Firefox fix */
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
+}
 
+.spoiler {
+  background-color: var(--fg);
+  filter: blur(2px);
+  opacity: .8;
   /* more blur to img video etc */
-  & > img, video {
-    filter: blur(16px);
-    -webkit-filter: blur(16px);
+  & > * {
+    filter: url('#spoiler-mask-filter');
   }
 
   &:hover {
-    background-color: inherit;    
-    opacity: 1.0;
+    background-color: inherit;
     filter: none;
-    -webkit-filter: none;
-
-    & > img, video {
+    opacity: 1;
+    & > * {
       filter: none;
-      -webkit-filter: none;
     }
+  }
+}
+
+a.mention:before {
+  content: '@';
+  color: transparent;
+  background: url('./Assets/user.svg') no-repeat -1px 2px;
+  background-size: 16px 16px;
+}
+
+details.expand {
+  background-color: var(--dim1);
+  border-radius: 4px;
+  padding: 0.5em;
+  margin: 0.5em 0;
+
+  & > summary {
+    display: block;
+    position: relative;
+    padding-left: 1.5em;
+    color: var(--fg);
+    font-weight: bold;
+    list-style-type: none;
+    cursor: pointer;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    &::-moz-list-bullet{
+      list-style-type:none;
+    }
+
+    &::marker{
+      display:none;
+    }
+
+    &::before {
+      left: 0;
+      top: 0;
+      content: '';
+      -webkit-mask: url('./Assets/expand.svg') no-repeat 50% 50%;
+      mask: url('./Assets/expand.svg') no-repeat 50% 50%;
+      background-color: var(--button-dis-fg);
+      width: 20px;
+      height: 20px;
+      position: absolute;
+      transition: transform .25s;
+    }
+  }
+
+  &[open] > summary {
+    margin-bottom: .5em;
+  }
+
+  &[open] > summary::before {
+    transform: rotateZ(90deg);
+  }
+
+  & > div[role="button"] {
+    display: block;
+    background-color: var(--dim1);
+    height: 0.5em;
+    cursor: pointer;
   }
 }
 

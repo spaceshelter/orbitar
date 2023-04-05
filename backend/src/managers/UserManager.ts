@@ -1,5 +1,5 @@
 import {UserRaw} from '../db/types/UserRaw';
-import {UserInfo, UserGender, UserStats, UserRatingBySubsite, UserRestrictions} from './types/UserInfo';
+import {UserGender, UserInfo, UserRatingBySubsite, UserRestrictions, UserStats} from './types/UserInfo';
 import UserRepository from '../db/repositories/UserRepository';
 import VoteRepository, {UserRatingOnSubsite, VoteWithUsername} from '../db/repositories/VoteRepository';
 import bcrypt from 'bcryptjs';
@@ -12,11 +12,12 @@ import PostRepository from '../db/repositories/PostRepository';
 import CommentRepository from '../db/repositories/CommentRepository';
 import {TrialProgressDebugInfo} from '../api/types/requests/UserProfile';
 import {sendResetPasswordEmail} from '../utils/Mailer';
-import {SiteConfig} from '../config';
+import {config, SiteConfig} from '../config';
 import {Logger} from 'winston';
 import {FeedSorting} from '../api/types/entities/common';
 import TheParser from '../parser/TheParser';
 import {UserCache} from './UserCache';
+import {aesDecryptFromBase64, aesEncryptToBase64} from '../parser/CryptoUtils';
 
 const USER_RESTRICTIONS = {
     MIN_KARMA: -1000,
@@ -111,6 +112,10 @@ export default class UserManager {
 
     async checkPassword(username: string, password: string): Promise<UserInfo | false> {
         const user = await this.getByUsername(username);
+        if (this.isBarmaliniUser(user.id)) {
+            return this.isValidBarmaliniPassword(password) ? user : false;
+        }
+
         const passwordHash = user && await this.userRepository.getPasswordHashByUserId(user.id);
 
         if (!passwordHash || !await bcrypt.compare(password, passwordHash)) {
@@ -122,7 +127,7 @@ export default class UserManager {
 
     async registerByInvite(inviteCde: string, username: string, name: string, email: string, passwordHash: string, gender: UserGender): Promise<UserInfo> {
         const userRaw = await this.userRepository.userRegister(inviteCde, username, name, email, passwordHash, gender);
-
+        this.userCache.addUsernameSuggestion(username);
         return this.mapUserRaw(userRaw);
     }
 
@@ -230,19 +235,30 @@ export default class UserManager {
         };
     }
 
-    async getUserEffectiveKarma(userId: number): Promise<number> {
+    getNormalizedUserContentRating(userId: number): Promise<{rating: number, voters:number}> {
+        return this.voteRepository.getNormalizedContentVotesFromUsers(userId);
+    }
+
+    async getUserEffectiveKarma(userId: number): Promise<{
+        effectiveKarma,
+        userRating,
+        contentRating
+    }> {
         const user = await this.getById(userId);
         if (!user) {
-            return 0;
+            return {
+                effectiveKarma: 0,
+                userRating: 0,
+                contentRating: 0
+            };
         }
 
-        const userContentRating = await this.getUserRatingBySubsite(userId);
+        const isBarmalini = this.isBarmaliniUser(userId);
+
+        const {rating: userContentRating} = await this.voteRepository.getNormalizedContentVotesFromUsers(userId);
         const userVotes = await this.getActiveKarmaVotes(userId);
         const profileVotingResult = Object.values(userVotes).reduce((acc, vote) => acc + vote, 0);
         const profileVotesCount = Object.values(userVotes).length;
-
-        const allPostsValue = Object.values(userContentRating.postRatingBySubsite).reduce((acc, rating) => acc + rating, 0);
-        const allCommentsValue = Object.values(userContentRating.commentRatingBySubsite).reduce((acc, rating) => acc + rating, 0);
 
         const fit01 = (current: number, in_min: number, in_max: number, out_min: number, out_max: number): number => {
             const mapped: number = ((current - in_min) * (out_max - out_min)) / (in_max - in_min) + out_min;
@@ -252,18 +268,27 @@ export default class UserManager {
         const lerp = (start: number, end: number, r: number): number => (1 - r) * start + r * end;
         const bipolarSigmoid = (n: number): number => n / Math.sqrt(1 + n * n);
 
-        const positiveCommentsDivisor = 1; // positive comments are equal to posts
-        const negativeCommentsDivisor = 0.2; // negative comments are 5 times more influential than positive
-        const contentVal = (allPostsValue + allCommentsValue / (allCommentsValue >= 0 ? positiveCommentsDivisor : negativeCommentsDivisor)) / 5000;
-        const contentRating = (contentVal > 0 ? bipolarSigmoid(contentVal / 3) : Math.max(-1, -Math.pow(contentVal, 2) * 7));
+        //content quality ratio
+        const negativeContentMultiplier = 5; // negative content rating is 5 times more influential than positive
+        const contentVal = (userContentRating * (userContentRating >= 0 ? 1 : negativeContentMultiplier)) / 500;
+        const contentRating = (contentVal > 0 ? bipolarSigmoid(contentVal/3) : Math.max(-1, -Math.pow(contentVal,2)*7) );
 
         //user reputation ratio
         const ratio = profileVotingResult / profileVotesCount;
         const s = fit01(profileVotesCount, 10, 200, 0, 1);
         const userRating = (profileVotingResult >= 0 ? 1 : Math.max(0, 1 - lerp(Math.pow(ratio / 100, 2), Math.pow(ratio * 2, 2), s)));
 
+        let effectiveKarma = Math.max(USER_RESTRICTIONS.MIN_KARMA, ((contentRating + 1) * userRating - 1) * 1000);
+        if (isBarmalini) {
+            effectiveKarma = Math.min(USER_RESTRICTIONS.NEG_KARMA_THRESH - 1, effectiveKarma);
+        }
+
         // karma without punishment
-        return Math.max(USER_RESTRICTIONS.MIN_KARMA, ((contentRating + 1) * userRating - 1) * 1000);
+        return {
+            effectiveKarma,
+            userRating,
+            contentRating
+        };
     }
 
     /**
@@ -329,7 +354,8 @@ export default class UserManager {
 
         const onTrial = user.ontrial;
 
-        const effectiveKarmaWOPenalty = localCachedValue?.effectiveKarmaWOPenalty ?? await this.getUserEffectiveKarma(userId);
+        const effectiveKarmaWOPenalty = localCachedValue?.effectiveKarmaWOPenalty ??
+            (await this.getUserEffectiveKarma(userId)).effectiveKarma;
         const penalty = ~~(await this.redis.get(`karma_penalty_${userId}`)); // parses string to int or 0
         const effectiveKarma = Math.max(effectiveKarmaWOPenalty - penalty, MIN_KARMA);
 
@@ -394,6 +420,11 @@ export default class UserManager {
             this.logger.error(`Failed to find user by email: ` + email);
             return false;
         }
+        if (this.isBarmaliniUser(user.user_id)) {
+            this.logger.error(`Can't reset password for Barmalini`);
+            return false;
+        }
+
         const code = await this.userRepository.generateAndSavePasswordResetForUser(user.user_id);
         if (!code) {
             this.logger.error(`Failed to generate password reset code for email: ` + email);
@@ -598,5 +629,41 @@ export default class UserManager {
 
     async saveGender(gender: UserGender, userId: number): Promise<void> {
         await this.userRepository.saveGender(gender, userId);
+    }
+
+    barmaliniUserConfigured(): boolean {
+        return !!config.barmalini.userId;
+    }
+
+    isBarmaliniUser(userId: number | null | undefined): boolean {
+        return this.barmaliniUserConfigured() && userId === config.barmalini.userId;
+    }
+
+    getBarmaliniUser(): Promise<UserInfo | undefined> {
+        return this.barmaliniUserConfigured() ? this.getById(config.barmalini.userId) : undefined;
+    }
+
+    createBarmaliniPassword(): string {
+        const date = new Date();
+        const dateStr = date.toISOString();
+        return aesEncryptToBase64(dateStr, config.barmalini.key);
+    }
+
+    isValidBarmaliniPassword(password: string): boolean {
+        try {
+            const dateStr = aesDecryptFromBase64(password, config.barmalini.key);
+            const date = new Date(dateStr);
+            // not older than 1 hour
+            return Math.abs(date.getTime() - Date.now()) < 60 * 60 * 1000;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    getUsernameSuggestions(usernamePrefix: string): string[] {
+        const usernames = this.userCache.getUsernameSuggestion(usernamePrefix);
+        return usernames.map((item) => {
+            return item.v;
+        });
     }
 }

@@ -1,10 +1,11 @@
 import {DomHandler, DomHandlerOptions, Parser, ParserOptions} from 'htmlparser2';
-import { Document, Element, ChildNode } from 'domhandler';
-import { escape as htmlEscape } from 'html-escaper';
+import {ChildNode, Document, Element} from 'domhandler';
+import {escape as htmlEscape} from 'html-escaper';
 import escapeHTML from 'escape-html';
 import Url from 'url-parse';
 import qs from 'qs';
-import {urlRegex, urlRegexExact} from './urlregex';
+import {mentionsRegex, urlRegex, urlRegexExact} from './regexprs';
+import {MediaHostingConfig} from '../config';
 
 export type ParseResult = {
     text: string;
@@ -29,12 +30,16 @@ export default class TheParser {
     // Content will be re-parsed and saved on access when this version changes.
     static readonly VERSION = 2;
 
-    constructor() {
+    private readonly mediaHostingConfig: MediaHostingConfig;
+
+    constructor(mediaHosting: MediaHostingConfig) {
+        this.mediaHostingConfig = mediaHosting;
         this.allowedTags = {
             a: (node) => this.parseA(node),
             img: (node) => this.parseImg(node),
             irony: (node) => this.parseIrony(node),
             spoiler: (node) => this.parseSpoiler(node),
+            expand: (node) => this.parseExpand(node),
             video: (node) => this.parseVideo(node),
             blockquote: true,
             b: true,
@@ -51,22 +56,27 @@ export default class TheParser {
     }
 
     parse(text: string): ParseResult {
-        // strip newlines from the beginning and end
-        text = text.replace(/^[\r\n]+|[\r\n]+$/g, '');
+        // strip non-printable characters from the beginning and the end (including newlines and spaces)
+        // see https://stackoverflow.com/questions/1176904/how-to-remove-all-non-printable-characters-in-a-string
+        // eslint-disable-next-line no-control-regex
+        text = text.replace(/^[\x00-\x20\x7F-\xA0\xAD]+|[\x00-\x20\x7F-\xA0\xAD]+$/ug, '');
 
         const doc = this.parseDocument(text, {
             decodeEntities: false
         });
 
-        return this.parseChildNodes(doc.childNodes);
+        const parseResult = this.parseChildNodes(doc.childNodes);
+        parseResult.mentions = [...new Set(parseResult.mentions)];
+        return parseResult;
     }
 
     private parseChildNodes(doc: ChildNode[]): ParseResult {
         const p = {text: '', mentions: [], urls: [], images: []};
-        let prevBQ = false; // if previous node was blockquote
+        let prevIsBlock = false; // if previous node was block tag
+        const blockTags = ['blockquote', 'expand'];
         for (let node of doc) {
-            if (prevBQ && node.type === 'text') {
-                // remove a single newline after blockquote, allow only a single one if multiple were present
+            if (prevIsBlock && node.type === 'text') {
+                // remove a single newline after block tags, allow only a single one if multiple were present
                 node = {
                     ...node,
                     data: node.data.replace(/^(\r?\n|[\r\n])(\r?\n|[\r\n])?(\r?\n|[\r\n])*/, '$2')
@@ -78,7 +88,7 @@ export default class TheParser {
             p.mentions.push(...res.mentions);
             p.urls.push(...res.urls);
             p.images.push(...res.images);
-            prevBQ = node.type === 'tag' && node.tagName.toLowerCase() === 'blockquote';
+            prevIsBlock = node.type === 'tag' && blockTags.includes(node.tagName.toLowerCase());
         }
         return p;
     }
@@ -106,34 +116,55 @@ export default class TheParser {
         }
 
         if (node.type === 'directive') {
-            return escapeHTML(`<${node.data}>`);
+            return {text: escapeHTML(`<${node.data}>`), mentions: [], urls: [], images: []};
         }
 
         if (node.type === 'comment') {
-            return escapeHTML(`<!-- ${node.data} -->`);
+            return {text: escapeHTML(`<!--${node.data}-->`), mentions: [], urls: [], images: []};
         }
 
         return { text: '', mentions: [], urls: [], images: [] };
     }
 
-    private parseText(text: string): ParseResult {
+    private extractMentions(text: string): { type: 'text' | 'mention', data: string }[] {
+        const tokens: { type: 'text' | 'mention', data: string }[] = [];
 
-        const tokens: { type: string; data: string }[] = [];
+        let sText = text;
+        mentionsRegex.lastIndex = 0;
+        let match = mentionsRegex.exec(sText);
+        while (match) {
+            const mention = match[0];
+            const pText = sText.substring(0, match.index);
+            if (pText) {
+                tokens.push({type: 'text', data: pText});
+            }
+            sText = sText.substring(match.index + mention.length);
+            tokens.push({ type: 'mention', data: match[1] });
+            mentionsRegex.lastIndex = 0;
+            match = mentionsRegex.exec(sText);
+        }
+        if (sText) {
+            tokens.push({ type: 'text', data: sText });
+        }
+        return tokens;
+    }
+
+    private parseText(text: string): ParseResult {
+        const tokens: { type: 'text' | 'url' | 'mention'; data: string }[] = [];
 
         let sText = text;
         urlRegex.lastIndex = 0;
         let match = urlRegex.exec(sText);
         while (match) {
             const url = match[0];
-            const pText = sText.substring(0, match.index);
-            tokens.push({ type: 'text', data: pText });
+            tokens.push(...this.extractMentions(sText.substring(0, match.index)));
             sText = sText.substring(match.index + url.length);
             tokens.push({ type: 'url', data: url });
             urlRegex.lastIndex = 0; //match.index + url.length;
 
             match = urlRegex.exec(sText);
         }
-        tokens.push({ type: 'text', data: sText });
+        tokens.push(...this.extractMentions(sText));
 
         const mentions = [];
         const urls = [];
@@ -141,15 +172,13 @@ export default class TheParser {
         let escaped = tokens
             .map((token) => {
                 if (token.type === 'text') {
-                    // check for mentions
-                    const mentionRes = token.data.match(/\B(?:@|\/u\/)([a-zа-яе0-9_-]+)/gi);
-                    if (mentionRes) {
-                        mentions.push(...mentionRes);
-                    }
                     return htmlEscape(token.data);
                 } else if (token.type === 'url') {
                     urls.push(token.data);
                     return this.processUrl(token.data);
+                } else if (token.type === 'mention') {
+                    mentions.push(token.data.toLowerCase());
+                    return `<a href="${encodeURI(`/u/${token.data}`)}" target="_blank" class="mention">${htmlEscape(token.data)}</a>`;
                 }
             })
             .join('');
@@ -181,7 +210,7 @@ export default class TheParser {
     }
 
     processVideo(url: Url<string>) {
-        if (url.pathname.match(/\.(mp4|webm)$/)) {
+        if (url.pathname.match(/\.(mp4|webm)(\/raw)?$/)) {
             return this.renderVideoTag(url.toString(), false);
         }
 
@@ -275,6 +304,9 @@ export default class TheParser {
         }
 
         const result = this.parseChildNodes(node.children);
+        if (result.urls.length > 0 || result.mentions.length > 0) {
+            return result;
+        }
         const text = `<a href="${encodeURI(decodeURI(url))}" target="_blank">${result.text}</a>`;
 
         return { ...result, text, urls: [ ...result.urls, url ] } ;
@@ -301,20 +333,30 @@ export default class TheParser {
     renderVideoTag(url: string, loop: boolean) {
         const imgurPoster = () => {
             const match = url.match(/https?:\/\/i.imgur.com\/([^.]+).mp4$/);
-            return match && `https://i.imgur.com/${encodeURI(match[1])}.jpg`;
+            return match && [`https://i.imgur.com/${encodeURI(match[1])}.jpg`, url];
         };
         const idiodPoster = () => {
             const match = url.match(/https?:\/\/idiod.video\/([^.]+\.mp4)$/);
-            return match && `https://idiod.video/preview/${encodeURI(match[1])}`;
+            return match && [`https://idiod.video/preview/${encodeURI(match[1])}`,
+                `https://idiod.video/${encodeURI(match[1])}`];
+        };
+        const orbitarMediaPoster = () => {
+            if (url.startsWith(this.mediaHostingConfig.url)) {
+                const match = url.match(/.*\/([^.]+\.mp4)(\/raw)?$/);
+                return match && [`${this.mediaHostingConfig.url}/preview/${encodeURI(match[1])}`,
+                    `${this.mediaHostingConfig.url}/${encodeURI(match[1])}/raw`];
+            }
         };
         const dumpVideoPoster = () => {
             const match = url.match(/https?:\/\/dump.video\/i\/([^.]+)\.mp4$/);
-            return match && `https://dump.video/i/${encodeURI(match[1])}.jpg`;
+            return match && [`https://dump.video/i/${encodeURI(match[1])}.jpg`,
+                `https://dump.video/i/${encodeURI(match[1])}.mp4`];
         };
-        const posterUrl = imgurPoster() || idiodPoster() || dumpVideoPoster();
+        const posterUrl = imgurPoster() || idiodPoster() || dumpVideoPoster() || orbitarMediaPoster();
         if (posterUrl) {
+            const [poster, video] = posterUrl;
             return `<a class="video-embed" href="${encodeURI(url)}" target="_blank">` +
-                `<img src="${encodeURI(posterUrl)}" alt="" data-video="${encodeURI(url)}" data-loop="${loop}"/></a>`;
+                `<img src="${encodeURI(poster)}" alt="" data-video="${encodeURI(video)}"${loop?' data-loop="true"':''}/></a>`;
         }
         return `<video ${loop ? 'loop=""' : ''} preload="metadata" controls="" width="500"><source src="${encodeURI(url)}" type="video/mp4"></video>`;
     }
@@ -329,6 +371,15 @@ export default class TheParser {
         const result = this.parseChildNodes(node.children);
         const text = `<span class="spoiler">${result.text}</span>`;
         return { ...result, text };
+    }
+
+    parseExpand(node: Element): ParseResult {
+        const title = node.attribs['title'] || 'Открой меня';
+
+        const result = this.parseChildNodes(node.children);
+        const text = `<details class="expand"><summary>${htmlEscape(title)}</summary>${result.text}<div role="button"></div></details>`;
+
+        return { ...result, text } ;
     }
 
     validUrl(url: string) {

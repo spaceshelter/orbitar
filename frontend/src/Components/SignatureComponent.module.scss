@@ -2,8 +2,8 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 14px;
-  line-height: 14px;
+  font-size: 13px;
+  line-height: 13px;
   margin-bottom: 8px;
   color: var(--fgSoftest);
   >a {
@@ -23,9 +23,9 @@
   }
 
   .username {
-    color: var(--fgMedium);
+    color: var(--fgSoftest);
     &:before {
-      color: var(--fgMedium);
+      color: var(--fgSoftest);
     }
     &:hover {
       color: var(--primary);
@@ -35,7 +35,7 @@
   .toggleHistory {
     border: none;
     background: none;
-    font-size: 14px;
+    font-size: 13px;
     margin: 0;
     padding: 0;
     color: var(--fgSoftest);

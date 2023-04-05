@@ -89,7 +89,9 @@ const FeedPage = observer(() => {
                     {posts.map(post => <PostComponent key={post.id} post={post} showSite={siteInfo?.site !== post.site} onChange={updatePost} autoCut={true} />)}
                 </div>}
 
-                <Paginator page={page} pages={pages} base={baseRoute} />
+                <div className={styles.paginatorContainer}>
+                    <Paginator page={page} pages={pages} base={baseRoute} />
+                </div>
             </div>
         </div>
     );

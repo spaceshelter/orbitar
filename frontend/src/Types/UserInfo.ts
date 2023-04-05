@@ -23,3 +23,11 @@ export type UserProfileInfo = UserInfo & {
     bio_html: string;
 };
 
+export type BarmaliniAccessResult = {
+    login: string;
+    password: string;
+};
+
+export type UsernameSuggestResult = {
+    usernames: string[];
+};

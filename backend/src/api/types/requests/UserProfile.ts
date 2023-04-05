@@ -27,11 +27,15 @@ export type TrialProgressDebugInfo = {
 
 export type UserKarmaResponse = {
     effectiveKarma: number;
+    effectiveKarmaUserRating: number;
+    effectiveKarmaContentRating: number;
     senatePenalty: number;
     activeKarmaVotes: Record<string, number>;
     postRatingBySubsite: Record<string, number>;
     commentRatingBySubsite: Record<string, number>;
     trialProgress: TrialProgressDebugInfo;
+    totalNormalizedContentRating: number;
+    contentVotersNum: number
 };
 
 /* see UserRestrictions */
@@ -64,4 +68,11 @@ export type UserSaveGenderRequest = {
 
 export type UserSaveGenderResponse = {
     gender: UserGender;
+};
+
+export type BarmaliniPasswordRequest = Record<string, unknown>;
+
+export type BarmaliniPasswordResponse = {
+    login: string;
+    password: string;
 };

@@ -18,6 +18,7 @@ import './index.scss';
 import 'react-toastify/dist/ReactToastify.css';
 import {ReactComponent as MonsterIcon} from './Assets/monster_large.svg';
 import {ReactComponent as MonsterIconNy} from './Assets/monster_large_ny.svg';
+import {ReactComponent as SpoilerMask} from './Assets/spoiler-mask.svg';
 import {useTheme} from './Theme/ThemeProvider';
 import {SiteSidebar} from './Components/SiteSidebar';
 import WatchPage from './Pages/WatchPage';
@@ -108,6 +109,7 @@ const ReadyContainer = observer(() => {
             {isNewYear && <div className={classNames(styles.monster, styles.monsterNy)}><MonsterIconNy /></div>}
             {!isNewYear && <div className={styles.monster}><MonsterIcon /></div>}
             <ToastContainer theme={theme as Theme} />
+            <SpoilerMask/>
         </>
     );
 });
@@ -127,6 +129,7 @@ const Ready = observer(() => {
                     <Route path="u/:username">
                         <Route path="" element={<UserPage />} />
                         <Route path=":page" element={<UserPage />} />
+                        <Route path="settings" element={<MonsterIcon />} />
                     </Route>
                     <Route path="profile">
                         <Route path="" element={<UserPage />} />

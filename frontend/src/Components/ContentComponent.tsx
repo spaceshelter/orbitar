@@ -1,11 +1,19 @@
 import React, {useEffect, useRef, useState} from 'react';
 import classNames from 'classnames';
 import styles from './ContentComponent.module.scss';
+import {createObserverService, observeOnHidden} from '../Services/ObserverService';
 
 interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
     content: string;
     autoCut?: boolean;
     lowRating?: boolean;
+}
+
+declare global {
+    interface Window {
+        YT: typeof YT;
+        onYouTubeIframeAPIReady: () => void;
+    }
 }
 
 function updateContent(div: HTMLDivElement) {
@@ -27,9 +35,15 @@ function updateContent(div: HTMLDivElement) {
     div.querySelectorAll('span.spoiler').forEach(spoiler => {
         updateSpoiler(spoiler as HTMLSpanElement);
     });
+
+    div.querySelectorAll('details.expand').forEach(expand => {
+        updateExpand(expand as HTMLDetailsElement);
+    });
 }
 
 function updateVideo(video: HTMLVideoElement) {
+    video.addEventListener('play', () => stopInnerVideos(document.body, video));
+    observeOnHidden(video, () => stopVideo(video));
     if (video.dataset.aspectRatioProcessed) {
         return;
     }
@@ -51,16 +65,42 @@ function processYtEmbed(img: HTMLImageElement) {
         img.addEventListener('click', (e) => {
             e.preventDefault();
             const iframe = document.createElement('iframe');
-            iframe.src = ytUrl + '?autoplay=1';
+            iframe.src = ytUrl + (ytUrl.indexOf('?') === -1 ? '?' : '&') + 'autoplay=1&enablejsapi=1';
             iframe.width = img.width.toString();
             iframe.height = img.height.toString();
             iframe.allowFullscreen = true;
             iframe.frameBorder = '0';
             iframe.allow = 'autoplay; clipboard-write; encrypted-media; picture-in-picture';
+            iframe.classList.add('youtube-embed');
             img.parentElement?.replaceWith(iframe);
+            loadYTPlayer(iframe);
+            observeOnHidden(iframe, () => stopVideo(iframe));
         });
     }
     return !!ytUrl;
+}
+
+function loadYTPlayer(iframe: HTMLIFrameElement) {
+    const attachYTPlayer = () => {
+        new YT.Player(iframe as HTMLIFrameElement,    {
+            events: {
+                onStateChange: (event) => {
+                    if (event.data === YT.PlayerState.PLAYING) {
+                        stopInnerVideos(document.body, iframe);
+                    }
+                },
+            }
+        });
+    };
+
+    if (window.YT) {
+        attachYTPlayer();
+    } else {
+        const tag = document.createElement('script');
+        tag.src = 'https://www.youtube.com/player_api';
+        window.onYouTubeIframeAPIReady = attachYTPlayer;
+        document.head.append(tag);
+    }
 }
 
 /**
@@ -81,6 +121,8 @@ function processVideoEmbed(img: HTMLImageElement) {
             video.style.width = img.width.toString() + 'px';
             video.style.height = img.height.toString() + 'px';
             img.parentElement?.replaceWith(video);
+            video.addEventListener('play', () => stopInnerVideos(document.body, video));
+            observeOnHidden(video, () => stopVideo(video));
         });
     }
     return !!videoUrl;
@@ -131,6 +173,48 @@ function updateSpoiler(spoiler: HTMLSpanElement) {
     spoiler.addEventListener('click', spoilerOnClickHandler);
 }
 
+function updateExpand(expand: HTMLDetailsElement) {
+    expand.addEventListener('toggle', () => {
+        if (!expand.open) {
+            stopInnerVideos(expand);
+        }
+    });
+
+    const expandClose = expand.querySelector('div[role="button"]');
+
+    if (expandClose) {
+        expandClose.addEventListener('click', () => {
+            expand.open = false;
+        });
+    }
+}
+
+function stopVideo(el: HTMLVideoElement | HTMLIFrameElement) {
+    if (el instanceof HTMLVideoElement) {
+        (el as HTMLVideoElement).pause();
+        return;
+    }
+    if (el instanceof HTMLIFrameElement && el.classList.contains('youtube-embed')) {
+        (el as HTMLIFrameElement).contentWindow?.postMessage(
+            '{"event":"command","func":"pauseVideo","args":""}', '*'
+        );
+        return;
+    }
+}
+
+function stopInnerVideos(el: Element, exept?: HTMLVideoElement | HTMLIFrameElement) {
+    el.querySelectorAll('video').forEach(video => {
+        if (video === exept)
+            return;
+        stopVideo(video);
+    });
+    el.querySelectorAll('iframe.youtube-embed').forEach(iframe => {
+        if (iframe === exept)
+            return;
+        stopVideo(iframe as HTMLIFrameElement);
+    });
+}
+
 export default function ContentComponent(props: ContentComponentProps) {
     const contentDiv = useRef<HTMLDivElement>(null);
     const [cut, setCut] = useState(false);
@@ -141,6 +225,7 @@ export default function ContentComponent(props: ContentComponentProps) {
             return;
         }
 
+        createObserverService();
         updateContent(content);
 
         if (props.autoCut) {

@@ -4,6 +4,7 @@ import {APIRequest, APIResponse, joiFormat, joiUsername, validate} from './ApiMi
 import Joi from 'joi';
 import {Logger} from 'winston';
 import {
+    BarmaliniPasswordRequest, BarmaliniPasswordResponse,
     UserKarmaResponse,
     UserProfileRequest,
     UserProfileResponse,
@@ -20,6 +21,7 @@ import {UserCommentsRequest, UserCommentsResponse} from './types/requests/UserCo
 import {UserProfileEntity} from './types/entities/UserEntity';
 import VoteManager from '../managers/VoteManager';
 import {UserGender, UserRatingBySubsite} from '../managers/types/UserInfo';
+import {SuggestUsernameRequest, SuggestUsernameResponse} from './types/requests/UsernameSuggest';
 
 // constant variables
 import {ERROR_CODES} from './utils/error-codes';
@@ -76,6 +78,12 @@ export default class UserController {
             keyGenerator: (req) => String(req.session.data?.userId)
         });
 
+        const suggestUsernameLimiter = rateLimit({
+            windowMs: 1000 * 60 * 5,
+            max: 100,
+            keyGenerator: (req) => String(req.session.data?.userId)
+        });
+
         this.router.post('/user/profile', validate(profileSchema), (req, res) => this.profile(req, res));
         this.router.post('/user/posts', userCommentsAndPostsLimiter, validate(postsOrCommentsSchema), (req, res) => this.posts(req, res));
         this.router.post('/user/comments', userCommentsAndPostsLimiter, validate(postsOrCommentsSchema), (req, res) => this.comments(req, res));
@@ -84,6 +92,8 @@ export default class UserController {
         this.router.post('/user/restrictions', validate(profileSchema), (req, res) => this.restrictions(req, res));
         this.router.post('/user/savebio', settingsSaveLimiter, validate(bioSchema), (req, res) => this.saveBio(req, res));
         this.router.post('/user/savegender', settingsSaveLimiter, validate(genderSchema), (req, res) => this.saveGender(req, res));
+        this.router.post('/user/barmalini', settingsSaveLimiter, (req, res) => this.barmaliniPassword(req, res));
+        this.router.post('/user/suggest-username', suggestUsernameLimiter, (req, res) => this.suggestUsername(req, res));
     }
 
     async profile(request: APIRequest<UserProfileRequest>, response: APIResponse<UserProfileResponse>) {
@@ -234,18 +244,25 @@ export default class UserController {
                 return response.error(ERROR_CODES.NOT_FOUND, 'User not found', 404);
             }
 
+            const effectiveKarmaDebug = await this.userManager.getUserEffectiveKarma(profile.id);
             const restrictions = await this.userManager.getUserRestrictions(profile.id);
+            const {rating: totalNormalizedContentRating, voters: contentVotersNum} =
+                await this.userManager.getNormalizedUserContentRating(profile.id);
             const ratingBySubsite: UserRatingBySubsite = await this.userManager.getUserRatingBySubsite(profile.id);
             const activeKarmaVotes = await this.userManager.getActiveKarmaVotes(profile.id);
             const trialProgress = await this.userManager.getTrialProgressRaw(profile.id);
 
             return response.success({
-                effectiveKarma: restrictions.effectiveKarma,
+                effectiveKarma: effectiveKarmaDebug.effectiveKarma,
+                effectiveKarmaUserRating: effectiveKarmaDebug.userRating,
+                effectiveKarmaContentRating: effectiveKarmaDebug.contentRating,
                 senatePenalty: restrictions.senatePenalty,
                 activeKarmaVotes,
                 postRatingBySubsite: ratingBySubsite.postRatingBySubsite,
                 commentRatingBySubsite: ratingBySubsite.commentRatingBySubsite,
-                trialProgress
+                trialProgress,
+                totalNormalizedContentRating,
+                contentVotersNum
             });
         }
         catch (error) {
@@ -329,6 +346,48 @@ export default class UserController {
         } catch (error) {
             this.logger.error('Could not update user bio', { error });
             return response.error('error', `Could not update bio`, 500);
+        }
+    }
+
+    async barmaliniPassword(request: APIRequest<BarmaliniPasswordRequest>, response: APIResponse<BarmaliniPasswordResponse>) {
+        if (!this.userManager.barmaliniUserConfigured()) {
+            return response.error('error', `Barmalini is not configured`, 500);
+        }
+
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+        const userId = request.session.data.userId;
+        try {
+            const restrictions = await this.userManager.getUserRestrictions(userId);
+            if (this.userManager.isBarmaliniUser(userId) || !restrictions.canVoteKarma) {
+                return response.error('error', `Not enough permissions`, 403);
+            }
+
+            const barmaliniUser = await this.userManager.getBarmaliniUser();
+
+            return response.success({
+                login: barmaliniUser.username,
+                password: this.userManager.createBarmaliniPassword()
+            });
+        }
+        catch (error) {
+            this.logger.error('Could not create barmalini password', { error });
+            this.logger.error(error);
+            return response.error('error', `Could not create barmalini password`, 500);
+        }
+    }
+
+    suggestUsername(request: APIRequest<SuggestUsernameRequest>, response: APIResponse<SuggestUsernameResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+        const {start} = request.body;
+        try {
+            return response.success({usernames: this.userManager.getUsernameSuggestions(start)});
+        } catch (error) {
+            this.logger.error('Could not get usernames suggestions', { error });
+            return response.error('error', `Could not get usernames suggestions`, 500);
         }
     }
 }

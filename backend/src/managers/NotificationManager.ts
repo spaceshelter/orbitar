@@ -137,13 +137,8 @@ export default class NotificationManager {
         this.sendWebPush(forUserId, notification).then().catch();
     }
 
-    async sendAnswerNotify(parentCommentId: number, byUserId: number, postId: number, commentId?: number) {
-        const commentRaw = await this.commentRepository.getComment(parentCommentId);
-        if (!commentRaw) {
-            return false;
-        }
-
-        if (commentRaw.author_id === byUserId) {
+    async sendAnswerNotify(forUserId: number, byUserId: number, postId: number, commentId?: number) {
+        if (forUserId === byUserId) {
             return false;
         }
 
@@ -157,16 +152,15 @@ export default class NotificationManager {
             }
         };
 
-        await this.sendNotification(commentRaw.author_id, notification);
+        await this.sendNotification(forUserId, notification);
     }
 
     async sendMentionNotify(mention: string, byUserId: number, postId: number, commentId?: number) {
         let username;
         if (mention.substring(0, 1) === '@') {
             username = mention.substring(1);
-        }
-        else if (mention.substring(0, 3) === '/u/') {
-            username = mention.substring(3);
+        } else {
+            username = mention;
         }
 
         if (!username) {
