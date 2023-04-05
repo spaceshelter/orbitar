@@ -11,6 +11,7 @@ import PostLink from './PostLink';
 import moment from 'moment';
 import {useRestrictions} from '../API/use/useRestrictions';
 import {UserProfileResult} from '../API/UserAPIHelper';
+import classNames from 'classnames';
 
 type UserProfileKarmaProps = {
     username: string;
@@ -134,17 +135,18 @@ export const UserProfileKarma = (props: UserProfileKarmaProps) => {
     }
 
     const showTrialProgress = props.profile?.trialProgress !== undefined && (hasRestrictions || debug);
+    const negativeTrialProgress = props.profile?.trialProgress !== undefined && props.profile?.trialProgress < 0;
 
     return (
         <>
             {(isOwnProfile || showTrialProgress) && <div className={styles.info}>
                 {showTrialProgress && props.profile?.trialProgress &&
-                    <div className={styles.trialProgress}>
-                        <CircularProgressbar value={props?.profile.trialProgress * 100}
+                    <div className={classNames(styles.trialProgress, {[styles.negativeTrialProgress]:negativeTrialProgress})}>
+                        <CircularProgressbar value={Math.abs(props?.profile.trialProgress) * 100}
                                              text={`${Math.round(props.profile?.trialProgress * 100)}%`}/>
                     </div>}
                 <div>
-                    {showTrialProgress && <p>← Прогресс к полным правам.</p>}
+                    {showTrialProgress && <p>← {negativeTrialProgress ? 'Прогресс к потере прав.' : 'Прогресс к полным правам.'}</p>}
                     {isOwnProfile && <>
                         <p>Это все еще сырая версия саморегуляции, работающая по механизму,
                             <PostLink post={{id: 781, site: 'dev'}}> описанному тут</PostLink>.</p>

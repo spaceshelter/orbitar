@@ -26,6 +26,12 @@ div.info {
   stroke: var(--primary);
 }
 
+.negativeTrialProgress {
+  :global(.CircularProgressbar .CircularProgressbar-path) {
+    stroke: var(--danger);
+  }
+}
+
 :global(.CircularProgressbar .CircularProgressbar-trail) {
   stroke: var(--dim3);
 }
