@@ -62,6 +62,12 @@ test('orbitar video embed', () => {
     );
 });
 
+test('raw orbitar video embed', () => {
+    expect(p.parse('https://orbitar.media/8feuw2.mp4/raw').text).toEqual(
+        `<a class="video-embed" href="https://orbitar.media/8feuw2.mp4/raw" target="_blank"><img src="https://orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://orbitar.media/8feuw2.mp4/raw"/></a>`
+    );
+});
+
 test('mp4 video element', () => {
     expect(p.parse('<video src="https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_1MB.mp4">').text).toEqual(
         `<video  preload="metadata" controls="" width="500"><source src="https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_1MB.mp4" type="video/mp4"></video>`
