@@ -210,7 +210,7 @@ export default class TheParser {
     }
 
     processVideo(url: Url<string>) {
-        if (url.pathname.match(/\.(mp4|webm)$/)) {
+        if (url.pathname.match(/\.(mp4|webm)(\/raw)?$/)) {
             return this.renderVideoTag(url.toString(), false);
         }
 
