@@ -9,6 +9,8 @@ import {BarmaliniAccessResult, UserGender} from '../Types/UserInfo';
 import {toast} from 'react-toastify';
 import {observer} from 'mobx-react-lite';
 import styles from './UserProfileSettings.module.scss';
+import classNames from 'classnames';
+import {confirmAlert} from 'react-confirm-alert';
 
 type UserProfileSettingsProps = {
   onChange: any;
@@ -27,12 +29,41 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
 
   let gender = props.gender;
 
-  const handleLogout = (e: React.MouseEvent) => {
-    e.preventDefault();
-    api.auth.signOut().then(() => {
-      navigate(location.pathname);
-    });
-  };
+    const confirmWrapper = (message: string, callback: () => void) => (e: React.MouseEvent) => {
+        e.preventDefault();
+        confirmAlert({
+            title: 'Астанавитесь! Подумайте!',
+            message,
+            buttons: [
+                {
+                    label: 'Да!',
+                    onClick: callback
+                },
+                {
+                    label: 'Отмена',
+                    className: 'cancel'
+                }
+            ],
+            overlayClassName: 'orbitar-confirm-overlay'
+        });
+    };
+
+  const handleLogout = confirmWrapper(
+      'Вы действительно хотите выйти? Текущая сессия будет сброшена. Вы будете вынуждены войти в аккаунт заново.', () => {
+          api.auth.signOut().then(() => {
+              navigate(location.pathname);
+          });
+      });
+
+  const handleResetSessions = confirmWrapper(
+      `Вы действительно хотите сбросить пароль и все сессии?
+      Вы будете разлогинены на ВСЕХ устройствах, текущий пароль больше не будет работать.
+      Вам нужно будет сменить пароль (через почту) и войти в аккаунт заново.`, () => {
+          api.auth.dropPasswordAndSessions().then(() => {
+              navigate(location.pathname);
+          });
+      }
+  );
 
   const handleGenderChange = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -66,9 +97,13 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
                         )
                     } </button>}
                 {<ThemeToggleComponent dynamic={true} buttonLabel="Сменить тему"/>}
-                {<button className={buttonStyles.logoutButton} onClick={handleLogout}><LogoutIcon/> Выйти </button>}
             </div>
             {props.barmaliniAccess && <BarmaliniAccess/>}
+            <div>
+            {<button className={classNames(buttonStyles.settingsButton, styles.dropSessions)} onClick={handleResetSessions}>
+                <span className={classNames('i i-ghost' )}/> Сброс пароля и сессий </button>}
+            {<button className={buttonStyles.logoutButton} onClick={handleLogout}><LogoutIcon/> Выйти </button>}
+            </div>
         </>
     );
 }
@@ -129,7 +164,7 @@ const BarmaliniAccess = observer(() => {
                     &nbsp;<button className={buttonStyles.linkButton} onClick={handleCopy}>скопировать</button>
                 </div>
                 <div><span className={styles.label}>Счастливого бармаления. Пароль истекает через час.</span></div>
-            </div> || <button className={buttonStyles.linkButton} onClick={handleShowPassword}>
+            </div> || <button className={buttonStyles.settingsButton} onClick={handleShowPassword}>
                 Бармалинить</button>}
         </div>
     );
