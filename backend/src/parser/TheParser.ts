@@ -192,6 +192,7 @@ export default class TheParser {
 
         const res =
             this.processYoutube(pUrl) ||
+            this.processVimeo(pUrl) ||
             this.processImage(pUrl) ||
             this.processVideo(pUrl);
         if (res !== false) {
@@ -272,6 +273,51 @@ export default class TheParser {
 
         return `<a class="youtube-embed" href="${encodeURI(urlStr)}" target="_blank">`+
             `<img src="${encodeURI(thumbnail)}" alt="" data-youtube="${encodeURI(embed)}"/></a>`;
+    }
+
+    processVimeo(url: Url<string>) {
+        let videoId = '';
+        let startTime = 0;
+
+        const parseTime = (time: string) => {
+            const groups = time.match(/^(\d+h)?(\d+m)?(\d+s?)?$/);
+            if (!groups) {
+                return 0;
+            }
+            const h = parseInt(groups[1], 10) || 0;
+            const m = parseInt(groups[2], 10) || 0;
+            const s = parseInt(groups[3], 10) || 0;
+            return h * 3600 + m * 60 + s;
+        };
+
+        if (
+            (url.host === 'vimeo.com' || url.host === 'www.vimeo.com') &&
+            url.pathname
+        ) {
+            videoId = url.pathname.substring(1);
+            if (url.hash) {
+                const q = qs.parse(url.hash.substring(1));
+                if (typeof q.t === 'string') {
+                    startTime = parseTime(q.t);
+                }
+            }
+        }
+        else {
+            return false;
+        }
+
+        if (!videoId) {
+            return false;
+        }
+
+        let embed = `https://player.vimeo.com/video/${videoId}`;
+        if (startTime) {
+            embed += '#t=' + startTime;
+        }
+
+        return `<iframe class="vimeo-embed" src="${encodeURI(embed)}" ` +
+        `width="480" height="360" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen>` +
+        `</iframe>`;
     }
 
     parseAllowedTag(node: Element): ParseResult {

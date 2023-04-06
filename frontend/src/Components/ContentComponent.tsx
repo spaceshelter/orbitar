@@ -2,6 +2,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import classNames from 'classnames';
 import styles from './ContentComponent.module.scss';
 import {createObserverService, observeOnHidden} from '../Services/ObserverService';
+import * as Vimeo from '@vimeo/player';
 
 interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
     content: string;
@@ -11,6 +12,7 @@ interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
 
 declare global {
     interface Window {
+        Vimeo: typeof Vimeo;
         YT: typeof YT;
         onYouTubeIframeAPIReady: () => void;
     }
@@ -30,6 +32,10 @@ function updateContent(div: HTMLDivElement) {
 
     div.querySelectorAll('video').forEach(video => {
         updateVideo(video);
+    });
+
+    div.querySelectorAll('iframe.vimeo-embed').forEach(iframe => {
+        updateVimeo(iframe as HTMLIFrameElement);
     });
 
     div.querySelectorAll('span.spoiler').forEach(spoiler => {
@@ -128,6 +134,31 @@ function processVideoEmbed(img: HTMLImageElement) {
     return !!videoUrl;
 }
 
+function updateVimeo(iframe: HTMLIFrameElement) {
+
+    loadVimeoPlayer(iframe);
+    observeOnHidden(iframe, () => stopVideo(iframe));
+
+}
+
+function loadVimeoPlayer(iframe: HTMLIFrameElement) {
+    const attachVimeoPlayer = () => {
+        const player = new window.Vimeo.Player(iframe);
+        player.on('play', function() {
+            stopInnerVideos(document.body, iframe);
+        });
+    };
+
+    if (window.Vimeo) {
+        attachVimeoPlayer();
+    } else {
+        const tag = document.createElement('script');
+        tag.src = 'https://player.vimeo.com/api/player.js';
+        tag.onload = () => {attachVimeoPlayer();};
+        document.head.append(tag);
+    }
+}
+
 function updateImg(img: HTMLImageElement) {
     if (processYtEmbed(img) || processVideoEmbed(img)) {
         return;
@@ -200,6 +231,12 @@ function stopVideo(el: HTMLVideoElement | HTMLIFrameElement) {
         );
         return;
     }
+    if (el instanceof HTMLIFrameElement && el.classList.contains('vimeo-embed')) {
+        (el as HTMLIFrameElement).contentWindow?.postMessage(
+            '{"method":"pause"}', '*'
+        );
+        return;
+    }
 }
 
 function stopInnerVideos(el: Element, exept?: HTMLVideoElement | HTMLIFrameElement) {
@@ -209,6 +246,11 @@ function stopInnerVideos(el: Element, exept?: HTMLVideoElement | HTMLIFrameEleme
         stopVideo(video);
     });
     el.querySelectorAll('iframe.youtube-embed').forEach(iframe => {
+        if (iframe === exept)
+            return;
+        stopVideo(iframe as HTMLIFrameElement);
+    });
+    el.querySelectorAll('iframe.vimeo-embed').forEach(iframe => {
         if (iframe === exept)
             return;
         stopVideo(iframe as HTMLIFrameElement);
