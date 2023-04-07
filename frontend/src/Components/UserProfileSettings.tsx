@@ -49,7 +49,7 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
     };
 
   const handleLogout = confirmWrapper(
-      'Вы действительно хотите выйти? Текущая сессия будет сброшена. Вы будете вынуждены войти в аккаунт заново.', () => {
+      'Вы действительно хотите выйти? Вы будете вынуждены войти в аккаунт заново.', () => {
           api.auth.signOut().then(() => {
               navigate(location.pathname);
           });
@@ -58,7 +58,7 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
   const handleResetSessions = confirmWrapper(
       `Вы действительно хотите сбросить пароль и все сессии?
       Вы будете разлогинены на ВСЕХ устройствах, текущий пароль больше не будет работать.
-      Вам нужно будет сменить пароль (через почту) и войти в аккаунт заново.`, () => {
+      На почту использованную при регистрации (у вас же всё ещё есть доступ к ней?) придет ссылка для сброса пароля через которую вы сможете войти в аккаунт заново и установить новый пароль.`, () => {
           api.auth.dropPasswordAndSessions().then(() => {
               navigate(location.pathname);
           });
