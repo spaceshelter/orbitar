@@ -182,6 +182,10 @@ export default class AuthController {
         }
 
         const userId = request.session.data.userId;
+        if (this.userManager.isBarmaliniUser(userId)) {
+            return response.error('barmalini-user', 'Barmalini user cannot drop password and sessions');
+        }
+
         try {
             await this.userManager.dropPassword(userId);
             await request.session.destroyAllForCurrentUser();

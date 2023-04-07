@@ -151,7 +151,8 @@ export default class UserController {
                 trialProgress,
                 numberOfPosts,
                 numberOfComments,
-                numberOfInvitesAvailable
+                numberOfInvitesAvailable,
+                isBarmalini: this.userManager.isBarmaliniUser(profileInfo.id)
             });
         } catch (error) {
             this.logger.error('Could not get user profile', {username});

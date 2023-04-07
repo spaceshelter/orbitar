@@ -16,6 +16,7 @@ type UserProfileSettingsProps = {
   onChange: any;
   gender: UserGender;
   barmaliniAccess?: boolean;
+  isBarmalini?: boolean;
 };
 
 export default function UserProfileSettings(props: UserProfileSettingsProps) {
@@ -100,9 +101,9 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
             </div>
             {props.barmaliniAccess && <BarmaliniAccess/>}
             <div>
-            {<button className={classNames(buttonStyles.settingsButton, styles.dropSessions)} onClick={handleResetSessions}>
+            {!props.isBarmalini && <button className={classNames(buttonStyles.settingsButton, styles.dropSessions)} onClick={handleResetSessions}>
                 <span className={classNames('i i-ghost' )}/> Сброс пароля и сессий </button>}
-            {<button className={buttonStyles.logoutButton} onClick={handleLogout}><LogoutIcon/> Выйти </button>}
+                <button className={buttonStyles.logoutButton} onClick={handleLogout}><LogoutIcon/> Выйти </button>
             </div>
         </>
     );
