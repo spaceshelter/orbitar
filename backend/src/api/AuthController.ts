@@ -184,7 +184,7 @@ export default class AuthController {
         const userId = request.session.data.userId;
         try {
             await this.userManager.dropPassword(userId);
-            await request.session.destroyAll();
+            await request.session.destroyAllForCurrentUser();
             return response.success({});
         } catch (err) {
             this.logger.error('Failed to drop password and sessions', {user_id: userId});

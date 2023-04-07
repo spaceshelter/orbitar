@@ -147,7 +147,7 @@ export default class Session {
         this.response.setHeader(Session.SESSION_HEADER, '-');
     }
 
-    async destroyAll() {
+    async destroyAllForCurrentUser() {
         if (!this.id || !this.data?.userId) return;
         const userSessions = sessionsByUser.get(this.data.userId);
         if (userSessions) {
