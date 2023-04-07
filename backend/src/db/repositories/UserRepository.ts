@@ -268,4 +268,8 @@ export default class UserRepository {
             { offset }
         );
     }
+
+    async dropPassword(userId: number) {
+        return this.db.query(`update users set password = '' where user_id = :user_id`, {user_id: userId});
+    }
 }

@@ -1,4 +1,5 @@
 .logoutButton,
+.settingsButton,
 .themeButton {
   background: var(--dim1);
   color: var(--fgSoft);
@@ -12,7 +13,7 @@
   fill: var(--fgSoft);
 }
 
-.logoutButton:hover,
+.logoutButton:hover, .settingsButton:hover,
 .themeButton.dynamic:hover
 {
   fill: var(--fg);

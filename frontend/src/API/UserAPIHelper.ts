@@ -13,6 +13,7 @@ export type UserProfileResult = {
     numberOfPosts: number;
     numberOfComments: number;
     numberOfInvitesAvailable?: number;
+    isBarmalini?: boolean;
 };
 
 export default class UserAPIHelper {

@@ -139,7 +139,11 @@ export const UserPage = observer(() => {
                     {isComments && <UserProfileComments username={user.username} />}
                     {isInvites && <UserProfileInvites username={user.username} onInvitesChange={handleInvitesChange} />}
                     {isKarma && <UserProfileKarma username={user.username} profile={profile} />}
-                    {isSettings && <UserProfileSettings gender={user.gender} onChange={refreshProfile} barmaliniAccess={restrictions?.canVoteKarma} />}
+                    {isSettings && <UserProfileSettings
+                        gender={user.gender} onChange={refreshProfile}
+                        barmaliniAccess={restrictions?.canVoteKarma && !profile.isBarmalini}
+                        isBarmalini={profile.isBarmalini}
+                    />}
                 </div>
             </div>
         );

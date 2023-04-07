@@ -18,6 +18,9 @@ import {
 type SignOutRequest = Record<string, unknown>;
 type SignOutResponse = Record<string, unknown>;
 
+type DropPasswordAndSessionsRequest = Record<string, unknown>;
+type DropPasswordAndSessionsResponse = Record<string, unknown>;
+
 export default class AuthController {
     public router = Router();
     private userManager: UserManager;
@@ -62,6 +65,7 @@ export default class AuthController {
 
         this.router.post('/auth/signin', signInLimiter, validate(signInSchema), (req, res) => this.signin(req, res));
         this.router.post('/auth/reset-password', resetPaswsordLimiter, validate(resetPasswordSchema), (req, res) => this.resetPaswsord(req, res));
+        this.router.post('/auth/drop-password-and-sessions', (req, res) => this.dropPasswordAndSessions(req, res));
         this.router.post('/auth/new-password', resetPaswsordLimiter, validate(newPasswordSchema), (req, res) => this.setNewPassword(req, res));
         this.router.post('/auth/check-reset-password-code', validate(checkResetPasswordCodeSchema), (req, res) => this.checkIfPasswordResetCodeExists(req, res));
         this.router.post('/auth/signout', (req, res) => this.signout(req, res));
@@ -167,6 +171,28 @@ export default class AuthController {
             return response.success({});
         }
         catch (err) {
+            return response.error('unknown', 'Unknown error', 500);
+        }
+    }
+
+    async dropPasswordAndSessions(request: APIRequest<DropPasswordAndSessionsRequest>,
+                                  response: APIResponse<DropPasswordAndSessionsResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+
+        const userId = request.session.data.userId;
+        if (this.userManager.isBarmaliniUser(userId)) {
+            return response.error('barmalini-user', 'Barmalini user cannot drop password and sessions');
+        }
+
+        try {
+            await this.userManager.dropPassword(userId);
+            await request.session.destroyAllForCurrentUser();
+            return response.success({});
+        } catch (err) {
+            this.logger.error('Failed to drop password and sessions', {user_id: userId});
+            this.logger.error(err);
             return response.error('unknown', 'Unknown error', 500);
         }
     }

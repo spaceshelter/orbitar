@@ -25,6 +25,7 @@ type UserProfileResponse = {
     numberOfPosts: number;
     numberOfComments: number;
     numberOfInvitesAvailable?: number;
+    isBarmalini?: boolean;
 };
 type UserProfilePostsRequest = {
     username: string;
