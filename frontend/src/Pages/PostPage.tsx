@@ -1,4 +1,4 @@
-import React, {useEffect, useRef} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import styles from './PostPage.module.css';
 import {Link, useLocation, useParams, useSearchParams} from 'react-router-dom';
 import {CommentInfo, PostInfo, PostLinkInfo} from '../Types/PostInfo';
@@ -14,6 +14,7 @@ export default function PostPage() {
     const [search] = useSearchParams();
     const postId = params.postId ? parseInt(params.postId, 10) : 0;
     const location = useLocation();
+    const [scrolledToComment, setScrolledToComment] = useState<{postId: number, commentId: number}>();
     const {site} = useAppState();
     const containerRef = useRef<HTMLDivElement>(null);
     const unreadOnly = search.get('new') !== null;
@@ -54,16 +55,20 @@ export default function PostPage() {
         }
 
         let scrollToComment: HTMLDivElement | null | undefined;
+        let commentId: number | undefined;
         if (location.hash) {
-            const commentId = parseInt(location.hash.substring(1));
+            commentId = parseInt(location.hash.substring(1));
             scrollToComment = document.querySelector<HTMLDivElement>(`[data-comment-id="${commentId}"]`);
         }
         else if (unreadOnly) {
             // find first new comment
              scrollToComment = document.querySelector<HTMLDivElement>(`.isNew`);
+             commentId = scrollToComment?.dataset.commentId ? parseInt(scrollToComment.dataset.commentId) : undefined;
         }
         // do nothing if element is focused already
-        if(!scrollToComment || scrollToComment.className.indexOf(styles.focusing) >= 0) {
+        if (!scrollToComment || scrollToComment.className.indexOf(styles.focusing) >= 0 ||
+            (scrolledToComment && scrolledToComment.postId === postId && scrolledToComment.commentId === commentId)
+        ) {
             return;
         }
 
@@ -76,6 +81,8 @@ export default function PostPage() {
         containerNode?.classList.add(styles.focusing);
         scrollToComment.classList.add(styles.focused);
         commentBody.classList.add(styles.highlight);
+
+        commentId && setScrolledToComment({postId, commentId});
 
         // do not use `smooth` here - it is too slow and element won't focus into view correctly
         commentBody.scrollIntoView({behavior: 'auto', block: 'start'});
