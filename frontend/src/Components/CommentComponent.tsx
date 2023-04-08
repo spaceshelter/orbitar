@@ -3,7 +3,7 @@ import styles from './CommentComponent.module.scss';
 import RatingSwitch from './RatingSwitch';
 import React, {useMemo, useState} from 'react';
 import {CreateCommentComponentRestricted} from './CreateCommentComponent';
-import ContentComponent from './ContentComponent';
+import ContentComponent, {LARGE_AUTO_CUT} from './ContentComponent';
 import {useAPI} from '../AppState/AppState';
 import {toast} from 'react-toastify';
 import {SignatureComponent} from './SignatureComponent';
@@ -113,7 +113,9 @@ export default function CommentComponent(props: CommentProps) {
                             <HistoryComponent initial={{ content, date: created }} history={{ id: props.comment.id, type: 'comment' }} onClose={toggleHistory} />
                         :
                             <div className={styles.content}>
-                                <ContentComponent className={styles.commentContent} content={content} lowRating={props.comment.rating <= Conf.COMMENT_LOW_RATING_THRESHOLD} autoCut={props.comment.rating <= Conf.COMMENT_LOW_RATING_THRESHOLD} />
+                                <ContentComponent className={styles.commentContent} content={content}
+                                                  lowRating={props.comment.rating <= Conf.COMMENT_LOW_RATING_THRESHOLD || props.comment.vote === -1}
+                                                  autoCut={(props.comment.rating <= Conf.COMMENT_LOW_RATING_THRESHOLD || props.comment.vote === -1) ? LARGE_AUTO_CUT : undefined} />
                             </div>
                     )
                 :

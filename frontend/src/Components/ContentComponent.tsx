@@ -1,11 +1,11 @@
 import React, {useEffect, useRef, useState} from 'react';
 import classNames from 'classnames';
 import styles from './ContentComponent.module.scss';
-import {createObserverService, observeOnHidden} from '../Services/ObserverService';
+import {observeOnHidden} from '../Services/ObserverService';
 
 interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
     content: string;
-    autoCut?: boolean;
+    autoCut?: number;
     lowRating?: boolean;
 }
 
@@ -15,6 +15,9 @@ declare global {
         onYouTubeIframeAPIReady: () => void;
     }
 }
+
+export const LARGE_AUTO_CUT = 650;
+export const SMALL_AUTO_CUT = 200;
 
 function updateContent(div: HTMLDivElement) {
     div.querySelectorAll('img').forEach(img => {
@@ -225,14 +228,25 @@ export default function ContentComponent(props: ContentComponentProps) {
             return;
         }
 
-        createObserverService();
         updateContent(content);
 
-        if (props.autoCut) {
-            const rect = content.getBoundingClientRect();
-            if (rect.height > 1000) {
-                setCut(true);
+        let resizeObserver: ResizeObserver | null = null;
+        const handleResize = (entries: ResizeObserverEntry[]) => {
+            for (const entry of entries) {
+                if (props.autoCut && entry.target === content) {
+                    const rect = entry.contentRect;
+                    if (rect.height > props.autoCut + 250) {
+                        setCut(true);
+                        resizeObserver?.disconnect();
+                        resizeObserver = null;
+                    }
+                }
             }
+        };
+
+        if (props.autoCut) {
+            resizeObserver = new ResizeObserver(handleResize);
+            resizeObserver.observe(content);
         }
 
         if (props.lowRating) {
@@ -246,7 +260,12 @@ export default function ContentComponent(props: ContentComponentProps) {
             }, {once: true});
         }
 
-    }, [contentDiv, props.autoCut]);
+        return () => {
+            if (resizeObserver) {
+                resizeObserver.disconnect();
+            }
+        };
+    }, [contentDiv, props.autoCut, props.lowRating]);
 
     const handleCut = () => {
         setCut(false);
@@ -254,7 +273,9 @@ export default function ContentComponent(props: ContentComponentProps) {
 
     return (
         <>
-            <div className={classNames(styles.content, props.className, cut && styles.cut)} dangerouslySetInnerHTML={{__html: props.content}} ref={contentDiv} />
+            <div className={classNames(styles.content, props.className, cut && styles.cut)}
+                 style={{maxHeight: cut && props.autoCut ? Math.max(props.autoCut): undefined}}
+                 dangerouslySetInnerHTML={{__html: props.content}} ref={contentDiv} />
             {cut && <div className={styles.cutCover}><button className={styles.cutButton} onClick={handleCut}>Читать дальше</button></div>}
         </>
     );

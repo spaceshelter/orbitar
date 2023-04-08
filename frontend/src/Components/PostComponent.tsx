@@ -24,7 +24,7 @@ interface PostComponentProps {
     showSite?: boolean;
     buttons?: React.ReactNode;
     onChange?: (id: number, post: Partial<PostInfo>) => void;
-    autoCut?: boolean;
+    autoCut?: number;
     onEdit?: (post: PostInfo, text: string, title?: string) => Promise<PostInfo | undefined>;
     dangerousHtmlTitle?: boolean;
     hideRating?: boolean;
@@ -156,7 +156,9 @@ export default function PostComponent(props: PostComponentProps) {
                                         props.dangerousHtmlTitle ? <span dangerouslySetInnerHTML={{__html: title}} /> : title
                                     }</PostLink></div>}
                                     <div className={styles.content}>
-                                        <ContentComponent className={styles.content} content={content} autoCut={props.autoCut} lowRating={rating <= Conf.POST_LOW_RATING_THRESHOLD} />
+                                        <ContentComponent className={styles.content} content={content}
+                                                          autoCut={props.autoCut}
+                                                          lowRating={rating <= Conf.POST_LOW_RATING_THRESHOLD || props.post.vote === -1} />
                                     </div>
                                 </>
                         )
