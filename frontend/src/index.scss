@@ -10,6 +10,7 @@ html,body {
   -moz-osx-font-smoothing: grayscale;
   background: var(--bg);
   color: var(--fg);
+  overflow-y: scroll;
 }
 #root {
   height: 100%;
