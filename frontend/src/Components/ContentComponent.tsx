@@ -17,7 +17,7 @@ declare global {
 }
 
 export const LARGE_AUTO_CUT = 650;
-export const SMALL_AUTO_CUT = 200;
+export const SMALL_AUTO_CUT = 100;
 
 function updateContent(div: HTMLDivElement) {
     div.querySelectorAll('img').forEach(img => {
@@ -222,6 +222,17 @@ export default function ContentComponent(props: ContentComponentProps) {
     const contentDiv = useRef<HTMLDivElement>(null);
     const [cut, setCut] = useState(false);
 
+    const checkAutoCut = (content: HTMLElement) => {
+        if (props.autoCut) {
+            const rect = content.getBoundingClientRect();
+            if (rect.height > props.autoCut + 250) {
+                setCut(true);
+                return true;
+            }
+        }
+        return false;
+    };
+
     useEffect(() => {
         const content = contentDiv.current;
         if (!content) {
@@ -229,25 +240,7 @@ export default function ContentComponent(props: ContentComponentProps) {
         }
 
         updateContent(content);
-
         let resizeObserver: ResizeObserver | null = null;
-        const handleResize = (entries: ResizeObserverEntry[]) => {
-            for (const entry of entries) {
-                if (props.autoCut && entry.target === content) {
-                    const rect = entry.contentRect;
-                    if (rect.height > props.autoCut + 250) {
-                        setCut(true);
-                        resizeObserver?.disconnect();
-                        resizeObserver = null;
-                    }
-                }
-            }
-        };
-
-        if (props.autoCut) {
-            resizeObserver = new ResizeObserver(handleResize);
-            resizeObserver.observe(content);
-        }
 
         if (props.lowRating) {
             content.querySelectorAll('img, video, iframe').forEach(el => el.classList.add('low-rating'));
@@ -256,15 +249,36 @@ export default function ContentComponent(props: ContentComponentProps) {
                 evt.preventDefault();
                 evt.stopPropagation();
                 content.querySelectorAll('img, iframe, video').forEach(el => el.classList.remove('low-rating'));
+                if (resizeObserver) {
+                    resizeObserver.disconnect();
+                }
+                setCut(false);
                 return false;
             }, {once: true});
         }
 
-        return () => {
-            if (resizeObserver) {
-                resizeObserver.disconnect();
+        if (!checkAutoCut(content)) {
+            const handleResize = (entries: ResizeObserverEntry[]) => {
+                for (const entry of entries) {
+                    if (entry.target === content && checkAutoCut(content)) {
+                        resizeObserver?.disconnect();
+                        resizeObserver = null;
+                    }
+                }
+            };
+
+            if (props.autoCut) {
+                resizeObserver = new ResizeObserver(handleResize);
+                resizeObserver.observe(content);
             }
-        };
+
+            return () => {
+                if (resizeObserver) {
+                    resizeObserver.disconnect();
+                }
+            };
+        }
+
     }, [contentDiv, props.autoCut, props.lowRating]);
 
     const handleCut = () => {
@@ -274,7 +288,7 @@ export default function ContentComponent(props: ContentComponentProps) {
     return (
         <>
             <div className={classNames(styles.content, props.className, cut && styles.cut)}
-                 style={{maxHeight: cut && props.autoCut ? Math.max(props.autoCut): undefined}}
+                 style={{maxHeight: cut && props.autoCut ? props.autoCut: undefined}}
                  dangerouslySetInnerHTML={{__html: props.content}} ref={contentDiv} />
             {cut && <div className={styles.cutCover}><button className={styles.cutButton} onClick={handleCut}>Читать дальше</button></div>}
         </>
