@@ -50,6 +50,14 @@ test('return valid youtube url', () => {
   );
 });
 
+test('vimeo player embed', () => {
+    expect(
+        p.parse('https://www.vimeo.com/123456789').text
+    ).toEqual(
+        `<iframe class="vimeo-embed" src="https://player.vimeo.com/video/123456789" width="480" height="360" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`
+    );
+});
+
 test('idiod video embed', () => {
     expect(p.parse('https://idiod.video/8feuw2.mp4').text).toEqual(
         `<a class="video-embed" href="https://idiod.video/8feuw2.mp4" target="_blank"><img src="https://idiod.video/preview/8feuw2.mp4" alt="" data-video="https://idiod.video/8feuw2.mp4"/></a>`
