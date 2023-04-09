@@ -24,6 +24,8 @@ import {toast} from 'react-toastify';
 import ReactTextareaAutocomplete from '@webscopeio/react-textarea-autocomplete';
 import TextareaAutosize from 'react-textarea-autosize';
 import debouncePromise from 'debounce-promise';
+import {useHotkeys} from 'react-hotkeys-hook';
+import {HotkeysEvent} from 'react-hotkeys-hook/dist/types';
 
 interface CreateCommentProps {
     open: boolean;
@@ -71,6 +73,21 @@ const Item = (item: { entity: string }) => {
     return <div>{`${item.entity}`}</div>;
 };
 
+const allowedKeys = [
+    'ctrl+enter',
+    'meta+enter',
+    'ctrl+b',
+    'meta+b',
+    'ctrl+i',
+    'meta+i',
+    'ctrl+u',
+    'meta+u',
+    'ctrl+k',
+    'meta+k',
+    'ctrl+shift+x',
+    'meta+shift+x'
+];
+
 export default function CreateCommentComponent(props: CreateCommentProps) {
     const answerRef = useRef<HTMLTextAreaElement>();
     const containerRef = useRef<HTMLDivElement>(null);
@@ -79,6 +96,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     const [isPosting, setPosting] = useState(false);
     const [previewing, setPreviewing] = useState<string | null>(null);
     const [mediaUploaderOpen, setMediaUploaderOpen] = useState(false);
+    const hotKeysRef = useHotkeys<HTMLTextAreaElement>(allowedKeys.join(','), (_, e) => handleHotKey(e), {enableOnFormTags: true});
     const api = useAPI();
 
     const pronoun = props?.comment?.author?.gender === UserGender.he ? 'ему' : props?.comment?.author?.gender===UserGender.she ? 'ей' : '';
@@ -98,6 +116,18 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     const handleAnswerChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setStorageValueDebounced(e.target.value);
         setAnswerText(e.target.value);
+    };
+
+    const handleHotKey = (e: HotkeysEvent) => {
+        if(!e.keys) return;
+        const key = e.keys.join('');
+
+        if((e.ctrl || e.meta) && key === 'b') applyTag('b');
+        if((e.ctrl || e.meta) && key === 'i') applyTag('i');
+        if((e.ctrl || e.meta) && key === 'u') applyTag('u');
+        if((e.ctrl || e.meta) && key === 'k') applyTag('a');
+        if((e.ctrl || e.meta) && e.shift && key === 'x') applyTag('strike');
+        if((e.ctrl || e.meta) && key === 'enter') handleAnswer();
     };
 
     const replaceText = (text: string, cursor: number) => {
@@ -264,12 +294,6 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             });
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if ((e.ctrlKey || e.metaKey) && e.code === 'Enter') {
-            handleAnswer();
-        }
-    };
-
     const handleMediaUpload = (uri: string, type: 'video' | 'image') => {
         setMediaUploaderOpen(false);
         if (type === 'image') {
@@ -338,13 +362,12 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 ?  <div className={styles.editor} ref={containerRef}>
                         <ReactTextareaAutocomplete<string>
                             placeholder={placeholderText}
-                            innerRef={(el: HTMLTextAreaElement) => { answerRef.current = el; }}
+                            innerRef={(el: HTMLTextAreaElement) => { answerRef.current = el; hotKeysRef.current = el;}}
                             dropdownClassName={styles.textareaSuggestContainer}
                             loadingComponent={() => <></>}
                             minChar={1}
                             disabled={isPosting}
                             onChange={handleAnswerChange}
-                            onKeyDown={handleKeyDown}
                             value={answerText}
                             // @ts-expect-error -- types of react-textarea-autosize and react-textarea-autocomplete are incompatible with their latest versions
                             textAreaComponent={TextareaAutosize}
