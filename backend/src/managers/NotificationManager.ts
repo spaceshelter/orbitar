@@ -212,8 +212,8 @@ export default class NotificationManager {
         this.userCache.deleteUserStatsCache(forUserId);
     }
 
-    async setHiddenAll(forUserId: number) {
-        await this.notificationsRepository.setReadAndHideAll(forUserId);
+    async setHiddenAll(forUserId: number, readOnly: boolean) {
+        await this.notificationsRepository.setReadAndHideAll(forUserId, readOnly);
         this.userCache.deleteUserStatsCache(forUserId);
     }
 

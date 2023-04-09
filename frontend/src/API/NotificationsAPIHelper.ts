@@ -34,8 +34,8 @@ export default class NotificationsAPIHelper {
         return await this.api.readAll();
     }
 
-    async hideAll() {
-        return await this.api.hideAll();
+    async hideAll(readOnly = false) {
+        return await this.api.hideAll(readOnly);
     }
 
     async list(auth?: string): Promise<{ webPushRegistered: boolean, notifications: NotificationInfo[] }> {

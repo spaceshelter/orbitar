@@ -1,4 +1,5 @@
 import styles from './NotificationsPopup.module.scss';
+import feedStyles from '../Pages/FeedPage.module.scss';
 import {ReactComponent as CommentIcon} from '../Assets/notifications/comment.svg';
 import {ReactComponent as MentionIcon} from '../Assets/notifications/mention.svg';
 import {ReactComponent as CloseIcon} from '../Assets/close.svg';
@@ -107,18 +108,33 @@ export default function NotificationsPopup(props: NotificationsPopupProps) {
     };
 
     const handleClearAll = () => {
-        app.setVisibleNotificationsCount(0);
-        app.setUnreadNotificationsCount(0);
-        api.notifications.hideAll()
+        const filteredNotifications = notifications?.filter(n => !n.read);
+
+        // Update the state with the filtered notifications
+        setNotifications(filteredNotifications);
+
+        const remainingCount = filteredNotifications?.length || 0;
+        app.setVisibleNotificationsCount(remainingCount);
+        app.setUnreadNotificationsCount(remainingCount);
+
+        api.notifications.hideAll(true)
             .then()
             .catch(() => toast.error('Не удалось скрыть уведомления'));
-        if (props.onClose) {
+
+        if (remainingCount === 0 && props.onClose) {
             props.onClose();
         }
     };
 
     const handleReadAll = () => {
         app.setUnreadNotificationsCount(0);
+
+        const readNotifications = notifications?.map(n => {
+            n.read = true;
+            return n;
+        });
+        setNotifications(readNotifications);
+
         api.notifications.readAll()
             .then()
             .catch(() => toast.error('Не удалось пометить уведомления как прочитанные'));
@@ -127,6 +143,7 @@ export default function NotificationsPopup(props: NotificationsPopupProps) {
     const a = (n: NotificationInfo) => n.source.byUser.gender === UserGender.she ? 'а' : '';
 
     return (
+        !notifications && <div className={feedStyles.loading}/> ||
         <>
             <div className={styles.overlay} onClick={props.onClose}/>
             <div className={styles.container}>
@@ -152,7 +169,7 @@ export default function NotificationsPopup(props: NotificationsPopupProps) {
                     })}
                 </div>
                 <div className={styles.buttons}>
-                    <button className={styles.buttonClear} onClick={handleClearAll}>Очистить</button>
+                    <button className={styles.buttonClear} onClick={handleClearAll}>Очистить прочитанные</button>
                     <button className={styles.buttonRead} onClick={handleReadAll}>Прочитать все</button>
                     {/*TODO <button className={styles.buttonAll} disabled={true}>Все чпяки</button>*/}
                 </div>
