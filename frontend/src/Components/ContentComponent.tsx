@@ -2,7 +2,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import classNames from 'classnames';
 import styles from './ContentComponent.module.scss';
 import {createObserverService, observeOnHidden} from '../Services/ObserverService';
-import * as Vimeo from '@vimeo/player';
+import type * as Vimeo from '@vimeo/player';
 
 interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
     content: string;
@@ -34,9 +34,7 @@ function updateContent(div: HTMLDivElement) {
         updateVideo(video);
     });
 
-    div.querySelectorAll('iframe.vimeo-embed').forEach(iframe => {
-        updateVimeo(iframe as HTMLIFrameElement);
-    });
+    updateVimeo(div);
 
     div.querySelectorAll('span.spoiler').forEach(spoiler => {
         updateSpoiler(spoiler as HTMLSpanElement);
@@ -134,27 +132,39 @@ function processVideoEmbed(img: HTMLImageElement) {
     return !!videoUrl;
 }
 
-function updateVimeo(iframe: HTMLIFrameElement) {
+function updateVimeo(div: HTMLDivElement) {
+    const videos = div.querySelectorAll('iframe.vimeo-embed');
 
-    loadVimeoPlayer(iframe);
-    observeOnHidden(iframe, () => stopVideo(iframe));
+    if (videos.length === 0)
+        return;
 
-}
-
-function loadVimeoPlayer(iframe: HTMLIFrameElement) {
-    const attachVimeoPlayer = () => {
+    const attachVimeoPlayer = (iframe: HTMLIFrameElement) => {
         const player = new window.Vimeo.Player(iframe);
         player.on('play', function() {
             stopInnerVideos(document.body, iframe);
         });
+        observeOnHidden(iframe, () => stopVideo(iframe));
+    };
+
+    const attachAll = () => {
+        videos.forEach(iframe => {
+            attachVimeoPlayer(iframe as HTMLIFrameElement);
+        });
     };
 
     if (window.Vimeo) {
-        attachVimeoPlayer();
+        attachAll();
     } else {
+        loadVimeoPlayer(attachAll);
+    }
+}
+
+function loadVimeoPlayer(onload: () => void) {
+    if (!document.getElementById('vimeo-embed')) {
         const tag = document.createElement('script');
+        tag.id = 'vimeo-embed';
         tag.src = 'https://player.vimeo.com/api/player.js';
-        tag.onload = () => {attachVimeoPlayer();};
+        tag.onload = onload;
         document.head.append(tag);
     }
 }
