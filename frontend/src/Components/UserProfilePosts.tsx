@@ -6,6 +6,7 @@ import Paginator from '../Components/Paginator';
 import {useLocation, useSearchParams} from 'react-router-dom';
 import {useFeed} from '../API/use/useFeed';
 import {useDebouncedCallback} from 'use-debounce';
+import {LARGE_AUTO_CUT} from './ContentComponent';
 
 type UserProfilePostsProps = {
   username: string;
@@ -60,7 +61,8 @@ export default function UserProfilePosts(props: UserProfilePostsProps) {
                  <>
                     {error && <div className={styles.error}>{styles.error}</div> }
                     {posts && <div className={styles.posts}>
-                        {posts.map(post => <PostComponent key={post.id} post={post} showSite={true} onChange={updatePost} autoCut={true} />)}
+                        {posts.map(post => <PostComponent key={post.id} post={post} showSite={true} onChange={updatePost}
+                                                          autoCut={LARGE_AUTO_CUT} />)}
                     </div>}
                     <div className={styles.paginatorContainer}>
                       <Paginator page={page} pages={pages} base={`/u/${props.username}/posts`} queryStringParams={params} />

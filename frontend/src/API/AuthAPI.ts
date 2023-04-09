@@ -24,6 +24,8 @@ type SignOutRequest = Record<string, unknown>;
 type SignOutResponse = Record<string, unknown>;
 
 type ResetPasswordRequest = {email: string;};
+type ResetPasswordAndSessionsRequest = Record<string, unknown>;
+type ResetPasswordAndSessionsResponse = Record<string, unknown>;
 type ResetPasswordResponse = {result: boolean;};
 type CheckResetPasswordCodeRequest = {code: string;};
 type SetNewPasswordRequest = {password: string; code: string;};
@@ -54,6 +56,10 @@ export default class AuthAPI {
         return await this.api.request<ResetPasswordRequest, ResetPasswordResponse>('/auth/reset-password', {
             email
         });
+    }
+
+    async dropPasswordAndSessions() {
+        return await this.api.request<ResetPasswordAndSessionsRequest, ResetPasswordAndSessionsResponse>('/auth/drop-password-and-sessions', {});
     }
 
     async setNewPassword(password: string, code: string): Promise<ResetPasswordResponse> {

@@ -672,4 +672,8 @@ export default class UserManager {
             return item.v;
         });
     }
+
+    async dropPassword(userId: number) {
+        await this.userRepository.dropPassword(userId);
+    }
 }

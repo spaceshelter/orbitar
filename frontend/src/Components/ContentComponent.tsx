@@ -1,12 +1,12 @@
 import React, {useEffect, useRef, useState} from 'react';
 import classNames from 'classnames';
 import styles from './ContentComponent.module.scss';
-import {createObserverService, observeOnHidden} from '../Services/ObserverService';
+import {observeOnHidden} from '../Services/ObserverService';
 import type * as Vimeo from '@vimeo/player';
 
 interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
     content: string;
-    autoCut?: boolean;
+    autoCut?: number;
     lowRating?: boolean;
 }
 
@@ -17,6 +17,9 @@ declare global {
         onYouTubeIframeAPIReady: () => void;
     }
 }
+
+export const LARGE_AUTO_CUT = 650;
+export const SMALL_AUTO_CUT = 100;
 
 function updateContent(div: HTMLDivElement) {
     div.querySelectorAll('img').forEach(img => {
@@ -271,21 +274,25 @@ export default function ContentComponent(props: ContentComponentProps) {
     const contentDiv = useRef<HTMLDivElement>(null);
     const [cut, setCut] = useState(false);
 
+    const checkAutoCut = (content: HTMLElement) => {
+        if (props.autoCut) {
+            const rect = content.getBoundingClientRect();
+            if (rect.height > props.autoCut + 250) {
+                setCut(true);
+                return true;
+            }
+        }
+        return false;
+    };
+
     useEffect(() => {
         const content = contentDiv.current;
         if (!content) {
             return;
         }
 
-        createObserverService();
         updateContent(content);
-
-        if (props.autoCut) {
-            const rect = content.getBoundingClientRect();
-            if (rect.height > 1000) {
-                setCut(true);
-            }
-        }
+        let resizeObserver: ResizeObserver | null = null;
 
         if (props.lowRating) {
             content.querySelectorAll('img, video, iframe').forEach(el => el.classList.add('low-rating'));
@@ -294,11 +301,37 @@ export default function ContentComponent(props: ContentComponentProps) {
                 evt.preventDefault();
                 evt.stopPropagation();
                 content.querySelectorAll('img, iframe, video').forEach(el => el.classList.remove('low-rating'));
+                if (resizeObserver) {
+                    resizeObserver.disconnect();
+                }
+                setCut(false);
                 return false;
             }, {once: true});
         }
 
-    }, [contentDiv, props.autoCut]);
+        if (!checkAutoCut(content)) {
+            const handleResize = (entries: ResizeObserverEntry[]) => {
+                for (const entry of entries) {
+                    if (entry.target === content && checkAutoCut(content)) {
+                        resizeObserver?.disconnect();
+                        resizeObserver = null;
+                    }
+                }
+            };
+
+            if (props.autoCut) {
+                resizeObserver = new ResizeObserver(handleResize);
+                resizeObserver.observe(content);
+            }
+
+            return () => {
+                if (resizeObserver) {
+                    resizeObserver.disconnect();
+                }
+            };
+        }
+
+    }, [contentDiv, props.autoCut, props.lowRating]);
 
     const handleCut = () => {
         setCut(false);
@@ -306,7 +339,9 @@ export default function ContentComponent(props: ContentComponentProps) {
 
     return (
         <>
-            <div className={classNames(styles.content, props.className, cut && styles.cut)} dangerouslySetInnerHTML={{__html: props.content}} ref={contentDiv} />
+            <div className={classNames(styles.content, props.className, cut && styles.cut)}
+                 style={{maxHeight: cut && props.autoCut ? props.autoCut: undefined}}
+                 dangerouslySetInnerHTML={{__html: props.content}} ref={contentDiv} />
             {cut && <div className={styles.cutCover}><button className={styles.cutButton} onClick={handleCut}>Читать дальше</button></div>}
         </>
     );

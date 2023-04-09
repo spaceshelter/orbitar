@@ -43,7 +43,9 @@ export type NotificationsHideRequest =  NotificationsReadRequest;
 export type NotificationsHideResponse = Record<string, never>;
 export type NotificationsReadAllRequest = Record<string, never>;
 export type NotificationsReadAllResponse = Record<string, never>;
-export type NotificationsHideAllRequest = Record<string, never>;
+export type NotificationsHideAllRequest = {
+    readOnly: boolean;
+};
 export type NotificationsHideAllResponse = Record<string, never>;
 
 export type WebPushSubscribeRequest = {
@@ -74,8 +76,9 @@ export default class NotificationsAPI {
         });
     }
 
-    hideAll(): Promise<NotificationsReadAllResponse> {
+    hideAll(readOnly: boolean): Promise<NotificationsReadAllResponse> {
         return this.api.request<NotificationsHideAllRequest, NotificationsHideAllResponse>('/notifications/hide/all', {
+            readOnly
         });
     }
 

@@ -16,6 +16,7 @@ export type UserProfileResponse = {
     numberOfInvitesAvailable?: number;
 
     invites: UserProfileEntity[];
+    isBarmalini?: boolean;
 };
 
 export type TrialProgressDebugInfo = {

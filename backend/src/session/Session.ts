@@ -5,6 +5,26 @@ import {Logger} from 'winston';
 import {config} from '../config';
 
 const sessionStorage: Record<string, { created: Date, data: SessionData}> = {};
+const sessionsByUser: Map<number, Set<string>> = new Map();
+
+function addToUserSessions(userId: number, sessionId: string) {
+    // add to user index
+    const userSessions = sessionsByUser.get(userId);
+    if (userSessions) {
+        userSessions.add(sessionId);
+    } else {
+        const userSessions = new Set([sessionId]);
+        sessionsByUser.set(userId, userSessions);
+    }
+}
+
+function deleteFromUserSessions(userId: number, sessionId: string) {
+    // remove from user index
+    const userSessions = sessionsByUser.get(userId);
+    if (userSessions) {
+        userSessions.delete(sessionId);
+    }
+}
 
 export default class Session {
     private request: Request;
@@ -56,6 +76,7 @@ export default class Session {
                         created: this.created,
                         data: this.data
                     };
+                    addToUserSessions(this.data.userId, this.id);
                     this.response.setHeader(Session.SESSION_HEADER, this.id);
                     return;
                 }
@@ -113,7 +134,9 @@ export default class Session {
         this.data.clear();
         this.data = new SessionData('');
         delete sessionStorage[this.id];
-
+        if (this.data.userId) {
+            deleteFromUserSessions(this.data.userId, this.id);
+        }
         this.logger.verbose(`Session ${this.id} removed from DB`, { session: this.id });
 
         await this.db.query('delete from sessions where id=:id', {
@@ -121,6 +144,25 @@ export default class Session {
         });
 
         this.id = undefined;
+        this.response.setHeader(Session.SESSION_HEADER, '-');
+    }
+
+    async destroyAllForCurrentUser() {
+        if (!this.id || !this.data?.userId) return;
+        const userSessions = sessionsByUser.get(this.data.userId);
+        if (userSessions) {
+            sessionsByUser.delete(this.data.userId);
+            for (const sessionId of userSessions) {
+                delete sessionStorage[sessionId];
+            }
+        }
+        await this.db.query('delete from sessions where user_id=:userId', {
+            userId: this.data.userId
+        });
+        this.data.clear();
+        this.data = new SessionData('');
+        this.id = undefined;
+
         this.response.setHeader(Session.SESSION_HEADER, '-');
     }
 
@@ -132,10 +174,17 @@ export default class Session {
         };
         const stringData = JSON.stringify(data);
 
-        await this.db.query('insert into sessions (id, data) values (:id, :data) on duplicate key update data=:data', {
-            id: this.id,
-            data: stringData
-        });
+        await this.db.query(
+            `insert into sessions (id, user_id, data)
+             values (:id, :user_id, :data)
+                 on duplicate key update
+                        user_id=:user_id,
+                        data=:data`
+            , {
+                id: this.id,
+                user_id: this.data.userId,
+                data: stringData
+            });
 
         this.logger.verbose(`Session ${this.id} stored to DB`, { session: this.id, data: data });
     }

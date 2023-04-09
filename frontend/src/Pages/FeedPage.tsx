@@ -9,6 +9,7 @@ import {APIError} from '../API/APIBase';
 import {FeedSorting} from '../Types/FeedSortingSettings';
 import classNames from 'classnames';
 import {observer} from 'mobx-react-lite';
+import {LARGE_AUTO_CUT, SMALL_AUTO_CUT} from '../Components/ContentComponent';
 
 const FeedPage = observer(() => {
     const { site, siteInfo } = useAppState();
@@ -86,7 +87,8 @@ const FeedPage = observer(() => {
                     (error[1] as APIError)?.code === 'no-site' ? <>Нет такого сайта. <Link to='/sites/create'>Создать</Link>?</> : error[0]
                 }</div> }
                 {posts && <div className={styles.posts}>
-                    {posts.map(post => <PostComponent key={post.id} post={post} showSite={siteInfo?.site !== post.site} onChange={updatePost} autoCut={true} />)}
+                    {posts.map(post => <PostComponent key={post.id} post={post} showSite={siteInfo?.site !== post.site} onChange={updatePost}
+                                                      autoCut={post.vote === -1 ? SMALL_AUTO_CUT : LARGE_AUTO_CUT} />)}
                 </div>}
 
                 <div className={styles.paginatorContainer}>

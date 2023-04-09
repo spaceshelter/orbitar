@@ -70,8 +70,11 @@ export default class NotificationsRepository {
         });
     }
 
-    async setReadAndHideAll(forUserId: number) {
-        await this.db.query('update notifications set hidden=1, `read`=1 where user_id=:user_id', {
+    async setReadAndHideAll(forUserId: number, readOnly = false) {
+        await this.db.query(`
+            update notifications set hidden=1, \`read\`=1 where user_id=:user_id
+                ${readOnly ? 'and `read`=1' : ''}
+            `, {
             user_id: forUserId
         });
     }
