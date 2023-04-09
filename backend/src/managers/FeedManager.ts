@@ -328,7 +328,7 @@ export default class FeedManager {
 
         await this.siteManager.siteSubscribe(userId, site.id, main, bookmarks);
 
-        if ((!!existingSubscription.feed_main) !== main) {
+        if ((!!existingSubscription?.feed_main) !== main) {
             this.logger.info(`Clearing feed cache for user ${userId} after subscribing to ${siteName}`);
             this.userSubscriptionsCache.delete(userId);
         }

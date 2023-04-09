@@ -107,6 +107,7 @@ export default class SiteController {
         }
         catch (error) {
             this.logger.error('Could not change subscription', { site, main, bookmarks, error });
+            this.logger.error(error);
             return response.error('error', 'Unknown error', 500);
         }
     }
