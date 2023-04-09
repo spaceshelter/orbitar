@@ -169,7 +169,7 @@ export default function NotificationsPopup(props: NotificationsPopupProps) {
                     })}
                 </div>
                 <div className={styles.buttons}>
-                    <button className={styles.buttonClear} onClick={handleClearAll}>Очистить прочтенные</button>
+                    <button className={styles.buttonClear} onClick={handleClearAll}>Очистить прочитанные</button>
                     <button className={styles.buttonRead} onClick={handleReadAll}>Прочитать все</button>
                     {/*TODO <button className={styles.buttonAll} disabled={true}>Все чпяки</button>*/}
                 </div>
