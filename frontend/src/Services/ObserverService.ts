@@ -2,9 +2,15 @@ type IntersectionCallback = (entry: IntersectionObserverEntry) => void;
 type ElementCallbacks = WeakMap<Element, Set<IntersectionCallback>>;
 
 const INTERSECTION_RATIO = .5;
-let intersectionObserver: IntersectionObserver;
-let onShown: ElementCallbacks;
-let onHidden: ElementCallbacks;
+const intersectionObserver: IntersectionObserver = new IntersectionObserver(
+    handleIntersections,
+    {
+        rootMargin: '0px',
+        threshold: 0.5,
+    },
+);
+const onShown: ElementCallbacks = new WeakMap();
+const onHidden: ElementCallbacks = new WeakMap();
 
 function handleIntersections(entries: IntersectionObserverEntry[]) {
     entries.forEach((entry) => {
@@ -29,18 +35,6 @@ function addEventListener(callbacks: ElementCallbacks, el: Element, cb: Intersec
 function removeEventListener(callbacks: ElementCallbacks, el: Element, cb: IntersectionCallback) {
     const cbs = callbacks.get(el);
     cbs && cbs.delete(cb);
-}
-
-export function createObserverService() {
-    onShown = new WeakMap();
-    onHidden = new WeakMap();
-    intersectionObserver = new IntersectionObserver(
-        handleIntersections,
-        {
-            rootMargin: '0px',
-            threshold: 0.5,
-        },
-    );
 }
 
 export function observeOnShown(el: Element, callback: IntersectionCallback) {

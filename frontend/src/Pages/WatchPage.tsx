@@ -4,6 +4,7 @@ import PostComponent from '../Components/PostComponent';
 import Paginator from '../Components/Paginator';
 import {Link, useMatch, useSearchParams} from 'react-router-dom';
 import {useFeed} from '../API/use/useFeed';
+import {LARGE_AUTO_CUT, SMALL_AUTO_CUT} from '../Components/ContentComponent';
 
 export default function WatchPage() {
     let siteName = 'main';
@@ -38,7 +39,8 @@ export default function WatchPage() {
                 {error && <div className={styles.error}>{styles.error}</div> }
                 {posts && <div className={styles.posts}>
                     {posts.length === 0 && <div>Здесь ничего нет. Вероятно, вы уже всё прочитали!</div>}
-                    {posts.map(post => <PostComponent key={post.id} post={post} showSite={true} onChange={updatePost} autoCut={true} />)}
+                    {posts.map(post => <PostComponent key={post.id} post={post} showSite={true} onChange={updatePost}
+                                                      autoCut={post.vote === -1 ? SMALL_AUTO_CUT : LARGE_AUTO_CUT} />)}
                 </div>}
 
                 <Paginator page={page} pages={pages} base={isAll ? '/watch/all' : '/watch'} />

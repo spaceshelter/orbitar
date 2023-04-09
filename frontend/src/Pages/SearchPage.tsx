@@ -10,6 +10,7 @@ import PostComponent from '../Components/PostComponent';
 import {UserGender} from '../Types/UserInfo';
 import classNames from 'classnames';
 import {useCache} from '../API/use/useCache';
+import {LARGE_AUTO_CUT} from '../Components/ContentComponent';
 
 type SearchForm = {
     term: string;
@@ -44,7 +45,7 @@ function SearchResult(props: {
                                    comments: 0,
                                    newComments: 0,
                                }}
-                               showSite={true} autoCut={true} dangerousHtmlTitle={true} hideRating={true}/> :
+                               showSite={true} autoCut={LARGE_AUTO_CUT} dangerousHtmlTitle={true} hideRating={true}/> :
                 <CommentComponent key={resultItem.comment_id}
                                   comment={{
                                       id: resultItem.comment_id,
