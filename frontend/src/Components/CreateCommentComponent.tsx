@@ -25,7 +25,6 @@ import ReactTextareaAutocomplete from '@webscopeio/react-textarea-autocomplete';
 import TextareaAutosize from 'react-textarea-autosize';
 import debouncePromise from 'debounce-promise';
 import {useHotkeys} from 'react-hotkeys-hook';
-import {HotkeysEvent} from 'react-hotkeys-hook/dist/types';
 
 interface CreateCommentProps {
     open: boolean;
@@ -96,7 +95,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     const [isPosting, setPosting] = useState(false);
     const [previewing, setPreviewing] = useState<string | null>(null);
     const [mediaUploaderOpen, setMediaUploaderOpen] = useState(false);
-    const hotKeysRef = useHotkeys<HTMLTextAreaElement>(allowedKeys.join(','), (_, e) => handleHotKey(e), {enableOnFormTags: true});
+    const hotKeysRef = useHotkeys<HTMLTextAreaElement>(allowedKeys.join(','), (e ) => handleHotKey(e), {enableOnFormTags: ['TEXTAREA']});
     const api = useAPI();
 
     const pronoun = props?.comment?.author?.gender === UserGender.he ? 'ему' : props?.comment?.author?.gender===UserGender.she ? 'ей' : '';
@@ -118,16 +117,15 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         setAnswerText(e.target.value);
     };
 
-    const handleHotKey = (e: HotkeysEvent) => {
-        if(!e.keys) return;
-        const key = e.keys.join('');
+    const handleHotKey = (e: KeyboardEvent) => {
+        const key = e.key.toLowerCase();
 
-        if((e.ctrl || e.meta) && key === 'b') applyTag('b');
-        if((e.ctrl || e.meta) && key === 'i') applyTag('i');
-        if((e.ctrl || e.meta) && key === 'u') applyTag('u');
-        if((e.ctrl || e.meta) && key === 'k') applyTag('a');
-        if((e.ctrl || e.meta) && e.shift && key === 'x') applyTag('strike');
-        if((e.ctrl || e.meta) && key === 'enter') handleAnswer();
+        if((e.ctrlKey || e.metaKey) && key === 'b') applyTag('b');
+        if((e.ctrlKey || e.metaKey) && key === 'i') applyTag('i');
+        if((e.ctrlKey || e.metaKey) && key === 'u') applyTag('u');
+        if((e.ctrlKey || e.metaKey) && key === 'k') applyTag('a');
+        if((e.ctrlKey || e.metaKey) && e.shiftKey && key === 'x') applyTag('strike');
+        if((e.ctrlKey || e.metaKey) && key === 'enter') handleAnswer();
     };
 
     const replaceText = (text: string, cursor: number) => {
