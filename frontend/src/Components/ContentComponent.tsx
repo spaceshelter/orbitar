@@ -2,6 +2,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import classNames from 'classnames';
 import styles from './ContentComponent.module.scss';
 import {observeOnHidden} from '../Services/ObserverService';
+import type * as Vimeo from '@vimeo/player';
 
 interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
     content: string;
@@ -11,6 +12,7 @@ interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
 
 declare global {
     interface Window {
+        Vimeo: typeof Vimeo;
         YT: typeof YT;
         onYouTubeIframeAPIReady: () => void;
     }
@@ -34,6 +36,8 @@ function updateContent(div: HTMLDivElement) {
     div.querySelectorAll('video').forEach(video => {
         updateVideo(video);
     });
+
+    updateVimeo(div);
 
     div.querySelectorAll('span.spoiler').forEach(spoiler => {
         updateSpoiler(spoiler as HTMLSpanElement);
@@ -131,6 +135,43 @@ function processVideoEmbed(img: HTMLImageElement) {
     return !!videoUrl;
 }
 
+function updateVimeo(div: HTMLDivElement) {
+    const videos = div.querySelectorAll('iframe.vimeo-embed');
+
+    if (videos.length === 0)
+        return;
+
+    const attachVimeoPlayer = (iframe: HTMLIFrameElement) => {
+        const player = new window.Vimeo.Player(iframe);
+        player.on('play', function() {
+            stopInnerVideos(document.body, iframe);
+        });
+        observeOnHidden(iframe, () => stopVideo(iframe));
+    };
+
+    const attachAll = () => {
+        videos.forEach(iframe => {
+            attachVimeoPlayer(iframe as HTMLIFrameElement);
+        });
+    };
+
+    if (window.Vimeo) {
+        attachAll();
+    } else {
+        loadVimeoPlayer(attachAll);
+    }
+}
+
+function loadVimeoPlayer(onload: () => void) {
+    if (!document.getElementById('vimeo-embed')) {
+        const tag = document.createElement('script');
+        tag.id = 'vimeo-embed';
+        tag.src = 'https://player.vimeo.com/api/player.js';
+        tag.onload = onload;
+        document.head.append(tag);
+    }
+}
+
 function updateImg(img: HTMLImageElement) {
     if (processYtEmbed(img) || processVideoEmbed(img)) {
         return;
@@ -203,6 +244,12 @@ function stopVideo(el: HTMLVideoElement | HTMLIFrameElement) {
         );
         return;
     }
+    if (el instanceof HTMLIFrameElement && el.classList.contains('vimeo-embed')) {
+        (el as HTMLIFrameElement).contentWindow?.postMessage(
+            '{"method":"pause"}', '*'
+        );
+        return;
+    }
 }
 
 function stopInnerVideos(el: Element, exept?: HTMLVideoElement | HTMLIFrameElement) {
@@ -212,6 +259,11 @@ function stopInnerVideos(el: Element, exept?: HTMLVideoElement | HTMLIFrameEleme
         stopVideo(video);
     });
     el.querySelectorAll('iframe.youtube-embed').forEach(iframe => {
+        if (iframe === exept)
+            return;
+        stopVideo(iframe as HTMLIFrameElement);
+    });
+    el.querySelectorAll('iframe.vimeo-embed').forEach(iframe => {
         if (iframe === exept)
             return;
         stopVideo(iframe as HTMLIFrameElement);

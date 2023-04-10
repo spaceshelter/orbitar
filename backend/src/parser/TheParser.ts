@@ -192,6 +192,7 @@ export default class TheParser {
 
         const res =
             this.processYoutube(pUrl) ||
+            this.processVimeo(pUrl) ||
             this.processImage(pUrl) ||
             this.processVideo(pUrl);
         if (res !== false) {
@@ -272,6 +273,25 @@ export default class TheParser {
 
         return `<a class="youtube-embed" href="${encodeURI(urlStr)}" target="_blank">`+
             `<img src="${encodeURI(thumbnail)}" alt="" data-youtube="${encodeURI(embed)}"/></a>`;
+    }
+
+    processVimeo(url) {
+        const isVimeo = url.host === 'vimeo.com' || url.host === 'www.vimeo.com';
+        if (!isVimeo || !url.pathname) return false;
+
+        const videoId = url.pathname.substring(1);
+        if (!/^\d+$/.test(videoId)) return false;
+
+        const startTime = url.hash ? parseTime(qs.parse(url.hash.substring(1)).t) : 0;
+        const embed = `https://player.vimeo.com/video/${videoId}${startTime ? '#t=' + startTime : ''}`;
+
+        return `<iframe class="vimeo-embed" src="${encodeURI(embed)}" width="480" height="360" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
+
+        function parseTime(time) {
+            if (!time) return 0;
+            const [, h, m, s] = time.match(/^(\d+h)?(\d+m)?(\d+s?)?$/) || [];
+            return (parseInt(h, 10) || 0) * 3600 + (parseInt(m, 10) || 0) * 60 + (parseInt(s, 10) || 0);
+        }
     }
 
     parseAllowedTag(node: Element): ParseResult {
