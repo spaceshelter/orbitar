@@ -58,6 +58,14 @@ test('vimeo player embed', () => {
     );
 });
 
+test('vimeo player illegal embed', () => {
+    expect(
+        p.parse('https://vimeo.com/user35789315?embedded=true&source=owner_name&owner=35789315').text
+    ).toEqual(
+        `<a href="https://vimeo.com/user35789315?embedded=true&source=owner_name&owner=35789315" target="_blank">https://vimeo.com/user35789315?embedded=true&amp;source=owner_name&amp;owner=35789315</a>`
+    );
+});
+
 test('idiod video embed', () => {
     expect(p.parse('https://idiod.video/8feuw2.mp4').text).toEqual(
         `<a class="video-embed" href="https://idiod.video/8feuw2.mp4" target="_blank"><img src="https://idiod.video/preview/8feuw2.mp4" alt="" data-video="https://idiod.video/8feuw2.mp4"/></a>`

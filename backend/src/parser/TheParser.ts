@@ -275,49 +275,23 @@ export default class TheParser {
             `<img src="${encodeURI(thumbnail)}" alt="" data-youtube="${encodeURI(embed)}"/></a>`;
     }
 
-    processVimeo(url: Url<string>) {
-        let videoId = '';
-        let startTime = 0;
+    processVimeo(url) {
+        const isVimeo = url.host === 'vimeo.com' || url.host === 'www.vimeo.com';
+        if (!isVimeo || !url.pathname) return false;
 
-        const parseTime = (time: string) => {
-            const groups = time.match(/^(\d+h)?(\d+m)?(\d+s?)?$/);
-            if (!groups) {
-                return 0;
-            }
-            const h = parseInt(groups[1], 10) || 0;
-            const m = parseInt(groups[2], 10) || 0;
-            const s = parseInt(groups[3], 10) || 0;
-            return h * 3600 + m * 60 + s;
-        };
+        const videoId = url.pathname.substring(1);
+        if (!/^\d+$/.test(videoId)) return false;
 
-        if (
-            (url.host === 'vimeo.com' || url.host === 'www.vimeo.com') &&
-            url.pathname
-        ) {
-            videoId = url.pathname.substring(1);
-            if (url.hash) {
-                const q = qs.parse(url.hash.substring(1));
-                if (typeof q.t === 'string') {
-                    startTime = parseTime(q.t);
-                }
-            }
+        const startTime = url.hash ? parseTime(qs.parse(url.hash.substring(1)).t) : 0;
+        const embed = `https://player.vimeo.com/video/${videoId}${startTime ? '#t=' + startTime : ''}`;
+
+        return `<iframe class="vimeo-embed" src="${encodeURI(embed)}" width="480" height="360" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
+
+        function parseTime(time) {
+            if (!time) return 0;
+            const [, h, m, s] = time.match(/^(\d+h)?(\d+m)?(\d+s?)?$/) || [];
+            return (parseInt(h, 10) || 0) * 3600 + (parseInt(m, 10) || 0) * 60 + (parseInt(s, 10) || 0);
         }
-        else {
-            return false;
-        }
-
-        if (!videoId) {
-            return false;
-        }
-
-        let embed = `https://player.vimeo.com/video/${videoId}`;
-        if (startTime) {
-            embed += '#t=' + startTime;
-        }
-
-        return `<iframe class="vimeo-embed" src="${encodeURI(embed)}" ` +
-        `width="480" height="360" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen>` +
-        `</iframe>`;
     }
 
     parseAllowedTag(node: Element): ParseResult {
