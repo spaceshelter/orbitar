@@ -32,6 +32,7 @@
     "react-confirm-alert": "^3.0.6",
     "react-dom": "^18.0.0",
     "react-hook-form": "^7.29.0",
+    "react-hotkeys-hook": "^4.3.8",
     "react-icons": "^4.3.1",
     "react-router-dom": "^6.3.0",
     "react-scripts": "5.0.0",
