@@ -89,13 +89,12 @@ const allowedKeys = [
 
 export default function CreateCommentComponent(props: CreateCommentProps) {
     const answerRef = useRef<HTMLTextAreaElement>();
-    const containerRef = useRef<HTMLDivElement>(null);
     const [answerText, setAnswerText] = useState<string>(props.text ||
         (props.storageKey && localStorage.getItem('crCmp:' + props.storageKey)) || '');
     const [isPosting, setPosting] = useState(false);
     const [previewing, setPreviewing] = useState<string | null>(null);
     const [mediaUploaderOpen, setMediaUploaderOpen] = useState(false);
-    const hotKeysRef = useHotkeys<HTMLDivElement>(allowedKeys.join(','), (e ) => handleHotKey(e), {enableOnFormTags: ['TEXTAREA']});
+    const containerRef = useHotkeys<HTMLDivElement>(allowedKeys.join(','), (e ) => handleHotKey(e), {enableOnFormTags: ['TEXTAREA']});
     const api = useAPI();
 
     const pronoun = props?.comment?.author?.gender === UserGender.he ? 'ему' : props?.comment?.author?.gender===UserGender.she ? 'ей' : '';
@@ -355,29 +354,30 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('img')} title="Вставить картинку/видео"><ImageIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('a')} title="Вставить ссылку"><LinkIcon /></button></div>
             </div>
-            <div ref={hotKeysRef}>
-                {
-                    (previewing === null )
-                    ?  <div className={styles.editor} ref={containerRef}>
-                            <ReactTextareaAutocomplete<string>
-                                placeholder={placeholderText}
-                                innerRef={(el: HTMLTextAreaElement) => { answerRef.current = el;}}
-                                dropdownClassName={styles.textareaSuggestContainer}
-                                loadingComponent={() => <></>}
-                                minChar={1}
-                                disabled={isPosting}
-                                onChange={handleAnswerChange}
-                                value={answerText}
-                                // @ts-expect-error -- types of react-textarea-autosize and react-textarea-autocomplete are incompatible with their latest versions
-                                textAreaComponent={TextareaAutosize}
-                                maxRows={25}
-                                movePopupAsYouType={true}
-                                trigger={suggestTrigger}
-                            />
-                        </div>
-                    :  <div className={classNames(commentStyles.content, styles.preview, postStyles.preview)} onClick={handleClosePreview}><ContentComponent content={previewing} /></div>
-                }
-            </div>
+            {
+                (previewing === null)
+                    ? <div className={styles.editor} ref={containerRef}>
+                        <ReactTextareaAutocomplete<string>
+                            placeholder={placeholderText}
+                            innerRef={(el: HTMLTextAreaElement) => {
+                                answerRef.current = el;
+                            }}
+                            dropdownClassName={styles.textareaSuggestContainer}
+                            loadingComponent={() => <></>}
+                            minChar={1}
+                            disabled={isPosting}
+                            onChange={handleAnswerChange}
+                            value={answerText}
+                            // @ts-expect-error -- types of react-textarea-autosize and react-textarea-autocomplete are incompatible with their latest versions
+                            textAreaComponent={TextareaAutosize}
+                            maxRows={25}
+                            movePopupAsYouType={true}
+                            trigger={suggestTrigger}
+                        />
+                    </div>
+                    : <div className={classNames(commentStyles.content, styles.preview, postStyles.preview)}
+                           onClick={handleClosePreview}><ContentComponent content={previewing}/></div>
+            }
             <div className={styles.final}>
                 {previewing && (
                   <ThemeToggleComponent buttonLabel='Превью с другой темой' resetOnOnmount={true} />
