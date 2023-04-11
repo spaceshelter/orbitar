@@ -89,13 +89,12 @@ const allowedKeys = [
 
 export default function CreateCommentComponent(props: CreateCommentProps) {
     const answerRef = useRef<HTMLTextAreaElement>();
-    const containerRef = useRef<HTMLDivElement>(null);
     const [answerText, setAnswerText] = useState<string>(props.text ||
         (props.storageKey && localStorage.getItem('crCmp:' + props.storageKey)) || '');
     const [isPosting, setPosting] = useState(false);
     const [previewing, setPreviewing] = useState<string | null>(null);
     const [mediaUploaderOpen, setMediaUploaderOpen] = useState(false);
-    const hotKeysRef = useHotkeys<HTMLTextAreaElement>(allowedKeys.join(','), (e ) => handleHotKey(e), {enableOnFormTags: ['TEXTAREA']});
+    const containerRef = useHotkeys<HTMLDivElement>(allowedKeys.join(','), (e ) => handleHotKey(e), {enableOnFormTags: ['TEXTAREA']});
     const api = useAPI();
 
     const pronoun = props?.comment?.author?.gender === UserGender.he ? 'ему' : props?.comment?.author?.gender===UserGender.she ? 'ей' : '';
@@ -356,11 +355,13 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('a')} title="Вставить ссылку"><LinkIcon /></button></div>
             </div>
             {
-                (previewing === null )
-                ?  <div className={styles.editor} ref={containerRef}>
+                (previewing === null)
+                    ? <div className={styles.editor} ref={containerRef}>
                         <ReactTextareaAutocomplete<string>
                             placeholder={placeholderText}
-                            innerRef={(el: HTMLTextAreaElement) => { answerRef.current = el; hotKeysRef.current = el;}}
+                            innerRef={(el: HTMLTextAreaElement) => {
+                                answerRef.current = el;
+                            }}
                             dropdownClassName={styles.textareaSuggestContainer}
                             loadingComponent={() => <></>}
                             minChar={1}
@@ -374,7 +375,8 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                             trigger={suggestTrigger}
                         />
                     </div>
-                :  <div className={classNames(commentStyles.content, styles.preview, postStyles.preview)} onClick={handleClosePreview}><ContentComponent content={previewing} /></div>
+                    : <div className={classNames(commentStyles.content, styles.preview, postStyles.preview)}
+                           onClick={handleClosePreview}><ContentComponent content={previewing}/></div>
             }
             <div className={styles.final}>
                 {previewing && (
