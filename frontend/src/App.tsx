@@ -100,7 +100,7 @@ const ReadyContainer = observer(() => {
                 menuState={menuState}
                 onMenuToggle={handleMenuToggle}
             />
-            <div className={styles.container}>
+            <div id="app" className={styles.container}>
                 <div className={styles.innerContainer}>
                     <Outlet />
                 </div>
