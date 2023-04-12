@@ -1,11 +1,11 @@
-import {DomHandler, DomHandlerOptions, Parser, ParserOptions} from 'htmlparser2';
-import {ChildNode, Document, Element} from 'domhandler';
-import {escape as htmlEscape} from 'html-escaper';
+import { DomHandler, DomHandlerOptions, Parser, ParserOptions } from 'htmlparser2';
+import { ChildNode, Document, Element } from 'domhandler';
+import { escape as htmlEscape } from 'html-escaper';
 import escapeHTML from 'escape-html';
 import Url from 'url-parse';
 import qs from 'qs';
-import {mentionsRegex, urlRegex, urlRegexExact} from './regexprs';
-import {MediaHostingConfig} from '../config';
+import { mentionsRegex, urlRegex, urlRegexExact } from './regexprs';
+import { MediaHostingConfig } from '../config';
 
 export type ParseResult = {
     text: string;
@@ -45,6 +45,7 @@ export default class TheParser {
             b: true,
             i: true,
             u: true,
+            pre: true,
             strike: true,
         };
     }
@@ -71,7 +72,7 @@ export default class TheParser {
     }
 
     private parseChildNodes(doc: ChildNode[]): ParseResult {
-        const p = {text: '', mentions: [], urls: [], images: []};
+        const p = { text: '', mentions: [], urls: [], images: [] };
         let prevIsBlock = false; // if previous node was block tag
         const blockTags = ['blockquote', 'expand'];
         for (let node of doc) {
@@ -116,11 +117,11 @@ export default class TheParser {
         }
 
         if (node.type === 'directive') {
-            return {text: escapeHTML(`<${node.data}>`), mentions: [], urls: [], images: []};
+            return { text: escapeHTML(`<${node.data}>`), mentions: [], urls: [], images: [] };
         }
 
         if (node.type === 'comment') {
-            return {text: escapeHTML(`<!--${node.data}-->`), mentions: [], urls: [], images: []};
+            return { text: escapeHTML(`<!--${node.data}-->`), mentions: [], urls: [], images: [] };
         }
 
         return { text: '', mentions: [], urls: [], images: [] };
@@ -136,7 +137,7 @@ export default class TheParser {
             const mention = match[0];
             const pText = sText.substring(0, match.index);
             if (pText) {
-                tokens.push({type: 'text', data: pText});
+                tokens.push({ type: 'text', data: pText });
             }
             sText = sText.substring(match.index + mention.length);
             tokens.push({ type: 'mention', data: match[1] });
@@ -271,7 +272,7 @@ export default class TheParser {
             urlStr += '&t=' + startTime;
         }
 
-        return `<a class="youtube-embed" href="${encodeURI(urlStr)}" target="_blank">`+
+        return `<a class="youtube-embed" href="${encodeURI(urlStr)}" target="_blank">` +
             `<img src="${encodeURI(thumbnail)}" alt="" data-youtube="${encodeURI(embed)}"/></a>`;
     }
 
@@ -329,7 +330,7 @@ export default class TheParser {
         }
         const text = `<a href="${encodeURI(decodeURI(url))}" target="_blank">${result.text}</a>`;
 
-        return { ...result, text, urls: [ ...result.urls, url ] } ;
+        return { ...result, text, urls: [...result.urls, url] };
     }
 
     parseImg(node: Element): ParseResult {
@@ -358,25 +359,25 @@ export default class TheParser {
         const idiodPoster = () => {
             const match = url.match(/https?:\/\/idiod.video\/([^.]+\.mp4)$/);
             return match && [`https://idiod.video/preview/${encodeURI(match[1])}`,
-                `https://idiod.video/${encodeURI(match[1])}`];
+            `https://idiod.video/${encodeURI(match[1])}`];
         };
         const orbitarMediaPoster = () => {
             if (url.startsWith(this.mediaHostingConfig.url)) {
                 const match = url.match(/.*\/([^.]+\.mp4)(\/raw)?$/);
                 return match && [`${this.mediaHostingConfig.url}/preview/${encodeURI(match[1])}`,
-                    `${this.mediaHostingConfig.url}/${encodeURI(match[1])}/raw`];
+                `${this.mediaHostingConfig.url}/${encodeURI(match[1])}/raw`];
             }
         };
         const dumpVideoPoster = () => {
             const match = url.match(/https?:\/\/dump.video\/i\/([^.]+)\.mp4$/);
             return match && [`https://dump.video/i/${encodeURI(match[1])}.jpg`,
-                `https://dump.video/i/${encodeURI(match[1])}.mp4`];
+            `https://dump.video/i/${encodeURI(match[1])}.mp4`];
         };
         const posterUrl = imgurPoster() || idiodPoster() || dumpVideoPoster() || orbitarMediaPoster();
         if (posterUrl) {
             const [poster, video] = posterUrl;
             return `<a class="video-embed" href="${encodeURI(url)}" target="_blank">` +
-                `<img src="${encodeURI(poster)}" alt="" data-video="${encodeURI(video)}"${loop?' data-loop="true"':''}/></a>`;
+                `<img src="${encodeURI(poster)}" alt="" data-video="${encodeURI(video)}"${loop ? ' data-loop="true"' : ''}/></a>`;
         }
         return `<video ${loop ? 'loop=""' : ''} preload="metadata" controls="" width="500"><source src="${encodeURI(url)}" type="video/mp4"></video>`;
     }
@@ -399,7 +400,7 @@ export default class TheParser {
         const result = this.parseChildNodes(node.children);
         const text = `<details class="expand"><summary>${htmlEscape(title)}</summary>${result.text}<div role="button"></div></details>`;
 
-        return { ...result, text } ;
+        return { ...result, text };
     }
 
     validUrl(url: string) {
