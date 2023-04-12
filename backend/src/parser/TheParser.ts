@@ -45,6 +45,7 @@ export default class TheParser {
             b: true,
             i: true,
             u: true,
+            pre: true,
             strike: true,
         };
     }

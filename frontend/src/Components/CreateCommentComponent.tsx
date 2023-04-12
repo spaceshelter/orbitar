@@ -9,6 +9,7 @@ import {ReactComponent as SpoilerIcon} from '../Assets/spoiler.svg';
 import {ReactComponent as ExpandIcon} from '../Assets/expand.svg';
 import {ReactComponent as LinkIcon} from '../Assets/link.svg';
 import {ReactComponent as QuoteIcon} from '../Assets/quote.svg';
+import {ReactComponent as CodeIcon} from '../Assets/code-slash.svg';
 import {ReactComponent as SendIcon} from '../Assets/send.svg';
 import ContentComponent from './ContentComponent';
 import classNames from 'classnames';
@@ -207,6 +208,17 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 }
                 break;
             }
+            case 'pre': {
+                const escapedValue = oldValue.replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/&/g, '&amp;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+                newValue = `<pre>${escapedValue}</pre>`;
+                newPos = newValue.length;
+                break;
+            }
             default: {
                 const textAttrs = !attrs ? '' : Object.keys(attrs).reduce((_, name) => `${_} ${name}="${attrs[name]}"`, '');
                 newValue = `<${tag}${textAttrs}>${oldValue}</${tag}>`;
@@ -351,6 +363,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('spoiler')} title="Спойлер"><SpoilerIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('expand', {'title':''})} title="Свернуть/Развернуть"><ExpandIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('blockquote')} title="Цитировать"><QuoteIcon /></button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('pre')} title="Вставить форматированный текст"><CodeIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('img')} title="Вставить картинку/видео"><ImageIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('a')} title="Вставить ссылку"><LinkIcon /></button></div>
             </div>
