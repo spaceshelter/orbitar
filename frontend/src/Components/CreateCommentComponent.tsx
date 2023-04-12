@@ -34,7 +34,7 @@ interface CreateCommentProps {
     text?: string;
     storageKey?: string;
 
-    onAnswer: (text: string, post?: PostLinkInfo, comment?: CommentInfo) => Promise<CommentInfo | string| undefined>;
+    onAnswer: (text: string, post?: PostLinkInfo, comment?: CommentInfo) => Promise<CommentInfo | string | undefined>;
 }
 
 // same as CreateCommentComponent, but with slow mode and other restrictions
@@ -53,23 +53,23 @@ export const CreateCommentComponentRestricted = observer((props: CreateCommentPr
     }
 
     if (userRestrictions?.restrictedToPostId && userRestrictions.restrictedToPostId !== props.post?.id) {
-        return <div className={styles.answer}><RestrictedToPostIdMessage postId={userRestrictions.restrictedToPostId}/></div>;
+        return <div className={styles.answer}><RestrictedToPostIdMessage postId={userRestrictions.restrictedToPostId} /></div>;
     }
 
     if (userRestrictions?.commentSlowModeWaitSecRemain) {
         return <div className={styles.answer}><RestrictedSlowMode
             endTime={new Date(Date.now() + userRestrictions.commentSlowModeWaitSecRemain * 1000)}
-            endCallback={() => api.user.refreshUserRestrictions()}/></div>;
+            endCallback={() => api.user.refreshUserRestrictions()} /></div>;
     }
 
     return <CreateCommentComponent {...props} onAnswer={(text, post, comment) => {
         return props.onAnswer(text, post, comment).finally(() => {
             api.user.refreshUserRestrictions();
         });
-    }}/>;
+    }} />;
 });
 
-const Item = (item: { entity: string }) => {
+const Item = (item: {entity: string}) => {
     return <div>{`${item.entity}`}</div>;
 };
 
@@ -95,10 +95,10 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     const [isPosting, setPosting] = useState(false);
     const [previewing, setPreviewing] = useState<string | null>(null);
     const [mediaUploaderOpen, setMediaUploaderOpen] = useState(false);
-    const containerRef = useHotkeys<HTMLDivElement>(allowedKeys.join(','), (e ) => handleHotKey(e), {enableOnFormTags: ['TEXTAREA']});
+    const containerRef = useHotkeys<HTMLDivElement>(allowedKeys.join(','), (e) => handleHotKey(e), {enableOnFormTags: ['TEXTAREA']});
     const api = useAPI();
 
-    const pronoun = props?.comment?.author?.gender === UserGender.he ? 'ему' : props?.comment?.author?.gender===UserGender.she ? 'ей' : '';
+    const pronoun = props?.comment?.author?.gender === UserGender.he ? 'ему' : props?.comment?.author?.gender === UserGender.she ? 'ей' : '';
     const placeholderText = props.comment ? `Ваш ответ ${pronoun}` : '';
     const disabledButtons = isPosting || previewing !== null;
 
@@ -120,12 +120,12 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     const handleHotKey = (e: KeyboardEvent) => {
         const key = e.key.toLowerCase();
 
-        if((e.ctrlKey || e.metaKey) && key === 'b') applyTag('b');
-        if((e.ctrlKey || e.metaKey) && key === 'i') applyTag('i');
-        if((e.ctrlKey || e.metaKey) && key === 'u') applyTag('u');
-        if((e.ctrlKey || e.metaKey) && key === 'k') applyTag('a');
-        if((e.ctrlKey || e.metaKey) && e.shiftKey && key === 'x') applyTag('strike');
-        if((e.ctrlKey || e.metaKey) && key === 'enter') handleAnswer();
+        if ((e.ctrlKey || e.metaKey) && key === 'b') applyTag('b');
+        if ((e.ctrlKey || e.metaKey) && key === 'i') applyTag('i');
+        if ((e.ctrlKey || e.metaKey) && key === 'u') applyTag('u');
+        if ((e.ctrlKey || e.metaKey) && key === 'k') applyTag('a');
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && key === 'x') applyTag('strike');
+        if ((e.ctrlKey || e.metaKey) && key === 'enter') handleAnswer();
     };
 
     const replaceText = (text: string, cursor: number) => {
@@ -240,7 +240,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     useEffect(() => {
         if (
             !answerRef.current ||
-          !containerRef.current
+            !containerRef.current
         ) {
             return;
         }
@@ -361,7 +361,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('strike')} title="Перечеркнуть" className={styles.strike}>S</button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('irony')} title="Ирония"><IronyIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('spoiler')} title="Спойлер"><SpoilerIcon /></button></div>
-                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('expand', {'title':''})} title="Свернуть/Развернуть"><ExpandIcon /></button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('expand', {'title': ''})} title="Свернуть/Развернуть"><ExpandIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('blockquote')} title="Цитировать"><QuoteIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('pre')} title="Вставить форматированный текст"><CodeIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('img')} title="Вставить картинку/видео"><ImageIcon /></button></div>
@@ -389,11 +389,11 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                         />
                     </div>
                     : <div className={classNames(commentStyles.content, styles.preview, postStyles.preview)}
-                           onClick={handleClosePreview}><ContentComponent content={previewing}/></div>
+                        onClick={handleClosePreview}><ContentComponent content={previewing} /></div>
             }
             <div className={styles.final}>
                 {previewing && (
-                  <ThemeToggleComponent buttonLabel='Превью с другой темой' resetOnOnmount={true} />
+                    <ThemeToggleComponent buttonLabel='Превью с другой темой' resetOnOnmount={true} />
                 )}
                 <button disabled={isPosting || !answerText} className={styles.buttonPreview} onClick={handlePreview}>{(previewing === null) ? 'Превью' : 'Редактор'}</button>
                 <button disabled={isPosting || !answerText} className={styles.buttonSend} onClick={handleAnswer}><SendIcon /></button>
@@ -403,19 +403,19 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     );
 }
 
-const RestrictedToPostIdMessage = (props: { postId: number | true }) => {
+const RestrictedToPostIdMessage = (props: {postId: number | true}) => {
     return props.postId === true ?
         <div className={styles.restrictedToPostIdMessage}>
             Возможность комментировать в чужих постах заблокирована из-за низкой кармы.
             <a href={'/create'}>Создать свой пост.</a>
         </div>
         : <div className={styles.restrictedToPostIdMessage}>
-        Возможность комментировать заблокирована из-за низкой кармы.
-        Можно комментировать только в <a href={`/p${props.postId}`}>этом посте</a>.
-    </div>;
+            Возможность комментировать заблокирована из-за низкой кармы.
+            Можно комментировать только в <a href={`/p${props.postId}`}>этом посте</a>.
+        </div>;
 };
 
-const RestrictedSlowMode = (props: { endTime: Date; endCallback: () => void }) => {
+const RestrictedSlowMode = (props: {endTime: Date; endCallback: () => void}) => {
     return <SlowMode endTime={props.endTime} endCallback={props.endCallback}>
         <div className={styles.restrictedSlowMode}>
             Возможность комментировать ограничена из-за низкой кармы. До конца ожидания осталось:
