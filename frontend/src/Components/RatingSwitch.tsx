@@ -59,9 +59,11 @@ export default function RatingSwitch(props: RatingSwitchProps) {
         const ph = popupEl.clientHeight;
 
         const isTotalHeightMoreThanPageHeight  = y + rh + ph > document.documentElement.scrollHeight;
-        isTotalHeightMoreThanPageHeight
-            ? popupEl.style.bottom = 30 + 'px'
-            : popupEl.style.top = 30 + 'px';
+        if(isTotalHeightMoreThanPageHeight){
+            popupEl.style.bottom = '30px';
+        } else {
+            popupEl.style.top = '30px';
+        }
 
         const clickHandler = (e: MouseEvent) => {
             e.stopPropagation();
