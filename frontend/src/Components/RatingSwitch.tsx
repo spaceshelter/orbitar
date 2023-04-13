@@ -225,7 +225,7 @@ const RatingList = React.forwardRef((props: RatingListProps, ref: ForwardedRef<H
     }
 
     return (
-        <div ref={ref} className={styles.list} onMouseDown={popupMouseDownHandler}>
+        <div ref={ref} className={` ${styles.list} ratingPopup`} onMouseDown={popupMouseDownHandler}>
             <div className={styles.listUp}>
                 <div className={listStyles.join(' ')}>{props.rating}</div>
                 <div className={styles.listDetails}>
