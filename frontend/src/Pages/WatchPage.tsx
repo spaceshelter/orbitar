@@ -24,8 +24,7 @@ export default function WatchPage() {
 
     const { posts, loading, pages, error, updatePost } = useFeed(siteName, isAll ? 'watch-all' : 'watch', page, perpage);
     useEffect(() => {
-        const element = document.querySelector('#app');
-        element && element.scrollIntoView({block: 'start'});
+        window.scrollTo({ top: 0 });
     }, [page]);
 
     document.title = 'Новые комментарии';

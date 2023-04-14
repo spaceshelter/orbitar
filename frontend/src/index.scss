@@ -2,6 +2,10 @@
 
 // TODO add css reset
 
+html {
+  overflow-y: scroll;
+}
+
 html,body {
   height: 100%;
   margin: 0;
@@ -13,7 +17,6 @@ html,body {
 }
 #root {
   height: 100%;
-  overflow-y: scroll;
 }
 
 input[type="text"], input[type="password"], input[type="email"], input[type="search"], textarea {
