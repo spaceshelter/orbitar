@@ -139,7 +139,7 @@ $smallShift: 8px;
         border-left: none;
     }
 
-    .unreadOnly :local(.comment):not(.isNew) > .commentBody {
+    .unreadOnly :local(.comment):not(.isNew) > .commentBody:not(:has(.ratingPopup)) {
         opacity: 0.4;
         transition: opacity 500ms;
     }

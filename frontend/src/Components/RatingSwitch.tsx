@@ -36,7 +36,6 @@ export default function RatingSwitch(props: RatingSwitchProps) {
         if (!ratingRef.current || !popupRef.current) {
             return;
         }
-        const [popupEl, ratingEl] = [popupRef.current, ratingRef.current];
         if (!showPopup) {
             return;
         }
@@ -52,27 +51,19 @@ export default function RatingSwitch(props: RatingSwitchProps) {
                 });
         }
 
+        const [popupEl, ratingEl] = [popupRef.current, ratingRef.current];
+
         const rect = ratingEl.getBoundingClientRect();
-        const x = rect.x;
         const y = rect.y + document.documentElement.scrollTop || 0;
-        const [w, h] = [ratingEl.clientWidth, ratingEl.clientHeight];
-        const [pw, ph] = [popupEl.clientWidth, popupEl.clientHeight];
+        const rh = ratingEl.clientHeight;
+        const ph = popupEl.clientHeight;
 
-        let ny = y + h + 8;
-        if (ny + ph > document.documentElement.scrollHeight) {
-            ny = y - 8 - ph;
+        const isTotalHeightMoreThanPageHeight  = y + rh + ph > document.documentElement.scrollHeight;
+        if(isTotalHeightMoreThanPageHeight){
+            popupEl.style.bottom = '30px';
+        } else {
+            popupEl.style.top = '30px';
         }
-        let nx = x;
-        if (nx + 8 + pw > document.documentElement.scrollWidth) {
-            if (x+w+8>pw) {
-                nx = x + w - pw;
-            } else {
-                nx = 8;
-            }
-        }
-
-        popupEl.style.left = (nx) + 'px';
-        popupEl.style.top = (ny) + 'px';
 
         const clickHandler = (e: MouseEvent) => {
             e.stopPropagation();
@@ -164,7 +155,7 @@ export default function RatingSwitch(props: RatingSwitchProps) {
     };
 
     return (
-        <>
+        <div className={styles.ratingWrapper}>
             <div ref={ratingRef} className={styles.rating}>
                 {props.double && <button {...buttonExtraProps} className={minus2Styles.join(' ')} onClick={handleVote(-2)}></button>}
                 <button {...buttonExtraProps} className={minusStyles.join(' ')} onClick={handleVote(-1)}></button>
@@ -173,7 +164,7 @@ export default function RatingSwitch(props: RatingSwitchProps) {
                 {props.double && <button {...buttonExtraProps} className={plus2Styles.join(' ')} onClick={handleVote(2)}></button>}
             </div>
             {showPopup && <RatingList ref={popupRef} vote={state.vote || 0} rating={state.rating} votes={votes} hidePopup={hide}></RatingList>}
-        </>
+        </div>
     );
 }
 
@@ -236,7 +227,7 @@ const RatingList = React.forwardRef((props: RatingListProps, ref: ForwardedRef<H
     }
 
     return (
-        <div ref={ref} className={styles.list} onMouseDown={popupMouseDownHandler}>
+        <div ref={ref} className={` ${styles.list} ratingPopup`} onMouseDown={popupMouseDownHandler}>
             <div className={styles.listUp}>
                 <div className={listStyles.join(' ')}>{props.rating}</div>
                 <div className={styles.listDetails}>
