@@ -83,8 +83,7 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
     }, [page, reloadIdx, filter]);
 
     useEffect(() => {
-        const element = document.querySelector('#app');
-        element && element.scrollIntoView({block: 'start'});
+        window.scrollTo({ top: 0 });
     }, [page]);
 
     const params = filter ? {filter} : undefined;

@@ -46,8 +46,7 @@ const FeedPage = observer(() => {
     const {posts, loading, pages, error, updatePost, setLoading} = useFeed(site, feedType, page, perpage, setSorting, sorting);
 
     useEffect(() => {
-        const element = document.querySelector('#app');
-        element && element.scrollIntoView({block: 'start'});
+        window.scrollTo({ top: 0 });
     }, [page]);
 
     useEffect(() => {

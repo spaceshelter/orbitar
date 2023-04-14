@@ -21,8 +21,7 @@ type UserProfileSettingsProps = {
 
 export default function UserProfileSettings(props: UserProfileSettingsProps) {
   useEffect(() => {
-      const element = document.querySelector('#app');
-      element && element.scrollIntoView({block: 'start'});
+    window.scrollTo({ top: 0 });
   }, []);
 
   const api = useAPI();

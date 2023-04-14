@@ -47,8 +47,7 @@ export default function UserProfilePosts(props: UserProfilePostsProps) {
 
   const { posts, loading, pages, error, updatePost } = useFeed(props.username, 'user-profile', page, perpage, undefined, undefined, filter || '');
     useEffect(() => {
-        const element = document.querySelector('#app');
-        element && element.scrollIntoView({block: 'start'});
+        window.scrollTo({ top: 0 });
     }, [page]);
 
     const params = filter ? {filter} : undefined;
