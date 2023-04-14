@@ -10,10 +10,10 @@ html,body {
   -moz-osx-font-smoothing: grayscale;
   background: var(--bg);
   color: var(--fg);
+  overflow-y: scroll;
 }
 #root {
   height: 100%;
-  overflow-y: scroll;
 }
 
 input[type="text"], input[type="password"], input[type="email"], input[type="search"], textarea {
