@@ -17,6 +17,8 @@ services:
       - caddy_config:/config
     # Default caddy command borrowed from https://github.com/caddyserver/caddy-docker/blob/master/Dockerfile.tmpl
     command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile", "--watch"]
+    extra_hosts:
+        - "host.docker.internal:host-gateway"
 
   mysql:
     platform: linux/amd64
