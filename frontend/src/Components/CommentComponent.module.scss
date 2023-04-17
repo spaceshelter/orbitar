@@ -139,11 +139,16 @@ $smallShift: 8px;
         border-left: none;
     }
 
-    .unreadOnly :local(.comment):not(.isNew) > .commentBody:not(:has(.ratingPopup)) {
+    .unreadOnly :local(.comment):not(.isNew) > .commentBody > :not(:last-child),
+    .unreadOnly :local(.comment):not(.isNew) > .commentBody > :last-child > :not(:first-child),
+    .unreadOnly :local(.comment):not(.isNew) > .commentBody > :last-child > :first-child > * > :first-child {
         opacity: 0.4;
         transition: opacity 500ms;
     }
-    .unreadOnly :local(.comment):not(.isNew) > .commentBody:hover {
+
+    .unreadOnly :local(.comment):not(.isNew) > .commentBody:hover > :not(:last-child),
+    .unreadOnly :local(.comment):not(.isNew) > .commentBody:hover > :last-child > :not(:first-child),
+    .unreadOnly :local(.comment):not(.isNew) > .commentBody:hover > :last-child > :first-child > * > :first-child {
         opacity: inherit;
         transition: opacity 500ms;
     }
