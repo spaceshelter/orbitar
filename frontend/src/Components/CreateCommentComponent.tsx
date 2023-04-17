@@ -118,13 +118,12 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
 
     const handleHotKey = (e: KeyboardEvent ) => {
         const key = e.code;
-        console.log(e);
-        if((e.ctrlKey || e.metaKey) && key === 'KeyB') applyTag('b');
-        if((e.ctrlKey || e.metaKey) && key === 'KeyI') applyTag('i');
-        if((e.ctrlKey || e.metaKey) && key === 'KeyU') applyTag('u');
-        if((e.ctrlKey || e.metaKey) && key === 'KeyA') applyTag('a');
-        if((e.ctrlKey || e.metaKey) && e.shiftKey && key === 'KeyX') applyTag('strike');
-        if((e.ctrlKey || e.metaKey) && key === 'Enter') handleAnswer();
+        if ((e.ctrlKey || e.metaKey) && key === 'KeyB') applyTag('b');
+        if ((e.ctrlKey || e.metaKey) && key === 'KeyI') applyTag('i');
+        if ((e.ctrlKey || e.metaKey) && key === 'KeyU') applyTag('u');
+        if ((e.ctrlKey || e.metaKey) && key === 'KeyA') applyTag('a');
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && key === 'KeyX') applyTag('strike');
+        if ((e.ctrlKey || e.metaKey) && key === 'Enter') handleAnswer();
     };
 
     const replaceText = (text: string, cursor: number) => {
