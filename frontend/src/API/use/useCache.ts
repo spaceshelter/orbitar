@@ -54,7 +54,11 @@ function setCachedValue<T>(name: string, deps: unknown[], value: T) {
         }
     }
 
-    localStorage.setItem('cache:'+name, JSON.stringify(cached));
+    try {
+        localStorage.setItem('cache:' + name, JSON.stringify(cached));
+    } catch (e) {
+        console.error('Error while saving cache', e);
+    }
 }
 
 export function useCache<T>(name: string, deps: unknown[]): [T | undefined, ((value: T) => void)] {
