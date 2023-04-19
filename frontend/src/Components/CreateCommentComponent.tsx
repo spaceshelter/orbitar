@@ -94,7 +94,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     const [isPosting, setPosting] = useState(false);
     const [previewing, setPreviewing] = useState<string | null>(null);
     const [mediaUploaderOpen, setMediaUploaderOpen] = useState(false);
-    const containerRef = useHotkeys<HTMLDivElement>(allowedKeys.join(','), (e ) => handleHotKey(e), {enableOnFormTags: ['TEXTAREA']});
+    const containerRef = useHotkeys<HTMLDivElement>(allowedKeys.join(','), (e ) => handleHotKey(e), {enableOnFormTags: ['TEXTAREA'], preventDefault: true});
     const api = useAPI();
 
     const pronoun = props?.comment?.author?.gender === UserGender.he ? 'ему' : props?.comment?.author?.gender===UserGender.she ? 'ей' : '';
@@ -116,15 +116,14 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         setAnswerText(e.target.value);
     };
 
-    const handleHotKey = (e: KeyboardEvent) => {
-        const key = e.key.toLowerCase();
-
-        if((e.ctrlKey || e.metaKey) && key === 'b') applyTag('b');
-        if((e.ctrlKey || e.metaKey) && key === 'i') applyTag('i');
-        if((e.ctrlKey || e.metaKey) && key === 'u') applyTag('u');
-        if((e.ctrlKey || e.metaKey) && key === 'k') applyTag('a');
-        if((e.ctrlKey || e.metaKey) && e.shiftKey && key === 'x') applyTag('strike');
-        if((e.ctrlKey || e.metaKey) && key === 'enter') handleAnswer();
+    const handleHotKey = (e: KeyboardEvent ) => {
+        const key = e.code;
+        if ((e.ctrlKey || e.metaKey) && key === 'KeyB') applyTag('b');
+        if ((e.ctrlKey || e.metaKey) && key === 'KeyI') applyTag('i');
+        if ((e.ctrlKey || e.metaKey) && key === 'KeyU') applyTag('u');
+        if ((e.ctrlKey || e.metaKey) && key === 'KeyA') applyTag('a');
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && key === 'KeyX') applyTag('strike');
+        if ((e.ctrlKey || e.metaKey) && key === 'Enter') handleAnswer();
     };
 
     const replaceText = (text: string, cursor: number) => {
