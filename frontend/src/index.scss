@@ -218,9 +218,9 @@ img.low-rating, video.low-rating, iframe.low-rating {
   max-width: 48px;
 }
 
-body.no-scroll {
+html.no-scroll {
   overflow: hidden;
-  margin-right: 18px;
+  margin-right: 16px;
 }
 
 ::-webkit-scrollbar {

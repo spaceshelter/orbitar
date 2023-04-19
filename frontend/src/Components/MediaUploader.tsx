@@ -32,9 +32,10 @@ export default function MediaUploader(props: MediaUploaderProps) {
 
     useEffect(() => {
         uriRef.current?.focus();
-        document.body.classList.add('no-scroll');
+        const htmlElement = document.getElementsByTagName('html')[0];
+        htmlElement.classList.add('no-scroll');
         return () => {
-            document.body.classList.remove('no-scroll');
+            htmlElement.classList.remove('no-scroll');
         };
     }, []);
 
