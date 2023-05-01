@@ -111,6 +111,11 @@ export default class SearchController {
             search_direction
         } = request.body;
         try {
+            const restrictions = await this.userManager.getUserRestrictions(userId);
+            if (restrictions.restrictedToPostId !== false) {
+                return response.error('error', 'User is restricted', 403);
+            }
+
             const result = await this.searchManager.search(
                 term,
                 scope,

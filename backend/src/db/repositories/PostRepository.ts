@@ -84,7 +84,9 @@ export default class PostRepository {
             });
     }
 
-    async getPostsByUser(userId: number, forUserId: number, filter: string, page: number, perPage: number): Promise<PostRawWithUserData[]> {
+    async getPostsByUser(userId: number, forUserId: number, filter: string, page: number, perPage: number,
+                         sorting: FeedSorting = FeedSorting.postCreatedAt
+                         ): Promise<PostRawWithUserData[]> {
         const limitFrom = (page - 1) * perPage;
         return await this.db.query(`
             select p.*, v.vote, b.read_comments, b.bookmark, b.last_read_comment_id, b.watch
@@ -93,7 +95,7 @@ export default class PostRepository {
                      left join user_bookmarks b on (b.post_id = p.post_id and b.user_id = :for_user_id)
             where p.author_id = :user_id
                 ${filter ? ' and (p.source like :filter or p.title like :filter) ' : ''}
-            order by created_at desc
+            order by ${sorting === FeedSorting.postCommentedAt ? 'commented_at' : 'created_at'} desc
             limit :limit_from, :limit_count
         `, {
             user_id: userId,
@@ -104,7 +106,7 @@ export default class PostRepository {
         });
     }
 
-    async getPostsByUserTotal(userId: number, filter: string): Promise<number> {
+    async getPostsByUserTotal(userId: number, filter = ''): Promise<number> {
         const result = await this.db.fetchOne<{ cnt: string }>(
             `select count(*) as cnt
              from posts

@@ -154,7 +154,7 @@ export default class UserRepository {
         return await this.db.fetchAll<{ user_id: number }>('select user_id from user_sites where site_id=:site_id and feed_main=1', { site_id: siteId });
     }
 
-    async getUserUnreadComments(forUserId: number): Promise<number> {
+    async getUserUnreadComments(forUserId: number, ownOnly = false): Promise<number> {
         const res = await this.db.fetchOne<{ cnt: string }>(`
           select sum(p.comments - ub.read_comments) cnt
             from
@@ -163,6 +163,7 @@ export default class UserRepository {
             where
               ub.user_id = :user_id
               and watch = 1
+              ${ownOnly ? 'and p.author_id = :user_id' : ''}
         `, {
             user_id: forUserId
         });

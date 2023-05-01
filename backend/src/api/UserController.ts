@@ -111,6 +111,10 @@ export default class UserController {
                 return response.error(ERROR_CODES.NOT_FOUND, 'User not found', 404);
             }
 
+            if (await this.userIsRestrictedToOwnContent(userId, profileInfo.id)) {
+                return response.error(ERROR_CODES.NOT_FOUND, 'User not found', 404);
+            }
+
             const invites = await this.userManager.getInvites(profileInfo.id);
             const invitedBy = await this.userManager.getInvitedBy(profileInfo.id);
             const active = await this.userManager.isUserActive(profileInfo.id);
@@ -161,6 +165,11 @@ export default class UserController {
         }
     }
 
+    async userIsRestrictedToOwnContent(userId: number, profileId: number) {
+        const userRestrictions = await this.userManager.getUserRestrictions(userId);
+        return userRestrictions.restrictedToPostId !== false && userId !== profileId;
+    }
+
     async posts(request: APIRequest<UserPostsRequest>, response: APIResponse<UserPostsResponse>) {
         if (!request.session.data.userId) {
             return response.authRequired();
@@ -174,6 +183,10 @@ export default class UserController {
 
             if (!profile) {
                 return response.error(ERROR_CODES.NOT_FOUND, 'User not found', 404);
+            }
+
+            if (await this.userIsRestrictedToOwnContent(userId, profile.id)) {
+                return response.error(ERROR_CODES.NO_PERMISSION, 'You are not allowed to view this user\'s posts', 403);
             }
 
             const total = await this.postManager.getPostsByUserTotal(profile.id, filter);
@@ -205,6 +218,10 @@ export default class UserController {
 
             if (!profile) {
                 return response.error(ERROR_CODES.NOT_FOUND, 'User not found', 404);
+            }
+
+            if (await this.userIsRestrictedToOwnContent(userId, profile.id)) {
+                return response.error(ERROR_CODES.NO_PERMISSION, 'You are not allowed to view this user\'s comments', 403);
             }
 
             const total = await this.postManager.getUserCommentsTotal(profile.id, filter);
@@ -243,6 +260,10 @@ export default class UserController {
 
             if (!profile) {
                 return response.error(ERROR_CODES.NOT_FOUND, 'User not found', 404);
+            }
+
+            if (await this.userIsRestrictedToOwnContent(request.session.data.userId, profile.id)) {
+                return response.error(ERROR_CODES.NO_PERMISSION, 'You are not allowed to view this user\'s karma', 403);
             }
 
             const effectiveKarmaDebug = await this.userManager.getUserEffectiveKarma(profile.id);

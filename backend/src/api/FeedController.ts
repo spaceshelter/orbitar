@@ -1,7 +1,7 @@
 import FeedManager from '../managers/FeedManager';
 import {Logger} from 'winston';
 import {Router} from 'express';
-import {APIRequest, APIResponse, joiFormat, validate, joiSite} from './ApiMiddleware';
+import {APIRequest, APIResponse, joiFormat, joiSite, validate} from './ApiMiddleware';
 import Joi from 'joi';
 import UserManager from '../managers/UserManager';
 import SiteManager from '../managers/SiteManager';
@@ -70,11 +70,15 @@ export default class FeedController {
 
         try {
             const sorting = await this.userManager.getFeedSorting(userId, 1);
-            // const total = await this.feedManager.getSubscriptionsTotal(userId);
+            const restrictedPosts = await this.feedManager.getRestrictedPosts(userId, page, perPage, format, sorting);
+
             const {
                 total,
                 posts: rawPosts
-            } = await this.feedManager.getSubscriptionFeed(userId, page, perPage, format, sorting);
+            } = restrictedPosts ? {
+                total: await this.postManager.getPostsByUserTotal(userId),
+                posts: restrictedPosts
+            } : await this.feedManager.getSubscriptionFeed(userId, page, perPage, format, sorting);
             const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts);
 
             response.success({
@@ -102,8 +106,9 @@ export default class FeedController {
 
         try {
             const sorting = await this.userManager.getFeedSorting(userId, 1);
-            const total = await this.feedManager.getAllPostsTotal();
-            const rawPosts = await this.feedManager.getAllPosts(userId, page, perPage, format, sorting);
+            const restrictedPosts = await this.feedManager.getRestrictedPosts(userId, page, perPage, format, sorting);
+            const total = restrictedPosts ? await this.postManager.getPostsByUserTotal(userId) : await this.feedManager.getAllPostsTotal();
+            const rawPosts = restrictedPosts || await this.feedManager.getAllPosts(userId, page, perPage, format, sorting);
             const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts);
 
             response.success({
@@ -137,8 +142,10 @@ export default class FeedController {
             }
 
             const siteId = site.id;
-            const total = await this.feedManager.getSiteTotal(siteId);
-            const rawPosts = await this.feedManager.getSiteFeed(userId, siteId, page, perPage, format, sorting);
+
+            const restrictedPosts = await this.feedManager.getRestrictedPosts(userId, page, perPage, format, sorting);
+            const total = restrictedPosts ? await this.postManager.getPostsByUserTotal(userId) : await this.feedManager.getSiteTotal(siteId);
+            const rawPosts = restrictedPosts || await this.feedManager.getSiteFeed(userId, siteId, page, perPage, format, sorting);
             const { posts, users } = await this.enricher.enrichRawPosts(rawPosts);
 
             response.success({
@@ -165,8 +172,9 @@ export default class FeedController {
         const { filter, format, page, perpage: perPage } = request.body;
 
         try {
-            const total = await this.feedManager.getWatchTotal(userId, filter === 'all');
-            const rawPosts = await this.feedManager.getWatchFeed(userId, page, perPage, filter === 'all', format);
+            const restrictedPosts = await this.feedManager.getRestrictedPosts(userId, page, perPage, format, FeedSorting.postCommentedAt);
+            const total = restrictedPosts ? await this.postManager.getPostsByUserTotal(userId) : await this.feedManager.getWatchTotal(userId, filter === 'all');
+            const rawPosts = restrictedPosts || await this.feedManager.getWatchFeed(userId, page, perPage, filter === 'all', format);
             const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts);
 
             response.success({

@@ -137,7 +137,9 @@ export default class UserManager {
             return cached;
         }
 
-        const unreadComments = await this.userRepository.getUserUnreadComments(forUserId);
+        const restrictions = await this.getUserRestrictions(forUserId);
+        const unreadComments = await this.userRepository.getUserUnreadComments(forUserId,
+            restrictions.restrictedToPostId !== false);
         const notifications = await this.notificationManager.getNotificationsCounts(forUserId);
 
         const stats = {
