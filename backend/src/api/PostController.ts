@@ -476,6 +476,12 @@ export default class PostController {
         }
         const {id, type} = request.body;
         try {
+            const restrictions = await this.userManager.getUserRestrictions(request.session.data.userId);
+            if (restrictions.restrictedToPostId !== false) {
+                // simplification, just disallows the translation
+                return response.error('access-denied', `Translation is not allowed.`, 403);
+            }
+
             return response.success(await this.translationManager.translateEntity(id, type));
         } catch (err) {
             this.logger.error(err);

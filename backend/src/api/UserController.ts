@@ -112,7 +112,7 @@ export default class UserController {
             }
 
             if (await this.userIsRestrictedToOwnContent(userId, profileInfo.id)) {
-                return response.error(ERROR_CODES.NOT_FOUND, 'User not found', 404);
+                return response.error(ERROR_CODES.NO_PERMISSION, 'No permissions to view this profile', 403);
             }
 
             const invites = await this.userManager.getInvites(profileInfo.id);
