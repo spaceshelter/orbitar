@@ -1,6 +1,5 @@
 import PostRepository from '../db/repositories/PostRepository';
 import {PostRawWithUserData} from '../db/types/PostRaw';
-import UserRepository from '../db/repositories/UserRepository';
 import CodeError from '../CodeError';
 import BookmarkRepository from '../db/repositories/BookmarkRepository';
 import {PostInfo} from './types/PostInfo';
@@ -12,6 +11,7 @@ import {Logger} from 'winston';
 import fetch from 'node-fetch';
 import {config} from '../config';
 import TheParser from '../parser/TheParser';
+import UserManager from './UserManager';
 
 const FEED_API = `http://${config.feed.host}:${config.feed.port}`;
 
@@ -39,7 +39,7 @@ type QueryResponse = {
 export default class FeedManager {
     private readonly bookmarkRepository: BookmarkRepository;
     private readonly postRepository: PostRepository;
-    private readonly userRepository: UserRepository;
+    private readonly userManager: UserManager;
     private readonly siteManager: SiteManager;
     private initialized = undefined;
     /* minimal post created / updated date */
@@ -51,11 +51,11 @@ export default class FeedManager {
 
     private userSubscriptionsCache = new Map<number, number[]>();
 
-    constructor(bookmarkRepository: BookmarkRepository, postRepository: PostRepository, userRepository: UserRepository,
+    constructor(bookmarkRepository: BookmarkRepository, postRepository: PostRepository, userManager: UserManager,
                 siteManager: SiteManager, parser: TheParser, logger: Logger) {
         this.bookmarkRepository = bookmarkRepository;
         this.postRepository = postRepository;
-        this.userRepository = userRepository;
+        this.userManager = userManager;
         this.siteManager = siteManager;
         this.parser = parser;
         this.logger = logger;
@@ -256,6 +256,17 @@ export default class FeedManager {
         return await this.postRepository.getPostsTotal(siteId);
     }
 
+    async getRestrictedPosts(forUserId: number, page: number, perpage: number, format: ContentFormat, sorting: FeedSorting): Promise<PostInfo[] | undefined> {
+        const userRestrictions = await this.userManager.getUserRestrictions(forUserId);
+        if (userRestrictions.restrictedToPostId === false) {
+            return undefined;
+        }
+        // fetch all own posts
+        const rawPosts = await this.postRepository.getPostsByUser(forUserId,
+            forUserId, '', page, perpage, sorting);
+
+        return this.convertRawPosts(forUserId, rawPosts, format);
+    }
 
     async convertRawPosts(forUserId: number, rawPosts: PostRawWithUserData[], format: ContentFormat): Promise<PostInfo[]> {
         const siteById: Record<number, SiteInfo> = {};

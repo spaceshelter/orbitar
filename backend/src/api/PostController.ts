@@ -166,6 +166,9 @@ export default class PostController {
             }
 
             const restrictions = await this.userManager.getUserRestrictions(userId);
+            if (restrictions.restrictedToPostId !== false && rawPost.author !== userId) {
+                return response.error('access-denied', 'You don\'t have permission to view this post', 403);
+            }
 
             const {posts: [post], users} = await this.enricher.enrichRawPosts([rawPost]);
             if (!restrictions.canEditOwnContent) {
@@ -213,6 +216,11 @@ export default class PostController {
         const { id, title, format, content } = request.body;
 
         try {
+            const restrictions = await this.userManager.getUserRestrictions(userId);
+            if (!restrictions.canEditOwnContent) {
+                return response.error('access-denied', 'Access-denied', 403);
+            }
+
             const postInfo = await this.postManager.editPost(userId, id, title, content, format);
             if (!postInfo) {
                 return response.error('no-comment', 'Post not found');
@@ -400,6 +408,12 @@ export default class PostController {
                 return response.error('no-comment', 'Comment not found');
             }
 
+            const restrictions = await this.userManager.getUserRestrictions(userId);
+            if (restrictions.restrictedToPostId && restrictions.restrictedToPostId !== commentInfo.post) {
+                // simplification, but currently getComment is used only for editing, so it's ok
+                return response.error('access-denied', `Commenting restricted to post #${restrictions.restrictedToPostId}`, 403);
+            }
+
             const {allComments: [comment], users} = await this.enricher.enrichRawComments([commentInfo], {}, format,
                 () => false
             );
@@ -462,6 +476,12 @@ export default class PostController {
         }
         const {id, type} = request.body;
         try {
+            const restrictions = await this.userManager.getUserRestrictions(request.session.data.userId);
+            if (restrictions.restrictedToPostId !== false) {
+                // simplification, just disallows the translation
+                return response.error('access-denied', `Translation is not allowed.`, 403);
+            }
+
             return response.success(await this.translationManager.translateEntity(id, type));
         } catch (err) {
             this.logger.error(err);
@@ -478,6 +498,11 @@ export default class PostController {
         const { id, type, format } = request.body;
 
         try {
+            const restrictions = await this.userManager.getUserRestrictions(userId);
+            if (restrictions.restrictedToPostId !== false) {
+                return response.error('access-denied', 'Access-denied', 403);
+            }
+
             const historyInfos = await this.postManager.getHistory(userId, id, type, format);
 
             const history: HistoryEntity[] = historyInfos.map(h => ({

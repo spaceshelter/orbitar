@@ -111,7 +111,7 @@ const userManager = new UserManager(credentialsRepository, userRepository, voteR
     userCache, theParser, notificationManager, redis.client, config.site, logger.child({ service: 'USER' }));
 const inviteManager = new InviteManager(inviteRepository, theParser, userManager);
 const siteManager = new SiteManager(siteRepository, userManager);
-const feedManager = new FeedManager(bookmarkRepository, postRepository, userRepository, siteManager, theParser, logger.child({ service: 'FEED' }));
+const feedManager = new FeedManager(bookmarkRepository, postRepository, userManager, siteManager, theParser, logger.child({ service: 'FEED' }));
 const translationManager = new TranslationManager(translationRepository, postRepository, theParser, logger.child({ service: 'TRANSL' }));
 const postManager = new PostManager(bookmarkRepository, commentRepository, postRepository, feedManager, notificationManager, siteManager, userManager, translationManager, theParser);
 const voteManager = new VoteManager(voteRepository, postManager, userManager, redis.client);

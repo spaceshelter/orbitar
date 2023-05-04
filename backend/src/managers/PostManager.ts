@@ -62,7 +62,7 @@ export default class PostManager {
         return this.postRepository.getPost(postId);
     }
 
-    async getPostsByUserTotal(userId: number, filter: string): Promise<number> {
+    async getPostsByUserTotal(userId: number, filter = ''): Promise<number> {
         if (!this.numberOfPostsCache[userId]) {
             this.numberOfPostsCache[userId] = new ContentNumberCache();
         }
