@@ -309,7 +309,10 @@ export default class PostController {
 
             const overrideUserId = (await this.postManager.getUserIdOverride(postId)) || userId;
 
-            const commentInfo = await this.postManager.createComment(overrideUserId, postId, parentCommentId, content, format);
+            const doFanOutAndNotifications = userRestrictions.restrictedToPostId === false;
+            const commentInfo = await this.postManager.createComment(
+                overrideUserId, postId, parentCommentId, content, format, doFanOutAndNotifications
+            );
             const { allComments : [comment] } = await this.enricher.enrichRawComments([commentInfo], {}, format, () => true);
             comment.canEdit = overrideUserId === userId;
 
