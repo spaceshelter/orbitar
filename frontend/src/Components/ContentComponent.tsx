@@ -135,6 +135,37 @@ function processVideoEmbed(img: HTMLImageElement) {
     return !!videoUrl;
 }
 
+function processCoubEmbed(img: HTMLImageElement) {
+    const coubUrl = img.dataset.coub;
+
+    if (coubUrl && !img.classList.contains('coub-embed-processed')) {
+        const orignalEl = img.parentElement?.cloneNode(true) as HTMLImageElement; // Clone the original img element
+
+        img.classList.add('coub-embed-processed');
+        img.addEventListener('click', (e) => {
+            e.preventDefault();
+            const iframe = document.createElement('iframe');
+            iframe.src = coubUrl + (coubUrl.indexOf('?') === -1 ? '?' : '&') +
+                'muted=false&autostart=true&originalSize=false&startWithHD=true';
+
+            iframe.classList.add('coub-embed');
+            iframe.allowFullscreen = true;
+            iframe.frameBorder = '0';
+            // use current rendered image size as iframe size
+            iframe.width = img.getBoundingClientRect().width.toString();
+            iframe.height = img.getBoundingClientRect().height.toString();
+            iframe.allow = 'autoplay';
+            img.parentElement?.replaceWith(iframe);
+
+            observeOnHidden(iframe, () => {
+                iframe.replaceWith(orignalEl);
+                updateImg(orignalEl.querySelector(`img[data-coub="${coubUrl}"]`) as HTMLImageElement);
+            });
+        });
+    }
+    return !!coubUrl;
+}
+
 function updateVimeo(div: HTMLDivElement) {
     const videos = div.querySelectorAll('iframe.vimeo-embed');
 
@@ -173,7 +204,7 @@ function loadVimeoPlayer(onload: () => void) {
 }
 
 function updateImg(img: HTMLImageElement) {
-    if (processYtEmbed(img) || processVideoEmbed(img)) {
+    if (processYtEmbed(img) || processVideoEmbed(img) ||  processCoubEmbed(img)) {
         return;
     }
 

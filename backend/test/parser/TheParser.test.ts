@@ -90,6 +90,12 @@ test('mp4 video element', () => {
     );
 });
 
+test('coub embed', () => {
+    expect(p.parse('https://coub.com/view/1eyshv').text).toEqual(
+        `<a class="coub-embed" href="https://coub.com/view/1eyshv" target="_blank"><img src="https://orbitar.media/coub/1eyshv" alt="" data-coub="https://coub.com/embed/1eyshv"/></a>`
+    );
+});
+
 test('strip leading and trailing non-printable chars', () => {
     const orig = Buffer.from([0x00, 0x01, 0x20, 0x34, 0x32, 0x16, 0x20, 0x0D, 0x0A]).toString('utf8');
     const parsed = p.parse(orig).text;
