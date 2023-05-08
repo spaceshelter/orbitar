@@ -1,7 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import classNames from 'classnames';
 import styles from './ContentComponent.module.scss';
-import {observeOnHidden} from '../Services/ObserverService';
 import type * as Vimeo from '@vimeo/player';
 
 interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
@@ -50,7 +49,6 @@ function updateContent(div: HTMLDivElement) {
 
 function updateVideo(video: HTMLVideoElement) {
     video.addEventListener('play', () => stopInnerVideos(document.body, video));
-    observeOnHidden(video, () => stopVideo(video));
     if (video.dataset.aspectRatioProcessed) {
         return;
     }
@@ -81,7 +79,6 @@ function processYtEmbed(img: HTMLImageElement) {
             iframe.classList.add('youtube-embed');
             img.parentElement?.replaceWith(iframe);
             loadYTPlayer(iframe);
-            observeOnHidden(iframe, () => stopVideo(iframe));
         });
     }
     return !!ytUrl;
@@ -129,7 +126,6 @@ function processVideoEmbed(img: HTMLImageElement) {
             video.style.height = img.height.toString() + 'px';
             img.parentElement?.replaceWith(video);
             video.addEventListener('play', () => stopInnerVideos(document.body, video));
-            observeOnHidden(video, () => stopVideo(video));
         });
     }
     return !!videoUrl;
@@ -146,7 +142,6 @@ function updateVimeo(div: HTMLDivElement) {
         player.on('play', function() {
             stopInnerVideos(document.body, iframe);
         });
-        observeOnHidden(iframe, () => stopVideo(iframe));
     };
 
     const attachAll = () => {
