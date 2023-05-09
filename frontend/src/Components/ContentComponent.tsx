@@ -21,6 +21,8 @@ declare global {
 export const LARGE_AUTO_CUT = 650;
 export const SMALL_AUTO_CUT = 100;
 
+const iframeToOriginalEl = new WeakMap<HTMLIFrameElement, HTMLElement>();
+
 function updateContent(div: HTMLDivElement) {
     div.querySelectorAll('img').forEach(img => {
         if (img.complete) {
@@ -157,9 +159,11 @@ function processCoubEmbed(img: HTMLImageElement) {
             iframe.allow = 'autoplay';
             img.parentElement?.replaceWith(iframe);
 
+            iframeToOriginalEl.set(iframe, orignalEl);
+            stopInnerVideos(document.body, iframe);
+
             observeOnHidden(iframe, () => {
-                iframe.replaceWith(orignalEl);
-                updateImg(orignalEl.querySelector(`img[data-coub="${coubUrl}"]`) as HTMLImageElement);
+                stopVideo(iframe);
             });
         });
     }
@@ -281,24 +285,25 @@ function stopVideo(el: HTMLVideoElement | HTMLIFrameElement) {
         );
         return;
     }
+    if (el instanceof HTMLIFrameElement && el.classList.contains('coub-embed')) {
+        const originalEl = iframeToOriginalEl.get(el);
+        if (originalEl) {
+            el.replaceWith(originalEl);
+            updateImg(originalEl.querySelector(`img`) as HTMLImageElement);
+        }
+    }
 }
 
-function stopInnerVideos(el: Element, exept?: HTMLVideoElement | HTMLIFrameElement) {
-    el.querySelectorAll('video').forEach(video => {
-        if (video === exept)
-            return;
-        stopVideo(video);
-    });
-    el.querySelectorAll('iframe.youtube-embed').forEach(iframe => {
-        if (iframe === exept)
-            return;
-        stopVideo(iframe as HTMLIFrameElement);
-    });
-    el.querySelectorAll('iframe.vimeo-embed').forEach(iframe => {
-        if (iframe === exept)
-            return;
-        stopVideo(iframe as HTMLIFrameElement);
-    });
+function stopInnerVideos(el: Element, except?: HTMLVideoElement | HTMLIFrameElement) {
+    el.querySelectorAll('video,iframe.youtube-embed,iframe.vimeo-embed,iframe.coub-embed')
+        .forEach(iframe => {
+            if (iframe === except) {
+                return;
+            }
+            if (iframe instanceof HTMLIFrameElement || iframe instanceof HTMLVideoElement) {
+                stopVideo(iframe as HTMLIFrameElement | HTMLVideoElement);
+            }
+        });
 }
 
 export default function ContentComponent(props: ContentComponentProps) {
