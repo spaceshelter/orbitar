@@ -92,7 +92,8 @@ export const UserProfileKarma = (props: UserProfileKarmaProps) => {
         <><span className={'i i-no-poop'}></span>Нет права ставить плюсы и минусы постам и комментариям. Голоса в карму другим людям отменены.</>,
 
         restrictionsResult.restrictedToPostId === true &&
-        <><span className={'i i-dead'}></span>Права максимально ограничены, есть возможность создать свой последний пост.</>,
+        <><span className={'i i-dead'}></span>Права максимально ограничены, есть возможность создать свой последний пост.
+            Доступ ограничен только своими постами.</>,
 
         Number.isFinite(restrictionsResult.restrictedToPostId) &&
         <>
@@ -102,6 +103,7 @@ export const UserProfileKarma = (props: UserProfileKarmaProps) => {
                 id: restrictionsResult.restrictedToPostId as number,
                 site: 'main'
             }}> последнем посте</PostLink>.
+                Доступ ограничен только своими постами.
             </div>
         </>,
     ].filter(Boolean);

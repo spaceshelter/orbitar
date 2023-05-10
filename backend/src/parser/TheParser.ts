@@ -194,6 +194,7 @@ export default class TheParser {
             this.processYoutube(pUrl) ||
             this.processVimeo(pUrl) ||
             this.processImage(pUrl) ||
+            this.processCoub(pUrl) ||
             this.processVideo(pUrl);
         if (res !== false) {
             return res;
@@ -213,6 +214,25 @@ export default class TheParser {
     processVideo(url: Url<string>) {
         if (url.pathname.match(/\.(mp4|webm)(\/raw)?$/)) {
             return this.renderVideoTag(url.toString(), false);
+        }
+
+        return false;
+    }
+
+    processCoub(url: Url<string>) {
+        const coubIdPattern = /^\/view\/(\w+)$/;
+
+        if (url.host === 'coub.com' || url.host === 'www.coub.com') {
+            const match = url.pathname.match(coubIdPattern);
+            if (match) {
+                const coubId = match[1];
+                const origUrl = `https://coub.com/view/${coubId}`;
+                const previewUrl = `${this.mediaHostingConfig.url}/coub/${coubId}`;
+                const embedUrl = `https://coub.com/embed/${coubId}`;
+
+                return `<a class="coub-embed" href="${encodeURI(origUrl)}" target="_blank">` +
+                    `<img src="${encodeURI(previewUrl)}" alt="" data-coub="${encodeURI(embedUrl)}"/></a>`;
+            }
         }
 
         return false;

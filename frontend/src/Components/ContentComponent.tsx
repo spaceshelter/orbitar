@@ -20,6 +20,8 @@ declare global {
 export const LARGE_AUTO_CUT = 650;
 export const SMALL_AUTO_CUT = 100;
 
+const iframeToOriginalEl = new WeakMap<HTMLIFrameElement, HTMLElement>();
+
 function updateContent(div: HTMLDivElement) {
     div.querySelectorAll('img').forEach(img => {
         if (img.complete) {
@@ -131,6 +133,39 @@ function processVideoEmbed(img: HTMLImageElement) {
     return !!videoUrl;
 }
 
+function processCoubEmbed(img: HTMLImageElement) {
+    const coubUrl = img.dataset.coub;
+
+    if (coubUrl && !img.classList.contains('coub-embed-processed')) {
+        const orignalEl = img.parentElement?.cloneNode(true) as HTMLImageElement; // Clone the original img element
+
+        img.classList.add('coub-embed-processed');
+        img.addEventListener('click', (e) => {
+            e.preventDefault();
+            const iframe = document.createElement('iframe');
+            iframe.src = coubUrl + (coubUrl.indexOf('?') === -1 ? '?' : '&') +
+                'muted=false&autostart=true&originalSize=false&startWithHD=true';
+
+            iframe.classList.add('coub-embed');
+            iframe.allowFullscreen = true;
+            iframe.frameBorder = '0';
+            // use current rendered image size as iframe size
+            iframe.width = img.getBoundingClientRect().width.toString();
+            iframe.height = img.getBoundingClientRect().height.toString();
+            iframe.allow = 'autoplay';
+            img.parentElement?.replaceWith(iframe);
+
+            iframeToOriginalEl.set(iframe, orignalEl);
+            stopInnerVideos(document.body, iframe);
+
+            observeOnHidden(iframe, () => {
+                stopVideo(iframe);
+            });
+        });
+    }
+    return !!coubUrl;
+}
+
 function updateVimeo(div: HTMLDivElement) {
     const videos = div.querySelectorAll('iframe.vimeo-embed');
 
@@ -168,7 +203,7 @@ function loadVimeoPlayer(onload: () => void) {
 }
 
 function updateImg(img: HTMLImageElement) {
-    if (processYtEmbed(img) || processVideoEmbed(img)) {
+    if (processYtEmbed(img) || processVideoEmbed(img) ||  processCoubEmbed(img)) {
         return;
     }
 
@@ -245,24 +280,25 @@ function stopVideo(el: HTMLVideoElement | HTMLIFrameElement) {
         );
         return;
     }
+    if (el instanceof HTMLIFrameElement && el.classList.contains('coub-embed')) {
+        const originalEl = iframeToOriginalEl.get(el);
+        if (originalEl) {
+            el.replaceWith(originalEl);
+            updateImg(originalEl.querySelector(`img`) as HTMLImageElement);
+        }
+    }
 }
 
-function stopInnerVideos(el: Element, exept?: HTMLVideoElement | HTMLIFrameElement) {
-    el.querySelectorAll('video').forEach(video => {
-        if (video === exept)
-            return;
-        stopVideo(video);
-    });
-    el.querySelectorAll('iframe.youtube-embed').forEach(iframe => {
-        if (iframe === exept)
-            return;
-        stopVideo(iframe as HTMLIFrameElement);
-    });
-    el.querySelectorAll('iframe.vimeo-embed').forEach(iframe => {
-        if (iframe === exept)
-            return;
-        stopVideo(iframe as HTMLIFrameElement);
-    });
+function stopInnerVideos(el: Element, except?: HTMLVideoElement | HTMLIFrameElement) {
+    el.querySelectorAll('video,iframe.youtube-embed,iframe.vimeo-embed,iframe.coub-embed')
+        .forEach(iframe => {
+            if (iframe === except) {
+                return;
+            }
+            if (iframe instanceof HTMLIFrameElement || iframe instanceof HTMLVideoElement) {
+                stopVideo(iframe as HTMLIFrameElement | HTMLVideoElement);
+            }
+        });
 }
 
 export default function ContentComponent(props: ContentComponentProps) {
