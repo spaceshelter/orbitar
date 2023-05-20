@@ -383,8 +383,10 @@ export default class TheParser {
         const orbitarMediaPoster = () => {
             if (url.startsWith(this.mediaHostingConfig.url)) {
                 const match = url.match(/.*\/([^.]+\.mp4)(\/raw)?$/);
+                // add origin subdomain to `mediaHostingConfig.url`
+                const origin = this.mediaHostingConfig.url.replace(/^https?:\/\//, 'https://origin.');
                 return match && [`${this.mediaHostingConfig.url}/preview/${encodeURI(match[1])}`,
-                    `${this.mediaHostingConfig.url}/${encodeURI(match[1])}/raw`];
+                    `${origin}/${encodeURI(match[1])}/raw`];
             }
         };
         const dumpVideoPoster = () => {

@@ -74,13 +74,13 @@ test('idiod video embed', () => {
 
 test('orbitar video embed', () => {
     expect(p.parse('https://orbitar.media/8feuw2.mp4').text).toEqual(
-        `<a class="video-embed" href="https://orbitar.media/8feuw2.mp4" target="_blank"><img src="https://orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://orbitar.media/8feuw2.mp4/raw"/></a>`
+        `<a class="video-embed" href="https://orbitar.media/8feuw2.mp4" target="_blank"><img src="https://orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://origin.orbitar.media/8feuw2.mp4/raw"/></a>`
     );
 });
 
 test('raw orbitar video embed', () => {
     expect(p.parse('https://orbitar.media/8feuw2.mp4/raw').text).toEqual(
-        `<a class="video-embed" href="https://orbitar.media/8feuw2.mp4/raw" target="_blank"><img src="https://orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://orbitar.media/8feuw2.mp4/raw"/></a>`
+        `<a class="video-embed" href="https://orbitar.media/8feuw2.mp4/raw" target="_blank"><img src="https://orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://origin.orbitar.media/8feuw2.mp4/raw"/></a>`
     );
 });
 
