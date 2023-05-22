@@ -109,9 +109,24 @@ export function useTheme() {
     return useContext(ThemeContext);
 }
 
+function getPreferredColorScheme() {
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+        return 'light';
+    } else {
+        return undefined;
+    }
+}
+
 function restoreTheme() {
     const storedStyles = localStorage.getItem('theme');
     if (!storedStyles) {
+        const preferredColorScheme = getPreferredColorScheme();
+        if (preferredColorScheme) {
+            const themes = getThemes();
+            return { theme: preferredColorScheme, styles: themes[preferredColorScheme] };
+        }
         return { theme: undefined, styles: undefined };
     }
     try {
