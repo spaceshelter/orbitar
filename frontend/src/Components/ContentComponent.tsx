@@ -3,6 +3,7 @@ import classNames from 'classnames';
 import styles from './ContentComponent.module.scss';
 import {observeOnHidden} from '../Services/ObserverService';
 import type * as Vimeo from '@vimeo/player';
+import {getVideoAutopause} from './UserProfileSettings';
 
 interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
     content: string;
@@ -52,7 +53,10 @@ function updateContent(div: HTMLDivElement) {
 
 function updateVideo(video: HTMLVideoElement) {
     video.addEventListener('play', () => stopInnerVideos(document.body, video));
-    observeOnHidden(video, () => stopVideo(video));
+    if (getVideoAutopause()) {
+        observeOnHidden(video, () => stopVideo(video));
+    }
+
     if (video.dataset.aspectRatioProcessed) {
         return;
     }
@@ -83,7 +87,9 @@ function processYtEmbed(img: HTMLImageElement) {
             iframe.classList.add('youtube-embed');
             img.parentElement?.replaceWith(iframe);
             loadYTPlayer(iframe);
-            observeOnHidden(iframe, () => stopVideo(iframe));
+            if (getVideoAutopause()) {
+                observeOnHidden(iframe, () => stopVideo(iframe));
+            }
         });
     }
     return !!ytUrl;
@@ -131,7 +137,9 @@ function processVideoEmbed(img: HTMLImageElement) {
             video.style.height = img.height.toString() + 'px';
             img.parentElement?.replaceWith(video);
             video.addEventListener('play', () => stopInnerVideos(document.body, video));
-            observeOnHidden(video, () => stopVideo(video));
+            if (getVideoAutopause()) {
+                observeOnHidden(video, () => stopVideo(video));
+            }
         });
     }
     return !!videoUrl;
@@ -162,6 +170,7 @@ function processCoubEmbed(img: HTMLImageElement) {
             iframeToOriginalEl.set(iframe, orignalEl);
             stopInnerVideos(document.body, iframe);
 
+            // coubs are always stopped when hidden
             observeOnHidden(iframe, () => {
                 stopVideo(iframe);
             });
@@ -181,7 +190,9 @@ function updateVimeo(div: HTMLDivElement) {
         player.on('play', function() {
             stopInnerVideos(document.body, iframe);
         });
-        observeOnHidden(iframe, () => stopVideo(iframe));
+        if (getVideoAutopause()) {
+            observeOnHidden(iframe, () => stopVideo(iframe));
+        }
     };
 
     const attachAll = () => {

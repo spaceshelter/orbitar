@@ -19,6 +19,10 @@ type UserProfileSettingsProps = {
   isBarmalini?: boolean;
 };
 
+export function getVideoAutopause(): boolean {
+    return JSON.parse(localStorage.getItem('autoStopVideos') || 'false');
+}
+
 export default function UserProfileSettings(props: UserProfileSettingsProps) {
   useEffect(() => {
     window.scrollTo({ top: 0 });
@@ -29,6 +33,8 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
   const location = useLocation();
 
   let gender = props.gender;
+
+    const [autoStop, setAutoStop] = React.useState(getVideoAutopause());
 
     const confirmWrapper = (message: string, callback: () => void) => (e: React.MouseEvent) => {
         e.preventDefault();
@@ -66,6 +72,10 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
       }
   );
 
+    const toggleAutoStop = () => {
+        setAutoStop(!autoStop);
+    };
+
   const handleGenderChange = (e: React.MouseEvent) => {
     e.preventDefault();
     if (gender === undefined) {
@@ -86,6 +96,10 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
     });
   };
 
+    useEffect(() => {
+        localStorage.setItem('autoStopVideos', JSON.stringify(autoStop));
+    }, [autoStop]);
+
     return (
         <>
             <div>
@@ -97,6 +111,9 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
                             )
                         )
                     } </button>}
+                <button className={buttonStyles.settingsButton} onClick={toggleAutoStop}>
+                    Видео автопауза: {autoStop ? 'Вкл' : 'Выкл'}
+                </button>
                 {<ThemeToggleComponent dynamic={true} buttonLabel="Сменить тему"/>}
             </div>
             {props.barmaliniAccess && <BarmaliniAccess/>}
