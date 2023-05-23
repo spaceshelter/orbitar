@@ -31,9 +31,14 @@ export default class TheParser {
     static readonly VERSION = 2;
 
     private readonly mediaHostingConfig: MediaHostingConfig;
+    private readonly mediaHostingUrlOrigin: string;
 
     constructor(mediaHosting: MediaHostingConfig) {
         this.mediaHostingConfig = mediaHosting;
+        // add origin. subdomain to the url
+        this.mediaHostingUrlOrigin =
+            this.mediaHostingConfig.url.replace(/^https?:\/\//, 'https://origin.');
+
         this.allowedTags = {
             a: (node) => this.parseA(node),
             img: (node) => this.parseImg(node),
@@ -381,12 +386,10 @@ export default class TheParser {
                 `https://idiod.video/${encodeURI(match[1])}`];
         };
         const orbitarMediaPoster = () => {
-            if (url.startsWith(this.mediaHostingConfig.url)) {
+            if (url.startsWith(this.mediaHostingConfig.url) || url.startsWith(this.mediaHostingUrlOrigin)) {
                 const match = url.match(/.*\/([^.]+\.mp4)(\/raw)?$/);
-                // add origin subdomain to `mediaHostingConfig.url`
-                const origin = this.mediaHostingConfig.url.replace(/^https?:\/\//, 'https://origin.');
                 return match && [`${this.mediaHostingConfig.url}/preview/${encodeURI(match[1])}`,
-                    `${origin}/${encodeURI(match[1])}/raw`];
+                    `${this.mediaHostingUrlOrigin}/${encodeURI(match[1])}/raw`];
             }
         };
         const dumpVideoPoster = () => {
@@ -397,6 +400,9 @@ export default class TheParser {
         const posterUrl = imgurPoster() || idiodPoster() || dumpVideoPoster() || orbitarMediaPoster();
         if (posterUrl) {
             const [poster, video] = posterUrl;
+            if (url.startsWith(this.mediaHostingUrlOrigin)) {
+                url = url.replace(this.mediaHostingUrlOrigin, this.mediaHostingConfig.url);
+            }
             return `<a class="video-embed" href="${encodeURI(url)}" target="_blank">` +
                 `<img src="${encodeURI(poster)}" alt="" data-video="${encodeURI(video)}"${loop?' data-loop="true"':''}/></a>`;
         }
