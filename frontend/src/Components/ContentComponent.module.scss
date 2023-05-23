@@ -25,6 +25,13 @@
   img, :global(a.youtube-embed) img, :global(a.video-embed) img, :global(a.coub-embed) img {
     max-width: 100%;
     max-height: 500px;
+    height: auto;
+    object-fit: contain;
+    //object-position: 0 50%;
+  }
+
+  :global(a.youtube-embed) img, :global(a.video-embed) img, :global(a.coub-embed) img {
+    background-color: var(--lowered);
   }
 
   :global(a.youtube-embed), :global(a.video-embed), :global(a.coub-embed)  {
