@@ -6,6 +6,7 @@ import Url from 'url-parse';
 import qs from 'qs';
 import {mentionsRegex, urlRegex, urlRegexExact} from './regexprs';
 import {MediaHostingConfig} from '../config';
+import {decryptMetadata} from './CryptoUtils';
 
 export type ParseResult = {
     text: string;
@@ -31,9 +32,12 @@ export default class TheParser {
     static readonly VERSION = 2;
 
     private readonly mediaHostingConfig: MediaHostingConfig;
+    private readonly mediaHostingUrl: URL;
 
     constructor(mediaHosting: MediaHostingConfig) {
         this.mediaHostingConfig = mediaHosting;
+        this.mediaHostingUrl = new URL(mediaHosting.url);
+
         this.allowedTags = {
             a: (node) => this.parseA(node),
             img: (node) => this.parseImg(node),
@@ -203,12 +207,20 @@ export default class TheParser {
         return `<a href="${encodeURI(decodeURI(url))}" target="_blank">${htmlEscape(decodeURI(url))}</a>`;
     }
 
-    processImage(url: Url<string>) {
-        if (url.pathname.match(/\.(jpg|gif|png|webp|jpeg|svg)$/)) {
-            return `<img src="${encodeURI(url.toString())}" alt=""/>`;
+    processImage(url: Url<string>, ignoreExt = false) {
+        if (!ignoreExt && !url.pathname.match(/\.(jpg|gif|png|webp|jpeg|svg)$/)) {
+            return false;
         }
 
-        return false;
+        if (url.host === this.mediaHostingUrl.host) {
+            const metadata = this.extractMetadata(url.pathname);
+            if (metadata) {
+                return `<img width="${metadata.width}" height="${metadata.height}"` +
+                    ` src="${this.mediaHostingConfig.url}${url.pathname}" alt=""/>`;
+            }
+        }
+
+        return `<img src="${encodeURI(url.toString())}" alt=""/>`;
     }
 
     processVideo(url: Url<string>) {
@@ -358,7 +370,7 @@ export default class TheParser {
             return this.parseDisallowedTag(node);
         }
 
-        return { text: `<img src="${encodeURI(url)}" alt=""/>`, mentions: [], urls: [], images: [url] };
+        return {text: this.processImage(new Url(url), true) || '', mentions: [], urls: [], images: [url]};
     }
 
     parseVideo(node: Element): ParseResult {
@@ -371,32 +383,37 @@ export default class TheParser {
     }
 
     renderVideoTag(url: string, loop: boolean) {
-        const imgurPoster = () => {
+        type PosterTuple = [string, string, { width: number, height: number } | undefined];
+        type PosterParser = () => PosterTuple | undefined;
+
+        const imgurPoster: PosterParser = () => {
             const match = url.match(/https?:\/\/i.imgur.com\/([^.]+).mp4$/);
-            return match && [`https://i.imgur.com/${encodeURI(match[1])}.jpg`, url];
+            return match && [`https://i.imgur.com/${encodeURI(match[1])}.jpg`, url, undefined];
         };
-        const idiodPoster = () => {
+        const idiodPoster: PosterParser = () => {
             const match = url.match(/https?:\/\/idiod.video\/([^.]+\.mp4)$/);
             return match && [`https://idiod.video/preview/${encodeURI(match[1])}`,
-                `https://idiod.video/${encodeURI(match[1])}`];
+                `https://idiod.video/${encodeURI(match[1])}`, undefined];
         };
-        const orbitarMediaPoster = () => {
+        const orbitarMediaPoster: PosterParser = () => {
             if (url.startsWith(this.mediaHostingConfig.url)) {
                 const match = url.match(/.*\/([^.]+\.mp4)(\/raw)?$/);
                 return match && [`${this.mediaHostingConfig.url}/preview/${encodeURI(match[1])}`,
-                    `${this.mediaHostingConfig.url}/${encodeURI(match[1])}/raw`];
+                    `${this.mediaHostingConfig.url}/${encodeURI(match[1])}/raw`, this.extractMetadata(url)];
             }
         };
-        const dumpVideoPoster = () => {
+        const dumpVideoPoster: PosterParser = () => {
             const match = url.match(/https?:\/\/dump.video\/i\/([^.]+)\.mp4$/);
             return match && [`https://dump.video/i/${encodeURI(match[1])}.jpg`,
-                `https://dump.video/i/${encodeURI(match[1])}.mp4`];
+                `https://dump.video/i/${encodeURI(match[1])}.mp4`, undefined];
         };
-        const posterUrl = imgurPoster() || idiodPoster() || dumpVideoPoster() || orbitarMediaPoster();
+        const posterUrl: undefined | PosterTuple =
+            imgurPoster() || idiodPoster() || dumpVideoPoster() || orbitarMediaPoster();
         if (posterUrl) {
-            const [poster, video] = posterUrl;
+            const [poster, video, md] = posterUrl;
             return `<a class="video-embed" href="${encodeURI(url)}" target="_blank">` +
-                `<img src="${encodeURI(poster)}" alt="" data-video="${encodeURI(video)}"${loop?' data-loop="true"':''}/></a>`;
+                `<img src="${encodeURI(poster)}" ${md?`width="${md.width}" height="${md.height}" `:''}`+
+                `alt="" data-video="${encodeURI(video)}"${loop?' data-loop="true"':''}/></a>`;
         }
         return `<video ${loop ? 'loop=""' : ''} preload="metadata" controls="" width="500"><source src="${encodeURI(url)}" type="video/mp4"></video>`;
     }
@@ -424,5 +441,30 @@ export default class TheParser {
 
     validUrl(url: string) {
         return encodeURI(decodeURI(url)).match(urlRegexExact);
+    }
+
+    extractMetadata(path: string) {
+        try {
+            const match = path.match('(.*)/([^/.]*)\\.([^.]*)$');
+            if (match) {
+                const [, , hash, ext] = match;
+                if (hash.length > 64) {
+                    // protect against maliciously long hash
+                    return null;
+                }
+                const metadata = decryptMetadata(hash, this.mediaHostingConfig.dimsAesKey);
+                const metadataMath = metadata.match(/(\d+):(\d+):(.*)/);
+                if (metadataMath && metadataMath.length === 4 && ext === metadataMath[3]) {
+                    return {
+                        width: parseInt(metadataMath[1], 10),
+                        height: parseInt(metadataMath[2], 10),
+                        ext: metadataMath[3],
+                    };
+                }
+            }
+        } catch (e) {
+            /*ignore*/
+        }
+        return null;
     }
 }

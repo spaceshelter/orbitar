@@ -3,7 +3,7 @@ import TheParser from "../../src/parser/TheParser";
 
 const p = new TheParser({
     url: 'https://orbitar.media',
-    dimsAesKey: ''
+    dimsAesKey: 'k7DG2CekzdUfckbr7ay9PESLvDPBQf9S' // note: random key, don't use it for anything else!
 });
 
 test('parse A tag', () => {
@@ -73,8 +73,11 @@ test('idiod video embed', () => {
 });
 
 test('orbitar video embed', () => {
-    expect(p.parse('https://orbitar.media/8feuw2.mp4').text).toEqual(
-        `<a class="video-embed" href="https://orbitar.media/8feuw2.mp4" target="_blank"><img src="https://orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://orbitar.media/8feuw2.mp4/raw"/></a>`
+    expect(p.parse('https://orbitar.media/2CoP3GlQbjzFhGkh1jkObDwsgg1NsmV1FP.mp4').text).toEqual(
+        `<a class="video-embed" href="https://orbitar.media/2CoP3GlQbjzFhGkh1jkObDwsgg1NsmV1FP.mp4" `+
+        `target="_blank"><img src="https://orbitar.media/preview/2CoP3GlQbjzFhGkh1jkObDwsgg1NsmV1FP.mp4" `+
+        `width="123" height="456" `+
+        `alt="" data-video="https://orbitar.media/2CoP3GlQbjzFhGkh1jkObDwsgg1NsmV1FP.mp4/raw"/></a>`
     );
 });
 
@@ -100,6 +103,18 @@ test('strip leading and trailing non-printable chars', () => {
     const orig = Buffer.from([0x00, 0x01, 0x20, 0x34, 0x32, 0x16, 0x20, 0x0D, 0x0A]).toString('utf8');
     const parsed = p.parse(orig).text;
     expect(parsed).toEqual('42');
+});
+
+test('orbitar image link', () => {
+    expect(p.parse('https://orbitar.media/2BzdP5FgGRLHrxhLzLZIrHHAcrf8TWlCef.jpg').text).toEqual(
+        `<img width="123" height="456" src="https://orbitar.media/2BzdP5FgGRLHrxhLzLZIrHHAcrf8TWlCef.jpg" alt=""/>`
+    );
+});
+
+test('orbitar image', () => {
+    expect(p.parse('<img src="https://orbitar.media/2BzdP5FgGRLHrxhLzLZIrHHAcrf8TWlCef.jpg">').text).toEqual(
+        `<img width="123" height="456" src="https://orbitar.media/2BzdP5FgGRLHrxhLzLZIrHHAcrf8TWlCef.jpg" alt=""/>`
+    );
 });
 
 test('remove line breaks at the beginning and the end', () => {
@@ -156,6 +171,19 @@ test('remove extra line break after blockquote tag', () => {
     ).toEqual(
         '<blockquote>Hello<br />\n<blockquote>world</blockquote></blockquote>test'
     );
+});
+
+test('metadata decrypt', () => {
+    expect(
+        p.extractMetadata('/2BzpgpcfkWRAzyTQizXMcLSXBbahQ5e1Xa.jpg')
+    ).toEqual({
+        width: 123,
+        height: 456,
+        ext: 'jpg'
+    });
+
+    // mismatched extensnion
+    expect(p.extractMetadata('/2BzpgpcfkWRAzyTQizXMcLSXBbahQ5e1Xa.gif')).toBeNull();
 });
 
 test('remove extra line break after expand tag', () => {

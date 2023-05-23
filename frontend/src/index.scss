@@ -200,6 +200,9 @@ img.image-scalable {
   cursor: zoom-in;
   max-width: 100%;
   max-height: 500px;
+  height: auto;
+  object-fit: contain;
+  object-position: 0 50%;
 }
 img.image-preview {
   max-width: 100%;
