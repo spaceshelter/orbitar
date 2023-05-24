@@ -84,18 +84,9 @@ function processYtEmbed(img: HTMLImageElement) {
             iframe.allow = 'autoplay; clipboard-write; encrypted-media; picture-in-picture';
             iframe.classList.add('youtube-embed');
             img.parentElement?.replaceWith(iframe);
-            loadYTPlayer(iframe);
-            if (getVideoAutopause()) {
-                observeOnHidden(iframe, () => stopVideo(iframe));
-            }
-        });
-    }
-    return !!ytUrl;
-}
 
-function loadYTPlayer(iframe: HTMLIFrameElement) {
-    const attachYTPlayer = () => {
-        new YT.Player(iframe as HTMLIFrameElement,    {
+            loadYTPlayer(() => {
+                new YT.Player(iframe, {
                     events: {
                         onStateChange: (event) => {
                             if (event.data === YT.PlayerState.PLAYING) {
@@ -104,14 +95,26 @@ function loadYTPlayer(iframe: HTMLIFrameElement) {
                         },
                     }
                 });
-    };
+            });
 
+            if (getVideoAutopause()) {
+                observeOnHidden(iframe, () => stopVideo(iframe));
+            }
+        });
+    }
+    return !!ytUrl;
+}
+
+function loadYTPlayer(onload: () => void) {
     if (window.YT) {
-        attachYTPlayer();
-    } else {
+        onload();
+        return;
+    }
+    if (!document.getElementById('yt-embed')) {
         const tag = document.createElement('script');
+        tag.id = 'yt-embed';
         tag.src = 'https://www.youtube.com/player_api';
-        window.onYouTubeIframeAPIReady = attachYTPlayer;
+        window.onYouTubeIframeAPIReady = onload;
         document.head.append(tag);
     }
 }
