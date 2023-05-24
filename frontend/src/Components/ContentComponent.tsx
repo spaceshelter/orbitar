@@ -86,7 +86,7 @@ function processYtEmbed(img: HTMLImageElement) {
             img.parentElement?.replaceWith(iframe);
 
             loadYTPlayer(() => {
-                new YT.Player(iframe, {
+                const player = new YT.Player(iframe, {
                     events: {
                         onStateChange: (event) => {
                             if (event.data === YT.PlayerState.PLAYING) {
@@ -95,6 +95,7 @@ function processYtEmbed(img: HTMLImageElement) {
                         },
                     }
                 });
+                player.playVideo(); //?
             });
 
             if (getVideoAutopause()) {
@@ -202,6 +203,7 @@ function processVimeoEmbed(img: HTMLImageElement) {
                 player.on('play', function() {
                     stopInnerVideos(document.body, iframe);
                 });
+                player.play();
             });
 
             if (getVideoAutopause()) {
