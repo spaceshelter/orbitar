@@ -62,7 +62,7 @@ export default class UserController {
         });
 
         const bioSchema = Joi.object<UserSaveBioRequest>({
-            bio: Joi.string().required().max(1024)
+            bio: Joi.string().required().max(1024 * 4)
         });
 
         const genderSchema = Joi.object<UserSaveGenderRequest>({
