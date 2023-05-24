@@ -308,9 +308,13 @@ export default class TheParser {
         if (!/^\d+$/.test(videoId)) return false;
 
         const startTime = url.hash ? parseTime(qs.parse(url.hash.substring(1)).t) : 0;
-        const embed = `https://player.vimeo.com/video/${videoId}${startTime ? '#t=' + startTime : ''}`;
 
-        return `<iframe class="vimeo-embed" src="${encodeURI(embed)}" width="480" height="360" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
+        const origUrl = `https://vimeo.com/${videoId}${startTime ? '#t=' + startTime : ''}`;
+        const previewUrl = `${this.mediaHostingConfig.url}/vimeo/${videoId}`;
+        const embedUrl = `https://player.vimeo.com/video/${videoId}${startTime ? '#t=' + startTime : ''}`;
+
+        return `<a class="vimeo-embed" href="${encodeURI(origUrl)}" target="_blank">` +
+        `<img src="${encodeURI(previewUrl)}" alt="" data-vimeo="${encodeURI(embedUrl)}"/></a>`;
 
         function parseTime(time) {
             if (!time) return 0;
