@@ -22,12 +22,12 @@
     color: var(--fg);
   }
 
-  img, :global(a.youtube-embed) img, :global(a.video-embed) img, :global(a.coub-embed) img {
+  img, :global(a.youtube-embed) img, :global(a.video-embed) img, :global(a.coub-embed) img, :global(a.vimeo-embed) img {
     max-width: 100%;
     max-height: 500px;
   }
 
-  :global(a.youtube-embed), :global(a.video-embed), :global(a.coub-embed)  {
+  :global(a.youtube-embed), :global(a.video-embed), :global(a.coub-embed), :global(a.vimeo-embed) {
     position: relative;
     display: inline-block;
 
@@ -68,6 +68,18 @@
 
     &:after {
       background: url(../Assets/coub.svg) no-repeat center center;
+      opacity: 0.8;
+    }
+    &:hover:after {
+      opacity: 1;
+    }
+  }
+
+  :global(a.vimeo-embed) {
+
+    &:after {
+      background: url(../Assets/vimeo.svg) no-repeat center center;
+
       opacity: 0.8;
     }
     &:hover:after {

@@ -54,7 +54,8 @@ test('vimeo player embed', () => {
     expect(
         p.parse('https://www.vimeo.com/123456789').text
     ).toEqual(
-        `<iframe class="vimeo-embed" src="https://player.vimeo.com/video/123456789" width="480" height="360" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`
+        `<a class="vimeo-embed" href="https://vimeo.com/123456789" target="_blank">` +
+        `<img src="https://orbitar.media/vimeo/123456789" alt="" data-vimeo="https://player.vimeo.com/video/123456789"/></a>`
     );
 });
 

@@ -40,8 +40,6 @@ function updateContent(div: HTMLDivElement) {
         updateVideo(video);
     });
 
-    updateVimeo(div);
-
     div.querySelectorAll('span.spoiler').forEach(spoiler => {
         updateSpoiler(spoiler as HTMLSpanElement);
     });
@@ -86,7 +84,20 @@ function processYtEmbed(img: HTMLImageElement) {
             iframe.allow = 'autoplay; clipboard-write; encrypted-media; picture-in-picture';
             iframe.classList.add('youtube-embed');
             img.parentElement?.replaceWith(iframe);
-            loadYTPlayer(iframe);
+
+            loadYTPlayer(() => {
+                const player = new YT.Player(iframe, {
+                    events: {
+                        onStateChange: (event) => {
+                            if (event.data === YT.PlayerState.PLAYING) {
+                                stopInnerVideos(document.body, iframe);
+                            }
+                        },
+                    }
+                });
+                player.playVideo(); //?
+            });
+
             if (getVideoAutopause()) {
                 observeOnHidden(iframe, () => stopVideo(iframe));
             }
@@ -95,25 +106,16 @@ function processYtEmbed(img: HTMLImageElement) {
     return !!ytUrl;
 }
 
-function loadYTPlayer(iframe: HTMLIFrameElement) {
-    const attachYTPlayer = () => {
-        new YT.Player(iframe as HTMLIFrameElement,    {
-            events: {
-                onStateChange: (event) => {
-                    if (event.data === YT.PlayerState.PLAYING) {
-                        stopInnerVideos(document.body, iframe);
-                    }
-                },
-            }
-        });
-    };
-
+function loadYTPlayer(onload: () => void) {
     if (window.YT) {
-        attachYTPlayer();
-    } else {
+        onload();
+        return;
+    }
+    if (!document.getElementById('yt-embed')) {
         const tag = document.createElement('script');
+        tag.id = 'yt-embed';
         tag.src = 'https://www.youtube.com/player_api';
-        window.onYouTubeIframeAPIReady = attachYTPlayer;
+        window.onYouTubeIframeAPIReady = onload;
         document.head.append(tag);
     }
 }
@@ -179,36 +181,44 @@ function processCoubEmbed(img: HTMLImageElement) {
     return !!coubUrl;
 }
 
-function updateVimeo(div: HTMLDivElement) {
-    const videos = div.querySelectorAll('iframe.vimeo-embed');
+function processVimeoEmbed(img: HTMLImageElement) {
+    const vimeoUrl = img.dataset.vimeo;
 
-    if (videos.length === 0)
-        return;
+    if (vimeoUrl && !img.classList.contains('vimeo-embed-processed')) {
+        img.classList.add('vimeo-embed-processed');
+        img.addEventListener('click', (e) => {
+            e.preventDefault();
+            const iframe = document.createElement('iframe');
+            iframe.src = vimeoUrl;
+            iframe.width = img.width.toString();
+            iframe.height = img.height.toString();
+            iframe.allowFullscreen = true;
+            iframe.frameBorder = '0';
+            iframe.allow = 'autoplay; fullscreen; picture-in-picture';
+            iframe.classList.add('vimeo-embed');
+            img.parentElement?.replaceWith(iframe);
 
-    const attachVimeoPlayer = (iframe: HTMLIFrameElement) => {
-        const player = new window.Vimeo.Player(iframe);
-        player.on('play', function() {
-            stopInnerVideos(document.body, iframe);
+            loadVimeoPlayer(() => {
+                const player = new window.Vimeo.Player(iframe);
+                player.on('play', function() {
+                    stopInnerVideos(document.body, iframe);
+                });
+                player.play();
+            });
+
+            if (getVideoAutopause()) {
+                observeOnHidden(iframe, () => stopVideo(iframe));
+            }
         });
-        if (getVideoAutopause()) {
-            observeOnHidden(iframe, () => stopVideo(iframe));
-        }
-    };
-
-    const attachAll = () => {
-        videos.forEach(iframe => {
-            attachVimeoPlayer(iframe as HTMLIFrameElement);
-        });
-    };
-
-    if (window.Vimeo) {
-        attachAll();
-    } else {
-        loadVimeoPlayer(attachAll);
     }
+    return !!vimeoUrl;
 }
 
 function loadVimeoPlayer(onload: () => void) {
+    if (window.Vimeo) {
+        onload();
+        return;
+    }
     if (!document.getElementById('vimeo-embed')) {
         const tag = document.createElement('script');
         tag.id = 'vimeo-embed';
@@ -219,7 +229,7 @@ function loadVimeoPlayer(onload: () => void) {
 }
 
 function updateImg(img: HTMLImageElement) {
-    if (processYtEmbed(img) || processVideoEmbed(img) ||  processCoubEmbed(img)) {
+    if (processYtEmbed(img) || processVideoEmbed(img) || processCoubEmbed(img) || processVimeoEmbed(img)) {
         return;
     }
 
