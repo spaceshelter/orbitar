@@ -182,3 +182,17 @@ jobs:
       - name: Deploy
         working-directory: /orbitar
         run: docker-compose -f docker-compose.ssl.local.yml up -d
+
+      - name: Purge Cloudflare Cache
+        env:
+            CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE }}
+            CLOUDFLARE_BEARER_TOKEN: ${{ secrets.CLOUDFLARE_BEARER_TOKEN }}
+        if: env.CLOUDFLARE_ZONE != '' && env.CLOUDFLARE_BEARER_TOKEN != ''
+        run: |
+          curl --request POST \
+            --url https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_ZONE }}/purge_cache \
+            --header 'Content-Type: application/json' \
+            --header 'Authorization: Bearer ${{ secrets.CLOUDFLARE_BEARER_TOKEN }}' \
+            --data '{
+            "purge_everything": true
+          }'
