@@ -35,6 +35,8 @@
   header {
     Access-Control-Allow-Origin .* "{header.Origin}"
   }
+  header X-Fingerprint "{$FINGERPRINT}"
+  header Access-Control-Expose-Headers "X-Fingerprint"
 
   reverse_proxy http://backend:5001
 }

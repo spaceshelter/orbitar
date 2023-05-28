@@ -28,6 +28,18 @@ type AppStateContextState = {
     appState: AppState;
 };
 
+// Define the type
+class FingerprintHash {
+    @observable
+    base: string | undefined = undefined;
+
+    @observable
+    current: string | undefined = undefined;
+
+    constructor() {
+        makeObservable(this);
+    }
+}
 export class AppState {
     @observable
     appLoadingState = AppLoadingState.loading;
@@ -49,6 +61,9 @@ export class AppState {
 
     @observable.struct
     subscriptions: SiteWithUserInfo[] | undefined = undefined;
+
+    @observable
+    fingerprintHash = new FingerprintHash();
 
     browserHistory = createBrowserHistory();
     router = new RouterStore(this.browserHistory);
@@ -116,6 +131,19 @@ export class AppState {
     @action
     setSiteInfo(value: SiteWithUserInfo | undefined) {
         value && this.cache.setSite(value);
+    }
+
+    @action
+    setLatestHash(hash: string) {
+        if (this.fingerprintHash.base === undefined) {
+            this.fingerprintHash.base = hash;
+        }
+        this.fingerprintHash.current = hash;
+    }
+
+    @computed
+    get isUpdateAvailable() {
+        return this.fingerprintHash.base !== this.fingerprintHash.current && !!this.fingerprintHash.base;
     }
 }
 

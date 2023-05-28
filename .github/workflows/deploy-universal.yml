@@ -99,6 +99,12 @@ jobs:
           cp -f /opt/deployment-specific-files/chain.pem ./caddy/certs
           cp -f /opt/deployment-specific-files/priv.pem ./caddy/certs
           cp -f /opt/deployment-specific-files/.env ./
+          
+          # remove any FINGERPRINT= lines from .env
+          sed -i '/^FINGERPRINT=/d' .env
+          # add FINGERPRINT to .env
+          echo "FINGERPRINT=$(date +%s%N)$RANDOM" >> .env
+          
 
       - name: Build
         env:

@@ -14,6 +14,7 @@ services:
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
       VAPID_CONTACT: ${VAPID_CONTACT}
+      FINGERPRINT: ${FINGERPRINT}
     volumes:
       - $PWD/caddy/Caddyfile.local:/etc/caddy/Caddyfile:ro
       - frontend_build:/srv:ro
