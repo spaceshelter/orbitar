@@ -61,13 +61,7 @@ export default class APIHelper {
         try {
             this.appState.appLoadingState = AppLoadingState.loading;
 
-            const status = await this.authAPI.status();
-
-            this.appState.setUserInfo(status.user);
-            this.appState.setWatchCommentsCount(status.watch.comments);
-            this.appState.setUnreadNotificationsCount(status.notifications.unread);
-            this.appState.setVisibleNotificationsCount(status.notifications.visible);
-            this.appState.setAppLoadingState(AppLoadingState.authorized);
+            await this.updateAppStatus();
 
             // start fetch status update
             setTimeout(() => {
@@ -103,15 +97,19 @@ export default class APIHelper {
         }
     }
 
+    private async updateAppStatus() {
+        const [status, fingerprint] = await this.authAPI.status();
+        this.appState.setUserInfo(status.user);
+        this.appState.setWatchCommentsCount(status.watch.comments);
+        this.appState.setUnreadNotificationsCount(status.notifications.unread);
+        this.appState.setVisibleNotificationsCount(status.notifications.visible);
+        this.appState.setAppLoadingState(AppLoadingState.authorized);
+        this.appState.setLatestHash(fingerprint || '');
+    }
+
     async fetchStatusUpdate() {
         try {
-            const status = await this.authAPI.status();
-
-            this.appState.setUserInfo(status.user);
-            this.appState.setWatchCommentsCount(status.watch.comments);
-            this.appState.setUnreadNotificationsCount(status.notifications.unread);
-            this.appState.setVisibleNotificationsCount(status.notifications.visible);
-            this.appState.setAppLoadingState(AppLoadingState.authorized);
+            await this.updateAppStatus();
         }
         finally {
             setTimeout(() => {
