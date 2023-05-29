@@ -270,7 +270,8 @@ export default class NotificationManager {
                 await webpush.sendNotification(subscription, JSON.stringify({title, body: commentText, icon, url}));
             }
             catch (err) {
-                if (err.statusCode === 410) {
+                const badCodes = [404, 410];
+                if (badCodes.includes(err.statusCode)) {
                     await this.webPushRepository.resetSubscription(forUserId, subscription.keys.auth);
                 }
             }

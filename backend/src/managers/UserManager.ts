@@ -184,6 +184,10 @@ export default class UserManager {
         return await this.webPushRepository.resetSubscription(forUserId, auth);
     }
 
+    async resetAllPushSubscriptions(forUserId: number) {
+        return await this.webPushRepository.resetAllSubscriptions(forUserId);
+    }
+
     logVisit(userId: number) {
         const date = this.truncateVisitDate(new Date());
         if (!this.cacheLastVisit[userId] || this.cacheLastVisit[userId].getTime() !== date.getTime()) {

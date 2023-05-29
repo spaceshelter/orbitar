@@ -188,6 +188,7 @@ export default class AuthController {
 
         try {
             await this.userManager.dropPassword(userId);
+            await this.userManager.resetAllPushSubscriptions(userId);
             await request.session.destroyAllForCurrentUser();
             return response.success({});
         } catch (err) {
