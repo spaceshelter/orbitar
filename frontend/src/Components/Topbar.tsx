@@ -12,6 +12,7 @@ import NotificationsPopup from './NotificationsPopup';
 import {Hamburger} from './Hamburger';
 import {observer} from 'mobx-react-lite';
 import classNames from 'classnames';
+import {ReloadingLink} from './ReloadingLink';
 
 export type TopbarMenuState = 'disabled' | 'open' | 'close';
 
@@ -52,7 +53,7 @@ export const Topbar = observer((props: TopbarProps) => {
                     <button className={menuClasses.join(' ')} onClick={menuToggle}>
                         <Hamburger open={props.menuState === 'close'} />
                     </button>
-                    <Link to={`/`}><MonsterIcon /></Link>
+                    <ReloadingLink to={`/`}><MonsterIcon /></ReloadingLink>
                     <CreateButton />
                 </div>
 
@@ -85,7 +86,7 @@ const CreateButton = observer(() => {
 const WatchButton = observer(() => {
     const {watchCommentsCount} = useAppState();
     return (
-        <Link to={'/watch'} className={watchCommentsCount > 0 ? styles.active : ''}><HotIcon /><span className={styles.label}>{watchCommentsCount > 0 ? watchCommentsCount : ''}</span></Link>
+        <ReloadingLink to={'/watch'} className={watchCommentsCount > 0 ? styles.active : ''}><HotIcon /><span className={styles.label}>{watchCommentsCount > 0 ? watchCommentsCount : ''}</span></ReloadingLink>
     );
 });
 
