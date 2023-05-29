@@ -14,6 +14,7 @@ import webpush from 'web-push';
 import {SiteConfig, VapidConfig} from '../config';
 import WebPushRepository from '../db/repositories/WebPushRepository';
 import {UserCache} from './UserCache';
+import {Logger} from 'winston';
 
 
 export default class NotificationManager {
@@ -25,13 +26,15 @@ export default class NotificationManager {
     private readonly userCache: UserCache;
     private couldSendWebPush = false;
     private siteConfig: SiteConfig;
+    private logger: Logger;
 
     constructor(
         commentRepository: CommentRepository, notificationsRepository: NotificationsRepository,
         postRepository: PostRepository, siteRepository: SiteRepository,
         userCache: UserCache, webPushRepository: WebPushRepository,
         vapidConfig: VapidConfig,
-        siteConfig: SiteConfig
+        siteConfig: SiteConfig,
+        logger: Logger
     ) {
         this.commentRepository = commentRepository;
         this.notificationsRepository = notificationsRepository;
@@ -40,6 +43,7 @@ export default class NotificationManager {
         this.userCache = userCache;
         this.webPushRepository = webPushRepository;
         this.siteConfig = siteConfig;
+        this.logger = logger;
 
         if (vapidConfig.publicKey && vapidConfig.privateKey && vapidConfig.contact) {
             webpush.setVapidDetails(vapidConfig.contact, vapidConfig.publicKey, vapidConfig.privateKey);
@@ -273,6 +277,8 @@ export default class NotificationManager {
                 const badCodes = [404, 410];
                 if (badCodes.includes(err.statusCode)) {
                     await this.webPushRepository.resetSubscription(forUserId, subscription.keys.auth);
+                } else if (err.statusCode < 500) {
+                    this.logger.error(err);
                 }
             }
         }
