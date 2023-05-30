@@ -106,7 +106,7 @@ const webPushRepository = new WebPushRepository(db);
 const translationRepository = new TranslationRepository(db);
 
 const userCache = new UserCache(userRepository);
-const notificationManager = new NotificationManager(commentRepository, notificationsRepository, postRepository, siteRepository, userCache, webPushRepository, config.vapid, config.site);
+const notificationManager = new NotificationManager(commentRepository, notificationsRepository, postRepository, siteRepository, userCache, webPushRepository, config.vapid, config.site, logger.child({ service: 'NOTIFY' }));
 const userManager = new UserManager(credentialsRepository, userRepository, voteRepository, commentRepository, postRepository, webPushRepository,
     userCache, theParser, notificationManager, redis.client, config.site, logger.child({ service: 'USER' }));
 const inviteManager = new InviteManager(inviteRepository, theParser, userManager);
