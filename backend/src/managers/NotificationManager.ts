@@ -276,6 +276,8 @@ export default class NotificationManager {
             catch (err) {
                 const badCodes = [404, 410];
                 if (badCodes.includes(err.statusCode)) {
+                    this.logger.info(`Bad subscription for user ${forUserId} with auth ${subscription.keys.auth},
+                    got ${err.statusCode} status code, removing subscription`);
                     await this.webPushRepository.resetSubscription(forUserId, subscription.keys.auth);
                 } else if (err.statusCode < 500) {
                     this.logger.error(err);
