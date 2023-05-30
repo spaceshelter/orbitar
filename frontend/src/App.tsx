@@ -30,6 +30,7 @@ import KarmaCalculatorPage from './Pages/KarmaCalculatorPage';
 import ResetPasswordPage from './Pages/ResetPasswordPage';
 import SearchPage from './Pages/SearchPage';
 import classNames from 'classnames';
+import {ForcedReload} from './Components/ForcedReload';
 
 export const App = observer(() => {
     const {appLoadingState} = useAppState();
@@ -102,7 +103,9 @@ const ReadyContainer = observer(() => {
             />
             <div className={styles.container}>
                 <div className={styles.innerContainer}>
-                    <Outlet />
+                    <ForcedReload>
+                        <Outlet />
+                    </ForcedReload>
                 </div>
             </div>
 

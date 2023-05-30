@@ -65,6 +65,9 @@ export class AppState {
     @observable
     fingerprintHash = new FingerprintHash();
 
+    @observable
+    reloadCounter = 0;
+
     browserHistory = createBrowserHistory();
     router = new RouterStore(this.browserHistory);
 
@@ -131,6 +134,11 @@ export class AppState {
     @action
     setSiteInfo(value: SiteWithUserInfo | undefined) {
         value && this.cache.setSite(value);
+    }
+
+    @action
+    forceReload() {
+        this.reloadCounter++;
     }
 
     @action
