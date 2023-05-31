@@ -41,7 +41,8 @@
     "textarea-caret": "^3.1.0",
     "typescript": "^4.6.3",
     "use-debounce": "^8.0.4",
-    "webfonts-loader": "^7.5.2"
+    "webfonts-loader": "^7.5.2",
+    "use-local-storage": "^3.0.0"
   },
   "devDependencies": {
     "sass": "^1.55.0"
