@@ -50,6 +50,15 @@ test('return valid youtube url', () => {
   );
 });
 
+test('youtube shorts', () => {
+    expect(
+        p.parse('https://youtube.com/shorts/XeZorMhBlzQ?feature=share'
+        ).text
+    ).toEqual(
+        `<a class="youtube-embed" href="https://www.youtube.com/watch?v=XeZorMhBlzQ" target="_blank"><img src="https://img.youtube.com/vi/XeZorMhBlzQ/0.jpg" alt="" data-youtube="https://www.youtube.com/embed/XeZorMhBlzQ"/></a>`
+    );
+});
+
 test('vimeo player embed', () => {
     expect(
         p.parse('https://www.vimeo.com/123456789').text
