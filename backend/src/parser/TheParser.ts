@@ -280,6 +280,12 @@ export default class TheParser {
                 }
             }
         }
+        else if (
+            (url.host === 'youtube.com' || url.host === 'www.youtube.com') &&
+            url.pathname.match(/^\/shorts\/(\w+)$/)
+        ) {
+            videoId = url.pathname.match(/^\/shorts\/(\w+)$/)[1];
+        }
         else {
             return false;
         }
