@@ -25,6 +25,21 @@ export default class VoteController {
         keyGenerator: (req) => String(req.session.data?.userId)
     });
 
+    // 100 requests per day for each (voterId, userId) pair
+    private readonly voteDayRateLimiter = rateLimit({
+        max: 100,
+        windowMs: 24 * 60 * 60 * 1000, // 24 hours
+        skipSuccessfulRequests: false,
+        standardHeaders: false,
+        legacyHeaders: false,
+        keyGenerator: (req) => {
+            // Combine voterId and userId into a single key
+            const voterId = String(req.session.data?.userId);
+            const userId = String(req.body.id);
+            return `${voterId}:${userId}`;
+        }
+    });
+
     constructor(voteManager: VoteManager, userManager: UserManager, logger: Logger) {
         this.voteManager = voteManager;
         this.userManager = userManager;
@@ -40,7 +55,7 @@ export default class VoteController {
             id: Joi.number().required()
         });
 
-        this.router.post('/vote/set', this.voteRateLimiter, validate(voteSchema), (req, res) => this.setVote(req, res));
+        this.router.post('/vote/set', this.voteRateLimiter, validate(voteSchema), this.voteDayRateLimiter, (req, res) => this.setVote(req, res));
         this.router.post('/vote/list', validate(listSchema), (req, res) => this.list(req, res));
     }
 
