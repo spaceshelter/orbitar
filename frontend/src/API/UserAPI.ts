@@ -150,6 +150,10 @@ export default class UserAPI {
         return this.api.request<{bio: string}, {bio: string}>('/user/savebio', {bio});
     }
 
+    async saveName(name: string): Promise<{name: string}> {
+        return this.api.request<{name: string}, {name: string}>('/user/savename', {name});
+    }
+
     async saveGender(gender: UserGender): Promise<{gender: UserGender}> {
         return this.api.request<{gender: UserGender}, {gender: UserGender}>('/user/savegender', {gender});
     }

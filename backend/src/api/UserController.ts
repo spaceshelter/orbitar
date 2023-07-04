@@ -11,6 +11,8 @@ import {
     UserRestrictionsResponse,
     UserSaveBioRequest,
     UserSaveBioResponse,
+    UserSaveNameRequest,
+    UserSaveNameResponse,
     UserSaveGenderRequest,
     UserSaveGenderResponse
 } from './types/requests/UserProfile';
@@ -65,6 +67,10 @@ export default class UserController {
             bio: Joi.string().required().max(1024 * 4)
         });
 
+        const nameSchema = Joi.object<UserSaveNameRequest>({
+            name: Joi.string().required()
+        });
+
         const genderSchema = Joi.object<UserSaveGenderRequest>({
             gender: Joi.number().required().allow(UserGender.fluid, UserGender.he, UserGender.she)
         });
@@ -91,6 +97,7 @@ export default class UserController {
         this.router.post('/user/clearCache', validate(profileSchema), (req, res) => this.clearCache(req, res));
         this.router.post('/user/restrictions', validate(profileSchema), (req, res) => this.restrictions(req, res));
         this.router.post('/user/savebio', settingsSaveLimiter, validate(bioSchema), (req, res) => this.saveBio(req, res));
+        this.router.post('/user/savename', settingsSaveLimiter, validate(nameSchema), (req, res) => this.saveName(req, res));
         this.router.post('/user/savegender', settingsSaveLimiter, validate(genderSchema), (req, res) => this.saveGender(req, res));
         this.router.post('/user/barmalini', settingsSaveLimiter, (req, res) => this.barmaliniPassword(req, res));
         this.router.post('/user/suggest-username', suggestUsernameLimiter, (req, res) => this.suggestUsername(req, res));
@@ -368,6 +375,24 @@ export default class UserController {
         } catch (error) {
             this.logger.error('Could not update user bio', { error });
             return response.error('error', `Could not update bio`, 500);
+        }
+    }
+
+    async saveName(request: APIRequest<UserSaveNameRequest>, response: APIResponse<UserSaveNameResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+        const {name} = request.body;
+        try {
+            const ok = await this.userManager.saveName(name, request.session.data.userId);
+            if (!ok) {
+                return response.error('error', `Could not save name to database`);
+            }
+            this.userManager.clearCache(request.session.data.userId);
+            return response.success({name: name});
+        } catch (error) {
+            this.logger.error('Could not update user name', { error });
+            return response.error('error', `Could not update name`, 500);
         }
     }
 

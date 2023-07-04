@@ -63,6 +63,14 @@ export type UserSaveBioResponse = {
     bio: string;
 };
 
+export type UserSaveNameRequest = {
+    name: string;
+};
+
+export type UserSaveNameResponse = {
+    name: string;
+};
+
 export type UserSaveGenderRequest = {
     gender: UserGender;
 };

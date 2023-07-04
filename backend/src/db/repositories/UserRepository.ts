@@ -256,6 +256,13 @@ export default class UserRepository {
         });
     }
 
+    async saveName(name: string, userId: number): Promise<boolean> {
+        return this.db.query(`update users set name = :name where user_id = :user_id`, {
+            user_id: userId,
+            name: name
+        });
+    }
+
     async saveGender(gender: UserGender, userId: number): Promise<boolean> {
         return this.db.query(`update users set gender = :gender where user_id = :user_id`, {
             user_id: userId,

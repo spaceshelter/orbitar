@@ -14,6 +14,7 @@ import {UserProfileKarma} from '../Components/UserProfileKarma';
 import {UserGender, UserProfileInfo} from '../Types/UserInfo';
 import UserProfileSettings from '../Components/UserProfileSettings';
 import UserProfileBio from '../Components/UserProfileBio';
+import UserProfileName from '../Components/UserProfileName';
 
 export const UserPage = observer(() => {
     const {userInfo, userRestrictions: restrictions} = useAppState();
@@ -106,7 +107,9 @@ export const UserPage = observer(() => {
                             <RatingSwitch rating={rating} type='user' id={user.id} double={true} votingDisabled={!restrictions?.canVoteKarma} onVote={handleOnVote}/>
                         </div>
                     </div>
-                    <div className={styles.name}>{user.name}</div>
+                    <div className={styles.name}>
+                    {isProfile && <UserProfileName name={user.name} mine={!!isMyProfile} />}
+                    </div>
                 </div>
 
                 <div className={styles.controls}>
