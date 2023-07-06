@@ -11,7 +11,7 @@ type UserProfileNameProps = {
   mine: boolean;
 };
 
-export default function UserProfileBio(props: UserProfileNameProps) {
+export default function UserProfileName(props: UserProfileNameProps) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(props.name);
   const api = useAPI();
@@ -27,8 +27,7 @@ export default function UserProfileBio(props: UserProfileNameProps) {
 
   const handleEditNameComplete = async () => {
     try {
-      const newName = await api.userAPI.saveName(name);
-      console.log(newName);
+      await api.userAPI.saveName(name);
       setEditing(false);
     } catch (error: any) {
       toast.error('Не удалось сохранить.');
