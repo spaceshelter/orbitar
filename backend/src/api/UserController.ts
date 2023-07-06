@@ -68,7 +68,7 @@ export default class UserController {
         });
 
         const nameSchema = Joi.object<UserSaveNameRequest>({
-            name: Joi.string().required()
+            name: Joi.string().required().max(100)
         });
 
         const genderSchema = Joi.object<UserSaveGenderRequest>({

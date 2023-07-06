@@ -47,7 +47,7 @@ export default class InviteController {
         const useSchema = Joi.object<InviteUseRequest>({
             code: Joi.string().alphanum().required(),
             username: joiUsername,
-            name: Joi.string().required(),
+            name: Joi.string().required().max(100),
             email: Joi.string().email().required(),
             gender: Joi.number().valid(0, 1, 2).default(0),
             password: joiPassword.required()
