@@ -639,6 +639,10 @@ export default class UserManager {
         return parseResult.text;
     }
 
+    async saveName(name: string, userId: number): Promise<boolean> {
+        return await this.userRepository.saveName(name, userId);
+    }
+
     async saveGender(gender: UserGender, userId: number): Promise<void> {
         await this.userRepository.saveGender(gender, userId);
     }
