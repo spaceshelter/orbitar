@@ -18,8 +18,7 @@ export default function UserProfileName(props: UserProfileNameProps) {
 
   useEffect(() => {
     setName(props.name);
-    setEditing(false);
-  }, []);
+  }, [props.name]);
 
   const handleEditName = (e: React.ChangeEvent<HTMLInputElement>) => {
     setName(e.target.value);
