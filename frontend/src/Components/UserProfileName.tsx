@@ -5,6 +5,7 @@ import {ReactComponent as EditIcon} from '../Assets/edit.svg';
 import {ReactComponent as SendIcon} from '../Assets/send.svg';
 import {useAPI} from '../AppState/AppState';
 import {toast} from 'react-toastify';
+import {useHotkeys} from 'react-hotkeys-hook';
 
 type UserProfileNameProps = {
   name: string;
@@ -15,6 +16,7 @@ export default function UserProfileName(props: UserProfileNameProps) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(props.name);
   const api = useAPI();
+  const refEditName = useHotkeys<HTMLInputElement>('enter', () => handleEditNameComplete(), {enableOnFormTags: ['INPUT'], preventDefault: true});
 
   useEffect(() => {
     setName(props.name);
@@ -40,7 +42,7 @@ export default function UserProfileName(props: UserProfileNameProps) {
         <div className={`${postStyles.control} ${nameStyles.profile_name}`}>{name}</div>}
       {editing &&
         <div className={`${postStyles.control} ${nameStyles.edit_active}`}>
-          <input className={postStyles.title} value={name} onChange={handleEditName} placeholder={name} type='text'/>
+          <input ref={refEditName} className={postStyles.title} value={name} onChange={handleEditName} placeholder={name} type='text'/>
         </div>}
 
       {props.mine && !editing &&
