@@ -42,7 +42,7 @@ export default function UserProfileName(props: UserProfileNameProps) {
         <div className={`${postStyles.control} ${nameStyles.profile_name}`}>{name}</div>}
       {editing &&
         <div className={`${postStyles.control} ${nameStyles.edit_active}`}>
-          <input ref={refEditName} className={postStyles.title} value={name} onChange={handleEditName} placeholder={name} type='text'/>
+          <input ref={refEditName} className={postStyles.title} value={name} onChange={handleEditName} placeholder={name} type='text' autoFocus/>
         </div>}
 
       {props.mine && !editing &&
