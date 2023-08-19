@@ -331,6 +331,12 @@ test('parse html directive', () => {
     ).toEqual('test&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;');
 });
 
+test('parse malformed url', () => {
+    expect(
+        p.parse('<a href="https://test>test</a>%<img src="https://test"/>').text
+    ).toEqual('&lt;a href=&quot;https://test&gt;test&lt;/a&gt;%&lt;img src=&quot; https:=&quot;&quot; test&quot;=&quot;&quot;/&gt;&lt;/a&gt;');
+});
+
 test('parse spoiler tag', () => {
     expect(p.parse('<spoiler>Hello</spoiler>').text).toEqual(
         '<span class="spoiler">Hello</span>'

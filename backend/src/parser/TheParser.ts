@@ -441,6 +441,10 @@ export default class TheParser {
     }
 
     validUrl(url: string) {
-        return encodeURI(decodeURI(url)).match(urlRegexExact);
+        try {
+            return encodeURI(decodeURI(url)).match(urlRegexExact);
+        } catch (e) {
+            return false;
+        }
     }
 }
