@@ -94,6 +94,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     const [isPosting, setPosting] = useState(false);
     const [previewing, setPreviewing] = useState<string | null>(null);
     const [mediaUploaderOpen, setMediaUploaderOpen] = useState(false);
+    const [mediaUploaderData, setMediaUploaderData] = useState<File | undefined>();
     const containerRef = useHotkeys<HTMLDivElement>(allowedKeys.join(','), (e ) => handleHotKey(e), {enableOnFormTags: ['TEXTAREA'], preventDefault: true});
     const api = useAPI();
 
@@ -240,6 +241,27 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         suggestResults.style.setProperty('left', left.toString() + 'px');
     });
 
+    useEffect(() => {
+        document.addEventListener('paste', handlePaste);
+        return () => {
+            document.removeEventListener('paste', handlePaste);
+        };
+    }, []);
+
+    const handlePaste = (e: ClipboardEvent) =>{
+        setMediaUploaderData(undefined);
+        const items = e.clipboardData?.items;
+        if (!items) 
+            return;
+        for (let i = 0; i < items.length; i++) {
+            const file = items[i].getAsFile();
+            if (file) {
+                setMediaUploaderData(file);
+                setMediaUploaderOpen(true);
+            }
+        }
+    };
+
     const handlePreview = async () => {
         if (isPosting) {
             return;
@@ -291,6 +313,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     };
 
     const handleMediaUpload = (uri: string, type: 'video' | 'image') => {
+        setMediaUploaderData(undefined);
         setMediaUploaderOpen(false);
         if (type === 'image') {
             // noinspection HtmlRequiredAltAttribute
@@ -304,6 +327,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     };
 
     const handleMediaUploadCancel = () => {
+        setMediaUploaderData(undefined);
         setMediaUploaderOpen(false);
     };
 
@@ -383,7 +407,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 )}
                 <button disabled={isPosting || !answerText} className={styles.buttonPreview} onClick={handlePreview}>{(previewing === null) ? 'Превью' : 'Редактор'}</button>
                 <button disabled={isPosting || !answerText} className={styles.buttonSend} onClick={handleAnswer}><SendIcon /></button>
-                {mediaUploaderOpen && <MediaUploader onSuccess={handleMediaUpload} onCancel={handleMediaUploadCancel} />}
+                {mediaUploaderOpen && <MediaUploader onSuccess={handleMediaUpload} onCancel={handleMediaUploadCancel} mediaData={mediaUploaderData}/>}
             </div>
         </div>
     );

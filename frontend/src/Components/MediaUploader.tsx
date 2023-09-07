@@ -16,6 +16,7 @@ export type UploadData = UploadDataUri | UploadDataFile;
 export type MediaUploaderProps = {
     onCancel: () => void;
     onSuccess: (uri: string, type: 'video' | 'image') => void;
+    mediaData?: File
 };
 
 export default function MediaUploader(props: MediaUploaderProps) {
@@ -32,12 +33,20 @@ export default function MediaUploader(props: MediaUploaderProps) {
 
     useEffect(() => {
         uriRef.current?.focus();
-        document.addEventListener('paste', handlePaste);
         const htmlElement = document.getElementsByTagName('html')[0];
         htmlElement.classList.add('no-scroll');
         return () => {
-            document.removeEventListener('paste', handlePaste);
             htmlElement.classList.remove('no-scroll');
+        };
+    }, []);
+
+    useEffect(() => {
+        if (props.mediaData) {
+            readFile(props.mediaData);
+        }
+        document.addEventListener('paste', handlePaste);
+        return () => {
+            document.removeEventListener('paste', handlePaste);
         };
     }, []);
 
