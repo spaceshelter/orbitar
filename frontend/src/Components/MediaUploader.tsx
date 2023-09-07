@@ -32,9 +32,11 @@ export default function MediaUploader(props: MediaUploaderProps) {
 
     useEffect(() => {
         uriRef.current?.focus();
+        document.addEventListener('paste', handlePaste);
         const htmlElement = document.getElementsByTagName('html')[0];
         htmlElement.classList.add('no-scroll');
         return () => {
+            document.removeEventListener('paste', handlePaste);
             htmlElement.classList.remove('no-scroll');
         };
     }, []);
@@ -133,8 +135,10 @@ export default function MediaUploader(props: MediaUploaderProps) {
         }
     };
 
-    const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-        const items = e.clipboardData.items;
+    const handlePaste = (e: ClipboardEvent) =>{
+        const items = e.clipboardData?.items;
+        if (!items) 
+            return;
         for (let i = 0; i < items.length; i++) {
             const file = items[i].getAsFile();
             if (file) {
@@ -219,7 +223,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
             <div className={styles.container}>
                 <div className={styles.controls}>
                     <div className={styles.upload}>
-                        <input disabled={uploading} className={styles.url} ref={uriRef} type="text" placeholder="https://" value={uri} onChange={handleUriChange} onPaste={handlePaste} />
+                        <input disabled={uploading} className={styles.url} ref={uriRef} type="text" placeholder="https://" title='Вставьте ссылку или картинку' value={uri} onChange={handleUriChange} />
                         <label className={styles.selector}>
                             <input disabled={uploading} type="file" accept="image/*,video/mp4,video/webm" onChange={handleFileChoose} />
                             <div className={styles.choose}>Выбрать</div>
