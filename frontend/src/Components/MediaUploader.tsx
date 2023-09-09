@@ -16,6 +16,7 @@ export type UploadData = UploadDataUri | UploadDataFile;
 export type MediaUploaderProps = {
     onCancel: () => void;
     onSuccess: (uri: string, type: 'video' | 'image') => void;
+    mediaData?: File
 };
 
 export default function MediaUploader(props: MediaUploaderProps) {
@@ -36,6 +37,16 @@ export default function MediaUploader(props: MediaUploaderProps) {
         htmlElement.classList.add('no-scroll');
         return () => {
             htmlElement.classList.remove('no-scroll');
+        };
+    }, []);
+
+    useEffect(() => {
+        if (props.mediaData) {
+            readFile(props.mediaData);
+        }
+        document.addEventListener('paste', handlePaste);
+        return () => {
+            document.removeEventListener('paste', handlePaste);
         };
     }, []);
 
@@ -133,8 +144,10 @@ export default function MediaUploader(props: MediaUploaderProps) {
         }
     };
 
-    const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-        const items = e.clipboardData.items;
+    const handlePaste = (e: ClipboardEvent) =>{
+        const items = e.clipboardData?.items;
+        if (!items) 
+            return;
         for (let i = 0; i < items.length; i++) {
             const file = items[i].getAsFile();
             if (file) {
@@ -219,7 +232,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
             <div className={styles.container}>
                 <div className={styles.controls}>
                     <div className={styles.upload}>
-                        <input disabled={uploading} className={styles.url} ref={uriRef} type="text" placeholder="https://" value={uri} onChange={handleUriChange} onPaste={handlePaste} />
+                        <input disabled={uploading} className={styles.url} ref={uriRef} type="text" placeholder="https://" title='Вставьте ссылку или картинку' value={uri} onChange={handleUriChange} />
                         <label className={styles.selector}>
                             <input disabled={uploading} type="file" accept="image/*,video/mp4,video/webm" onChange={handleFileChoose} />
                             <div className={styles.choose}>Выбрать</div>
