@@ -241,18 +241,9 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         suggestResults.style.setProperty('left', left.toString() + 'px');
     });
 
-    useEffect(() => {
-        document.addEventListener('paste', handlePaste);
-        return () => {
-            document.removeEventListener('paste', handlePaste);
-        };
-    }, []);
-
-    const handlePaste = (e: ClipboardEvent) =>{
+    const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) =>{
         setMediaUploaderData(undefined);
-        const items = e.clipboardData?.items;
-        if (!items) 
-            return;
+        const items = e.clipboardData.items;
         for (let i = 0; i < items.length; i++) {
             const file = items[i].getAsFile();
             if (file) {
@@ -390,6 +381,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                             minChar={1}
                             disabled={isPosting}
                             onChange={handleAnswerChange}
+                            onPaste={handlePaste} 
                             value={answerText}
                             // @ts-expect-error -- types of react-textarea-autosize and react-textarea-autocomplete are incompatible with their latest versions
                             textAreaComponent={TextareaAutosize}
