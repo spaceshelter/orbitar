@@ -16,6 +16,7 @@ import CreateCommentComponent from './CreateCommentComponent';
 import { HistoryComponent } from './HistoryComponent';
 import {SignatureComponent} from './SignatureComponent';
 import Conf from '../Conf';
+import googleTranslate from '../Utils/googleTranslate';
 
 const defaultLanguage = process.env.DEFAULT_LANGUAGE || 'ru';
 
@@ -78,17 +79,23 @@ export default function PostComponent(props: PostComponentProps) {
         setShowOptions(false);
     };
 
-    const translate = () => {
+    const translate = async () => {
         if (translation) {
             setTranslation(undefined);
         } else {
             setTranslation(false);
-            api.postAPI.translate(id, 'post')
-                .then(res => setTranslation(res))
-                .catch(() => {
-                    setTranslation(undefined);
-                    toast.error('Не удалось перевести');
+            try {
+                const title = await googleTranslate(props.post.title);
+                const html = await googleTranslate(props.post.content);
+
+                setTranslation({
+                    title,
+                    html
                 });
+            } catch(err) {
+                setTranslation(undefined);
+                toast.error('Не удалось перевести');
+            }
         }
     };
 

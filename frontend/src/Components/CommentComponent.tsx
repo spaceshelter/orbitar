@@ -9,6 +9,7 @@ import {toast} from 'react-toastify';
 import {SignatureComponent} from './SignatureComponent';
 import {HistoryComponent} from './HistoryComponent';
 import Conf from '../Conf';
+import googleTranslate from '../Utils/googleTranslate';
 
 const defaultLanguage = process.env.DEFAULT_LANGUAGE || 'ru';
 
@@ -77,17 +78,19 @@ export default function CommentComponent(props: CommentProps) {
         }
     };
 
-    const translate = () => {
+    const translate = async () => {
         if (translation) {
             setTranslation(undefined);
         } else {
             setTranslation(false);
-            api.postAPI.translate(props.comment.id, 'comment')
-                .then(res => setTranslation(res.html))
-                .catch(() => {
-                    setTranslation(undefined);
-                    toast.error('Не удалось перевести');
-                });
+            try {
+                const html = await googleTranslate(props.comment.content);
+
+                setTranslation(html);
+            } catch(err) {
+                setTranslation(undefined);
+                toast.error('Не удалось перевести');
+            }
         }
     };
 
