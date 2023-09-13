@@ -38,6 +38,7 @@ export default function PostComponent(props: PostComponentProps) {
     const [editingTitle, setEditingTitle] = useState<string>(props.post.title || '');
     const [showHistory, setShowHistory] = useState(false);
     const [translation, setTranslation] = useState<{title: string, html: string} | false | undefined>(undefined);
+    const [cachedTranslation, setCachedTranslation] = useState<{title: string, html: string} | undefined>(undefined);
 
     const handleVote = useMemo(() => {
         return (value: number, vote?: number) => {
@@ -82,6 +83,8 @@ export default function PostComponent(props: PostComponentProps) {
     const translate = async () => {
         if (translation) {
             setTranslation(undefined);
+        } else if(cachedTranslation){
+            setTranslation(cachedTranslation);
         } else {
             setTranslation(false);
             try {
@@ -89,6 +92,10 @@ export default function PostComponent(props: PostComponentProps) {
                 const html = await googleTranslate(props.post.content);
 
                 setTranslation({
+                    title,
+                    html
+                });
+                setCachedTranslation({
                     title,
                     html
                 });

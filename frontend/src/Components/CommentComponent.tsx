@@ -31,6 +31,8 @@ export default function CommentComponent(props: CommentProps) {
     const [editingText, setEditingText] = useState<false | string>(false);
     const [showHistory, setShowHistory] = useState(false);
     const [translation, setTranslation] = useState<string | false | undefined>(undefined);
+    const [cachedTranslation, setCachedTranslation] = useState<string | undefined>(undefined);
+
     const api = useAPI();
 
     const handleAnswerSwitch = (e: React.MouseEvent) => {
@@ -81,12 +83,15 @@ export default function CommentComponent(props: CommentProps) {
     const translate = async () => {
         if (translation) {
             setTranslation(undefined);
+        } else if(cachedTranslation){
+            setTranslation(cachedTranslation);
         } else {
             setTranslation(false);
             try {
                 const html = await googleTranslate(props.comment.content);
 
                 setTranslation(html);
+                setCachedTranslation(html);
             } catch(err) {
                 setTranslation(undefined);
                 toast.error('Не удалось перевести');
