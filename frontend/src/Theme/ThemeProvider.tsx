@@ -221,7 +221,7 @@ const preprocessTheme = (theme: ThemeStyles) => {
     colors.linkGhost ??= reduceAlpha( colors.link as string, .7);
 
     // backgrounds
-    const c = isDark ? 255 : 0;
+    const c = isDark ? 1 : 0;
     colors.elevated ??= isDark ? lerpColor( colors.bg as string, '#ffffff', 0.03): '#fff';
     colors.lowered ??= lerpColor( colors.bg as string, '#000000',  isDark ? 0.2 : 0.03 );
     colors.dim1 ??= rgbaToString([c,c,c,0.02]);
