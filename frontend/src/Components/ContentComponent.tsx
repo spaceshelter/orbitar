@@ -3,6 +3,7 @@ import classNames from 'classnames';
 import styles from './ContentComponent.module.scss';
 import {observeOnHidden} from '../Services/ObserverService';
 import type * as Vimeo from '@vimeo/player';
+import {getVideoAutopause} from './UserProfileSettings';
 
 interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
     content: string;
@@ -21,6 +22,8 @@ declare global {
 export const LARGE_AUTO_CUT = 650;
 export const SMALL_AUTO_CUT = 100;
 
+const iframeToOriginalEl = new WeakMap<HTMLIFrameElement, HTMLElement>();
+
 function updateContent(div: HTMLDivElement) {
     div.querySelectorAll('img').forEach(img => {
         if (img.complete) {
@@ -37,8 +40,6 @@ function updateContent(div: HTMLDivElement) {
         updateVideo(video);
     });
 
-    updateVimeo(div);
-
     div.querySelectorAll('span.spoiler').forEach(spoiler => {
         updateSpoiler(spoiler as HTMLSpanElement);
     });
@@ -50,7 +51,10 @@ function updateContent(div: HTMLDivElement) {
 
 function updateVideo(video: HTMLVideoElement) {
     video.addEventListener('play', () => stopInnerVideos(document.body, video));
-    observeOnHidden(video, () => stopVideo(video));
+    if (getVideoAutopause()) {
+        observeOnHidden(video, () => stopVideo(video));
+    }
+
     if (video.dataset.aspectRatioProcessed) {
         return;
     }
@@ -80,32 +84,38 @@ function processYtEmbed(img: HTMLImageElement) {
             iframe.allow = 'autoplay; clipboard-write; encrypted-media; picture-in-picture';
             iframe.classList.add('youtube-embed');
             img.parentElement?.replaceWith(iframe);
-            loadYTPlayer(iframe);
-            observeOnHidden(iframe, () => stopVideo(iframe));
+
+            loadYTPlayer(() => {
+                const player = new YT.Player(iframe, {
+                    events: {
+                        onStateChange: (event) => {
+                            if (event.data === YT.PlayerState.PLAYING) {
+                                stopInnerVideos(document.body, iframe);
+                            }
+                        },
+                    }
+                });
+                player.playVideo(); //?
+            });
+
+            if (getVideoAutopause()) {
+                observeOnHidden(iframe, () => stopVideo(iframe));
+            }
         });
     }
     return !!ytUrl;
 }
 
-function loadYTPlayer(iframe: HTMLIFrameElement) {
-    const attachYTPlayer = () => {
-        new YT.Player(iframe as HTMLIFrameElement,    {
-            events: {
-                onStateChange: (event) => {
-                    if (event.data === YT.PlayerState.PLAYING) {
-                        stopInnerVideos(document.body, iframe);
-                    }
-                },
-            }
-        });
-    };
-
+function loadYTPlayer(onload: () => void) {
     if (window.YT) {
-        attachYTPlayer();
-    } else {
+        onload();
+        return;
+    }
+    if (!document.getElementById('yt-embed')) {
         const tag = document.createElement('script');
+        tag.id = 'yt-embed';
         tag.src = 'https://www.youtube.com/player_api';
-        window.onYouTubeIframeAPIReady = attachYTPlayer;
+        window.onYouTubeIframeAPIReady = onload;
         document.head.append(tag);
     }
 }
@@ -129,40 +139,86 @@ function processVideoEmbed(img: HTMLImageElement) {
             video.style.height = img.height.toString() + 'px';
             img.parentElement?.replaceWith(video);
             video.addEventListener('play', () => stopInnerVideos(document.body, video));
-            observeOnHidden(video, () => stopVideo(video));
+            if (getVideoAutopause()) {
+                observeOnHidden(video, () => stopVideo(video));
+            }
         });
     }
     return !!videoUrl;
 }
 
-function updateVimeo(div: HTMLDivElement) {
-    const videos = div.querySelectorAll('iframe.vimeo-embed');
+function processCoubEmbed(img: HTMLImageElement) {
+    const coubUrl = img.dataset.coub;
 
-    if (videos.length === 0)
-        return;
+    if (coubUrl && !img.classList.contains('coub-embed-processed')) {
+        const orignalEl = img.parentElement?.cloneNode(true) as HTMLImageElement; // Clone the original img element
 
-    const attachVimeoPlayer = (iframe: HTMLIFrameElement) => {
-        const player = new window.Vimeo.Player(iframe);
-        player.on('play', function() {
+        img.classList.add('coub-embed-processed');
+        img.addEventListener('click', (e) => {
+            e.preventDefault();
+            const iframe = document.createElement('iframe');
+            iframe.src = coubUrl + (coubUrl.indexOf('?') === -1 ? '?' : '&') +
+                'muted=false&autostart=true&originalSize=false&startWithHD=true';
+
+            iframe.classList.add('coub-embed');
+            iframe.allowFullscreen = true;
+            iframe.frameBorder = '0';
+            // use current rendered image size as iframe size
+            iframe.width = img.getBoundingClientRect().width.toString();
+            iframe.height = img.getBoundingClientRect().height.toString();
+            iframe.allow = 'autoplay';
+            img.parentElement?.replaceWith(iframe);
+
+            iframeToOriginalEl.set(iframe, orignalEl);
             stopInnerVideos(document.body, iframe);
-        });
-        observeOnHidden(iframe, () => stopVideo(iframe));
-    };
 
-    const attachAll = () => {
-        videos.forEach(iframe => {
-            attachVimeoPlayer(iframe as HTMLIFrameElement);
+            // coubs are always stopped when hidden
+            observeOnHidden(iframe, () => {
+                stopVideo(iframe);
+            });
         });
-    };
-
-    if (window.Vimeo) {
-        attachAll();
-    } else {
-        loadVimeoPlayer(attachAll);
     }
+    return !!coubUrl;
+}
+
+function processVimeoEmbed(img: HTMLImageElement) {
+    const vimeoUrl = img.dataset.vimeo;
+
+    if (vimeoUrl && !img.classList.contains('vimeo-embed-processed')) {
+        img.classList.add('vimeo-embed-processed');
+        img.addEventListener('click', (e) => {
+            e.preventDefault();
+            const iframe = document.createElement('iframe');
+            iframe.src = vimeoUrl;
+            iframe.width = img.width.toString();
+            iframe.height = img.height.toString();
+            iframe.allowFullscreen = true;
+            iframe.frameBorder = '0';
+            iframe.allow = 'autoplay; fullscreen; picture-in-picture';
+            iframe.classList.add('vimeo-embed');
+            img.parentElement?.replaceWith(iframe);
+
+            loadVimeoPlayer(() => {
+                const player = new window.Vimeo.Player(iframe);
+                player.on('play', function() {
+                    stopInnerVideos(document.body, iframe);
+                });
+                player.play();
+            });
+
+            if (getVideoAutopause()) {
+                observeOnHidden(iframe, () => stopVideo(iframe));
+            }
+        });
+    }
+    return !!vimeoUrl;
 }
 
 function loadVimeoPlayer(onload: () => void) {
+    if (window.Vimeo) {
+        onload();
+        return;
+    }
     if (!document.getElementById('vimeo-embed')) {
         const tag = document.createElement('script');
         tag.id = 'vimeo-embed';
@@ -173,7 +229,7 @@ function loadVimeoPlayer(onload: () => void) {
 }
 
 function updateImg(img: HTMLImageElement) {
-    if (processYtEmbed(img) || processVideoEmbed(img)) {
+    if (processYtEmbed(img) || processVideoEmbed(img) || processCoubEmbed(img) || processVimeoEmbed(img)) {
         return;
     }
 
@@ -250,24 +306,25 @@ function stopVideo(el: HTMLVideoElement | HTMLIFrameElement) {
         );
         return;
     }
+    if (el instanceof HTMLIFrameElement && el.classList.contains('coub-embed')) {
+        const originalEl = iframeToOriginalEl.get(el);
+        if (originalEl) {
+            el.replaceWith(originalEl);
+            updateImg(originalEl.querySelector(`img`) as HTMLImageElement);
+        }
+    }
 }
 
-function stopInnerVideos(el: Element, exept?: HTMLVideoElement | HTMLIFrameElement) {
-    el.querySelectorAll('video').forEach(video => {
-        if (video === exept)
-            return;
-        stopVideo(video);
-    });
-    el.querySelectorAll('iframe.youtube-embed').forEach(iframe => {
-        if (iframe === exept)
-            return;
-        stopVideo(iframe as HTMLIFrameElement);
-    });
-    el.querySelectorAll('iframe.vimeo-embed').forEach(iframe => {
-        if (iframe === exept)
-            return;
-        stopVideo(iframe as HTMLIFrameElement);
-    });
+function stopInnerVideos(el: Element, except?: HTMLVideoElement | HTMLIFrameElement) {
+    el.querySelectorAll('video,iframe.youtube-embed,iframe.vimeo-embed,iframe.coub-embed')
+        .forEach(iframe => {
+            if (iframe === except) {
+                return;
+            }
+            if (iframe instanceof HTMLIFrameElement || iframe instanceof HTMLVideoElement) {
+                stopVideo(iframe as HTMLIFrameElement | HTMLVideoElement);
+            }
+        });
 }
 
 export default function ContentComponent(props: ContentComponentProps) {

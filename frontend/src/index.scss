@@ -206,6 +206,11 @@ img.image-preview {
   max-height: none;
   cursor: zoom-out;
 }
+
+video {
+  max-width: 100%;
+}
+
 img.image-large {
   display: block;
 }

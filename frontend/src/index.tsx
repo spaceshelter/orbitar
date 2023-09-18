@@ -5,6 +5,7 @@ import {AppStateProvider, useAppState} from './AppState/AppState';
 import {getThemes, ThemeProvider} from './Theme/ThemeProvider';
 import {Router} from 'react-router-dom';
 import './icons.font';
+import {ReloadOnUpdate} from './Components/ReloadOnUpdate';
 
 (async () => {
     if (!('serviceWorker' in navigator)) {
@@ -43,7 +44,9 @@ root.render(
     <AppStateProvider>
         <MobXAwareRouter>
             <ThemeProvider themeCollection={ getThemes() }>
-                <App />
+                <ReloadOnUpdate>
+                    <App />
+                </ReloadOnUpdate>
             </ThemeProvider>
         </MobXAwareRouter>
     </AppStateProvider>

@@ -184,6 +184,10 @@ export default class UserManager {
         return await this.webPushRepository.resetSubscription(forUserId, auth);
     }
 
+    async resetAllPushSubscriptions(forUserId: number) {
+        return await this.webPushRepository.resetAllSubscriptions(forUserId);
+    }
+
     logVisit(userId: number) {
         const date = this.truncateVisitDate(new Date());
         if (!this.cacheLastVisit[userId] || this.cacheLastVisit[userId].getTime() !== date.getTime()) {
@@ -633,6 +637,10 @@ export default class UserManager {
         const parseResult = this.parser.parse(bio);
         await this.userRepository.saveBio(bio, parseResult.text, userId);
         return parseResult.text;
+    }
+
+    async saveName(name: string, userId: number): Promise<boolean> {
+        return await this.userRepository.saveName(name, userId);
     }
 
     async saveGender(gender: UserGender, userId: number): Promise<void> {

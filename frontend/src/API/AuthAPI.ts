@@ -2,7 +2,7 @@ import APIBase from './APIBase';
 import {UserInfo} from '../Types/UserInfo';
 
 type StatusRequest = Record<string, never>;
-type StatusResponse = {
+export type StatusResponse = {
     user: UserInfo;
     watch: {
         posts: number;
@@ -37,8 +37,14 @@ export default class AuthAPI {
         this.api = api;
     }
 
-    async status(): Promise<StatusResponse> {
-        return await this.api.request<StatusRequest, StatusResponse>('/status', {});
+    async status(): Promise<[StatusResponse, string]> {
+        let fingerprintHeader = '';
+        const status =
+            await this.api.request<StatusRequest, StatusResponse>('/status', {},
+                (resp) => {
+                    fingerprintHeader = resp.headers.get('X-Fingerprint') || '';
+                });
+        return [status, fingerprintHeader];
     }
 
     async signIn(username: string, password: string): Promise<SignInResponse> {

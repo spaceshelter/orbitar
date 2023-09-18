@@ -36,7 +36,7 @@ export default function Paginator(props: PaginatorProps) {
     links.push(<Page key={-1} disabled={page === 1} page={page-1} {...commonProps}>←</Page>);
 
     if (pageMin > 1) {
-        links.push(<span className={styles.ellipsis}>…</span>);
+        links.push(<span key='el1' className={styles.ellipsis}>…</span>);
     }
 
     for (let i = pageMin; i <= pageMax; i++) {
@@ -44,7 +44,7 @@ export default function Paginator(props: PaginatorProps) {
     }
 
     if (pageMax < pages) {
-        links.push(<span className={styles.ellipsis}>…</span>);
+        links.push(<span key='el2' className={styles.ellipsis}>…</span>);
     }
 
     links.push(<Page key={pages + 1} disabled={page === pages} page={page+1} {...commonProps}>→</Page>);

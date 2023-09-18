@@ -10,6 +10,7 @@ services:
       SERVER_DOMAIN: ${SERVER_DOMAIN}
       MEDIA_HOSTING_URL: ${MEDIA_HOSTING_URL}
       MEDIA_HOSTING_CLIENT_ID: ${MEDIA_HOSTING_CLIENT_ID}
+      FINGERPRINT: ${FINGERPRINT}
     volumes:
       - $PWD/caddy/Caddyfile.ssl.dev:/etc/caddy/Caddyfile
       - $PWD/caddy/certs:/certs

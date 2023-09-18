@@ -1,6 +1,6 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import styles from './Topbar.module.scss';
-import {Link, useLocation} from 'react-router-dom';
+import {Link, useLocation, useMatch} from 'react-router-dom';
 import {useAppState} from '../AppState/AppState';
 import {ReactComponent as PostIcon} from '../Assets/post.svg';
 import {ReactComponent as MonsterIcon} from '../Assets/monster.svg';
@@ -12,6 +12,8 @@ import NotificationsPopup from './NotificationsPopup';
 import {Hamburger} from './Hamburger';
 import {observer} from 'mobx-react-lite';
 import classNames from 'classnames';
+import {ReloadingLink} from './ReloadingLink';
+import useLocalStorage from 'use-local-storage';
 
 export type TopbarMenuState = 'disabled' | 'open' | 'close';
 
@@ -52,7 +54,7 @@ export const Topbar = observer((props: TopbarProps) => {
                     <button className={menuClasses.join(' ')} onClick={menuToggle}>
                         <Hamburger open={props.menuState === 'close'} />
                     </button>
-                    <Link to={`/`}><MonsterIcon /></Link>
+                    <HomeButton />
                     <CreateButton />
                 </div>
 
@@ -67,6 +69,30 @@ export const Topbar = observer((props: TopbarProps) => {
         </>
     );
 });
+
+const HomeButton = () => {
+    const [savedRoute, setSavedRoute] =
+        useLocalStorage('homeButtonRoute', '/');
+
+    const routes: [string, boolean][] = [];
+    for (const route of ['/', '/posts', '/all']) {
+        // Fine to disable, we're calling this hook a fixed number of times
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        routes.push([route, !!useMatch(route)]);
+    }
+
+    useEffect(() => {
+        routes.forEach(([route, match]) => {
+            if (match && savedRoute !== route) {
+                setSavedRoute(route);
+            }
+        });
+    }, [savedRoute, routes.map(_ => _[1]).join(':')]);
+
+    return (
+        <ReloadingLink to={savedRoute}><MonsterIcon/></ReloadingLink>
+    );
+};
 
 const SearchButton = () => {
     const location = useLocation();
@@ -85,7 +111,7 @@ const CreateButton = observer(() => {
 const WatchButton = observer(() => {
     const {watchCommentsCount} = useAppState();
     return (
-        <Link to={'/watch'} className={watchCommentsCount > 0 ? styles.active : ''}><HotIcon /><span className={styles.label}>{watchCommentsCount > 0 ? watchCommentsCount : ''}</span></Link>
+        <ReloadingLink to={'/watch'} className={watchCommentsCount > 0 ? styles.active : ''}><HotIcon /><span className={styles.label}>{watchCommentsCount > 0 ? watchCommentsCount : ''}</span></ReloadingLink>
     );
 });
 

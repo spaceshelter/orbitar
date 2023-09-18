@@ -29,5 +29,8 @@
 api.{$SERVER_DOMAIN} {
   tls /certs/orbitar.crt /certs/orbitar.key
 
+  header X-Fingerprint "{$FINGERPRINT}"
+  header Access-Control-Expose-Headers "X-Fingerprint"
+
   reverse_proxy http://host.docker.internal:5001
 }

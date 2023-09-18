@@ -74,12 +74,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Copy configuration
-        run: |
-          cp -f /opt/deployment-specific-files/chain.pem $GITHUB_WORKSPACE/caddy/certs
-          cp -f /opt/deployment-specific-files/priv.pem $GITHUB_WORKSPACE/caddy/certs
-          cp -f /opt/deployment-specific-files/.env $GITHUB_WORKSPACE/      
-
       - name: Download DB backup
         uses: ./.github/actions/get-db
         id: get-db
@@ -87,9 +81,11 @@ jobs:
           zip-password: ${{ secrets.STAGING_BACKUP_PASSWORD }}
 
       - name: Stop backend
+        working-directory: /orbitar
         run: docker-compose -f docker-compose.ssl.local.yml stop backend
 
       - name: Restore backup
+        working-directory: /orbitar
         env:
             MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
         run: |
@@ -98,9 +94,11 @@ jobs:
             < ${{ steps.get-db.outputs.db-dump-file }}
 
       - name: Flush Redis cache
+        working-directory: /orbitar
         env:
           REDIS_PASSWORD: orbitar
         run: docker-compose -f docker-compose.ssl.local.yml exec -e REDISCLI_AUTH=$REDIS_PASSWORD redis redis-cli FLUSHALL
 
       - name: Restart backend
+        working-directory: /orbitar
         run: docker-compose -f docker-compose.ssl.local.yml start backend

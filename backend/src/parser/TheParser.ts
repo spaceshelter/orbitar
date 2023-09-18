@@ -31,9 +31,14 @@ export default class TheParser {
     static readonly VERSION = 2;
 
     private readonly mediaHostingConfig: MediaHostingConfig;
+    private readonly mediaHostingUrlOrigin: string;
 
     constructor(mediaHosting: MediaHostingConfig) {
         this.mediaHostingConfig = mediaHosting;
+        // add origin. subdomain to the url
+        this.mediaHostingUrlOrigin =
+            this.mediaHostingConfig.url.replace(/^https?:\/\//, 'https://origin.');
+
         this.allowedTags = {
             a: (node) => this.parseA(node),
             img: (node) => this.parseImg(node),
@@ -194,6 +199,7 @@ export default class TheParser {
             this.processYoutube(pUrl) ||
             this.processVimeo(pUrl) ||
             this.processImage(pUrl) ||
+            this.processCoub(pUrl) ||
             this.processVideo(pUrl);
         if (res !== false) {
             return res;
@@ -213,6 +219,25 @@ export default class TheParser {
     processVideo(url: Url<string>) {
         if (url.pathname.match(/\.(mp4|webm)(\/raw)?$/)) {
             return this.renderVideoTag(url.toString(), false);
+        }
+
+        return false;
+    }
+
+    processCoub(url: Url<string>) {
+        const coubIdPattern = /^\/view\/(\w+)$/;
+
+        if (url.host === 'coub.com' || url.host === 'www.coub.com') {
+            const match = url.pathname.match(coubIdPattern);
+            if (match) {
+                const coubId = match[1];
+                const origUrl = `https://coub.com/view/${coubId}`;
+                const previewUrl = `${this.mediaHostingConfig.url}/coub/${coubId}`;
+                const embedUrl = `https://coub.com/embed/${coubId}`;
+
+                return `<a class="coub-embed" href="${encodeURI(origUrl)}" target="_blank">` +
+                    `<img src="${encodeURI(previewUrl)}" alt="" data-coub="${encodeURI(embedUrl)}"/></a>`;
+            }
         }
 
         return false;
@@ -255,6 +280,12 @@ export default class TheParser {
                 }
             }
         }
+        else if (
+            (url.host === 'youtube.com' || url.host === 'www.youtube.com') &&
+            url.pathname.match(/^\/shorts\/(\w+)$/)
+        ) {
+            videoId = url.pathname.match(/^\/shorts\/(\w+)$/)[1];
+        }
         else {
             return false;
         }
@@ -283,9 +314,13 @@ export default class TheParser {
         if (!/^\d+$/.test(videoId)) return false;
 
         const startTime = url.hash ? parseTime(qs.parse(url.hash.substring(1)).t) : 0;
-        const embed = `https://player.vimeo.com/video/${videoId}${startTime ? '#t=' + startTime : ''}`;
 
-        return `<iframe class="vimeo-embed" src="${encodeURI(embed)}" width="480" height="360" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
+        const origUrl = `https://vimeo.com/${videoId}${startTime ? '#t=' + startTime : ''}`;
+        const previewUrl = `${this.mediaHostingConfig.url}/vimeo/${videoId}`;
+        const embedUrl = `https://player.vimeo.com/video/${videoId}${startTime ? '#t=' + startTime : ''}`;
+
+        return `<a class="vimeo-embed" href="${encodeURI(origUrl)}" target="_blank">` +
+        `<img src="${encodeURI(previewUrl)}" alt="" data-vimeo="${encodeURI(embedUrl)}"/></a>`;
 
         function parseTime(time) {
             if (!time) return 0;
@@ -361,10 +396,10 @@ export default class TheParser {
                 `https://idiod.video/${encodeURI(match[1])}`];
         };
         const orbitarMediaPoster = () => {
-            if (url.startsWith(this.mediaHostingConfig.url)) {
+            if (url.startsWith(this.mediaHostingConfig.url) || url.startsWith(this.mediaHostingUrlOrigin)) {
                 const match = url.match(/.*\/([^.]+\.mp4)(\/raw)?$/);
                 return match && [`${this.mediaHostingConfig.url}/preview/${encodeURI(match[1])}`,
-                    `${this.mediaHostingConfig.url}/${encodeURI(match[1])}/raw`];
+                    `${this.mediaHostingUrlOrigin}/${encodeURI(match[1])}/raw`];
             }
         };
         const dumpVideoPoster = () => {
@@ -375,6 +410,9 @@ export default class TheParser {
         const posterUrl = imgurPoster() || idiodPoster() || dumpVideoPoster() || orbitarMediaPoster();
         if (posterUrl) {
             const [poster, video] = posterUrl;
+            if (url.startsWith(this.mediaHostingUrlOrigin)) {
+                url = url.replace(this.mediaHostingUrlOrigin, this.mediaHostingConfig.url);
+            }
             return `<a class="video-embed" href="${encodeURI(url)}" target="_blank">` +
                 `<img src="${encodeURI(poster)}" alt="" data-video="${encodeURI(video)}"${loop?' data-loop="true"':''}/></a>`;
         }
@@ -402,7 +440,11 @@ export default class TheParser {
         return { ...result, text } ;
     }
 
-    validUrl(url: string) {
-        return encodeURI(decodeURI(url)).match(urlRegexExact);
+    validUrl(url: string): boolean {
+        try {
+            return encodeURI(decodeURI(url)).match(urlRegexExact) !== null;
+        } catch (e) {
+            return false;
+        }
     }
 }

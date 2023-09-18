@@ -29,6 +29,7 @@ export async function getLanguage(text: string): Promise<{lang: string, prob: nu
     }
 }
 
+// DEPRECATED
 export default class TranslationManager {
 
     private translationRepository: TranslationRepository;

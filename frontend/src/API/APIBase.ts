@@ -33,7 +33,7 @@ export default class APIBase {
         this.endpoint = '//' + (process.env.REACT_APP_API_DOMAIN || ('api.' + process.env.REACT_APP_ROOT_DOMAIN)) + '/api/v1';
     }
 
-    async request<Req, Res>(url: string, payload: Req): Promise<Res> {
+    async request<Req, Res>(url: string, payload: Req, responseCallback?: (resp: Response) => void): Promise<Res> {
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
         };
@@ -50,6 +50,10 @@ export default class APIBase {
                 headers
             }
         );
+
+        if (responseCallback) {
+            responseCallback(response);
+        }
 
         if (response.status === 429) {
             throw new APIError('rate-limit', 'Rate limit exceeded', response.status);

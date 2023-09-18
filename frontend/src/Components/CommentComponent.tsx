@@ -9,6 +9,7 @@ import {toast} from 'react-toastify';
 import {SignatureComponent} from './SignatureComponent';
 import {HistoryComponent} from './HistoryComponent';
 import Conf from '../Conf';
+import googleTranslate from '../Utils/googleTranslate';
 
 const defaultLanguage = process.env.DEFAULT_LANGUAGE || 'ru';
 
@@ -30,6 +31,8 @@ export default function CommentComponent(props: CommentProps) {
     const [editingText, setEditingText] = useState<false | string>(false);
     const [showHistory, setShowHistory] = useState(false);
     const [translation, setTranslation] = useState<string | false | undefined>(undefined);
+    const [cachedTranslation, setCachedTranslation] = useState<string | undefined>(undefined);
+
     const api = useAPI();
 
     const handleAnswerSwitch = (e: React.MouseEvent) => {
@@ -77,17 +80,22 @@ export default function CommentComponent(props: CommentProps) {
         }
     };
 
-    const translate = () => {
+    const translate = async () => {
         if (translation) {
             setTranslation(undefined);
+        } else if(cachedTranslation){
+            setTranslation(cachedTranslation);
         } else {
             setTranslation(false);
-            api.postAPI.translate(props.comment.id, 'comment')
-                .then(res => setTranslation(res.html))
-                .catch(() => {
-                    setTranslation(undefined);
-                    toast.error('Не удалось перевести');
-                });
+            try {
+                const html = await googleTranslate(props.comment.content);
+
+                setTranslation(html);
+                setCachedTranslation(html);
+            } catch(err) {
+                setTranslation(undefined);
+                toast.error('Не удалось перевести');
+            }
         }
     };
 
