@@ -347,7 +347,8 @@ export default class FeedManager {
         return { main, bookmarks };
     }
 
-    async postFanOut(subsite_id: number, post_id: number, createdAt: Date | undefined, updatedAt: Date | undefined) {
+    async postFanOut(subsite_id: number, post_id: number, createdAt: Date | undefined, updatedAt: Date | undefined,
+                     onlyDbUpdate= false) {
         this.confirmedPostsExist = true;
         if (!this.initialized || !this.minDate) {
             return;
@@ -355,11 +356,13 @@ export default class FeedManager {
         const batch = [];
         let dbUpdateJob;
 
-        if (createdAt) {
+        if (createdAt && !onlyDbUpdate) {
             batch.push({subsite: `${subsite_id}:new`, posts: [{id: post_id, ts: this.offsetPostTs(createdAt)}]});
         }
         if (updatedAt) {
-            batch.push({subsite: `${subsite_id}:live`, posts: [{id: post_id, ts: this.offsetPostTs(updatedAt)}]});
+            if (!onlyDbUpdate) {
+                batch.push({subsite: `${subsite_id}:live`, posts: [{id: post_id, ts: this.offsetPostTs(updatedAt)}]});
+            }
             dbUpdateJob = (async () => {
                 this.logger.profile(`postFanOut/setUpdated:${post_id}`);
                 await this.bookmarkRepository.setUpdated(post_id, updatedAt);
