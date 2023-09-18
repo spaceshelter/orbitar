@@ -82,7 +82,8 @@ export default class CommentRepository {
             }).then((res) => parseInt(res.cnt || '0'));
     }
 
-    async createComment(userId: number, postId: number, parentCommentId: number | undefined, source: string, language: string, html: string): Promise<CommentRaw> {
+    async createComment(userId: number, postId: number, parentCommentId: number | undefined, source: string,
+                        language: string, html: string, updateCommentedAt = true): Promise<CommentRaw> {
         return await this.db.inTransaction(async conn => {
             const siteResult = await conn.fetchOne<{site_id: number}>('select site_id from posts where post_id=:post_id', { post_id: postId });
 
@@ -112,7 +113,10 @@ export default class CommentRepository {
                 contentSourceId
             });
 
-            await conn.query(`update posts p set comments=(select count(*) from comments c where c.post_id = p.post_id), last_comment_id=:last_comment_id, commented_at=now() where p.post_id=:post_id`, {
+            await conn.query(`update posts p set comments=(select count(*) from comments c where c.post_id = p.post_id), 
+                   last_comment_id=:last_comment_id
+                       ${updateCommentedAt ? ', commented_at=now()' : ''} 
+               where p.post_id=:post_id`, {
                 post_id: postId,
                 last_comment_id: commentId
             });

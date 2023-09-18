@@ -238,39 +238,46 @@ export default class PostManager {
             () => this.commentRepository.getUserCommentsTotal(userId, filter));
     }
 
-    async createComment(userId: number, postId: number, parentCommentId: number | undefined, content: string, format: ContentFormat): Promise<CommentInfoWithPostData> {
+    async createComment(userId: number, postId: number, parentCommentId: number | undefined, content: string, format: ContentFormat,
+                        fanOutAndNotifications = true): Promise<CommentInfoWithPostData> {
         const parseResult = this.parser.parse(content);
         const language = await this.translationManager.detectLanguage('', parseResult.text);
 
-        const commentRaw = await this.commentRepository.createComment(userId, postId, parentCommentId, content, language, parseResult.text);
+        const commentRaw = await this.commentRepository.createComment(
+            userId, postId, parentCommentId, content, language, parseResult.text, fanOutAndNotifications
+        );
         this.userManager.clearUserRestrictionsCache(userId);
 
-        let parentAuthor: UserInfo | undefined;
-        if (parentCommentId) {
-            const parentComment = await this.commentRepository.getComment(parentCommentId);
-            parentAuthor = await this.userManager.getById(parentComment.author_id);
-        }
-        for (const mention of parseResult.mentions) {
-            // if author of parent comment/post was mentioned - do not send notifications:
-            // they are already notified about answer to their comment
-            if (mention === parentAuthor?.username.toLowerCase()) {
-                continue;
+        if (fanOutAndNotifications) {
+            let parentAuthor: UserInfo | undefined;
+            if (parentCommentId) {
+                const parentComment = await this.commentRepository.getComment(parentCommentId);
+                parentAuthor = await this.userManager.getById(parentComment.author_id);
             }
-            await this.notificationManager.sendMentionNotify(mention, userId, postId, commentRaw.comment_id);
-        }
+            for (const mention of parseResult.mentions) {
+                // if author of parent comment/post was mentioned - do not send notifications:
+                // they are already notified about answer to their comment
+                if (mention === parentAuthor?.username.toLowerCase()) {
+                    continue;
+                }
+                await this.notificationManager.sendMentionNotify(mention, userId, postId, commentRaw.comment_id);
+            }
 
-        if (parentAuthor) {
-            await this.notificationManager.sendAnswerNotify(parentAuthor.id, userId, postId, commentRaw.comment_id);
+            if (parentAuthor) {
+                await this.notificationManager.sendAnswerNotify(parentAuthor.id, userId, postId, commentRaw.comment_id);
+            }
         }
 
         await this.bookmarkRepository.setWatch(postId, userId, true);
         this.userManager.clearUserStatsCache();
 
-        // fan out in background
-        this.feedManager.postFanOut(commentRaw.site_id, commentRaw.post_id,
+        if (fanOutAndNotifications) {
+            // fan out in background
+            this.feedManager.postFanOut(commentRaw.site_id, commentRaw.post_id,
                 undefined,
                 commentRaw.created_at
-        ).then().catch();
+            ).then().catch();
+        }
 
         const comments = await this.convertRawCommentsWithPostData(userId, [commentRaw], format);
         delete this.numberOfCommentsCache[userId];
