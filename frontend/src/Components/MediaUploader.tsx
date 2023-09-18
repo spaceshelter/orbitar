@@ -109,7 +109,13 @@ export default function MediaUploader(props: MediaUploaderProps) {
 
     const handleUriChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const uri = e.target.value;
+       
+        if (uri.match(/^file:\/\//)) {
+            return; // skip local files
+        }
+        
         setUri(uri);
+
         if (uri.match(/\.(png|jpg|gif|jpeg)$/i)) {
             setPreview(undefined);
             setVideoPreview(undefined);

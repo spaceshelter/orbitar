@@ -249,6 +249,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             if (file) {
                 setMediaUploaderData(file);
                 setMediaUploaderOpen(true);
+                e.preventDefault();
             }
         }
     };
