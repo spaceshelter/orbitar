@@ -348,7 +348,7 @@ export default class FeedManager {
     }
 
     async postFanOut(subsite_id: number, post_id: number, createdAt: Date | undefined, updatedAt: Date | undefined,
-                     onlyDbUpdate= false) {
+                     onlyDbUpdate = false) {
         this.confirmedPostsExist = true;
         if (!this.initialized || !this.minDate) {
             return;
