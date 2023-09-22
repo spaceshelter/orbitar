@@ -271,13 +271,12 @@ export default class PostManager {
         await this.bookmarkRepository.setWatch(postId, userId, true);
         this.userManager.clearUserStatsCache();
 
-        if (fanOutAndNotifications) {
-            // fan out in background
-            this.feedManager.postFanOut(commentRaw.site_id, commentRaw.post_id,
-                undefined,
-                commentRaw.created_at
-            ).then().catch();
-        }
+        // fan out in background
+        this.feedManager.postFanOut(commentRaw.site_id, commentRaw.post_id,
+            undefined,
+            commentRaw.created_at,
+            /*onlyDbUpdate=*/!fanOutAndNotifications
+        ).then().catch();
 
         const comments = await this.convertRawCommentsWithPostData(userId, [commentRaw], format);
         delete this.numberOfCommentsCache[userId];
