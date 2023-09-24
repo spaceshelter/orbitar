@@ -23,6 +23,10 @@ export function getVideoAutopause(): boolean {
     return JSON.parse(localStorage.getItem('autoStopVideos') || 'false');
 }
 
+export function getLegacyZoom(): boolean {
+    return JSON.parse(localStorage.getItem('legacyZoom') || 'false');
+}
+
 export default function UserProfileSettings(props: UserProfileSettingsProps) {
   useEffect(() => {
     window.scrollTo({ top: 0 });
@@ -35,6 +39,7 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
   let gender = props.gender;
 
     const [autoStop, setAutoStop] = React.useState(getVideoAutopause());
+    const [legacyZoom, setLegacyZoom] = React.useState(getLegacyZoom());
 
     const confirmWrapper = (message: string, callback: () => void) => (e: React.MouseEvent) => {
         e.preventDefault();
@@ -76,6 +81,10 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
         setAutoStop(!autoStop);
     };
 
+    const toggleLegacyZoom = () => {
+        setLegacyZoom(!legacyZoom);
+    };
+
   const handleGenderChange = (e: React.MouseEvent) => {
     e.preventDefault();
     if (gender === undefined) {
@@ -100,6 +109,10 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
         localStorage.setItem('autoStopVideos', JSON.stringify(autoStop));
     }, [autoStop]);
 
+    useEffect(() => {
+        localStorage.setItem('legacyZoom', JSON.stringify(legacyZoom));
+    }, [legacyZoom]);
+
     return (
         <>
             <div>
@@ -113,6 +126,9 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
                     } </button>}
                 <button className={buttonStyles.settingsButton} onClick={toggleAutoStop}>
                     Видео автопауза: {autoStop ? 'Вкл' : 'Выкл'}
+                </button>
+                <button className={buttonStyles.settingsButton} onClick={toggleLegacyZoom}>
+                    Легаси зум: {legacyZoom ? 'Вкл' : 'Выкл'}
                 </button>
                 {<ThemeToggleComponent dynamic={true} buttonLabel="Сменить тему"/>}
             </div>

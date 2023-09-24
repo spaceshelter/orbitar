@@ -37,6 +37,11 @@ input.title {
         max-height: 500px;
     }
 
+    :global(.react-transform-wrapper) img {
+      max-width: unset;
+      max-height: unset;
+    }
+
     // TODO video sizing
 }
 
