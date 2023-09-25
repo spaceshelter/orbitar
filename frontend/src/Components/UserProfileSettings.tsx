@@ -24,7 +24,7 @@ export function getVideoAutopause(): boolean {
 }
 
 export function getLegacyZoom(): boolean {
-    return JSON.parse(localStorage.getItem('legacyZoom') || 'false');
+    return localStorage.getItem('legacyZoom') === 'true';
 }
 
 export default function UserProfileSettings(props: UserProfileSettingsProps) {
