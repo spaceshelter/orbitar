@@ -451,7 +451,6 @@ function ZoomComponent(props: ZoomComponentProps) {
         >
             <TransformWrapper
                 initialScale={defaultScale}
-                // centerOnInit={true}
                 limitToBounds={true}
                 centerZoomedOut={true}
                 minScale={minScale}
