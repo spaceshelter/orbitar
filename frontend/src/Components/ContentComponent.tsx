@@ -1,9 +1,12 @@
 import React, {useEffect, useRef, useState} from 'react';
 import classNames from 'classnames';
 import styles from './ContentComponent.module.scss';
+import mediaStyles from './MediaUploader.module.css';
 import {observeOnHidden} from '../Services/ObserverService';
 import type * as Vimeo from '@vimeo/player';
-import {getVideoAutopause} from './UserProfileSettings';
+import {getLegacyZoom, getVideoAutopause} from './UserProfileSettings';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
+import {useHotkeys} from 'react-hotkeys-hook';
 
 interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
     content: string;
@@ -24,15 +27,21 @@ export const SMALL_AUTO_CUT = 100;
 
 const iframeToOriginalEl = new WeakMap<HTMLIFrameElement, HTMLElement>();
 
-function updateContent(div: HTMLDivElement) {
+type ZoomedImg = {
+    src: string;
+    width: number;
+    height: number;
+};
+
+function updateContent(div: HTMLDivElement, setZoomedImg: (img: ZoomedImg | null) => void) {
     div.querySelectorAll('img').forEach(img => {
         if (img.complete) {
-            updateImg(img);
+            updateImg(img, setZoomedImg);
             return;
         }
 
         img.onload = () => {
-            updateImg(img);
+            updateImg(img, setZoomedImg);
         };
     });
 
@@ -228,7 +237,7 @@ function loadVimeoPlayer(onload: () => void) {
     }
 }
 
-function updateImg(img: HTMLImageElement) {
+function updateImg(img: HTMLImageElement, setZoomedImg: (img: ZoomedImg | null) => void) {
     if (processYtEmbed(img) || processVideoEmbed(img) || processCoubEmbed(img) || processVimeoEmbed(img)) {
         return;
     }
@@ -251,16 +260,24 @@ function updateImg(img: HTMLImageElement) {
     }
 
     let imageLarge = false;
-    img.classList.add('image-scalable');
     if (img.naturalWidth > 500 || img.naturalHeight > 500) {
+        img.classList.add('image-scalable');
         img.onclick = () => {
-            if (imageLarge) {
-                imageLarge = false;
-                img.classList.remove('image-preview');
-                return;
+            if (getLegacyZoom()) {
+                if (imageLarge) {
+                    imageLarge = false;
+                    img.classList.remove('image-preview');
+                    return;
+                }
+                imageLarge = true;
+                img.classList.add('image-preview');
+            } else {
+                setZoomedImg({
+                    src: img.src,
+                    width: img.naturalWidth,
+                    height: img.naturalHeight,
+                });
             }
-            imageLarge = true;
-            img.classList.add('image-preview');
         };
     }
 }
@@ -310,7 +327,7 @@ function stopVideo(el: HTMLVideoElement | HTMLIFrameElement) {
         const originalEl = iframeToOriginalEl.get(el);
         if (originalEl) {
             el.replaceWith(originalEl);
-            updateImg(originalEl.querySelector(`img`) as HTMLImageElement);
+            updateImg(originalEl.querySelector(`img`) as HTMLImageElement, () => {} );
         }
     }
 }
@@ -330,6 +347,7 @@ function stopInnerVideos(el: Element, except?: HTMLVideoElement | HTMLIFrameElem
 export default function ContentComponent(props: ContentComponentProps) {
     const contentDiv = useRef<HTMLDivElement>(null);
     const [cut, setCut] = useState(false);
+    const [zoomedImg, setZoomedImg] = useState<ZoomedImg | null>(null);
 
     const checkAutoCut = (content: HTMLElement) => {
         if (props.autoCut) {
@@ -348,7 +366,7 @@ export default function ContentComponent(props: ContentComponentProps) {
             return;
         }
 
-        updateContent(content);
+        updateContent(content, setZoomedImg);
         let resizeObserver: ResizeObserver | null = null;
 
         if (props.lowRating) {
@@ -400,6 +418,62 @@ export default function ContentComponent(props: ContentComponentProps) {
                  style={{maxHeight: cut && props.autoCut ? props.autoCut: undefined}}
                  dangerouslySetInnerHTML={{__html: props.content}} ref={contentDiv} />
             {cut && <div className={styles.cutCover}><button className={styles.cutButton} onClick={handleCut}>Читать дальше</button></div>}
+            {zoomedImg &&  <ZoomComponent {...zoomedImg} onExit={() => setZoomedImg(null)} />}
         </>
+    );
+}
+
+// extract zoom component
+
+interface ZoomComponentProps {
+    src: string;
+    width: number;
+    height: number;
+    onExit: () => void;
+}
+
+function ZoomComponent(props: ZoomComponentProps) {
+    // need to account for retina displays
+    const minScale = Math.min(1, window.innerWidth / props.width, window.innerHeight / props.height);
+    const defaultScale = Math.min(window.innerWidth / props.width, window.innerHeight / props.height);
+    const defaultTranslateX = (window.innerWidth - props.width * defaultScale) / 2;
+    const defaultTranslateY = (window.innerHeight - props.height * defaultScale) / 2;
+    useHotkeys('esc', props.onExit);
+
+    return (
+        <div className={mediaStyles.overlay}
+            onClick={(e) => {
+                // check if click originated from this element
+                if ((e.target as HTMLElement).classList.contains('react-transform-wrapper')) {
+                    props.onExit();
+                }
+            }}
+        >
+            <TransformWrapper
+                initialScale={defaultScale}
+                limitToBounds={true}
+                centerZoomedOut={true}
+                minScale={minScale}
+                initialPositionX={defaultTranslateX}
+                initialPositionY={defaultTranslateY}
+            >
+                <TransformComponent
+                    wrapperStyle={
+                        {
+                            width: '100vw',
+                            height: '100vh',
+                        }
+                    }
+                >
+                <img src={props.src} alt="" style={
+                    {
+                        maxWidth: 'auto !important',
+                        maxHeight: 'auto !important',
+                    }
+                }/>
+                </TransformComponent>
+            </TransformWrapper>
+            <span className={classNames('i i-close', styles.overlayCloseButton)} onClick={props.onExit} />
+        </div>
     );
 }
