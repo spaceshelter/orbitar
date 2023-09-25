@@ -434,7 +434,7 @@ interface ZoomComponentProps {
 
 function ZoomComponent(props: ZoomComponentProps) {
     // need to account for retina displays
-    const minScale = Math.min(1, window.innerWidth / props.width / 2, window.innerHeight / props.height / 2);
+    const minScale = Math.min(1, window.innerWidth / props.width, window.innerHeight / props.height);
     const defaultScale = Math.min(window.innerWidth / props.width, window.innerHeight / props.height);
     const defaultTranslateX = (window.innerWidth - props.width * defaultScale) / 2;
     const defaultTranslateY = (window.innerHeight - props.height * defaultScale) / 2;
