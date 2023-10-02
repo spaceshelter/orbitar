@@ -109,11 +109,11 @@ export default function MediaUploader(props: MediaUploaderProps) {
 
     const handleUriChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const uri = e.target.value;
-       
+
         if (uri.match(/^file:\/\//)) {
             return; // skip local files
         }
-        
+
         setUri(uri);
 
         if (uri.match(/\.(png|jpg|gif|jpeg)$/i)) {
@@ -152,12 +152,14 @@ export default function MediaUploader(props: MediaUploaderProps) {
 
     const handlePaste = (e: ClipboardEvent) =>{
         const items = e.clipboardData?.items;
-        if (!items) 
+        if (!items)
             return;
         for (let i = 0; i < items.length; i++) {
             const file = items[i].getAsFile();
             if (file) {
                 readFile(file);
+                // prevent pasting into the editor
+                e.preventDefault();
             }
         }
     };
