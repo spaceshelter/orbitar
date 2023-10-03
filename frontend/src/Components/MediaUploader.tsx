@@ -109,7 +109,13 @@ export default function MediaUploader(props: MediaUploaderProps) {
 
     const handleUriChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const uri = e.target.value;
+
+        if (uri.match(/^file:\/\//)) {
+            return; // skip local files
+        }
+
         setUri(uri);
+
         if (uri.match(/\.(png|jpg|gif|jpeg)$/i)) {
             setPreview(undefined);
             setVideoPreview(undefined);
@@ -146,12 +152,14 @@ export default function MediaUploader(props: MediaUploaderProps) {
 
     const handlePaste = (e: ClipboardEvent) =>{
         const items = e.clipboardData?.items;
-        if (!items) 
+        if (!items)
             return;
         for (let i = 0; i < items.length; i++) {
             const file = items[i].getAsFile();
             if (file) {
                 readFile(file);
+                // prevent pasting into the editor
+                e.preventDefault();
             }
         }
     };
@@ -160,7 +168,9 @@ export default function MediaUploader(props: MediaUploaderProps) {
         setUploadEnabled(true);
     };
 
-    const handleUpload = () => {
+    const handleUpload = (e:  React.SyntheticEvent) => {
+        e.preventDefault();
+
         if (!uploadData) {
             return;
         }
@@ -230,7 +240,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
         <>
             <div className={styles.overlay} onClick={handleOverlayClick}></div>
             <div className={styles.container}>
-                <div className={styles.controls}>
+                <form className={styles.controls} onSubmit={handleUpload}>
                     <div className={styles.upload}>
                         <input disabled={uploading} className={styles.url} ref={uriRef} type="text" placeholder="https://" title='Вставьте ссылку или картинку' value={uri} onChange={handleUriChange} />
                         <label className={styles.selector}>
@@ -238,8 +248,8 @@ export default function MediaUploader(props: MediaUploaderProps) {
                             <div className={styles.choose}>Выбрать</div>
                         </label>
                     </div>
-                    <button disabled={!uploadEnabled || uploading} className={styles.done + ' button'} onClick={handleUpload}>{uploading ? 'Загрузка' : 'Фьють'}</button>
-                </div>
+                    <button disabled={!uploadEnabled || uploading} className={styles.done + ' button'} type="submit">{uploading ? 'Загрузка' : 'Фьють'}</button>
+                </form>
                 <div className={styles.dropbox + (dragActive ? ' ' + styles.active : '')} onDragEnter={handleDragEnter} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
                     <div className={styles.preview}>
                         {preview && <img draggable={false} className={styles.preview} src={preview} onLoad={handleImageLoad} ref={previewRef} alt="" />}

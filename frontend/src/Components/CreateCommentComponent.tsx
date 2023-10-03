@@ -249,6 +249,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             if (file) {
                 setMediaUploaderData(file);
                 setMediaUploaderOpen(true);
+                e.preventDefault();
             }
         }
     };
@@ -326,6 +327,17 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         toast(error, {type: 'error'});
     }, 5000, {leading: true, trailing: false, maxWait: 10000});
 
+    const onDragEnter = (e: React.DragEvent<HTMLTextAreaElement>) => {
+        // open media uploader on drag enter
+        // check that image files are dragged
+        if (e.dataTransfer.items.length > 0 &&
+            e.dataTransfer.items[0].kind === 'file' &&
+            e.dataTransfer.items[0].type.startsWith('image/')
+        ) {
+            setMediaUploaderOpen(true);
+        }
+    };
+
     const fetchUsernameSuggestions = async (startsWith: string) => {
         try {
             const result = await api.userAPI.getUsernameSuggestions(startsWith);
@@ -381,7 +393,8 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                             minChar={1}
                             disabled={isPosting}
                             onChange={handleAnswerChange}
-                            onPaste={handlePaste} 
+                            onPaste={handlePaste}
+                            onDragEnter={onDragEnter}
                             value={answerText}
                             // @ts-expect-error -- types of react-textarea-autosize and react-textarea-autocomplete are incompatible with their latest versions
                             textAreaComponent={TextareaAutosize}
