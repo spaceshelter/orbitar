@@ -16,9 +16,8 @@ import CreateCommentComponent from './CreateCommentComponent';
 import { HistoryComponent } from './HistoryComponent';
 import {SignatureComponent} from './SignatureComponent';
 import Conf from '../Conf';
-import googleTranslate from '../Utils/googleTranslate';
+import googleTranslate, {AlreadyTargetLang} from '../Utils/googleTranslate';
 
-const defaultLanguage = process.env.DEFAULT_LANGUAGE || 'ru';
 
 interface PostComponentProps {
     post: PostInfo;
@@ -100,8 +99,20 @@ export default function PostComponent(props: PostComponentProps) {
                     html
                 });
             } catch(err) {
-                setTranslation(undefined);
-                toast.error('Не удалось перевести');
+                if(err instanceof AlreadyTargetLang) {
+                    try {
+                        const res = await api.postAPI.translate(id, 'post');
+                        setTranslation(res);
+                        setCachedTranslation(res);
+                    } catch (err) {
+                        setTranslation(undefined);
+                        toast.error('Не удалось перевести');
+                   }
+                } else {
+                        setTranslation(undefined);
+                        toast.error('Не удалось перевести');
+
+                }
             }
         }
     };
@@ -192,8 +203,8 @@ export default function PostComponent(props: PostComponentProps) {
                 <div className={styles.control}><CommentsCount post={props.post} /></div>
                 {/*<div className={styles.control}><button disabled={true} onClick={toggleBookmark} className={bookmark ? styles.active : ''}><BookmarkIcon /><span className={styles.label}></span></button></div>*/}
                 {props.post.canEdit && props.onEdit && <div className={styles.control}><button onClick={handleEdit}><EditIcon /></button></div>}
-                {props.post.language && props.post.language !== defaultLanguage && <div className={styles.control}><button
-                    disabled={translation === false} onClick={translate} className={`i i-translate ${styles.translate}`}/></div>}
+                <div className={styles.control}><button
+                    disabled={translation === false} onClick={translate} className={`i i-translate ${styles.translate}`}/></div>
                 <div className={styles.control + ' ' + styles.options}>
                     <button onClick={toggleOptions} className={showOptions ? styles.active : ''}><OptionsIcon /></button>
                     {showOptions &&

@@ -1,6 +1,5 @@
 import TranslationRepository from '../db/repositories/TranslationRepository';
 import {Translation} from './types/Translation';
-import fetch from 'node-fetch';
 import PostRepository from '../db/repositories/PostRepository';
 import {ContentSourceRaw} from '../db/types/ContentSourceRaw';
 import TheParser from '../parser/TheParser';
@@ -8,7 +7,11 @@ import {stripHtml} from 'string-strip-html';
 import {Logger} from 'winston';
 import {addOnPostRun, FastText, FastTextModel} from '../../langid/fasttext.js';
 import {urlRegex} from '../parser/regexprs';
+import OpenAI from 'openai';
 
+const openai = new OpenAI({
+    apiKey: process.env["OPENAI_API_KEY"]
+});
 const fasttextModelPromise: Promise<FastTextModel> = new Promise<FastText>((resolve) => {
     addOnPostRun(() => {
         const ft = new FastText();
@@ -29,7 +32,6 @@ export async function getLanguage(text: string): Promise<{lang: string, prob: nu
     }
 }
 
-// DEPRECATED
 export default class TranslationManager {
 
     private translationRepository: TranslationRepository;
@@ -55,37 +57,61 @@ export default class TranslationManager {
             return translation;
         }
 
-        let html = contentSource.source;
+        const PRE_PROMPT = "Переведи текст "
+
+        const FILTERS = [
+            "как пьяный викинг",
+            "как пьяница в крайней степени опьянения",
+            "как неандерталец",
+            "на эмодзи",
+            "на языке танца",
+            "как мегаинтеллектуал",
+            "как крестьянин 18-го века",
+            "как заносчивый аристократ 19-го века",
+            "как заика",
+            "как философ",
+            "как похотливая монашка",
+            "как уголовник",
+            "как одессит",
+            "как закарпатский вуйко",
+            "как Шекспир",
+            "как панк",
+            "на японский",
+            "на корейский",
+            "на китайский",
+            "на грузинский",
+            "на вьетнамский",
+            "на санскрит",
+            "на арабский",
+            "как рассказываешь сказку",
+            "как злой пират",
+            "как зомби",
+            "как хакер"
+        ];
+
+        const POST_PROMPT = ':'
 
         let uuidTag;
+        let html = contentSource.source.substring(0, 1024);
+
         if (contentSource.title) {
             uuidTag = `<t${Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)}/>`;
             //FIXME: strip html tags from title
             html = `${contentSource.title}${uuidTag}\n` + html;
         }
-        const brUuidTag = `<br${Math.random().toString(36).substring(2, 8)}/>`;
-        // replace line breaks with brUuidTag
-        html = html.replace(/\n/g, brUuidTag);
 
-        const translationResponse = await fetch('https://api-free.deepl.com/v2/translate', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Authorization': `DeepL-Auth-Key ${process.env.DEEPL_API_KEY}`
-            },
-            body: `text=${encodeURIComponent(html)}&target_lang=${language}&tag_handling=html`
-        }).then(res => {
-            if (res.status !== 200) {
-                this.logger.error('Translation failed', {status: res.status, contentSource});
-                throw new Error(`Translation failed with status ${res.status}`);
-            }
+        const role = FILTERS[Math.floor(Math.random()*FILTERS.length)]
+        const prompt = PRE_PROMPT + role + POST_PROMPT
 
-            return res.json();
+        const chatCompletion = await openai.chat.completions.create({
+            messages: [
+                { role: 'system', content: prompt },
+                { role: 'user', content: html }
+            ],
+            model: 'gpt-3.5-turbo',
         });
 
-        let translatedHtml = translationResponse.translations[0].text;
-        // replace brUuidTag with line breaks
-        translatedHtml = translatedHtml.replaceAll(brUuidTag, '\n');
+        let translatedHtml = chatCompletion.choices[0].message.content
 
         let translatedTitle = '';
         if (contentSource.title) {
@@ -95,6 +121,7 @@ export default class TranslationManager {
                 translatedHtml = titleMatch[1];
             }
         }
+        translatedHtml = `<irony>${role}</irony>\n${translatedHtml}`;
 
         await this.translationRepository.saveTranslation(contentSource.content_source_id, language,
             translatedTitle, translatedHtml);

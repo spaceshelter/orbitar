@@ -9,9 +9,8 @@ import {toast} from 'react-toastify';
 import {SignatureComponent} from './SignatureComponent';
 import {HistoryComponent} from './HistoryComponent';
 import Conf from '../Conf';
-import googleTranslate from '../Utils/googleTranslate';
+import googleTranslate, {AlreadyTargetLang} from '../Utils/googleTranslate';
 
-const defaultLanguage = process.env.DEFAULT_LANGUAGE || 'ru';
 
 interface CommentProps {
     comment: CommentInfo;
@@ -93,8 +92,20 @@ export default function CommentComponent(props: CommentProps) {
                 setTranslation(html);
                 setCachedTranslation(html);
             } catch(err) {
-                setTranslation(undefined);
-                toast.error('Не удалось перевести');
+                if(err instanceof AlreadyTargetLang){
+                    try {
+                        const res = await api.postAPI.translate(props.comment.id, 'comment');
+                        setTranslation(res.html);
+                        setCachedTranslation(res.html);
+
+                    }  catch (err) {
+                        setTranslation(undefined);
+                        toast.error('Не удалось перевести');
+                    }
+                } else {
+                    setTranslation(undefined);
+                    toast.error('Не удалось перевести');
+                }
             }
         }
     };
@@ -136,8 +147,8 @@ export default function CommentComponent(props: CommentProps) {
                         <RatingSwitch type="comment" id={props.comment.id} rating={{ vote: props.comment.vote, value: props.comment.rating }} onVote={handleVote} />
                     </div>}
                     {props.comment.canEdit && props.onEdit && <div className={styles.control}><button onClick={handleEdit} className='i i-edit' /></div>}
-                    {props.comment.language && props.comment.language !== defaultLanguage && <div className={styles.control}><button
-                        disabled={translation === false} onClick={translate} className={`i i-translate ${styles.translate}`}/></div>}
+                    <div className={styles.control}><button
+                        disabled={translation === false} onClick={translate} className={`i i-translate ${styles.translate}`}/></div>
                     {props.onAnswer && <div className={styles.control}><button onClick={handleAnswerSwitch}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</button></div>}
                 </div>
             </div>
