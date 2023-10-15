@@ -6,10 +6,11 @@ import {Logger} from 'winston';
 import {addOnPostRun, FastText, FastTextModel} from '../../langid/fasttext.js';
 import {urlRegex} from '../parser/regexprs';
 import OpenAI from 'openai';
-const NodeStream = require('stream')
 import {ChatCompletionChunk} from "openai/src/resources/chat/completions";
 import {APIPromise} from "openai/core";
 import {Stream} from "openai/streaming";
+import {APIResponse} from "../api/ApiMiddleware";
+import {TranslateResponse} from "../api/types/requests/Translate";
 
 const openai = new OpenAI({
     apiKey: process.env["OPENAI_API_KEY"]
@@ -104,14 +105,16 @@ export default class TranslationManager {
         });
     }
 
-    async translateEntity(ref_id: number, type: 'post' | 'comment', mode: TranslationMode): Promise<string | ReadableStream<string>> {
+    async translateEntity(ref_id: number, type: 'post' | 'comment', mode: TranslationMode, response: APIResponse<TranslateResponse>): Promise<void> {
         const contentSource = await this.postRepository.getLatestContentSource(ref_id, type);
         if (!contentSource) {
             throw new Error('ContentSource not found');
         }
         const cachedTranslation = await this.translationRepository.getTranslation(contentSource.content_source_id, mode);
         if (cachedTranslation) {
-            // return cachedTranslation.html;
+            response.write(cachedTranslation.html);
+            response.end();
+            return;
         }
 
         let prompt, hint;
@@ -131,34 +134,19 @@ export default class TranslationManager {
         // TODO review limitations to fit into budget
         const content = contentSource.source.substring(0, 1024)
 
-        const readableGPTStream = await TranslationManager.interpreterString(prompt, content);
-
-        // Now need to remove ChatGPT related responses, \
-        // transform to simple text stream
-        // and cache final interpretation
-        const rs = new NodeStream.Readable({read: async () => {
-                for await (const part of readableGPTStream) {
-                    const chunk = part.choices[0]?.delta?.content || ''
-                    console.log('async', chunk)
-                    fullResponse.push(chunk);
-                    rs.push(chunk);
-                }
-                // HACK to write received response into repository even if user has reloaded the page and
-                // interrupted the response - doing this at the end of _read
-                if(fullResponse.length > 1) {
-                    const fullResponseStr = fullResponse.join('');
-                    console.log('end of stream', fullResponseStr)
-                    await this.translationRepository.saveTranslation(contentSource.content_source_id, mode, contentSource.title || '', fullResponseStr);
-                    rs.push(null)
-                    // empty array to prevent future calls
-                    fullResponse.length = 0;
-                }
-            }
-        });
-        rs.push(`<irony>${hint}</irony>\n`)
         const fullResponse: string[] = [`<irony>${hint}</irony>\n`];
-
-        return rs
+        const readableGPTStream = await TranslationManager.interpreterString(prompt, content);
+        response.write(`<irony>${hint}</irony>\n`)
+        for await (const part of readableGPTStream) {
+            const chunk = part.choices[0]?.delta?.content || ''
+            console.log('async', chunk)
+            response.write(chunk);
+            fullResponse.push(chunk);
+        }
+        const fullResponseStr = fullResponse.join('');
+        console.log('done', fullResponseStr)
+        await this.translationRepository.saveTranslation(contentSource.content_source_id, mode, contentSource.title || '', fullResponseStr);
+        response.end()
     }
 
     async detectLanguage(title, source): Promise<string> {

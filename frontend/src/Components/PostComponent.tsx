@@ -39,7 +39,7 @@ export default function PostComponent(props: PostComponentProps) {
     const [editingText, setEditingText] = useState<false | string>(false);
     const [editingTitle, setEditingTitle] = useState<string>(props.post.title || '');
     const [showHistory, setShowHistory] = useState(false);
-    const [alternativeMode, setAlternativeMode] = React.useState<AltContentType | undefined >();
+    const [currentMode, setCurrentMode] = React.useState<AltContentType | undefined >();
     const [cachedTitleTranslation, setCachedTitleTranslation] = useState<string | undefined>();
     const [cachedContentTranslation, setCachedContentTranslation] = useState< string | undefined>();
     const [streamingAnnotation, setStreamingAnnotation] = useState<string | undefined>();
@@ -62,10 +62,10 @@ export default function PostComponent(props: PostComponentProps) {
     }, [props]);
 
     const { id, created, site, author, vote, rating, watch } = props.post;
-    const title = alternativeMode === 'translate' ? cachedTitleTranslation : props.post.title;
-    const content = (alternativeMode === 'translate' && cachedContentTranslation) ||
-        (alternativeMode === 'altTranslate' && (cachedAltTranslation || streamingAltTranslation)) ||
-        (alternativeMode === 'annotate' && (cachedAnnotation || streamingAnnotation)) ||
+    const title = currentMode === 'translate' ? cachedTitleTranslation : props.post.title;
+    const content = (currentMode === 'translate' && cachedContentTranslation) ||
+        (currentMode === 'altTranslate' && (cachedAltTranslation || streamingAltTranslation)) ||
+        (currentMode === 'annotate' && (cachedAnnotation || streamingAnnotation)) ||
         props.post.content;
 
     const toggleOptions = () => {
@@ -91,7 +91,7 @@ export default function PostComponent(props: PostComponentProps) {
     };
 
     const translate = () => {
-        getAlternative('translate', cachedTitleTranslation, cachedContentTranslation, async () => {
+        getAlternative('translate', currentMode, setCurrentMode, cachedContentTranslation, async () => {
             const title = await googleTranslate(props.post.title);
             const html = await googleTranslate(props.post.content);
             setCachedTitleTranslation(title);
@@ -112,7 +112,7 @@ export default function PostComponent(props: PostComponentProps) {
             let done, value, finalValue = '';
             while (!done) {
                 ({ value, done } = await reader.read());
-                console.log(value, done, alternativeMode, mode, alternativeMode === mode);
+                console.log(value, done, currentMode, mode, currentMode === mode);
                 if (done) {
                     finalValue = chunks.join('');
                     setCachedValue(finalValue);
@@ -127,31 +127,32 @@ export default function PostComponent(props: PostComponentProps) {
     };
 
     const altTranslate = () => {
-        getAlternative('altTranslate', props.post.title, cachedAltTranslation, retrieveStreamResponse('post', 'altTranslate', setStreamingAltTranslation, setCachedAltTranslation));
+        getAlternative('altTranslate', currentMode, setCurrentMode, cachedAltTranslation, retrieveStreamResponse('post', 'altTranslate', setStreamingAltTranslation, setCachedAltTranslation));
     };
 
     const annotate = () => {
-        getAlternative('annotate', props.post.title, cachedAnnotation, retrieveStreamResponse('post', 'annotate', setStreamingAnnotation, setCachedAnnotation));
+        getAlternative('annotate', currentMode, setCurrentMode, cachedAnnotation, retrieveStreamResponse('post', 'annotate', setStreamingAnnotation, setCachedAnnotation));
     };
 
     const getAlternative = async (
-        mode: AltContentType,
-        cachedTitle: string | undefined,
+        newMode: AltContentType,
+        currentMode: AltContentType | undefined,
+        setCurrentMode: (mode: AltContentType | undefined) => void,
         cachedContent: string | undefined,
         retrieveContent: () => Promise<void>
     ): Promise<void> => {
-        if (alternativeMode === mode) {
-            setAlternativeMode(undefined);
+        if (currentMode === newMode) {
+            setCurrentMode(undefined);
         } else if(cachedContent){
-            setAlternativeMode(mode);
+            setCurrentMode(newMode);
         } else {
             try {
-                setAlternativeMode(mode);
+                setCurrentMode(newMode);
                 await retrieveContent();
             } catch (err) {
                 console.error(err);
-                setAlternativeMode(undefined);
-                toast.error('Не удалось перевести');
+                setCurrentMode(undefined);
+                toast.error('Роботы не справились - восстание машин откладывается.');
             }
         }
     };
@@ -221,7 +222,7 @@ export default function PostComponent(props: PostComponentProps) {
                                     }</PostLink></div>}
                                     <div className={styles.content}>
                                         <ContentComponent className={styles.content} content={content}
-                                                          autoCut={alternativeMode === 'annotate' ? undefined : props.autoCut}
+                                                          autoCut={currentMode === 'annotate' ? undefined : props.autoCut}
                                                           lowRating={rating <= Conf.POST_LOW_RATING_THRESHOLD || props.post.vote === -1} />
                                     </div>
                                 </>

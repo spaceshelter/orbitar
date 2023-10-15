@@ -25,7 +25,6 @@ import {HistoryEntity} from './types/entities/HistoryEntity';
 import rateLimit from 'express-rate-limit';
 import {TranslateRequest, TranslateResponse} from './types/requests/Translate';
 import TranslationManager from '../managers/TranslationManager';
-import ReadableStream from "stream";
 
 const commonRateLimitConfig = {
     skipSuccessfulRequests: false,
@@ -487,15 +486,9 @@ export default class PostController {
                 return response.error('access-denied', `Translation is not allowed.`, 403);
             }
 
-            const translation = await this.translationManager.translateEntity(id, type, mode);
-            if(translation instanceof ReadableStream){
-                // @ts-ignore ReadStream has .pipe method
-                return translation.pipe(response);
-            } else {
-                console.log('write', translation)
-                response.write(translation as string);
-                response.end();
-            }
+            // TODO 4vanger: I spent 3 days on trying to make it work without passing in
+            // the response object but I'm giving up - it is just too messy and complicated.
+            await this.translationManager.translateEntity(id, type, mode, response);
         } catch (err) {
             this.logger.error(err);
             return response.error('error', 'Unknown error', 500);
