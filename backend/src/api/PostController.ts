@@ -25,6 +25,7 @@ import {HistoryEntity} from './types/entities/HistoryEntity';
 import rateLimit from 'express-rate-limit';
 import {TranslateRequest, TranslateResponse} from './types/requests/Translate';
 import TranslationManager from '../managers/TranslationManager';
+import ReadableStream from "stream";
 
 const commonRateLimitConfig = {
     skipSuccessfulRequests: false,
@@ -125,6 +126,7 @@ export default class PostController {
         const translateSchema = Joi.object<TranslateRequest>({
             id: Joi.number().required(),
             type: Joi.string().valid('post', 'comment').required(),
+            mode: Joi.string().valid('altTranslate', 'annotate').required(),
         });
         const historySchema = Joi.object<PostHistoryRequest>({
             id: Joi.number().required(),
@@ -477,7 +479,7 @@ export default class PostController {
         if (!request.session.data.userId) {
             return response.authRequired();
         }
-        const {id, type} = request.body;
+        const {id, type, mode} = request.body;
         try {
             const restrictions = await this.userManager.getUserRestrictions(request.session.data.userId);
             if (restrictions.restrictedToPostId !== false) {
@@ -485,7 +487,15 @@ export default class PostController {
                 return response.error('access-denied', `Translation is not allowed.`, 403);
             }
 
-            return response.success(await this.translationManager.translateEntity(id, type));
+            const translation = await this.translationManager.translateEntity(id, type, mode);
+            if(translation instanceof ReadableStream){
+                // @ts-ignore ReadStream has .pipe method
+                return translation.pipe(response);
+            } else {
+                console.log('write', translation)
+                response.write(translation as string);
+                response.end();
+            }
         } catch (err) {
             this.logger.error(err);
             return response.error('error', 'Unknown error', 500);

@@ -1,8 +1,4 @@
-export class AlreadyTargetLang extends Error {
-    
-}
-
-const defaultLanguage = process.env.DEFAULT_LANGUAGE || 'ru';
+// const defaultLanguage = process.env.DEFAULT_LANGUAGE || 'ru';
 
 export default async function googleTranslate(str: string | undefined) {
     if(!str) {
@@ -17,9 +13,7 @@ export default async function googleTranslate(str: string | undefined) {
 
     }); 
     const json = await response.json();
-    if(json.src === defaultLanguage) {
-        throw new AlreadyTargetLang();
-    }
+
     const sentences = (json.sentences as Array<{trans: string}>).map(sentence => sentence.trans);
     return sentences.join('');
 }

@@ -1,17 +1,22 @@
 import TranslationRepository from '../db/repositories/TranslationRepository';
-import {Translation} from './types/Translation';
 import PostRepository from '../db/repositories/PostRepository';
-import {ContentSourceRaw} from '../db/types/ContentSourceRaw';
 import TheParser from '../parser/TheParser';
 import {stripHtml} from 'string-strip-html';
 import {Logger} from 'winston';
 import {addOnPostRun, FastText, FastTextModel} from '../../langid/fasttext.js';
 import {urlRegex} from '../parser/regexprs';
 import OpenAI from 'openai';
+const NodeStream = require('stream')
+import {ChatCompletionChunk} from "openai/src/resources/chat/completions";
+import {APIPromise} from "openai/core";
+import {Stream} from "openai/streaming";
 
 const openai = new OpenAI({
     apiKey: process.env["OPENAI_API_KEY"]
 });
+
+export type TranslationMode = 'altTranslate' | 'annotate';
+
 const fasttextModelPromise: Promise<FastTextModel> = new Promise<FastText>((resolve) => {
     addOnPostRun(() => {
         const ft = new FastText();
@@ -33,7 +38,6 @@ export async function getLanguage(text: string): Promise<{lang: string, prob: nu
 }
 
 export default class TranslationManager {
-
     private translationRepository: TranslationRepository;
     private postRepository: PostRepository;
     private parser: TheParser;
@@ -51,14 +55,9 @@ export default class TranslationManager {
         this.logger = logger;
     }
 
-    async translateContentSource(contentSource: ContentSourceRaw, language: string): Promise<Translation> {
-        const translation = await this.translationRepository.getTranslation(contentSource.content_source_id, language);
-        if (translation) {
-            return translation;
-        }
-
+    getAltTranslatePrompt(): [string, string] {
         const PRE_PROMPT = "Переведи текст "
-
+        const POST_PROMPT = ':'
         const FILTERS = [
             "как пьяный викинг",
             "как пьяница в крайней степени опьянения",
@@ -86,61 +85,80 @@ export default class TranslationManager {
             "как рассказываешь сказку",
             "как злой пират",
             "как зомби",
-            "как хакер"
+            "на хакерский"
         ];
 
-        const POST_PROMPT = ':'
-
-        let uuidTag;
-        let html = contentSource.source.substring(0, 1024);
-
-        if (contentSource.title) {
-            uuidTag = `<t${Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)}/>`;
-            //FIXME: strip html tags from title
-            html = `${contentSource.title}${uuidTag}\n` + html;
-        }
-
         const role = FILTERS[Math.floor(Math.random()*FILTERS.length)]
-        const prompt = PRE_PROMPT + role + POST_PROMPT
-
-        const chatCompletion = await openai.chat.completions.create({
-            messages: [
-                { role: 'system', content: prompt },
-                { role: 'user', content: html }
-            ],
-            model: 'gpt-3.5-turbo',
-        });
-
-        let translatedHtml = chatCompletion.choices[0].message.content
-
-        let translatedTitle = '';
-        if (contentSource.title) {
-            const titleMatch = translatedHtml.split(uuidTag);
-            if (titleMatch.length === 2) {
-                translatedTitle = titleMatch[0];
-                translatedHtml = titleMatch[1];
-            }
-        }
-        translatedHtml = `<irony>${role}</irony>\n${translatedHtml}`;
-
-        await this.translationRepository.saveTranslation(contentSource.content_source_id, language,
-            translatedTitle, translatedHtml);
-        return {
-            title: translatedTitle,
-            html: translatedHtml
-        };
+        return [PRE_PROMPT + role + POST_PROMPT, role]
     }
 
-    async translateEntity(ref_id: number, type: 'post' | 'comment'): Promise<Translation> {
+    static interpreterString(prompt: string, content: string): APIPromise<Stream<ChatCompletionChunk>> {
+        return openai.chat.completions.create({
+            messages: [
+                {role: 'system', content: prompt},
+                {role: 'user', content: content}
+            ],
+            model: 'gpt-3.5-turbo',
+            max_tokens: 2048,
+            stream: true
+        });
+    }
+
+    async translateEntity(ref_id: number, type: 'post' | 'comment', mode: TranslationMode): Promise<string | ReadableStream<string>> {
         const contentSource = await this.postRepository.getLatestContentSource(ref_id, type);
         if (!contentSource) {
             throw new Error('ContentSource not found');
         }
-        const translation = await this.translateContentSource(contentSource, defaultLanguage);
-        return {
-            title: translation.title,
-            html: this.parser.parse(translation.html).text
-        };
+        const cachedTranslation = await this.translationRepository.getTranslation(contentSource.content_source_id, mode);
+        if (cachedTranslation) {
+            // return cachedTranslation.html;
+        }
+
+        let prompt, hint;
+        switch(mode) {
+            case 'altTranslate':
+                [prompt, hint] = this.getAltTranslatePrompt();
+                break;
+            case 'annotate':
+                prompt = 'Кратко перескажи о чём говориться в тексте';
+                hint = 'Аннотация'
+                break;
+        }
+
+        if(!prompt){
+            throw new Error('Invalid prompt');
+        }
+        // TODO review limitations to fit into budget
+        const content = contentSource.source.substring(0, 1024)
+
+        const readableGPTStream = await TranslationManager.interpreterString(prompt, content);
+
+        // Now need to remove ChatGPT related responses, \
+        // transform to simple text stream
+        // and cache final interpretation
+        const rs = new NodeStream.Readable({read: async () => {
+                for await (const part of readableGPTStream) {
+                    const chunk = part.choices[0]?.delta?.content || ''
+                    console.log('async', chunk)
+                    fullResponse.push(chunk);
+                    rs.push(chunk);
+                }
+                // HACK to write received response into repository even if user has reloaded the page and
+                // interrupted the response - doing this at the end of _read
+                if(fullResponse.length > 1) {
+                    const fullResponseStr = fullResponse.join('');
+                    console.log('end of stream', fullResponseStr)
+                    await this.translationRepository.saveTranslation(contentSource.content_source_id, mode, contentSource.title || '', fullResponseStr);
+                    rs.push(null)
+                    // empty array to prevent future calls
+                    fullResponse.length = 0;
+                }
+            }
+        });
+        rs.push(`<irony>${hint}</irony>\n`)
+        const fullResponse: string[] = [`<irony>${hint}</irony>\n`];
+
+        return rs
     }
 
     async detectLanguage(title, source): Promise<string> {

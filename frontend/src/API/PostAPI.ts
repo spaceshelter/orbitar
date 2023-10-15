@@ -197,15 +197,15 @@ type PostHistoryResponse = {
     history: HistoryEntity[];
 };
 
+export type TranslateModes = 'altTranslate' | 'annotate';
+
 export type TranslateRequest = {
     id: number;
     type: 'post' | 'comment';
+    mode: TranslateModes;
 };
 
-export type TranslateResponse = {
-    title: string;
-    html: string;
-};
+export type TranslateResponse = ReadableStream<string>;
 
 export default class PostAPI {
     api: APIBase;
@@ -299,10 +299,11 @@ export default class PostAPI {
         });
     }
 
-    translate(id: number, type: 'post' | 'comment'): Promise<TranslateResponse> {
-        return this.api.request<TranslateRequest, TranslateResponse>('/post/translate', {
+    translate(id: number, type: 'post' | 'comment', mode: 'altTranslate' | 'annotate'): Promise<TranslateResponse> {
+        return this.api.stream<TranslateRequest, TranslateResponse>('/post/translate', {
             id,
-            type
+            type,
+            mode
         });
     }
 
