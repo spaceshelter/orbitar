@@ -16,8 +16,7 @@ const openai = new OpenAI({
     apiKey: process.env['OPENAI_API_KEY']
 });
 
-const TEXT_SIZE_LIMIT = 4096;
-const MAX_TOKENS = 8192;
+const TEXT_SIZE_LIMIT = 2048;
 
 export type TranslationMode = 'altTranslate' | 'annotate';
 
@@ -88,7 +87,9 @@ export default class TranslationManager {
             ['как рассказываешь сказку', 'сказка mode'],
             ['как злой пират', 'пират mode'],
             ['как зомби', 'зомби mode'],
-            ['на хакерский', 'хакер mode']
+            ['на рыбий', 'рыба mode'],
+            ['на кошачий', 'кот mode'],
+            ['на l33t', 'хакер mode']
         ];
 
         const [role, hint] = FILTERS[Math.floor(Math.random()*FILTERS.length)];
@@ -102,7 +103,6 @@ export default class TranslationManager {
                 {role: 'user', content: content}
             ],
             model: 'gpt-3.5-turbo',
-            max_tokens: MAX_TOKENS,
             stream: true
         });
     }
