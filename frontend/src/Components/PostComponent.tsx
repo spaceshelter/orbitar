@@ -16,9 +16,8 @@ import CreateCommentComponent from './CreateCommentComponent';
 import { HistoryComponent } from './HistoryComponent';
 import {SignatureComponent} from './SignatureComponent';
 import Conf from '../Conf';
-import googleTranslate from '../Utils/googleTranslate';
-import {TranslateModes} from '../API/PostAPI';
-
+import {useInterpreter} from '../API/use/useInterpreter';
+import xssFilter from '../Utils/xssFilter';
 
 interface PostComponentProps {
     post: PostInfo;
@@ -31,7 +30,6 @@ interface PostComponentProps {
     hideRating?: boolean;
 }
 
-export type AltContentType = 'translate' | TranslateModes;
 
 export default function PostComponent(props: PostComponentProps) {
     const api = useAPI();
@@ -39,13 +37,7 @@ export default function PostComponent(props: PostComponentProps) {
     const [editingText, setEditingText] = useState<false | string>(false);
     const [editingTitle, setEditingTitle] = useState<string>(props.post.title || '');
     const [showHistory, setShowHistory] = useState(false);
-    const [currentMode, setCurrentMode] = React.useState<AltContentType | undefined >();
-    const [cachedTitleTranslation, setCachedTitleTranslation] = useState<string | undefined>();
-    const [cachedContentTranslation, setCachedContentTranslation] = useState< string | undefined>();
-    const [streamingAnnotation, setStreamingAnnotation] = useState<string | undefined>();
-    const [cachedAnnotation, setCachedAnnotation] = useState<string | undefined>();
-    const [streamingAltTranslation, setStreamingAltTranslation] = useState<string | undefined>();
-    const [cachedAltTranslation, setCachedAltTranslation] = useState<string | undefined>();
+    const {altTitle, altContent, translate, annotate, altTranslate} = useInterpreter(props.post.content, props.post.title, props.post.id, 'post');
 
     const handleVote = useMemo(() => {
         return (value: number, vote?: number) => {
@@ -62,11 +54,8 @@ export default function PostComponent(props: PostComponentProps) {
     }, [props]);
 
     const { id, created, site, author, vote, rating, watch } = props.post;
-    const title = currentMode === 'translate' ? cachedTitleTranslation : props.post.title;
-    const content = (currentMode === 'translate' && cachedContentTranslation) ||
-        (currentMode === 'altTranslate' && (cachedAltTranslation || streamingAltTranslation)) ||
-        (currentMode === 'annotate' && (cachedAnnotation || streamingAnnotation)) ||
-        props.post.content;
+    const title = altTitle || props.post.title;
+    const content = altContent || props.post.content;
 
     const toggleOptions = () => {
         setShowOptions(!showOptions);
@@ -88,73 +77,6 @@ export default function PostComponent(props: PostComponentProps) {
             });
 
         setShowOptions(false);
-    };
-
-    const translate = () => {
-        getAlternative('translate', currentMode, setCurrentMode, cachedContentTranslation, async () => {
-            const title = await googleTranslate(props.post.title);
-            const html = await googleTranslate(props.post.content);
-            setCachedTitleTranslation(title);
-            setCachedContentTranslation(html);
-        });
-    };
-
-    const retrieveStreamResponse =  (type: 'post' | 'comment', mode: 'altTranslate' | 'annotate', setStreamingValue: (str: string) => void, setCachedValue: (str: string) => void): () => Promise<void> => {
-        return async () => {
-            const rs = await api.postAPI.translate(id, type, mode);
-
-            const reader = rs.pipeThrough((new TextDecoderStream()) as unknown as ReadableWritablePair<string, string>).getReader();
-            if(!reader){
-                throw new Error('Invalid response');
-            }
-
-            const chunks: string[] = [];
-            let done, value, finalValue = '';
-            while (!done) {
-                ({ value, done } = await reader.read());
-                console.log(value, done, currentMode, mode, currentMode === mode);
-                if (done) {
-                    finalValue = chunks.join('');
-                    setCachedValue(finalValue);
-                }
-
-                if(value && value !== ''){
-                    setStreamingValue(chunks.join(''));
-                    chunks.push(value);
-                }
-            }
-        };
-    };
-
-    const altTranslate = () => {
-        getAlternative('altTranslate', currentMode, setCurrentMode, cachedAltTranslation, retrieveStreamResponse('post', 'altTranslate', setStreamingAltTranslation, setCachedAltTranslation));
-    };
-
-    const annotate = () => {
-        getAlternative('annotate', currentMode, setCurrentMode, cachedAnnotation, retrieveStreamResponse('post', 'annotate', setStreamingAnnotation, setCachedAnnotation));
-    };
-
-    const getAlternative = async (
-        newMode: AltContentType,
-        currentMode: AltContentType | undefined,
-        setCurrentMode: (mode: AltContentType | undefined) => void,
-        cachedContent: string | undefined,
-        retrieveContent: () => Promise<void>
-    ): Promise<void> => {
-        if (currentMode === newMode) {
-            setCurrentMode(undefined);
-        } else if(cachedContent){
-            setCurrentMode(newMode);
-        } else {
-            try {
-                setCurrentMode(newMode);
-                await retrieveContent();
-            } catch (err) {
-                console.error(err);
-                setCurrentMode(undefined);
-                toast.error('Роботы не справились - восстание машин откладывается.');
-            }
-        }
     };
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -218,11 +140,11 @@ export default function PostComponent(props: PostComponentProps) {
                             ? <HistoryComponent initial={{ title, content, date: created }} history={{ id: props.post.id, type: 'post' }} onClose={toggleHistory} />
                             : <>
                                     {title && <div className={styles.title}><PostLink post={props.post}>{
-                                        props.dangerousHtmlTitle ? <span dangerouslySetInnerHTML={{__html: title}} /> : title
+                                        props.dangerousHtmlTitle ? <span dangerouslySetInnerHTML={{__html: xssFilter(title)}} /> : title
                                     }</PostLink></div>}
                                     <div className={styles.content}>
                                         <ContentComponent className={styles.content} content={content}
-                                                          autoCut={currentMode === 'annotate' ? undefined : props.autoCut}
+                                                          autoCut={props.autoCut}
                                                           lowRating={rating <= Conf.POST_LOW_RATING_THRESHOLD || props.post.vote === -1} />
                                     </div>
                                 </>
@@ -247,8 +169,8 @@ export default function PostComponent(props: PostComponentProps) {
                      onClick={translate} className={`i i-translate ${styles.translate}`}/></div>
                 <div className={styles.control}><button
                      onClick={altTranslate} className={`i i-translate ${styles.translate}`}/></div>
-                <div className={styles.control}><button
-                     onClick={annotate} className={`i i-translate ${styles.translate}`}/></div>
+                {props.post.content.length > 400 && (<div className={styles.control}><button
+                     onClick={annotate} className={`i i-translate ${styles.translate}`}/></div>)}
                 <div className={styles.control + ' ' + styles.options}>
                     <button onClick={toggleOptions} className={showOptions ? styles.active : ''}><OptionsIcon /></button>
                     {showOptions &&

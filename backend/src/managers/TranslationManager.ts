@@ -60,37 +60,36 @@ export default class TranslationManager {
         const PRE_PROMPT = "Переведи текст "
         const POST_PROMPT = ':'
         const FILTERS = [
-            "как пьяный викинг",
-            "как пьяница в крайней степени опьянения",
-            "как неандерталец",
-            "на эмодзи",
-            "на языке танца",
-            "как мегаинтеллектуал",
-            "как крестьянин 18-го века",
-            "как заносчивый аристократ 19-го века",
-            "как заика",
-            "как философ",
-            "как похотливая монашка",
-            "как уголовник",
-            "как одессит",
-            "как закарпатский вуйко",
-            "как Шекспир",
-            "как панк",
-            "на японский",
-            "на корейский",
-            "на китайский",
-            "на грузинский",
-            "на вьетнамский",
-            "на санскрит",
-            "на арабский",
-            "как рассказываешь сказку",
-            "как злой пират",
-            "как зомби",
-            "на хакерский"
+            ["как пьяный викинг", "викинг mode"],
+            ["как пьяница в крайней степени опьянения", "пьяница mode"],
+            ["как неандерталец", "неандерталец mode"],
+            ["на emoji", "emoji mode"],
+            ["на языке танца", "язык танца mode"],
+            ["как занудный мегаинтеллектуал", "интеллектуал mode"],
+            ["как крестьянин 18-го века", "крестьянин mode"],
+            ["как заносчивый аристократ 19-го века", "аристократ mode"],
+            ["как заика", "заика mode"],
+            ["как философ", "философ mode"],
+            ["как похотливая монашка", "монашка mode"],
+            ["как уголовник", "урка mode"],
+            ["как одессит", "Одесса mode"],
+            ["как закарпатский вуйко", "закарпатье mode"],
+            ["как Шекспир", "Шекспир mode"],
+            ["как панк", "панк mode"],
+            ["в стиле аниме", "аниме mode"],
+            ["на корейский", "Корея mode"],
+            ["на грузинский", "Грузия mode"],
+            ["на вьетнамский", "Вьетнам mode"],
+            ["на санскрит", "санскрит mode"],
+            ["на арабский", "арабский mode"],
+            ["как рассказываешь сказку", "сказка mode"],
+            ["как злой пират", "пират mode"],
+            ["как зомби", "зомби mode"],
+            ["на хакерский", "хакер mode"]
         ];
 
-        const role = FILTERS[Math.floor(Math.random()*FILTERS.length)]
-        return [PRE_PROMPT + role + POST_PROMPT, role]
+        const [role, hint] = FILTERS[Math.floor(Math.random()*FILTERS.length)]
+        return [PRE_PROMPT + role + POST_PROMPT, hint]
     }
 
     static interpreterString(prompt: string, content: string): APIPromise<Stream<ChatCompletionChunk>> {
@@ -110,6 +109,7 @@ export default class TranslationManager {
         if (!contentSource) {
             throw new Error('ContentSource not found');
         }
+
         const cachedTranslation = await this.translationRepository.getTranslation(contentSource.content_source_id, mode);
         if (cachedTranslation) {
             response.write(cachedTranslation.html);
@@ -132,19 +132,17 @@ export default class TranslationManager {
             throw new Error('Invalid prompt');
         }
         // TODO review limitations to fit into budget
-        const content = contentSource.source.substring(0, 1024)
+        const content = contentSource.source.substring(0, mode === 'annotate' ? 1536 : 1024)
 
-        const fullResponse: string[] = [`<irony>${hint}</irony>\n`];
+        const fullResponse: string[] = [`<span class="irony">${hint}</span><br />`];
         const readableGPTStream = await TranslationManager.interpreterString(prompt, content);
-        response.write(`<irony>${hint}</irony>\n`)
+        response.write(`<span class="irony">${hint}</span><br />`)
         for await (const part of readableGPTStream) {
             const chunk = part.choices[0]?.delta?.content || ''
-            console.log('async', chunk)
             response.write(chunk);
             fullResponse.push(chunk);
         }
         const fullResponseStr = fullResponse.join('');
-        console.log('done', fullResponseStr)
         await this.translationRepository.saveTranslation(contentSource.content_source_id, mode, contentSource.title || '', fullResponseStr);
         response.end()
     }

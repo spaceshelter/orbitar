@@ -9,8 +9,7 @@ import {toast} from 'react-toastify';
 import {SignatureComponent} from './SignatureComponent';
 import {HistoryComponent} from './HistoryComponent';
 import Conf from '../Conf';
-import googleTranslate, {AlreadyTargetLang} from '../Utils/googleTranslate';
-
+import {useInterpreter} from '../API/use/useInterpreter';
 
 interface CommentProps {
     comment: CommentInfo;
@@ -29,10 +28,9 @@ export default function CommentComponent(props: CommentProps) {
     const [answerOpen, setAnswerOpen] = useState(false);
     const [editingText, setEditingText] = useState<false | string>(false);
     const [showHistory, setShowHistory] = useState(false);
-    const [translation, setTranslation] = useState<string | false | undefined>(undefined);
-    const [cachedTranslation, setCachedTranslation] = useState<string | undefined>(undefined);
 
     const api = useAPI();
+    const {altContent, translate, annotate, altTranslate} = useInterpreter(props.comment.content, undefined, props.comment.id, 'comment');
 
     const handleAnswerSwitch = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -79,43 +77,12 @@ export default function CommentComponent(props: CommentProps) {
         }
     };
 
-    const translate = async () => {
-        if (translation) {
-            setTranslation(undefined);
-        } else if(cachedTranslation){
-            setTranslation(cachedTranslation);
-        } else {
-            setTranslation(false);
-            try {
-                const html = await googleTranslate(props.comment.content);
-
-                setTranslation(html);
-                setCachedTranslation(html);
-            } catch(err) {
-                if(err instanceof AlreadyTargetLang){
-                    try {
-                        const res = await api.postAPI.translate(props.comment.id, 'comment');
-                        setTranslation(res.html);
-                        setCachedTranslation(res.html);
-
-                    }  catch (err) {
-                        setTranslation(undefined);
-                        toast.error('Не удалось перевести');
-                    }
-                } else {
-                    setTranslation(undefined);
-                    toast.error('Не удалось перевести');
-                }
-            }
-        }
-    };
-
     const toggleHistory = () => {
         setShowHistory(!showHistory);
     };
 
     const {author, created, site, postLink, editFlag } = props.comment;
-    const content = translation || props.comment.content;
+    const content = altContent || props.comment.content;
 
     const depth = props.depth || 0;
     const maxDepth = props.maxTreeDepth || 0;
@@ -134,7 +101,7 @@ export default function CommentComponent(props: CommentProps) {
                             <div className={styles.content}>
                                 <ContentComponent className={styles.commentContent} content={content}
                                                   lowRating={props.comment.rating <= Conf.COMMENT_LOW_RATING_THRESHOLD || props.comment.vote === -1}
-                                                  autoCut={(props.comment.rating <= Conf.COMMENT_LOW_RATING_THRESHOLD || props.comment.vote === -1) ? LARGE_AUTO_CUT : undefined} />
+                                                  autoCut={!altContent && (props.comment.rating <= Conf.COMMENT_LOW_RATING_THRESHOLD || props.comment.vote === -1) ? LARGE_AUTO_CUT : undefined} />
                             </div>
                     )
                 :
@@ -148,7 +115,11 @@ export default function CommentComponent(props: CommentProps) {
                     </div>}
                     {props.comment.canEdit && props.onEdit && <div className={styles.control}><button onClick={handleEdit} className='i i-edit' /></div>}
                     <div className={styles.control}><button
-                        disabled={translation === false} onClick={translate} className={`i i-translate ${styles.translate}`}/></div>
+                        onClick={translate} title='Перевести' className={`i i-translate ${styles.translate}`}/></div>
+                    <div className={styles.control}><button
+                        onClick={altTranslate} title='"Перевести"' className={`i i-translate ${styles.translate}`}/></div>
+                    {props.comment.content.length > 400 && (<div className={styles.control}><button
+                        onClick={annotate} title='Аннотировать' className={`i i-translate ${styles.translate}`}/></div>)}
                     {props.onAnswer && <div className={styles.control}><button onClick={handleAnswerSwitch}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</button></div>}
                 </div>
             </div>

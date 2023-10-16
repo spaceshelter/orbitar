@@ -7,6 +7,7 @@ import type * as Vimeo from '@vimeo/player';
 import {getLegacyZoom, getVideoAutopause} from './UserProfileSettings';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import {useHotkeys} from 'react-hotkeys-hook';
+import xssFilter from '../Utils/xssFilter';
 
 interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
     content: string;
@@ -416,7 +417,7 @@ export default function ContentComponent(props: ContentComponentProps) {
         <>
             <div className={classNames(styles.content, props.className, cut && styles.cut)}
                  style={{maxHeight: cut && props.autoCut ? props.autoCut: undefined}}
-                 dangerouslySetInnerHTML={{__html: props.content}} ref={contentDiv} />
+                 dangerouslySetInnerHTML={{__html: xssFilter(props.content)}} ref={contentDiv} />
             {cut && <div className={styles.cutCover}><button className={styles.cutButton} onClick={handleCut}>Читать дальше</button></div>}
             {zoomedImg &&  <ZoomComponent {...zoomedImg} onExit={() => setZoomedImg(null)} />}
         </>
