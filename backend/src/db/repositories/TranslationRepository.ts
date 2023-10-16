@@ -1,6 +1,6 @@
 import DB from '../DB';
 import {TranslationRaw} from '../types/TranslationRaw';
-import {TranslationMode} from "../../managers/TranslationManager";
+import {TranslationMode} from '../../managers/TranslationManager';
 
 export default class TranslationRepository {
     private db: DB;

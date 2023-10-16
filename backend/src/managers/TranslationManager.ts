@@ -6,14 +6,14 @@ import {Logger} from 'winston';
 import {addOnPostRun, FastText, FastTextModel} from '../../langid/fasttext.js';
 import {urlRegex} from '../parser/regexprs';
 import OpenAI from 'openai';
-import {ChatCompletionChunk} from "openai/src/resources/chat/completions";
-import {APIPromise} from "openai/core";
-import {Stream} from "openai/streaming";
-import {APIResponse} from "../api/ApiMiddleware";
-import {TranslateResponse} from "../api/types/requests/Translate";
+import {ChatCompletionChunk} from 'openai/src/resources/chat/completions';
+import {APIPromise} from 'openai/core';
+import {Stream} from 'openai/streaming';
+import {APIResponse} from '../api/ApiMiddleware';
+import {TranslateResponse} from '../api/types/requests/Translate';
 
 const openai = new OpenAI({
-    apiKey: process.env["OPENAI_API_KEY"]
+    apiKey: process.env['OPENAI_API_KEY']
 });
 
 const TEXT_SIZE_LIMIT = 4096;
@@ -60,39 +60,39 @@ export default class TranslationManager {
     }
 
     getAltTranslatePrompt(): [string, string] {
-        const PRE_PROMPT = "Переведи текст "
-        const POST_PROMPT = ':'
+        const PRE_PROMPT = 'Переведи текст ';
+        const POST_PROMPT = ':';
         const FILTERS = [
-            ["как пьяный викинг", "викинг mode"],
-            ["как пьяница в крайней степени опьянения", "пьяница mode"],
-            ["как неандерталец", "неандерталец mode"],
-            ["на emoji", "emoji mode"],
-            ["на языке танца", "язык танца mode"],
-            ["как занудный мегаинтеллектуал", "интеллектуал mode"],
-            ["как крестьянин 18-го века", "крестьянин mode"],
-            ["как заносчивый аристократ 19-го века", "аристократ mode"],
-            ["как заика", "заика mode"],
-            ["как философ", "философ mode"],
-            ["как похотливая монашка", "монашка mode"],
-            ["как уголовник", "урка mode"],
-            ["как одессит", "Одесса mode"],
-            ["как закарпатский вуйко", "закарпатье mode"],
-            ["как Шекспир", "Шекспир mode"],
-            ["как панк", "панк mode"],
-            ["в стиле аниме", "аниме mode"],
-            ["на корейский", "Корея mode"],
-            ["на грузинский", "Грузия mode"],
-            ["на вьетнамский", "Вьетнам mode"],
-            ["на санскрит", "санскрит mode"],
-            ["на арабский", "арабский mode"],
-            ["как рассказываешь сказку", "сказка mode"],
-            ["как злой пират", "пират mode"],
-            ["как зомби", "зомби mode"],
-            ["на хакерский", "хакер mode"]
+            ['как пьяный викинг', 'викинг mode'],
+            ['как пьяница в крайней степени опьянения', 'пьяница mode'],
+            ['как неандерталец', 'неандерталец mode'],
+            ['на emoji', 'emoji mode'],
+            ['на языке танца', 'язык танца mode'],
+            ['как занудный мегаинтеллектуал', 'интеллектуал mode'],
+            ['как крестьянин 18-го века', 'крестьянин mode'],
+            ['как заносчивый аристократ 19-го века', 'аристократ mode'],
+            ['как заика', 'заика mode'],
+            ['как философ', 'философ mode'],
+            ['как похотливая монашка', 'монашка mode'],
+            ['как уголовник', 'урка mode'],
+            ['как одессит', 'Одесса mode'],
+            ['как закарпатский вуйко', 'закарпатье mode'],
+            ['как Шекспир', 'Шекспир mode'],
+            ['как панк', 'панк mode'],
+            ['в стиле аниме', 'аниме mode'],
+            ['на корейский', 'Корея mode'],
+            ['на грузинский', 'Грузия mode'],
+            ['на вьетнамский', 'Вьетнам mode'],
+            ['на санскрит', 'санскрит mode'],
+            ['на арабский', 'арабский mode'],
+            ['как рассказываешь сказку', 'сказка mode'],
+            ['как злой пират', 'пират mode'],
+            ['как зомби', 'зомби mode'],
+            ['на хакерский', 'хакер mode']
         ];
 
-        const [role, hint] = FILTERS[Math.floor(Math.random()*FILTERS.length)]
-        return [PRE_PROMPT + role + POST_PROMPT, hint]
+        const [role, hint] = FILTERS[Math.floor(Math.random()*FILTERS.length)];
+        return [PRE_PROMPT + role + POST_PROMPT, hint];
     }
 
     static interpreterString(prompt: string, content: string): APIPromise<Stream<ChatCompletionChunk>> {
@@ -127,7 +127,7 @@ export default class TranslationManager {
                 break;
             case 'annotate':
                 prompt = 'Кратко перескажи о чём говориться в тексте';
-                hint = 'Аннотация'
+                hint = 'Аннотация';
                 break;
         }
 
@@ -135,19 +135,19 @@ export default class TranslationManager {
             throw new Error('Invalid prompt');
         }
         // TODO review limitations to fit into budget
-        const content = contentSource.source.substring(0, TEXT_SIZE_LIMIT)
+        const content = contentSource.source.substring(0, TEXT_SIZE_LIMIT);
 
         const fullResponse: string[] = [`<span class="irony">${hint}</span><br />`];
         const readableGPTStream = await TranslationManager.interpreterString(prompt, content);
-        response.write(`<span class="irony">${hint}</span><br />`)
+        response.write(`<span class="irony">${hint}</span><br />`);
         for await (const part of readableGPTStream) {
-            const chunk = part.choices[0]?.delta?.content || ''
+            const chunk = part.choices[0]?.delta?.content || '';
             response.write(chunk);
             fullResponse.push(chunk);
         }
         const fullResponseStr = fullResponse.join('');
         await this.translationRepository.saveTranslation(contentSource.content_source_id, mode, contentSource.title || '', fullResponseStr);
-        response.end()
+        response.end();
     }
 
     async detectLanguage(title, source): Promise<string> {

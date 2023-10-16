@@ -1,4 +1,4 @@
-import {TranslationMode} from "../../../managers/TranslationManager";
+import {TranslationMode} from '../../../managers/TranslationManager';
 
 export type TranslateRequest = {
     id: number;
