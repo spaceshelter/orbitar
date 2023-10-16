@@ -19,12 +19,37 @@ type UserProfileSettingsProps = {
   isBarmalini?: boolean;
 };
 
+const languages = new Map([
+    ['az', 'Azərbaycanca'],
+    ['be', 'Беларуская'],
+    ['bg', 'Български'],
+    ['et', 'Eesti'],
+    ['ka', 'ქართული'],
+    ['kk', 'Қазақша'],
+    ['ky', 'Кыргызча'],
+    ['lt', 'Lietuvių'],
+    ['lv', 'Latviešu'],
+    ['mn', 'Монгол'],
+    ['ru', 'Русский'],
+    ['tg', 'Тоҷикӣ'],
+    ['tk', 'Türkmençe'],
+    ['uk', 'Українська'],
+    ['uz', 'Oʻzbekcha'],
+    ['hy', 'Հայերեն'],
+    ['ky', 'қазақ'],
+    ['uz', 'oʻzbek'],
+]);
+
 export function getVideoAutopause(): boolean {
     return JSON.parse(localStorage.getItem('autoStopVideos') || 'false');
 }
 
 export function getLegacyZoom(): boolean {
     return localStorage.getItem('legacyZoom') === 'true';
+}
+
+export function getPreferredLang(): string {
+    return localStorage.getItem('preferredLang') || 'ru';
 }
 
 export default function UserProfileSettings(props: UserProfileSettingsProps) {
@@ -38,27 +63,28 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
 
   let gender = props.gender;
 
-    const [autoStop, setAutoStop] = React.useState(getVideoAutopause());
-    const [legacyZoom, setLegacyZoom] = React.useState(getLegacyZoom());
+const [autoStop, setAutoStop] = React.useState<boolean>(getVideoAutopause());
+const [legacyZoom, setLegacyZoom] = React.useState<boolean>(getLegacyZoom());
+const [preferredLang, setPreferredLang] = React.useState<string>(getPreferredLang());
 
-    const confirmWrapper = (message: string, callback: () => void) => (e: React.MouseEvent) => {
-        e.preventDefault();
-        confirmAlert({
-            title: 'Астанавитесь! Подумайте!',
-            message,
-            buttons: [
-                {
-                    label: 'Да!',
-                    onClick: callback
-                },
-                {
-                    label: 'Отмена',
-                    className: 'cancel'
-                }
-            ],
-            overlayClassName: 'orbitar-confirm-overlay'
-        });
-    };
+const confirmWrapper = (message: string, callback: () => void) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    confirmAlert({
+        title: 'Астанавитесь! Подумайте!',
+        message,
+        buttons: [
+            {
+                label: 'Да!',
+                onClick: callback
+            },
+            {
+                label: 'Отмена',
+                className: 'cancel'
+            }
+        ],
+        overlayClassName: 'orbitar-confirm-overlay'
+    });
+};
 
   const handleLogout = confirmWrapper(
       'Вы действительно хотите выйти? Вы будете вынуждены войти в аккаунт заново.', () => {
@@ -84,6 +110,11 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
     const toggleLegacyZoom = () => {
         setLegacyZoom(!legacyZoom);
     };
+
+  const changeLang = (ev:  React.FormEvent<HTMLSelectElement>) => {
+      const lang = ev.currentTarget.value;
+      setPreferredLang(lang);
+  };
 
   const handleGenderChange = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -113,6 +144,10 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
         localStorage.setItem('legacyZoom', JSON.stringify(legacyZoom));
     }, [legacyZoom]);
 
+    useEffect(() => {
+        localStorage.setItem('preferredLang', preferredLang);
+    }, [preferredLang]);
+
     return (
         <>
             <div>
@@ -131,6 +166,10 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
                     Легаси зум: {legacyZoom ? 'Вкл' : 'Выкл'}
                 </button>
                 {<ThemeToggleComponent dynamic={true} buttonLabel="Сменить тему"/>}
+                <>Язык перевода: <select onChange={changeLang} value={preferredLang}>
+                    {Array.from(languages.entries()).map(([lang, name]) => <option key={lang} value={lang}>{name}</option>)}
+                </select>
+                </>
             </div>
             {props.barmaliniAccess && <BarmaliniAccess/>}
             <div>

@@ -37,7 +37,7 @@ export default function PostComponent(props: PostComponentProps) {
     const [editingText, setEditingText] = useState<false | string>(false);
     const [editingTitle, setEditingTitle] = useState<string>(props.post.title || '');
     const [showHistory, setShowHistory] = useState(false);
-    const {altTitle, altContent, translate, annotate, altTranslate} = useInterpreter(props.post.content, props.post.title, props.post.id, 'post');
+    const {currentMode, altTitle, altContent, translate, annotate, altTranslate} = useInterpreter(props.post.content, props.post.title, props.post.id, 'post');
 
     const handleVote = useMemo(() => {
         return (value: number, vote?: number) => {
@@ -166,11 +166,11 @@ export default function PostComponent(props: PostComponentProps) {
                 {/*<div className={styles.control}><button disabled={true} onClick={toggleBookmark} className={bookmark ? styles.active : ''}><BookmarkIcon /><span className={styles.label}></span></button></div>*/}
                 {props.post.canEdit && props.onEdit && <div className={styles.control}><button onClick={handleEdit}><EditIcon /></button></div>}
                 <div className={styles.control}><button
-                     onClick={translate} className={`i i-translate ${styles.translate}`}/></div>
+                     onClick={translate} className={`i i-translate ${styles.translate} ${currentMode === 'translate' ? styles.active : ''}`}/></div>
                 <div className={styles.control}><button
-                     onClick={altTranslate} className={`i i-translate ${styles.translate}`}/></div>
+                     onClick={altTranslate} className={`i i-alttranslate ${styles.translate} ${currentMode === 'altTranslate' ? styles.active : ''}`}/></div>
                 {props.post.content.length > 400 && (<div className={styles.control}><button
-                     onClick={annotate} className={`i i-translate ${styles.translate}`}/></div>)}
+                     onClick={annotate} className={`i i-annotate ${styles.translate} ${currentMode === 'annotate' ? styles.active : ''}`}/></div>)}
                 <div className={styles.control + ' ' + styles.options}>
                     <button onClick={toggleOptions} className={showOptions ? styles.active : ''}><OptionsIcon /></button>
                     {showOptions &&

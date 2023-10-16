@@ -9,7 +9,7 @@ import {toast} from 'react-toastify';
 import {SignatureComponent} from './SignatureComponent';
 import {HistoryComponent} from './HistoryComponent';
 import Conf from '../Conf';
-import {useInterpreter} from '../API/use/useInterpreter';
+import {ANNOTATE_LIMIT, useInterpreter} from '../API/use/useInterpreter';
 
 interface CommentProps {
     comment: CommentInfo;
@@ -30,7 +30,7 @@ export default function CommentComponent(props: CommentProps) {
     const [showHistory, setShowHistory] = useState(false);
 
     const api = useAPI();
-    const {altContent, translate, annotate, altTranslate} = useInterpreter(props.comment.content, undefined, props.comment.id, 'comment');
+    const {currentMode, altContent, translate, annotate, altTranslate} = useInterpreter(props.comment.content, undefined, props.comment.id, 'comment');
 
     const handleAnswerSwitch = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -115,11 +115,11 @@ export default function CommentComponent(props: CommentProps) {
                     </div>}
                     {props.comment.canEdit && props.onEdit && <div className={styles.control}><button onClick={handleEdit} className='i i-edit' /></div>}
                     <div className={styles.control}><button
-                        onClick={translate} title='Перевести' className={`i i-translate ${styles.translate}`}/></div>
+                        onClick={translate} title='Перевести' className={`i i-translate ${styles.action} ${currentMode === 'translate' ? styles.active : ''}`}/></div>
                     <div className={styles.control}><button
-                        onClick={altTranslate} title='"Перевести"' className={`i i-translate ${styles.translate}`}/></div>
-                    {props.comment.content.length > 400 && (<div className={styles.control}><button
-                        onClick={annotate} title='Аннотировать' className={`i i-translate ${styles.translate}`}/></div>)}
+                        onClick={altTranslate} title='"Перевести"' className={`i i-alttranslate ${styles.action} ${currentMode === 'altTranslate' ? styles.active : ''}`}/></div>
+                    {props.comment.content.length > ANNOTATE_LIMIT && (<div className={styles.control}><button
+                        onClick={annotate} title='Аннотировать' className={`i i-annotate ${styles.action} ${currentMode === 'annotate' ? styles.active : ''}`}/></div>)}
                     {props.onAnswer && <div className={styles.control}><button onClick={handleAnswerSwitch}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</button></div>}
                 </div>
             </div>

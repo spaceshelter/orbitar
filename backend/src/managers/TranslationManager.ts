@@ -16,6 +16,9 @@ const openai = new OpenAI({
     apiKey: process.env["OPENAI_API_KEY"]
 });
 
+const TEXT_SIZE_LIMIT = 4096;
+const MAX_TOKENS = 8192;
+
 export type TranslationMode = 'altTranslate' | 'annotate';
 
 const fasttextModelPromise: Promise<FastTextModel> = new Promise<FastText>((resolve) => {
@@ -99,7 +102,7 @@ export default class TranslationManager {
                 {role: 'user', content: content}
             ],
             model: 'gpt-3.5-turbo',
-            max_tokens: 2048,
+            max_tokens: MAX_TOKENS,
             stream: true
         });
     }
@@ -132,7 +135,7 @@ export default class TranslationManager {
             throw new Error('Invalid prompt');
         }
         // TODO review limitations to fit into budget
-        const content = contentSource.source.substring(0, mode === 'annotate' ? 1536 : 1024)
+        const content = contentSource.source.substring(0, TEXT_SIZE_LIMIT)
 
         const fullResponse: string[] = [`<span class="irony">${hint}</span><br />`];
         const readableGPTStream = await TranslationManager.interpreterString(prompt, content);

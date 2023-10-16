@@ -65,11 +65,11 @@
         font-size: 24px;
     }
 
-    button.translate:before {
+    button.action:before {
       font-size: 20px;
     }
 
-    button.translate:disabled:before {
+    button.action:disabled:before {
       animation: pulse 1s infinite;
       @keyframes pulse {
         0% {
@@ -99,6 +99,7 @@
         font-weight: normal;
 
         &.active {
+            color: var(--primary);
             fill: var(--primary);
             font-weight: normal;
         }
