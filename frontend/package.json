@@ -43,7 +43,8 @@
     "typescript": "^4.6.3",
     "use-debounce": "^8.0.4",
     "use-local-storage": "^3.0.0",
-    "webfonts-loader": "^7.5.2"
+    "webfonts-loader": "^7.5.2",
+    "xss": "^1.0.14"
   },
   "devDependencies": {
     "sass": "^1.55.0"
