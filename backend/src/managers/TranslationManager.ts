@@ -124,7 +124,7 @@ export default class TranslationManager {
         switch(mode) {
             case 'altTranslate':
                 [prompt, hint] = this.getAltTranslatePrompt();
-                hint = `<span class="interpretation"><span class="i i-alttranslate"></span>${hint}</span><br />`
+                hint = `<span class="interpretation"><span class="i i-alttranslate"></span>${hint}</span><br />`;
                 break;
             case 'annotate':
                 prompt = 'Кратко перескажи о чём говориться в тексте';
