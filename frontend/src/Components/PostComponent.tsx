@@ -37,7 +37,7 @@ export default function PostComponent(props: PostComponentProps) {
     const [editingText, setEditingText] = useState<false | string>(false);
     const [editingTitle, setEditingTitle] = useState<string>(props.post.title || '');
     const [showHistory, setShowHistory] = useState(false);
-    const {currentMode, altTitle, altContent, translate, annotate, altTranslate} = useInterpreter(props.post.content, props.post.title, props.post.id, 'post');
+    const {currentMode, altTitle, altContent, contentRef, translate, annotate, altTranslate} = useInterpreter(props.post.content, props.post.title, props.post.id, 'post');
 
     const handleVote = useMemo(() => {
         return (value: number, vote?: number) => {
@@ -131,7 +131,7 @@ export default function PostComponent(props: PostComponentProps) {
     };
 
     return (
-        <div className={'postComponent ' + styles.post}>
+        <div className={'postComponent ' + styles.post} ref={contentRef}>
             <div className={styles.header}>
                 <SignatureComponent showSite={props.showSite} site={site} author={author} onHistoryClick={toggleHistory} postLink={props.post} date={created} editFlag={props.post.editFlag} />
                 <div className={styles.contentContainer}>

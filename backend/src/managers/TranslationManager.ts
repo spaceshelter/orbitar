@@ -124,10 +124,11 @@ export default class TranslationManager {
         switch(mode) {
             case 'altTranslate':
                 [prompt, hint] = this.getAltTranslatePrompt();
+                hint = `<span class="interpretation"><span class="i i-alttranslate"></span>${hint}</span><br />`
                 break;
             case 'annotate':
                 prompt = 'Кратко перескажи о чём говориться в тексте';
-                hint = 'Аннотация';
+                hint = '<span class="interpretation"><span class="i i-annotate"></span>Аннотация</span><br />';
                 break;
         }
 
@@ -137,9 +138,9 @@ export default class TranslationManager {
         // TODO review limitations to fit into budget
         const content = contentSource.source.substring(0, TEXT_SIZE_LIMIT);
 
-        const fullResponse: string[] = [`<span class="irony">${hint}</span><br />`];
+        const fullResponse: string[] = [hint];
         const readableGPTStream = await TranslationManager.interpreterString(prompt, content);
-        response.write(`<span class="irony">${hint}</span><br />`);
+        response.write(hint);
         for await (const part of readableGPTStream) {
             const chunk = part.choices[0]?.delta?.content || '';
             response.write(chunk);

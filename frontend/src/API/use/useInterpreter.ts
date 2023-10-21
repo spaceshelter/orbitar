@@ -1,8 +1,9 @@
 import {useAPI} from '../../AppState/AppState';
-import React, {useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {TranslateModes} from '../PostAPI';
 import googleTranslate from '../../Utils/googleTranslate';
 import {toast} from 'react-toastify';
+import {scrollUnderTopbar} from '../../Utils/utils';
 
 export type AltContentType = 'translate' | TranslateModes;
 
@@ -11,6 +12,7 @@ export const ANNOTATE_LIMIT = 1024;
 
 export function useInterpreter(originalContent: string, originalTitle: string | undefined, id: number, type: 'post' | 'comment') {
     const api = useAPI();
+    const contentRef = useRef<HTMLDivElement>(null);
     const [currentMode, setCurrentMode] = React.useState<AltContentType | undefined >();
     const [cachedTitleTranslation, setCachedTitleTranslation] = useState<string | undefined>();
     const [cachedContentTranslation, setCachedContentTranslation] = useState< string | undefined>();
@@ -52,7 +54,7 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
             let done, value, finalValue = '';
             while (!done) {
                 ({ value, done } = await reader.read());
-                console.log(value, done, currentMode, mode, currentMode === mode);
+
                 if (done) {
                     finalValue = chunks.join('');
                     setCachedValue(finalValue);
@@ -97,5 +99,13 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
         }
     };
 
-    return {currentMode, setCurrentMode, altTitle, altContent, translate, annotate, altTranslate};
+    // bring top of the content into view when updating content
+    useEffect(() => {
+        if(contentRef.current) {
+            scrollUnderTopbar(contentRef.current);
+        }
+
+    }, [currentMode]);
+
+    return {contentRef, currentMode, setCurrentMode, altTitle, altContent, translate, annotate, altTranslate};
 }

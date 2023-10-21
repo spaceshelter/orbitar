@@ -30,7 +30,7 @@ export default function CommentComponent(props: CommentProps) {
     const [showHistory, setShowHistory] = useState(false);
 
     const api = useAPI();
-    const {currentMode, altContent, translate, annotate, altTranslate} = useInterpreter(props.comment.content, undefined, props.comment.id, 'comment');
+    const {currentMode, contentRef, altContent, translate, annotate, altTranslate} = useInterpreter(props.comment.content, undefined, props.comment.id, 'comment');
 
     const handleAnswerSwitch = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -89,7 +89,7 @@ export default function CommentComponent(props: CommentProps) {
     const isFlat = depth > maxDepth;
     return (
         <div className={`comment ${styles.comment} ${props.comment.isNew ? ' isNew': ''} ${isFlat?' isFlat':''}`} data-comment-id={props.comment.id}>
-            <div className='commentBody'>
+            <div className='commentBody' ref={contentRef}>
                 <SignatureComponent showSite={props.showSite} site={site} author={author} onHistoryClick={toggleHistory}
                                     parentCommentId={props.idx && props.parent?.id} parentCommentAuthor={props.parent?.author?.username}
                                     postLink={postLink} commentId={props.comment.id} postLinkIsNew={props.unreadOnly} date={created} editFlag={editFlag} />

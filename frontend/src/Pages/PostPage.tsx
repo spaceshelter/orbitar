@@ -8,6 +8,7 @@ import {CreateCommentComponentRestricted} from '../Components/CreateCommentCompo
 import {usePost} from '../API/use/usePost';
 import {useAppState} from '../AppState/AppState';
 import Username from '../Components/Username';
+import {scrollUnderTopbar} from '../Utils/utils';
 
 export default function PostPage() {
     const params = useParams<{postId: string}>();
@@ -84,14 +85,7 @@ export default function PostPage() {
 
         commentId && setScrolledToComment({postId, commentId});
 
-        // do not use `smooth` here - it is too slow and element won't focus into view correctly
-        commentBody.scrollIntoView({behavior: 'auto', block: 'start'});
-        // compensate for topbar height - otherwise element will be partially covered
-        const topbarHeight = document.getElementById('topbar')?.clientHeight;
-
-        if(topbarHeight) {
-            window.scrollBy({top: -topbarHeight - 10});
-        }
+        scrollUnderTopbar(commentBody);
 
         return () => {
             commentBody.classList.remove(styles.highlight);
