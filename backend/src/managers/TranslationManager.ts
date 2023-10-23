@@ -11,9 +11,10 @@ import {APIPromise} from 'openai/core';
 import {Stream} from 'openai/streaming';
 import {APIResponse} from '../api/ApiMiddleware';
 import {TranslateResponse} from '../api/types/requests/Translate';
+import {config} from '../config';
 
 const openai = new OpenAI({
-    apiKey: process.env['OPENAI_API_KEY']
+    apiKey: config.openai.apiKey
 });
 
 const TEXT_SIZE_LIMIT = 2048;
