@@ -77,6 +77,7 @@ services:
       MEDIA_HOSTING_DIMS_AES_KEY: ${MEDIA_HOSTING_DIMS_AES_KEY}
       BARMALINI_USER_ID: ${BARMALINI_USER_ID}
       BARMALINI_KEY: ${BARMALINI_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
     depends_on:
       - mysql
       - redis

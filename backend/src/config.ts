@@ -8,6 +8,7 @@ type Config = {
     mediaHosting: MediaHostingConfig;
     feed: FeedConfig;
     barmalini: BarmaliniConfig;
+    openai: OpenAIConfig;
 };
 
 export type MysqlConfig = {
@@ -50,6 +51,10 @@ export type BarmaliniConfig = {
     key: string;
 };
 
+export type OpenAIConfig = {
+    apiKey: string;
+};
+
 export const config: Config = {
     port: parseInt(process.env.SERVER_PORT) || 5001,
     logLevel: process.env.LOG_LEVEL || 'info',
@@ -85,5 +90,8 @@ export const config: Config = {
     barmalini: {
         userId: process.env.BARMALINI_USER_ID ? parseInt(process.env.BARMALINI_USER_ID) : undefined,
         key: process.env.BARMALINI_KEY || '',
+    },
+    openai: {
+        apiKey: process.env.OPENAI_API_KEY || '',
     }
 };

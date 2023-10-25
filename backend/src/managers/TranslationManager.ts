@@ -9,9 +9,10 @@ import OpenAI from 'openai';
 import {ChatCompletionChunk} from 'openai/src/resources/chat/completions';
 import {APIPromise} from 'openai/core';
 import {Stream} from 'openai/streaming';
+import {config} from '../config';
 
 const openai = new OpenAI({
-    apiKey: process.env['OPENAI_API_KEY']
+    apiKey: config.openai.apiKey
 });
 
 const TEXT_SIZE_LIMIT = 2048;
@@ -37,8 +38,6 @@ export async function getLanguage(text: string): Promise<{lang: string, prob: nu
         return {lang: lang[0][1], prob: lang[0][0]};
     }
 }
-
-type ResWriteType = { (chunk: any, callback?: (error: (Error | null | undefined)) => void): boolean; (chunk: any, encoding: BufferEncoding, callback?: (error: (Error | null | undefined)) => void): boolean };
 
 export default class TranslationManager {
     private translationRepository: TranslationRepository;
