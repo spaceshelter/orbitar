@@ -9,8 +9,6 @@ import OpenAI from 'openai';
 import {ChatCompletionChunk} from 'openai/src/resources/chat/completions';
 import {APIPromise} from 'openai/core';
 import {Stream} from 'openai/streaming';
-import {APIResponse} from '../api/ApiMiddleware';
-import {TranslateResponse} from '../api/types/requests/Translate';
 
 const openai = new OpenAI({
     apiKey: process.env['OPENAI_API_KEY']
@@ -39,6 +37,8 @@ export async function getLanguage(text: string): Promise<{lang: string, prob: nu
         return {lang: lang[0][1], prob: lang[0][0]};
     }
 }
+
+type ResWriteType = { (chunk: any, callback?: (error: (Error | null | undefined)) => void): boolean; (chunk: any, encoding: BufferEncoding, callback?: (error: (Error | null | undefined)) => void): boolean };
 
 export default class TranslationManager {
     private translationRepository: TranslationRepository;
@@ -107,7 +107,7 @@ export default class TranslationManager {
         });
     }
 
-    async translateEntity(ref_id: number, type: 'post' | 'comment', mode: TranslationMode, response: APIResponse<TranslateResponse>): Promise<void> {
+    async translateEntity(ref_id: number, type: 'post' | 'comment', mode: TranslationMode, write: (str: string) => void): Promise<void> {
         const contentSource = await this.postRepository.getLatestContentSource(ref_id, type);
         if (!contentSource) {
             throw new Error('ContentSource not found');
@@ -115,8 +115,7 @@ export default class TranslationManager {
 
         const cachedTranslation = await this.translationRepository.getTranslation(contentSource.content_source_id, mode);
         if (cachedTranslation) {
-            response.write(cachedTranslation.html);
-            response.end();
+            write(cachedTranslation.html);
             return;
         }
 
@@ -140,15 +139,14 @@ export default class TranslationManager {
 
         const fullResponse: string[] = [hint];
         const readableGPTStream = await TranslationManager.interpreterString(prompt, content);
-        response.write(hint);
+        write(hint);
         for await (const part of readableGPTStream) {
             const chunk = part.choices[0]?.delta?.content || '';
-            response.write(chunk);
+            write(chunk);
             fullResponse.push(chunk);
         }
         const fullResponseStr = fullResponse.join('');
         await this.translationRepository.saveTranslation(contentSource.content_source_id, mode, contentSource.title || '', fullResponseStr);
-        response.end();
     }
 
     async detectLanguage(title, source): Promise<string> {

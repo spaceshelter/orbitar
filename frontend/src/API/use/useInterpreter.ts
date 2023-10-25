@@ -4,6 +4,7 @@ import {TranslateModes} from '../PostAPI';
 import googleTranslate from '../../Utils/googleTranslate';
 import {toast} from 'react-toastify';
 import {scrollUnderTopbar} from '../../Utils/utils';
+import xssFilter from '../../Utils/xssFilter';
 
 export type AltContentType = 'translate' | TranslateModes;
 
@@ -61,7 +62,7 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
                 }
 
                 if(value && value !== ''){
-                    setStreamingValue(chunks.join(''));
+                    setStreamingValue(xssFilter(chunks.join('')));
                     chunks.push(value);
                 }
             }
