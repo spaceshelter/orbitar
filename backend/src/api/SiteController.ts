@@ -1,6 +1,13 @@
 import {Logger} from 'winston';
 import {Router} from 'express';
-import {APIRequest, APIResponse, joiSite, joiSiteName, validate} from './ApiMiddleware';
+import {
+    APIRequest,
+    APIResponse,
+    joiSite,
+    joiSiteName,
+    siteDomainMinLengthChars,
+    validate
+} from './ApiMiddleware';
 import SiteManager from '../managers/SiteManager';
 import {SiteSubscribeRequest, SiteSubscribeResponse} from './types/requests/SiteSubscribe';
 import {SiteRequest, SiteResponse} from './types/requests/Site';
@@ -53,7 +60,7 @@ export default class SiteController {
         });
 
         const siteCreateSchema = Joi.object<SiteCreateRequest>({
-            site: joiSite.required(),
+            site: joiSite.min(siteDomainMinLengthChars).required(),
             name: joiSiteName.required()
         });
 
