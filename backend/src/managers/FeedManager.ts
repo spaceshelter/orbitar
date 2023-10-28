@@ -178,7 +178,7 @@ export default class FeedManager {
                 offset: limitFrom,
                 limit: perpage,
             } as Query),
-        }).then(res => res.json() as QueryResponse);
+        }).then(res => res.json() as unknown as QueryResponse);
         this.logger.profile(`getSubscriptionFeed/query:${forUserId}`);
 
         /**
