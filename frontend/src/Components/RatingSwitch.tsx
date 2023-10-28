@@ -22,15 +22,25 @@ type VoteType = { vote: number, username: string };
 
 export default function RatingSwitch(props: RatingSwitchProps) {
     const api = useAPI();
-    const [state, setState] = useState({rating: props.rating.value, vote: props.rating.vote});
+    const [currentVote, setCurrentVote] = React.useState<number | undefined>(props.rating.vote);
+    const [currentRating, setCurrentRating] = React.useState<number>(props.rating.value);
     const [showPopup, setShowPopup] = useState(false);
     const ratingRef = useRef<HTMLDivElement>(null);
     const popupRef = useRef<HTMLDivElement>(null);
     const [votes, setVotes] = useState<VoteType[]>();
 
     useEffect(() => {
-        setState({rating: props.rating.value, vote: props.rating.vote});
+        setCurrentVote(props.rating.vote);
+        setCurrentRating(props.rating.value);
     }, [props]);
+
+    useEffect(() => {
+        if(!votes) {
+            return;
+        }
+        const rating = (votes || []).reduce((acc, item) => acc + item.vote, 0);
+        setCurrentRating(rating);
+    }, [votes]);
 
     useEffect(() => {
         if (!ratingRef.current || !popupRef.current) {
@@ -76,7 +86,7 @@ export default function RatingSwitch(props: RatingSwitchProps) {
             document.removeEventListener('mousedown', clickHandler);
         };
 
-    }, [showPopup, ratingRef, popupRef, votes, state.vote, props.id, props.type, api.voteAPI]);
+    }, [showPopup, ratingRef, popupRef, votes, currentVote, props.id, props.type, api.voteAPI]);
 
     const hide = () => {
         setShowPopup(false);
@@ -84,39 +94,38 @@ export default function RatingSwitch(props: RatingSwitchProps) {
     };
 
     const handleVote = (vote: number) => {
-        return (ev: React.MouseEvent) => {
+        return async (ev: React.MouseEvent) => {
             ev.stopPropagation();
             ev.preventDefault();
             // unfocus a button to space button will keep scrolling the page
             (document.activeElement as HTMLButtonElement).blur();
-            const prevState = { ...state };
-            if (state.vote === vote) {
+            const prevVote = currentVote;
+            const prevRating = currentRating;
+            if (currentVote === vote) {
                 vote = 0;
             }
 
-            const newRating = state.rating - (state.vote || 0) + vote;
-
-            setState({ vote: vote, rating: newRating});
+            const newRating = currentRating - (currentVote || 0) + vote;
+            setCurrentVote(vote);
+            setCurrentRating(newRating);
             if (props.onVote) {
-            props.onVote(newRating, vote, false);
+               props.onVote(newRating, vote, false);
             }
 
-            api.voteAPI.vote(props.type, props.id, vote)
-                .then(result => {
-                    setState({
-                        rating: result.rating,
-                        vote: result.vote
-                    });
+            try {
+                const result = await api.voteAPI.vote(props.type, props.id, vote);
+                setCurrentVote(result.vote);
+                setCurrentRating(result.rating);
 
-                    if (props.onVote) {
+                if (props.onVote) {
                     props.onVote(result.rating, result.vote, true);
-                    }
-                })
-                .catch(() => {
-                    setState(prevState);
-                    toast.warn('Голос не учтён 🤬', { position: 'bottom-right' });
-                });
-            };
+                }
+            } catch (exc) {
+                setCurrentVote(prevVote);
+                setCurrentRating(prevRating);
+                toast.warn('Голос не учтён 🤬', { position: 'bottom-right' });
+            }
+        };
     };
 
     const handleVoteList = (e: React.MouseEvent) => {
@@ -130,21 +139,21 @@ export default function RatingSwitch(props: RatingSwitchProps) {
     const minusStyles = ['i', 'i-rating_minus'];
     const plus2Styles = ['i', 'i-rating_plus'];
     const minus2Styles = ['i', 'i-rating_minus'];
-    if (state.vote && state.vote < 0) {
+    if (currentVote && currentVote < 0) {
         valueStyles.push(styles.minus);
         minusStyles.push(styles.minus);
         plusStyles.push(styles.dis);
         plus2Styles.push(styles.dis);
-        if (state.vote < -1) {
+        if (currentVote < -1) {
             minus2Styles.push(styles.minus);
         }
     }
-    else if (state.vote && state.vote > 0) {
+    else if (currentVote && currentVote > 0) {
         valueStyles.push(styles.plus);
         plusStyles.push(styles.plus);
         minusStyles.push(styles.dis);
         minus2Styles.push(styles.dis);
-        if (state.vote > 1) {
+        if (currentVote > 1) {
             plus2Styles.push(styles.plus);
         }
     }
@@ -159,11 +168,11 @@ export default function RatingSwitch(props: RatingSwitchProps) {
             <div ref={ratingRef} className={styles.rating}>
                 {props.double && <button {...buttonExtraProps} className={minus2Styles.join(' ')} onClick={handleVote(-2)}></button>}
                 <button {...buttonExtraProps} className={minusStyles.join(' ')} onClick={handleVote(-1)}></button>
-                <div onClick={handleVoteList} className={valueStyles.join(' ')}>{state.rating}</div>
+                <div onClick={handleVoteList} className={valueStyles.join(' ')}>{currentRating}</div>
                 <button {...buttonExtraProps} className={plusStyles.join(' ')} onClick={handleVote(1)}></button>
                 {props.double && <button {...buttonExtraProps} className={plus2Styles.join(' ')} onClick={handleVote(2)}></button>}
             </div>
-            {showPopup && <RatingList ref={popupRef} vote={state.vote || 0} rating={state.rating} votes={votes} hidePopup={hide}></RatingList>}
+            {showPopup && <RatingList ref={popupRef} vote={currentVote || 0} rating={currentRating} votes={votes} hidePopup={hide}></RatingList>}
         </div>
     );
 }
