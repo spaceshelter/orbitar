@@ -1,15 +1,18 @@
 import {CommentInfo, PostLinkInfo} from '../Types/PostInfo';
 import styles from './CommentComponent.module.scss';
+import postStyles from './PostComponent.module.scss';
 import RatingSwitch from './RatingSwitch';
 import React, {useMemo, useState} from 'react';
 import {CreateCommentComponentRestricted} from './CreateCommentComponent';
 import ContentComponent, {LARGE_AUTO_CUT} from './ContentComponent';
+import {ReactComponent as OptionsIcon} from '../Assets/options.svg';
 import {useAPI} from '../AppState/AppState';
 import {toast} from 'react-toastify';
 import {SignatureComponent} from './SignatureComponent';
 import {HistoryComponent} from './HistoryComponent';
 import Conf from '../Conf';
 import {ANNOTATE_LIMIT, useInterpreter} from '../API/use/useInterpreter';
+import OutsideClickHandler from 'react-outside-click-handler';
 
 interface CommentProps {
     comment: CommentInfo;
@@ -28,6 +31,7 @@ export default function CommentComponent(props: CommentProps) {
     const [answerOpen, setAnswerOpen] = useState(false);
     const [editingText, setEditingText] = useState<false | string>(false);
     const [showHistory, setShowHistory] = useState(false);
+    const [showOptions, setShowOptions] = useState(false);
 
     const api = useAPI();
     const {currentMode, contentRef, altContent, translate, annotate, altTranslate} = useInterpreter(props.comment.content, undefined, props.comment.id, 'comment');
@@ -35,6 +39,10 @@ export default function CommentComponent(props: CommentProps) {
     const handleAnswerSwitch = (e: React.MouseEvent) => {
         e.preventDefault();
         setAnswerOpen(!answerOpen);
+    };
+
+    const toggleOptions = () => {
+        setShowOptions(!showOptions);
     };
 
     const handleAnswer = async (text: string, post?: PostLinkInfo, comment?: CommentInfo) => {
@@ -114,12 +122,34 @@ export default function CommentComponent(props: CommentProps) {
                         <RatingSwitch type="comment" id={props.comment.id} rating={{ vote: props.comment.vote, value: props.comment.rating }} onVote={handleVote} />
                     </div>}
                     {props.comment.canEdit && props.onEdit && <div className={styles.control}><button onClick={handleEdit} className='i i-edit' /></div>}
-                    <div className={styles.control}><button
-                        onClick={translate} title='Перевести' className={`i i-translate ${styles.action} ${currentMode === 'translate' ? styles.active : ''}`}/></div>
-                    <div className={styles.control}><button
-                        onClick={altTranslate} title='"Перевести"' className={`i i-alttranslate ${styles.action} ${currentMode === 'altTranslate' ? styles.active : ''}`}/></div>
-                    {props.comment.content.length > ANNOTATE_LIMIT && (<div className={styles.control}><button
-                        onClick={annotate} title='Аннотировать' className={`i i-annotate ${styles.action} ${currentMode === 'annotate' ? styles.active : ''}`}/></div>)}
+
+                    <div className={styles.control + ' ' + postStyles.options}>
+                        <button onClick={toggleOptions} className={showOptions ? styles.active : ''}><OptionsIcon />
+                            {showOptions &&
+                                <OutsideClickHandler onOutsideClick={() => setShowOptions(false)}>
+                                <div className={postStyles.optionsList}>
+                                    <div><button
+                                        onClick={translate} title='Перевести' className={`i i-translate ${styles.action} ${currentMode === 'translate' ? styles.active : ''}`}>
+                                        <div className={styles.label}>Перевести</div>
+                                    </button>
+                                    </div>
+                                    <div><button
+                                        onClick={altTranslate} title='"Перевести"' className={`i i-alttranslate ${styles.action} ${currentMode === 'altTranslate' ? styles.active : ''}`}>
+                                        <div className={styles.label}>"Перевести"</div>
+                                    </button>
+                                    </div>
+                                    {props.comment.content.length > ANNOTATE_LIMIT && (<div>
+                                        <button
+                                            onClick={annotate} title="Аннотировать"
+                                            className={`i i-annotate ${styles.action} ${currentMode === 'annotate' ? styles.active : ''}`}>
+                                            <div className={styles.label}>Аннотировать</div>
+                                        </button>
+                                    </div>)}
+                                </div>
+                                </OutsideClickHandler>
+                            }
+                        </button>
+                    </div>
                     {props.onAnswer && <div className={styles.control}><button onClick={handleAnswerSwitch}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</button></div>}
                 </div>
             </div>
@@ -137,4 +167,3 @@ export default function CommentComponent(props: CommentProps) {
         </div>
     );
 }
-

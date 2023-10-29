@@ -130,13 +130,18 @@ input.title {
 
 
 .optionsList {
-    position: absolute;
-    left: 30px;
-    top: -4px;
-    border: 1px solid var(--disabled-fg);
-    border-radius: 4px;
-    padding: 4px;
-    width: max-content;
+  position: absolute;
+  left: 30px;
+  top: -4px;
+  border: 1px solid var(--disabled-fg);
+  border-radius: 4px;
+  padding: 4px;
+  width: max-content;
+  background-color: var(--bg);
+
+    > div {
+        padding: 6px;
+    }
 }
 .options {
     position: relative;
