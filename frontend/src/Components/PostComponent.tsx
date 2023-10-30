@@ -38,7 +38,8 @@ export default function PostComponent(props: PostComponentProps) {
     const [editingText, setEditingText] = useState<false | string>(false);
     const [editingTitle, setEditingTitle] = useState<string>(props.post.title || '');
     const [showHistory, setShowHistory] = useState(false);
-    const {currentMode, altTitle, altContent, contentRef, translate, annotate, altTranslate} = useInterpreter(props.post.content, props.post.title, props.post.id, 'post');
+    const {currentMode, altTitle, altContent, inProgress,
+        contentRef, translate, annotate, altTranslate} = useInterpreter(props.post.content, props.post.title, props.post.id, 'post');
 
     const handleVote = useMemo(() => {
         return (value: number, vote?: number) => {
@@ -172,14 +173,17 @@ export default function PostComponent(props: PostComponentProps) {
                         <OutsideClickHandler onOutsideClick={() => setShowOptions(false)}>
                         <div className={styles.optionsList}>
                             <button
+                                disabled={inProgress}
                                 onClick={translate} className={`i i-translate ${styles.translate} ${currentMode === 'translate' ? styles.active : ''}`}>
                                 <div className={styles.label}>Перевести</div>
                             </button>
                             <button
+                                disabled={inProgress}
                                 onClick={altTranslate} className={`i i-alttranslate ${styles.translate} ${currentMode === 'altTranslate' ? styles.active : ''}`}>
                                 <div className={styles.label}>"Перевести"</div>
                             </button>
                             {props.post.content.length > 400 && (<button
+                                    disabled={inProgress}
                                     onClick={annotate} className={`i i-annotate ${styles.translate} ${currentMode === 'annotate' ? styles.active : ''}`}>
                                     <div className={styles.label}>Аннотировать</div>
                                 </button>

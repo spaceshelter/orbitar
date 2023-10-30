@@ -21,6 +21,7 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
     const [cachedAnnotation, setCachedAnnotation] = useState<string | undefined>();
     const [streamingAltTranslation, setStreamingAltTranslation] = useState<string | undefined>();
     const [cachedAltTranslation, setCachedAltTranslation] = useState<string | undefined>();
+    const [inProgress, setInProgress] = useState<boolean>(false);
 
     const altTitle = currentMode === 'translate' ? cachedTitleTranslation : undefined;
 
@@ -91,11 +92,14 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
         } else {
             try {
                 setCurrentMode(newMode);
+                setInProgress(true);
                 await retrieveContent();
             } catch (err) {
                 console.error(err);
                 setCurrentMode(undefined);
                 toast.error('Роботы не справились - восстание машин откладывается.');
+            } finally {
+                setInProgress(false);
             }
         }
     };
@@ -113,5 +117,5 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
 
     }, [currentMode]);
 
-    return {contentRef, currentMode, setCurrentMode, altTitle, altContent, translate, annotate, altTranslate};
+    return {contentRef, currentMode, inProgress, altTitle, altContent, translate, annotate, altTranslate};
 }

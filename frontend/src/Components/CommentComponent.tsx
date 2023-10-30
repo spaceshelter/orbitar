@@ -34,7 +34,7 @@ export default function CommentComponent(props: CommentProps) {
     const [showOptions, setShowOptions] = useState(false);
 
     const api = useAPI();
-    const {currentMode, contentRef, altContent, translate, annotate, altTranslate} = useInterpreter(props.comment.content, undefined, props.comment.id, 'comment');
+    const {currentMode, inProgress, contentRef, altContent, translate, annotate, altTranslate} = useInterpreter(props.comment.content, undefined, props.comment.id, 'comment');
 
     const handleAnswerSwitch = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -129,15 +129,18 @@ export default function CommentComponent(props: CommentProps) {
                                 <OutsideClickHandler onOutsideClick={() => setShowOptions(false)}>
                                 <div className={postStyles.optionsList}>
                                     <button
+                                        disabled={inProgress}
                                         onClick={translate} title='Перевести' className={`i i-translate ${styles.action} ${currentMode === 'translate' ? styles.active : ''}`}>
                                         <div className={styles.label}>Перевести</div>
                                     </button>
                                     <button
+                                        disabled={inProgress}
                                         onClick={altTranslate} title='"Перевести"' className={`i i-alttranslate ${styles.action} ${currentMode === 'altTranslate' ? styles.active : ''}`}>
                                         <div className={styles.label}>"Перевести"</div>
                                     </button>
                                     {props.comment.content.length > ANNOTATE_LIMIT && (
                                         <button
+                                            disabled={inProgress}
                                             onClick={annotate} title="Аннотировать"
                                             className={`i i-annotate ${styles.action} ${currentMode === 'annotate' ? styles.active : ''}`}>
                                             <div className={styles.label}>Аннотировать</div>
