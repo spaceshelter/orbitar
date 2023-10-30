@@ -165,10 +165,12 @@ const confirmWrapper = (message: string, callback: () => void) => (e: React.Mous
                     Легаси зум: {legacyZoom ? 'Вкл' : 'Выкл'}
                 </button>
                 {<ThemeToggleComponent dynamic={true} buttonLabel="Сменить тему"/>}
-                <>Язык перевода: <select onChange={changeLang} value={preferredLang}>
+            </div>
+            <div className={styles.select}>
+                <span className={styles.selectLabel}>Язык перевода:</span>
+                <select onChange={changeLang} value={preferredLang}>
                     {Array.from(languages.entries()).map(([lang, name]) => <option key={lang} value={lang}>{name}</option>)}
                 </select>
-                </>
             </div>
             {props.barmaliniAccess && <BarmaliniAccess/>}
             <div>

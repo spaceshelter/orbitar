@@ -16,3 +16,27 @@
 .dropSessions {
     color: var(--danger);
 }
+
+.select {
+  display: flex;
+  align-items: center; /* This will align items vertically */
+}
+
+.selectLabel {
+  margin-right: 8px;
+}
+
+select {
+  background: var(--dim1);
+  color: var(--fgSoft);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+select:hover {
+  color: var(--fg);
+  background: var(--dim3);
+}
