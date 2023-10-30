@@ -103,7 +103,12 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
     // bring top of the content into view when updating content
     useEffect(() => {
         if(contentRef.current) {
-            scrollUnderTopbar(contentRef.current);
+            const rect = contentRef.current.getBoundingClientRect();
+            const topbarHeight = document.getElementById('topbar')?.clientHeight;
+
+            if(rect.top < (topbarHeight || 0)){
+                scrollUnderTopbar(contentRef.current);
+            }
         }
 
     }, [currentMode]);
