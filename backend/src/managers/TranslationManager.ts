@@ -17,7 +17,8 @@ const openai = new OpenAI({
 
 const TEXT_SIZE_LIMIT = 2048;
 
-export type TranslationMode = 'altTranslate' | 'annotate';
+export const TRANSLATION_MODES = ['altTranslate', 'annotate'] as const;
+export type TranslationMode = typeof TRANSLATION_MODES[number];
 
 const fasttextModelPromise: Promise<FastTextModel> = new Promise<FastText>((resolve) => {
     addOnPostRun(() => {

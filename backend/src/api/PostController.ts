@@ -24,7 +24,7 @@ import {PostHistoryRequest, PostHistoryResponse} from './types/requests/PostHist
 import {HistoryEntity} from './types/entities/HistoryEntity';
 import rateLimit from 'express-rate-limit';
 import {TranslateRequest, TranslateResponse} from './types/requests/Translate';
-import TranslationManager from '../managers/TranslationManager';
+import TranslationManager, {TRANSLATION_MODES} from '../managers/TranslationManager';
 
 const commonRateLimitConfig = {
     skipSuccessfulRequests: false,
@@ -125,7 +125,7 @@ export default class PostController {
         const translateSchema = Joi.object<TranslateRequest>({
             id: Joi.number().required(),
             type: Joi.string().valid('post', 'comment').required(),
-            mode: Joi.string().valid('altTranslate', 'annotate').required(),
+            mode: Joi.string().valid(...TRANSLATION_MODES).required(),
         });
         const historySchema = Joi.object<PostHistoryRequest>({
             id: Joi.number().required(),
