@@ -128,23 +128,21 @@ export default function CommentComponent(props: CommentProps) {
                             {showOptions &&
                                 <OutsideClickHandler onOutsideClick={() => setShowOptions(false)}>
                                 <div className={postStyles.optionsList}>
-                                    <div><button
+                                    <button
                                         onClick={translate} title='Перевести' className={`i i-translate ${styles.action} ${currentMode === 'translate' ? styles.active : ''}`}>
                                         <div className={styles.label}>Перевести</div>
                                     </button>
-                                    </div>
-                                    <div><button
+                                    <button
                                         onClick={altTranslate} title='"Перевести"' className={`i i-alttranslate ${styles.action} ${currentMode === 'altTranslate' ? styles.active : ''}`}>
                                         <div className={styles.label}>"Перевести"</div>
                                     </button>
-                                    </div>
-                                    {props.comment.content.length > ANNOTATE_LIMIT && (<div>
+                                    {props.comment.content.length > ANNOTATE_LIMIT && (
                                         <button
                                             onClick={annotate} title="Аннотировать"
                                             className={`i i-annotate ${styles.action} ${currentMode === 'annotate' ? styles.active : ''}`}>
                                             <div className={styles.label}>Аннотировать</div>
                                         </button>
-                                    </div>)}
+                                    )}
                                 </div>
                                 </OutsideClickHandler>
                             }

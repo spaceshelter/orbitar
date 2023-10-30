@@ -171,26 +171,24 @@ export default function PostComponent(props: PostComponentProps) {
                     {showOptions &&
                         <OutsideClickHandler onOutsideClick={() => setShowOptions(false)}>
                         <div className={styles.optionsList}>
-                            <div><button
+                            <button
                                 onClick={translate} className={`i i-translate ${styles.translate} ${currentMode === 'translate' ? styles.active : ''}`}>
                                 <div className={styles.label}>Перевести</div>
-                            </button></div>
-                            <div><button
+                            </button>
+                            <button
                                 onClick={altTranslate} className={`i i-alttranslate ${styles.translate} ${currentMode === 'altTranslate' ? styles.active : ''}`}>
                                 <div className={styles.label}>"Перевести"</div>
-                            </button></div>
-                            {props.post.content.length > 400 && (<div><button
-                                onClick={annotate} className={`i i-annotate ${styles.translate} ${currentMode === 'annotate' ? styles.active : ''}`}>
-                                <div className={styles.label}>Аннотировать</div>
                             </button>
-                            </div>)}
-                            <div>
-                                <button className={styles.control} onClick={toggleWatch}>{watch ? <><UnwatchIcon/>
-                                    <div className={styles.label}>не отслеживать</div>
-                                </> : <><WatchIcon/>
-                                    <div className={styles.label}>отслеживать</div>
-                                </>}</button>
-                            </div>
+                            {props.post.content.length > 400 && (<button
+                                    onClick={annotate} className={`i i-annotate ${styles.translate} ${currentMode === 'annotate' ? styles.active : ''}`}>
+                                    <div className={styles.label}>Аннотировать</div>
+                                </button>
+                            )}
+                            <button className={styles.control} onClick={toggleWatch}>{watch ? <><UnwatchIcon/>
+                                <div className={styles.label}>не отслеживать</div>
+                            </> : <><WatchIcon/>
+                                <div className={styles.label}>отслеживать</div>
+                            </>}</button>
                         </div>
                         </OutsideClickHandler>}
                 </div>
