@@ -34,7 +34,6 @@ const languages = new Map([
     ['tg', 'Тоҷикӣ'],
     ['tk', 'Türkmençe'],
     ['uk', 'Українська'],
-    ['uz', 'Oʻzbekcha'],
     ['hy', 'Հայերեն'],
     ['ky', 'қазақ'],
     ['uz', 'oʻzbek'],
