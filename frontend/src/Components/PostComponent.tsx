@@ -8,6 +8,7 @@ import {ReactComponent as OptionsIcon} from '../Assets/options.svg';
 import {ReactComponent as WatchIcon} from '../Assets/watch.svg';
 import {ReactComponent as UnwatchIcon} from '../Assets/unwatch.svg';
 import {ReactComponent as EditIcon} from '../Assets/edit.svg';
+import OutsideClickHandler from 'react-outside-click-handler';
 
 import PostLink from './PostLink';
 import {useAPI} from '../AppState/AppState';
@@ -165,19 +166,33 @@ export default function PostComponent(props: PostComponentProps) {
                 <div className={styles.control}><CommentsCount post={props.post} /></div>
                 {/*<div className={styles.control}><button disabled={true} onClick={toggleBookmark} className={bookmark ? styles.active : ''}><BookmarkIcon /><span className={styles.label}></span></button></div>*/}
                 {props.post.canEdit && props.onEdit && <div className={styles.control}><button onClick={handleEdit}><EditIcon /></button></div>}
-                <div className={styles.control}><button
-                     onClick={translate} className={`i i-translate ${styles.translate} ${currentMode === 'translate' ? styles.active : ''}`}/></div>
-                <div className={styles.control}><button
-                     onClick={altTranslate} className={`i i-alttranslate ${styles.translate} ${currentMode === 'altTranslate' ? styles.active : ''}`}/></div>
-                {props.post.content.length > 400 && (<div className={styles.control}><button
-                     onClick={annotate} className={`i i-annotate ${styles.translate} ${currentMode === 'annotate' ? styles.active : ''}`}/></div>)}
                 <div className={styles.control + ' ' + styles.options}>
                     <button onClick={toggleOptions} className={showOptions ? styles.active : ''}><OptionsIcon /></button>
                     {showOptions &&
+                        <OutsideClickHandler onOutsideClick={() => setShowOptions(false)}>
                         <div className={styles.optionsList}>
-                            <div><button className={styles.control} onClick={toggleWatch}>{watch ?<><UnwatchIcon /><div className={styles.label}>не отслеживать</div></> : <><WatchIcon /><div className={styles.label}>отслеживать</div></>}</button></div>
+                            <div><button
+                                onClick={translate} className={`i i-translate ${styles.translate} ${currentMode === 'translate' ? styles.active : ''}`}>
+                                <div className={styles.label}>Перевести</div>
+                            </button></div>
+                            <div><button
+                                onClick={altTranslate} className={`i i-alttranslate ${styles.translate} ${currentMode === 'altTranslate' ? styles.active : ''}`}>
+                                <div className={styles.label}>"Перевести"</div>
+                            </button></div>
+                            {props.post.content.length > 400 && (<div><button
+                                onClick={annotate} className={`i i-annotate ${styles.translate} ${currentMode === 'annotate' ? styles.active : ''}`}>
+                                <div className={styles.label}>Аннотировать</div>
+                            </button>
+                            </div>)}
+                            <div>
+                                <button className={styles.control} onClick={toggleWatch}>{watch ? <><UnwatchIcon/>
+                                    <div className={styles.label}>не отслеживать</div>
+                                </> : <><WatchIcon/>
+                                    <div className={styles.label}>отслеживать</div>
+                                </>}</button>
+                            </div>
                         </div>
-                    }
+                        </OutsideClickHandler>}
                 </div>
             </div>
             {props.buttons}

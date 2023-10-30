@@ -487,7 +487,7 @@ export default class PostController {
             }
 
             await this.translationManager.translateEntity(id, type, mode, (chunk) => response.write(chunk));
-            response.end()
+            response.end();
         } catch (err) {
             this.logger.error(err);
             return response.error('error', 'Unknown error', 500);
