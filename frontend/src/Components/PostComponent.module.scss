@@ -138,9 +138,10 @@ input.title {
   padding: 4px;
   width: max-content;
   background-color: var(--bg);
+  z-index: 99999;
 
-    > div {
-        padding: 6px;
+    > button {
+        margin: 12px 8px;
     }
 }
 .options {
