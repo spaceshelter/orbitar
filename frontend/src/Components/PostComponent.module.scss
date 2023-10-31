@@ -52,24 +52,6 @@ input.title {
     align-items: center;
     overflow-x: visible;
 
-    button.translate:before {
-      font-size: 20px;
-    }
-
-    button.translate:disabled:before {
-      animation: pulse 1s infinite;
-      @keyframes pulse {
-        0% {
-          opacity: 0.5;
-        }
-        50% {
-          opacity: 1;
-        }
-        100% {
-          opacity: 0.5;
-        }
-      }
-    }
 }
 
 .control {

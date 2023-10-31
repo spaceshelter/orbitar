@@ -1,0 +1,27 @@
+.icon:before {
+  font-size: 20px;
+}
+
+.active {
+  color: var(--primaryHover) !important; // overriding PostComponent.scss#.control
+  fill: var(--primaryHover) !important;
+}
+
+.inProgress {
+  animation: pulse 1s infinite;
+  @keyframes pulse {
+    0% {
+      opacity: 0.5;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0.5;
+    }
+  }
+}
+
+.label {
+  margin-left: 6px;
+}

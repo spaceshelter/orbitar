@@ -5,8 +5,6 @@ import {PostInfo} from '../Types/PostInfo';
 import ContentComponent from './ContentComponent';
 import {ReactComponent as CommentsIcon} from '../Assets/comments.svg';
 import {ReactComponent as OptionsIcon} from '../Assets/options.svg';
-import {ReactComponent as WatchIcon} from '../Assets/watch.svg';
-import {ReactComponent as UnwatchIcon} from '../Assets/unwatch.svg';
 import {ReactComponent as EditIcon} from '../Assets/edit.svg';
 import OutsideClickHandler from 'react-outside-click-handler';
 
@@ -17,8 +15,8 @@ import CreateCommentComponent from './CreateCommentComponent';
 import { HistoryComponent } from './HistoryComponent';
 import {SignatureComponent} from './SignatureComponent';
 import Conf from '../Conf';
-import {useInterpreter} from '../API/use/useInterpreter';
-import xssFilter from '../Utils/xssFilter';
+import {ANNOTATE_LIMIT, useInterpreter} from '../API/use/useInterpreter';
+import {AltTranslateButton, AnnotateButton, TranslateButton, UnwatchButton, WatchButton} from './ContentButtons';
 
 interface PostComponentProps {
     post: PostInfo;
@@ -142,7 +140,7 @@ export default function PostComponent(props: PostComponentProps) {
                             ? <HistoryComponent initial={{ title, content, date: created }} history={{ id: props.post.id, type: 'post' }} onClose={toggleHistory} />
                             : <>
                                     {title && <div className={styles.title}><PostLink post={props.post}>{
-                                        props.dangerousHtmlTitle ? <span dangerouslySetInnerHTML={{__html: xssFilter(title)}} /> : title
+                                        props.dangerousHtmlTitle ? <span dangerouslySetInnerHTML={{__html: title}} /> : title
                                     }</PostLink></div>}
                                     <div className={styles.content}>
                                         <ContentComponent className={styles.content} content={content}
@@ -168,31 +166,20 @@ export default function PostComponent(props: PostComponentProps) {
                 {/*<div className={styles.control}><button disabled={true} onClick={toggleBookmark} className={bookmark ? styles.active : ''}><BookmarkIcon /><span className={styles.label}></span></button></div>*/}
                 {props.post.canEdit && props.onEdit && <div className={styles.control}><button onClick={handleEdit}><EditIcon /></button></div>}
                 <div className={styles.control + ' ' + styles.options}>
+                    {currentMode === 'translate' && <TranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={translate} /> }
+                    {currentMode === 'altTranslate' && <AltTranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={altTranslate}/> }
+                    {currentMode === 'annotate' && <AnnotateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={annotate} />}
+
                     <button onClick={toggleOptions} className={showOptions ? styles.active : ''}><OptionsIcon /></button>
                     {showOptions &&
                         <OutsideClickHandler onOutsideClick={() => setShowOptions(false)}>
                         <div className={styles.optionsList}>
-                            <button
-                                disabled={inProgress}
-                                onClick={translate} className={`i i-translate ${styles.translate} ${currentMode === 'translate' ? styles.active : ''}`}>
-                                <div className={styles.label}>Перевести</div>
-                            </button>
-                            <button
-                                disabled={inProgress}
-                                onClick={altTranslate} className={`i i-alttranslate ${styles.translate} ${currentMode === 'altTranslate' ? styles.active : ''}`}>
-                                <div className={styles.label}>"Перевести"</div>
-                            </button>
-                            {props.post.content.length > 400 && (<button
-                                    disabled={inProgress}
-                                    onClick={annotate} className={`i i-annotate ${styles.translate} ${currentMode === 'annotate' ? styles.active : ''}`}>
-                                    <div className={styles.label}>Аннотировать</div>
-                                </button>
+                            <TranslateButton className={styles.control} inProgress={inProgress} onClick={() => {setShowOptions(false);translate();}} isActive={currentMode === 'translate'} />
+                            <AltTranslateButton className={styles.control} inProgress={inProgress} onClick={() => {setShowOptions(false);altTranslate();}} isActive={currentMode === 'altTranslate'}/>
+                            {props.post.content.length > ANNOTATE_LIMIT && (
+                                <AnnotateButton className={styles.control} inProgress={inProgress} onClick={() => {setShowOptions(false);annotate();}} isActive={currentMode === 'annotate'} />
                             )}
-                            <button className={styles.control} onClick={toggleWatch}>{watch ? <><UnwatchIcon/>
-                                <div className={styles.label}>не отслеживать</div>
-                            </> : <><WatchIcon/>
-                                <div className={styles.label}>отслеживать</div>
-                            </>}</button>
+                            {watch ? <WatchButton onClick={toggleWatch} /> : <UnwatchButton onClick={toggleWatch} />}
                         </div>
                         </OutsideClickHandler>}
                 </div>

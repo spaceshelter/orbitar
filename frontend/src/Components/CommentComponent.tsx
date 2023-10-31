@@ -13,6 +13,7 @@ import {HistoryComponent} from './HistoryComponent';
 import Conf from '../Conf';
 import {ANNOTATE_LIMIT, useInterpreter} from '../API/use/useInterpreter';
 import OutsideClickHandler from 'react-outside-click-handler';
+import {AltTranslateButton, AnnotateButton, TranslateButton} from './ContentButtons';
 
 interface CommentProps {
     comment: CommentInfo;
@@ -124,27 +125,18 @@ export default function CommentComponent(props: CommentProps) {
                     {props.comment.canEdit && props.onEdit && <div className={styles.control}><button onClick={handleEdit} className='i i-edit' /></div>}
 
                     <div className={styles.control + ' ' + postStyles.options}>
+                        {currentMode === 'translate' && <TranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={translate} /> }
+                        {currentMode === 'altTranslate' && <AltTranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={altTranslate}/> }
+                        {currentMode === 'annotate' && <AnnotateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={annotate} />}
                         <button onClick={toggleOptions} className={showOptions ? styles.active : ''}><OptionsIcon />
+
                             {showOptions &&
                                 <OutsideClickHandler onOutsideClick={() => setShowOptions(false)}>
                                 <div className={postStyles.optionsList}>
-                                    <button
-                                        disabled={inProgress}
-                                        onClick={translate} title='Перевести' className={`i i-translate ${styles.action} ${currentMode === 'translate' ? styles.active : ''}`}>
-                                        <div className={styles.label}>Перевести</div>
-                                    </button>
-                                    <button
-                                        disabled={inProgress}
-                                        onClick={altTranslate} title='"Перевести"' className={`i i-alttranslate ${styles.action} ${currentMode === 'altTranslate' ? styles.active : ''}`}>
-                                        <div className={styles.label}>"Перевести"</div>
-                                    </button>
+                                    <TranslateButton className={styles.control} inProgress={inProgress} onClick={() => {setShowOptions(false);translate();}} isActive={currentMode === 'translate'} />
+                                    <AltTranslateButton className={styles.control} inProgress={inProgress} onClick={() => {setShowOptions(false);altTranslate();}} isActive={currentMode === 'altTranslate'}/>
                                     {props.comment.content.length > ANNOTATE_LIMIT && (
-                                        <button
-                                            disabled={inProgress}
-                                            onClick={annotate} title="Аннотировать"
-                                            className={`i i-annotate ${styles.action} ${currentMode === 'annotate' ? styles.active : ''}`}>
-                                            <div className={styles.label}>Аннотировать</div>
-                                        </button>
+                                        <AnnotateButton className={styles.control} inProgress={inProgress} onClick={() => {setShowOptions(false);annotate();}} isActive={currentMode === 'annotate'} />
                                     )}
                                 </div>
                                 </OutsideClickHandler>

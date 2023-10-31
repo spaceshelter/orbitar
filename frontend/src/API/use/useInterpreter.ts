@@ -23,7 +23,7 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
     const [cachedAltTranslation, setCachedAltTranslation] = useState<string | undefined>();
     const [inProgress, setInProgress] = useState<boolean>(false);
 
-    const altTitle = currentMode === 'translate' ? cachedTitleTranslation : undefined;
+    const altTitle = currentMode === 'translate' && cachedTitleTranslation ? xssFilter(cachedTitleTranslation) : undefined;
 
     const altContent = (currentMode === 'translate' && cachedContentTranslation) ||
         (currentMode === 'altTranslate' && (cachedAltTranslation || streamingAltTranslation)) ||
@@ -32,7 +32,7 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
 
 
     const translate = () => {
-        getAlternative('translate', currentMode, setCurrentMode, cachedContentTranslation, async () => {
+        getAlternative('translate', currentMode, setCurrentMode, cachedContentTranslation, undefined, async () => {
             if(originalTitle){
                 const title = await googleTranslate(originalTitle);
                 setCachedTitleTranslation(title);
@@ -43,7 +43,7 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
         });
     };
 
-    const retrieveStreamResponse =  (mode: TranslateModes, setStreamingValue: (str: string) => void, setCachedValue: (str: string) => void): () => Promise<void> => {
+    const retrieveStreamResponse =  (mode: TranslateModes, setStreamingValue: (str: string | undefined) => void, setCachedValue: (str: string) => void): () => Promise<void> => {
         return async () => {
             const rs = await api.postAPI.translate(id, type, mode);
 
@@ -59,6 +59,7 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
 
                 if (done) {
                     finalValue = chunks.join('');
+                    setStreamingValue(undefined);
                     setCachedValue(finalValue);
                 }
 
@@ -71,11 +72,11 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
     };
 
     const altTranslate = () => {
-        getAlternative('altTranslate', currentMode, setCurrentMode, cachedAltTranslation, retrieveStreamResponse('altTranslate', setStreamingAltTranslation, setCachedAltTranslation));
+        getAlternative('altTranslate', currentMode, setCurrentMode, cachedAltTranslation, streamingAltTranslation, retrieveStreamResponse('altTranslate', setStreamingAltTranslation, setCachedAltTranslation));
     };
 
     const annotate = () => {
-        getAlternative('annotate', currentMode, setCurrentMode, cachedAnnotation, retrieveStreamResponse('annotate', setStreamingAnnotation, setCachedAnnotation));
+        getAlternative('annotate', currentMode, setCurrentMode, cachedAnnotation, streamingAnnotation, retrieveStreamResponse('annotate', setStreamingAnnotation, setCachedAnnotation));
     };
 
     const getAlternative = async (
@@ -83,11 +84,12 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
         currentMode: AltContentType | undefined,
         setCurrentMode: (mode: AltContentType | undefined) => void,
         cachedContent: string | undefined,
+        streamingContent: string | undefined,
         retrieveContent: () => Promise<void>
     ): Promise<void> => {
         if (currentMode === newMode) {
             setCurrentMode(undefined);
-        } else if(cachedContent){
+        } else if(cachedContent || streamingContent){
             setCurrentMode(newMode);
         } else {
             try {

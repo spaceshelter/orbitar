@@ -490,6 +490,7 @@ export default class PostController {
             response.end();
         } catch (err) {
             this.logger.error(err);
+            // TODO analyze OpenAI response here and show custom error message once we will know how "run out of money" response looks like
             return response.error('error', 'Unknown error', 500);
         }
     }
