@@ -17,9 +17,9 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
     const [currentMode, setCurrentMode] = React.useState<AltContentType | undefined >();
     const [cachedTitleTranslation, setCachedTitleTranslation] = useState<string | undefined>();
     const [cachedContentTranslation, setCachedContentTranslation] = useState< string | undefined>();
-    const [streamingAnnotation, setStreamingAnnotation] = useState<string | undefined>();
+    const [streamingAnnotation, setStreamingAnnotation] = useState<string | undefined | null>(); // null is a special value indication that content is being fetched
     const [cachedAnnotation, setCachedAnnotation] = useState<string | undefined>();
-    const [streamingAltTranslation, setStreamingAltTranslation] = useState<string | undefined>();
+    const [streamingAltTranslation, setStreamingAltTranslation] = useState<string | undefined | null>();  // null is a special value indication that content is being fetched
     const [cachedAltTranslation, setCachedAltTranslation] = useState<string | undefined>();
     const [inProgress, setInProgress] = useState<boolean>(false);
 
@@ -33,6 +33,8 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
 
     const translate = () => {
         getAlternative('translate', currentMode, setCurrentMode, cachedContentTranslation, undefined, async () => {
+            setInProgress(true);
+
             if(originalTitle){
                 const title = await googleTranslate(originalTitle);
                 setCachedTitleTranslation(title);
@@ -40,13 +42,15 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
 
             const html = await googleTranslate(originalContent);
             setCachedContentTranslation(html);
+            setInProgress(false);
         });
     };
 
-    const retrieveStreamResponse =  (mode: TranslateModes, setStreamingValue: (str: string | undefined) => void, setCachedValue: (str: string) => void): () => Promise<void> => {
+    const retrieveStreamResponse =  (mode: TranslateModes, setStreamingValue: (str: string | undefined | null) => void, setCachedValue: (str: string) => void): () => Promise<void> => {
         return async () => {
+            // set special value to indicate that content is being fetched
+            setStreamingValue(null);
             const rs = await api.postAPI.translate(id, type, mode);
-
             const reader = rs.pipeThrough((new TextDecoderStream()) as unknown as ReadableWritablePair<string, string>).getReader();
             if(!reader){
                 throw new Error('Invalid response');
@@ -87,12 +91,12 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
         currentMode: AltContentType | undefined,
         setCurrentMode: (mode: AltContentType | undefined) => void,
         cachedContent: string | undefined,
-        streamingContent: string | undefined,
+        streamingContent: string | undefined | null,
         retrieveContent: () => Promise<void>
     ): Promise<void> => {
         if (currentMode === newMode) {
             setCurrentMode(undefined);
-        } else if(cachedContent || streamingContent){
+        } else if(cachedContent || streamingContent || streamingContent === null){
             setCurrentMode(newMode);
         } else {
             try {

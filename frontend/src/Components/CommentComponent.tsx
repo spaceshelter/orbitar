@@ -129,7 +129,7 @@ export default function CommentComponent(props: CommentProps) {
                         {currentMode === 'altTranslate' && <AltTranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={altTranslate}/> }
                         {currentMode === 'annotate' && <AnnotateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={annotate} />}
 
-                        <button onClick={toggleOptions} className={showOptions ? styles.active : ''}><OptionsIcon /></button>
+                        <button onClick={toggleOptions} className={styles.options + ' ' + (showOptions ? styles.active : '')}><OptionsIcon /></button>
                         {showOptions &&
                             <OutsideClickHandler onOutsideClick={() => setShowOptions(false)}>
                             <div className={postStyles.optionsList}>
