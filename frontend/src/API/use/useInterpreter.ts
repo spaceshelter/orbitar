@@ -64,6 +64,9 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
                 }
 
                 if(value && value !== ''){
+                    if(value.indexOf('{"result":"error","code":"error"') === 0) {
+                        throw new Error('Error fetching interpretation');
+                    }
                     setStreamingValue(xssFilter(chunks.join('')));
                     chunks.push(value);
                 }
