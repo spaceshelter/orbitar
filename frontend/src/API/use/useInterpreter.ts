@@ -119,8 +119,15 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
             const rect = contentRef.current.getBoundingClientRect();
             const topbarHeight = document.getElementById('topbar')?.clientHeight;
 
-            if(rect.top < (topbarHeight || 0)){
-                scrollUnderTopbar(contentRef.current);
+            if (currentMode === 'annotate') {
+                // scroll to bottom
+                if (rect.bottom > window.innerHeight) {
+                    scrollUnderTopbar(contentRef.current, /*toBottom*/ true);
+                }
+            } else {
+                if (rect.top < (topbarHeight || 0)) {
+                    scrollUnderTopbar(contentRef.current);
+                }
             }
         }
 
