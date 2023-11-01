@@ -408,6 +408,12 @@ export default function ContentComponent(props: ContentComponentProps) {
 
     }, [contentDiv, props.autoCut, props.lowRating]);
 
+    useEffect(() => {
+        if (!props.autoCut && cut) {
+            setCut(false);
+        }
+    }, [props.autoCut, cut]);
+
     const handleCut = () => {
         setCut(false);
     };

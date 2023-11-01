@@ -130,6 +130,9 @@ export default function PostComponent(props: PostComponentProps) {
         setShowHistory(!showHistory);
     };
 
+    const altMode = currentMode !== undefined || inProgress;
+    const autoCut = altMode ? undefined : props.autoCut;
+
     return (
         <div className={'postComponent ' + styles.post} ref={contentRef}>
             <div className={styles.header}>
@@ -144,7 +147,7 @@ export default function PostComponent(props: PostComponentProps) {
                                     }</PostLink></div>}
                                     <div className={styles.content}>
                                         <ContentComponent className={styles.content} content={content}
-                                                          autoCut={props.autoCut}
+                                                          autoCut={autoCut}
                                                           lowRating={rating <= Conf.POST_LOW_RATING_THRESHOLD || props.post.vote === -1} />
                                     </div>
                                 </>
