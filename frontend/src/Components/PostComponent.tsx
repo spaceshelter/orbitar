@@ -166,9 +166,18 @@ export default function PostComponent(props: PostComponentProps) {
                 {/*<div className={styles.control}><button disabled={true} onClick={toggleBookmark} className={bookmark ? styles.active : ''}><BookmarkIcon /><span className={styles.label}></span></button></div>*/}
                 {props.post.canEdit && props.onEdit && <div className={styles.control}><button onClick={handleEdit}><EditIcon /></button></div>}
                 <div className={styles.control + ' ' + styles.options}>
-                    {currentMode === 'translate' && <TranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={translate} /> }
-                    {currentMode === 'altTranslate' && <AltTranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={altTranslate}/> }
-                    {currentMode === 'annotate' && <AnnotateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={annotate} />}
+                    {currentMode === 'translate' &&
+                        <div className={styles.control}>
+                            <TranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={translate}/>
+                        </div>}
+                    {currentMode === 'altTranslate' &&
+                        <div className={styles.control}>
+                            <AltTranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={altTranslate}/>
+                        </div>}
+                    {currentMode === 'annotate' &&
+                        <div className={styles.control}>
+                            <AnnotateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={annotate} />
+                        </div>}
 
                     <button onClick={toggleOptions} className={styles.options + ' ' + (showOptions ? styles.active : '')}><OptionsIcon /></button>
                     {showOptions &&

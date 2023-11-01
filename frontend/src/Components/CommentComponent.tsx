@@ -125,18 +125,27 @@ export default function CommentComponent(props: CommentProps) {
                     {props.comment.canEdit && props.onEdit && <div className={styles.control}><button onClick={handleEdit} className='i i-edit' /></div>}
 
                     <div className={styles.control + ' ' + postStyles.options}>
-                        {currentMode === 'translate' && <TranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={translate} /> }
-                        {currentMode === 'altTranslate' && <AltTranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={altTranslate}/> }
-                        {currentMode === 'annotate' && <AnnotateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={annotate} />}
+                        {currentMode === 'translate' &&
+                            <div className={styles.control}>
+                                <TranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={translate} />
+                            </div>}
+                        {currentMode === 'altTranslate' &&
+                            <div className={styles.control}>
+                                <AltTranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={altTranslate}/>
+                            </div>}
+                        {currentMode === 'annotate' &&
+                            <div className={styles.control}>
+                                <AnnotateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={annotate} />
+                            </div>}
 
                         <button onClick={toggleOptions} className={styles.options + ' ' + (showOptions ? styles.active : '')}><OptionsIcon /></button>
                         {showOptions &&
                             <OutsideClickHandler onOutsideClick={() => setShowOptions(false)}>
                             <div className={postStyles.optionsList}>
-                                <TranslateButton className={styles.control} inProgress={inProgress} onClick={() => {setShowOptions(false);translate();}} isActive={currentMode === 'translate'} />
-                                <AltTranslateButton className={styles.control} inProgress={inProgress} onClick={() => {setShowOptions(false);altTranslate();}} isActive={currentMode === 'altTranslate'}/>
+                                <TranslateButton inProgress={inProgress} onClick={() => {setShowOptions(false);translate();}} isActive={currentMode === 'translate'} />
+                                <AltTranslateButton inProgress={inProgress} onClick={() => {setShowOptions(false);altTranslate();}} isActive={currentMode === 'altTranslate'}/>
                                 {props.comment.content.length > ANNOTATE_LIMIT && (
-                                    <AnnotateButton className={styles.control} inProgress={inProgress} onClick={() => {setShowOptions(false);annotate();}} isActive={currentMode === 'annotate'} />
+                                    <AnnotateButton inProgress={inProgress} onClick={() => {setShowOptions(false);annotate();}} isActive={currentMode === 'annotate'} />
                                 )}
                             </div>
                             </OutsideClickHandler>

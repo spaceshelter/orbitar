@@ -51,11 +51,6 @@ input.title {
     margin-left: -4px;
     align-items: center;
     overflow-x: visible;
-
-    .options {
-        margin-left: 10px;
-    }
-
 }
 
 .control {
@@ -114,7 +109,6 @@ input.title {
 
 }
 
-
 .optionsList {
   position: absolute;
   left: 30px;
@@ -127,7 +121,7 @@ input.title {
   z-index: 99999;
 
     > button {
-        margin: 12px 8px;
+        margin: 12px 8px !important;
     }
 }
 .options {
