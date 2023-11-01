@@ -25,7 +25,7 @@ import {HistoryEntity} from './types/entities/HistoryEntity';
 import rateLimit from 'express-rate-limit';
 import {TranslateRequest, TranslateResponse} from './types/requests/Translate';
 import TranslationManager, {TRANSLATION_MODES} from '../managers/TranslationManager';
-import {APIError, AuthenticationError, RateLimitError} from "openai";
+import {APIError, AuthenticationError, RateLimitError} from 'openai';
 
 const commonRateLimitConfig = {
     skipSuccessfulRequests: false,
@@ -496,7 +496,7 @@ export default class PostController {
             } else if(err instanceof RateLimitError){
                 msg = 'OpenAI RateLimitError';
             } else if(err instanceof APIError) {
-                msg = 'OpenAI error'
+                msg = 'OpenAI error';
             }
             this.logger.error(err);
             // TODO analyze OpenAI response here and show custom error message once we will know how "run out of money" response looks like
