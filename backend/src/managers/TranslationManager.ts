@@ -137,8 +137,8 @@ export default class TranslationManager {
                 temp = 1;
                 break;
             case 'annotate':
-                prompt = 'Summarize the text in 1-2 paragraphs. Answer in Russian.\n';
-                hint = '<span class="interpretation"><span class="i i-annotate"></span>Аннотация</span><br />';
+                prompt = 'Напиши сжатое изложение текста, один-два абзаца, до 200 слов.\n';
+                hint = '<span class="interpretation"><span class="i i-annotate"></span>TL;DR</span><br />';
                 temp = 0.5;
                 break;
         }
@@ -156,9 +156,20 @@ export default class TranslationManager {
             return Promise.resolve();
         }
 
-        const fullResponse: string[] = [hint];
+        const fullResponse: string[] = [];
+
+        if (mode === 'annotate') {
+            fullResponse.push(parsingResult);
+            fullResponse.push('<br />');
+            fullResponse.push('<br />');
+        }
+        fullResponse.push(hint);
+
+        for (const chunk of fullResponse) {
+            write(chunk);
+        }
+
         const readableGPTStream = await TranslationManager.interpreterString(prompt, content, temp);
-        write(hint);
         for await (const part of readableGPTStream) {
             const chunk = part.choices[0]?.delta?.content || '';
             write(chunk);
