@@ -59,8 +59,10 @@ export default class TranslationManager {
     }
 
     getAltTranslatePrompt(): [string, string] {
-        const PRE_PROMPT = 'Переведи текст ';
-        const POST_PROMPT = ':';
+        const PRE_PROMPT = 'Перепиши данный текст ';
+        const POST_PROMPT =
+            '. Результат должен быть максимально смешным и дурашливым, но не глупым. ' +
+            'Постарайся сохранить или уменьшить объем текста.';
         const FILTERS = [
             ['как пьяный викинг', 'викинг mode'],
             ['как пьяница в крайней степени опьянения', 'пьяница mode'],
@@ -96,14 +98,22 @@ export default class TranslationManager {
         return [PRE_PROMPT + role + POST_PROMPT, hint];
     }
 
-    static interpreterString(prompt: string, content: string): APIPromise<Stream<ChatCompletionChunk>> {
+    static interpreterString(prompt: string, content: string, temperature: number): APIPromise<Stream<ChatCompletionChunk>> {
         return openai.chat.completions.create({
             messages: [
-                {role: 'system', content: prompt},
-                {role: 'user', content: content}
+                // let's duplicate the instructions for better emphasis
+                {role: 'system', content: (prompt + ' Текст ниже:')},
+                {role: 'user', content: content},
+                {role: 'system', content: ('Текст выше. Напоминаю инструкцию:\n' + prompt)},
+                {
+                    role: 'system', content: 'Answer MUST CONTAIN ONLY THE MODIFIED TEXT ' +
+                        'as if written by the original author. PRESERVE the original HTML tags and formatting AS IS.\n' +
+                        'Strive for the best quality. Answer in Russian if not specified otherwise.'
+                }
             ],
             model: 'gpt-3.5-turbo',
-            stream: true
+            stream: true,
+            temperature: temperature,
         });
     }
 
@@ -119,15 +129,17 @@ export default class TranslationManager {
             return;
         }
 
-        let prompt, hint;
+        let prompt, hint, temp;
         switch(mode) {
             case 'altTranslate':
                 [prompt, hint] = this.getAltTranslatePrompt();
                 hint = `<span class="interpretation"><span class="i i-alttranslate"></span>${hint}</span><br />`;
+                temp = 1;
                 break;
             case 'annotate':
-                prompt = 'Кратко перескажи о чём говориться в тексте';
+                prompt = 'Summarize the text in 1-2 paragraphs. Answer in Russian.\n';
                 hint = '<span class="interpretation"><span class="i i-annotate"></span>Аннотация</span><br />';
+                temp = 0.5;
                 break;
         }
 
@@ -135,10 +147,17 @@ export default class TranslationManager {
             throw new Error('Invalid prompt');
         }
         // TODO review limitations to fit into budget
-        const content = contentSource.source.substring(0, TEXT_SIZE_LIMIT);
+        const parsingResult = this.parser.parse(contentSource.source).text;
+        const content = parsingResult.substring(0, TEXT_SIZE_LIMIT);
+
+        // if parsingResult without html tags and whitespace is too short, don't do anything
+        if (stripHtml(parsingResult).result.trim().length < 6) {
+            write(parsingResult);
+            return Promise.resolve();
+        }
 
         const fullResponse: string[] = [hint];
-        const readableGPTStream = await TranslationManager.interpreterString(prompt, content);
+        const readableGPTStream = await TranslationManager.interpreterString(prompt, content, temp);
         write(hint);
         for await (const part of readableGPTStream) {
             const chunk = part.choices[0]?.delta?.content || '';
