@@ -33,7 +33,7 @@ export function TranslateButton ({iconOnly = false, ...props}: ExtendedButtonPro
     return <BaseButton {...props} icon='translate' label={iconOnly ? '' : 'Перевести'} />;
 }
 export function AltTranslateButton ({iconOnly = false, ...props}: ExtendedButtonProps) {
-    return <BaseButton {...props} icon='alttranslate' label={iconOnly ? '' : 'Я диод'} />;
+    return <BaseButton {...props} icon='alttranslate' label={iconOnly ? '' : 'ЪУЪ'} />;
 }
 export function AnnotateButton ({iconOnly = false, ...props}: ExtendedButtonProps) {
     return <BaseButton {...props} icon='annotate' label={iconOnly ? '' : 'Скукожить'} />;
