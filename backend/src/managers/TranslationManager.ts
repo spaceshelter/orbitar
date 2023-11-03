@@ -6,7 +6,7 @@ import {Logger} from 'winston';
 import {addOnPostRun, FastText, FastTextModel} from '../../langid/fasttext.js';
 import {urlRegex} from '../parser/regexprs';
 import OpenAI from 'openai';
-import {ChatCompletionChunk} from 'openai/src/resources/chat/completions';
+import {ChatCompletionChunk, ChatCompletionMessageParam} from 'openai/src/resources/chat/completions';
 import {APIPromise} from 'openai/core';
 import {Stream} from 'openai/streaming';
 import {config} from '../config';
@@ -99,18 +99,29 @@ export default class TranslationManager {
     }
 
     static interpreterString(prompt: string, content: string, temperature: number): APIPromise<Stream<ChatCompletionChunk>> {
-        return openai.chat.completions.create({
-            messages: [
-                // let's duplicate the instructions for better emphasis
+        const messages: Array<ChatCompletionMessageParam> = [];
+        const short = content.length < prompt.length * 2;
+
+        if (short) {
+            // let's duplicate the instructions for better emphasis
+            messages.push(
                 {role: 'system', content: (prompt + ' Текст ниже:')},
-                {role: 'user', content: content},
-                {role: 'system', content: ('Текст выше. Напоминаю инструкцию:\n' + prompt)},
-                {
-                    role: 'system', content: 'Answer MUST CONTAIN ONLY THE MODIFIED TEXT ' +
-                        'as if written by the original author. PRESERVE the original HTML tags and formatting AS IS.\n' +
-                        'Strive for the best quality. Answer in Russian if not specified otherwise.'
-                }
-            ],
+            );
+        }
+
+        // push all
+        messages.push(
+            {role: 'user', content: content},
+            {role: 'system', content: (`Текст выше. ${ short ? 'Инструкция:' : 'Напоминаю инструкцию:'}\n${prompt}`)},
+            {
+                role: 'system', content: 'Answer MUST CONTAIN ONLY THE MODIFIED TEXT ' +
+                    'as if written by the original author. PRESERVE the original HTML tags and formatting AS IS.\n' +
+                    'Strive for the best quality. Answer in Russian if not specified otherwise.'
+            }
+        );
+
+        return openai.chat.completions.create({
+            messages : messages,
             model: 'gpt-3.5-turbo',
             stream: true,
             temperature: temperature,
@@ -156,6 +167,12 @@ export default class TranslationManager {
             return Promise.resolve();
         }
 
+        const readableGPTStream = await TranslationManager.interpreterString(prompt, content, temp);
+
+        // Important!
+        // Ensure that the first chunk is written after the stream is created,
+        // otherwise the error cannot be set in http response downstream
+
         const fullResponse: string[] = [];
 
         if (mode === 'annotate') {
@@ -169,7 +186,6 @@ export default class TranslationManager {
             write(chunk);
         }
 
-        const readableGPTStream = await TranslationManager.interpreterString(prompt, content, temp);
         for await (const part of readableGPTStream) {
             const chunk = part.choices[0]?.delta?.content || '';
             write(chunk);
