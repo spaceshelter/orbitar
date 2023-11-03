@@ -89,13 +89,13 @@ export default function MediaUploader(props: MediaUploaderProps) {
     };
     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
         const data = e.dataTransfer;
-        console.log(e);
+
         if (data.files.length) {
             readFile(data.files[0]);
         }
         else if (data.types.indexOf('text/uri-list') !== -1) {
             const uri = data.getData('text/uri-list');
-            console.log('uri', uri);
+
             if (uri) {
                 setUri(uri);
                 setPreview(uri);

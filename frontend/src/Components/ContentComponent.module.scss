@@ -86,6 +86,16 @@
       opacity: 1;
     }
   }
+
+  :global(.interpretation) {
+    color: var(--fgGhost);
+
+    :global(.i):before {
+      vertical-align: middle;
+      font-size: 16px;
+      padding-right: 4px;
+    }
+  }
 }
 
 .overlayCloseButton {

@@ -24,7 +24,8 @@ import {PostHistoryRequest, PostHistoryResponse} from './types/requests/PostHist
 import {HistoryEntity} from './types/entities/HistoryEntity';
 import rateLimit from 'express-rate-limit';
 import {TranslateRequest, TranslateResponse} from './types/requests/Translate';
-import TranslationManager from '../managers/TranslationManager';
+import TranslationManager, {TRANSLATION_MODES} from '../managers/TranslationManager';
+import {APIError, AuthenticationError, RateLimitError} from 'openai';
 
 const commonRateLimitConfig = {
     skipSuccessfulRequests: false,
@@ -125,6 +126,7 @@ export default class PostController {
         const translateSchema = Joi.object<TranslateRequest>({
             id: Joi.number().required(),
             type: Joi.string().valid('post', 'comment').required(),
+            mode: Joi.string().valid(...TRANSLATION_MODES).required(),
         });
         const historySchema = Joi.object<PostHistoryRequest>({
             id: Joi.number().required(),
@@ -477,7 +479,7 @@ export default class PostController {
         if (!request.session.data.userId) {
             return response.authRequired();
         }
-        const {id, type} = request.body;
+        const {id, type, mode} = request.body;
         try {
             const restrictions = await this.userManager.getUserRestrictions(request.session.data.userId);
             if (restrictions.restrictedToPostId !== false) {
@@ -485,10 +487,20 @@ export default class PostController {
                 return response.error('access-denied', `Translation is not allowed.`, 403);
             }
 
-            return response.success(await this.translationManager.translateEntity(id, type));
+            await this.translationManager.translateEntity(id, type, mode, (chunk) => response.write(chunk));
+            response.end();
         } catch (err) {
+            let msg = 'Unknown error';
+            if(err instanceof AuthenticationError){
+                msg = 'OpenAI AuthenticationError';
+            } else if(err instanceof RateLimitError){
+                msg = 'OpenAI RateLimitError';
+            } else if(err instanceof APIError) {
+                msg = 'OpenAI error';
+            }
             this.logger.error(err);
-            return response.error('error', 'Unknown error', 500);
+            // TODO analyze OpenAI response here and show custom error message once we will know how "run out of money" response looks like
+            return response.error('error', msg, 500);
         }
     }
 

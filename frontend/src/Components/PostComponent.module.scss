@@ -51,25 +51,6 @@ input.title {
     margin-left: -4px;
     align-items: center;
     overflow-x: visible;
-
-    button.translate:before {
-      font-size: 20px;
-    }
-
-    button.translate:disabled:before {
-      animation: pulse 1s infinite;
-      @keyframes pulse {
-        0% {
-          opacity: 0.5;
-        }
-        50% {
-          opacity: 1;
-        }
-        100% {
-          opacity: 0.5;
-        }
-      }
-    }
 }
 
 .control {
@@ -128,15 +109,20 @@ input.title {
 
 }
 
-
 .optionsList {
-    position: absolute;
-    left: 30px;
-    top: -4px;
-    border: 1px solid var(--disabled-fg);
-    border-radius: 4px;
-    padding: 4px;
-    width: max-content;
+  position: absolute;
+  left: 30px;
+  top: -4px;
+  border: 1px solid var(--disabled-fg);
+  border-radius: 4px;
+  padding: 4px;
+  width: max-content;
+  background-color: var(--bg);
+  z-index: 99999;
+
+    > button {
+        margin: 12px 8px !important;
+    }
 }
 .options {
     position: relative;

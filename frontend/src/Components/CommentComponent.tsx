@@ -1,17 +1,19 @@
 import {CommentInfo, PostLinkInfo} from '../Types/PostInfo';
 import styles from './CommentComponent.module.scss';
+import postStyles from './PostComponent.module.scss';
 import RatingSwitch from './RatingSwitch';
 import React, {useMemo, useState} from 'react';
 import {CreateCommentComponentRestricted} from './CreateCommentComponent';
 import ContentComponent, {LARGE_AUTO_CUT} from './ContentComponent';
+import {ReactComponent as OptionsIcon} from '../Assets/options.svg';
 import {useAPI} from '../AppState/AppState';
 import {toast} from 'react-toastify';
 import {SignatureComponent} from './SignatureComponent';
 import {HistoryComponent} from './HistoryComponent';
 import Conf from '../Conf';
-import googleTranslate from '../Utils/googleTranslate';
-
-const defaultLanguage = process.env.DEFAULT_LANGUAGE || 'ru';
+import {ANNOTATE_LIMIT, useInterpreter} from '../API/use/useInterpreter';
+import OutsideClickHandler from 'react-outside-click-handler';
+import {AltTranslateButton, AnnotateButton, TranslateButton} from './ContentButtons';
 
 interface CommentProps {
     comment: CommentInfo;
@@ -30,14 +32,18 @@ export default function CommentComponent(props: CommentProps) {
     const [answerOpen, setAnswerOpen] = useState(false);
     const [editingText, setEditingText] = useState<false | string>(false);
     const [showHistory, setShowHistory] = useState(false);
-    const [translation, setTranslation] = useState<string | false | undefined>(undefined);
-    const [cachedTranslation, setCachedTranslation] = useState<string | undefined>(undefined);
+    const [showOptions, setShowOptions] = useState(false);
 
     const api = useAPI();
+    const {currentMode, inProgress, contentRef, altContent, translate, annotate, altTranslate} = useInterpreter(props.comment.content, undefined, props.comment.id, 'comment');
 
     const handleAnswerSwitch = (e: React.MouseEvent) => {
         e.preventDefault();
         setAnswerOpen(!answerOpen);
+    };
+
+    const toggleOptions = () => {
+        setShowOptions(!showOptions);
     };
 
     const handleAnswer = async (text: string, post?: PostLinkInfo, comment?: CommentInfo) => {
@@ -80,38 +86,19 @@ export default function CommentComponent(props: CommentProps) {
         }
     };
 
-    const translate = async () => {
-        if (translation) {
-            setTranslation(undefined);
-        } else if(cachedTranslation){
-            setTranslation(cachedTranslation);
-        } else {
-            setTranslation(false);
-            try {
-                const html = await googleTranslate(props.comment.content);
-
-                setTranslation(html);
-                setCachedTranslation(html);
-            } catch(err) {
-                setTranslation(undefined);
-                toast.error('Не удалось перевести');
-            }
-        }
-    };
-
     const toggleHistory = () => {
         setShowHistory(!showHistory);
     };
 
     const {author, created, site, postLink, editFlag } = props.comment;
-    const content = translation || props.comment.content;
+    const content = altContent || props.comment.content;
 
     const depth = props.depth || 0;
     const maxDepth = props.maxTreeDepth || 0;
     const isFlat = depth > maxDepth;
     return (
         <div className={`comment ${styles.comment} ${props.comment.isNew ? ' isNew': ''} ${isFlat?' isFlat':''}`} data-comment-id={props.comment.id}>
-            <div className='commentBody'>
+            <div className='commentBody' ref={contentRef}>
                 <SignatureComponent showSite={props.showSite} site={site} author={author} onHistoryClick={toggleHistory}
                                     parentCommentId={props.idx && props.parent?.id} parentCommentAuthor={props.parent?.author?.username}
                                     postLink={postLink} commentId={props.comment.id} postLinkIsNew={props.unreadOnly} date={created} editFlag={editFlag} />
@@ -123,7 +110,7 @@ export default function CommentComponent(props: CommentProps) {
                             <div className={styles.content}>
                                 <ContentComponent className={styles.commentContent} content={content}
                                                   lowRating={props.comment.rating <= Conf.COMMENT_LOW_RATING_THRESHOLD || props.comment.vote === -1}
-                                                  autoCut={(props.comment.rating <= Conf.COMMENT_LOW_RATING_THRESHOLD || props.comment.vote === -1) ? LARGE_AUTO_CUT : undefined} />
+                                                  autoCut={!altContent && (props.comment.rating <= Conf.COMMENT_LOW_RATING_THRESHOLD || props.comment.vote === -1) ? LARGE_AUTO_CUT : undefined} />
                             </div>
                     )
                 :
@@ -136,8 +123,34 @@ export default function CommentComponent(props: CommentProps) {
                         <RatingSwitch type="comment" id={props.comment.id} rating={{ vote: props.comment.vote, value: props.comment.rating }} onVote={handleVote} />
                     </div>}
                     {props.comment.canEdit && props.onEdit && <div className={styles.control}><button onClick={handleEdit} className='i i-edit' /></div>}
-                    {props.comment.language && props.comment.language !== defaultLanguage && <div className={styles.control}><button
-                        disabled={translation === false} onClick={translate} className={`i i-translate ${styles.translate}`}/></div>}
+
+                    <div className={styles.control + ' ' + postStyles.options}>
+                        {currentMode === 'translate' &&
+                            <div className={styles.control}>
+                                <TranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={translate} />
+                            </div>}
+                        {currentMode === 'altTranslate' &&
+                            <div className={styles.control}>
+                                <AltTranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={altTranslate}/>
+                            </div>}
+                        {currentMode === 'annotate' &&
+                            <div className={styles.control}>
+                                <AnnotateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={annotate} />
+                            </div>}
+
+                        <button onClick={toggleOptions} className={styles.options + ' ' + (showOptions ? styles.active : '')}><OptionsIcon /></button>
+                        {showOptions &&
+                            <OutsideClickHandler onOutsideClick={() => setShowOptions(false)}>
+                            <div className={postStyles.optionsList}>
+                                <TranslateButton inProgress={inProgress} onClick={() => {setShowOptions(false);translate();}} isActive={currentMode === 'translate'} />
+                                <AltTranslateButton inProgress={inProgress} onClick={() => {setShowOptions(false);altTranslate();}} isActive={currentMode === 'altTranslate'}/>
+                                {props.comment.content.length > ANNOTATE_LIMIT && (
+                                    <AnnotateButton inProgress={inProgress} onClick={() => {setShowOptions(false);annotate();}} isActive={currentMode === 'annotate'} />
+                                )}
+                            </div>
+                            </OutsideClickHandler>
+                        }
+                    </div>
                     {props.onAnswer && <div className={styles.control}><button onClick={handleAnswerSwitch}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</button></div>}
                 </div>
             </div>
@@ -155,4 +168,3 @@ export default function CommentComponent(props: CommentProps) {
         </div>
     );
 }
-
