@@ -8,9 +8,6 @@ import xssFilter from '../../Utils/xssFilter';
 
 export type AltContentType = 'translate' | TranslateModes;
 
-// show annotate only if message is longer than
-export const ANNOTATE_LIMIT = 1024;
-
 export function useInterpreter(originalContent: string, originalTitle: string | undefined, id: number, type: 'post' | 'comment') {
     const api = useAPI();
     const contentRef = useRef<HTMLDivElement>(null);
