@@ -33,16 +33,16 @@ export function TranslateButton ({iconOnly = false, ...props}: ExtendedButtonPro
     return <BaseButton {...props} icon='translate' label={iconOnly ? '' : 'Перевести'} />;
 }
 export function AltTranslateButton ({iconOnly = false, ...props}: ExtendedButtonProps) {
-    return <BaseButton {...props} icon='alttranslate' label={iconOnly ? '' : '"Перевести"'} />;
+    return <BaseButton {...props} icon='alttranslate' label={iconOnly ? '' : 'ЪУЪ'} />;
 }
 export function AnnotateButton ({iconOnly = false, ...props}: ExtendedButtonProps) {
-    return <BaseButton {...props} icon='annotate' label={iconOnly ? '' : 'Аннотировать'} />;
+    return <BaseButton {...props} icon='annotate' label={iconOnly ? '' : 'Скукожить'} />;
 }
 
 export function WatchButton (props: ExtendedButtonProps) {
-    return <BaseButton {...props} icon='watch' label='отслеживать' />;
+    return <BaseButton {...props} icon='watch' label='Отслеживать' />;
 }
 
 export function UnwatchButton (props: ExtendedButtonProps) {
-    return <BaseButton {...props} icon='unwatch' label='не отслеживать' />;
+    return <BaseButton {...props} icon='unwatch' label='Не отслеживать' />;
 }
