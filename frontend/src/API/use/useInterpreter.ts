@@ -25,9 +25,17 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
 
     const altTitle = currentMode === 'translate' && cachedTitleTranslation ? xssFilter(cachedTitleTranslation) : undefined;
 
+    const mergeAnnotation = (cachedAnnotation?: string, streamingAnnotation?: string | null): string | undefined => {
+        const annotation = cachedAnnotation || streamingAnnotation;
+        if(annotation){
+            return originalContent + '<br/><br/>' + annotation;
+        }
+        return undefined;
+    };
+
     const altContent = (currentMode === 'translate' && cachedContentTranslation) ||
-        (currentMode === 'altTranslate' && (cachedAltTranslation || streamingAltTranslation)) ||
-        (currentMode === 'annotate' && (cachedAnnotation || streamingAnnotation)) ||
+        (currentMode === 'altTranslate' && mergeAnnotation(cachedAltTranslation, streamingAltTranslation)) ||
+        (currentMode === 'annotate' && mergeAnnotation(cachedAnnotation, streamingAnnotation)) ||
         undefined;
 
 
@@ -120,7 +128,7 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
             const rect = contentRef.current.getBoundingClientRect();
             const topbarHeight = document.getElementById('topbar')?.clientHeight;
 
-            if (currentMode === 'annotate') {
+            if (currentMode === 'altTranslate' || currentMode === 'annotate') {
                 // scroll to bottom
                 if (rect.bottom > window.innerHeight) {
                     scrollUnderTopbar(contentRef.current, /*toBottom*/ true);
