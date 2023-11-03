@@ -506,7 +506,11 @@ export default class PostController {
                 // should not happen now, just a precaution if the invariant in translateEntity is broken
                 this.logger.error('Error writing response');
                 this.logger.error(err);
-                response.end();
+                try {
+                    response.write('{"result":"error","code":"error"}');
+                } finally {
+                    response.end();
+                }
             }
         }
     }
