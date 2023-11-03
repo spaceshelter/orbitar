@@ -112,7 +112,7 @@ export default class TranslationManager {
         // push all
         messages.push(
             {role: 'user', content: content},
-            {role: 'system', content: (`Текст выше. ${ short ? 'Инструкция:' : 'Напоминаю инструкцию:'}\n' + ${prompt}`)},
+            {role: 'system', content: (`Текст выше. ${ short ? 'Инструкция:' : 'Напоминаю инструкцию:'}\n${prompt}`)},
             {
                 role: 'system', content: 'Answer MUST CONTAIN ONLY THE MODIFIED TEXT ' +
                     'as if written by the original author. PRESERVE the original HTML tags and formatting AS IS.\n' +
