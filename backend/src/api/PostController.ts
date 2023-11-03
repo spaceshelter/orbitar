@@ -499,8 +499,15 @@ export default class PostController {
                 msg = 'OpenAI error';
             }
             this.logger.error(err);
-            // TODO analyze OpenAI response here and show custom error message once we will know how "run out of money" response looks like
-            return response.error('error', msg, 500);
+            try {
+                response.error('error', msg, 500);
+            } catch (err) {
+                // in case some chunks were already written
+                // should not happen now, just a precaution if the invariant in translateEntity is broken
+                this.logger.error('Error writing response');
+                this.logger.error(err);
+                response.end();
+            }
         }
     }
 
