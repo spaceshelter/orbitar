@@ -6,7 +6,7 @@ import {toast} from 'react-toastify';
 import {scrollUnderTopbar} from '../../Utils/utils';
 import xssFilter from '../../Utils/xssFilter';
 import {useLazy} from './useLazy';
-import {stripHtml} from 'string-strip-html';
+import xss from 'xss';
 
 export type AltContentType = 'translate' | TranslateModes;
 
@@ -26,15 +26,10 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
     const [inProgress, setInProgress] = useState<boolean>(false);
 
     const calcStrippedOriginalContentLength = useLazy(() =>
-        stripHtml(originalContent,
-            {
-                stripTogetherWithTheirContents: [
-                    'script', // default
-                    'style', // default
-                    'xml', // default
-                    'a', // <-- custom-added
-                ],
-            }).result.trim().length, [originalContent]);
+        xss(originalContent, {
+            stripIgnoreTag: true,
+            stripIgnoreTagBody: ['script', 'style', 'xml', 'a']
+        }).trim().length, [originalContent]);
 
     const calcShowAltTranslate = () =>
         // content.length is used intentionally, we don't want to use it on the long content
@@ -44,8 +39,8 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
     const altTitle = currentMode === 'translate' && cachedTitleTranslation ? xssFilter(cachedTitleTranslation) : undefined;
 
     const altContent = (currentMode === 'translate' && cachedContentTranslation) ||
-        (currentMode === 'altTranslate' && mergeContent(cachedAltTranslation, streamingAltTranslation)) ||
-        (currentMode === 'annotate' && mergeContent(cachedAnnotation, streamingAnnotation)) ||
+        (currentMode === 'altTranslate' && mergeContent(cachedAltTranslation, streamingAltTranslation, originalContent)) ||
+        (currentMode === 'annotate' && mergeContent(cachedAnnotation, streamingAnnotation, originalContent)) ||
         undefined;
 
     const translate = () => {
@@ -156,10 +151,13 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
     };
 }
 
-function mergeContent(cachedAnnotation: string | undefined, streamingAnnotation: string | undefined | null): string | undefined {
+function mergeContent(cachedAnnotation: string | undefined,
+                      streamingAnnotation: string | undefined | null,
+                      originalContent: string
+                      ): string | undefined {
     const annotation = cachedAnnotation || streamingAnnotation;
     if (annotation) {
-        return annotation;
+        return `${originalContent}<br/><br/>${annotation}`;
     }
     return undefined;
 }
