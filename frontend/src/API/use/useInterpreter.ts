@@ -5,20 +5,41 @@ import googleTranslate from '../../Utils/googleTranslate';
 import {toast} from 'react-toastify';
 import {scrollUnderTopbar} from '../../Utils/utils';
 import xssFilter from '../../Utils/xssFilter';
+import {useLazy} from './useLazy';
+import {stripHtml} from 'string-strip-html';
 
 export type AltContentType = 'translate' | TranslateModes;
+
+// show annotate only if message is longer than
+export const ANNOTATE_LIMIT = 1024;
 
 export function useInterpreter(originalContent: string, originalTitle: string | undefined, id: number, type: 'post' | 'comment') {
     const api = useAPI();
     const contentRef = useRef<HTMLDivElement>(null);
-    const [currentMode, setCurrentMode] = React.useState<AltContentType | undefined >();
+    const [currentMode, setCurrentMode] = React.useState<AltContentType | undefined>();
     const [cachedTitleTranslation, setCachedTitleTranslation] = useState<string | undefined>();
-    const [cachedContentTranslation, setCachedContentTranslation] = useState< string | undefined>();
+    const [cachedContentTranslation, setCachedContentTranslation] = useState<string | undefined>();
     const [streamingAnnotation, setStreamingAnnotation] = useState<string | undefined | null>(); // null is a special value indication that content is being fetched
     const [cachedAnnotation, setCachedAnnotation] = useState<string | undefined>();
     const [streamingAltTranslation, setStreamingAltTranslation] = useState<string | undefined | null>();  // null is a special value indication that content is being fetched
     const [cachedAltTranslation, setCachedAltTranslation] = useState<string | undefined>();
     const [inProgress, setInProgress] = useState<boolean>(false);
+
+    const calcStrippedOriginalContentLength = useLazy(() =>
+        stripHtml(originalContent,
+            {
+                stripTogetherWithTheirContents: [
+                    'script', // default
+                    'style', // default
+                    'xml', // default
+                    'a', // <-- custom-added
+                ],
+            }).result.trim().length, [originalContent]);
+
+    const calcShowAltTranslate = () =>
+        // content.length is used intentionally, we don't want to use it on the long content
+        originalContent.length < ANNOTATE_LIMIT && calcStrippedOriginalContentLength() >= 6;
+    const calcShowAnnotate = () => calcStrippedOriginalContentLength() >= ANNOTATE_LIMIT;
 
     const altTitle = currentMode === 'translate' && cachedTitleTranslation ? xssFilter(cachedTitleTranslation) : undefined;
 
@@ -130,7 +151,9 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
 
     }, [currentMode]);
 
-    return {contentRef, currentMode, inProgress, altTitle, altContent, translate, annotate, altTranslate};
+    return {contentRef, currentMode, inProgress, altTitle, altContent, translate, annotate, altTranslate,
+        calcShowAltTranslate, calcShowAnnotate
+    };
 }
 
 function mergeContent(cachedAnnotation: string | undefined, streamingAnnotation: string | undefined | null): string | undefined {

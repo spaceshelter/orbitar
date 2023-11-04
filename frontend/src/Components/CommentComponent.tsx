@@ -14,7 +14,6 @@ import Conf from '../Conf';
 import {useInterpreter} from '../API/use/useInterpreter';
 import OutsideClickHandler from 'react-outside-click-handler';
 import {AltTranslateButton, AnnotateButton, TranslateButton} from './ContentButtons';
-import InterpreterWrapper from './InterpreterWrapper';
 
 interface CommentProps {
     comment: CommentInfo;
@@ -36,7 +35,9 @@ export default function CommentComponent(props: CommentProps) {
     const [showOptions, setShowOptions] = useState(false);
 
     const api = useAPI();
-    const {currentMode, inProgress, contentRef, altContent, translate, annotate, altTranslate} = useInterpreter(props.comment.content, undefined, props.comment.id, 'comment');
+    const {currentMode, inProgress, contentRef, altContent, translate, annotate, altTranslate,
+        calcShowAnnotate, calcShowAltTranslate
+    } = useInterpreter(props.comment.content, undefined, props.comment.id, 'comment');
 
     const handleAnswerSwitch = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -141,17 +142,15 @@ export default function CommentComponent(props: CommentProps) {
 
                         <button onClick={toggleOptions} className={styles.options + ' ' + (showOptions ? styles.active : '')}><OptionsIcon /></button>
                         {showOptions &&
-                            <InterpreterWrapper content={props.comment.content}>{(showAltTranslate, showAnnotate) =>
                             <OutsideClickHandler onOutsideClick={() => setShowOptions(false)}>
                             <div className={postStyles.optionsList}>
                                 <TranslateButton inProgress={inProgress} onClick={() => {setShowOptions(false);translate();}} isActive={currentMode === 'translate'} />
-                                {showAltTranslate &&
+                                {calcShowAltTranslate() &&
                                     <AltTranslateButton inProgress={inProgress} onClick={() => {setShowOptions(false);altTranslate();}} isActive={currentMode === 'altTranslate'}/>}
-                                {showAnnotate &&
+                                {calcShowAnnotate() &&
                                     <AnnotateButton inProgress={inProgress} onClick={() => {setShowOptions(false);annotate();}} isActive={currentMode === 'annotate'} />}
                             </div>
                             </OutsideClickHandler>}
-                            </InterpreterWrapper>}
                     </div>
                     {props.onAnswer && <div className={styles.control}><button onClick={handleAnswerSwitch}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</button></div>}
                 </div>
