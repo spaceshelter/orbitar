@@ -15,7 +15,7 @@ import CreateCommentComponent from './CreateCommentComponent';
 import { HistoryComponent } from './HistoryComponent';
 import {SignatureComponent} from './SignatureComponent';
 import Conf from '../Conf';
-import {ANNOTATE_LIMIT, useInterpreter} from '../API/use/useInterpreter';
+import {useInterpreter} from '../API/use/useInterpreter';
 import {AltTranslateButton, AnnotateButton, TranslateButton, UnwatchButton, WatchButton} from './ContentButtons';
 
 interface PostComponentProps {
@@ -37,7 +37,8 @@ export default function PostComponent(props: PostComponentProps) {
     const [editingTitle, setEditingTitle] = useState<string>(props.post.title || '');
     const [showHistory, setShowHistory] = useState(false);
     const {currentMode, altTitle, altContent, inProgress,
-        contentRef, translate, annotate, altTranslate} = useInterpreter(props.post.content, props.post.title, props.post.id, 'post');
+        contentRef, translate, annotate, altTranslate, calcShowAltTranslate, calcShowAnnotate
+    } = useInterpreter(props.post.content, props.post.title, props.post.id, 'post');
 
     const handleVote = useMemo(() => {
         return (value: number, vote?: number) => {
@@ -187,10 +188,10 @@ export default function PostComponent(props: PostComponentProps) {
                         <OutsideClickHandler onOutsideClick={() => setShowOptions(false)}>
                         <div className={styles.optionsList}>
                             <TranslateButton className={styles.control} inProgress={inProgress} onClick={() => {setShowOptions(false);translate();}} isActive={currentMode === 'translate'} />
-                            <AltTranslateButton className={styles.control} inProgress={inProgress} onClick={() => {setShowOptions(false);altTranslate();}} isActive={currentMode === 'altTranslate'}/>
-                            {props.post.content.length > ANNOTATE_LIMIT && (
-                                <AnnotateButton className={styles.control} inProgress={inProgress} onClick={() => {setShowOptions(false);annotate();}} isActive={currentMode === 'annotate'} />
-                            )}
+                            {calcShowAltTranslate() &&
+                                <AltTranslateButton className={styles.control} inProgress={inProgress} onClick={() => {setShowOptions(false);altTranslate();}} isActive={currentMode === 'altTranslate'}/>}
+                            {calcShowAnnotate() &&
+                                <AnnotateButton className={styles.control} inProgress={inProgress} onClick={() => {setShowOptions(false);annotate();}} isActive={currentMode === 'annotate'} />}
                             {watch ? <WatchButton onClick={toggleWatch} /> : <UnwatchButton onClick={toggleWatch} />}
                         </div>
                         </OutsideClickHandler>}
