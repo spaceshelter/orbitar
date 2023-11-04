@@ -27,6 +27,7 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
 
     const calcStrippedOriginalContentLength = useLazy(() =>
         xss(originalContent, {
+            whiteList: {},
             stripIgnoreTag: true,
             stripIgnoreTagBody: ['script', 'style', 'xml', 'a']
         }).trim().length, [originalContent]);
