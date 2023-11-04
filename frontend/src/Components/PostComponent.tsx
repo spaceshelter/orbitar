@@ -192,7 +192,7 @@ export default function PostComponent(props: PostComponentProps) {
                                 <AltTranslateButton className={styles.control} inProgress={inProgress} onClick={() => {setShowOptions(false);altTranslate();}} isActive={currentMode === 'altTranslate'}/>}
                             {calcShowAnnotate() &&
                                 <AnnotateButton className={styles.control} inProgress={inProgress} onClick={() => {setShowOptions(false);annotate();}} isActive={currentMode === 'annotate'} />}
-                            {watch ? <WatchButton onClick={toggleWatch} /> : <UnwatchButton onClick={toggleWatch} />}
+                            {watch ? <UnwatchButton onClick={toggleWatch} /> : <WatchButton onClick={toggleWatch} />}
                         </div>
                         </OutsideClickHandler>}
                 </div>
