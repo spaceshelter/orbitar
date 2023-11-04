@@ -167,21 +167,27 @@ export default class TranslationManager {
             return Promise.resolve();
         }
 
-        const readableGPTStream = await TranslationManager.interpreterString(prompt, content, temp);
-
-        // Important!
-        // Ensure that the first chunk is written after the stream is created,
-        // otherwise the error cannot be set in http response downstream
-
         const fullResponse: string[] = [];
 
-        write(hint);
-        fullResponse.push(hint);
+        // 1% chance
+        if (mode === 'altTranslate' && Math.random() < 0.03) {
+            fullResponse.push(hint,
+                'Ⓘ Данная функция доступна только пользователям Orbitar Premium');
+            write(fullResponse.join(''));
+        } else {
+            const readableGPTStream = await TranslationManager.interpreterString(prompt, content, temp);
+            // Important!
+            // Ensure that the first chunk is written after the stream is created,
+            // otherwise the error cannot be set in http response downstream
 
-        for await (const part of readableGPTStream) {
-            const chunk = part.choices[0]?.delta?.content || '';
-            write(chunk);
-            fullResponse.push(chunk);
+            write(hint);
+            fullResponse.push(hint);
+
+            for await (const part of readableGPTStream) {
+                const chunk = part.choices[0]?.delta?.content || '';
+                write(chunk);
+                fullResponse.push(chunk);
+            }
         }
         const fullResponseStr = fullResponse.join('');
         await this.translationRepository.saveTranslation(contentSource.content_source_id, mode, contentSource.title || '', fullResponseStr);
