@@ -163,7 +163,7 @@ export default class TranslationManager {
 
         // if parsingResult without html tags and whitespace is too short, don't do anything
         if (stripHtml(parsingResult).result.trim().length < 6) {
-            write(parsingResult);
+            // return empty response
             return Promise.resolve();
         }
 
@@ -175,16 +175,8 @@ export default class TranslationManager {
 
         const fullResponse: string[] = [];
 
-        if (mode === 'annotate') {
-            fullResponse.push(parsingResult);
-            fullResponse.push('<br />');
-            fullResponse.push('<br />');
-        }
+        write(hint);
         fullResponse.push(hint);
-
-        for (const chunk of fullResponse) {
-            write(chunk);
-        }
 
         for await (const part of readableGPTStream) {
             const chunk = part.choices[0]?.delta?.content || '';
