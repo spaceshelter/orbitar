@@ -25,19 +25,10 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
 
     const altTitle = currentMode === 'translate' && cachedTitleTranslation ? xssFilter(cachedTitleTranslation) : undefined;
 
-    const mergeAnnotation = (cachedAnnotation?: string, streamingAnnotation?: string | null): string | undefined => {
-        const annotation = cachedAnnotation || streamingAnnotation;
-        if(annotation){
-            return originalContent + '<br/><br/>' + annotation;
-        }
-        return undefined;
-    };
-
     const altContent = (currentMode === 'translate' && cachedContentTranslation) ||
-        (currentMode === 'altTranslate' && mergeAnnotation(cachedAltTranslation, streamingAltTranslation)) ||
-        (currentMode === 'annotate' && mergeAnnotation(cachedAnnotation, streamingAnnotation)) ||
+        (currentMode === 'altTranslate' && mergeContent(cachedAltTranslation, streamingAltTranslation)) ||
+        (currentMode === 'annotate' && mergeContent(cachedAnnotation, streamingAnnotation)) ||
         undefined;
-
 
     const translate = () => {
         getAlternative('translate', currentMode, setCurrentMode, cachedContentTranslation, undefined, async () => {
@@ -143,4 +134,12 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
     }, [currentMode]);
 
     return {contentRef, currentMode, inProgress, altTitle, altContent, translate, annotate, altTranslate};
+}
+
+function mergeContent(cachedAnnotation: string | undefined, streamingAnnotation: string | undefined | null): string | undefined {
+    const annotation = cachedAnnotation || streamingAnnotation;
+    if (annotation) {
+        return annotation;
+    }
+    return undefined;
 }
