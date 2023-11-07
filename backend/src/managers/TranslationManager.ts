@@ -15,7 +15,7 @@ const openai = new OpenAI({
     apiKey: config.openai.apiKey
 });
 
-const TEXT_SIZE_LIMIT = 2048;
+const TEXT_SIZE_LIMIT = 4096;
 
 export const TRANSLATION_MODES = ['altTranslate', 'annotate'] as const;
 export type TranslationMode = typeof TRANSLATION_MODES[number];
