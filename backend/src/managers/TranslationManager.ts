@@ -122,7 +122,7 @@ export default class TranslationManager {
 
         return openai.chat.completions.create({
             messages : messages,
-            model: 'gpt-3.5-turbo',
+            model: 'gpt-4-1106-preview',
             stream: true,
             temperature: temperature,
         });
