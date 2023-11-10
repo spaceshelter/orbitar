@@ -45,6 +45,7 @@
     "use-debounce": "^8.0.4",
     "use-local-storage": "^3.0.0",
     "webfonts-loader": "^7.5.2",
+    "@daotl/cryptico": "^2.0.3",
     "xss": "^1.0.14"
   },
   "devDependencies": {

@@ -46,6 +46,8 @@ export default class TheParser {
             spoiler: (node) => this.parseSpoiler(node),
             expand: (node) => this.parseExpand(node),
             video: (node) => this.parseVideo(node),
+            mailbox: (node) => this.parseSecretMailbox(node),
+            mail: (node) => this.parseSecretMail(node),
             blockquote: true,
             b: true,
             i: true,
@@ -374,6 +376,30 @@ export default class TheParser {
         }
 
         return { text: `<img src="${encodeURI(url)}" alt=""/>`, mentions: [], urls: [], images: [url] };
+    }
+
+    parseSecretMailbox(node: Element): ParseResult {
+        // retain secret attribute and content
+        const secret = node.attribs['secret'];
+        if (!secret) {
+            return this.parseDisallowedTag(node);
+        }
+        const result = this.parseChildNodes(node.children);
+
+        const text =  `<span class="i i-mailbox-secure secret-mailbox" data-secret="${secret}">${result.text}</span>`;
+        return { ...result, text };
+    }
+
+    parseSecretMail(node: Element): ParseResult {
+        // retain secret attribute and content
+        const secret = node.attribs['secret'];
+        if (!secret) {
+            return this.parseDisallowedTag(node);
+        }
+        const result = this.parseChildNodes(node.children);
+
+        const text =  `<span class="i i-mail-secure secret-mail" data-secret="${secret}">${result.text}</span>`;
+        return { ...result, text };
     }
 
     parseVideo(node: Element): ParseResult {

@@ -10,6 +10,7 @@ import {ReactComponent as ExpandIcon} from '../Assets/expand.svg';
 import {ReactComponent as LinkIcon} from '../Assets/link.svg';
 import {ReactComponent as QuoteIcon} from '../Assets/quote.svg';
 import {ReactComponent as SendIcon} from '../Assets/send.svg';
+import {ReactComponent as MailboxIcon} from '../Assets/mailbox-secure.svg';
 import ContentComponent from './ContentComponent';
 import classNames from 'classnames';
 import MediaUploader from './MediaUploader';
@@ -25,6 +26,7 @@ import ReactTextareaAutocomplete from '@webscopeio/react-textarea-autocomplete';
 import TextareaAutosize from 'react-textarea-autosize';
 import debouncePromise from 'debounce-promise';
 import {useHotkeys} from 'react-hotkeys-hook';
+import {EnigmaKeyGenerator} from './Enigma';
 
 interface CreateCommentProps {
     open: boolean;
@@ -96,11 +98,13 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     const [mediaUploaderOpen, setMediaUploaderOpen] = useState(false);
     const [mediaUploaderData, setMediaUploaderData] = useState<File | undefined>();
     const containerRef = useHotkeys<HTMLDivElement>(allowedKeys.join(','), (e ) => handleHotKey(e), {enableOnFormTags: ['TEXTAREA'], preventDefault: true});
+    const [enigmaOpen, setEnigmaOpen] = useState(false);
     const api = useAPI();
+    const {userInfo} = useAppState();
 
     const pronoun = props?.comment?.author?.gender === UserGender.he ? 'ему' : props?.comment?.author?.gender===UserGender.she ? 'ей' : '';
     const placeholderText = props.comment ? `Ваш ответ ${pronoun}` : '';
-    const disabledButtons = isPosting || previewing !== null;
+    const disabledButtons = isPosting || previewing !== null || enigmaOpen;
 
     const setStorageValueDebounced = useDebouncedCallback((value) => {
         if (props.storageKey) {
@@ -348,6 +352,15 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         }
     };
 
+    const handleEnigma = (key: string) => {
+        setEnigmaOpen(false);
+        const text = `<mailbox secret="${key}">Сикретни почтовый ящик @${userInfo?.username}</mailbox>`;
+        replaceText(text, text.length);
+    };
+    const handleEnigmaCancel = () => {
+        setEnigmaOpen(false);
+    };
+
     if (!props.open) {
         return <></>;
     }
@@ -379,6 +392,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('blockquote')} title="Цитировать"><QuoteIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('img')} title="Вставить картинку/видео"><ImageIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('a')} title="Вставить ссылку"><LinkIcon /></button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => setEnigmaOpen(true)} title="Секретный почтовый ящик"><MailboxIcon /></button></div>
             </div>
             {
                 (previewing === null)
@@ -413,6 +427,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 <button disabled={isPosting || !answerText} className={styles.buttonPreview} onClick={handlePreview}>{(previewing === null) ? 'Превью' : 'Редактор'}</button>
                 <button disabled={isPosting || !answerText} className={styles.buttonSend} onClick={handleAnswer}><SendIcon /></button>
                 {mediaUploaderOpen && <MediaUploader onSuccess={handleMediaUpload} onCancel={handleMediaUploadCancel} mediaData={mediaUploaderData}/>}
+                {enigmaOpen && <EnigmaKeyGenerator onSuccess={handleEnigma} onCancel={handleEnigmaCancel} />}
             </div>
         </div>
     );

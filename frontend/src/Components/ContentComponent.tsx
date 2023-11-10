@@ -7,6 +7,7 @@ import type * as Vimeo from '@vimeo/player';
 import {getLegacyZoom, getVideoAutopause} from './UserProfileSettings';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import {useHotkeys} from 'react-hotkeys-hook';
+import {EnigmaEncoderForm, EnigmaSecret} from './Enigma';
 
 interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
     content: string;
@@ -33,7 +34,23 @@ type ZoomedImg = {
     height: number;
 };
 
-function updateContent(div: HTMLDivElement, setZoomedImg: (img: ZoomedImg | null) => void) {
+type MailboxKey = {
+    type: 'mailbox';
+    forUsername?: string;
+    openKey: string;
+};
+
+type MailKey = {
+    type: 'mail';
+    secret: string;
+    title: string;
+};
+
+function updateContent(
+    div: HTMLDivElement,
+    setZoomedImg: (img: ZoomedImg | null) => void,
+    setMailboxKey: (key: MailboxKey | MailKey | null) => void
+) {
     div.querySelectorAll('img').forEach(img => {
         if (img.complete) {
             updateImg(img, setZoomedImg);
@@ -55,6 +72,53 @@ function updateContent(div: HTMLDivElement, setZoomedImg: (img: ZoomedImg | null
 
     div.querySelectorAll('details.expand').forEach(expand => {
         updateExpand(expand as HTMLDetailsElement);
+    });
+
+    div.querySelectorAll('span.secret-mailbox').forEach(mailbox => {
+        updateMailbox(mailbox as HTMLSpanElement, setMailboxKey);
+    });
+
+    div.querySelectorAll('span.secret-mail').forEach(mail => {
+        updateMail(mail as HTMLSpanElement, setMailboxKey);
+    });
+}
+
+function updateMailbox(mailbox: HTMLSpanElement,
+                          setMailboxKey: (key: MailboxKey | null) => void
+                       ) {
+    const secret = mailbox.dataset.secret;
+    if (!secret) {
+        return;
+    }
+    // try to find username as the text in in a.mention
+    const mention = mailbox.querySelector('a.mention');
+    const username = mention?.textContent?.trim();
+
+    mailbox.addEventListener('click', () => {
+        setMailboxKey({
+            type: 'mailbox',
+            openKey: secret,
+            forUsername: username,
+        });
+    });
+}
+
+function updateMail(mail: HTMLSpanElement,
+                    setMailboxKey: (key: MailKey | null) => void
+) {
+    const secret = mail.dataset.secret;
+    if (!secret) {
+        return;
+    }
+    // just the text
+    const title = mail.innerText.trim();
+
+    mail.addEventListener('click', () => {
+        setMailboxKey({
+            type: 'mail',
+            secret: secret,
+            title: title,
+        });
     });
 }
 
@@ -348,6 +412,7 @@ export default function ContentComponent(props: ContentComponentProps) {
     const contentDiv = useRef<HTMLDivElement>(null);
     const [cut, setCut] = useState(false);
     const [zoomedImg, setZoomedImg] = useState<ZoomedImg | null>(null);
+    const [mailboxKey, setMailboxKey] = useState<MailboxKey | MailKey | null>(null);
 
     const checkAutoCut = (content: HTMLElement) => {
         if (props.autoCut) {
@@ -366,7 +431,7 @@ export default function ContentComponent(props: ContentComponentProps) {
             return;
         }
 
-        updateContent(content, setZoomedImg);
+        updateContent(content, setZoomedImg, setMailboxKey);
         let resizeObserver: ResizeObserver | null = null;
 
         if (props.lowRating) {
@@ -425,6 +490,10 @@ export default function ContentComponent(props: ContentComponentProps) {
                  dangerouslySetInnerHTML={{__html: props.content}} ref={contentDiv} />
             {cut && <div className={styles.cutCover}><button className={styles.cutButton} onClick={handleCut}>Читать дальше</button></div>}
             {zoomedImg &&  <ZoomComponent {...zoomedImg} onExit={() => setZoomedImg(null)} />}
+            {mailboxKey &&
+                (mailboxKey.type === 'mailbox' && <EnigmaEncoderForm {...mailboxKey} onClose={() => setMailboxKey(null)} /> ||
+                mailboxKey.type === 'mail' && <EnigmaSecret {...mailboxKey} onClose={() => setMailboxKey(null)} />)
+            }
         </>
     );
 }
