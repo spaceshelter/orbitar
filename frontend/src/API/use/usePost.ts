@@ -3,12 +3,14 @@ import {useEffect, useMemo, useRef, useState} from 'react';
 import {useAppState} from '../../AppState/AppState';
 import {SiteInfo} from '../../Types/SiteInfo';
 import {useCache} from './useCache';
+import {UserInfo} from '../../Types/UserInfo';
 
 type UsePost = {
     site?: SiteInfo;
     post?: PostInfo;
     comments?: CommentInfo[];
     error?: string;
+    anonymousUser?: UserInfo;
 
     postComment(comment: string, answerToCommentId?: number): Promise<CommentInfo>;
     editComment(comment: string, commentId: number): Promise<CommentInfo>;
@@ -33,6 +35,7 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
 
     const [post, setPost] = useState<PostInfo>();
     const [site, setSite] = useState<SiteInfo>();
+    const [anonymousUser, setAnonymousUser] = useState<UserInfo|undefined>();
     const [cachedComments, setCachedComments] = useCache<CommentInfo[]>('post', [siteName, postId, !!showUnreadOnly]);
     const [rawComments, setRawComments] = useState<CommentInfo[] | undefined>(cachedComments);
     const filteredComments: CommentInfo[] | undefined = cachedComments ? filterComments(cachedComments, !!showUnreadOnly) : undefined;
@@ -151,6 +154,7 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
                 .then(result => {
                     setPost(result.post);
                     setSite(result.site);
+                    setAnonymousUser(result.anonymousUser);
                     setCachedComments(result.comments);
                     setRawComments(result.comments);
 
@@ -202,7 +206,7 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
         reload(showUnreadOnly || false);
     }, [siteName, postId, showUnreadOnly, api, rawComments, prev, reload]);
 
-    return { site, post, comments, error, postComment, editComment, editPost, setVote, setCommentVote, reload, updatePost };
+    return { site, post, comments, error, anonymousUser, postComment, editComment, editPost, setVote, setCommentVote, reload, updatePost };
 }
 
 function findComment(comments: CommentInfo[], commentId: number): CommentInfo | undefined {

@@ -1,9 +1,9 @@
+import {TranslationMode} from '../../../managers/TranslationManager';
+
 export type TranslateRequest = {
     id: number;
     type: 'post' | 'comment';
+    mode: TranslationMode;
 };
 
-export type TranslateResponse = {
-    title: string;
-    html: string;
-};
+export type TranslateResponse = string;

@@ -17,6 +17,14 @@ on:
         description: 'Restore DB?'
         type: boolean
         default: false
+      manual-sql:
+        description: 'SQL intervention file path'
+        type: string
+        default: ''
+      reindex-elastic:
+        description: 'Reindex elasticsearch?'
+        type: boolean
+        default: false
       flush-redis:
         description: 'Clear redis?'
         type: boolean
@@ -47,8 +55,14 @@ jobs:
             if [ "${{ github.event.inputs.restore-db }}" = "true" ]; then
               echo "::warning::Restoring DB!"
             fi
+            if [ "${{ github.event.inputs.manual-sql }}" != "" ]; then
+              echo "::warning::SQL to be run: ${{ github.event.inputs.manual-sql }}"
+            fi
             if [ "${{ github.event.inputs.flush-redis }}" = "true" ]; then
               echo "::warning::Flushing redis!"
+            fi
+            if [ "${{ github.event.inputs.reindex-elastic }}" = "true" ]; then
+              echo "::warning::Reindexing elasticsearch!"
             fi
             if [ "${{ github.event.inputs.build-flag }}" != "None" ]; then
               echo "::notice::Build flag: ${{ github.event.inputs.build-flag }}"
@@ -72,11 +86,25 @@ jobs:
           echo "Update /opt/deployment-specific-files/.env on the host or .env.sample in your branch" &&\
           exit 1)
 
+      - name: Verify manual interventions
+        if: github.event.inputs.manual-sql != ''
+        run: |
+          if [ ! -r "${{ github.event.inputs.manual-sql }}" ]; then
+            echo "File ${{ github.event.inputs.manual-sql }} does not exist or is not readable"
+            exit 1
+          fi
+
       - name: Copy configuration
         run: |
           cp -f /opt/deployment-specific-files/chain.pem ./caddy/certs
           cp -f /opt/deployment-specific-files/priv.pem ./caddy/certs
           cp -f /opt/deployment-specific-files/.env ./
+          
+          # remove any FINGERPRINT= lines from .env
+          sed -i '/^FINGERPRINT=/d' .env
+          # add FINGERPRINT to .env
+          echo "FINGERPRINT=$(date +%s%N)$RANDOM" >> .env
+          
 
       - name: Build
         env:
@@ -123,6 +151,30 @@ jobs:
             -u root --password=$MYSQL_ROOT_PASSWORD --default-character-set=utf8mb4 \
             < ${{ steps.get-db.outputs.db-dump-file }}
 
+      - name: Run manual SQL interventions
+        working-directory: /orbitar
+        if: github.event.inputs.manual-sql != ''
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+        run: |
+          set -ex
+          docker-compose -f docker-compose.ssl.local.yml stop backend
+          docker-compose -f docker-compose.ssl.local.yml up -d mysql --wait
+          
+          docker-compose -f docker-compose.ssl.local.yml exec -T mysql /usr/bin/mysql \
+            -u root --password=$MYSQL_ROOT_PASSWORD --default-character-set=utf8mb4 orbitar_db \
+            < ${{ github.event.inputs.manual-sql }}
+
+      - name: Reindex ElasticSearch
+        if: github.event.inputs.reindex-elastic == 'true'
+        working-directory: /orbitar
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+        run: |
+          docker-compose -f docker-compose.ssl.local.yml up -d mysql --wait
+          echo "update orbitar_db.content_source set indexed = 0;" | \
+            docker-compose -f docker-compose.ssl.local.yml exec -T mysql /usr/bin/mysql -u root --password=$MYSQL_ROOT_PASSWORD
+
       - name: Flush redis
         if: github.event.inputs.flush-redis == 'true'
         working-directory: /orbitar
@@ -136,3 +188,17 @@ jobs:
       - name: Deploy
         working-directory: /orbitar
         run: docker-compose -f docker-compose.ssl.local.yml up -d
+
+      - name: Purge Cloudflare Cache
+        env:
+            CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE }}
+            CLOUDFLARE_BEARER_TOKEN: ${{ secrets.CLOUDFLARE_BEARER_TOKEN }}
+        if: env.CLOUDFLARE_ZONE != '' && env.CLOUDFLARE_BEARER_TOKEN != ''
+        run: |
+          curl --request POST \
+            --url https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_ZONE }}/purge_cache \
+            --header 'Content-Type: application/json' \
+            --header 'Authorization: Bearer ${{ secrets.CLOUDFLARE_BEARER_TOKEN }}' \
+            --data '{
+            "purge_everything": true
+          }'

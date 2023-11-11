@@ -17,6 +17,8 @@ import styles from './App.module.css';
 import './index.scss';
 import 'react-toastify/dist/ReactToastify.css';
 import {ReactComponent as MonsterIcon} from './Assets/monster_large.svg';
+import {ReactComponent as MonsterIconNy} from './Assets/monster_large_ny.svg';
+import {ReactComponent as SpoilerMask} from './Assets/spoiler-mask.svg';
 import {useTheme} from './Theme/ThemeProvider';
 import {SiteSidebar} from './Components/SiteSidebar';
 import WatchPage from './Pages/WatchPage';
@@ -26,6 +28,9 @@ import {SitesPage} from './Pages/SitesPage';
 import {SitesCreatePage} from './Pages/SitesCreatePage';
 import KarmaCalculatorPage from './Pages/KarmaCalculatorPage';
 import ResetPasswordPage from './Pages/ResetPasswordPage';
+import SearchPage from './Pages/SearchPage';
+import classNames from 'classnames';
+import {ForcedReload} from './Components/ForcedReload';
 
 export const App = observer(() => {
     const {appLoadingState} = useAppState();
@@ -84,6 +89,11 @@ const ReadyContainer = observer(() => {
         }
     };
 
+    // New Year holidays: from 26 Dec to 7 Jan
+    const isNewYear =
+        new Date().getMonth() === 11 && new Date().getDate() >= 26 ||
+        new Date().getMonth() === 0 && new Date().getDate() <= 7;
+
     return (
         <>
             <Topbar menuState={menuState} onMenuToggle={handleMenuToggle} />
@@ -93,11 +103,16 @@ const ReadyContainer = observer(() => {
             />
             <div className={styles.container}>
                 <div className={styles.innerContainer}>
-                    <Outlet />
+                    <ForcedReload>
+                        <Outlet />
+                    </ForcedReload>
                 </div>
             </div>
-            <div className={styles.monster}><MonsterIcon /></div>
+
+            {isNewYear && <div className={classNames(styles.monster, styles.monsterNy)}><MonsterIconNy /></div>}
+            {!isNewYear && <div className={styles.monster}><MonsterIcon /></div>}
             <ToastContainer theme={theme as Theme} />
+            <SpoilerMask/>
         </>
     );
 });
@@ -117,6 +132,7 @@ const Ready = observer(() => {
                     <Route path="u/:username">
                         <Route path="" element={<UserPage />} />
                         <Route path=":page" element={<UserPage />} />
+                        <Route path="settings" element={<MonsterIcon />} />
                     </Route>
                     <Route path="profile">
                         <Route path="" element={<UserPage />} />
@@ -129,6 +145,7 @@ const Ready = observer(() => {
                     <Route path="sites/create" element={<SitesCreatePage />} />
                     <Route path="theme" element={<ThemePreviewPage />} />
                     <Route path="karma" element={<KarmaCalculatorPage />} />
+                    <Route path="search" element={<SearchPage />} />
 
                     <Route path="s/:site">
                         <Route path="" element={<FeedPage />} />

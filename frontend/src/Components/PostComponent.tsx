@@ -5,9 +5,8 @@ import {PostInfo} from '../Types/PostInfo';
 import ContentComponent from './ContentComponent';
 import {ReactComponent as CommentsIcon} from '../Assets/comments.svg';
 import {ReactComponent as OptionsIcon} from '../Assets/options.svg';
-import {ReactComponent as WatchIcon} from '../Assets/watch.svg';
-import {ReactComponent as UnwatchIcon} from '../Assets/unwatch.svg';
 import {ReactComponent as EditIcon} from '../Assets/edit.svg';
+import OutsideClickHandler from 'react-outside-click-handler';
 
 import PostLink from './PostLink';
 import {useAPI} from '../AppState/AppState';
@@ -16,17 +15,20 @@ import CreateCommentComponent from './CreateCommentComponent';
 import { HistoryComponent } from './HistoryComponent';
 import {SignatureComponent} from './SignatureComponent';
 import Conf from '../Conf';
-
-const defaultLanguage = process.env.DEFAULT_LANGUAGE || 'ru';
+import {useInterpreter} from '../API/use/useInterpreter';
+import {AltTranslateButton, AnnotateButton, TranslateButton, UnwatchButton, WatchButton} from './ContentButtons';
 
 interface PostComponentProps {
     post: PostInfo;
     showSite?: boolean;
     buttons?: React.ReactNode;
     onChange?: (id: number, post: Partial<PostInfo>) => void;
-    autoCut?: boolean;
+    autoCut?: number;
     onEdit?: (post: PostInfo, text: string, title?: string) => Promise<PostInfo | undefined>;
+    dangerousHtmlTitle?: boolean;
+    hideRating?: boolean;
 }
+
 
 export default function PostComponent(props: PostComponentProps) {
     const api = useAPI();
@@ -34,7 +36,9 @@ export default function PostComponent(props: PostComponentProps) {
     const [editingText, setEditingText] = useState<false | string>(false);
     const [editingTitle, setEditingTitle] = useState<string>(props.post.title || '');
     const [showHistory, setShowHistory] = useState(false);
-    const [translation, setTranslation] = useState<{title: string, html: string} | false | undefined>(undefined);
+    const {currentMode, altTitle, altContent, inProgress,
+        contentRef, translate, annotate, altTranslate, calcShowAltTranslate, calcShowAnnotate
+    } = useInterpreter(props.post.content, props.post.title, props.post.id, 'post');
 
     const handleVote = useMemo(() => {
         return (value: number, vote?: number) => {
@@ -48,11 +52,11 @@ export default function PostComponent(props: PostComponentProps) {
                 });
             }
         };
-    }, [props.post]);
+    }, [props]);
 
     const { id, created, site, author, vote, rating, watch } = props.post;
-    const title = translation ? translation.title : props.post.title;
-    const content = translation ? translation.html : props.post.content;
+    const title = altTitle || props.post.title;
+    const content = altContent || props.post.content;
 
     const toggleOptions = () => {
         setShowOptions(!showOptions);
@@ -74,20 +78,6 @@ export default function PostComponent(props: PostComponentProps) {
             });
 
         setShowOptions(false);
-    };
-
-    const translate = () => {
-        if (translation) {
-            setTranslation(undefined);
-        } else {
-            setTranslation(false);
-            api.postAPI.translate(id, 'post')
-                .then(res => setTranslation(res))
-                .catch(() => {
-                    setTranslation(undefined);
-                    toast.error('Не удалось перевести');
-                });
-        }
     };
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -141,8 +131,11 @@ export default function PostComponent(props: PostComponentProps) {
         setShowHistory(!showHistory);
     };
 
+    const altMode = currentMode !== undefined || inProgress;
+    const autoCut = altMode ? undefined : props.autoCut;
+
     return (
-        <div className={styles.post}>
+        <div className={'postComponent ' + styles.post} ref={contentRef}>
             <div className={styles.header}>
                 <SignatureComponent showSite={props.showSite} site={site} author={author} onHistoryClick={toggleHistory} postLink={props.post} date={created} editFlag={props.post.editFlag} />
                 <div className={styles.contentContainer}>
@@ -150,9 +143,13 @@ export default function PostComponent(props: PostComponentProps) {
                         (showHistory
                             ? <HistoryComponent initial={{ title, content, date: created }} history={{ id: props.post.id, type: 'post' }} onClose={toggleHistory} />
                             : <>
-                                    {title && <div className={styles.title}><PostLink post={props.post}>{title}</PostLink></div>}
+                                    {title && <div className={styles.title}><PostLink post={props.post}>{
+                                        props.dangerousHtmlTitle ? <span dangerouslySetInnerHTML={{__html: title}} /> : title
+                                    }</PostLink></div>}
                                     <div className={styles.content}>
-                                        <ContentComponent className={styles.content} content={content} autoCut={props.autoCut} lowRating={rating <= Conf.POST_LOW_RATING_THRESHOLD} />
+                                        <ContentComponent className={styles.content} content={content}
+                                                          autoCut={autoCut}
+                                                          lowRating={rating <= Conf.POST_LOW_RATING_THRESHOLD || props.post.vote === -1} />
                                     </div>
                                 </>
                         )
@@ -166,21 +163,38 @@ export default function PostComponent(props: PostComponentProps) {
                 </div>
             </div>
             <div className={styles.controls}>
-                <div className={styles.control}>
+                {!props.hideRating && <div className={styles.control}>
                     <RatingSwitch type='post' id={id} rating={{ vote, value: rating }} onVote={handleVote} />
-                </div>
+                </div>}
                 <div className={styles.control}><CommentsCount post={props.post} /></div>
                 {/*<div className={styles.control}><button disabled={true} onClick={toggleBookmark} className={bookmark ? styles.active : ''}><BookmarkIcon /><span className={styles.label}></span></button></div>*/}
                 {props.post.canEdit && props.onEdit && <div className={styles.control}><button onClick={handleEdit}><EditIcon /></button></div>}
-                {props.post.language && props.post.language !== defaultLanguage && <div className={styles.control}><button
-                    disabled={translation === false} onClick={translate} className={`i i-translate ${styles.translate}`}/></div>}
                 <div className={styles.control + ' ' + styles.options}>
-                    <button onClick={toggleOptions} className={showOptions ? styles.active : ''}><OptionsIcon /></button>
+                    {currentMode === 'translate' &&
+                        <div className={styles.control}>
+                            <TranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={translate}/>
+                        </div>}
+                    {currentMode === 'altTranslate' &&
+                        <div className={styles.control}>
+                            <AltTranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={altTranslate}/>
+                        </div>}
+                    {currentMode === 'annotate' &&
+                        <div className={styles.control}>
+                            <AnnotateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={annotate} />
+                        </div>}
+
+                    <button onClick={toggleOptions} className={styles.options + ' ' + (showOptions ? styles.active : '')}><OptionsIcon /></button>
                     {showOptions &&
+                        <OutsideClickHandler onOutsideClick={() => setShowOptions(false)}>
                         <div className={styles.optionsList}>
-                            <div><button className={styles.control} onClick={toggleWatch}>{watch ?<><UnwatchIcon /><div className={styles.label}>не отслеживать</div></> : <><WatchIcon /><div className={styles.label}>отслеживать</div></>}</button></div>
+                            <TranslateButton className={styles.control} inProgress={inProgress} onClick={() => {setShowOptions(false);translate();}} isActive={currentMode === 'translate'} />
+                            {calcShowAltTranslate() &&
+                                <AltTranslateButton className={styles.control} inProgress={inProgress} onClick={() => {setShowOptions(false);altTranslate();}} isActive={currentMode === 'altTranslate'}/>}
+                            {calcShowAnnotate() &&
+                                <AnnotateButton className={styles.control} inProgress={inProgress} onClick={() => {setShowOptions(false);annotate();}} isActive={currentMode === 'annotate'} />}
+                            {watch ? <UnwatchButton onClick={toggleWatch} /> : <WatchButton onClick={toggleWatch} />}
                         </div>
-                    }
+                        </OutsideClickHandler>}
                 </div>
             </div>
             {props.buttons}

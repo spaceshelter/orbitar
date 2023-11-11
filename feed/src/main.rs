@@ -1,5 +1,6 @@
 #![feature(test)]
 #[macro_use]
+#[allow(unused_imports)]
 extern crate test;
 
 #[macro_use]

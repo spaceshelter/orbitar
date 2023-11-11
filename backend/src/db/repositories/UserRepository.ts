@@ -25,7 +25,16 @@ export default class UserRepository {
     }
 
     async getUserByUsername(username: string): Promise<UserRaw | undefined> {
-        return await this.db.fetchOne<UserRaw>('select * from users where username=:username', {username: username});
+        return await this.db.fetchOne<UserRaw>(
+            `select *
+             from users
+             where username = :username`, {username: username});
+    }
+
+    async getPasswordHashByUserId(userId: number): Promise<string | undefined> {
+        const result = await this.db.fetchOne<{ password: string }>(
+            'select password from users where user_id=:user_id', {user_id: userId});
+        return result?.password;
     }
 
     // TODO: need to decide if we want to encrypt email addresses
@@ -145,7 +154,7 @@ export default class UserRepository {
         return await this.db.fetchAll<{ user_id: number }>('select user_id from user_sites where site_id=:site_id and feed_main=1', { site_id: siteId });
     }
 
-    async getUserUnreadComments(forUserId: number): Promise<number> {
+    async getUserUnreadComments(forUserId: number, ownOnly = false): Promise<number> {
         const res = await this.db.fetchOne<{ cnt: string }>(`
           select sum(p.comments - ub.read_comments) cnt
             from
@@ -154,6 +163,7 @@ export default class UserRepository {
             where
               ub.user_id = :user_id
               and watch = 1
+              ${ownOnly ? 'and p.author_id = :user_id' : ''}
         `, {
             user_id: forUserId
         });
@@ -184,6 +194,16 @@ export default class UserRepository {
         return this.db.query(`
             insert ignore into activity_db.user_activity (user_id, visited_at) values (:user_id, :visited_at)
         `, {user_id: userId, visited_at: dateToInsert});
+    }
+
+    getLastActiveUsers(): Promise<UserRaw[]> {
+        return this.db.fetchAll(`
+            select * from users
+            where user_id in (select distinct user_id
+                              from activity_db.user_activity
+                              where visited_at > subdate(now(), interval 30 day)
+                              ) limit 1000
+        `);
     }
 
     /**
@@ -226,5 +246,38 @@ export default class UserRepository {
             return FeedSorting.postCommentedAt;
         }
         return res.feed_sorting as FeedSorting;
+    }
+
+    async saveBio(bio: string, bioHtml: string, userId: number): Promise<boolean> {
+        return this.db.query(`update users set bio_source = :bio, bio_html = :bio_html where user_id = :user_id`, {
+            user_id: userId,
+            bio: bio,
+            bio_html: bioHtml
+        });
+    }
+
+    async saveName(name: string, userId: number): Promise<boolean> {
+        return this.db.query(`update users set name = :name where user_id = :user_id`, {
+            user_id: userId,
+            name: name
+        });
+    }
+
+    async saveGender(gender: UserGender, userId: number): Promise<boolean> {
+        return this.db.query(`update users set gender = :gender where user_id = :user_id`, {
+            user_id: userId,
+            gender
+        });
+    }
+
+    async getUsernames(offset: number): Promise<{username: string}[]> {
+        return await this.db.fetchAll<{username: string}>(
+            `select username from users order by username limit 1000 offset :offset`,
+            { offset }
+        );
+    }
+
+    async dropPassword(userId: number) {
+        return this.db.query(`update users set password = '' where user_id = :user_id`, {user_id: userId});
     }
 }

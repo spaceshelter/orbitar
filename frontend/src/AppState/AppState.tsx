@@ -28,6 +28,18 @@ type AppStateContextState = {
     appState: AppState;
 };
 
+// Define the type
+class FingerprintHash {
+    @observable
+    base: string | undefined = undefined;
+
+    @observable
+    current: string | undefined = undefined;
+
+    constructor() {
+        makeObservable(this);
+    }
+}
 export class AppState {
     @observable
     appLoadingState = AppLoadingState.loading;
@@ -39,13 +51,22 @@ export class AppState {
     userRestrictions: UserRestrictionsResponse | undefined;
 
     @observable
-    notificationsCount = 0;
+    unreadNotificationsCount = 0;
+
+    @observable
+    visibleNotificationsCount = 0;
 
     @observable
     watchCommentsCount = 0;
 
     @observable.struct
-    subscriptions: SiteWithUserInfo[] = [];
+    subscriptions: SiteWithUserInfo[] | undefined = undefined;
+
+    @observable
+    fingerprintHash = new FingerprintHash();
+
+    @observable
+    reloadCounter = 0;
 
     browserHistory = createBrowserHistory();
     router = new RouterStore(this.browserHistory);
@@ -102,13 +123,35 @@ export class AppState {
     }
 
     @action
-    setNotificationsCount(value: number) {
-        this.notificationsCount = value;
+    setUnreadNotificationsCount(value: number) {
+        this.unreadNotificationsCount = value;
+    }
+    @action
+    setVisibleNotificationsCount(value: number) {
+        this.visibleNotificationsCount = value;
     }
 
     @action
     setSiteInfo(value: SiteWithUserInfo | undefined) {
         value && this.cache.setSite(value);
+    }
+
+    @action
+    forceReload() {
+        this.reloadCounter++;
+    }
+
+    @action
+    setLatestHash(hash: string) {
+        if (this.fingerprintHash.base === undefined) {
+            this.fingerprintHash.base = hash;
+        }
+        this.fingerprintHash.current = hash;
+    }
+
+    @computed
+    get isUpdateAvailable() {
+        return this.fingerprintHash.base !== this.fingerprintHash.current && !!this.fingerprintHash.base;
     }
 }
 
@@ -125,7 +168,7 @@ export const AppStateProvider = (props: {children: ReactNode}) => {
             if (!link) {
                 return;
             }
-            if (appState.notificationsCount > 0) {
+            if (appState.unreadNotificationsCount > 0) {
                 link.href = '//' + process.env.REACT_APP_ROOT_DOMAIN + '/favicon-badge.png';
             }
             else {

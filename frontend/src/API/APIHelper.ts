@@ -14,6 +14,7 @@ import NotificationsAPI from './NotificationsAPI';
 import NotificationsAPIHelper from './NotificationsAPIHelper';
 import FeedAPI from './FeedAPI';
 import FeedAPIHelper from './FeedAPIHelper';
+import SearchApi from './SearchApi';
 
 export default class APIHelper {
     auth: AuthAPIHelper;
@@ -30,10 +31,11 @@ export default class APIHelper {
     notifications: NotificationsAPIHelper;
     feedAPI: FeedAPI;
     feed: FeedAPIHelper;
+    searchApi: SearchApi;
     private baseAPI: APIBase;
     private initRetryCount = 0;
     private appState: AppState;
-    private updateInterval: number = parseInt(process.env.REACT_APP_STATUS_UPDATE_INTERVAL || '60');
+    private updateInterval: number = parseInt(process.env.REACT_APP_STATUS_UPDATE_INTERVAL || '30');
 
     constructor(api: APIBase, appState: AppState) {
         this.baseAPI = api;
@@ -52,22 +54,14 @@ export default class APIHelper {
         this.notifications = new NotificationsAPIHelper(this.notificationsAPI, appState);
         this.feedAPI = new FeedAPI(api);
         this.feed = new FeedAPIHelper(this.feedAPI, appState);
+        this.searchApi = new SearchApi(api);
     }
 
     async init() {
         try {
             this.appState.appLoadingState = AppLoadingState.loading;
 
-            const status = await this.authAPI.status(this.appState.site);
-
-            this.appState.setUserInfo(status.user);
-            this.appState.setWatchCommentsCount(status.watch.comments);
-            this.appState.setNotificationsCount(status.notifications);
-            this.appState.setSubscriptions(status.subscriptions);
-            if (status.site) {
-                this.appState.setSiteInfo(status.site);
-            }
-            this.appState.setAppLoadingState(AppLoadingState.authorized);
+            await this.updateAppStatus();
 
             // start fetch status update
             setTimeout(() => {
@@ -103,18 +97,19 @@ export default class APIHelper {
         }
     }
 
+    private async updateAppStatus() {
+        const [status, fingerprint] = await this.authAPI.status();
+        this.appState.setUserInfo(status.user);
+        this.appState.setWatchCommentsCount(status.watch.comments);
+        this.appState.setUnreadNotificationsCount(status.notifications.unread);
+        this.appState.setVisibleNotificationsCount(status.notifications.visible);
+        this.appState.setAppLoadingState(AppLoadingState.authorized);
+        this.appState.setLatestHash(fingerprint || '');
+    }
+
     async fetchStatusUpdate() {
         try {
-            const status = await this.authAPI.status(this.appState.site);
-
-            this.appState.setUserInfo(status.user);
-            this.appState.setWatchCommentsCount(status.watch.comments);
-            this.appState.setNotificationsCount(status.notifications);
-            this.appState.setSubscriptions(status.subscriptions);
-            if (status.site) {
-                this.appState.setSiteInfo(status.site);
-            }
-            this.appState.setAppLoadingState(AppLoadingState.authorized);
+            await this.updateAppStatus();
         }
         finally {
             setTimeout(() => {

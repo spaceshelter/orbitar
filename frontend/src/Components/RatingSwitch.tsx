@@ -22,21 +22,30 @@ type VoteType = { vote: number, username: string };
 
 export default function RatingSwitch(props: RatingSwitchProps) {
     const api = useAPI();
-    const [state, setState] = useState({rating: props.rating.value, vote: props.rating.vote});
+    const [currentVote, setCurrentVote] = React.useState<number | undefined>(props.rating.vote);
+    const [currentRating, setCurrentRating] = React.useState<number>(props.rating.value);
     const [showPopup, setShowPopup] = useState(false);
     const ratingRef = useRef<HTMLDivElement>(null);
     const popupRef = useRef<HTMLDivElement>(null);
     const [votes, setVotes] = useState<VoteType[]>();
 
     useEffect(() => {
-        setState({rating: props.rating.value, vote: props.rating.vote});
+        setCurrentVote(props.rating.vote);
+        setCurrentRating(props.rating.value);
     }, [props]);
+
+    useEffect(() => {
+        if(!votes) {
+            return;
+        }
+        const rating = (votes || []).reduce((acc, item) => acc + item.vote, 0);
+        setCurrentRating(rating);
+    }, [votes]);
 
     useEffect(() => {
         if (!ratingRef.current || !popupRef.current) {
             return;
         }
-        const [popupEl, ratingEl] = [popupRef.current, ratingRef.current];
         if (!showPopup) {
             return;
         }
@@ -52,33 +61,24 @@ export default function RatingSwitch(props: RatingSwitchProps) {
                 });
         }
 
+        const [popupEl, ratingEl] = [popupRef.current, ratingRef.current];
+
         const rect = ratingEl.getBoundingClientRect();
-        const x = rect.x;
         const y = rect.y + document.documentElement.scrollTop || 0;
-        const [w, h] = [ratingEl.clientWidth, ratingEl.clientHeight];
-        const [pw, ph] = [popupEl.clientWidth, popupEl.clientHeight];
+        const rh = ratingEl.clientHeight;
+        const ph = popupEl.clientHeight;
 
-        let ny = y + h + 8;
-        if (ny + ph > document.documentElement.scrollHeight) {
-            ny = y - 8 - ph;
+        const isTotalHeightMoreThanPageHeight  = y + rh + ph > document.documentElement.scrollHeight;
+        if(isTotalHeightMoreThanPageHeight){
+            popupEl.style.bottom = '30px';
+        } else {
+            popupEl.style.top = '30px';
         }
-        let nx = x;
-        if (nx + 8 + pw > document.documentElement.scrollWidth) {
-            if (x+w+8>pw) {
-                nx = x + w - pw;
-            } else {
-                nx = 8;
-            }
-        }
-
-        popupEl.style.left = (nx) + 'px';
-        popupEl.style.top = (ny) + 'px';
 
         const clickHandler = (e: MouseEvent) => {
             e.stopPropagation();
             e.preventDefault();
-            setShowPopup(false);
-            setVotes(undefined);
+            hide();
             return false;
         };
         document.addEventListener('mousedown', clickHandler);
@@ -86,42 +86,46 @@ export default function RatingSwitch(props: RatingSwitchProps) {
             document.removeEventListener('mousedown', clickHandler);
         };
 
-    }, [showPopup, ratingRef, popupRef, votes, state.vote, props.id, props.type]);
+    }, [showPopup, ratingRef, popupRef, votes, currentVote, props.id, props.type, api.voteAPI]);
+
+    const hide = () => {
+        setShowPopup(false);
+        setVotes(undefined);
+    };
 
     const handleVote = (vote: number) => {
-        return (ev: React.MouseEvent) => {
+        return async (ev: React.MouseEvent) => {
             ev.stopPropagation();
             ev.preventDefault();
             // unfocus a button to space button will keep scrolling the page
             (document.activeElement as HTMLButtonElement).blur();
-            const prevState = { ...state };
-            if (state.vote === vote) {
+            const prevVote = currentVote;
+            const prevRating = currentRating;
+            if (currentVote === vote) {
                 vote = 0;
             }
 
-            const newRating = state.rating - (state.vote || 0) + vote;
-
-            setState({ vote: vote, rating: newRating});
+            const newRating = currentRating - (currentVote || 0) + vote;
+            setCurrentVote(vote);
+            setCurrentRating(newRating);
             if (props.onVote) {
-            props.onVote(newRating, vote, false);
+               props.onVote(newRating, vote, false);
             }
 
-            api.voteAPI.vote(props.type, props.id, vote)
-                .then(result => {
-                    setState({
-                        rating: result.rating,
-                        vote: result.vote
-                    });
+            try {
+                const result = await api.voteAPI.vote(props.type, props.id, vote);
+                setCurrentVote(result.vote);
+                setCurrentRating(result.rating);
 
-                    if (props.onVote) {
+                if (props.onVote) {
                     props.onVote(result.rating, result.vote, true);
-                    }
-                })
-                .catch(() => {
-                    setState(prevState);
-                    toast.warn('Голос не учтён 🤬', { position: 'bottom-right' });
-                });
-            };
+                }
+            } catch (exc) {
+                setCurrentVote(prevVote);
+                setCurrentRating(prevRating);
+                toast.warn('Голос не учтён 🤬', { position: 'bottom-right' });
+            }
+        };
     };
 
     const handleVoteList = (e: React.MouseEvent) => {
@@ -135,21 +139,21 @@ export default function RatingSwitch(props: RatingSwitchProps) {
     const minusStyles = ['i', 'i-rating_minus'];
     const plus2Styles = ['i', 'i-rating_plus'];
     const minus2Styles = ['i', 'i-rating_minus'];
-    if (state.vote && state.vote < 0) {
+    if (currentVote && currentVote < 0) {
         valueStyles.push(styles.minus);
         minusStyles.push(styles.minus);
         plusStyles.push(styles.dis);
         plus2Styles.push(styles.dis);
-        if (state.vote < -1) {
+        if (currentVote < -1) {
             minus2Styles.push(styles.minus);
         }
     }
-    else if (state.vote && state.vote > 0) {
+    else if (currentVote && currentVote > 0) {
         valueStyles.push(styles.plus);
         plusStyles.push(styles.plus);
         minusStyles.push(styles.dis);
         minus2Styles.push(styles.dis);
-        if (state.vote > 1) {
+        if (currentVote > 1) {
             plus2Styles.push(styles.plus);
         }
     }
@@ -160,16 +164,16 @@ export default function RatingSwitch(props: RatingSwitchProps) {
     };
 
     return (
-        <>
+        <div className={styles.ratingWrapper}>
             <div ref={ratingRef} className={styles.rating}>
                 {props.double && <button {...buttonExtraProps} className={minus2Styles.join(' ')} onClick={handleVote(-2)}></button>}
                 <button {...buttonExtraProps} className={minusStyles.join(' ')} onClick={handleVote(-1)}></button>
-                <div onClick={handleVoteList} className={valueStyles.join(' ')}>{state.rating}</div>
+                <div onClick={handleVoteList} className={valueStyles.join(' ')}>{currentRating}</div>
                 <button {...buttonExtraProps} className={plusStyles.join(' ')} onClick={handleVote(1)}></button>
                 {props.double && <button {...buttonExtraProps} className={plus2Styles.join(' ')} onClick={handleVote(2)}></button>}
             </div>
-            {showPopup && <RatingList ref={popupRef} vote={state.vote || 0} rating={state.rating} votes={votes}></RatingList>}
-        </>
+            {showPopup && <RatingList ref={popupRef} vote={currentVote || 0} rating={currentRating} votes={votes} hidePopup={hide}></RatingList>}
+        </div>
     );
 }
 
@@ -177,6 +181,7 @@ type RatingListProps = {
     rating: number;
     vote: number;
     votes?: VoteType[];
+    hidePopup: () => void
 };
 
 const RatingList = React.forwardRef((props: RatingListProps, ref: ForwardedRef<HTMLDivElement>) => {
@@ -215,6 +220,21 @@ const RatingList = React.forwardRef((props: RatingListProps, ref: ForwardedRef<H
         e.stopPropagation();
     };
 
+    function renderVotes(votes: VoteType[]) {
+        if(votes.length === 0) {
+            return <span className={styles.listEmpty}>Пусто. Совсем ничего.</span>;
+        }
+
+        return votes.map((v) => {
+            return (
+                <div key={v.username} onClick={props.hidePopup}>
+                    <Username className={styles.username} user={ {username: v.username} } />
+                    {v.vote > 0 ? `+${v.vote}`: v.vote}
+                </div>
+            );
+        });
+    }
+
     return (
         <div ref={ref} className={styles.list} onMouseDown={popupMouseDownHandler}>
             <div className={styles.listUp}>
@@ -230,10 +250,10 @@ const RatingList = React.forwardRef((props: RatingListProps, ref: ForwardedRef<H
                 <div className={styles.listScrollContainer}>
                     {voteList ? <>
                         <div className={styles.listMinus}>
-                            {voteList.votes[0].length > 0 ? voteList.votes[0].map((v) => <div key={v.username}><Username className={styles.username} user={ {username: v.username} } /> {v.vote}</div>) : 'пусто'}
+                            {renderVotes(voteList.votes[0])}
                         </div>
                         <div className={styles.listPlus}>
-                            {voteList.votes[1].length > 0 ? voteList.votes[1].map((v) => <div key={v.username}><Username className={styles.username} user={ {username: v.username} } /> +{v.vote}</div>) : 'пусто'}
+                            {renderVotes(voteList.votes[1])}
                         </div>
                     </>
                     : <>...</>}

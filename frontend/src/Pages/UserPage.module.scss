@@ -29,6 +29,7 @@
 }
 .active {
   padding-right: 20px;
+  pointer-events: none;
 }
 
 .active > span{
@@ -66,29 +67,20 @@
     font-size: 40px;
 }
 
-
 .name {
     font-size: 25px;
 }
 
-.logout{
+.userinfo .bio {
     margin-top: 80px;
-    background: var(--dim1);
-    color: var(--fgSoft);
-    border: none;
-    display: flex;
-    padding: 8px 16px;
-    border-radius: 4px;
-    font-weight: bold;
-    align-items: center;
-    gap: 8px;
-    fill: var(--fgSoft);
+    display: block;
 
-    &:hover{
-       fill: var(--fg);
-       color: var(--fg);
-       background: var(--dim3);
+    .controls {
+        margin-top: 20px;
     }
 
+    svg {
+        margin-left: 12px;
+        margin-right: 4px;
+    }
 }
-

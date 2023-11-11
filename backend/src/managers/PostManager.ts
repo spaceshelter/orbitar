@@ -15,6 +15,7 @@ import {CommentInfoWithPostData} from './types/CommentInfo';
 import {SiteInfo} from './types/SiteInfo';
 import {HistoryInfo} from './types/HistoryInfo';
 import TranslationManager from './TranslationManager';
+import {UserInfo} from './types/UserInfo';
 
 export default class PostManager {
     private bookmarkRepository: BookmarkRepository;
@@ -26,6 +27,9 @@ export default class PostManager {
     private userManager: UserManager;
     private translationManager: TranslationManager;
     private parser: TheParser;
+
+    private numberOfPostsCache: Record<number, ContentNumberCache> = {};
+    private numberOfCommentsCache: Record<number, ContentNumberCache> = {};
 
     constructor(
         bookmarkRepository: BookmarkRepository, commentRepository: CommentRepository, postRepository: PostRepository,
@@ -46,20 +50,24 @@ export default class PostManager {
 
     async getPost(postId: number, forUserId: number, format: ContentFormat): Promise<PostInfo | undefined> {
         const [rawPost] = await this.postRepository.getPostsWithUserData([postId], forUserId);
-        return (await this.feedManager.convertRawPost(forUserId, [rawPost], format))[0];
+        return (await this.feedManager.convertRawPosts(forUserId, [rawPost], format))[0];
     }
 
-    async getPostsByUser(userId: number, forUserId: number, page: number, perpage: number, format: ContentFormat): Promise<PostInfo[]> {
-        const posts = await this.postRepository.getPostsByUser(userId, forUserId, page, perpage);
-        return await this.feedManager.convertRawPost(forUserId, posts, format);
+    async getPostsByUser(userId: number, forUserId: number, filter: string, page: number, perpage: number, format: ContentFormat): Promise<PostInfo[]> {
+        const posts = await this.postRepository.getPostsByUser(userId, forUserId, filter, page, perpage);
+        return await this.feedManager.convertRawPosts(forUserId, posts, format);
     }
 
     getPostWithoutUserData(postId: number): Promise<PostRaw | undefined> {
         return this.postRepository.getPost(postId);
     }
 
-    getPostsByUserTotal(userId: number): Promise<number> {
-        return this.postRepository.getPostsByUserTotal(userId);
+    async getPostsByUserTotal(userId: number, filter = ''): Promise<number> {
+        if (!this.numberOfPostsCache[userId]) {
+            this.numberOfPostsCache[userId] = new ContentNumberCache();
+        }
+        return await this.numberOfPostsCache[userId].getOrUpdate(filter,
+            () => this.postRepository.getPostsByUserTotal(userId, filter));
     }
 
     async createPost(siteName: string, userId: number, title: string, content: string, format: ContentFormat): Promise<PostInfo> {
@@ -83,6 +91,8 @@ export default class PostManager {
         this.feedManager.postFanOut(postRaw.site_id, postRaw.post_id,
             postRaw.created_at, postRaw.created_at
         ).then().catch();
+
+        delete this.numberOfPostsCache[userId];
 
         return {
             id: postRaw.post_id,
@@ -108,7 +118,7 @@ export default class PostManager {
 
         if (rawPost.source === content && rawPost.title === title) {
             // nothing changed
-            const [post] = await this.feedManager.convertRawPost(forUserId, [rawPost], format);
+            const [post] = await this.feedManager.convertRawPosts(forUserId, [rawPost], format);
             return post;
         }
 
@@ -121,7 +131,7 @@ export default class PostManager {
         }
 
         [rawPost] = await this.postRepository.getPostsWithUserData([postId], forUserId);
-        const [post] = await this.feedManager.convertRawPost(forUserId, [rawPost], format);
+        const [post] = await this.feedManager.convertRawPosts(forUserId, [rawPost], format);
 
         return post;
     }
@@ -140,20 +150,49 @@ export default class PostManager {
         return await this.convertRawCommentsWithPostData(forUserId, rawComments, format);
     }
 
-    async getUserComments(userId: number, forUserId: number, page: number, perpage: number, format: ContentFormat): Promise<CommentInfoWithPostData[]> {
-        const rawComments = await this.commentRepository.getUserComments(userId, forUserId, page, perpage);
+    async getUserComments(userId: number, forUserId: number, filter: string, page: number, perpage: number, format: ContentFormat): Promise<CommentInfoWithPostData[]> {
+        const rawComments = await this.commentRepository.getUserComments(userId, forUserId, filter, page, perpage);
         return await this.convertRawCommentsWithPostData(forUserId, rawComments, format);
+    }
+
+    private async updateCommentsHtmlAndParserVersionInBatches(toUpdate:{id: number, html: string}[]) {
+        const batchSize = 128;
+
+        const updateIdsOnly = toUpdate.filter(comment => comment.html === undefined)
+            .map(comment => comment.id);
+        for (let i = 0; i < updateIdsOnly.length; i += batchSize) {
+            const batch = updateIdsOnly.slice(i, i + batchSize);
+            await this.commentRepository.updateCommentsParserVersion(batch, TheParser.VERSION);
+        }
+
+        toUpdate = toUpdate.filter(comment => comment.html !== undefined);
+
+        for (let i = 0; i < toUpdate.length; i += batchSize) {
+            const batch = toUpdate.slice(i, i + batchSize);
+            await this.commentRepository.updateCommentsHtmlAndParserVersion(batch, TheParser.VERSION);
+        }
     }
 
     private async convertRawCommentsWithPostData(forUserId: number, rawComments: CommentRawWithUserData[], format: ContentFormat): Promise<CommentInfoWithPostData[]> {
         const siteById: Record<number, SiteInfo> = {};
         const comments: CommentInfoWithPostData[] = [];
+        const postsToUpdateHtmlAndParserVersion: {id: number, html: string}[] = [];
 
         for (const raw of rawComments) {
             let site = siteById[raw.site_id];
             if (!site) {
                 site = await this.siteManager.getSiteById(raw.site_id);
                 siteById[raw.site_id] = site;
+            }
+
+            if (raw.parser_version !== TheParser.VERSION) {
+                const html = this.parser.parse(raw.source).text;
+                raw.parser_version = TheParser.VERSION;
+                postsToUpdateHtmlAndParserVersion.push({
+                    id: raw.comment_id,
+                    html: raw.html !== html ? html : undefined
+                });
+                raw.html = html;
             }
 
             const comment: CommentInfoWithPostData = {
@@ -182,37 +221,65 @@ export default class PostManager {
             comments.push(comment);
         }
 
+        if (postsToUpdateHtmlAndParserVersion.length) {
+            // update in background
+            this.updateCommentsHtmlAndParserVersionInBatches(postsToUpdateHtmlAndParserVersion)
+                .then().catch();
+        }
+
         return comments;
     }
 
-    getUserCommentsTotal(userId: number): Promise<number> {
-        return this.commentRepository.getUserCommentsTotal(userId);
+    async getUserCommentsTotal(userId: number, filter = ''): Promise<number> {
+        if (!this.numberOfCommentsCache[userId]) {
+            this.numberOfCommentsCache[userId] = new ContentNumberCache();
+        }
+        return await this.numberOfCommentsCache[userId].getOrUpdate(filter,
+            () => this.commentRepository.getUserCommentsTotal(userId, filter));
     }
 
-    async createComment(userId: number, postId: number, parentCommentId: number | undefined, content: string, format: ContentFormat): Promise<CommentInfoWithPostData> {
+    async createComment(userId: number, postId: number, parentCommentId: number | undefined, content: string, format: ContentFormat,
+                        fanOutAndNotifications = true): Promise<CommentInfoWithPostData> {
         const parseResult = this.parser.parse(content);
         const language = await this.translationManager.detectLanguage('', parseResult.text);
 
-        const commentRaw = await this.commentRepository.createComment(userId, postId, parentCommentId, content, language, parseResult.text);
+        const commentRaw = await this.commentRepository.createComment(
+            userId, postId, parentCommentId, content, language, parseResult.text, fanOutAndNotifications
+        );
         this.userManager.clearUserRestrictionsCache(userId);
 
-        for (const mention of parseResult.mentions) {
-            await this.notificationManager.sendMentionNotify(mention, userId, postId, commentRaw.comment_id);
-        }
+        if (fanOutAndNotifications) {
+            let parentAuthor: UserInfo | undefined;
+            if (parentCommentId) {
+                const parentComment = await this.commentRepository.getComment(parentCommentId);
+                parentAuthor = await this.userManager.getById(parentComment.author_id);
+            }
+            for (const mention of parseResult.mentions) {
+                // if author of parent comment/post was mentioned - do not send notifications:
+                // they are already notified about answer to their comment
+                if (mention === parentAuthor?.username.toLowerCase()) {
+                    continue;
+                }
+                await this.notificationManager.sendMentionNotify(mention, userId, postId, commentRaw.comment_id);
+            }
 
-        if (parentCommentId) {
-            await this.notificationManager.sendAnswerNotify(parentCommentId, userId, postId, commentRaw.comment_id);
+            if (parentAuthor) {
+                await this.notificationManager.sendAnswerNotify(parentAuthor.id, userId, postId, commentRaw.comment_id);
+            }
         }
 
         await this.bookmarkRepository.setWatch(postId, userId, true);
+        this.userManager.clearUserStatsCache();
 
         // fan out in background
         this.feedManager.postFanOut(commentRaw.site_id, commentRaw.post_id,
-                undefined,
-                commentRaw.created_at
+            undefined,
+            commentRaw.created_at,
+            /*onlyDbUpdate=*/!fanOutAndNotifications
         ).then().catch();
 
         const comments = await this.convertRawCommentsWithPostData(userId, [commentRaw], format);
+        delete this.numberOfCommentsCache[userId];
         return comments[0];
     }
 
@@ -292,5 +359,33 @@ export default class PostManager {
         }
 
         return sources;
+    }
+
+    /**
+     * Returns the user id that should be used for the given post.
+     * (anonymous posts mechanism)
+     * @param postId
+     */
+    getUserIdOverride(postId: number): Promise<number | undefined> {
+        return this.postRepository.getUserIdOverride(postId);
+    }
+}
+
+class ContentNumberCache {
+    filtered?: [string, number];
+    total?: number;
+
+    async getOrUpdate(filter: string,  set: () => Promise<number>): Promise<number> {
+        if (filter !== '') {
+            if (this.filtered && this.filtered[0] === filter) {
+                return this.filtered[1];
+            }
+            this.filtered = [filter, await set()];
+            return this.filtered[1];
+        }
+        if (this.total === undefined) {
+            this.total = await set();
+        }
+        return this.total;
     }
 }

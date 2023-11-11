@@ -13,6 +13,8 @@ export type UserRaw = UserBaseRaw & {
     ontrial: number;
     name: string;
     registered_at: Date;
+    bio_source?: string;
+    bio_html?: string;
 };
 
 export type UserSiteRaw = {

@@ -52,14 +52,15 @@
             fill: var(--primaryHover);
         }
 
+        .label {
+          margin-left: 5px;
+          color: var(--fg)
+        }
+
         &.active {
             fill: var(--primary);
             &:hover {
                 fill: var(--primaryHover);
-            }
-            .label {
-                margin-left: 5px;
-                color: var(--fg)
             }
         }
 

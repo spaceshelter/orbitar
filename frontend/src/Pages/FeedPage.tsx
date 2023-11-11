@@ -9,6 +9,8 @@ import {APIError} from '../API/APIBase';
 import {FeedSorting} from '../Types/FeedSortingSettings';
 import classNames from 'classnames';
 import {observer} from 'mobx-react-lite';
+import {LARGE_AUTO_CUT, SMALL_AUTO_CUT} from '../Components/ContentComponent';
+import {ReloadingLink} from '../Components/ReloadingLink';
 
 const FeedPage = observer(() => {
     const { site, siteInfo } = useAppState();
@@ -78,7 +80,11 @@ const FeedPage = observer(() => {
                       <a href='#' className={classNames({[styles.active]: !liveSorting})} onClick={handleFeedSortingChange(FeedSorting.postCreatedAt)}><i className='i i-new'></i>НОВОЕ</a>
                     </div>}
                     {siteInfo?.site === 'main' && <div className={styles.feedControls}>
-                        <Link to='/' className={feedType === 'subscriptions' ? styles.active : ''} replace={true}>подписки</Link>•<Link to='/all' className={feedType === 'all' ? styles.active : ''} replace={true}>всё</Link>•<Link to='/posts' className={feedType === 'site' ? styles.active : ''} replace={true}>главная</Link>
+                        <ReloadingLink to='/' className={feedType === 'subscriptions' ? styles.active : ''} replace={true}>подписки</ReloadingLink>
+                        •
+                        <ReloadingLink to='/all' className={feedType === 'all' ? styles.active : ''} replace={true}>всё</ReloadingLink>
+                        •
+                        <ReloadingLink to='/posts' className={feedType === 'site' ? styles.active : ''} replace={true}>главная</ReloadingLink>
                     </div>}
                 </div>
                 {!error && loading && <div className={styles.loading}></div>}
@@ -86,10 +92,13 @@ const FeedPage = observer(() => {
                     (error[1] as APIError)?.code === 'no-site' ? <>Нет такого сайта. <Link to='/sites/create'>Создать</Link>?</> : error[0]
                 }</div> }
                 {posts && <div className={styles.posts}>
-                    {posts.map(post => <PostComponent key={post.id} post={post} showSite={siteInfo?.site !== post.site} onChange={updatePost} autoCut={true} />)}
+                    {posts.map(post => <PostComponent key={post.id} post={post} showSite={siteInfo?.site !== post.site} onChange={updatePost}
+                                                      autoCut={post.vote === -1 ? SMALL_AUTO_CUT : LARGE_AUTO_CUT} />)}
                 </div>}
 
-                <Paginator page={page} pages={pages} base={baseRoute} />
+                <div className={styles.paginatorContainer}>
+                    <Paginator page={page} pages={pages} base={baseRoute} />
+                </div>
             </div>
         </div>
     );

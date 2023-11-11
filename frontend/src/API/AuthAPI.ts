@@ -1,19 +1,17 @@
 import APIBase from './APIBase';
 import {UserInfo} from '../Types/UserInfo';
-import {SiteWithUserInfo} from '../Types/SiteInfo';
 
-type StatusRequest = {
-    site?: string;
-};
-type StatusResponse = {
-    site?: SiteWithUserInfo;
+type StatusRequest = Record<string, never>;
+export type StatusResponse = {
     user: UserInfo;
     watch: {
         posts: number;
         comments: number;
     };
-    notifications: number;
-    subscriptions: SiteWithUserInfo[];
+    notifications: {
+        unread: number;
+        visible: number;
+    }
 };
 
 type SignInRequest = Record<string, unknown>;
@@ -26,6 +24,8 @@ type SignOutRequest = Record<string, unknown>;
 type SignOutResponse = Record<string, unknown>;
 
 type ResetPasswordRequest = {email: string;};
+type ResetPasswordAndSessionsRequest = Record<string, unknown>;
+type ResetPasswordAndSessionsResponse = Record<string, unknown>;
 type ResetPasswordResponse = {result: boolean;};
 type CheckResetPasswordCodeRequest = {code: string;};
 type SetNewPasswordRequest = {password: string; code: string;};
@@ -37,8 +37,14 @@ export default class AuthAPI {
         this.api = api;
     }
 
-    async status(site: string): Promise<StatusResponse> {
-        return await this.api.request<StatusRequest, StatusResponse>('/status', { site });
+    async status(): Promise<[StatusResponse, string]> {
+        let fingerprintHeader = '';
+        const status =
+            await this.api.request<StatusRequest, StatusResponse>('/status', {},
+                (resp) => {
+                    fingerprintHeader = resp.headers.get('X-Fingerprint') || '';
+                });
+        return [status, fingerprintHeader];
     }
 
     async signIn(username: string, password: string): Promise<SignInResponse> {
@@ -56,6 +62,10 @@ export default class AuthAPI {
         return await this.api.request<ResetPasswordRequest, ResetPasswordResponse>('/auth/reset-password', {
             email
         });
+    }
+
+    async dropPasswordAndSessions() {
+        return await this.api.request<ResetPasswordAndSessionsRequest, ResetPasswordAndSessionsResponse>('/auth/drop-password-and-sessions', {});
     }
 
     async setNewPassword(password: string, code: string): Promise<ResetPasswordResponse> {

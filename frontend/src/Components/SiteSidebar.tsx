@@ -1,10 +1,10 @@
 import styles from './SiteSidebar.module.scss';
 import {Link} from 'react-router-dom';
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {useAPI, useAppState} from '../AppState/AppState';
 import {toast} from 'react-toastify';
 import {observer} from 'mobx-react-lite';
-import {TopbarMenuState} from '../Components/Topbar';
+import {TopbarMenuState} from './Topbar';
 import classNames from 'classnames';
 
 type SidebarProps = {
@@ -36,6 +36,22 @@ export const SiteSidebar = observer((props: SidebarProps) => {
             });
     };
 
+    useEffect(() => {
+        if (!siteInfo) {
+            api.site.updateSiteInfo().then().catch(
+                () => toast.error('Не удалось обновить информацию о сайте!'),
+            );
+        }
+    }, [siteInfo, api.site]);
+
+    useEffect(() => {
+        if (subscriptions === undefined) {
+            api.site.subscriptons().then().catch(
+                () => toast.error('Не удалось получить список подписок!'),
+            );
+        }
+    }, [subscriptions]);
+
     return (
         <div className={classNames(styles.sidebar, {
             [styles.open]: props.menuState === 'close',
@@ -54,7 +70,7 @@ export const SiteSidebar = observer((props: SidebarProps) => {
                     </div>}
                     {siteInfo?.siteInfo && <div className='site-info'>{siteInfo.siteInfo}</div>}
                     <div className='subsites'>
-                        { subscriptions.map(site => {
+                        { subscriptions && subscriptions.map(site => {
                             return <div key={site.site}><Link onClick={menuToggle} to={site.site === 'main' ? '/' : `/s/${site.site}`}>{site.name}</Link></div>;
                         }) }
                     </div>

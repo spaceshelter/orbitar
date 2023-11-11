@@ -1,13 +1,26 @@
 import NotificationManager from '../managers/NotificationManager';
 import {Router} from 'express';
 import {Logger} from 'winston';
-import {APIRequest, APIResponse} from './ApiMiddleware';
+import {APIRequest, APIResponse, validate} from './ApiMiddleware';
 import {NotificationsListRequest, NotificationsListResponse} from './types/requests/NotificationsList';
-import {NotificationsReadRequest, NotificationsReadResponse} from './types/requests/NotificationsRead';
-import {NotificationsReadAllRequest, NotificationsReadAllResponse} from './types/requests/NotificationsReadAll';
+import {
+    NotificationsHideRequest, NotificationsHideResponse,
+    NotificationsReadRequest,
+    NotificationsReadResponse
+} from './types/requests/NotificationsRead';
+import {
+    NotificationsHideAllRequest, NotificationsHideAllResponse,
+    NotificationsReadAllRequest,
+    NotificationsReadAllResponse
+} from './types/requests/NotificationsReadAll';
 import UserManager from '../managers/UserManager';
 import {NotificationsSubscribeRequest, NotificationsSubscribeResponse} from './types/requests/NotificationsSubscribe';
 import {NotificationEntity} from './types/entities/NotificationEntity';
+import Joi from 'joi';
+
+const hideAllSchema = Joi.object<NotificationsHideAllRequest>({
+    readOnly: Joi.boolean()
+});
 
 export default class NotificationsController {
     router = Router();
@@ -22,7 +35,9 @@ export default class NotificationsController {
         this.logger = logger;
         this.router.post('/notifications/list', (req, res) => this.list(req, res));
         this.router.post('/notifications/read', (req, res) => this.read(req, res));
+        this.router.post('/notifications/hide', (req, res) => this.hide(req, res));
         this.router.post('/notifications/read/all', (req, res) => this.readAll(req, res));
+        this.router.post('/notifications/hide/all', validate(hideAllSchema), (req, res) => this.hideAll(req, res));
         this.router.post('/notifications/subscribe', (req, res) => this.subscribe(req, res));
     }
 
@@ -71,6 +86,24 @@ export default class NotificationsController {
         }
     }
 
+    async hide(request: APIRequest<NotificationsHideRequest>, response: APIResponse<NotificationsHideResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+
+        const userId = request.session.data.userId;
+        const { id: hideId } = request.body;
+
+        try {
+            await this.notificationManager.setReadAndHidden(userId, hideId);
+            return response.success({});
+        }
+        catch (err) {
+            this.logger.error('Notifications hide error', { error: err, hideId });
+            return response.error('error', 'Unknown error', 500);
+        }
+    }
+
     async readAll(request: APIRequest<NotificationsReadAllRequest>, response: APIResponse<NotificationsReadAllResponse>) {
         if (!request.session.data.userId) {
             return response.authRequired();
@@ -84,6 +117,24 @@ export default class NotificationsController {
         }
         catch (err) {
             this.logger.error('Notifications read all error', { error: err });
+            return response.error('error', 'Unknown error', 500);
+        }
+    }
+
+    async hideAll(request: APIRequest<NotificationsHideAllRequest>, response: APIResponse<NotificationsHideAllResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+
+        const userId = request.session.data.userId;
+        const { readOnly } = request.body;
+
+        try {
+            await this.notificationManager.setHiddenAll(userId, !!readOnly);
+            return response.success({});
+        }
+        catch (err) {
+            this.logger.error('Notifications hide all error', { error: err });
             return response.error('error', 'Unknown error', 500);
         }
     }

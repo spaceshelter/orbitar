@@ -16,6 +16,7 @@ export type UploadData = UploadDataUri | UploadDataFile;
 export type MediaUploaderProps = {
     onCancel: () => void;
     onSuccess: (uri: string, type: 'video' | 'image') => void;
+    mediaData?: File
 };
 
 export default function MediaUploader(props: MediaUploaderProps) {
@@ -32,9 +33,20 @@ export default function MediaUploader(props: MediaUploaderProps) {
 
     useEffect(() => {
         uriRef.current?.focus();
-        document.body.classList.add('no-scroll');
+        const htmlElement = document.getElementsByTagName('html')[0];
+        htmlElement.classList.add('no-scroll');
         return () => {
-            document.body.classList.remove('no-scroll');
+            htmlElement.classList.remove('no-scroll');
+        };
+    }, []);
+
+    useEffect(() => {
+        if (props.mediaData) {
+            readFile(props.mediaData);
+        }
+        document.addEventListener('paste', handlePaste);
+        return () => {
+            document.removeEventListener('paste', handlePaste);
         };
     }, []);
 
@@ -77,13 +89,13 @@ export default function MediaUploader(props: MediaUploaderProps) {
     };
     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
         const data = e.dataTransfer;
-        console.log(e);
+
         if (data.files.length) {
             readFile(data.files[0]);
         }
         else if (data.types.indexOf('text/uri-list') !== -1) {
             const uri = data.getData('text/uri-list');
-            console.log('uri', uri);
+
             if (uri) {
                 setUri(uri);
                 setPreview(uri);
@@ -97,7 +109,13 @@ export default function MediaUploader(props: MediaUploaderProps) {
 
     const handleUriChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const uri = e.target.value;
+
+        if (uri.match(/^file:\/\//)) {
+            return; // skip local files
+        }
+
         setUri(uri);
+
         if (uri.match(/\.(png|jpg|gif|jpeg)$/i)) {
             setPreview(undefined);
             setVideoPreview(undefined);
@@ -132,12 +150,16 @@ export default function MediaUploader(props: MediaUploaderProps) {
         }
     };
 
-    const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-        const items = e.clipboardData.items;
+    const handlePaste = (e: ClipboardEvent) =>{
+        const items = e.clipboardData?.items;
+        if (!items)
+            return;
         for (let i = 0; i < items.length; i++) {
             const file = items[i].getAsFile();
             if (file) {
                 readFile(file);
+                // prevent pasting into the editor
+                e.preventDefault();
             }
         }
     };
@@ -146,7 +168,9 @@ export default function MediaUploader(props: MediaUploaderProps) {
         setUploadEnabled(true);
     };
 
-    const handleUpload = () => {
+    const handleUpload = (e:  React.SyntheticEvent) => {
+        e.preventDefault();
+
         if (!uploadData) {
             return;
         }
@@ -179,7 +203,8 @@ export default function MediaUploader(props: MediaUploaderProps) {
                         .then(data => {
                             if (data.status === 'ok') {
                                 console.log('UPLOAD COMPLETE', data);
-                                props.onSuccess('https://idiod.video/' + data.url, uploadData.type);
+                                props.onSuccess(process.env.REACT_APP_MEDIA_HOSTING_URL +
+                                    '/' + data.url, uploadData.type);
                             } else {
                                 console.log('UPLOAD FAILED: no link', data, file.type);
                                 toast.error('Произошла ошибка при загрузке 🥺');
@@ -215,16 +240,16 @@ export default function MediaUploader(props: MediaUploaderProps) {
         <>
             <div className={styles.overlay} onClick={handleOverlayClick}></div>
             <div className={styles.container}>
-                <div className={styles.controls}>
+                <form className={styles.controls} onSubmit={handleUpload}>
                     <div className={styles.upload}>
-                        <input disabled={uploading} className={styles.url} ref={uriRef} type="text" placeholder="https://" value={uri} onChange={handleUriChange} onPaste={handlePaste} />
+                        <input disabled={uploading} className={styles.url} ref={uriRef} type="text" placeholder="https://" title='Вставьте ссылку или картинку' value={uri} onChange={handleUriChange} />
                         <label className={styles.selector}>
                             <input disabled={uploading} type="file" accept="image/*,video/mp4,video/webm" onChange={handleFileChoose} />
                             <div className={styles.choose}>Выбрать</div>
                         </label>
                     </div>
-                    <button disabled={!uploadEnabled || uploading} className={styles.done + ' button'} onClick={handleUpload}>{uploading ? 'Загрузка' : 'Фьють'}</button>
-                </div>
+                    <button disabled={!uploadEnabled || uploading} className={styles.done + ' button'} type="submit">{uploading ? 'Загрузка' : 'Фьють'}</button>
+                </form>
                 <div className={styles.dropbox + (dragActive ? ' ' + styles.active : '')} onDragEnter={handleDragEnter} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
                     <div className={styles.preview}>
                         {preview && <img draggable={false} className={styles.preview} src={preview} onLoad={handleImageLoad} ref={previewRef} alt="" />}

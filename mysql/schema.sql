@@ -8,6 +8,7 @@ USE `orbitar_db`;
 CREATE USER 'orbitar'@'%' IDENTIFIED BY 'orbitar';
 GRANT SELECT, INSERT, UPDATE, DELETE ON orbitar_db.* TO 'orbitar'@'%';
 GRANT SELECT, INSERT, UPDATE, DELETE ON activity_db.* TO 'orbitar'@'%'; -- activity_db does not exist in the original schema, but added in migrations
+FLUSH PRIVILEGES;
 
 DROP TABLE IF EXISTS `comment_votes`;
 CREATE TABLE `comment_votes` (

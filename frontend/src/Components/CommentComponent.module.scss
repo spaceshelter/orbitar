@@ -1,5 +1,4 @@
 .comment {
-
     // TODO fix alternative tree lines
     /*
     position: relative;
@@ -42,6 +41,11 @@
          max-width: 100%;
          max-height: 500px;
     }
+
+    :global(.react-transform-wrapper) img {
+        max-width: unset;
+        max-height: unset;
+    }
 }
 
 .controls {
@@ -49,10 +53,11 @@
     margin-top: 4px;
     margin-left: -3px;
     align-items: center;
+    overflow-x: visible;
 
     .control {
         margin-right: 25px;
-        color: var(--fgSofter);
+        color: var(--fgSoftest);
         display: flex;
         align-items: center;
     }
@@ -61,11 +66,11 @@
         font-size: 24px;
     }
 
-    button.translate:before {
+    button.action:before {
       font-size: 20px;
     }
 
-    button.translate:disabled:before {
+    button.action:disabled:before {
       animation: pulse 1s infinite;
       @keyframes pulse {
         0% {
@@ -92,11 +97,15 @@
         color: var(--fgSoftest);
         text-decoration: none;
 
-        font-weight: bold;
+        font-weight: normal;
 
         &.active {
+            color: var(--primary);
             fill: var(--primary);
-            font-weight: bold;
+            font-weight: normal;
+        }
+        &:hover {
+            color: var(--primary);
         }
     }
     a {
@@ -137,11 +146,16 @@ $smallShift: 8px;
         border-left: none;
     }
 
-    .unreadOnly :local(.comment):not(.isNew) > .commentBody {
+    .unreadOnly :local(.comment):not(.isNew) > .commentBody > :not(:last-child),
+    .unreadOnly :local(.comment):not(.isNew) > .commentBody > :last-child > :not(:first-child),
+    .unreadOnly :local(.comment):not(.isNew) > .commentBody > :last-child > :first-child > * > :first-child {
         opacity: 0.4;
         transition: opacity 500ms;
     }
-    .unreadOnly :local(.comment):not(.isNew) > .commentBody:hover {
+
+    .unreadOnly :local(.comment):not(.isNew) > .commentBody:hover > :not(:last-child),
+    .unreadOnly :local(.comment):not(.isNew) > .commentBody:hover > :last-child > :not(:first-child),
+    .unreadOnly :local(.comment):not(.isNew) > .commentBody:hover > :last-child > :first-child > * > :first-child {
         opacity: inherit;
         transition: opacity 500ms;
     }
@@ -164,6 +178,7 @@ $smallShift: 8px;
         padding-left: 0;
     }
 }
+
 .newComment {
     color: var(--primary);
     font-style: italic;

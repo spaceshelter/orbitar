@@ -46,6 +46,17 @@ export default class AuthAPIHelper {
         }
     }
 
+    async dropPasswordAndSessions() {
+        try {
+            await this.api.dropPasswordAndSessions();
+            this.appState.setUserInfo(undefined);
+            this.appState.setAppLoadingState(AppLoadingState.unauthorized);
+        } catch (error) {
+            console.log('ERROR DROPPING PASSWORD AND SESSIONS', error);
+            throw error;
+        }
+    }
+
     async setNewPassword(password: string, code: string) {
         try {
             return await this.api.setNewPassword(password, code);

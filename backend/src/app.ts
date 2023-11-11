@@ -41,6 +41,9 @@ import WebPushRepository from './db/repositories/WebPushRepository';
 import {Enricher} from './api/utils/Enricher';
 import TranslationManager from './managers/TranslationManager';
 import TranslationRepository from './db/repositories/TranslationRepository';
+import SearchController from './api/SearchController';
+import SearchManager from './managers/SearchManager';
+import {UserCache} from './managers/UserCache';
 
 const app = express();
 
@@ -88,7 +91,7 @@ const redis = new Redis(config.redis, logger.child({ service: 'REDIS' }));
 
 const db = new DB(config.mysql, logger.child({ service: 'DB' }));
 
-const theParser = new TheParser();
+const theParser = new TheParser(config.mediaHosting);
 
 const bookmarkRepository = new BookmarkRepository(db);
 const commentRepository = new CommentRepository(db);
@@ -102,14 +105,17 @@ const userRepository = new UserRepository(db);
 const webPushRepository = new WebPushRepository(db);
 const translationRepository = new TranslationRepository(db);
 
-const notificationManager = new NotificationManager(commentRepository, notificationsRepository, postRepository, siteRepository, userRepository, webPushRepository, config.vapid, config.site);
-const userManager = new UserManager(credentialsRepository, userRepository, voteRepository, commentRepository, postRepository, webPushRepository, notificationManager, redis.client, config.site, logger.child({ service: 'USER' }));
+const userCache = new UserCache(userRepository);
+const notificationManager = new NotificationManager(commentRepository, notificationsRepository, postRepository, siteRepository, userCache, webPushRepository, config.vapid, config.site, logger.child({ service: 'NOTIFY' }));
+const userManager = new UserManager(credentialsRepository, userRepository, voteRepository, commentRepository, postRepository, webPushRepository,
+    userCache, theParser, notificationManager, redis.client, config.site, logger.child({ service: 'USER' }));
 const inviteManager = new InviteManager(inviteRepository, theParser, userManager);
 const siteManager = new SiteManager(siteRepository, userManager);
-const feedManager = new FeedManager(bookmarkRepository, postRepository, userRepository, siteManager, logger.child({ service: 'FEED' }));
+const feedManager = new FeedManager(bookmarkRepository, postRepository, userManager, siteManager, theParser, logger.child({ service: 'FEED' }));
 const translationManager = new TranslationManager(translationRepository, postRepository, theParser, logger.child({ service: 'TRANSL' }));
 const postManager = new PostManager(bookmarkRepository, commentRepository, postRepository, feedManager, notificationManager, siteManager, userManager, translationManager, theParser);
 const voteManager = new VoteManager(voteRepository, postManager, userManager, redis.client);
+const searchManager = new SearchManager(userManager, siteManager, logger.child({ service: 'SEARCH' }));
 
 const apiEnricher = new Enricher(siteManager, userManager);
 
@@ -123,6 +129,7 @@ const requests = [
     new FeedController(apiEnricher, feedManager, siteManager, userManager, postManager, logger.child({ service: 'FEED' })),
     new SiteController(apiEnricher, feedManager, siteManager, userManager, logger.child( { service: 'SITE' })),
     new NotificationsController(notificationManager, userManager, logger.child({ service: 'NOTIFY' })),
+    new SearchController(userManager, searchManager, logger.child({ service: 'SEARCH' })),
 ];
 
 const filterLog = winston.format((info) => {

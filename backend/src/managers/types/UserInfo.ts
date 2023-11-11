@@ -16,10 +16,15 @@ export type UserInfo = UserBaseInfo & {
     name: string;
     vote?: number;
     registered: Date;
+    bio_source?: string;
+    bio_html?: string;
 };
 
 export type UserStats = {
-    notifications: number;
+    notifications: {
+        unread: number;
+        visible: number;
+    }
     watch: {
         posts: number;
         comments: number;

@@ -5,7 +5,6 @@ import {
     UserNotificationMention
 } from './types/UserNotification';
 import NotificationsRepository from '../db/repositories/NotificationsRepository';
-import UserRepository from '../db/repositories/UserRepository';
 import CommentRepository from '../db/repositories/CommentRepository';
 import {NotificationRaw} from '../db/types/NotificationRaw';
 import PostRepository from '../db/repositories/PostRepository';
@@ -14,7 +13,8 @@ import {CommentBaseInfo} from './types/CommentInfo';
 import webpush from 'web-push';
 import {SiteConfig, VapidConfig} from '../config';
 import WebPushRepository from '../db/repositories/WebPushRepository';
-
+import {UserCache} from './UserCache';
+import {Logger} from 'winston';
 
 
 export default class NotificationManager {
@@ -22,25 +22,28 @@ export default class NotificationManager {
     private readonly notificationsRepository: NotificationsRepository;
     private readonly postRepository: PostRepository;
     private readonly siteRepository: SiteRepository;
-    private readonly userRepository: UserRepository;
     private readonly webPushRepository: WebPushRepository;
+    private readonly userCache: UserCache;
     private couldSendWebPush = false;
     private siteConfig: SiteConfig;
+    private logger: Logger;
 
     constructor(
         commentRepository: CommentRepository, notificationsRepository: NotificationsRepository,
         postRepository: PostRepository, siteRepository: SiteRepository,
-        userRepository: UserRepository, webPushRepository: WebPushRepository,
+        userCache: UserCache, webPushRepository: WebPushRepository,
         vapidConfig: VapidConfig,
-        siteConfig: SiteConfig
+        siteConfig: SiteConfig,
+        logger: Logger
     ) {
         this.commentRepository = commentRepository;
         this.notificationsRepository = notificationsRepository;
         this.postRepository = postRepository;
         this.siteRepository = siteRepository;
-        this.userRepository = userRepository;
+        this.userCache = userCache;
         this.webPushRepository = webPushRepository;
         this.siteConfig = siteConfig;
+        this.logger = logger;
 
         if (vapidConfig.publicKey && vapidConfig.privateKey && vapidConfig.contact) {
             webpush.setVapidDetails(vapidConfig.contact, vapidConfig.publicKey, vapidConfig.privateKey);
@@ -48,8 +51,10 @@ export default class NotificationManager {
         }
     }
 
-    async getNotificationsCount(forUserId: number) {
-        return await this.notificationsRepository.getUnreadNotificationsCount(forUserId);
+    async getNotificationsCounts(forUserId: number): Promise<{ unread: number, visible: number }> {
+        const unread = this.notificationsRepository.getUnreadNotificationsCount(forUserId);
+        const visible = this.notificationsRepository.getVisibleNotificationsCount(forUserId);
+        return {unread: await unread, visible: await visible};
     }
 
     async getNotifications(forUserId: number): Promise<UserNotificationExpanded[]> {
@@ -74,12 +79,12 @@ export default class NotificationManager {
             switch (data.type) {
                 case 'answer':
                 case 'mention': {
-                    const byUserRaw = await this.userRepository.getUserById(data.source.byUserId);
+                    const byUserRaw = await this.userCache.getById(data.source.byUserId);
                     if (!byUserRaw) {
                         return;
                     }
                     const byUser = {
-                        id: byUserRaw.user_id,
+                        id: byUserRaw.id,
                         username: byUserRaw.username,
                         gender: byUserRaw.gender
                     };
@@ -109,6 +114,7 @@ export default class NotificationManager {
                         id: notification.notification_id,
                         type: data.type,
                         date: notification.created_at,
+                        read: notification.read === 1,
                         source: {
                             byUser,
                             post,
@@ -129,18 +135,14 @@ export default class NotificationManager {
     async sendNotification(forUserId: number, notification: UserNotification) {
         const json = JSON.stringify(notification);
         await this.notificationsRepository.addNotification(forUserId, notification.type, notification.source.byUserId, notification.source.postId, notification.source.commentId, json);
+        this.userCache.deleteUserStatsCache(forUserId);
 
         // send push in background
         this.sendWebPush(forUserId, notification).then().catch();
     }
 
-    async sendAnswerNotify(parentCommentId: number, byUserId: number, postId: number, commentId?: number) {
-        const commentRaw = await this.commentRepository.getComment(parentCommentId);
-        if (!commentRaw) {
-            return false;
-        }
-
-        if (commentRaw.author_id === byUserId) {
+    async sendAnswerNotify(forUserId: number, byUserId: number, postId: number, commentId?: number) {
+        if (forUserId === byUserId) {
             return false;
         }
 
@@ -154,28 +156,27 @@ export default class NotificationManager {
             }
         };
 
-        await this.sendNotification(commentRaw.author_id, notification);
+        await this.sendNotification(forUserId, notification);
     }
 
     async sendMentionNotify(mention: string, byUserId: number, postId: number, commentId?: number) {
         let username;
         if (mention.substring(0, 1) === '@') {
             username = mention.substring(1);
-        }
-        else if (mention.substring(0, 3) === '/u/') {
-            username = mention.substring(3);
+        } else {
+            username = mention;
         }
 
         if (!username) {
             return false;
         }
 
-        const user = await this.userRepository.getUserByUsername(username);
+        const user = await this.userCache.getByUsername(username);
         if (!user) {
             return false;
         }
 
-        if (user.user_id === byUserId) {
+        if (user.id === byUserId) {
             return false;
         }
 
@@ -189,21 +190,35 @@ export default class NotificationManager {
             }
         };
 
-        await this.sendNotification(user.user_id, notification);
+        await this.sendNotification(user.id, notification);
 
         return true;
     }
 
     async setRead(forUserId: number, notificationId: number) {
         await this.notificationsRepository.setRead(forUserId, notificationId);
+        this.userCache.deleteUserStatsCache(forUserId);
+    }
+
+    async setReadAndHidden(userId: number, hideId: number) {
+        await this.notificationsRepository.setReadAndHidden(userId, hideId);
+        this.userCache.deleteUserStatsCache(userId);
     }
 
     async setReadForPost(forUserId: number, postId: number) {
-        return await this.notificationsRepository.setReadForPost(forUserId, postId);
+        const res = await this.notificationsRepository.setReadForPost(forUserId, postId);
+        this.userCache.deleteUserStatsCache(forUserId);
+        return res;
     }
 
     async setReadAll(forUserId: number) {
         await this.notificationsRepository.setReadAll(forUserId);
+        this.userCache.deleteUserStatsCache(forUserId);
+    }
+
+    async setHiddenAll(forUserId: number, readOnly: boolean) {
+        await this.notificationsRepository.setReadAndHideAll(forUserId, readOnly);
+        this.userCache.deleteUserStatsCache(forUserId);
     }
 
     private async sendWebPush(forUserId: number, notification: UserNotification) {
@@ -220,7 +235,7 @@ export default class NotificationManager {
             return;
         }
 
-        const sender = await this.userRepository.getUserById(notification.source.byUserId);
+        const sender = await this.userCache.getById(notification.source.byUserId);
         const comment = await this.commentRepository.getComment(notification.source.commentId);
         const site = await this.siteRepository.getSiteById(comment.site_id);
 
@@ -259,8 +274,13 @@ export default class NotificationManager {
                 await webpush.sendNotification(subscription, JSON.stringify({title, body: commentText, icon, url}));
             }
             catch (err) {
-                if (err.statusCode === 410) {
+                const badCodes = [404, 410];
+                if (badCodes.includes(err.statusCode)) {
+                    this.logger.info(`Bad subscription for user ${forUserId} with auth ${subscription.keys.auth},
+                    got ${err.statusCode} status code, removing subscription`);
                     await this.webPushRepository.resetSubscription(forUserId, subscription.keys.auth);
+                } else if (err.statusCode < 500) {
+                    this.logger.error(err);
                 }
             }
         }

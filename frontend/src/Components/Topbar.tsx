@@ -1,18 +1,19 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import styles from './Topbar.module.scss';
-import {Link} from 'react-router-dom';
+import {Link, useLocation, useMatch} from 'react-router-dom';
 import {useAppState} from '../AppState/AppState';
-import {useTheme} from '../Theme/ThemeProvider';
 import {ReactComponent as PostIcon} from '../Assets/post.svg';
 import {ReactComponent as MonsterIcon} from '../Assets/monster.svg';
 import {ReactComponent as HotIcon} from '../Assets/hot.svg';
 import {ReactComponent as NotificationIcon} from '../Assets/notification.svg';
 import {ReactComponent as ProfileIcon} from '../Assets/profile.svg';
-import {ReactComponent as DarkIcon} from '../Assets/theme_dark.svg';
-import {ReactComponent as LightIcon} from '../Assets/theme_light.svg';
+import {ReactComponent as SearchIcon} from '../Assets/search.svg';
 import NotificationsPopup from './NotificationsPopup';
 import {Hamburger} from './Hamburger';
 import {observer} from 'mobx-react-lite';
+import classNames from 'classnames';
+import {ReloadingLink} from './ReloadingLink';
+import useLocalStorage from 'use-local-storage';
 
 export type TopbarMenuState = 'disabled' | 'open' | 'close';
 
@@ -23,25 +24,11 @@ type TopbarProps = {
 
 export const Topbar = observer((props: TopbarProps) => {
     const {userInfo} = useAppState();
-    const {theme, setTheme} = useTheme();
     const [showNotifications, setShowNotifications] = useState(false);
 
     if (!userInfo) {
         return <></>;
     }
-
-    const toggleTheme = (e: React.MouseEvent) => {
-        e.preventDefault();
-        if (theme === 'dark') {
-            setTheme('light');
-        }
-        else {
-            if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
-                if (theme === 'light') { setTheme('debugTheme'); return;  }
-            }
-            setTheme('dark');
-        }
-    };
 
     const menuToggle = () => {
         props.onMenuToggle();
@@ -62,17 +49,17 @@ export const Topbar = observer((props: TopbarProps) => {
 
     return (
         <>
-            <div className={styles.topbar}>
+            <div id="topbar" className={styles.topbar}>
                 <div className={styles.left}>
                     <button className={menuClasses.join(' ')} onClick={menuToggle}>
                         <Hamburger open={props.menuState === 'close'} />
                     </button>
-                    <Link to={`/`}><MonsterIcon /></Link>
+                    <HomeButton />
                     <CreateButton />
                 </div>
 
                 <div className={styles.right}>
-                    <button onClick={toggleTheme}>{theme === 'dark' ? <LightIcon /> : <DarkIcon />}</button>
+                    <SearchButton/>
                     <WatchButton />
                     <NotificationsButton onClick={handleNotificationsToggle} />
                     <Link to={'/profile'}><ProfileIcon /></Link>
@@ -82,6 +69,36 @@ export const Topbar = observer((props: TopbarProps) => {
         </>
     );
 });
+
+const HomeButton = () => {
+    const [savedRoute, setSavedRoute] =
+        useLocalStorage('homeButtonRoute', '/');
+
+    const routes: [string, boolean][] = [];
+    for (const route of ['/', '/posts', '/all']) {
+        // Fine to disable, we're calling this hook a fixed number of times
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        routes.push([route, !!useMatch(route)]);
+    }
+
+    useEffect(() => {
+        routes.forEach(([route, match]) => {
+            if (match && savedRoute !== route) {
+                setSavedRoute(route);
+            }
+        });
+    }, [savedRoute, routes.map(_ => _[1]).join(':')]);
+
+    return (
+        <ReloadingLink to={savedRoute}><MonsterIcon/></ReloadingLink>
+    );
+};
+
+const SearchButton = () => {
+    const location = useLocation();
+    const isSearch = location.pathname === '/search';
+    return (isSearch ? <></> : <Link to={`/search`}><SearchIcon /></Link>);
+};
 
 const CreateButton = observer(() => {
     const {site} = useAppState();
@@ -94,13 +111,25 @@ const CreateButton = observer(() => {
 const WatchButton = observer(() => {
     const {watchCommentsCount} = useAppState();
     return (
-        <Link to={'/watch'} className={watchCommentsCount > 0 ? styles.active : ''}><HotIcon /><span className={styles.label}>{watchCommentsCount > 0 ? watchCommentsCount : ''}</span></Link>
+        <ReloadingLink to={'/watch'} className={watchCommentsCount > 0 ? styles.active : ''}><HotIcon /><span className={styles.label}>{watchCommentsCount > 0 ? watchCommentsCount : ''}</span></ReloadingLink>
     );
 });
 
 const NotificationsButton = observer((props: React.ComponentPropsWithRef<'button'>) => {
-    const {notificationsCount} = useAppState();
+    const {unreadNotificationsCount, visibleNotificationsCount} = useAppState();
+
+    let label = '';
+    if (visibleNotificationsCount > 0) {
+        if (unreadNotificationsCount > 0  && unreadNotificationsCount !== visibleNotificationsCount) {
+            label = `${unreadNotificationsCount}/${visibleNotificationsCount}`;
+        } else {
+            label = `${visibleNotificationsCount}`;
+        }
+    }
+
     return (
-        <button {...props} disabled={notificationsCount === 0} className={notificationsCount > 0 ? styles.active : ''}><NotificationIcon /><span className={styles.label}>{notificationsCount > 0 ? notificationsCount : ''}</span></button>
+        <button {...props} disabled={visibleNotificationsCount === 0}
+                className={classNames({[styles.active]: unreadNotificationsCount})}><NotificationIcon />
+            <span className={styles.label}>{label}</span></button>
     );
 });

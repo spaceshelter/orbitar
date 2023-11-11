@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import styles from './PostPage.module.css';
 import {Link, useLocation, useParams, useSearchParams} from 'react-router-dom';
 import {CommentInfo, PostInfo, PostLinkInfo} from '../Types/PostInfo';
@@ -7,6 +7,8 @@ import CommentComponent from '../Components/CommentComponent';
 import {CreateCommentComponentRestricted} from '../Components/CreateCommentComponent';
 import {usePost} from '../API/use/usePost';
 import {useAppState} from '../AppState/AppState';
+import Username from '../Components/Username';
+import {scrollUnderTopbar} from '../Utils/utils';
 
 export default function PostPage() {
     const params = useParams<{postId: string}>();
@@ -15,9 +17,9 @@ export default function PostPage() {
     const location = useLocation();
     const [scrolledToComment, setScrolledToComment] = useState<{postId: number, commentId: number}>();
     const {site} = useAppState();
-
+    const containerRef = useRef<HTMLDivElement>(null);
     const unreadOnly = search.get('new') !== null;
-    const {post, comments, postComment, editComment, editPost, error, reload, updatePost} = usePost(site, postId, unreadOnly);
+    const {post, comments, anonymousUser, postComment, editComment, editPost, error, reload, updatePost} = usePost(site, postId, unreadOnly);
 
     useEffect(() => {
         let docTitle = `Пост #${postId}`;
@@ -53,50 +55,44 @@ export default function PostPage() {
             return;
         }
 
+        let scrollToComment: HTMLDivElement | null | undefined;
+        let commentId: number | undefined;
         if (location.hash) {
-            const commentId = parseInt(location.hash.substring(1));
-
-            if (scrolledToComment && scrolledToComment.postId === postId && scrolledToComment.commentId === commentId) {
-                return;
-            }
-
-            const el = document.querySelector(`[data-comment-id="${commentId}"] .commentBody`);
-            if (el) {
-                setTimeout(() => {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    el.classList.add('highlight');
-
-                    setTimeout(() => {
-                        el.classList.remove('highlight');
-                        setScrolledToComment({postId, commentId});
-                    }, 5000);
-                }, 100);
-            }
+            commentId = parseInt(location.hash.substring(1));
+            scrollToComment = document.querySelector<HTMLDivElement>(`[data-comment-id="${commentId}"]`);
         }
         else if (unreadOnly) {
-            // find new comment
-            const el = document.querySelector(`.isNew`);
-            if (el) {
-                const commentId = parseInt(el.getAttribute('data-comment-id') || '');
-                if (!commentId) {
-                    return;
-                }
-
-                if (scrolledToComment && scrolledToComment.postId === postId && scrolledToComment.commentId === commentId) {
-                    return;
-                }
-
-                setTimeout(() => {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-                    setTimeout(() => {
-                        setScrolledToComment({postId, commentId});
-                    }, 5000);
-                }, 100);
-            }
-
+            // find first new comment
+             scrollToComment = document.querySelector<HTMLDivElement>(`.isNew`);
+             commentId = scrollToComment?.dataset.commentId ? parseInt(scrollToComment.dataset.commentId) : undefined;
         }
-    }, [location.hash, comments, scrolledToComment, unreadOnly]);
+        // do nothing if element is focused already
+        if (!scrollToComment || scrollToComment.className.indexOf(styles.focusing) >= 0 ||
+            (scrolledToComment && scrolledToComment.postId === postId && scrolledToComment.commentId === commentId)
+        ) {
+            return;
+        }
+
+        const commentBody = scrollToComment.querySelector<HTMLDivElement>('.commentBody');
+        if (!commentBody) {
+            return;
+        }
+        const containerNode = containerRef.current;
+        // disable anchoring for all post&comments and anchor the comment
+        containerNode?.classList.add(styles.focusing);
+        scrollToComment.classList.add(styles.focused);
+        commentBody.classList.add(styles.highlight);
+
+        commentId && setScrolledToComment({postId, commentId});
+
+        scrollUnderTopbar(commentBody);
+
+        return () => {
+            commentBody.classList.remove(styles.highlight);
+            containerNode?.classList.remove(styles.focusing);
+            scrollToComment?.classList.remove(styles.focused);
+        };
+    }, [location.hash, comments, unreadOnly, postId]);
 
     const handlePostEdit = async (post: PostInfo, text: string, title?: string): Promise<PostInfo | undefined> => {
         return await editPost(title || '', text);
@@ -105,10 +101,11 @@ export default function PostPage() {
     const baseRoute = site === 'main' ? '/' : `/s/${site}/`;
 
     return (
-        <div className={styles.container}>
+        <div className={styles.container} ref={containerRef}>
             <div className={styles.feed}>
                 {post ? <div>
                         <PostComponent key={post.id} post={post} onChange={(_, partial) => updatePost(partial)} onEdit={handlePostEdit} />
+                        {anonymousUser && <div className={styles.anon}><span className={'i i-anon'}></span> Внимание, анонимность!<br/>Комментарии в этом посте публикуются лица <Username user={anonymousUser}/>.</div>}
                         <div className={styles.postButtons}><Link to={`${baseRoute}p${post.id}`} className={unreadOnly ? '' : 'bold'}>все комментарии</Link> • <Link to={`${baseRoute}p${post.id}?new`} className={unreadOnly ? 'bold' : ''}>только новые</Link></div>
                         <div className={styles.comments + (unreadOnly ? ' unreadOnly' : '')}>
                             {comments ?

@@ -5,6 +5,8 @@ import postStyles from '../Pages/CreatePostPage.module.css';
 import commentStyles from './CommentComponent.module.scss';
 import {ReactComponent as IronyIcon} from '../Assets/irony.svg';
 import {ReactComponent as ImageIcon} from '../Assets/image.svg';
+import {ReactComponent as SpoilerIcon} from '../Assets/spoiler.svg';
+import {ReactComponent as ExpandIcon} from '../Assets/expand.svg';
 import {ReactComponent as LinkIcon} from '../Assets/link.svg';
 import {ReactComponent as QuoteIcon} from '../Assets/quote.svg';
 import {ReactComponent as SendIcon} from '../Assets/send.svg';
@@ -15,8 +17,14 @@ import {UserGender} from '../Types/UserInfo';
 import {useAPI, useAppState} from '../AppState/AppState';
 import SlowMode from './SlowMode';
 import {observer} from 'mobx-react-lite';
-import TextareaAutosize from 'react-textarea-autosize';
 import {useDebouncedCallback} from 'use-debounce';
+import ThemeToggleComponent from './ThemeToggleComponent';
+import getCaretCoordinates from 'textarea-caret';
+import {toast} from 'react-toastify';
+import ReactTextareaAutocomplete from '@webscopeio/react-textarea-autocomplete';
+import TextareaAutosize from 'react-textarea-autosize';
+import debouncePromise from 'debounce-promise';
+import {useHotkeys} from 'react-hotkeys-hook';
 
 interface CreateCommentProps {
     open: boolean;
@@ -25,7 +33,7 @@ interface CreateCommentProps {
     text?: string;
     storageKey?: string;
 
-    onAnswer: (text: string, post?: PostLinkInfo, comment?: CommentInfo) => Promise<CommentInfo | undefined>;
+    onAnswer: (text: string, post?: PostLinkInfo, comment?: CommentInfo) => Promise<CommentInfo | string| undefined>;
 }
 
 // same as CreateCommentComponent, but with slow mode and other restrictions
@@ -60,13 +68,34 @@ export const CreateCommentComponentRestricted = observer((props: CreateCommentPr
     }}/>;
 });
 
+const Item = (item: { entity: string }) => {
+    return <div>{`${item.entity}`}</div>;
+};
+
+const allowedKeys = [
+    'ctrl+enter',
+    'meta+enter',
+    'ctrl+b',
+    'meta+b',
+    'ctrl+i',
+    'meta+i',
+    'ctrl+u',
+    'meta+u',
+    'ctrl+k',
+    'meta+k',
+    'ctrl+shift+x',
+    'meta+shift+x'
+];
+
 export default function CreateCommentComponent(props: CreateCommentProps) {
-    const answerRef = useRef<HTMLTextAreaElement>(null);
+    const answerRef = useRef<HTMLTextAreaElement>();
     const [answerText, setAnswerText] = useState<string>(props.text ||
         (props.storageKey && localStorage.getItem('crCmp:' + props.storageKey)) || '');
     const [isPosting, setPosting] = useState(false);
     const [previewing, setPreviewing] = useState<string | null>(null);
     const [mediaUploaderOpen, setMediaUploaderOpen] = useState(false);
+    const [mediaUploaderData, setMediaUploaderData] = useState<File | undefined>();
+    const containerRef = useHotkeys<HTMLDivElement>(allowedKeys.join(','), (e ) => handleHotKey(e), {enableOnFormTags: ['TEXTAREA'], preventDefault: true});
     const api = useAPI();
 
     const pronoun = props?.comment?.author?.gender === UserGender.he ? 'ему' : props?.comment?.author?.gender===UserGender.she ? 'ей' : '';
@@ -88,6 +117,16 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         setAnswerText(e.target.value);
     };
 
+    const handleHotKey = (e: KeyboardEvent ) => {
+        const key = e.code;
+        if ((e.ctrlKey || e.metaKey) && key === 'KeyB') applyTag('b');
+        if ((e.ctrlKey || e.metaKey) && key === 'KeyI') applyTag('i');
+        if ((e.ctrlKey || e.metaKey) && key === 'KeyU') applyTag('u');
+        if ((e.ctrlKey || e.metaKey) && key === 'KeyA') applyTag('a');
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && key === 'KeyX') applyTag('strike');
+        if ((e.ctrlKey || e.metaKey) && key === 'Enter') handleAnswer();
+    };
+
     const replaceText = (text: string, cursor: number) => {
         const answer = answerRef.current;
         if (!answer) {
@@ -103,18 +142,22 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         const newValue = text1 + text + text2;
         answer.value = newValue;
 
-        answer.selectionStart = start + cursor;
-        answer.selectionEnd = answer.selectionStart;
-
         setStorageValueDebounced(newValue);
         setAnswerText(newValue);
+
+        setTimeout(() => {
+            if (!answer) {
+                return;
+            }
+            answer.selectionStart = start + cursor;
+            answer.selectionEnd = answer.selectionStart;
+        });
     };
 
-    const applyTag = (tag: string) => {
+    const applyTag = (tag: string, attrs?: {[name: string]: string}) => {
         if (isPosting) {
             return;
         }
-
         const answer = answerRef.current;
         if (!answer) {
             return;
@@ -165,7 +208,8 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 break;
             }
             default: {
-                newValue = `<${tag}>${oldValue}</${tag}>`;
+                const textAttrs = !attrs ? '' : Object.keys(attrs).reduce((_, name) => `${_} ${name}="${attrs[name]}"`, '');
+                newValue = `<${tag}${textAttrs}>${oldValue}</${tag}>`;
                 newPos = oldValue ? newValue.length : newValue.length - `</${tag}>`.length;
             }
 
@@ -175,12 +219,40 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     };
 
     useEffect(() => {
-        const answer = answerRef.current;
-        if ((props.text || props.comment) && props.open && answer) {
-            answer.focus();
-            answer.selectionStart = answer.value.length;
+        if ((props.text || props.comment) && props.open && answerRef.current) {
+            answerRef.current.focus();
+            answerRef.current.selectionStart = answerRef.current.value.length;
         }
     }, [props.open, props.comment]);
+
+    useEffect(() => {
+        if (
+            !answerRef.current ||
+          !containerRef.current
+        ) {
+            return;
+        }
+        const {top, left} = getCaretCoordinates(answerRef.current, answerRef.current.selectionEnd);
+        const suggestResults = containerRef.current?.querySelector('.textarea-suggest__results ') as HTMLDivElement;
+        if (!suggestResults) {
+            return;
+        }
+        suggestResults.style.setProperty('top', top.toString() + 'px');
+        suggestResults.style.setProperty('left', left.toString() + 'px');
+    });
+
+    const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) =>{
+        setMediaUploaderData(undefined);
+        const items = e.clipboardData.items;
+        for (let i = 0; i < items.length; i++) {
+            const file = items[i].getAsFile();
+            if (file) {
+                setMediaUploaderData(file);
+                setMediaUploaderOpen(true);
+                e.preventDefault();
+            }
+        }
+    };
 
     const handlePreview = async () => {
         if (isPosting) {
@@ -202,6 +274,19 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         }
     };
 
+    const previewIgnoredTagNames = ['A', 'SUMMARY', 'VIDEO'];
+    const handleClosePreview = async (e: React.MouseEvent) => {
+        const el = e.target as HTMLElement;
+        if (isPosting ||
+            previewIgnoredTagNames.includes(el.tagName) ||
+            el.getAttribute('role') === 'button' ||
+            el.classList.contains('image-scalable')
+        ) {
+            return;
+        }
+        setPreviewing(null);
+    };
+
     const handleAnswer = () => {
         setPosting(true);
         props.onAnswer(answerText, props.post, props.comment)
@@ -219,13 +304,8 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             });
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if ((e.ctrlKey || e.metaKey) && e.code === 'Enter') {
-            handleAnswer();
-        }
-    };
-
     const handleMediaUpload = (uri: string, type: 'video' | 'image') => {
+        setMediaUploaderData(undefined);
         setMediaUploaderOpen(false);
         if (type === 'image') {
             // noinspection HtmlRequiredAltAttribute
@@ -239,37 +319,100 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     };
 
     const handleMediaUploadCancel = () => {
+        setMediaUploaderData(undefined);
         setMediaUploaderOpen(false);
+    };
+
+    const debounceSuggestError = useDebouncedCallback((error: string) => {
+        toast(error, {type: 'error'});
+    }, 5000, {leading: true, trailing: false, maxWait: 10000});
+
+    const onDragEnter = (e: React.DragEvent<HTMLTextAreaElement>) => {
+        // open media uploader on drag enter
+        // check that image files are dragged
+        if (e.dataTransfer.items.length > 0 &&
+            e.dataTransfer.items[0].kind === 'file' &&
+            e.dataTransfer.items[0].type.startsWith('image/')
+        ) {
+            setMediaUploaderOpen(true);
+        }
+    };
+
+    const fetchUsernameSuggestions = async (startsWith: string) => {
+        try {
+            const result = await api.userAPI.getUsernameSuggestions(startsWith);
+            return result.usernames;
+        } catch (e) {
+            debounceSuggestError((e as any).message);
+            return [];
+        }
     };
 
     if (!props.open) {
         return <></>;
     }
 
+    const fetchUsernameSuggestionsDebounced = debouncePromise(fetchUsernameSuggestions, 50);
+    const suggestTrigger = {
+        '@': {
+            dataProvider: async (startsWith: string) => {
+                if (!answerRef.current) {
+                    return [];
+                }
+                return fetchUsernameSuggestionsDebounced(startsWith);
+            },
+            component: Item,
+            output: (item: string) => '@' + item
+        }
+    };
+
     return (
         <div className={styles.answer}>
             <div className={styles.controls}>
-                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('b')} className={styles.bold}>B</button></div>
-                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('i')} className={styles.italic}>I</button></div>
-                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('u')} className={styles.underline}>U</button></div>
-                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('strike')} className={styles.strike}>S</button></div>
-                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('irony')}><IronyIcon /></button></div>
-                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('blockquote')}><QuoteIcon /></button></div>
-                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('img')}><ImageIcon /></button></div>
-                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('a')}><LinkIcon /></button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('b')} title="Болд" className={styles.bold}>B</button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('i')} title="Италик" className={styles.italic}>I</button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('u')} title="Подчеркнуть" className={styles.underline}>U</button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('strike')} title="Перечеркнуть" className={styles.strike}>S</button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('irony')} title="Ирония"><IronyIcon /></button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('spoiler')} title="Спойлер"><SpoilerIcon /></button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('expand', {'title':''})} title="Свернуть/Развернуть"><ExpandIcon /></button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('blockquote')} title="Цитировать"><QuoteIcon /></button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('img')} title="Вставить картинку/видео"><ImageIcon /></button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('a')} title="Вставить ссылку"><LinkIcon /></button></div>
             </div>
             {
-                (previewing === null )
-                ?  <div className={styles.editor}>
-                        <TextareaAutosize ref={answerRef} disabled={isPosting} placeholder={placeholderText} value={answerText}
-                                      onChange={handleAnswerChange} onKeyDown={handleKeyDown} maxRows={25}/>
+                (previewing === null)
+                    ? <div className={styles.editor} ref={containerRef}>
+                        <ReactTextareaAutocomplete<string>
+                            placeholder={placeholderText}
+                            innerRef={(el: HTMLTextAreaElement) => {
+                                answerRef.current = el;
+                            }}
+                            dropdownClassName={styles.textareaSuggestContainer}
+                            loadingComponent={() => <></>}
+                            minChar={1}
+                            disabled={isPosting}
+                            onChange={handleAnswerChange}
+                            onPaste={handlePaste}
+                            onDragEnter={onDragEnter}
+                            value={answerText}
+                            // @ts-expect-error -- types of react-textarea-autosize and react-textarea-autocomplete are incompatible with their latest versions
+                            textAreaComponent={TextareaAutosize}
+                            maxRows={25}
+                            movePopupAsYouType={true}
+                            trigger={suggestTrigger}
+                        />
                     </div>
-                :  <div className={classNames(commentStyles.content, styles.preview, postStyles.preview)} onClick={handlePreview}><ContentComponent content={previewing} /></div>
+                    : <div className={classNames(commentStyles.content, styles.preview, postStyles.preview)}
+                           onClick={handleClosePreview}><ContentComponent content={previewing}/></div>
             }
             <div className={styles.final}>
+                {previewing && (
+                  <ThemeToggleComponent buttonLabel='Превью с другой темой' resetOnOnmount={true} />
+                )}
                 <button disabled={isPosting || !answerText} className={styles.buttonPreview} onClick={handlePreview}>{(previewing === null) ? 'Превью' : 'Редактор'}</button>
                 <button disabled={isPosting || !answerText} className={styles.buttonSend} onClick={handleAnswer}><SendIcon /></button>
-                {mediaUploaderOpen && <MediaUploader onSuccess={handleMediaUpload} onCancel={handleMediaUploadCancel} />}
+                {mediaUploaderOpen && <MediaUploader onSuccess={handleMediaUpload} onCancel={handleMediaUploadCancel} mediaData={mediaUploaderData}/>}
             </div>
         </div>
     );

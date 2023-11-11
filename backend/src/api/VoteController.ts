@@ -7,12 +7,38 @@ import {VoteSetRequest, VoteSetResponse} from './types/requests/VoteSet';
 import {VoteListRequest, VoteListResponse} from './types/requests/VoteList';
 import {VoteListItemEntity} from './types/entities/VoteEntity';
 import UserManager from '../managers/UserManager';
+import rateLimit from 'express-rate-limit';
 
 export default class VoteController {
     public router = Router();
     private voteManager: VoteManager;
     private userManager: UserManager;
     private logger: Logger;
+
+    // 60 requests per two minutes
+    private readonly voteRateLimiter = rateLimit({
+        max: 60,
+        windowMs: 2 * 60 * 1000,
+        skipSuccessfulRequests: false,
+        standardHeaders: false,
+        legacyHeaders: false,
+        keyGenerator: (req) => String(req.session.data?.userId)
+    });
+
+    // 100 requests per day for each (voterId, userId) pair
+    private readonly voteDayRateLimiter = rateLimit({
+        max: 100,
+        windowMs: 24 * 60 * 60 * 1000, // 24 hours
+        skipSuccessfulRequests: false,
+        standardHeaders: false,
+        legacyHeaders: false,
+        keyGenerator: (req) => {
+            // Combine voterId and userId into a single key
+            const voterId = String(req.session.data?.userId);
+            const userId = String(req.body.id);
+            return `${voterId}:${userId}`;
+        }
+    });
 
     constructor(voteManager: VoteManager, userManager: UserManager, logger: Logger) {
         this.voteManager = voteManager;
@@ -29,7 +55,7 @@ export default class VoteController {
             id: Joi.number().required()
         });
 
-        this.router.post('/vote/set', validate(voteSchema), (req, res) => this.setVote(req, res));
+        this.router.post('/vote/set', this.voteRateLimiter, validate(voteSchema), this.voteDayRateLimiter, (req, res) => this.setVote(req, res));
         this.router.post('/vote/list', validate(listSchema), (req, res) => this.list(req, res));
     }
 

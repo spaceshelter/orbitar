@@ -1,0 +1,34 @@
+.logoutButton,
+.settingsButton,
+.themeButton {
+  background: var(--dim1);
+  color: var(--fgSoft);
+  border: none;
+  display: flex;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: bold;
+  align-items: center;
+  gap: 8px;
+  fill: var(--fgSoft);
+}
+
+.logoutButton:hover, .settingsButton:hover,
+.themeButton.dynamic:hover
+{
+  fill: var(--fg);
+  color: var(--fg);
+  background: var(--dim3);
+}
+
+button.linkButton {
+    border: none;
+    background: none;
+    color: var(--link);
+    margin: 0;
+    padding: 0 10px 0 0;
+
+    &:hover {
+      color: var(--linkHover);
+    }
+}

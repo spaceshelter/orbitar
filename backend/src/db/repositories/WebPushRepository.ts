@@ -24,6 +24,12 @@ export default class WebPushRepository {
         });
     }
 
+    async resetAllSubscriptions(forUserId: number) {
+        await this.db.query('delete from user_webpush where user_id=:user_id', {
+            user_id: forUserId
+        });
+    }
+
     async getSubscription(forUserId: number, auth: string): Promise<PushSubscription | undefined> {
         const result = await this.db.fetchOne<{subscription: string}>('select subscription from user_webpush where user_id=:user_id and auth = :auth', {
             user_id: forUserId,

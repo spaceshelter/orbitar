@@ -24,7 +24,8 @@ import {PostHistoryRequest, PostHistoryResponse} from './types/requests/PostHist
 import {HistoryEntity} from './types/entities/HistoryEntity';
 import rateLimit from 'express-rate-limit';
 import {TranslateRequest, TranslateResponse} from './types/requests/Translate';
-import TranslationManager from '../managers/TranslationManager';
+import TranslationManager, {TRANSLATION_MODES} from '../managers/TranslationManager';
+import {APIError, AuthenticationError, RateLimitError} from 'openai';
 
 const commonRateLimitConfig = {
     skipSuccessfulRequests: false,
@@ -125,6 +126,7 @@ export default class PostController {
         const translateSchema = Joi.object<TranslateRequest>({
             id: Joi.number().required(),
             type: Joi.string().valid('post', 'comment').required(),
+            mode: Joi.string().valid(...TRANSLATION_MODES).required(),
         });
         const historySchema = Joi.object<PostHistoryRequest>({
             id: Joi.number().required(),
@@ -166,6 +168,9 @@ export default class PostController {
             }
 
             const restrictions = await this.userManager.getUserRestrictions(userId);
+            if (restrictions.restrictedToPostId !== false && rawPost.author !== userId) {
+                return response.error('access-denied', 'You don\'t have permission to view this post', 403);
+            }
 
             const {posts: [post], users} = await this.enricher.enrichRawPosts([rawPost]);
             if (!restrictions.canEditOwnContent) {
@@ -186,15 +191,20 @@ export default class PostController {
                 comments = rootComments;
             }
 
+            const userIdOverride = await this.postManager.getUserIdOverride(postId);
+            const userIdOverrideEntity = userIdOverride && await this.userManager.getById(userIdOverride);
+
             response.success({
                 post: post,
                 site: this.enricher.siteInfoToEntity(site),
                 comments: comments,
-                users: users
+                users: users,
+                anonymousUser: userIdOverrideEntity
             });
         }
         catch (err) {
             this.logger.error('Post get error', { error: err, post_id: postId });
+            this.logger.error(err);
             return response.error('error', 'Unknown error', 500);
         }
     }
@@ -208,6 +218,11 @@ export default class PostController {
         const { id, title, format, content } = request.body;
 
         try {
+            const restrictions = await this.userManager.getUserRestrictions(userId);
+            if (!restrictions.canEditOwnContent) {
+                return response.error('access-denied', 'Access-denied', 403);
+            }
+
             const postInfo = await this.postManager.editPost(userId, id, title, content, format);
             if (!postInfo) {
                 return response.error('no-comment', 'Post not found');
@@ -220,6 +235,7 @@ export default class PostController {
         }
         catch (err) {
             this.logger.error('Post edit error', { error: err, user_id: userId, post_id: id, format, content, title });
+            this.logger.error(err);
 
             if (err instanceof CodeError && err.code === 'access-denied') {
                 return response.error('access-denied', 'Access-denied');
@@ -254,6 +270,7 @@ export default class PostController {
         }
         catch (err) {
             this.logger.error('Post create failed', { error: err, user_id: userId, site, format, content, title });
+            this.logger.error(err);
             return response.error('error', 'Unknown error', 500);
         }
     }
@@ -269,6 +286,7 @@ export default class PostController {
             response.success({ content : result });
         } catch (err) {
             this.logger.error('Comment create failed', { error: err, user_id: userId, content });
+            this.logger.error(err);
             return response.error('error', 'Unknown error', 500);
         }
     }
@@ -282,8 +300,6 @@ export default class PostController {
         const { post_id: postId, comment_id: parentCommentId, format, content } = request.body;
 
         try {
-            const users: Record<number, UserEntity> = {[userId]: await this.userManager.getById(userId)};
-
             const userRestrictions = await this.userManager.getUserRestrictions(userId);
             if (userRestrictions.commentSlowModeWaitSecRemain > 0) {
                 return response.error('slow-mode', `Slow mode, time left ${userRestrictions.commentSlowModeWaitSecRemain} sec`, 403);
@@ -293,13 +309,21 @@ export default class PostController {
                 return response.error('restricted', `Commenting restricted ${rid === true ? 'to own posts' : `to post #${rid}`}`, 403);
             }
 
-            const commentInfo = await this.postManager.createComment(userId, postId, parentCommentId, content, format);
-            const { allComments : [comment] } = await this.enricher.enrichRawComments([commentInfo], {}, format, () => true);
+            const overrideUserId = (await this.postManager.getUserIdOverride(postId)) || userId;
 
-            this.logger.info(`Comment created by #${userId} @${users[userId].username}`, {
+            const doFanOutAndNotifications = userRestrictions.restrictedToPostId === false;
+            const commentInfo = await this.postManager.createComment(
+                overrideUserId, postId, parentCommentId, content, format, doFanOutAndNotifications
+            );
+            const { allComments : [comment] } = await this.enricher.enrichRawComments([commentInfo], {}, format, () => true);
+            comment.canEdit = overrideUserId === userId;
+
+            const users: Record<number, UserEntity> = {[overrideUserId]: await this.userManager.getById(overrideUserId)};
+
+            this.logger.info(`Comment created by #${overrideUserId} @${users[overrideUserId].username}`, {
                 comment: content,
-                username: users[userId].username,
-                user_id: userId
+                username: users[overrideUserId].username,
+                user_id: overrideUserId
             });
 
             response.success({
@@ -309,6 +333,7 @@ export default class PostController {
         }
         catch (err) {
             this.logger.error('Comment create failed', { error: err, user_id: userId, format, content, post_id: postId });
+            this.logger.error(err);
             return response.error('error', 'Unknown error', 500);
         }
     }
@@ -322,13 +347,9 @@ export default class PostController {
         const { post_id: postId, comments, last_comment_id: lastCommentId } = request.body;
 
         const readUpdated = await this.postManager.setRead(postId, userId, comments, lastCommentId);
-            // update in background
-            // .then()
-            // .catch(err => {
-            //     this.logger.error(`Read update failed`, { error: err, user_id: userId, post_id: postId, comments: comments, last_comment_id: lastCommentId });
-            // });
 
         if (readUpdated) {
+            this.userManager.deleteUserStatsCache(userId);
             const status = await this.userManager.getUserStats(userId);
             return response.success({
                 notifications: status.notifications,
@@ -353,6 +374,7 @@ export default class PostController {
         }
         catch (err) {
             this.logger.error('Bookmark failed', { error: err, user_id: userId, post_id: postId, bookmark });
+            this.logger.error(err);
             return response.error('error', 'Unknown error', 500);
         }
     }
@@ -367,10 +389,12 @@ export default class PostController {
 
         try {
             await this.postManager.setWatch(postId, userId, watch);
+            this.userManager.deleteUserStatsCache(userId);
             response.success({watch});
         }
         catch (err) {
             this.logger.error('Watch failed', { error: err, user_id: userId, post_id: postId, watch });
+            this.logger.error(err);
             return response.error('error', 'Unknown error', 500);
         }
     }
@@ -389,6 +413,12 @@ export default class PostController {
                 return response.error('no-comment', 'Comment not found');
             }
 
+            const restrictions = await this.userManager.getUserRestrictions(userId);
+            if (restrictions.restrictedToPostId && restrictions.restrictedToPostId !== commentInfo.post) {
+                // simplification, but currently getComment is used only for editing, so it's ok
+                return response.error('access-denied', `Commenting restricted to post #${restrictions.restrictedToPostId}`, 403);
+            }
+
             const {allComments: [comment], users} = await this.enricher.enrichRawComments([commentInfo], {}, format,
                 () => false
             );
@@ -400,6 +430,7 @@ export default class PostController {
         }
         catch (err) {
             this.logger.error('Comment get error', { error: err, comment_id: commentId });
+            this.logger.error(err);
             return response.error('error', 'Unknown error', 500);
         }
     }
@@ -434,6 +465,7 @@ export default class PostController {
         }
         catch (err) {
             this.logger.error('Comment edit error', { error: err, comment_id: commentId });
+            this.logger.error(err);
 
             if (err instanceof CodeError && err.code === 'access-denied') {
                 return response.error('access-denied', 'Access-denied');
@@ -447,12 +479,39 @@ export default class PostController {
         if (!request.session.data.userId) {
             return response.authRequired();
         }
-        const {id, type} = request.body;
+        const {id, type, mode} = request.body;
         try {
-            return response.success(await this.translationManager.translateEntity(id, type));
+            const restrictions = await this.userManager.getUserRestrictions(request.session.data.userId);
+            if (restrictions.restrictedToPostId !== false) {
+                // simplification, just disallows the translation
+                return response.error('access-denied', `Translation is not allowed.`, 403);
+            }
+
+            await this.translationManager.translateEntity(id, type, mode, (chunk) => response.write(chunk));
+            response.end();
         } catch (err) {
+            let msg = 'Unknown error';
+            if(err instanceof AuthenticationError){
+                msg = 'OpenAI AuthenticationError';
+            } else if(err instanceof RateLimitError){
+                msg = 'OpenAI RateLimitError';
+            } else if(err instanceof APIError) {
+                msg = 'OpenAI error';
+            }
             this.logger.error(err);
-            return response.error('error', 'Unknown error', 500);
+            try {
+                response.error('error', msg, 500);
+            } catch (err) {
+                // in case some chunks were already written
+                // should not happen now, just a precaution if the invariant in translateEntity is broken
+                this.logger.error('Error writing response');
+                this.logger.error(err);
+                try {
+                    response.write('{"result":"error","code":"error"}');
+                } finally {
+                    response.end();
+                }
+            }
         }
     }
 
@@ -465,6 +524,11 @@ export default class PostController {
         const { id, type, format } = request.body;
 
         try {
+            const restrictions = await this.userManager.getUserRestrictions(userId);
+            if (restrictions.restrictedToPostId !== false) {
+                return response.error('access-denied', 'Access-denied', 403);
+            }
+
             const historyInfos = await this.postManager.getHistory(userId, id, type, format);
 
             const history: HistoryEntity[] = historyInfos.map(h => ({
@@ -483,6 +547,7 @@ export default class PostController {
         }
         catch (err) {
             this.logger.error('History request error', { error: err, ref_id: id, ref_type: type });
+            this.logger.error(err);
 
             if (err instanceof CodeError && err.code === 'access-denied') {
                 return response.error('access-denied', 'Access-denied');

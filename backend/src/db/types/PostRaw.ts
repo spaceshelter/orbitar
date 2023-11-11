@@ -16,6 +16,7 @@ export type PostRaw = {
     gold: number;
     language: string;
     content_source_id: number;
+    parser_version: number;
 } & PostBareBonesRaw;
 
 export type PostRawWithUserData = PostRaw & {
@@ -40,6 +41,7 @@ export type CommentRaw = {
     edit_flag?: number;
     language: string;
     content_source_id: number;
+    parser_version: number;
 };
 
 export type CommentRawWithUserData = CommentRaw & {

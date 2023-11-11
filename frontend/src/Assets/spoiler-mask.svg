@@ -1,0 +1,7 @@
+<svg id='spoiler-mask'>
+    <filter id='spoiler-mask-filter'>
+        <feGaussianBlur stdDeviation='20'></feGaussianBlur>
+        <feColorMatrix type='matrix' values='1 0 0 0 0, 0 1 0 0 0, 0 0 1 0 0, 0 0 0 9 0'></feColorMatrix>
+        <feComposite in2='SourceGraphic' operator='in'></feComposite>
+    </filter>
+</svg>

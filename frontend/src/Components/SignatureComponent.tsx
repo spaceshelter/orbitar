@@ -4,14 +4,14 @@ import Username from './Username';
 import PostLink from './PostLink';
 import DateComponent from './DateComponent';
 import React from 'react';
-import {UserInfo} from '../Types/UserInfo';
+import {UserBaseInfo} from '../Types/UserInfo';
 import {EditFlag} from '../API/PostAPI';
 import {PostLinkInfo} from '../Types/PostInfo';
 
 interface SignatureComponentProps {
     showSite?: boolean;
     site?: string;
-    author: UserInfo;
+    author: UserBaseInfo;
     editFlag?: EditFlag;
     onHistoryClick: () => void;
     postLink: PostLinkInfo;

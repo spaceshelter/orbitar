@@ -11,6 +11,7 @@ on:
       - docker-compose.local.yml
       - docker-compose.ssl.dev.yml
       - docker-compose.ssl.local.yml
+  workflow_dispatch:
 
 jobs:
   build-docker:

@@ -7,6 +7,7 @@ interface PostLinkProps extends React.ComponentPropsWithRef<'a'> {
     commentId?: number;
     children?: React.ReactNode;
     onlyNew?: boolean;
+    target?: string;
 }
 
 export default function PostLink(props: PostLinkProps) {
@@ -23,7 +24,8 @@ export default function PostLink(props: PostLinkProps) {
         link += '#' + props.commentId;
     }
 
+    const target = !props.target ? '_self':  props.target;
     return (
-        <Link to={link} className={props.className} onClick={props.onClick}>{props.children}</Link>
+        <Link target={target} to={link} className={props.className} onClick={props.onClick}>{props.children}</Link>
     );
 }

@@ -1,6 +1,5 @@
 import PostRepository from '../db/repositories/PostRepository';
 import {PostRawWithUserData} from '../db/types/PostRaw';
-import UserRepository from '../db/repositories/UserRepository';
 import CodeError from '../CodeError';
 import BookmarkRepository from '../db/repositories/BookmarkRepository';
 import {PostInfo} from './types/PostInfo';
@@ -11,6 +10,8 @@ import {FeedSorting} from '../api/types/entities/common';
 import {Logger} from 'winston';
 import fetch from 'node-fetch';
 import {config} from '../config';
+import TheParser from '../parser/TheParser';
+import UserManager from './UserManager';
 
 const FEED_API = `http://${config.feed.host}:${config.feed.port}`;
 
@@ -38,23 +39,25 @@ type QueryResponse = {
 export default class FeedManager {
     private readonly bookmarkRepository: BookmarkRepository;
     private readonly postRepository: PostRepository;
-    private readonly userRepository: UserRepository;
+    private readonly userManager: UserManager;
     private readonly siteManager: SiteManager;
     private initialized = undefined;
     /* minimal post created / updated date */
     private minDate: Date | undefined = undefined;
     /* when true, backend expects non-empty feed cache, will repopulate if discrepancy is found */
     private confirmedPostsExist = false;
+    private readonly parser: TheParser;
     private readonly logger: Logger;
 
     private userSubscriptionsCache = new Map<number, number[]>();
 
-    constructor(bookmarkRepository: BookmarkRepository, postRepository: PostRepository, userRepository: UserRepository,
-                siteManager: SiteManager, logger: Logger) {
+    constructor(bookmarkRepository: BookmarkRepository, postRepository: PostRepository, userManager: UserManager,
+                siteManager: SiteManager, parser: TheParser, logger: Logger) {
         this.bookmarkRepository = bookmarkRepository;
         this.postRepository = postRepository;
-        this.userRepository = userRepository;
+        this.userManager = userManager;
         this.siteManager = siteManager;
+        this.parser = parser;
         this.logger = logger;
     }
 
@@ -175,7 +178,7 @@ export default class FeedManager {
                 offset: limitFrom,
                 limit: perpage,
             } as Query),
-        }).then(res => res.json() as QueryResponse);
+        }).then(res => res.json() as unknown as QueryResponse);
         this.logger.profile(`getSubscriptionFeed/query:${forUserId}`);
 
         /**
@@ -209,7 +212,7 @@ export default class FeedManager {
 
         return {
             total,
-            posts: await this.convertRawPost(forUserId, posts, format)
+            posts: await this.convertRawPosts(forUserId, posts, format)
         };
     }
 
@@ -227,7 +230,7 @@ export default class FeedManager {
 
     async getAllPosts(forUserId: number, page: number, perpage: number, format: ContentFormat, sorting: FeedSorting): Promise<PostInfo[]> {
         const rawPosts = await this.postRepository.getAllPosts(forUserId, page, perpage, sorting);
-        return this.convertRawPost(forUserId, rawPosts, format);
+        return this.convertRawPosts(forUserId, rawPosts, format);
     }
 
     async getAllPostsTotal(): Promise<number> {
@@ -236,7 +239,7 @@ export default class FeedManager {
 
     async getWatchFeed(forUserId: number, page: number, perpage: number, all = false, format: ContentFormat = 'html'): Promise<PostInfo[]> {
         const rawPosts = await this.postRepository.getWatchPosts(forUserId, page, perpage, all);
-        return await this.convertRawPost(forUserId, rawPosts, format);
+        return await this.convertRawPosts(forUserId, rawPosts, format);
     }
 
     async getWatchTotal(forUserId: number, all = false): Promise<number> {
@@ -246,23 +249,45 @@ export default class FeedManager {
 
     async getSiteFeed(forUserId: number, siteId: number, page: number, perpage: number, format: ContentFormat, sorting: FeedSorting): Promise<PostInfo[]> {
         const rawPosts = await this.postRepository.getPosts(siteId, forUserId, page, perpage, sorting);
-        return this.convertRawPost(forUserId, rawPosts, format);
+        return this.convertRawPosts(forUserId, rawPosts, format);
     }
 
     async getSiteTotal(siteId: number): Promise<number> {
         return await this.postRepository.getPostsTotal(siteId);
     }
 
+    async getRestrictedPosts(forUserId: number, page: number, perpage: number, format: ContentFormat, sorting: FeedSorting): Promise<PostInfo[] | undefined> {
+        const userRestrictions = await this.userManager.getUserRestrictions(forUserId);
+        if (userRestrictions.restrictedToPostId === false) {
+            return undefined;
+        }
+        // fetch all own posts
+        const rawPosts = await this.postRepository.getPostsByUser(forUserId,
+            forUserId, '', page, perpage, sorting);
 
-    async convertRawPost(forUserId: number, rawPosts: PostRawWithUserData[], format: ContentFormat): Promise<PostInfo[]> {
+        return this.convertRawPosts(forUserId, rawPosts, format);
+    }
+
+    async convertRawPosts(forUserId: number, rawPosts: PostRawWithUserData[], format: ContentFormat): Promise<PostInfo[]> {
         const siteById: Record<number, SiteInfo> = {};
         const posts: PostInfo[] = [];
+        const commentsToUpdateHtmlAndParserVersion: {id: number, html: string}[] = [];
 
         for (const rawPost of rawPosts) {
             let site = siteById[rawPost.site_id];
             if (!site) {
                 site = await this.siteManager.getSiteById(rawPost.site_id);
                 siteById[rawPost.site_id] = site;
+            }
+
+            if (rawPost.parser_version !== TheParser.VERSION) {
+                const parseResult = this.parser.parse(rawPost.source);
+                commentsToUpdateHtmlAndParserVersion.push({
+                    id: rawPost.post_id,
+                    html: rawPost.html !== parseResult.text ? parseResult.text : undefined,
+                });
+                rawPost.html = parseResult.text;
+                rawPost.parser_version = TheParser.VERSION;
             }
 
             const post: PostInfo = {
@@ -291,8 +316,13 @@ export default class FeedManager {
             posts.push(post);
         }
 
-        return posts;
+        this.postRepository.updateHtmlAndParserVersion(commentsToUpdateHtmlAndParserVersion.filter(x => x.html !== undefined),
+            TheParser.VERSION).then().catch();
+        this.postRepository.updateParserVersion(
+            commentsToUpdateHtmlAndParserVersion.filter(x => x.html === undefined).map(x => x.id),
+            TheParser.VERSION).then().catch();
 
+        return posts;
     }
 
     async siteSubscribe(userId: number, siteName: string, main: boolean, bookmarks: boolean) {
@@ -309,7 +339,7 @@ export default class FeedManager {
 
         await this.siteManager.siteSubscribe(userId, site.id, main, bookmarks);
 
-        if ((!!existingSubscription.feed_main) !== main) {
+        if ((!!existingSubscription?.feed_main) !== main) {
             this.logger.info(`Clearing feed cache for user ${userId} after subscribing to ${siteName}`);
             this.userSubscriptionsCache.delete(userId);
         }
@@ -317,7 +347,8 @@ export default class FeedManager {
         return { main, bookmarks };
     }
 
-    async postFanOut(subsite_id: number, post_id: number, createdAt: Date | undefined, updatedAt: Date | undefined) {
+    async postFanOut(subsite_id: number, post_id: number, createdAt: Date | undefined, updatedAt: Date | undefined,
+                     onlyDbUpdate = false) {
         this.confirmedPostsExist = true;
         if (!this.initialized || !this.minDate) {
             return;
@@ -325,11 +356,13 @@ export default class FeedManager {
         const batch = [];
         let dbUpdateJob;
 
-        if (createdAt) {
+        if (createdAt && !onlyDbUpdate) {
             batch.push({subsite: `${subsite_id}:new`, posts: [{id: post_id, ts: this.offsetPostTs(createdAt)}]});
         }
         if (updatedAt) {
-            batch.push({subsite: `${subsite_id}:live`, posts: [{id: post_id, ts: this.offsetPostTs(updatedAt)}]});
+            if (!onlyDbUpdate) {
+                batch.push({subsite: `${subsite_id}:live`, posts: [{id: post_id, ts: this.offsetPostTs(updatedAt)}]});
+            }
             dbUpdateJob = (async () => {
                 this.logger.profile(`postFanOut/setUpdated:${post_id}`);
                 await this.bookmarkRepository.setUpdated(post_id, updatedAt);

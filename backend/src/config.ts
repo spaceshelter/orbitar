@@ -5,7 +5,10 @@ type Config = {
     redis: RedisConfig;
     vapid: VapidConfig;
     site: SiteConfig;
+    mediaHosting: MediaHostingConfig;
     feed: FeedConfig;
+    barmalini: BarmaliniConfig;
+    openai: OpenAIConfig;
 };
 
 export type MysqlConfig = {
@@ -33,9 +36,23 @@ export type SiteConfig = {
     http: boolean;
 };
 
+export type MediaHostingConfig = {
+    url: string;
+    dimsAesKey: string;
+};
+
 export type FeedConfig = {
     host: string;
     port: number;
+};
+
+export type BarmaliniConfig = {
+    userId: number | undefined;
+    key: string;
+};
+
+export type OpenAIConfig = {
+    apiKey: string;
 };
 
 export const config: Config = {
@@ -62,8 +79,19 @@ export const config: Config = {
         domain: process.env.SITE_DOMAIN || 'idiod.local',
         http: process.env.SITE_HTTP === 'true',
     },
+    mediaHosting: {
+        url: process.env.MEDIA_HOSTING_URL || 'https://orbitar.media',
+        dimsAesKey: process.env.MEDIA_HOSTING_DIMS_AES_KEY || ''
+    },
     feed: {
         host: process.env.FEED_INDEX_HOST || 'feed',
         port: parseInt(process.env.FEED_INDEX_PORT) || 6767,
+    },
+    barmalini: {
+        userId: process.env.BARMALINI_USER_ID ? parseInt(process.env.BARMALINI_USER_ID) : undefined,
+        key: process.env.BARMALINI_KEY || '',
+    },
+    openai: {
+        apiKey: process.env.OPENAI_API_KEY || '',
     }
 };

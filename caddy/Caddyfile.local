@@ -16,16 +16,11 @@ http://{$SERVER_DOMAIN} {
   # idiod.video proxy
   handle_path /upload {
     rewrite * /api/upload.php
-    reverse_proxy https://idiod.video {
-      header_up Host idiod.video
+    reverse_proxy {$MEDIA_HOSTING_URL} {
+      header_up Host {upstream_hostport}
+      header_up +authorization "Client-ID {$MEDIA_HOSTING_CLIENT_ID}"
       header_up -origin
       header_up -referer
-      header_up -sec-ch-ua
-      header_up -sec-ch-ua-mobile
-      header_up -sec-ch-ua-platform
-      header_up -sec-fetch-dest
-      header_up -sec-fetch-mode
-      header_up -sec-fetch-site
     }
   }
 
@@ -45,21 +40,9 @@ http://*.{$SERVER_DOMAIN} {
   redir / http://{$SERVER_DOMAIN}/s/{http.request.host.labels.2}
 }
 
-http://{$API_DOMAIN} {
-  @cors {
-    header Origin http://{$SERVER_DOMAIN}
-  }
-  header @cors {
-    Access-Control-Allow-Origin .* "{header.Origin}"
-    X-Cors-Matched YES
-    Vary Origin
-  }
-
-  header {
-    Access-Control-Allow-Origin * "http://{$SERVER_DOMAIN}"
-    Vary Origin
-    ?X-Cors-Matched NO
-  }
+http://api.{$SERVER_DOMAIN} {
+  header X-Fingerprint "{$FINGERPRINT}"
+  header Access-Control-Expose-Headers "X-Fingerprint"
 
   reverse_proxy http://backend:5001
 }

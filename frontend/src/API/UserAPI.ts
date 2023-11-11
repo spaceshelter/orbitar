@@ -1,5 +1,5 @@
 import APIBase from './APIBase';
-import {UserInfo, UserProfileInfo} from '../Types/UserInfo';
+import {BarmaliniAccessResult, UserGender, UserInfo, UsernameSuggestResult, UserProfileInfo} from '../Types/UserInfo';
 import {SiteInfo} from '../Types/SiteInfo';
 import {CommentEntity, ContentFormat, PostEntity} from './PostAPI';
 import PostAPIHelper from './PostAPIHelper';
@@ -22,9 +22,14 @@ type UserProfileResponse = {
     trialProgress?: number;
     daysLeftOnTrial?: number;
     trialApprovers?: VoteListItemEntity[];
+    numberOfPosts: number;
+    numberOfComments: number;
+    numberOfInvitesAvailable?: number;
+    isBarmalini?: boolean;
 };
 type UserProfilePostsRequest = {
     username: string;
+    filter?: string;
     format?: ContentFormat;
     page?: number;
     perpage?: number;
@@ -43,6 +48,7 @@ type UserProfilePostsResult = {
 type UserProfileCommentsRequest = {
     username: string;
     format?: ContentFormat;
+    filter?: string;
     page?: number;
     perpage?: number;
 };
@@ -67,11 +73,16 @@ export type TrialProgressDebugInfo = {
 
 export type UserKarmaResponse = {
     effectiveKarma: number;
+    effectiveKarmaUserRating: number;
+    effectiveKarmaContentRating: number;
     senatePenalty: number;
     activeKarmaVotes: Record<string, number>;
+
     postRatingBySubsite: Record<string, number>;
     commentRatingBySubsite: Record<string, number>;
     trialProgress: TrialProgressDebugInfo;
+    totalNormalizedContentRating: number;
+    contentVotersNum: number
 };
 
 /* see UserRestrictions */
@@ -106,9 +117,9 @@ export default class UserAPI {
         return this.api.request<UseProfileRequest, UserProfileResponse>('/user/profile', {username});
     }
 
-    async userPosts(username: string, page: number, perpage: number): Promise<UserProfilePostsResult> {
+    async userPosts(username: string, filter: string | undefined, page: number, perpage: number): Promise<UserProfilePostsResult> {
         const result = await this.api.request<UserProfilePostsRequest, UserProfilePostsResponse>('/user/posts', {
-            username, format: 'html', page, perpage
+            username, format: 'html', page, perpage, filter
         });
         return {
             posts: this.postAPIHelper.fixPosts(result.posts, result.users),
@@ -116,9 +127,9 @@ export default class UserAPI {
         };
     }
 
-    async userComments(username: string, page: number, perpage: number): Promise<UserProfileCommentsResult> {
+    async userComments(username: string, filter: string, page: number, perpage: number): Promise<UserProfileCommentsResult> {
         const result = await this.api.request<UserProfileCommentsRequest, UserProfileCommentsResponse>('/user/comments', {
-            username, format: 'html', page, perpage
+            username, format: 'html', page, perpage, filter
         });
         return {
             comments: this.postAPIHelper.fixComments(result.comments, result.users),
@@ -135,4 +146,23 @@ export default class UserAPI {
         return this.api.request<{username: string}, UserRestrictionsResponse>('/user/restrictions', {username});
     }
 
+    async saveBio(bio: string): Promise<{bio: string}> {
+        return this.api.request<{bio: string}, {bio: string}>('/user/savebio', {bio});
+    }
+
+    async saveName(name: string): Promise<{name: string}> {
+        return this.api.request<{name: string}, {name: string}>('/user/savename', {name});
+    }
+
+    async saveGender(gender: UserGender): Promise<{gender: UserGender}> {
+        return this.api.request<{gender: UserGender}, {gender: UserGender}>('/user/savegender', {gender});
+    }
+
+    async getBarmaliniAccess(): Promise<BarmaliniAccessResult> {
+        return this.api.request<Record<string, unknown>, BarmaliniAccessResult>('/user/barmalini', {});
+    }
+
+    async getUsernameSuggestions(start: string): Promise<UsernameSuggestResult> {
+        return this.api.request<{start: string}, UsernameSuggestResult>('/user/suggest-username', {start});
+    }
 }

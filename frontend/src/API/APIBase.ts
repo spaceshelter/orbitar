@@ -33,7 +33,7 @@ export default class APIBase {
         this.endpoint = '//' + (process.env.REACT_APP_API_DOMAIN || ('api.' + process.env.REACT_APP_ROOT_DOMAIN)) + '/api/v1';
     }
 
-    async request<Req, Res>(url: string, payload: Req): Promise<Res> {
+    async request<Req, Res>(url: string, payload: Req, responseCallback?: (resp: Response) => void): Promise<Res> {
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
         };
@@ -50,6 +50,10 @@ export default class APIBase {
                 headers
             }
         );
+
+        if (responseCallback) {
+            responseCallback(response);
+        }
 
         if (response.status === 429) {
             throw new APIError('rate-limit', 'Rate limit exceeded', response.status);
@@ -78,6 +82,35 @@ export default class APIBase {
         }
 
         return responseJson.payload;
+    }
+
+    async stream<Req, Res>(url: string, payload: Req): Promise<Res> {
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+        };
+        if (this.sessionId) {
+            headers['X-Session-Id'] = this.sessionId;
+        }
+        const response = await fetch(
+            this.endpoint + url,
+            {
+                method: 'POST',
+                body: JSON.stringify(payload),
+                headers
+            }
+        );
+
+        if (response.status === 429) {
+            throw new APIError('rate-limit', 'Rate limit exceeded', response.status);
+        }
+
+        const sessionId = response.headers.get('x-session-id');
+        if (sessionId) {
+            this.sessionId = sessionId;
+            Cookies.set('session', sessionId, { domain: '.' + process.env.REACT_APP_ROOT_DOMAIN, expires: 365 });
+        }
+
+        return response.body as unknown as Res;
     }
 
     fixDate(date: Date) {

@@ -19,5 +19,15 @@ export type UserInfo = UserBaseInfo & {
 export type UserProfileInfo = UserInfo & {
     registered: Date;
     active: boolean;
+    bio_source: string;
+    bio_html: string;
 };
 
+export type BarmaliniAccessResult = {
+    login: string;
+    password: string;
+};
+
+export type UsernameSuggestResult = {
+    usernames: string[];
+};

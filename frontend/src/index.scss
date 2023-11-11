@@ -2,6 +2,10 @@
 
 // TODO add css reset
 
+html {
+  overflow-y: scroll;
+}
+
 html,body {
   height: 100%;
   margin: 0;
@@ -15,7 +19,7 @@ html,body {
   height: 100%;
 }
 
-input[type="text"], input[type="password"], input[type="email"], textarea {
+input[type="text"], input[type="password"], input[type="email"], input[type="search"], textarea {
   background: var(--lowered);
   box-shadow: inset 0 0 2px var(--shadow);
   border: none;
@@ -62,6 +66,106 @@ a {
   color: var(--danger);
 }
 
+svg#spoiler-mask {
+  /* hide svg */
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  /* Firefox fix */
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
+}
+
+.spoiler {
+  background-color: var(--fg);
+  filter: blur(2px);
+  opacity: .8;
+  /* more blur to img video etc */
+  & > * {
+    filter: url('#spoiler-mask-filter');
+  }
+
+  &:hover {
+    background-color: inherit;
+    filter: none;
+    opacity: 1;
+    & > * {
+      filter: none;
+    }
+  }
+}
+
+a.mention:before {
+  content: '@';
+  color: transparent;
+  background: url('./Assets/user.svg') no-repeat -1px 2px;
+  background-size: 16px 16px;
+}
+
+details.expand {
+  background-color: var(--dim1);
+  border-radius: 4px;
+  padding: 0.5em;
+  margin: 0.5em 0;
+
+  & > summary {
+    display: block;
+    position: relative;
+    padding-left: 1.5em;
+    color: var(--fg);
+    font-weight: bold;
+    list-style-type: none;
+    cursor: pointer;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    &::-moz-list-bullet{
+      list-style-type:none;
+    }
+
+    &::marker{
+      display:none;
+    }
+
+    &::before {
+      left: 0;
+      top: 0;
+      content: '';
+      -webkit-mask: url('./Assets/expand.svg') no-repeat 50% 50%;
+      mask: url('./Assets/expand.svg') no-repeat 50% 50%;
+      background-color: var(--button-dis-fg);
+      width: 20px;
+      height: 20px;
+      position: absolute;
+      transition: transform .25s;
+    }
+  }
+
+  &[open] > summary {
+    margin-bottom: .5em;
+  }
+
+  &[open] > summary::before {
+    transform: rotateZ(90deg);
+  }
+
+  & > div[role="button"] {
+    display: block;
+    background-color: var(--dim1);
+    height: 0.5em;
+    cursor: pointer;
+  }
+}
+
 blockquote {
   border-radius: 4px;
   padding: 0.5em 0.5em 0.5em 2em;
@@ -102,6 +206,11 @@ img.image-preview {
   max-height: none;
   cursor: zoom-out;
 }
+
+video {
+  max-width: 100%;
+}
+
 img.image-large {
   display: block;
 }
@@ -114,35 +223,9 @@ img.low-rating, video.low-rating, iframe.low-rating {
   max-width: 48px;
 }
 
-/*br {*/
-/*  content: "";*/
-/*  padding: 2em;*/
-/*  margin: -2em;*/
-/*  display: block;*/
-/*  font-size: 25%;*/
-/*}*/
-
-@keyframes highlight-flash {
-  from {
-    background-color: transparent;
-  }
-  to {
-    background-color: var(--highlight-bg);
-  }
-}
-
-.highlight {
-  /*background: var(--highlight-bg);*/
-  /*transition: background-color 1s;*/
-  animation-duration: 0.5s;
-  animation-name: highlight-flash;
-  animation-iteration-count: 6;
-  animation-direction: alternate;
-}
-
-body.no-scroll {
+html.no-scroll {
   overflow: hidden;
-  margin-right: 18px;
+  margin-right: 16px;
 }
 
 ::-webkit-scrollbar {
