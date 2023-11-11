@@ -96,6 +96,34 @@
       padding-right: 4px;
     }
   }
+
+  :global(.secret-mailbox), :global(.secret-mail) {
+    border: 1px solid var(--dim3);
+    background-color: var(--dim2);
+    color: var(--fgMedium);
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: fit-content;
+    max-width: 100%;
+    display: block;
+    vertical-align: middle;
+
+    &:hover {
+      color: var(--primaryHover);
+      background-color: var(--dim3);
+      border-color: var(--primaryHover);
+    }
+
+    &:global(.i):before {
+      vertical-align: middle;
+      font-size: 26px;
+      padding-right: 4px;
+    }
+  }
 }
 
 .overlayCloseButton {

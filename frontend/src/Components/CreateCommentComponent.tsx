@@ -1,7 +1,8 @@
 import {CommentInfo, PostLinkInfo} from '../Types/PostInfo';
-import React, {useEffect, useRef, useState} from 'react';
+import React, {ReactNode, useEffect, useRef, useState} from 'react';
 import styles from './CreateCommentComponent.module.scss';
 import postStyles from '../Pages/CreatePostPage.module.css';
+import postComponentStyles from '../Components/PostComponent.module.scss';
 import commentStyles from './CommentComponent.module.scss';
 import {ReactComponent as IronyIcon} from '../Assets/irony.svg';
 import {ReactComponent as ImageIcon} from '../Assets/image.svg';
@@ -26,7 +27,8 @@ import ReactTextareaAutocomplete from '@webscopeio/react-textarea-autocomplete';
 import TextareaAutosize from 'react-textarea-autosize';
 import debouncePromise from 'debounce-promise';
 import {useHotkeys} from 'react-hotkeys-hook';
-import {EnigmaKeyGenerator} from './Enigma';
+import {SecretMailKeyGeneratorForm} from './SecretMailbox';
+import {ReactComponent as OptionsIcon} from '../Assets/options.svg';
 
 interface CreateCommentProps {
     open: boolean;
@@ -98,13 +100,14 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     const [mediaUploaderOpen, setMediaUploaderOpen] = useState(false);
     const [mediaUploaderData, setMediaUploaderData] = useState<File | undefined>();
     const containerRef = useHotkeys<HTMLDivElement>(allowedKeys.join(','), (e ) => handleHotKey(e), {enableOnFormTags: ['TEXTAREA'], preventDefault: true});
-    const [enigmaOpen, setEnigmaOpen] = useState(false);
+    const controlsRef = useRef<HTMLDivElement>(null);
+    const [mailboxFormOpen, setMailboxFormOpen] = useState(false);
     const api = useAPI();
     const {userInfo} = useAppState();
 
     const pronoun = props?.comment?.author?.gender === UserGender.he ? 'ему' : props?.comment?.author?.gender===UserGender.she ? 'ей' : '';
     const placeholderText = props.comment ? `Ваш ответ ${pronoun}` : '';
-    const disabledButtons = isPosting || previewing !== null || enigmaOpen;
+    const disabledButtons = isPosting || previewing !== null || mailboxFormOpen;
 
     const setStorageValueDebounced = useDebouncedCallback((value) => {
         if (props.storageKey) {
@@ -352,13 +355,13 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         }
     };
 
-    const handleEnigma = (key: string) => {
-        setEnigmaOpen(false);
-        const text = `<mailbox secret="${key}">Сикретни почтовый ящик @${userInfo?.username}</mailbox>`;
+    const handleMailboxForm = (key: string) => {
+        setMailboxFormOpen(false);
+        const text = `<mailbox secret="${key}">Почтовый ящик @${userInfo?.username}</mailbox>`;
         replaceText(text, text.length);
     };
-    const handleEnigmaCancel = () => {
-        setEnigmaOpen(false);
+    const handleMailboxFormCancel = () => {
+        setMailboxFormOpen(false);
     };
 
     if (!props.open) {
@@ -381,18 +384,23 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
 
     return (
         <div className={styles.answer}>
-            <div className={styles.controls}>
+            <div className={classNames(styles.controls, postComponentStyles.options)} ref={controlsRef}>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('b')} title="Болд" className={styles.bold}>B</button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('i')} title="Италик" className={styles.italic}>I</button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('u')} title="Подчеркнуть" className={styles.underline}>U</button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('strike')} title="Перечеркнуть" className={styles.strike}>S</button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('irony')} title="Ирония"><IronyIcon /></button></div>
-                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('spoiler')} title="Спойлер"><SpoilerIcon /></button></div>
-                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('expand', {'title':''})} title="Свернуть/Развернуть"><ExpandIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('blockquote')} title="Цитировать"><QuoteIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('img')} title="Вставить картинку/видео"><ImageIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('a')} title="Вставить ссылку"><LinkIcon /></button></div>
-                <div className={styles.control}><button disabled={disabledButtons} onClick={() => setEnigmaOpen(true)} title="Секретный почтовый ящик"><MailboxIcon /></button></div>
+                <SpilloverWrapper threshold={350} parentRef={controlsRef}>
+                    <div className={styles.control}>
+                        <button disabled={disabledButtons} onClick={() => applyTag('spoiler')} title="Спойлер"><SpoilerIcon /></button></div>
+                    <div className={styles.control}>
+                        <button disabled={disabledButtons} onClick={() => applyTag('expand', {'title':''})} title="Свернуть/Развернуть"><ExpandIcon /></button></div>
+                    <div className={styles.control}>
+                        <button disabled={disabledButtons} onClick={() => setMailboxFormOpen(true)} title="Секретный почтовый ящик"><MailboxIcon /></button></div>
+                </SpilloverWrapper>
             </div>
             {
                 (previewing === null)
@@ -427,7 +435,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 <button disabled={isPosting || !answerText} className={styles.buttonPreview} onClick={handlePreview}>{(previewing === null) ? 'Превью' : 'Редактор'}</button>
                 <button disabled={isPosting || !answerText} className={styles.buttonSend} onClick={handleAnswer}><SendIcon /></button>
                 {mediaUploaderOpen && <MediaUploader onSuccess={handleMediaUpload} onCancel={handleMediaUploadCancel} mediaData={mediaUploaderData}/>}
-                {enigmaOpen && <EnigmaKeyGenerator onSuccess={handleEnigma} onCancel={handleEnigmaCancel} />}
+                {mailboxFormOpen && <SecretMailKeyGeneratorForm onSuccess={handleMailboxForm} onCancel={handleMailboxFormCancel} />}
             </div>
         </div>
     );
@@ -451,4 +459,64 @@ const RestrictedSlowMode = (props: { endTime: Date; endCallback: () => void }) =
             Возможность комментировать ограничена из-за низкой кармы. До конца ожидания осталось:
         </div>
     </SlowMode>;
+};
+
+/**
+ * SpilloverWrapper is a React component that wraps its children and provides a responsive UI feature.
+ * It displays its children directly if the parent width is less than a given threshold.
+ * Otherwise, it provides a button to toggle the display of its children.
+ *
+ * @param {ReactNode} props.children - The children to be wrapped by this component.
+ * @param {React.RefObject<HTMLDivElement>} props.parentRef - A reference to the parent element.
+ * @param {number} props.threshold - The threshold width in pixels.
+ */
+const SpilloverWrapper = (props: { children: ReactNode, parentRef: React.RefObject<HTMLDivElement>, threshold: number }) => {
+    const [showOptions, setShowOptions] = useState(false);
+    const [parentWidth, setParentWidth] = useState(0);
+
+    const handleResize = () => {
+        if (props.parentRef.current) {
+            setParentWidth(props.parentRef.current.offsetWidth);
+        }
+    };
+
+    useEffect(() => {
+        handleResize(); // initial sizing
+        window.addEventListener('resize', handleResize);
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!showOptions) {
+            return;
+        }
+        const handleClick = (e: MouseEvent) => {
+            setShowOptions(false);
+        };
+        document.addEventListener('click', handleClick);
+        return () => {
+            document.removeEventListener('click', handleClick);
+        };
+    }, [showOptions]);
+
+    const toggleOptions = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setShowOptions(!showOptions);
+        return false;
+    };
+
+    return parentWidth > props.threshold ? (
+        <>{props.children}</>
+    ) : (
+        <div className={styles.control + ' ' + postComponentStyles.options}>
+            <button onClick={toggleOptions} className={postComponentStyles.options + ' ' + (showOptions ? styles.active : '')}><OptionsIcon /></button>
+            {showOptions &&
+                    <div className={postComponentStyles.optionsList}>
+                        {props.children}
+                    </div>
+            }
+        </div>
+    );
 };

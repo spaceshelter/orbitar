@@ -1,13 +1,13 @@
 import React, {useEffect, useRef, useState} from 'react';
 import classNames from 'classnames';
 import styles from './ContentComponent.module.scss';
-import mediaStyles from './MediaUploader.module.css';
+import overlayStyles from './Overlay.module.scss';
 import {observeOnHidden} from '../Services/ObserverService';
 import type * as Vimeo from '@vimeo/player';
 import {getLegacyZoom, getVideoAutopause} from './UserProfileSettings';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import {useHotkeys} from 'react-hotkeys-hook';
-import {EnigmaEncoderForm, EnigmaSecret} from './Enigma';
+import {SecretMailEncoderForm, SecretMailDecoderForm} from './SecretMailbox';
 
 interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
     content: string;
@@ -491,8 +491,8 @@ export default function ContentComponent(props: ContentComponentProps) {
             {cut && <div className={styles.cutCover}><button className={styles.cutButton} onClick={handleCut}>Читать дальше</button></div>}
             {zoomedImg &&  <ZoomComponent {...zoomedImg} onExit={() => setZoomedImg(null)} />}
             {mailboxKey &&
-                (mailboxKey.type === 'mailbox' && <EnigmaEncoderForm {...mailboxKey} onClose={() => setMailboxKey(null)} /> ||
-                mailboxKey.type === 'mail' && <EnigmaSecret {...mailboxKey} onClose={() => setMailboxKey(null)} />)
+                (mailboxKey.type === 'mailbox' && <SecretMailEncoderForm {...mailboxKey} onClose={() => setMailboxKey(null)} /> ||
+                mailboxKey.type === 'mail' && <SecretMailDecoderForm {...mailboxKey} onClose={() => setMailboxKey(null)} />)
             }
         </>
     );
@@ -516,7 +516,7 @@ function ZoomComponent(props: ZoomComponentProps) {
     useHotkeys('esc', props.onExit);
 
     return (
-        <div className={mediaStyles.overlay}
+        <div className={overlayStyles.overlay}
             onClick={(e) => {
                 // check if click originated from this element
                 if ((e.target as HTMLElement).classList.contains('react-transform-wrapper')) {
