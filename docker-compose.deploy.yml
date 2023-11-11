@@ -1,11 +1,13 @@
-version: '3.7'
-
 services:
   caddy:
     volumes:
       - frontend_build:/srv
     depends_on:
       - backend
+    environment:
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      VAPID_CONTACT: ${VAPID_CONTACT}
     # Default caddy command borrowed from https://github.com/caddyserver/caddy-docker/blob/master/Dockerfile.tmpl
     command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
 
@@ -15,7 +17,9 @@ services:
       args:
         NODE_ENV: production
         SERVER_DOMAIN: ${SERVER_DOMAIN}
+        MEDIA_HOSTING_URL: ${MEDIA_HOSTING_URL}
         API_DOMAIN: ${API_DOMAIN}
+        VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
     restart: "no"
     volumes:
       - frontend_build:/frontend
@@ -29,10 +33,22 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       SENDING_BLUE_API_KEY: ${SENDING_BLUE_API_KEY}
       DEEPL_API_KEY: ${DEEPL_API_KEY}
+      MEDIA_HOSTING_URL: ${MEDIA_HOSTING_URL}
+      MEDIA_HOSTING_DIMS_AES_KEY: ${MEDIA_HOSTING_DIMS_AES_KEY}
+      BARMALINI_USER_ID: ${BARMALINI_USER_ID}
+      BARMALINI_KEY: ${BARMALINI_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
     depends_on:
       - mysql
       - redis
       - feed
+      - elasticsearch-setup
+
+  elasticsearch-indexer:
+    depends_on:
+      backend:
+        condition: service_started # TODO change to service_healthy when we have a healthcheck
+
 
 volumes:
   frontend_build:

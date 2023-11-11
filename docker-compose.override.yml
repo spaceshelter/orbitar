@@ -2,6 +2,9 @@ services:
   caddy:
     ports:
       - "80:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
 
   mysql:
     ports:
@@ -15,4 +18,9 @@ services:
   feed:
     ports:
       - "6767:6767"
+
+  elasticsearch:
+    ports:
+      - "9200:9200"
+      - "9300:9300"
 
