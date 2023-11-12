@@ -95,9 +95,6 @@ services:
         condition: service_healthy
       elasticsearch-setup:
         condition: service_completed_successfully
-      backend:
-        condition: service_started # TODO change to service_healthy when we have a healthcheck
-
 
 
 volumes:
@@ -105,3 +102,4 @@ volumes:
   caddy_config:
   mysql_db:
   redis_data:
+  elasticsearch_data:

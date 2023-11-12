@@ -2,9 +2,9 @@
 
 1. Запустить контейнер с базой и веб-роутером (в корне проекта):
     ```
-    docker-compose -p orbitar-dev -f docker-compose.dev.yml up
+TODO    docker-compose -p orbitar-dev up
     ```
-   mysql повиснет на стандартном 3306 порту, redis на 6379.
+   mysql повиснет на стандартных 3306 и 33060 портах, redis на 6379, feed на 6767.
 
    Веб-роутер на 80 порту будет перенаправлять запросы с `*.orbitar.local` на `localhost:5000` (фронт), а `api.orbitar.local` на `localhost:5001` (бэк).
 
@@ -57,7 +57,7 @@
    ```
    Сгенерированный `certs/orbitar.crt` добавить в систему/браузер как доверенный.
 
-3. Для запуска контейнеров использовать конфиг `docker-compose.ssl.dev.yml`
+TODO 3. Для запуска контейнеров использовать конфиг `docker-compose.ssl.dev.yml`
 
 
 ### Настройка Web Push Notifications (опционально)
