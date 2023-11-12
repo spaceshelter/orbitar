@@ -143,6 +143,7 @@ export function SecretMailKeyGeneratorForm(props: SecretMailKeyGeneratorFormProp
     const password1Ref = useRef<HTMLInputElement>(null);
     const password2Ref = useRef<HTMLInputElement>(null);
     const [passwordsMatch, setPasswordsMatch] = useState<boolean | null>(null);
+    const [passwordShown, setPasswordShown] = useState(false);
 
     const handlePasswordChange = () => {
         if (!password1Ref?.current?.value  || !password2Ref?.current?.value ) {
@@ -152,8 +153,7 @@ export function SecretMailKeyGeneratorForm(props: SecretMailKeyGeneratorFormProp
         setPasswordsMatch(password1Ref.current.value === password2Ref.current.value);
     };
 
-    const handleSubmit = (e: any) => {
-        e.preventDefault();
+    const handleSubmit = () => {
         if (passwordsMatch === true) {
             const passwd = password1Ref?.current?.value || '';
             const privateKey = cryptico.generateRSAKey(passwd, 512);
@@ -162,26 +162,44 @@ export function SecretMailKeyGeneratorForm(props: SecretMailKeyGeneratorFormProp
         }
     };
 
+    // handle keypresses
+    useHotkeys(['ctrl+enter', 'meta+enter'], () => {
+        handleSubmit();
+    }, {
+        enableOnFormTags: true
+    });
+
+    const togglePassword = () => {
+        setPasswordShown(!passwordShown);
+    };
+
+    const inputType = passwordShown ? 'text' : 'password';
+
     return (
         <>
             <Overlay onClick={props.onCancel} />
-            <div className={mediaFormStyles.container}>
-               <form onSubmit={handleSubmit}>
-                   <div className={mediaFormStyles.controls}>
-                       <label htmlFor={'pwd1'}>Пароль</label><br/>
-                       <input type="password" placeholder="Password" id={'pwd1'} ref={password1Ref} onChange={handlePasswordChange} />
-                   </div>
-                   <div  className={mediaFormStyles.controls}>
-                       <label htmlFor={'pwd2'}>Пароль еще раз</label><br/>
-                       <input type="password" placeholder="Password" id={'pwd2'} ref={password2Ref} onChange={handlePasswordChange} />
-                   </div>
-                   <div>
-                       {passwordsMatch === true ? <span className={classNames(mediaFormStyles.success, 'i i-thumbs-up')}> Пароли совпадают</span> :
-                           passwordsMatch === false ? <span className={classNames(mediaFormStyles.error, 'i i-close')}> Пароли не совпадают</span> :
-                            <span className={mediaFormStyles.warning}>Введите пароль в оба поля.</span>
-                       }
-                   </div>
-                   <button type={'submit'} disabled={passwordsMatch !== true} className={mediaFormStyles.buttonSend} onClick={handleSubmit}>Создать</button>
+            <div className={classNames(mediaFormStyles.container, styles.container)}>
+                <h3><span className="i i-mailbox-secure"></span>
+                    Создать шифрованный почтовый ящик</h3>
+               <form onSubmit={(e) => {
+                   e.preventDefault();
+                   handleSubmit();
+               }}>
+               <label>Пароль</label>
+               <input type={inputType} placeholder="Пароль" id={'pwd1'} ref={password1Ref} onChange={handlePasswordChange} />
+               <span className={classNames('i', passwordShown ? 'i-hide' : 'i-eye', styles.togglePass)} onClick={togglePassword}></span>
+
+               <label>Пароль еще раз</label>
+               <input type={inputType} placeholder="Пароль еще раз" id={'pwd2'} ref={password2Ref} onChange={handlePasswordChange} />
+               <span className={classNames('i', passwordShown ? 'i-hide' : 'i-eye', styles.togglePass)} onClick={togglePassword}></span>
+
+               <div className={styles.hint}>
+                   {passwordsMatch === true ? <span className={classNames(mediaFormStyles.success, 'i i-thumbs-up')}> Пароли совпадают</span> :
+                       passwordsMatch === false ? <span className={classNames(mediaFormStyles.error, 'i i-close')}> Пароли не совпадают</span> :
+                        <span className={mediaFormStyles.warning}>Введите пароль в оба поля.</span>
+                   }
+               </div>
+               <div className={styles.submit}><input type="submit" disabled={passwordsMatch !== true} className={mediaFormStyles.buttonSend} value="Создать" /></div>
                </form>
             </div>
         </>
