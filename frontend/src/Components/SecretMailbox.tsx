@@ -26,8 +26,7 @@ export function SecretMailEncoderForm(props: {
         setEncoded(encoded);
     }, 300);
 
-    const renderedTitle = `Шифровка → ${props.mailboxTitle || '?'}`;
-    const result = `<mail secret="${encoded}">${renderedTitle}</mail>`;
+    const result = `<mail secret="${encoded}">→ ${props.mailboxTitle || '?'}</mail>`;
 
     const handleCopy = () => {
         if (!navigator.clipboard) {
@@ -63,7 +62,7 @@ export function SecretMailEncoderForm(props: {
             <div className={classNames(mediaFormStyles.container, styles.container)}>
                 <h3 className={classNames(styles.shortTitle)}>
                     <span className="i i-mail-secure"/>
-                    <span>{renderedTitle}</span>
+                    <span>{`Написать → ${props.mailboxTitle || '?'}`}</span>
                 </h3>
                 <div className={classNames(createCommentStyles.editor, createCommentStyles.answer)}>
                     <TextareaAutosize placeholder={'Текст шифровки'}
@@ -71,7 +70,7 @@ export function SecretMailEncoderForm(props: {
                                       minRows={3} maxRows={25} maxLength={20000}
                                       onChange={handleTextChange} />
                 </div>
-                <span>Шифр:</span>
+                <span>Результат шифрования:</span>
                 <div className={styles.encodingResult} ref={resultRef} onClick={handleResultClick}>
                     {result}
                 </div>
