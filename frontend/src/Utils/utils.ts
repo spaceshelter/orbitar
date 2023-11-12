@@ -19,3 +19,11 @@ export function scrollUnderTopbar(el: HTMLElement, toBottom?: boolean) {
     }
 
 }
+
+// see https://stackoverflow.com/a/30106551/1349366
+export function b64DecodeUnicode(str: string) {
+    // Going backwards: from bytestream, to percent-encoding, to original string.
+    return decodeURIComponent(atob(str).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+}

@@ -6,6 +6,8 @@ import Url from 'url-parse';
 import qs from 'qs';
 import {mentionsRegex, urlRegex, urlRegexExact} from './regexprs';
 import {MediaHostingConfig} from '../config';
+import {toBase64} from 'openai/core';
+import render from 'dom-serializer';
 
 export type ParseResult = {
     text: string;
@@ -359,7 +361,7 @@ export default class TheParser {
         if (!this.validUrl(url)) {
             return this.parseDisallowedTag(node);
         }
-
+        this.removeInnerMailTagsRec(node);
         const result = this.parseChildNodes(node.children);
         if (result.urls.length > 0 || result.mentions.length > 0) {
             return result;
@@ -378,15 +380,40 @@ export default class TheParser {
         return { text: `<img src="${encodeURI(url)}" alt=""/>`, mentions: [], urls: [], images: [url] };
     }
 
+    removeInnerMailTagsRec(node: Element): Element {
+        // Iterate over all child nodes
+        for (let i = node.children.length-1; i >= 0 ; i--) {
+            const child = node.children[i];
+
+            // If the child node is a mailbox tag, remove it
+            if (child.type === 'tag') {
+                if (child.name === 'mailbox' || child.name === 'mail') {
+                    node.children.splice(i, 1);
+                } else {
+                    // If the child node is not a mailbox tag, recursively call this function
+                    this.removeInnerMailTagsRec(child);
+                }
+            }
+        }
+        return node;
+    }
+
     parseSecretMailbox(node: Element): ParseResult {
         // retain secret attribute and content
         const secret = node.attribs['secret'];
         if (!secret) {
             return this.parseDisallowedTag(node);
         }
-        const result = this.parseChildNodes(node.children);
+        this.removeInnerMailTagsRec(node);
 
-        const text =  `<span class="i i-mailbox-secure secret-mailbox" data-secret="${secret}">${result.text}</span>`;
+        const result = this.parseChildNodes(node.children);
+        // render node.children back to html
+        const rawNodes = node.children.map((n) => render(n, {
+            encodeEntities: false,
+        })).join('');
+
+        const text =  `<span class="i i-mailbox-secure secret-mailbox" data-secret="${secret}" `+
+            `data-raw-text="${toBase64(rawNodes)}">${result.text}</span>`;
         return { ...result, text };
     }
 
@@ -396,6 +423,8 @@ export default class TheParser {
         if (!secret) {
             return this.parseDisallowedTag(node);
         }
+        this.removeInnerMailTagsRec(node);
+
         const result = this.parseChildNodes(node.children);
 
         const text =  `<span class="i i-mail-secure secret-mail" data-secret="${secret}">${result.text}</span>`;

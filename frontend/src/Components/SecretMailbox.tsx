@@ -11,7 +11,7 @@ import useFocus from '../API/use/useFocus';
 let passwordCache: string | null = null;
 
 export function SecretMailEncoderForm(props: {
-    openKey: string, forUsername?: string, onClose: () => void
+    openKey: string, mailboxTitle?: string, onClose: () => void
 }) {
     const [encoded, setEncoded] = useState<string>('');
 
@@ -27,7 +27,7 @@ export function SecretMailEncoderForm(props: {
                 <div className={mediaFormStyles.editor}><textarea placeholder={'Текст шифровки'} onChange={handleTextChange} /></div>
                 <span>Шифр:</span>
                 <div className={mediaFormStyles.final}>
-                    {`<mail secret="${encoded}">Шифровка${props.forUsername ? ` для @${props.forUsername}` : ''}</mail>`}
+                    {`<mail secret="${encoded}">Шифровка в ${props.mailboxTitle || ''}</mail>`}
                 </div>
             </div>
         </>

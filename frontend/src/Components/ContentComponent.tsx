@@ -8,6 +8,7 @@ import {getLegacyZoom, getVideoAutopause} from './UserProfileSettings';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import {useHotkeys} from 'react-hotkeys-hook';
 import {SecretMailEncoderForm, SecretMailDecoderForm} from './SecretMailbox';
+import {b64DecodeUnicode} from '../Utils/utils';
 
 interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
     content: string;
@@ -36,7 +37,7 @@ type ZoomedImg = {
 
 type MailboxKey = {
     type: 'mailbox';
-    forUsername?: string;
+    mailboxTitle?: string;
     openKey: string;
 };
 
@@ -90,15 +91,18 @@ function updateMailbox(mailbox: HTMLSpanElement,
     if (!secret) {
         return;
     }
-    // try to find username as the text in in a.mention
-    const mention = mailbox.querySelector('a.mention');
-    const username = mention?.textContent?.trim();
+    let mailboxTitle = mailbox.dataset.rawText;
+    try {
+        mailboxTitle = mailboxTitle && b64DecodeUnicode(mailboxTitle);
+    } catch (e) {
+        mailboxTitle = undefined;
+    }
 
     mailbox.addEventListener('click', () => {
         setMailboxKey({
             type: 'mailbox',
             openKey: secret,
-            forUsername: username,
+            mailboxTitle
         });
     });
 }
@@ -317,7 +321,8 @@ function updateImg(img: HTMLImageElement, setZoomedImg: (img: ZoomedImg | null) 
 
     let el: HTMLElement | null = img;
     while (el) {
-        if (el.tagName.toUpperCase() === 'A') {
+        if (el.tagName.toUpperCase() === 'A' ||
+            el.tagName.toUpperCase() === 'SPAN' && el.className.indexOf('secret-mail') !== -1) {
             return;
         }
         el = el.parentElement;
