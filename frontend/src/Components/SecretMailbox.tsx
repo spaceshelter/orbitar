@@ -26,7 +26,7 @@ export function SecretMailEncoderForm(props: {
         setEncoded(encoded);
     }, 300);
 
-    const renderedTitle = `Шифровка в ${props.mailboxTitle || '?'}`;
+    const renderedTitle = `Шифровка → ${props.mailboxTitle || '?'}`;
     const result = `<mail secret="${encoded}">${renderedTitle}</mail>`;
 
     const handleCopy = () => {
