@@ -1,11 +1,15 @@
 import mediaFormStyles from './MediaUploader.module.scss';
 import styles from './SecretMailbox.module.scss';
+import createCommentStyles from './CreateCommentComponent.module.scss';
 import React, {useEffect, useRef, useState} from 'react';
 import {cryptico} from '@daotl/cryptico';
 import {useDebouncedCallback} from 'use-debounce';
 import classNames from 'classnames';
 import Overlay from './Overlay';
 import useFocus from '../API/use/useFocus';
+import TextareaAutosize from 'react-textarea-autosize';
+import {toast} from 'react-toastify';
+import {useHotkeys} from 'react-hotkeys-hook';
 
 
 let passwordCache: string | null = null;
@@ -14,20 +18,65 @@ export function SecretMailEncoderForm(props: {
     openKey: string, mailboxTitle?: string, onClose: () => void
 }) {
     const [encoded, setEncoded] = useState<string>('');
+    const testAreaRef = useFocus<HTMLTextAreaElement>();
+    const resultRef = useRef<HTMLDivElement>(null);
 
     const handleTextChange = useDebouncedCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const encoded = (cryptico.encrypt(e.target.value, props.openKey, undefined as any) as any).cipher;
         setEncoded(encoded);
     }, 300);
 
+    const renderedTitle = `Шифровка в ${props.mailboxTitle || '?'}`;
+    const result = `<mail secret="${encoded}">${renderedTitle}</mail>`;
+
+    const handleCopy = () => {
+        if (!navigator.clipboard) {
+            return;
+        }
+        navigator.clipboard.writeText(result).then(() => {
+            toast('В буфере!');
+        }).catch();
+    };
+
+    // select all text in result div
+    const handleResultClick = () => {
+        if (resultRef.current) {
+            const range = document.createRange();
+            range.selectNodeContents(resultRef.current);
+            const selection = window.getSelection();
+            if (selection) {
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+        }
+    };
+
+    useHotkeys(['ctrl+enter', 'meta+enter'], () => {
+        handleCopy();
+    }, {
+        enableOnFormTags: true
+    });
+
     return (
         <>
             <Overlay onClick={props.onClose} />
-            <div className={mediaFormStyles.container}>
-                <div className={mediaFormStyles.editor}><textarea placeholder={'Текст шифровки'} onChange={handleTextChange} /></div>
+            <div className={classNames(mediaFormStyles.container, styles.container)}>
+                <h3 className={classNames(styles.shortTitle)}>
+                    <span className="i i-mail-secure"/>
+                    <span>{renderedTitle}</span>
+                </h3>
+                <div className={classNames(createCommentStyles.editor, createCommentStyles.answer)}>
+                    <TextareaAutosize placeholder={'Текст шифровки'}
+                                      ref={testAreaRef}
+                                      minRows={3} maxRows={25} maxLength={20000}
+                                      onChange={handleTextChange} />
+                </div>
                 <span>Шифр:</span>
-                <div className={mediaFormStyles.final}>
-                    {`<mail secret="${encoded}">Шифровка в ${props.mailboxTitle || ''}</mail>`}
+                <div className={styles.encodingResult} ref={resultRef} onClick={handleResultClick}>
+                    {result}
+                </div>
+                <div className={createCommentStyles.final}>
+                    <button className={classNames(styles.copyButton, mediaFormStyles.choose)} onClick={handleCopy}>Скопировать</button>
                 </div>
             </div>
         </>
@@ -71,9 +120,9 @@ export function SecretMailDecoderForm(props: {
         <>
             <Overlay onClick={props.onClose} />
             <div className={classNames(mediaFormStyles.container, styles.container)}>
-                <h3 className={styles.title}>
+                <h3>
                     <span className={classNames('i', decoded ? 'i-mail-open' : 'i-mail-secure')}/>
-                    <span className={mediaFormStyles.title}>{props.title}</span>
+                    <span>{props.title}</span>
                 </h3>
                 {decoded ?  <div className={styles.decoded}>{decoded}</div> : <>
                     <input ref={passwordRef} className={styles.input} type="password"

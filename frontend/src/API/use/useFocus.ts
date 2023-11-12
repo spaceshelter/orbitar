@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, MutableRefObject } from 'react';
 
-export default function useFocus() {
-    const ref = useRef<HTMLInputElement>(null);
+export default function useFocus<T extends HTMLElement = HTMLInputElement>(): MutableRefObject<T | null> {
+    const ref = useRef<T | null>(null);
 
     useEffect(() => {
         ref.current?.focus();
