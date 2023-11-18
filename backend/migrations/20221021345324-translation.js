@@ -21,8 +21,7 @@ exports.up = async function (db) {
     const result = await db.connection.promise().query(`
         select name from migrations where name = '/20221021345324-translation' or name = '/22102134532452-translation';
     `);
-
-    if (result.length > 0) {
+    if (result[0].length > 0) {
         return;
     }
 
