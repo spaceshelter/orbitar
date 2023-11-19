@@ -41,8 +41,12 @@ export function SecretMailEncoderForm(props: {
         }
     };
 
-    useHotkeys(['ctrl+enter', 'meta+enter'], () => {
+    const handleSubmit = () => {
         props.onClose(getResult(encode()));
+    };
+
+    useHotkeys(['ctrl+enter', 'meta+enter'], () => {
+        handleSubmit();
     }, {
         enableOnFormTags: true
     });
@@ -68,7 +72,7 @@ export function SecretMailEncoderForm(props: {
                     {getResult(encoded)}
                 </div>
                 <div className={createCommentStyles.final}>
-                    <button className={classNames(styles.copyButton, mediaFormStyles.choose)} onClick={handleResultClick}>Готово</button>
+                    <button className={classNames(styles.copyButton, mediaFormStyles.choose)} onClick={handleSubmit}>Готово</button>
                 </div>
             </div>
         </>

@@ -116,7 +116,10 @@ export default function CommentComponent(props: CommentProps) {
                             </div>
                     )
                 :
-                    <CreateCommentComponentRestricted open={true} text={editingText} onAnswer={handleEditComplete} />
+                    <CreateCommentComponentRestricted
+                        post={props.comment.postLink}
+                        comment={props.comment}
+                        open={true} text={editingText} onAnswer={handleEditComplete} />
                 }
 
                 <div className={styles.controls}>
