@@ -26,6 +26,10 @@ import rateLimit from 'express-rate-limit';
 import {TranslateRequest, TranslateResponse} from './types/requests/Translate';
 import TranslationManager, {TRANSLATION_MODES} from '../managers/TranslationManager';
 import {APIError, AuthenticationError, RateLimitError} from 'openai';
+import {
+    GetPublicKeyByPostOrCommentRequest,
+    GetPublicKeyByPostOrCommentResponse
+} from './types/requests/GetPublicKeyByPostOrComment';
 
 const commonRateLimitConfig = {
     skipSuccessfulRequests: false,
@@ -133,6 +137,10 @@ export default class PostController {
             type: Joi.valid('post', 'comment').required(),
             format: joiFormat
         });
+        const getPostPublicKeySchema = Joi.object<GetPublicKeyByPostOrCommentRequest>({
+            postId: Joi.number().optional(),
+            commentId: Joi.number().optional(),
+        });
 
         this.router.post('/post/get', validate(getSchema), (req, res) => this.postGet(req, res));
         this.router.post('/post/create', this.postCreateRateLimiter, validate(postCreateSchema), (req, res) => this.create(req, res));
@@ -146,6 +154,8 @@ export default class PostController {
         this.router.post('/post/get-comment', validate(getCommentSchema), (req, res) => this.getComment(req, res));
         this.router.post('/post/edit-comment', this.commentRateLimiter, validate(editCommentSchema), (req, res) => this.editComment(req, res));
         this.router.post('/post/history', validate(historySchema), (req, res) => this.history(req, res));
+        this.router.post('/post/get-public-key', validate(getPostPublicKeySchema), (req, res) =>
+            this.getPublicKeyByPostOrComment(req, res));
     }
 
     async postGet(request: APIRequest<PostGetRequest>, response: APIResponse<PostGetResponse>) {
@@ -554,6 +564,28 @@ export default class PostController {
             }
 
             return response.error('error', 'Unknown error', 500);
+        }
+    }
+
+    private async getPublicKeyByPostOrComment(req: APIRequest<GetPublicKeyByPostOrCommentRequest>, res: APIResponse<GetPublicKeyByPostOrCommentResponse>) {
+        const {postId, commentId} = req.body;
+
+        const userId = req.session.data.userId;
+
+        let targetUserId: number | undefined;
+        if (commentId) {
+            targetUserId = (await this.postManager.getComment(userId, commentId, 'html'))?.author;
+        } else if (postId) {
+            // note: inconsistent param order between getPost and getComment
+            // is not a mistake, it's just how it is (FIXME)
+            targetUserId = (await this.postManager.getPost(postId, userId, 'html'))?.author;
+        }
+
+        if (!targetUserId) {
+            return res.success({publicKey: undefined});
+        } else {
+            const publicKey = await this.userManager.getPublicKey(targetUserId);
+            return res.success({publicKey});
         }
     }
 }

@@ -8,34 +8,25 @@ import classNames from 'classnames';
 import Overlay from './Overlay';
 import useFocus from '../API/use/useFocus';
 import TextareaAutosize from 'react-textarea-autosize';
-import {toast} from 'react-toastify';
 import {useHotkeys} from 'react-hotkeys-hook';
 
 
 let passwordCache: string | null = null;
 
 export function SecretMailEncoderForm(props: {
-    openKey: string, mailboxTitle?: string, onClose: () => void
+    openKey: string, mailboxTitle?: string, onClose: (result?: string) => void
 }) {
     const [encoded, setEncoded] = useState<string>('');
     const testAreaRef = useFocus<HTMLTextAreaElement>();
     const resultRef = useRef<HTMLDivElement>(null);
 
+    const encode = () => (cryptico.encrypt(testAreaRef.current?.value || '', props.openKey, undefined as any) as any).cipher;
+
     const handleTextChange = useDebouncedCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const encoded = (cryptico.encrypt(e.target.value, props.openKey, undefined as any) as any).cipher;
-        setEncoded(encoded);
+        setEncoded(encode());
     }, 300);
 
-    const result = `<mail secret="${encoded}">→ ${props.mailboxTitle || '?'}</mail>`;
-
-    const handleCopy = () => {
-        if (!navigator.clipboard) {
-            return;
-        }
-        navigator.clipboard.writeText(result).then(() => {
-            toast('В буфере!');
-        }).catch();
-    };
+    const getResult = (encoded: string) => `<mail secret="${encoded}">${props.mailboxTitle || 'Шифровка'}</mail>`;
 
     // select all text in result div
     const handleResultClick = () => {
@@ -51,18 +42,20 @@ export function SecretMailEncoderForm(props: {
     };
 
     useHotkeys(['ctrl+enter', 'meta+enter'], () => {
-        handleCopy();
+        props.onClose(getResult(encode()));
     }, {
         enableOnFormTags: true
     });
 
     return (
         <>
-            <Overlay onClick={props.onClose} />
+            <Overlay onClick={() => {
+                props.onClose();
+            }}/>
             <div className={classNames(mediaFormStyles.container, styles.container)}>
                 <h3 className={classNames(styles.shortTitle)}>
                     <span className="i i-mail-secure"/>
-                    <span>{`Написать → ${props.mailboxTitle || '?'}`}</span>
+                    <span>{`Написать шифровку${props.mailboxTitle && ' ' + props.mailboxTitle || ''}`}</span>
                 </h3>
                 <div className={classNames(createCommentStyles.editor, createCommentStyles.answer)}>
                     <TextareaAutosize placeholder={'Текст шифровки'}
@@ -72,10 +65,10 @@ export function SecretMailEncoderForm(props: {
                 </div>
                 <span>Результат шифрования:</span>
                 <div className={styles.encodingResult} ref={resultRef} onClick={handleResultClick}>
-                    {result}
+                    {getResult(encoded)}
                 </div>
                 <div className={createCommentStyles.final}>
-                    <button className={classNames(styles.copyButton, mediaFormStyles.choose)} onClick={handleCopy}>Скопировать</button>
+                    <button className={classNames(styles.copyButton, mediaFormStyles.choose)} onClick={handleResultClick}>Готово</button>
                 </div>
             </div>
         </>
@@ -214,21 +207,16 @@ export function SecretMailKeyGeneratorForm(props: SecretMailKeyGeneratorFormProp
 
                    <div className={classNames(styles.hint, { [styles.collapsed] : cut })}>
                        <p>
-                           Когда вы создаете пароль, на его основе автоматически генерируются специальные ключи для
-                           шифрования ваших сообщений. Эти ключи бывают двух типов: публичный и приватный. Публичный ключ
-                           безопасно отправляется на сервер, а приватный нигде не сохраняется, и используется только на вашем
-                            компьютере для расшифровки сообщений, зашифрованных с помощью публичного ключа.
+                           Когда вы вводите пароль, на его основе генерируются пара ключей (публичный и приватный) для
+                           шифрования секретных сообщений, <b>адресованных вам</b>. Публичный ключ не является секретом, он
+                           хранится на сервере и виден другим пользователям, а приватный ключ нигде не сохраняется,
+                           и используется только на вашем компьютере для расшифровки сообщений, зашифрованных с помощью публичного ключа.
                        </p>
                        <p>
-                           Поэтому важно запомнить свой пароль.
-                           Если вы забудете пароль, вы не сможете получить доступ к своим зашифрованным сообщениям, так как
-                           они шифруются с помощью этого приватного ключа.
-                       </p>
-                       <p>
-                           Обратите внимание, что если вы решите сменить свой пароль, то вместе с ним изменятся и ключи
-                           шифрования. Это означает, что все сообщения, зашифрованные старым ключом, станут недоступными.
-                           Вы сможете их прочитать только в том случае, если у вас будет старый пароль. Поэтому очень важно
-                           хорошо запоминать свои пароли или сохранять их в надежном месте.
+                           Обратите внимание, что если вы решите сменить пароль "почтового ящика", то вместе с ним изменятся и ключи
+                           шифрования. Новые сообщения <b>адресованные вам</b> будут шифроваться с помощью нового ключа, а старые сообщения,
+                            зашифрованные с помощью старого ключа, можно будет прочитать только с помощью старого пароля.
+                           Поэтому очень важно хорошо запоминать свои пароли или сохранять их в надежном месте.
                        </p>
                    </div>
                </form>

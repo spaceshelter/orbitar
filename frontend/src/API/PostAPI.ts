@@ -197,6 +197,15 @@ type PostHistoryResponse = {
     history: HistoryEntity[];
 };
 
+type GetPostPublicKeyRequest = {
+    postId?: number;
+    commentId?: number;
+};
+
+export type GetPostPublicKeyResponse = {
+    publicKey?: string;
+};
+
 export type TranslateModes = 'altTranslate' | 'annotate';
 
 export type TranslateRequest = {
@@ -334,6 +343,13 @@ export default class PostAPI {
             id,
             type,
             format: 'html'
+        });
+    }
+
+    getPublicKeyByPostOrComment(postId?: number, commentId?: number) {
+        return this.api.request<GetPostPublicKeyRequest, GetPostPublicKeyResponse>('/post/get-public-key', {
+            postId,
+            commentId
         });
     }
 }
