@@ -143,6 +143,7 @@ export function SecretMailKeyGeneratorForm(props: SecretMailKeyGeneratorFormProp
     const password2Ref = useRef<HTMLInputElement>(null);
     const [passwordsMatch, setPasswordsMatch] = useState<boolean | null>(null);
     const [passwordShown, setPasswordShown] = useState(false);
+    const [cut, setCut] = useState(true);
 
     const handlePasswordChange = () => {
         if (!password1Ref?.current?.value  || !password2Ref?.current?.value ) {
@@ -198,7 +199,38 @@ export function SecretMailKeyGeneratorForm(props: SecretMailKeyGeneratorFormProp
                         <span className={mediaFormStyles.warning}>Введите пароль в оба поля.</span>
                    }
                </div>
-               <div className={styles.submit}><input type="submit" disabled={passwordsMatch !== true} className={mediaFormStyles.buttonSend} value="Создать" /></div>
+
+               <div className={classNames(styles.columns, styles.submit)}>
+                   <div className={styles.cutCover}>
+                       <button className={classNames('button', styles.cutButton)} type='button'
+                               onClick={(e) => {
+                           e.preventDefault();
+                           setCut(!cut);
+                       }}><span className={classNames('i', 'i-info')}></span>Инфо
+                       </button>
+                   </div>
+                   <div><input type="submit" disabled={passwordsMatch !== true} className={styles.buttonSend} value="Создать" /></div>
+                </div>
+
+                   <div className={classNames(styles.hint, { [styles.collapsed] : cut })}>
+                       <p>
+                           Когда вы создаете пароль, на его основе автоматически генерируются специальные ключи для
+                           шифрования ваших сообщений. Эти ключи бывают двух типов: публичный и приватный. Публичный ключ
+                           безопасно отправляется на сервер, а приватный нигде не сохраняется, и используется только на вашем
+                            компьютере для расшифровки сообщений, зашифрованных с помощью публичного ключа.
+                       </p>
+                       <p>
+                           Поэтому важно запомнить свой пароль.
+                           Если вы забудете пароль, вы не сможете получить доступ к своим зашифрованным сообщениям, так как
+                           они шифруются с помощью этого приватного ключа.
+                       </p>
+                       <p>
+                           Обратите внимание, что если вы решите сменить свой пароль, то вместе с ним изменятся и ключи
+                           шифрования. Это означает, что все сообщения, зашифрованные старым ключом, станут недоступными.
+                           Вы сможете их прочитать только в том случае, если у вас будет старый пароль. Поэтому очень важно
+                           хорошо запоминать свои пароли или сохранять их в надежном месте.
+                       </p>
+                   </div>
                </form>
             </div>
         </>

@@ -17,6 +17,8 @@ export type UserProfileResponse = {
 
     invites: UserProfileEntity[];
     isBarmalini?: boolean;
+
+    publicKey: string;
 };
 
 export type TrialProgressDebugInfo = {
@@ -77,6 +79,14 @@ export type UserSaveGenderRequest = {
 
 export type UserSaveGenderResponse = {
     gender: UserGender;
+};
+
+export type UserSavePublicKeyRequest = {
+    publicKey: string;
+};
+
+export type UserSavePublicKeyResponse = {
+    publicKey: string;
 };
 
 export type BarmaliniPasswordRequest = Record<string, unknown>;

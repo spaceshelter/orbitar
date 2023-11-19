@@ -686,4 +686,12 @@ export default class UserManager {
     async dropPassword(userId: number) {
         await this.userRepository.dropPassword(userId);
     }
+
+    savePublicKey(publicKey: string, userId: number) {
+        return this.userRepository.savePublicKey(publicKey, userId);
+    }
+
+    async getPublicKey(userId: number) {
+        return this.userRepository.getPublicKey(userId);
+    }
 }
