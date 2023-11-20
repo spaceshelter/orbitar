@@ -19,6 +19,7 @@ exports.up = async function (db) {
     await db.runSql(`
         UPDATE content_source
         SET title = (SELECT title FROM posts WHERE posts.content_source_id = content_source.content_source_id)
+        WHERE title IS NULL or title = '';
     `);
 };
 

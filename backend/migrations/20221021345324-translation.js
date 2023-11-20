@@ -15,6 +15,16 @@ exports.setup = function (options, seedLink) {
 };
 
 exports.up = async function (db) {
+    // skip if name '/20221021345324-translation' or '/22102134532452-translation'
+    // exists in migrations table
+    // temporary hack to fix migration order
+    const result = await db.connection.promise().query(`
+        select name from migrations where name = '/20221021345324-translation' or name = '/22102134532452-translation';
+    `);
+    if (result[0].length > 0) {
+        return;
+    }
+
     // add field language to table comments and posts
     const defaultLang = process.env.DEFAULT_TL_LANGUAGE || 'ru';
 
