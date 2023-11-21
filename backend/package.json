@@ -46,6 +46,7 @@
     "dotenv-flow": "^3.2.0",
     "express": "^4.17.3",
     "express-rate-limit": "^6.3.0",
+    "rate-limiter-flexible": "^3.0.4",
     "express-winston": "^4.2.0",
     "helmet": "^5.0.2",
     "html-escaper": "^3.0.3",
