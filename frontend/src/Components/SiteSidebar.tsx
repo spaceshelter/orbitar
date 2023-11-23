@@ -52,9 +52,10 @@ export const SiteSidebar = observer((props: SidebarProps) => {
         }
     }, [subscriptions]);
 
+    const sidebarOpened = props.menuState === 'close';
     return (
-        <div className={classNames(styles.sidebar, {
-            [styles.open]: props.menuState === 'close',
+        <div {...(sidebarOpened ? {} : {hidden: true, tabIndex: -1})} className={classNames(styles.sidebar, {
+            [styles.open]: sidebarOpened,
         })}>
             <div className={styles.fade} onClick={menuToggle}></div>
             <div className={styles.container}>
