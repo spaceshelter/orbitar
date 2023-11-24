@@ -26,6 +26,7 @@ interface CommentProps {
     idx?: number
     unreadOnly?: boolean
     hideRating?: boolean
+    currentUsername?: string
 }
 
 export default function CommentComponent(props: CommentProps) {
@@ -110,7 +111,7 @@ export default function CommentComponent(props: CommentProps) {
                             <HistoryComponent initial={{ content, date: created }} history={{ id: props.comment.id, type: 'comment' }} onClose={toggleHistory} />
                         :
                             <div className={styles.content}>
-                                <ContentComponent className={styles.commentContent} content={content}
+                                <ContentComponent className={styles.commentContent} content={content} currentUsername={props.currentUsername}
                                                   lowRating={props.comment.rating <= Conf.COMMENT_LOW_RATING_THRESHOLD || props.comment.vote === -1}
                                                   autoCut={!altContent && (props.comment.rating <= Conf.COMMENT_LOW_RATING_THRESHOLD || props.comment.vote === -1) ? LARGE_AUTO_CUT : undefined} />
                             </div>
@@ -165,7 +166,9 @@ export default function CommentComponent(props: CommentProps) {
                                                                          storageKey={`cp:${props.comment.id}`}/>}
                     {props.comment.answers && props.onAnswer ? props.comment.answers.map( (comment, idx) =>
                         <CommentComponent maxTreeDepth={maxDepth} depth={depth+1} parent={props.comment} key={comment.id}
-                                          comment={comment} onAnswer={props.onAnswer} onEdit={props.onEdit} unreadOnly={props.unreadOnly} idx={idx} />) : <></>}
+                                          comment={comment} onAnswer={props.onAnswer} onEdit={props.onEdit} unreadOnly={props.unreadOnly} idx={idx}
+                                          currentUsername={props.currentUsername}
+                        />) : <></>}
                 </div>
                 : <></>}
 

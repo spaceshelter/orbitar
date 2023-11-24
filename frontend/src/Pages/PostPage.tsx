@@ -16,7 +16,7 @@ export default function PostPage() {
     const postId = params.postId ? parseInt(params.postId, 10) : 0;
     const location = useLocation();
     const [scrolledToComment, setScrolledToComment] = useState<{postId: number, commentId: number}>();
-    const {site} = useAppState();
+    const {site, userInfo} = useAppState();
     const containerRef = useRef<HTMLDivElement>(null);
     const unreadOnly = search.get('new') !== null;
     const {post, comments, anonymousUser, postComment, editComment, editPost, error, reload, updatePost} = usePost(site, postId, unreadOnly);
@@ -109,7 +109,11 @@ export default function PostPage() {
                         <div className={styles.postButtons}><Link to={`${baseRoute}p${post.id}`} className={unreadOnly ? '' : 'bold'}>все комментарии</Link> • <Link to={`${baseRoute}p${post.id}?new`} className={unreadOnly ? 'bold' : ''}>только новые</Link></div>
                         <div className={styles.comments + (unreadOnly ? ' unreadOnly' : '')}>
                             {comments ?
-                                comments.map(comment => <CommentComponent maxTreeDepth={12} key={comment.id} comment={comment} onAnswer={handleAnswer} unreadOnly={unreadOnly} onEdit={handleCommentEdit} />)
+                                comments.map(comment =>
+                                    <CommentComponent maxTreeDepth={12} key={comment.id} comment={comment}
+                                                      onAnswer={handleAnswer} unreadOnly={unreadOnly} onEdit={handleCommentEdit}
+                                                      currentUsername={userInfo?.username} />
+                                )
                                 :
                                 (
                                     error ? <div className={styles.error}>{error}<div><button onClick={() => reload(unreadOnly)}>Повторить</button></div></div>

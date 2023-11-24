@@ -14,6 +14,7 @@ interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
     content: string;
     autoCut?: number;
     lowRating?: boolean;
+    currentUsername?: string;
 }
 
 declare global {
@@ -39,6 +40,7 @@ type MailboxKey = {
     type: 'mailbox';
     mailboxTitle?: string;
     openKey: string;
+    forUsername?: string;
 };
 
 type MailKey = {
@@ -50,7 +52,8 @@ type MailKey = {
 function updateContent(
     div: HTMLDivElement,
     setZoomedImg: (img: ZoomedImg | null) => void,
-    setMailboxKey: (key: MailboxKey | MailKey | null) => void
+    setMailboxKey: (key: MailboxKey | MailKey | null) => void,
+    currentUsername?: string
 ) {
     div.querySelectorAll('img').forEach(img => {
         if (img.complete) {
@@ -80,7 +83,7 @@ function updateContent(
     });
 
     div.querySelectorAll('span.secret-mail').forEach(mail => {
-        updateMail(mail as HTMLSpanElement, setMailboxKey);
+        updateMail(mail as HTMLSpanElement, setMailboxKey, currentUsername);
     });
 }
 
@@ -108,19 +111,38 @@ function updateMailbox(mailbox: HTMLSpanElement,
 }
 
 function updateMail(mail: HTMLSpanElement,
-                    setMailboxKey: (key: MailKey | null) => void
+                    setMailboxKey: (key: MailKey | null) => void,
+                    currentUsername?: string
 ) {
     const secret = mail.dataset.secret;
     if (!secret) {
         return;
     }
+    let cipher: string;
+    // try decode secret as json
+    try {
+        const j = JSON.parse(b64DecodeUnicode(secret));
+        // check v, to, c
+        if (!j.v || !j.c || (j.to && currentUsername && j.to !== currentUsername)
+            || !Number.isInteger(j.v)
+        ) {
+            mail.classList.add('secret-mail-disabled');
+            return;
+        }
+        cipher = j.c;
+    } catch (e) {
+        // add error class
+        mail.classList.add('secret-mail-error');
+        return;
+    }
+
     // just the text
     const title = mail.innerText.trim();
 
     mail.addEventListener('click', () => {
         setMailboxKey({
             type: 'mail',
-            secret: secret,
+            secret: cipher,
             title: title,
         });
     });
@@ -436,7 +458,7 @@ export default function ContentComponent(props: ContentComponentProps) {
             return;
         }
 
-        updateContent(content, setZoomedImg, setMailboxKey);
+        updateContent(content, setZoomedImg, setMailboxKey, props.currentUsername);
         let resizeObserver: ResizeObserver | null = null;
 
         if (props.lowRating) {

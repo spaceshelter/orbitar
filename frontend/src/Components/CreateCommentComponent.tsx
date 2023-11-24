@@ -463,6 +463,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 {mediaUploaderOpen && <MediaUploader onSuccess={handleMediaUpload} onCancel={handleMediaUploadCancel} mediaData={mediaUploaderData}/>}
                 {mailForm && parentPublicKey && <SecretMailEncoderForm
                     openKey={parentPublicKey.publicKey}
+                    forUsername={parentPublicKey.username}
                     mailboxTitle={`Шифровка для @${parentPublicKey.username}`}
                     onClose={handleMailClose}
                 />}

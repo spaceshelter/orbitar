@@ -9,18 +9,29 @@ import Overlay from './Overlay';
 import useFocus from '../API/use/useFocus';
 import TextareaAutosize from 'react-textarea-autosize';
 import {useHotkeys} from 'react-hotkeys-hook';
+import {b64EncodeUnicode} from '../Utils/utils';
 
 
 let passwordCache: string | null = null;
 
 export function SecretMailEncoderForm(props: {
-    openKey: string, mailboxTitle?: string, onClose: (result?: string) => void
+    openKey: string,
+    forUsername?: string,
+    mailboxTitle?: string, onClose: (result?: string) => void
 }) {
     const [encoded, setEncoded] = useState<string>('');
     const testAreaRef = useFocus<HTMLTextAreaElement>();
     const resultRef = useRef<HTMLDivElement>(null);
 
-    const encode = () => (cryptico.encrypt(testAreaRef.current?.value || '', props.openKey, undefined as any) as any).cipher;
+    const encode = () => {
+        const cipher = (cryptico.encrypt(testAreaRef.current?.value || '', props.openKey, undefined as any) as any).cipher;
+        const json = {
+            to: props.forUsername,
+            c: cipher,
+            v: 1
+        };
+        return b64EncodeUnicode(JSON.stringify(json));
+    };
 
     const handleTextChange = useDebouncedCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setEncoded(encode());
