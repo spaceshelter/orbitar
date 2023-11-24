@@ -27,8 +27,8 @@ import {TranslateRequest, TranslateResponse} from './types/requests/Translate';
 import TranslationManager, {TRANSLATION_MODES} from '../managers/TranslationManager';
 import {APIError, AuthenticationError, RateLimitError} from 'openai';
 import {
-    GetPublicKeyByPostOrCommentRequest,
-    GetPublicKeyByPostOrCommentResponse
+    GetPublicKeyByUsernameRequest,
+    GetPublicKeyByUsernameResponse
 } from './types/requests/GetPublicKeyByPostOrComment';
 
 const commonRateLimitConfig = {
@@ -137,7 +137,7 @@ export default class PostController {
             type: Joi.valid('post', 'comment').required(),
             format: joiFormat
         });
-        const getPostPublicKeySchema = Joi.object<GetPublicKeyByPostOrCommentRequest>({
+        const getPostPublicKeySchema = Joi.object<GetPublicKeyByUsernameRequest>({
             username: Joi.string().required()
         });
 
@@ -566,7 +566,7 @@ export default class PostController {
         }
     }
 
-    private async getPublicKeyByUsername(req: APIRequest<GetPublicKeyByPostOrCommentRequest>, res: APIResponse<GetPublicKeyByPostOrCommentResponse>) {
+    private async getPublicKeyByUsername(req: APIRequest<GetPublicKeyByUsernameRequest>, res: APIResponse<GetPublicKeyByUsernameResponse>) {
         const {username} = req.body;
         const targetUser = await this.userManager.getByUsername(username);
 

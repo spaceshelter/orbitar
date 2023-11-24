@@ -1,7 +1,7 @@
-export type GetPublicKeyByPostOrCommentRequest = {
+export type GetPublicKeyByUsernameRequest = {
     username: string;
 };
 
-export type GetPublicKeyByPostOrCommentResponse = {
+export type GetPublicKeyByUsernameResponse = {
     publicKey?: string;
 };
