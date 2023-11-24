@@ -102,7 +102,10 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     const containerRef = useHotkeys<HTMLDivElement>(allowedKeys.join(','), (e ) => handleHotKey(e), {enableOnFormTags: ['TEXTAREA'], preventDefault: true});
     const controlsRef = useRef<HTMLDivElement>(null);
 
-    const [parentPublicKey, setParentPublicKey] = useState<string | undefined>(undefined);
+    const [parentPublicKey, setParentPublicKey] = useState<{
+        publicKey: string;
+        username: string;
+    } | undefined>(undefined);
     const [mailForm, setFormOpen] = useState(false);
     const api = useAPI();
 
@@ -110,14 +113,22 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     const placeholderText = props.comment ? `Ваш ответ ${pronoun}` : '';
     const disabledButtons = isPosting || previewing !== null || mailForm;
 
+    const state = useAppState();
+    const username = state.userInfo?.username;
+
     // retrieve parent public key
     useEffect(() => {
         if (!props.post) {
             return;
         }
         api.postAPI.getPublicKeyByPostOrComment(props.post.id, props.comment?.id)
-            .then(key => {
-                setParentPublicKey(key.publicKey);
+            .then(res => {
+                if (res.username && res.publicKey && res.username !== username) {
+                    setParentPublicKey({
+                        publicKey: res.publicKey,
+                        username: res.username
+                    });
+                }
             });
     }, [setParentPublicKey, api, props.post, props.comment]);
 
@@ -410,7 +421,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                         <button disabled={disabledButtons} onClick={() => applyTag('expand', {'title':''})} title="Свернуть/Развернуть"><ExpandIcon /></button></div>
                     {parentPublicKey &&
                     <div className={styles.control}>
-                        <button disabled={disabledButtons} onClick={() => setFormOpen(true)} title="Секретный почтовый ящик"><MailIcon /></button></div>
+                        <button disabled={disabledButtons} onClick={() => setFormOpen(true)} title="Шифрованное послание"><MailIcon /></button></div>
                     }
                 </SpilloverWrapper>
             </div>
@@ -447,8 +458,9 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 <button disabled={isPosting || !answerText} className={styles.buttonPreview} onClick={handlePreview}>{(previewing === null) ? 'Превью' : 'Редактор'}</button>
                 <button disabled={isPosting || !answerText} className={styles.buttonSend} onClick={handleAnswer}><SendIcon /></button>
                 {mediaUploaderOpen && <MediaUploader onSuccess={handleMediaUpload} onCancel={handleMediaUploadCancel} mediaData={mediaUploaderData}/>}
-                {/*{mailForm && <SecretMailKeyGeneratorForm onSuccess={handleMailboxForm} onCancel={handleMailboxFormCancel} />}*/}
-                {mailForm && parentPublicKey && <SecretMailEncoderForm openKey={parentPublicKey}
+                {mailForm && parentPublicKey && <SecretMailEncoderForm
+                    openKey={parentPublicKey.publicKey}
+                    mailboxTitle={`Шифровка для @${parentPublicKey.username}`}
                     onClose={handleMailClose}
                 />}
             </div>

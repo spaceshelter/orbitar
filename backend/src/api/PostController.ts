@@ -582,10 +582,13 @@ export default class PostController {
         }
 
         if (!targetUserId) {
-            return res.success({publicKey: undefined});
+            return res.success({publicKey: undefined, username: undefined});
         } else {
             const publicKey = await this.userManager.getPublicKey(targetUserId);
-            return res.success({publicKey});
+            return res.success({
+                publicKey,
+                username: (await this.userManager.getById(targetUserId))?.username,
+            });
         }
     }
 }

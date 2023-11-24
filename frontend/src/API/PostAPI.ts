@@ -204,6 +204,7 @@ type GetPostPublicKeyRequest = {
 
 export type GetPostPublicKeyResponse = {
     publicKey?: string;
+    username?: string;
 };
 
 export type TranslateModes = 'altTranslate' | 'annotate';

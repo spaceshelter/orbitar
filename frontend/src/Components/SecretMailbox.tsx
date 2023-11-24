@@ -59,7 +59,7 @@ export function SecretMailEncoderForm(props: {
             <div className={classNames(mediaFormStyles.container, styles.container)}>
                 <h3 className={classNames(styles.shortTitle)}>
                     <span className="i i-mail-secure"/>
-                    <span>{`Написать шифровку${props.mailboxTitle && ' ' + props.mailboxTitle || ''}`}</span>
+                    <span>{`${props.mailboxTitle && props.mailboxTitle || 'Написать шифровку'}`}</span>
                 </h3>
                 <div className={classNames(createCommentStyles.editor, createCommentStyles.answer)}>
                     <TextareaAutosize placeholder={'Текст шифровки'}
@@ -87,10 +87,11 @@ export function SecretMailDecoderForm(props: {
     const [decoded, setDecoded] = useState<string>('');
 
     const passwordRef = useFocus();
+    const [wrongPassword, setWrongPassword] = useState(false);
 
     const tryDecode = (password: string | null) => {
         if (!password) {
-            return;
+            return false;
         }
         const rsaKey = cryptico.generateRSAKey(password, 512);
 
@@ -98,7 +99,9 @@ export function SecretMailDecoderForm(props: {
         if (decoded.status === 'success') {
             setDecoded(decoded.plaintext);
             passwordCache = password;
+            return true;
         }
+        return false;
     };
 
     useEffect(() => {
@@ -109,7 +112,8 @@ export function SecretMailDecoderForm(props: {
 
     const handleDecode = useDebouncedCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const password = e.target.value;
-        tryDecode(password);
+        const res = tryDecode(password);
+        setWrongPassword(!!password.length && !res);
     }, 300);
 
     return (
@@ -121,8 +125,10 @@ export function SecretMailDecoderForm(props: {
                     <span>{props.title}</span>
                 </h3>
                 {decoded ?  <div className={styles.decoded}>{decoded}</div> : <>
-                    <input ref={passwordRef} className={styles.input} type="password"
+                    <input autoFocus={true} ref={passwordRef} className={styles.input} type="password"
                            placeholder="Пароль от почтового ящика" onChange={handleDecode} />
+                    {wrongPassword && <div className={styles.hint}>
+                        <span className={classNames(mediaFormStyles.error, 'i i-close')}>Пароль не подходит.</span></div>}
                 </>}
             </div>
         </>
@@ -182,8 +188,14 @@ export function SecretMailKeyGeneratorForm(props: SecretMailKeyGeneratorFormProp
                    e.preventDefault();
                    handleSubmit();
                }}>
+               <div className={styles.info}>
+                   <p>
+                   Создайте ваш новый пароль для расшифровки адресованных вам секретных соообщений.
+                       Этот пароль не обязан совпадать с паролем от аккаунта.
+                   </p>
+               </div>
                <label>Пароль</label>
-               <input type={inputType} placeholder="Пароль" id={'pwd1'} ref={password1Ref} onChange={handlePasswordChange} />
+               <input autoFocus={true} type={inputType} placeholder="Пароль" id={'pwd1'} ref={password1Ref} onChange={handlePasswordChange} />
                <span className={classNames('i', passwordShown ? 'i-hide' : 'i-eye', styles.togglePass)} onClick={togglePassword}></span>
 
                <label>Пароль еще раз</label>

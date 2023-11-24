@@ -5,4 +5,5 @@ export type GetPublicKeyByPostOrCommentRequest = {
 
 export type GetPublicKeyByPostOrCommentResponse = {
     publicKey?: string;
+    username?: string;
 };
