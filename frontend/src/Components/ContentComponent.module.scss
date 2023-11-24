@@ -116,12 +116,19 @@
       cursor: default;
       opacity: 0.5;
     }
+    &:global(.secret-mail-decoded), &:global(.secret-mail-decoding) {
+      cursor: default;
+    }
+    &:global(.secret-mail-decoded) {
+      white-space: pre-wrap;
+    }
 
     &:global(.secret-mail-error) {
       background-color: var(--dangerGhost);
     }
 
-    &:hover:not(:global(.secret-mail-disabled), :global(.secret-mail-error)) {
+    &:hover:not(:global(.secret-mail-disabled), :global(.secret-mail-error), :global(.secret-mail-decoded),
+      :global(.secret-mail-decoding)) {
       color: var(--primaryHover);
       background-color: var(--dim3);
       border-color: var(--primaryHover);

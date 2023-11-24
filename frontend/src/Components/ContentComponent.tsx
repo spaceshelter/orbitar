@@ -1,4 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
+import ReactDOM from 'react-dom';
 import classNames from 'classnames';
 import styles from './ContentComponent.module.scss';
 import overlayStyles from './Overlay.module.scss';
@@ -138,13 +139,31 @@ function updateMail(mail: HTMLSpanElement,
 
     // just the text
     const title = mail.innerText.trim();
+    const mailInnerHtml = mail.innerHTML;
+    let decoded = false;
 
     mail.addEventListener('click', () => {
-        setMailboxKey({
-            type: 'mail',
-            secret: cipher,
-            title: title,
-        });
+        if (decoded) {
+            return;
+        }
+        mail.classList.remove('i', 'i-mail-secure');
+        mail.classList.add('secret-mail-decoding');
+
+        ReactDOM.render(
+            <SecretMailDecoderForm
+                secret={cipher} title={title}
+                onClose={(result) => {
+                    if (result) {
+                        decoded = true;
+                        mail.classList.add('i-mail-open', 'secret-mail-decoded', 'i');
+                        mail.classList.remove('secret-mail-decoding');
+                    } else {
+                        mail.classList.add('i', 'i-mail-secure');
+                        mail.classList.remove('secret-mail-decoding');
+                        ReactDOM.unmountComponentAtNode(mail);
+                        mail.innerHTML = mailInnerHtml;
+                    }
+                }}/>, mail);
     });
 }
 
@@ -498,7 +517,7 @@ export default function ContentComponent(props: ContentComponentProps) {
             };
         }
 
-    }, [contentDiv, props.autoCut, props.lowRating]);
+    }, [props.content, contentDiv, props.autoCut, props.lowRating]);
 
     useEffect(() => {
         if (!props.autoCut && cut) {

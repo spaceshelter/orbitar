@@ -1,7 +1,7 @@
 import mediaFormStyles from './MediaUploader.module.scss';
 import styles from './SecretMailbox.module.scss';
 import createCommentStyles from './CreateCommentComponent.module.scss';
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useRef, useState} from 'react';
 import {cryptico} from '@daotl/cryptico';
 import {useDebouncedCallback} from 'use-debounce';
 import classNames from 'classnames';
@@ -67,7 +67,7 @@ export function SecretMailEncoderForm(props: {
             <Overlay onClick={() => {
                 props.onClose();
             }}/>
-            <div className={classNames(mediaFormStyles.container, styles.container)}>
+            <div className={classNames(mediaFormStyles.container, styles.container, styles.modal)}>
                 <h3 className={classNames(styles.shortTitle)}>
                     <span className="i i-mail-secure"/>
                     <span>{`${props.mailboxTitle && props.mailboxTitle || 'Написать шифровку'}`}</span>
@@ -93,57 +93,61 @@ export function SecretMailEncoderForm(props: {
 export function SecretMailDecoderForm(props: {
     secret: string,
     title: string,
-    onClose: () => void
+    onClose: (result: boolean) => void
 }) {
-    const [decoded, setDecoded] = useState<string>('');
-
-    const passwordRef = useFocus();
-    const [wrongPassword, setWrongPassword] = useState(false);
-
     const tryDecode = (password: string | null) => {
         if (!password) {
-            return false;
+            return null;
         }
         const rsaKey = cryptico.generateRSAKey(password, 512);
 
         const decoded = cryptico.decrypt(props.secret, rsaKey);
         if (decoded.status === 'success') {
-            setDecoded(decoded.plaintext);
             passwordCache = password;
-            return true;
+            props.onClose(true);
+            return decoded.plaintext;
         }
-        return false;
+        return null;
     };
 
-    useEffect(() => {
-        if (passwordCache) {
-            tryDecode(passwordCache);
-        }
-    }, []);
+    const [decoded, setDecoded] = useState<string>(
+        passwordCache && tryDecode(passwordCache) || ''
+    );
+
+    const passwordRef = useFocus();
+    const [wrongPassword, setWrongPassword] = useState(false);
+
 
     const handleDecode = useDebouncedCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const password = e.target.value;
         const res = tryDecode(password);
+        if (res) {
+            setDecoded(res);
+        }
         setWrongPassword(!!password.length && !res);
     }, 300);
 
-    return (
-        <>
-            <Overlay onClick={props.onClose} />
-            <div className={classNames(mediaFormStyles.container, styles.container)}>
-                <h3>
-                    <span className={classNames('i', decoded ? 'i-mail-open' : 'i-mail-secure')}/>
-                    <span>{props.title}</span>
-                </h3>
-                {decoded ?  <div className={styles.decoded}>{decoded}</div> : <>
-                    <input autoFocus={true} ref={passwordRef} className={styles.input} type="password"
-                           placeholder="Пароль от почтового ящика" onChange={handleDecode} />
-                    {wrongPassword && <div className={styles.hint}>
-                        <span className={classNames(mediaFormStyles.error, 'i i-close')}>Пароль не подходит.</span></div>}
-                </>}
-            </div>
-        </>
-    );
+    return decoded ? <>{decoded}</> : <>
+        <div className={classNames(styles.container)}>
+            <h3>
+                <span className={classNames('i', decoded ? 'i-mail-open' : 'i-mail-secure')}/>
+                <span>{props.title}</span>
+            </h3>
+            <div className={styles.decoded}>{decoded}</div>
+            <>
+                <input autoFocus={true} ref={passwordRef} className={styles.decodeInput} type="password"
+                       placeholder="Пароль от почтового ящика" onChange={handleDecode}
+                       onBlur={() => {
+                           if (!decoded) {
+                               props.onClose(false);
+                           }
+                       }}
+                />
+                {wrongPassword && <div className={styles.hint}>
+                    <span className={classNames(mediaFormStyles.error, 'i i-close')}>Пароль не подходит.</span></div>}
+            </>
+        </div>
+    </>;
 }
 
 type SecretMailKeyGeneratorFormProps = {
@@ -192,7 +196,7 @@ export function SecretMailKeyGeneratorForm(props: SecretMailKeyGeneratorFormProp
     return (
         <>
             <Overlay onClick={props.onCancel} />
-            <div className={classNames(mediaFormStyles.container, styles.container)}>
+            <div className={classNames(mediaFormStyles.container, styles.container, styles.modal)}>
                 <h3><span className="i i-mailbox-secure"></span>
                     Создать шифрованный почтовый ящик</h3>
                <form onSubmit={(e) => {
