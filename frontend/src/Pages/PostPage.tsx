@@ -117,7 +117,9 @@ export default function PostPage() {
                                 )
                             }
                         </div>
-                        <CreateCommentComponentRestricted open={true} post={post} onAnswer={handleAnswer} storageKey={`c:${post.id}`} />
+                        <CreateCommentComponentRestricted
+                            parentAuthorUserName={post.author.username}
+                            open={true} post={post} onAnswer={handleAnswer} storageKey={`c:${post.id}`} />
                     </div>
                     :
                     (

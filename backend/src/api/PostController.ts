@@ -138,8 +138,7 @@ export default class PostController {
             format: joiFormat
         });
         const getPostPublicKeySchema = Joi.object<GetPublicKeyByPostOrCommentRequest>({
-            postId: Joi.number().optional(),
-            commentId: Joi.number().optional(),
+            username: Joi.string().required()
         });
 
         this.router.post('/post/get', validate(getSchema), (req, res) => this.postGet(req, res));
@@ -155,7 +154,7 @@ export default class PostController {
         this.router.post('/post/edit-comment', this.commentRateLimiter, validate(editCommentSchema), (req, res) => this.editComment(req, res));
         this.router.post('/post/history', validate(historySchema), (req, res) => this.history(req, res));
         this.router.post('/post/get-public-key', validate(getPostPublicKeySchema), (req, res) =>
-            this.getPublicKeyByPostOrComment(req, res));
+            this.getPublicKeyByUsername(req, res));
     }
 
     async postGet(request: APIRequest<PostGetRequest>, response: APIResponse<PostGetResponse>) {
@@ -567,28 +566,14 @@ export default class PostController {
         }
     }
 
-    private async getPublicKeyByPostOrComment(req: APIRequest<GetPublicKeyByPostOrCommentRequest>, res: APIResponse<GetPublicKeyByPostOrCommentResponse>) {
-        const {postId, commentId} = req.body;
+    private async getPublicKeyByUsername(req: APIRequest<GetPublicKeyByPostOrCommentRequest>, res: APIResponse<GetPublicKeyByPostOrCommentResponse>) {
+        const {username} = req.body;
+        const targetUser = await this.userManager.getByUsername(username);
 
-        const userId = req.session.data.userId;
-
-        let targetUserId: number | undefined;
-        if (commentId) {
-            targetUserId = (await this.postManager.getComment(userId, commentId, 'html'))?.author;
-        } else if (postId) {
-            // note: inconsistent param order between getPost and getComment
-            // is not a mistake, it's just how it is (FIXME)
-            targetUserId = (await this.postManager.getPost(postId, userId, 'html'))?.author;
+        if (!targetUser) {
+            return res.success({publicKey: undefined});
         }
-
-        if (!targetUserId) {
-            return res.success({publicKey: undefined, username: undefined});
-        } else {
-            const publicKey = await this.userManager.getPublicKey(targetUserId);
-            return res.success({
-                publicKey,
-                username: (await this.userManager.getById(targetUserId))?.username,
-            });
-        }
+        const publicKey = await this.userManager.getPublicKey(targetUser.id);
+        return res.success({publicKey});
     }
 }

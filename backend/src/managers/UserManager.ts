@@ -688,10 +688,12 @@ export default class UserManager {
     }
 
     savePublicKey(publicKey: string, userId: number) {
-        return this.userRepository.savePublicKey(publicKey, userId);
+        const res = this.userRepository.savePublicKey(publicKey, userId);
+        this.userCache.clearPublicKeysCache(userId);
+        return res;
     }
 
     async getPublicKey(userId: number) {
-        return this.userRepository.getPublicKey(userId);
+        return this.userCache.getPublicKey(userId);
     }
 }

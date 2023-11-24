@@ -36,6 +36,7 @@ interface CreateCommentProps {
     post?: PostLinkInfo;
     text?: string;
     storageKey?: string;
+    parentAuthorUserName?: string;
 
     onAnswer: (text: string, post?: PostLinkInfo, comment?: CommentInfo) => Promise<CommentInfo | string| undefined>;
 }
@@ -118,19 +119,21 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
 
     // retrieve parent public key
     useEffect(() => {
-        if (!props.post) {
+        const parentUserName = props.parentAuthorUserName || props.comment?.author?.username;
+
+        if (!parentUserName || parentUserName === username) {
             return;
         }
-        api.postAPI.getPublicKeyByPostOrComment(props.post.id, props.comment?.id)
+        api.postAPI.getPublicKeyByUsername(parentUserName)
             .then(res => {
-                if (res.username && res.publicKey && res.username !== username) {
+                if (res.publicKey) {
                     setParentPublicKey({
                         publicKey: res.publicKey,
-                        username: res.username
+                        username: parentUserName
                     });
                 }
             });
-    }, [setParentPublicKey, api, props.post, props.comment]);
+    }, [props.parentAuthorUserName, props.comment]);
 
     const setStorageValueDebounced = useDebouncedCallback((value) => {
         if (props.storageKey) {

@@ -1,9 +1,7 @@
 export type GetPublicKeyByPostOrCommentRequest = {
-    postId?: number;
-    commentId?: number;
+    username: string;
 };
 
 export type GetPublicKeyByPostOrCommentResponse = {
     publicKey?: string;
-    username?: string;
 };

@@ -198,13 +198,11 @@ type PostHistoryResponse = {
 };
 
 type GetPostPublicKeyRequest = {
-    postId?: number;
-    commentId?: number;
+    username: string;
 };
 
 export type GetPostPublicKeyResponse = {
     publicKey?: string;
-    username?: string;
 };
 
 export type TranslateModes = 'altTranslate' | 'annotate';
@@ -347,10 +345,9 @@ export default class PostAPI {
         });
     }
 
-    getPublicKeyByPostOrComment(postId?: number, commentId?: number) {
+    getPublicKeyByUsername(username: string) {
         return this.api.request<GetPostPublicKeyRequest, GetPostPublicKeyResponse>('/post/get-public-key', {
-            postId,
-            commentId
+            username
         });
     }
 }

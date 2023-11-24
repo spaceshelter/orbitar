@@ -15,6 +15,7 @@ export class UserCache {
     private cacheId: Record<number, UserInfo> = {};
     private cacheUsername: Record<string, UserInfo> = {};
     private cachedUserParents: Record<number, number | undefined | false> = {};
+    private cachedPublicKeys: Record<number, string | undefined> = {};
     private usernamesSuggestionsCache = new TrieSearch('k', {min: 1});
     private userStatsCache = new Map<number, UserStats>();
 
@@ -81,6 +82,7 @@ export class UserCache {
         }
         delete this.cacheId[userId];
         delete this.cacheUsername[cacheEntry.username];
+        delete this.cachedPublicKeys[userId];
     }
 
     private cache(user: UserInfo) {
@@ -153,5 +155,19 @@ export class UserCache {
 
     addUsernameSuggestion(username) {
         return this.usernamesSuggestionsCache.add({k: username.toLowerCase(), v: username});
+    }
+
+    clearPublicKeysCache(userId: number) {
+        delete this.cachedPublicKeys[userId];
+    }
+
+    async getPublicKey(userId: number): Promise<string | undefined> {
+        if (this.cachedPublicKeys[userId]) {
+            return this.cachedPublicKeys[userId];
+        }
+
+        const publicKey = await this.userRepository.getPublicKey(userId);
+        this.cachedPublicKeys[userId] = publicKey;
+        return publicKey;
     }
 }
