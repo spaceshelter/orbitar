@@ -464,7 +464,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 {mailForm && parentPublicKey && <SecretMailEncoderForm
                     openKey={parentPublicKey.publicKey}
                     forUsername={parentPublicKey.username}
-                    mailboxTitle={`Шифровка для @${parentPublicKey.username}`}
+                    mailboxTitle={`Шифровка`}
                     onClose={handleMailClose}
                 />}
             </div>

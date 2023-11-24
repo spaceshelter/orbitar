@@ -115,22 +115,50 @@ function updateMail(mail: HTMLSpanElement,
                     setMailboxKey: (key: MailKey | null) => void,
                     currentUsername?: string
 ) {
-    const secret = mail.dataset.secret;
-    if (!secret) {
+    // check processed
+    if (mail.dataset.processed) {
         return;
     }
-    let cipher: string;
+    mail.dataset.processed = '1';
+
+    const secret = mail.dataset.secret;
+    if (!secret) {
+        mail.classList.add('secret-mail-error');
+        return;
+    }
+    let cipher: string | undefined;
+    let encodedKey: string;
+
     // try decode secret as json
     try {
         const j = JSON.parse(b64DecodeUnicode(secret));
+        // add mention "для @username"
+        if (j.to && !mail.querySelector('span.mention')) {
+            const mention = document.createElement('span');
+            mention.classList.add('mention');
+            mention.innerText = j.to;
+            mail.appendChild(document.createTextNode(' для '));
+            mail.appendChild(mention);
+        }
+
         // check v, to, c
-        if (!j.v || !j.c || (j.to && currentUsername && j.to !== currentUsername)
-            || !Number.isInteger(j.v)
-        ) {
+        if (!j.v || !j.c || !Number.isInteger(j.v) || !j.toKey) {
+            throw new Error('Invalid secret');
+        } else if (j.to && j.to === currentUsername && j.toKey) {
+            encodedKey = j.toKey;
+            cipher = j.c;
+        } else if (j.from && j.from === currentUsername && j.fromKey) {
+            encodedKey = j.fromKey;
+            cipher = j.c;
+        } else if (!j.to) {
+            encodedKey = j.toKey;
+            cipher = j.c;
+        }
+
+        if (!cipher) {
             mail.classList.add('secret-mail-disabled');
             return;
         }
-        cipher = j.c;
     } catch (e) {
         // add error class
         mail.classList.add('secret-mail-error');
@@ -139,11 +167,12 @@ function updateMail(mail: HTMLSpanElement,
 
     // just the text
     const title = mail.innerText.trim();
+
     const mailInnerHtml = mail.innerHTML;
     let decoded = false;
 
     mail.addEventListener('click', () => {
-        if (decoded) {
+        if (decoded || !cipher) {
             return;
         }
         mail.classList.remove('i', 'i-mail-secure');
@@ -151,7 +180,8 @@ function updateMail(mail: HTMLSpanElement,
 
         ReactDOM.render(
             <SecretMailDecoderForm
-                secret={cipher} title={title}
+                cipher={cipher} title={title}
+                encodedKey={encodedKey}
                 onClose={(result) => {
                     if (result) {
                         decoded = true;
@@ -536,9 +566,7 @@ export default function ContentComponent(props: ContentComponentProps) {
                  dangerouslySetInnerHTML={{__html: props.content}} ref={contentDiv} />
             {cut && <div className={styles.cutCover}><button className={styles.cutButton} onClick={handleCut}>Читать дальше</button></div>}
             {zoomedImg &&  <ZoomComponent {...zoomedImg} onExit={() => setZoomedImg(null)} />}
-            {mailboxKey &&
-                (mailboxKey.type === 'mailbox' && <SecretMailEncoderForm {...mailboxKey} onClose={() => setMailboxKey(null)} /> ||
-                mailboxKey.type === 'mail' && <SecretMailDecoderForm {...mailboxKey} onClose={() => setMailboxKey(null)} />)
+            {mailboxKey && mailboxKey.type === 'mailbox' && <SecretMailEncoderForm {...mailboxKey} onClose={() => setMailboxKey(null)} />
             }
         </>
     );

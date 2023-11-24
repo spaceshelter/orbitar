@@ -1,7 +1,7 @@
 import mediaFormStyles from './MediaUploader.module.scss';
 import styles from './SecretMailbox.module.scss';
 import createCommentStyles from './CreateCommentComponent.module.scss';
-import React, {useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {cryptico} from '@daotl/cryptico';
 import {useDebouncedCallback} from 'use-debounce';
 import classNames from 'classnames';
@@ -10,6 +10,7 @@ import useFocus from '../API/use/useFocus';
 import TextareaAutosize from 'react-textarea-autosize';
 import {useHotkeys} from 'react-hotkeys-hook';
 import {b64EncodeUnicode} from '../Utils/utils';
+import {useAPI, useAppState} from '../AppState/AppState';
 
 
 let passwordCache: string | null = null;
@@ -22,12 +23,40 @@ export function SecretMailEncoderForm(props: {
     const [encoded, setEncoded] = useState<string>('');
     const testAreaRef = useFocus<HTMLTextAreaElement>();
     const resultRef = useRef<HTMLDivElement>(null);
+    const currentUsername = useAppState().userInfo?.username;
+    const [ownPublicKey, setOwnPublicKey] =
+        useState<string | undefined>(undefined);
+
+    const api = useAPI();
+
+    // fetch own public key
+    useEffect(() => {
+        if (currentUsername) {
+            api.postAPI.getPublicKeyByUsername(currentUsername).then((key) => {
+                if (key?.publicKey) {
+                    setOwnPublicKey(key.publicKey);
+                }
+            });
+        }
+    }, [currentUsername, api]);
 
     const encode = () => {
-        const cipher = (cryptico.encrypt(testAreaRef.current?.value || '', props.openKey, undefined as any) as any).cipher;
+        const randomAESKey = cryptico.generateAESKey();
+        const aesKeyString = cryptico.bytes2string(randomAESKey);
+        const msgCypher = cryptico.encryptAESCBC(testAreaRef.current?.value || '', randomAESKey);
+
+        const cipherTo: string = (cryptico.encrypt(
+            aesKeyString, props.openKey, undefined as any) as any).cipher;
+
+        const cipherFrom: string | undefined = ownPublicKey && (cryptico.encrypt(
+            aesKeyString, ownPublicKey, undefined as any) as any).cipher;
+
         const json = {
             to: props.forUsername,
-            c: cipher,
+            from: currentUsername,
+            toKey: cipherTo,
+            fromKey: cipherFrom,
+            c: msgCypher,
             v: 1
         };
         return b64EncodeUnicode(JSON.stringify(json));
@@ -72,6 +101,12 @@ export function SecretMailEncoderForm(props: {
                     <span className="i i-mail-secure"/>
                     <span>{`${props.mailboxTitle && props.mailboxTitle || 'Написать шифровку'}`}</span>
                 </h3>
+                {!ownPublicKey && <div className={styles.info}>
+                    <p>
+                        ⚠️ Вы не сможете прочитать это свое сообщение после отправки,
+                        так как не создали свой шифрованный почтовый ящик.
+                    </p>
+                </div>}
                 <div className={classNames(createCommentStyles.editor, createCommentStyles.answer)}>
                     <TextareaAutosize placeholder={'Текст шифровки'}
                                       ref={testAreaRef}
@@ -91,7 +126,8 @@ export function SecretMailEncoderForm(props: {
 }
 
 export function SecretMailDecoderForm(props: {
-    secret: string,
+    encodedKey: string,
+    cipher: string,
     title: string,
     onClose: (result: boolean) => void
 }) {
@@ -101,11 +137,15 @@ export function SecretMailDecoderForm(props: {
         }
         const rsaKey = cryptico.generateRSAKey(password, 512);
 
-        const decoded = cryptico.decrypt(props.secret, rsaKey);
+        const decoded = cryptico.decrypt(props.encodedKey, rsaKey);
         if (decoded.status === 'success') {
             passwordCache = password;
+
+            const aesKey = cryptico.string2bytes(decoded.plaintext);
+            const decrypted = cryptico.decryptAESCBC(props.cipher, aesKey);
+
             props.onClose(true);
-            return decoded.plaintext;
+            return decrypted;
         }
         return null;
     };
