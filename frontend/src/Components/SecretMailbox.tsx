@@ -26,7 +26,7 @@ export function SecretMailEncoderForm(props: {
     const resultRef = useRef<HTMLDivElement>(null);
     const currentUsername = useAppState().userInfo?.username;
     const [ownPublicKey, setOwnPublicKey] =
-        useState<string | undefined>(undefined);
+        useState<false | string | undefined>(false);
 
     const api = useAPI();
 
@@ -34,9 +34,7 @@ export function SecretMailEncoderForm(props: {
     useEffect(() => {
         if (currentUsername) {
             api.postAPI.getPublicKeyByUsername(currentUsername).then((key) => {
-                if (key?.publicKey) {
-                    setOwnPublicKey(key.publicKey);
-                }
+                setOwnPublicKey(key?.publicKey);
             });
         }
     }, [currentUsername, api]);
@@ -108,7 +106,7 @@ export function SecretMailEncoderForm(props: {
                     <span className="i i-mail-secure"/>
                     <span>{`${props.mailboxTitle && props.mailboxTitle || 'Написать шифровку'}`}</span>
                 </h3>
-                {!ownPublicKey && <div className={styles.info}>
+                {(!ownPublicKey && ownPublicKey !== false) && <div className={styles.info}>
                     <p>
                         ⚠️ Вы не сможете прочитать это свое сообщение после отправки,
                         так как не создали свой шифрованный почтовый ящик.
