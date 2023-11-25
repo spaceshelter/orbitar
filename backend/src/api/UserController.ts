@@ -4,7 +4,8 @@ import {APIRequest, APIResponse, joiFormat, joiUsername, validate} from './ApiMi
 import Joi from 'joi';
 import {Logger} from 'winston';
 import {
-    BarmaliniPasswordRequest, BarmaliniPasswordResponse,
+    BarmaliniPasswordRequest,
+    BarmaliniPasswordResponse,
     UserKarmaResponse,
     UserProfileRequest,
     UserProfileResponse,
@@ -14,7 +15,9 @@ import {
     UserSaveNameRequest,
     UserSaveNameResponse,
     UserSaveGenderRequest,
-    UserSaveGenderResponse, UserSavePublicKeyRequest, UserSavePublicKeyResponse
+    UserSaveGenderResponse,
+    UserSavePublicKeyRequest,
+    UserSavePublicKeyResponse
 } from './types/requests/UserProfile';
 import {UserPostsRequest, UserPostsResponse} from './types/requests/UserPosts';
 import PostManager from '../managers/PostManager';

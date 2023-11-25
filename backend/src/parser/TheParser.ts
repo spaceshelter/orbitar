@@ -6,7 +6,6 @@ import Url from 'url-parse';
 import qs from 'qs';
 import {mentionsRegex, urlRegex, urlRegexExact} from './regexprs';
 import {MediaHostingConfig} from '../config';
-import {toBase64} from 'openai/core';
 import render from 'dom-serializer';
 
 export type ParseResult = {
@@ -412,8 +411,9 @@ export default class TheParser {
             encodeEntities: false,
         })).join('');
 
+        const rawNodesBase64 = Buffer.from(rawNodes).toString('base64');
         const text =  `<span class="i i-mailbox-secure secret-mailbox" data-secret="${secret}" `+
-            `data-raw-text="${toBase64(rawNodes)}">${result.text}</span>`;
+            `data-raw-text="${rawNodesBase64}">${result.text}</span>`;
         return { ...result, text };
     }
 
