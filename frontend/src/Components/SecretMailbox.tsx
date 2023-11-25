@@ -11,6 +11,7 @@ import TextareaAutosize from 'react-textarea-autosize';
 import {useHotkeys} from 'react-hotkeys-hook';
 import {b64EncodeUnicode} from '../Utils/utils';
 import {useAPI, useAppState} from '../AppState/AppState';
+import OutsideClickHandler from 'react-outside-click-handler';
 
 
 let passwordCache: string | null = null;
@@ -41,9 +42,14 @@ export function SecretMailEncoderForm(props: {
     }, [currentUsername, api]);
 
     const encode = () => {
+        const sourceText = (testAreaRef.current?.value || '').trim();
+        if (!sourceText) {
+            return '';
+        }
+
         const randomAESKey = cryptico.generateAESKey();
         const aesKeyString = cryptico.bytes2string(randomAESKey);
-        const msgCypher = cryptico.encryptAESCBC(testAreaRef.current?.value || '', randomAESKey);
+        const msgCypher = cryptico.encryptAESCBC(sourceText, randomAESKey);
 
         const cipherTo: string = (cryptico.encrypt(
             aesKeyString, props.openKey, undefined as any) as any).cipher;
@@ -66,7 +72,8 @@ export function SecretMailEncoderForm(props: {
         setEncoded(encode());
     }, 300);
 
-    const getResult = (encoded: string) => `<mail secret="${encoded}">${props.mailboxTitle || 'Шифровка'}</mail>`;
+    const getResult = (encoded: string) =>
+        encoded && `<mail secret="${encoded}">${props.mailboxTitle || 'Шифровка'}</mail>`;
 
     // select all text in result div
     const handleResultClick = () => {
@@ -113,10 +120,12 @@ export function SecretMailEncoderForm(props: {
                                       minRows={3} maxRows={25} maxLength={20000}
                                       onChange={handleTextChange} />
                 </div>
+                {encoded && <>
                 <span>Результат шифрования:</span>
                 <div className={styles.encodingResult} ref={resultRef} onClick={handleResultClick}>
                     {getResult(encoded)}
                 </div>
+                </>}
                 <div className={createCommentStyles.final}>
                     <button className={classNames(styles.copyButton, mediaFormStyles.choose)} onClick={handleSubmit}>Готово</button>
                 </div>
@@ -168,7 +177,11 @@ export function SecretMailDecoderForm(props: {
     }, 300);
 
     return decoded ? <>{decoded}</> : <>
-        <div className={classNames(styles.container)}>
+        <OutsideClickHandler onOutsideClick={() => {
+            if (!decoded) {
+                props.onClose(false);
+            }
+        }}><div className={classNames(styles.container)}>
             <h3>
                 <span className={classNames('i', decoded ? 'i-mail-open' : 'i-mail-secure')}/>
                 <span>{props.title}</span>
@@ -177,16 +190,11 @@ export function SecretMailDecoderForm(props: {
             <>
                 <input autoFocus={true} ref={passwordRef} className={styles.decodeInput} type="password"
                        placeholder="Пароль от почтового ящика" onChange={handleDecode}
-                       onBlur={() => {
-                           if (!decoded) {
-                               props.onClose(false);
-                           }
-                       }}
                 />
                 {wrongPassword && <div className={styles.hint}>
                     <span className={classNames(mediaFormStyles.error, 'i i-close')}>Пароль не подходит.</span></div>}
             </>
-        </div>
+        </div></OutsideClickHandler>
     </>;
 }
 
