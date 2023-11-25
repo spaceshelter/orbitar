@@ -123,6 +123,12 @@ export default class TranslationManager {
         });
     }
 
+    static stripMailboxTags(text: string): string {
+        return stripHtml(text, {
+            onlyStripTags: ['mail', 'mailbox']
+        }).result;
+    }
+
     async translateEntity(ref_id: number, type: 'post' | 'comment', mode: TranslationMode, write: (str: string) => void): Promise<void> {
         const contentSource = await this.postRepository.getLatestContentSource(ref_id, type);
         if (!contentSource) {
@@ -153,7 +159,8 @@ export default class TranslationManager {
             throw new Error('Invalid prompt');
         }
         // TODO review limitations to fit into budget
-        const parsingResult = this.parser.parse(contentSource.source).text;
+        const parsingResult = this.parser.parse(
+            TranslationManager.stripMailboxTags(contentSource.source)).text;
         const content = parsingResult.substring(0, TEXT_SIZE_LIMIT);
 
         // if parsingResult without html tags and whitespace is too short, don't do anything
