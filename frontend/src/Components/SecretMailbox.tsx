@@ -2,7 +2,7 @@ import mediaFormStyles from './MediaUploader.module.scss';
 import styles from './SecretMailbox.module.scss';
 import createCommentStyles from './CreateCommentComponent.module.scss';
 import React, {useEffect, useRef, useState} from 'react';
-import {cryptico} from '@daotl/cryptico';
+import {cryptico, RSAKey} from '@daotl/cryptico';
 import {useDebouncedCallback} from 'use-debounce';
 import classNames from 'classnames';
 import Overlay from './Overlay';
@@ -12,9 +12,24 @@ import {useHotkeys} from 'react-hotkeys-hook';
 import {b64EncodeUnicode} from '../Utils/utils';
 import {useAPI, useAppState} from '../AppState/AppState';
 import OutsideClickHandler from 'react-outside-click-handler';
+import {scrypt} from 'scrypt-js';
 
+let rsaKeyCache: RSAKey | null = null;
 
-let passwordCache: string | null = null;
+async function getRSAKey(password: string): Promise<RSAKey> {
+    const salt = 'f8psK3rQ58K#J#j95@UXFt94RTyH!q9R';
+
+    const N = 16384, r = 8, p = 1;
+    const dkLen = 32;
+
+    const encoder = new TextEncoder();
+    const derivedKey = await scrypt(
+        encoder.encode(password),
+        encoder.encode(salt),
+        N, r, p, dkLen);
+
+    return cryptico.generateRSAKey(new TextDecoder('utf-8').decode(derivedKey), 512);
+}
 
 export function SecretMailEncoderForm(props: {
     openKey: string,
@@ -138,15 +153,14 @@ export function SecretMailDecoderForm(props: {
     title: string,
     onClose: (result: boolean) => void
 }) {
-    const tryDecode = (password: string | null) => {
-        if (!password) {
+    const tryDecode = (rsaKey: RSAKey | null) => {
+        if (!rsaKey) {
             return null;
         }
-        const rsaKey = cryptico.generateRSAKey(password, 512);
 
         const decoded = cryptico.decrypt(props.encodedKey, rsaKey);
         if (decoded.status === 'success') {
-            passwordCache = password;
+            rsaKeyCache = rsaKey;
 
             const aesKey = cryptico.string2bytes(decoded.plaintext);
             const decrypted = cryptico.decryptAESCBC(props.cipher, aesKey);
@@ -158,20 +172,26 @@ export function SecretMailDecoderForm(props: {
     };
 
     const [decoded, setDecoded] = useState<string>(
-        passwordCache && tryDecode(passwordCache) || ''
+        rsaKeyCache && tryDecode(rsaKeyCache) || ''
     );
 
     const passwordRef = useFocus();
     const [wrongPassword, setWrongPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
 
 
-    const handleDecode = useDebouncedCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        const password = e.target.value;
-        const res = tryDecode(password);
-        if (res) {
-            setDecoded(res);
+    const handleDecode = useDebouncedCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+        setLoading(true);
+        try {
+            const password = e.target.value;
+            const res = tryDecode(await getRSAKey(password));
+            if (res) {
+                setDecoded(res);
+            }
+            setWrongPassword(!!password.length && !res);
+        } finally {
+            setLoading(false);
         }
-        setWrongPassword(!!password.length && !res);
     }, 300);
 
     return decoded ? <>{decoded}</> : <>
@@ -189,8 +209,10 @@ export function SecretMailDecoderForm(props: {
                 <input autoFocus={true} ref={passwordRef} className={styles.decodeInput} type="password"
                        placeholder="Пароль от почтового ящика" onChange={handleDecode}
                 />
-                {wrongPassword && <div className={styles.hint}>
-                    <span className={classNames(mediaFormStyles.error, 'i i-close')}>Пароль не подходит.</span></div>}
+                {(loading || wrongPassword) && <div className={styles.hint}>
+                    {loading && <span className={classNames(mediaFormStyles.warning, 'i i-slow')}>Проверяем...</span>}
+                    {!loading && <span className={classNames(mediaFormStyles.error, 'i i-close')}>Пароль не подходит.</span>}
+                </div>}
             </>
         </div></OutsideClickHandler>
     </>;
@@ -208,6 +230,7 @@ export function SecretMailKeyGeneratorForm(props: SecretMailKeyGeneratorFormProp
     const [passwordsMatch, setPasswordsMatch] = useState<boolean | null>(null);
     const [passwordShown, setPasswordShown] = useState(false);
     const [cut, setCut] = useState(true);
+    const [loading, setLoading] = useState(false);
 
     const handlePasswordChange = () => {
         if (!password1Ref?.current?.value  || !password2Ref?.current?.value ) {
@@ -217,12 +240,17 @@ export function SecretMailKeyGeneratorForm(props: SecretMailKeyGeneratorFormProp
         setPasswordsMatch(password1Ref.current.value === password2Ref.current.value);
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (passwordsMatch === true) {
-            const passwd = password1Ref?.current?.value || '';
-            const privateKey = cryptico.generateRSAKey(passwd, 512);
-            const publicKey = cryptico.publicKeyString(privateKey);
-            props.onSuccess(publicKey);
+            try {
+                setLoading(true);
+                const passwd = password1Ref?.current?.value || '';
+                const privateKey = await getRSAKey(passwd);
+                const publicKey = cryptico.publicKeyString(privateKey);
+                props.onSuccess(publicKey);
+            } finally {
+                setLoading(false);
+            }
         }
     };
 
@@ -280,7 +308,8 @@ export function SecretMailKeyGeneratorForm(props: SecretMailKeyGeneratorFormProp
                        }}><span className={classNames('i', 'i-info')}></span>Инфо
                        </button>
                    </div>
-                   <div><input type="submit" disabled={passwordsMatch !== true} className={styles.buttonSend} value="Создать" /></div>
+                   <div><input type="submit" disabled={loading || passwordsMatch !== true} className={styles.buttonSend}
+                               value={loading ? 'Создаем...' : 'Создать'} /></div>
                 </div>
 
                    <div className={classNames(styles.hint, { [styles.collapsed] : cut })}>
