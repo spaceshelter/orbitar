@@ -280,4 +280,18 @@ export default class UserRepository {
     async dropPassword(userId: number) {
         return this.db.query(`update users set password = '' where user_id = :user_id`, {user_id: userId});
     }
+
+    async savePublicKey(publicKey: string, userId: number) {
+        return this.db.query(`UPDATE users
+                              SET public_key = :publicKey
+                              WHERE user_id = :userId`, {
+            publicKey,
+            userId
+        });
+    }
+
+    getPublicKey(userId: number) {
+        return this.db.fetchOne<{public_key: string}>(`SELECT public_key FROM users WHERE user_id = :userId`, {userId})
+            .then(res => res?.public_key);
+    }
 }

@@ -9,7 +9,7 @@ import {ReactComponent as EditIcon} from '../Assets/edit.svg';
 import OutsideClickHandler from 'react-outside-click-handler';
 
 import PostLink from './PostLink';
-import {useAPI} from '../AppState/AppState';
+import {useAPI, useAppState} from '../AppState/AppState';
 import {toast} from 'react-toastify';
 import CreateCommentComponent from './CreateCommentComponent';
 import { HistoryComponent } from './HistoryComponent';
@@ -32,6 +32,7 @@ interface PostComponentProps {
 
 export default function PostComponent(props: PostComponentProps) {
     const api = useAPI();
+    const currentUsername = useAppState().userInfo?.username;
     const [showOptions, setShowOptions] = useState(false);
     const [editingText, setEditingText] = useState<false | string>(false);
     const [editingTitle, setEditingTitle] = useState<string>(props.post.title || '');
@@ -147,8 +148,8 @@ export default function PostComponent(props: PostComponentProps) {
                                         props.dangerousHtmlTitle ? <span dangerouslySetInnerHTML={{__html: title}} /> : title
                                     }</PostLink></div>}
                                     <div className={styles.content}>
-                                        <ContentComponent className={styles.content} content={content}
-                                                          autoCut={autoCut}
+                                        <ContentComponent className={styles.content}
+                                                          {...{autoCut, content, currentUsername}}
                                                           lowRating={rating <= Conf.POST_LOW_RATING_THRESHOLD || props.post.vote === -1} />
                                     </div>
                                 </>

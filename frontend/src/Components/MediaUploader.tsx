@@ -1,6 +1,8 @@
-import styles from './MediaUploader.module.css';
+import styles from './MediaUploader.module.scss';
 import React, {useEffect, useRef, useState} from 'react';
 import {toast} from 'react-toastify';
+import Overlay from './Overlay';
+import useFocus from '../API/use/useFocus';
 
 type UploadDataUri = {
     type: 'video-uri' | 'image-uri';
@@ -20,7 +22,7 @@ export type MediaUploaderProps = {
 };
 
 export default function MediaUploader(props: MediaUploaderProps) {
-    const uriRef = useRef<HTMLInputElement>(null);
+    const uriRef = useFocus();
     const videoRef = useRef<HTMLVideoElement>(null);
     const previewRef = useRef<HTMLImageElement>(null);
     const [dragActive, setDragActive] = useState(false);
@@ -30,15 +32,6 @@ export default function MediaUploader(props: MediaUploaderProps) {
     const [uploadEnabled, setUploadEnabled] = useState<boolean>(false);
     const [uploadData, setUploadData] = useState<UploadData>();
     const [uploading, setUploading] = useState(false);
-
-    useEffect(() => {
-        uriRef.current?.focus();
-        const htmlElement = document.getElementsByTagName('html')[0];
-        htmlElement.classList.add('no-scroll');
-        return () => {
-            htmlElement.classList.remove('no-scroll');
-        };
-    }, []);
 
     useEffect(() => {
         if (props.mediaData) {
@@ -232,13 +225,9 @@ export default function MediaUploader(props: MediaUploaderProps) {
         }
     };
 
-    const handleOverlayClick = () => {
-        props.onCancel();
-    };
-
     return (
         <>
-            <div className={styles.overlay} onClick={handleOverlayClick}></div>
+            <Overlay onClick={props.onCancel} />
             <div className={styles.container}>
                 <form className={styles.controls} onSubmit={handleUpload}>
                     <div className={styles.upload}>

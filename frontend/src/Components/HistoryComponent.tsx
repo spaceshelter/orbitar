@@ -2,7 +2,7 @@ import styles from './HistoryComponent.module.scss';
 import {ReactComponent as CloseIcon} from '../Assets/close.svg';
 import React, {useEffect, useState} from 'react';
 import ContentComponent from './ContentComponent';
-import {useAPI} from '../AppState/AppState';
+import {useAPI, useAppState} from '../AppState/AppState';
 import {toast} from 'react-toastify';
 import {HistoryInfo} from '../Types/HistoryInfo';
 import DateComponent from './DateComponent';
@@ -23,6 +23,7 @@ interface HistoryComponentProps {
 
 export const HistoryComponent = (props: HistoryComponentProps) => {
     const api = useAPI();
+    const currentUsername = useAppState().userInfo?.username;
     const [title, setTitle] = useState(props.initial?.title);
     const [content, setContent] = useState(props.initial?.content || '');
     const [selectedId, setSelectedId] = useState(0);
@@ -71,7 +72,7 @@ export const HistoryComponent = (props: HistoryComponentProps) => {
         <div className={styles.history}>
             <div className='content'>
                 {title && <div className='title'>{title}</div>}
-                <ContentComponent content={content} />
+                <ContentComponent {...{currentUsername, content}} />
             </div>
             <div className='sideNav' >
                 <div className='top' ><span>История</span><div className='close' onClick={props.onClose}><CloseIcon /></div></div>

@@ -353,3 +353,49 @@ test('parse expand tag', () => {
         '<details class="expand"><summary>Открой меня</summary>Hello world<div role="button"></div></details>'
     );
 });
+
+test('parse secret mailbox with valid secret attribute', () => {
+    const result = p.parse('<mailbox secret="12345">Hello</mailbox>');
+    expect(result.text).toEqual('<span class="i i-mailbox-secure secret-mailbox" data-secret="12345" data-raw-text="SGVsbG8=">Hello</span>');
+});
+
+test('parse secret mailbox without secret attribute', () => {
+    const result = p.parse('<mailbox>Hello</mailbox>');
+    expect(result.text).toEqual('&lt;mailbox&gt;Hello&lt;/mailbox&gt;');
+});
+
+test('parse secret mailbox with empty secret attribute', () => {
+    const result = p.parse('<mailbox secret="">Hello</mailbox>');
+    expect(result.text).toEqual('&lt;mailbox secret=&quot;&quot;&gt;Hello&lt;/mailbox&gt;');
+});
+
+test('parse secret mailbox with nested tags', () => {
+    const result = p.parse('<mailbox secret="12345"><b>Hello</b></mailbox>');
+    expect(result.text).toEqual('<span class="i i-mailbox-secure secret-mailbox" data-secret="12345" data-raw-text="PGI+SGVsbG88L2I+"><b>Hello</b></span>');
+});
+
+test('parse secret mailbox with nested invalid tags', () => {
+    const result = p.parse('<mailbox secret="12345"><invalid>Hello</invalid></mailbox>');
+    expect(result.text).toEqual('<span class="i i-mailbox-secure secret-mailbox" data-secret="12345" data-raw-text="PGludmFsaWQ+SGVsbG88L2ludmFsaWQ+">&lt;invalid&gt;Hello&lt;/invalid&gt;</span>');
+});
+
+test('parse secret mailbox with Russian text', () => {
+    const result = p.parse('<mailbox secret="12345">Привет</mailbox>');
+    expect(result.text).toEqual('<span class="i i-mailbox-secure secret-mailbox" data-secret="12345" data-raw-text="0J/RgNC40LLQtdGC">Привет</span>');
+});
+
+test('parse secret mailbox with nested mailbox', () => {
+    const result = p.parse('<mailbox secret="12345"><mailbox secret="67890">Hello</mailbox></mailbox>');
+    expect(result.text).toEqual('<span class="i i-mailbox-secure secret-mailbox" data-secret="12345" data-raw-text=""></span>');
+});
+
+test('base64 validation', () => {
+    expect(TheParser.isValidBase64('')).toEqual(true);
+    expect(TheParser.isValidBase64('SGVsbG8')).toEqual(true);
+    expect(TheParser.isValidBase64('SGVsbG8=')).toEqual(true);
+    expect(TheParser.isValidBase64('SGVsbG8==')).toEqual(true);
+    expect(TheParser.isValidBase64('SGVsbG8===')).toEqual(true);
+
+    expect(TheParser.isValidBase64('=SGVsbG8')).toEqual(false);
+    expect(TheParser.isValidBase64('"SGVsbG8=')).toEqual(false);
+});

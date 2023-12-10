@@ -2,7 +2,7 @@ import React, {useEffect} from 'react';
 import buttonStyles from '../Components/Buttons.module.scss';
 import {ReactComponent as LogoutIcon} from '../Assets/logout.svg';
 import {ReactComponent as UserIcon} from '../Assets/user.svg';
-import {useAPI} from '../AppState/AppState';
+import {useAPI, useAppState} from '../AppState/AppState';
 import {useLocation, useNavigate} from 'react-router-dom';
 import ThemeToggleComponent from './ThemeToggleComponent';
 import {BarmaliniAccessResult, UserGender} from '../Types/UserInfo';
@@ -11,6 +11,8 @@ import {observer} from 'mobx-react-lite';
 import styles from './UserProfileSettings.module.scss';
 import classNames from 'classnames';
 import {confirmAlert} from 'react-confirm-alert';
+import {useUserProfile} from '../API/use/useUserProfile';
+import {SecretMailKeyGeneratorForm} from './SecretMailbox';
 
 type UserProfileSettingsProps = {
   onChange: any;
@@ -172,6 +174,7 @@ const confirmWrapper = (message: string, callback: () => void) => (e: React.Mous
                     {Array.from(languages.entries()).map(([lang, name]) => <option key={lang} value={lang}>{name}</option>)}
                 </select>
             </div>
+            <MailboxSettings/>
             {props.barmaliniAccess && <BarmaliniAccess/>}
             <div>
             {!props.isBarmalini && <button className={classNames(buttonStyles.settingsButton, styles.dropSessions)} onClick={handleResetSessions}>
@@ -242,4 +245,106 @@ const BarmaliniAccess = observer(() => {
                 Бармалинить</button>}
         </div>
     );
+});
+
+/**
+ * Mailbox settings component.
+ *
+ * Has two states: created (public key is set) and not created (public key is not set).
+ *
+ * When not created, mailbox icon is greyed out and "crete" button is shown.
+ * When created, mailbox icon is colored and buttons are shown:
+ *  * delete
+ *  * show public key
+ *
+ *  For mailbox creation, use SecretMailKeyGeneratorForm modal.
+ *  Before deletion, use `confirmAlert`.
+ */
+export const MailboxSettings = observer(() => {
+    const api = useAPI();
+    const {userInfo} = useAppState();
+    const [state, refreshProfile] = useUserProfile(userInfo?.username || '');
+    const publicKey = state.status === 'ready' && state.profile.publicKey;
+    const [creatingMailbox, setCreatingMailbox] = React.useState(false);
+    const [revealPublicKey, setRevealPublicKey] = React.useState(false);
+
+    const handleDelete = (e: React.MouseEvent) => {
+        e.preventDefault();
+        confirmAlert({
+            title: 'Астанавитесь! Подумайте!',
+            message: ('Вы действительно хотите удалить почтовый ящик? Вы больше не сможете получать новые шифровки, ' +
+                'но вы сможете читать старые шифровки, адресованные вам.'),
+            buttons: [
+                {
+                    label: 'Да!',
+                    onClick: () => {
+                        api.userAPI.savePublicKey('').then(() => {
+                            refreshProfile();
+                        }).catch((error) => {
+                            toast.error(error?.message || 'Не удалось удалить почтовый ящик.');
+                        });
+                    }
+                },
+                {
+                    label: 'Отмена',
+                    className: 'cancel'
+                }
+            ],
+            overlayClassName: 'orbitar-confirm-overlay'
+        });
+    };
+
+    const handleShowPublicKey = (e: React.MouseEvent) => {
+        e.preventDefault();
+        if (publicKey) {
+            // Copy to clipboard
+            navigator.clipboard?.writeText(publicKey)
+                ?.then(() => toast('В буфере!'))?.catch();
+        }
+    };
+
+    const handleCreatePublicKey = (key: string) => {
+        api.userAPI.savePublicKey(key).then(() => {
+            refreshProfile();
+        }).catch((error) => {
+            toast.error(error?.message || 'Не удалось создать почтовый ящик.');
+        }).finally(() => {
+            setCreatingMailbox(false);
+        });
+    };
+
+    return <>{state.status === 'ready' &&
+        <div className={styles.mailbox}>
+            {publicKey &&
+                <>{/*mailbox exists*/}
+                    <div className={styles.mailboxHeader}>
+                        <span className={classNames('i i-mailbox-secure', {[styles.mailboxCreated]: !!publicKey})}/>
+                        Почтовый ящик готов!
+                    </div>
+                    <div className={styles.mailboxActions}>
+                        <button className={classNames(buttonStyles.settingsButton, styles.delete)}
+                                onClick={handleDelete}>Удалить</button>
+                        {!revealPublicKey && <button className={buttonStyles.settingsButton} onClick={() =>
+                            setRevealPublicKey(!revealPublicKey)
+                        }>Показать публичный ключ</button>}
+                        {revealPublicKey && <div>
+                            <span className={styles.label}>Публичный ключ:</span><br/>
+                            <span className={styles.publicKey} onClick={handleShowPublicKey}>{publicKey}</span>
+                        </div>}
+                    </div>
+                </> ||
+                <div>{/*Mailbox doesn't exist*/}
+                    <button className={buttonStyles.settingsButton} onClick={() => {
+                        setCreatingMailbox(true);
+                    }}>
+                        <span className={classNames('i i-mailbox-secure', {[styles.mailboxCreated]: !!publicKey})}/>
+                        Создать ключ для приема шифровок
+                    </button>
+                </div>}
+        </div> || null}
+        {creatingMailbox && <div className={styles.modalWrapper}><SecretMailKeyGeneratorForm
+            onSuccess={handleCreatePublicKey}
+            onCancel={() => setCreatingMailbox(false)}
+        /></div>}
+    </>;
 });

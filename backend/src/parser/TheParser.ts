@@ -6,6 +6,7 @@ import Url from 'url-parse';
 import qs from 'qs';
 import {mentionsRegex, urlRegex, urlRegexExact} from './regexprs';
 import {MediaHostingConfig} from '../config';
+import render from 'dom-serializer';
 
 export type ParseResult = {
     text: string;
@@ -46,6 +47,8 @@ export default class TheParser {
             spoiler: (node) => this.parseSpoiler(node),
             expand: (node) => this.parseExpand(node),
             video: (node) => this.parseVideo(node),
+            mailbox: (node) => this.parseSecretMailbox(node),
+            mail: (node) => this.parseSecretMail(node),
             blockquote: true,
             b: true,
             i: true,
@@ -357,7 +360,7 @@ export default class TheParser {
         if (!this.validUrl(url)) {
             return this.parseDisallowedTag(node);
         }
-
+        this.removeInnerMailTagsRec(node);
         const result = this.parseChildNodes(node.children);
         if (result.urls.length > 0 || result.mentions.length > 0) {
             return result;
@@ -374,6 +377,63 @@ export default class TheParser {
         }
 
         return { text: `<img src="${encodeURI(url)}" alt=""/>`, mentions: [], urls: [], images: [url] };
+    }
+
+    removeInnerMailTagsRec(node: Element): Element {
+        // Iterate over all child nodes
+        for (let i = node.children.length-1; i >= 0 ; i--) {
+            const child = node.children[i];
+
+            // If the child node is a mailbox tag, remove it
+            if (child.type === 'tag') {
+                if (child.name === 'mailbox' || child.name === 'mail') {
+                    node.children.splice(i, 1);
+                } else {
+                    // If the child node is not a mailbox tag, recursively call this function
+                    this.removeInnerMailTagsRec(child);
+                }
+            }
+        }
+        return node;
+    }
+
+    static isValidBase64(str: string) {
+        const regex = /^[A-Za-z0-9+/]*={0,3}$/;
+        return regex.test(str);
+    }
+
+    parseSecretMailbox(node: Element): ParseResult {
+        // retain secret attribute and content
+        const secret = node.attribs['secret'];
+        if (!secret || !TheParser.isValidBase64(secret)) {
+            return this.parseDisallowedTag(node);
+        }
+        this.removeInnerMailTagsRec(node);
+
+        const result = this.parseChildNodes(node.children);
+        // render node.children back to html
+        const rawNodes = node.children.map((n) => render(n, {
+            encodeEntities: false,
+        })).join('');
+
+        const rawNodesBase64 = Buffer.from(rawNodes).toString('base64');
+        const text =  `<span class="i i-mailbox-secure secret-mailbox" data-secret="${secret}" `+
+            `data-raw-text="${rawNodesBase64}">${result.text}</span>`;
+        return { ...result, text };
+    }
+
+    parseSecretMail(node: Element): ParseResult {
+        // retain secret attribute and content
+        const secret = node.attribs['secret'];
+        if (!secret || !TheParser.isValidBase64(secret)) {
+            return this.parseDisallowedTag(node);
+        }
+        this.removeInnerMailTagsRec(node);
+
+        const result = this.parseChildNodes(node.children);
+
+        const text =  `<span class="i i-mail-secure secret-mail" data-secret="${secret}">${result.text}</span>`;
+        return { ...result, text };
     }
 
     parseVideo(node: Element): ParseResult {

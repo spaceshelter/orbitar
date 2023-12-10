@@ -45,3 +45,47 @@ select:hover {
   color: var(--fg);
   background: var(--dim3);
 }
+
+.mailbox {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding-top: 20px; /* Adjust as needed for your design */
+
+
+  .mailbox-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mailboxActions {
+    padding: 10px 0;
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    width: 100%; /* This makes sure the buttons are pushed to the edges */
+  }
+
+  :global(.i):before {
+    vertical-align: middle;
+    font-size: 30px;
+    padding-right: 4px;
+  }
+
+  .publicKey {
+    color: var(--fgSoft);
+    font-size: 14px;
+    width: 100%;
+    word-break: break-all;
+  }
+
+  .delete {
+    color: var(--danger);
+  }
+}
+
+.modalWrapper {
+    position: absolute;
+}

@@ -1,7 +1,8 @@
 import {CommentInfo, PostLinkInfo} from '../Types/PostInfo';
-import React, {useEffect, useRef, useState} from 'react';
+import React, {ReactNode, useEffect, useRef, useState} from 'react';
 import styles from './CreateCommentComponent.module.scss';
 import postStyles from '../Pages/CreatePostPage.module.css';
+import postComponentStyles from '../Components/PostComponent.module.scss';
 import commentStyles from './CommentComponent.module.scss';
 import {ReactComponent as IronyIcon} from '../Assets/irony.svg';
 import {ReactComponent as ImageIcon} from '../Assets/image.svg';
@@ -10,6 +11,7 @@ import {ReactComponent as ExpandIcon} from '../Assets/expand.svg';
 import {ReactComponent as LinkIcon} from '../Assets/link.svg';
 import {ReactComponent as QuoteIcon} from '../Assets/quote.svg';
 import {ReactComponent as SendIcon} from '../Assets/send.svg';
+import {ReactComponent as MailIcon} from '../Assets/mail-secure.svg';
 import ContentComponent from './ContentComponent';
 import classNames from 'classnames';
 import MediaUploader from './MediaUploader';
@@ -25,6 +27,8 @@ import ReactTextareaAutocomplete from '@webscopeio/react-textarea-autocomplete';
 import TextareaAutosize from 'react-textarea-autosize';
 import debouncePromise from 'debounce-promise';
 import {useHotkeys} from 'react-hotkeys-hook';
+import {SecretMailEncoderForm} from './SecretMailbox';
+import {ReactComponent as OptionsIcon} from '../Assets/options.svg';
 
 interface CreateCommentProps {
     open: boolean;
@@ -32,6 +36,7 @@ interface CreateCommentProps {
     post?: PostLinkInfo;
     text?: string;
     storageKey?: string;
+    parentAuthorUserName?: string;
 
     onAnswer: (text: string, post?: PostLinkInfo, comment?: CommentInfo) => Promise<CommentInfo | string| undefined>;
 }
@@ -96,11 +101,39 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     const [mediaUploaderOpen, setMediaUploaderOpen] = useState(false);
     const [mediaUploaderData, setMediaUploaderData] = useState<File | undefined>();
     const containerRef = useHotkeys<HTMLDivElement>(allowedKeys.join(','), (e ) => handleHotKey(e), {enableOnFormTags: ['TEXTAREA'], preventDefault: true});
+    const controlsRef = useRef<HTMLDivElement>(null);
+
+    const [parentPublicKey, setParentPublicKey] = useState<{
+        publicKey: string;
+        username: string;
+    } | undefined>(undefined);
+    const [mailForm, setFormOpen] = useState(false);
     const api = useAPI();
 
     const pronoun = props?.comment?.author?.gender === UserGender.he ? 'ему' : props?.comment?.author?.gender===UserGender.she ? 'ей' : '';
     const placeholderText = props.comment ? `Ваш ответ ${pronoun}` : '';
-    const disabledButtons = isPosting || previewing !== null;
+    const disabledButtons = isPosting || previewing !== null || mailForm;
+
+    const state = useAppState();
+    const username = state.userInfo?.username;
+
+    // retrieve parent public key
+    useEffect(() => {
+        const parentUserName = props.parentAuthorUserName || props.comment?.author?.username;
+
+        if (!parentUserName || parentUserName === username) {
+            return;
+        }
+        api.postAPI.getPublicKeyByUsername(parentUserName)
+            .then(res => {
+                if (res.publicKey) {
+                    setParentPublicKey({
+                        publicKey: res.publicKey,
+                        username: parentUserName
+                    });
+                }
+            });
+    }, [props.parentAuthorUserName, props.comment]);
 
     const setStorageValueDebounced = useDebouncedCallback((value) => {
         if (props.storageKey) {
@@ -348,6 +381,13 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         }
     };
 
+    const handleMailClose = (result?: string) => {
+        setFormOpen(false);
+        if (result) {
+            replaceText(result, result.length);
+        }
+    };
+
     if (!props.open) {
         return <></>;
     }
@@ -368,17 +408,25 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
 
     return (
         <div className={styles.answer}>
-            <div className={styles.controls}>
+            <div className={classNames(styles.controls, postComponentStyles.options)} ref={controlsRef}>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('b')} title="Болд" className={styles.bold}>B</button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('i')} title="Италик" className={styles.italic}>I</button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('u')} title="Подчеркнуть" className={styles.underline}>U</button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('strike')} title="Перечеркнуть" className={styles.strike}>S</button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('irony')} title="Ирония"><IronyIcon /></button></div>
-                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('spoiler')} title="Спойлер"><SpoilerIcon /></button></div>
-                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('expand', {'title':''})} title="Свернуть/Развернуть"><ExpandIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('blockquote')} title="Цитировать"><QuoteIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('img')} title="Вставить картинку/видео"><ImageIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('a')} title="Вставить ссылку"><LinkIcon /></button></div>
+                <SpilloverWrapper threshold={350} parentRef={controlsRef}>
+                    <div className={styles.control}>
+                        <button disabled={disabledButtons} onClick={() => applyTag('spoiler')} title="Спойлер"><SpoilerIcon /></button></div>
+                    <div className={styles.control}>
+                        <button disabled={disabledButtons} onClick={() => applyTag('expand', {'title':''})} title="Свернуть/Развернуть"><ExpandIcon /></button></div>
+                    {parentPublicKey &&
+                    <div className={styles.control}>
+                        <button disabled={disabledButtons} onClick={() => setFormOpen(true)} title="Шифрованное послание"><MailIcon /></button></div>
+                    }
+                </SpilloverWrapper>
             </div>
             {
                 (previewing === null)
@@ -413,6 +461,12 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 <button disabled={isPosting || !answerText} className={styles.buttonPreview} onClick={handlePreview}>{(previewing === null) ? 'Превью' : 'Редактор'}</button>
                 <button disabled={isPosting || !answerText} className={styles.buttonSend} onClick={handleAnswer}><SendIcon /></button>
                 {mediaUploaderOpen && <MediaUploader onSuccess={handleMediaUpload} onCancel={handleMediaUploadCancel} mediaData={mediaUploaderData}/>}
+                {mailForm && parentPublicKey && <SecretMailEncoderForm
+                    openKey={parentPublicKey.publicKey}
+                    forUsername={parentPublicKey.username}
+                    mailboxTitle={`Шифровка`}
+                    onClose={handleMailClose}
+                />}
             </div>
         </div>
     );
@@ -436,4 +490,64 @@ const RestrictedSlowMode = (props: { endTime: Date; endCallback: () => void }) =
             Возможность комментировать ограничена из-за низкой кармы. До конца ожидания осталось:
         </div>
     </SlowMode>;
+};
+
+/**
+ * SpilloverWrapper is a React component that wraps its children and provides a responsive UI feature.
+ * It displays its children directly if the parent width is less than a given threshold.
+ * Otherwise, it provides a button to toggle the display of its children.
+ *
+ * @param {ReactNode} props.children - The children to be wrapped by this component.
+ * @param {React.RefObject<HTMLDivElement>} props.parentRef - A reference to the parent element.
+ * @param {number} props.threshold - The threshold width in pixels.
+ */
+const SpilloverWrapper = (props: { children: ReactNode, parentRef: React.RefObject<HTMLDivElement>, threshold: number }) => {
+    const [showOptions, setShowOptions] = useState(false);
+    const [parentWidth, setParentWidth] = useState(0);
+
+    const handleResize = () => {
+        if (props.parentRef.current) {
+            setParentWidth(props.parentRef.current.offsetWidth);
+        }
+    };
+
+    useEffect(() => {
+        handleResize(); // initial sizing
+        window.addEventListener('resize', handleResize);
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!showOptions) {
+            return;
+        }
+        const handleClick = (e: MouseEvent) => {
+            setShowOptions(false);
+        };
+        document.addEventListener('click', handleClick);
+        return () => {
+            document.removeEventListener('click', handleClick);
+        };
+    }, [showOptions]);
+
+    const toggleOptions = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setShowOptions(!showOptions);
+        return false;
+    };
+
+    return parentWidth > props.threshold ? (
+        <>{props.children}</>
+    ) : (
+        <div className={styles.control + ' ' + postComponentStyles.options}>
+            <button onClick={toggleOptions} className={postComponentStyles.options + ' ' + (showOptions ? styles.active : '')}><OptionsIcon /></button>
+            {showOptions &&
+                    <div className={postComponentStyles.optionsList}>
+                        {props.children}
+                    </div>
+            }
+        </div>
+    );
 };

@@ -1,17 +1,21 @@
 import React, {useEffect, useRef, useState} from 'react';
+import ReactDOM from 'react-dom';
 import classNames from 'classnames';
 import styles from './ContentComponent.module.scss';
-import mediaStyles from './MediaUploader.module.css';
+import overlayStyles from './Overlay.module.scss';
 import {observeOnHidden} from '../Services/ObserverService';
 import type * as Vimeo from '@vimeo/player';
 import {getLegacyZoom, getVideoAutopause} from './UserProfileSettings';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import {useHotkeys} from 'react-hotkeys-hook';
+import {SecretMailEncoderForm, SecretMailDecoderForm} from './SecretMailbox';
+import {b64DecodeUnicode} from '../Utils/utils';
 
 interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
     content: string;
     autoCut?: number;
     lowRating?: boolean;
+    currentUsername?: string;
 }
 
 declare global {
@@ -33,7 +37,25 @@ type ZoomedImg = {
     height: number;
 };
 
-function updateContent(div: HTMLDivElement, setZoomedImg: (img: ZoomedImg | null) => void) {
+type MailboxKey = {
+    type: 'mailbox';
+    mailboxTitle?: string;
+    openKey: string;
+    forUsername?: string;
+};
+
+type MailKey = {
+    type: 'mail';
+    secret: string;
+    title: string;
+};
+
+function updateContent(
+    div: HTMLDivElement,
+    setZoomedImg: (img: ZoomedImg | null) => void,
+    setMailboxKey: (key: MailboxKey | MailKey | null) => void,
+    currentUsername?: string
+) {
     div.querySelectorAll('img').forEach(img => {
         if (img.complete) {
             updateImg(img, setZoomedImg);
@@ -55,6 +77,123 @@ function updateContent(div: HTMLDivElement, setZoomedImg: (img: ZoomedImg | null
 
     div.querySelectorAll('details.expand').forEach(expand => {
         updateExpand(expand as HTMLDetailsElement);
+    });
+
+    div.querySelectorAll('span.secret-mailbox').forEach(mailbox => {
+        updateMailbox(mailbox as HTMLSpanElement, setMailboxKey);
+    });
+
+    div.querySelectorAll('span.secret-mail').forEach(mail => {
+        updateMail(mail as HTMLSpanElement, setMailboxKey, currentUsername);
+    });
+}
+
+function updateMailbox(mailbox: HTMLSpanElement,
+                          setMailboxKey: (key: MailboxKey | null) => void
+                       ) {
+    const secret = mailbox.dataset.secret;
+    if (!secret) {
+        return;
+    }
+    let mailboxTitle = mailbox.dataset.rawText;
+    try {
+        mailboxTitle = mailboxTitle && b64DecodeUnicode(mailboxTitle);
+    } catch (e) {
+        mailboxTitle = undefined;
+    }
+
+    mailbox.addEventListener('click', () => {
+        setMailboxKey({
+            type: 'mailbox',
+            openKey: secret,
+            mailboxTitle
+        });
+    });
+}
+
+function updateMail(mail: HTMLSpanElement,
+                    setMailboxKey: (key: MailKey | null) => void,
+                    currentUsername?: string
+) {
+    // check processed
+    if (mail.dataset.processed) {
+        return;
+    }
+    mail.dataset.processed = '1';
+
+    const secret = mail.dataset.secret;
+    if (!secret) {
+        mail.classList.add('secret-mail-error');
+        return;
+    }
+    let cipher: string | undefined;
+    let encodedKey: string;
+
+    // try decode secret as json
+    try {
+        const j = JSON.parse(b64DecodeUnicode(secret));
+        // add mention "для @username"
+        if (j.to && !mail.querySelector('span.mention')) {
+            const mention = document.createElement('span');
+            mention.classList.add('mention');
+            mention.innerText = j.to;
+            mail.appendChild(document.createTextNode(' для '));
+            mail.appendChild(mention);
+        }
+
+        // check v, to, c
+        if (!j.v || !j.c || !Number.isInteger(j.v) || !j.toKey) {
+            throw new Error('Invalid secret');
+        } else if (j.to && j.to === currentUsername && j.toKey) {
+            encodedKey = j.toKey;
+            cipher = j.c;
+        } else if (j.from && j.from === currentUsername && j.fromKey) {
+            encodedKey = j.fromKey;
+            cipher = j.c;
+        } else if (!j.to) {
+            encodedKey = j.toKey;
+            cipher = j.c;
+        }
+
+        if (!cipher) {
+            mail.classList.add('secret-mail-disabled');
+            return;
+        }
+    } catch (e) {
+        // add error class
+        mail.classList.add('secret-mail-error');
+        return;
+    }
+
+    // just the text
+    const title = mail.innerText.trim();
+
+    const mailInnerHtml = mail.innerHTML;
+    let decoded = false;
+
+    mail.addEventListener('click', () => {
+        if (decoded || !cipher) {
+            return;
+        }
+        mail.classList.remove('i', 'i-mail-secure');
+        mail.classList.add('secret-mail-decoding');
+
+        ReactDOM.render(
+            <SecretMailDecoderForm
+                cipher={cipher} title={title}
+                encodedKey={encodedKey}
+                onClose={(result) => {
+                    if (result) {
+                        decoded = true;
+                        mail.classList.add('i-mail-open', 'secret-mail-decoded', 'i');
+                        mail.classList.remove('secret-mail-decoding');
+                    } else {
+                        mail.classList.add('i', 'i-mail-secure');
+                        mail.classList.remove('secret-mail-decoding');
+                        ReactDOM.unmountComponentAtNode(mail);
+                        mail.innerHTML = mailInnerHtml;
+                    }
+                }}/>, mail);
     });
 }
 
@@ -253,7 +392,8 @@ function updateImg(img: HTMLImageElement, setZoomedImg: (img: ZoomedImg | null) 
 
     let el: HTMLElement | null = img;
     while (el) {
-        if (el.tagName.toUpperCase() === 'A') {
+        if (el.tagName.toUpperCase() === 'A' ||
+            el.tagName.toUpperCase() === 'SPAN' && el.className.indexOf('secret-mail') !== -1) {
             return;
         }
         el = el.parentElement;
@@ -348,6 +488,7 @@ export default function ContentComponent(props: ContentComponentProps) {
     const contentDiv = useRef<HTMLDivElement>(null);
     const [cut, setCut] = useState(false);
     const [zoomedImg, setZoomedImg] = useState<ZoomedImg | null>(null);
+    const [mailboxKey, setMailboxKey] = useState<MailboxKey | MailKey | null>(null);
 
     const checkAutoCut = (content: HTMLElement) => {
         if (props.autoCut) {
@@ -366,7 +507,7 @@ export default function ContentComponent(props: ContentComponentProps) {
             return;
         }
 
-        updateContent(content, setZoomedImg);
+        updateContent(content, setZoomedImg, setMailboxKey, props.currentUsername);
         let resizeObserver: ResizeObserver | null = null;
 
         if (props.lowRating) {
@@ -406,7 +547,7 @@ export default function ContentComponent(props: ContentComponentProps) {
             };
         }
 
-    }, [contentDiv, props.autoCut, props.lowRating]);
+    }, [props.content, contentDiv, props.autoCut, props.lowRating]);
 
     useEffect(() => {
         if (!props.autoCut && cut) {
@@ -425,6 +566,8 @@ export default function ContentComponent(props: ContentComponentProps) {
                  dangerouslySetInnerHTML={{__html: props.content}} ref={contentDiv} />
             {cut && <div className={styles.cutCover}><button className={styles.cutButton} onClick={handleCut}>Читать дальше</button></div>}
             {zoomedImg &&  <ZoomComponent {...zoomedImg} onExit={() => setZoomedImg(null)} />}
+            {mailboxKey && mailboxKey.type === 'mailbox' && <SecretMailEncoderForm {...mailboxKey} onClose={() => setMailboxKey(null)} />
+            }
         </>
     );
 }
@@ -447,7 +590,7 @@ function ZoomComponent(props: ZoomComponentProps) {
     useHotkeys('esc', props.onExit);
 
     return (
-        <div className={mediaStyles.overlay}
+        <div className={overlayStyles.overlay}
             onClick={(e) => {
                 // check if click originated from this element
                 if ((e.target as HTMLElement).classList.contains('react-transform-wrapper')) {

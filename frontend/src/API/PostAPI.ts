@@ -197,6 +197,14 @@ type PostHistoryResponse = {
     history: HistoryEntity[];
 };
 
+type GetPostPublicKeyRequest = {
+    username: string;
+};
+
+export type GetPostPublicKeyResponse = {
+    publicKey?: string;
+};
+
 export type TranslateModes = 'altTranslate' | 'annotate';
 
 export type TranslateRequest = {
@@ -334,6 +342,12 @@ export default class PostAPI {
             id,
             type,
             format: 'html'
+        });
+    }
+
+    getPublicKeyByUsername(username: string) {
+        return this.api.request<GetPostPublicKeyRequest, GetPostPublicKeyResponse>('/post/get-public-key', {
+            username
         });
     }
 }

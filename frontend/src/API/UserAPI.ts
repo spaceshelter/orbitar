@@ -26,6 +26,7 @@ type UserProfileResponse = {
     numberOfComments: number;
     numberOfInvitesAvailable?: number;
     isBarmalini?: boolean;
+    publicKey: string;
 };
 type UserProfilePostsRequest = {
     username: string;
@@ -156,6 +157,10 @@ export default class UserAPI {
 
     async saveGender(gender: UserGender): Promise<{gender: UserGender}> {
         return this.api.request<{gender: UserGender}, {gender: UserGender}>('/user/savegender', {gender});
+    }
+
+    async savePublicKey(publicKey: string): Promise<{ publicKey: string }> {
+        return this.api.request<{ publicKey: string }, { publicKey: string }>('/user/save-public-key', {publicKey});
     }
 
     async getBarmaliniAccess(): Promise<BarmaliniAccessResult> {

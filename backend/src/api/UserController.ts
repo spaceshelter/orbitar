@@ -4,7 +4,8 @@ import {APIRequest, APIResponse, joiFormat, joiUsername, validate} from './ApiMi
 import Joi from 'joi';
 import {Logger} from 'winston';
 import {
-    BarmaliniPasswordRequest, BarmaliniPasswordResponse,
+    BarmaliniPasswordRequest,
+    BarmaliniPasswordResponse,
     UserKarmaResponse,
     UserProfileRequest,
     UserProfileResponse,
@@ -14,7 +15,9 @@ import {
     UserSaveNameRequest,
     UserSaveNameResponse,
     UserSaveGenderRequest,
-    UserSaveGenderResponse
+    UserSaveGenderResponse,
+    UserSavePublicKeyRequest,
+    UserSavePublicKeyResponse
 } from './types/requests/UserProfile';
 import {UserPostsRequest, UserPostsResponse} from './types/requests/UserPosts';
 import PostManager from '../managers/PostManager';
@@ -75,6 +78,10 @@ export default class UserController {
             gender: Joi.number().required().allow(UserGender.fluid, UserGender.he, UserGender.she)
         });
 
+        const publicKeySchema = Joi.object<UserSavePublicKeyRequest>({
+            publicKey: Joi.string().max(128).allow('')
+        });
+
         const settingsSaveLimiter = rateLimit({
             windowMs: 1000 * 60,
             max: 20,
@@ -101,6 +108,7 @@ export default class UserController {
         this.router.post('/user/savegender', settingsSaveLimiter, validate(genderSchema), (req, res) => this.saveGender(req, res));
         this.router.post('/user/barmalini', settingsSaveLimiter, (req, res) => this.barmaliniPassword(req, res));
         this.router.post('/user/suggest-username', suggestUsernameLimiter, (req, res) => this.suggestUsername(req, res));
+        this.router.post('/user/save-public-key', settingsSaveLimiter, validate(publicKeySchema), (req, res) => this.savePublicKey(req, res));
     }
 
     async profile(request: APIRequest<UserProfileRequest>, response: APIResponse<UserProfileResponse>) {
@@ -125,6 +133,7 @@ export default class UserController {
             const invites = await this.userManager.getInvites(profileInfo.id);
             const invitedBy = await this.userManager.getInvitedBy(profileInfo.id);
             const active = await this.userManager.isUserActive(profileInfo.id);
+            const publicKey = await this.userManager.getPublicKey(profileInfo.id);
             const trialApprovers = await this.userManager.getTrialApprovers(profileInfo.id);
             const invitedReason = await this.inviteManager.getInviteReason(profileInfo.id);
             const trialProgress = await this.userManager.tryEndTrial(profileInfo.id, false);
@@ -163,7 +172,8 @@ export default class UserController {
                 numberOfPosts,
                 numberOfComments,
                 numberOfInvitesAvailable,
-                isBarmalini: this.userManager.isBarmaliniUser(profileInfo.id)
+                isBarmalini: this.userManager.isBarmaliniUser(profileInfo.id),
+                publicKey
             });
         } catch (error) {
             this.logger.error('Could not get user profile', {username});
@@ -435,6 +445,20 @@ export default class UserController {
         } catch (error) {
             this.logger.error('Could not get usernames suggestions', { error });
             return response.error('error', `Could not get usernames suggestions`, 500);
+        }
+    }
+
+    private savePublicKey(req: APIRequest<UserSavePublicKeyRequest>, res: APIResponse<UserSavePublicKeyResponse>) {
+        if (!req.session.data.userId) {
+            return res.authRequired();
+        }
+        const {publicKey} = req.body;
+        try {
+            this.userManager.savePublicKey(publicKey, req.session.data.userId);
+            return res.success({publicKey});
+        } catch (error) {
+            this.logger.error('Could not update user public key', { error });
+            return res.error('error', `Could not update public key`, 500);
         }
     }
 }
