@@ -388,3 +388,14 @@ test('parse secret mailbox with nested mailbox', () => {
     const result = p.parse('<mailbox secret="12345"><mailbox secret="67890">Hello</mailbox></mailbox>');
     expect(result.text).toEqual('<span class="i i-mailbox-secure secret-mailbox" data-secret="12345" data-raw-text=""></span>');
 });
+
+test('base64 validation', () => {
+    expect(TheParser.isValidBase64('')).toEqual(true);
+    expect(TheParser.isValidBase64('SGVsbG8')).toEqual(true);
+    expect(TheParser.isValidBase64('SGVsbG8=')).toEqual(true);
+    expect(TheParser.isValidBase64('SGVsbG8==')).toEqual(true);
+    expect(TheParser.isValidBase64('SGVsbG8===')).toEqual(true);
+
+    expect(TheParser.isValidBase64('=SGVsbG8')).toEqual(false);
+    expect(TheParser.isValidBase64('"SGVsbG8=')).toEqual(false);
+});

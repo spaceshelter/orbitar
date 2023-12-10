@@ -397,10 +397,15 @@ export default class TheParser {
         return node;
     }
 
+    static isValidBase64(str: string) {
+        const regex = /^[A-Za-z0-9+/]*={0,3}$/;
+        return regex.test(str);
+    }
+
     parseSecretMailbox(node: Element): ParseResult {
         // retain secret attribute and content
         const secret = node.attribs['secret'];
-        if (!secret) {
+        if (!secret || !TheParser.isValidBase64(secret)) {
             return this.parseDisallowedTag(node);
         }
         this.removeInnerMailTagsRec(node);
@@ -420,7 +425,7 @@ export default class TheParser {
     parseSecretMail(node: Element): ParseResult {
         // retain secret attribute and content
         const secret = node.attribs['secret'];
-        if (!secret) {
+        if (!secret || !TheParser.isValidBase64(secret)) {
             return this.parseDisallowedTag(node);
         }
         this.removeInnerMailTagsRec(node);
