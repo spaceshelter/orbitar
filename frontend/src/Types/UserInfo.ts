@@ -31,3 +31,20 @@ export type BarmaliniAccessResult = {
 export type UsernameSuggestResult = {
     usernames: string[];
 };
+
+export type UserGetNoteRequest = {
+    username: string;
+};
+
+export type UserGetNoteResponse = {
+    note: string;
+};
+
+export type UserSaveNoteRequest = {
+    username: string;
+    note: string;
+};
+
+export type UserSaveNoteResponse = {
+    note: string;
+};

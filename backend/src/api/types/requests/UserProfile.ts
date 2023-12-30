@@ -19,6 +19,7 @@ export type UserProfileResponse = {
     isBarmalini?: boolean;
 
     publicKey: string;
+    userNote?: string;
 };
 
 export type TrialProgressDebugInfo = {
@@ -87,6 +88,23 @@ export type UserSavePublicKeyRequest = {
 
 export type UserSavePublicKeyResponse = {
     publicKey: string;
+};
+
+export type UserGetNoteRequest = {
+    username: string;
+};
+
+export type UserGetNoteResponse = {
+    note?: string;
+};
+
+export type UserSaveNoteRequest = {
+    username: string;
+    note: string;
+};
+
+export type UserSaveNoteResponse = {
+    note: string;
 };
 
 export type BarmaliniPasswordRequest = Record<string, unknown>;

@@ -696,4 +696,17 @@ export default class UserManager {
     async getPublicKey(userId: number) {
         return this.userCache.getPublicKey(userId);
     }
+
+    async saveUserNote(authorId: number, userId: number, note: string) {
+        return this.userRepository.saveUserNote(authorId, userId, note);
+    }
+
+    async getUserNote(authorId: number, userId: number) {
+        return this.userRepository.getUserNote(authorId, userId);
+    }
+
+    async deleteUserNote(authorId: number, userId: number) {
+        return this.userRepository.deleteUserNote(authorId, userId);
+    }
+
 }

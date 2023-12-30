@@ -15,6 +15,7 @@ import {UserGender, UserProfileInfo} from '../Types/UserInfo';
 import UserProfileSettings from '../Components/UserProfileSettings';
 import UserProfileBio from '../Components/UserProfileBio';
 import UserProfileName from '../Components/UserProfileName';
+import {SecretUserNote} from '../Components/SecretMailbox';
 
 export const UserPage = observer(() => {
     const {userInfo, userRestrictions: restrictions} = useAppState();
@@ -137,6 +138,10 @@ export const UserPage = observer(() => {
                                 {!inviteListTruncated && showInvitesList(invitesFullList)}
                         </div>}
                     </>}
+                    {isProfile && <SecretUserNote
+                        targetUsername={user.username}
+                        initialNote={profile.userNote}
+                    />}
                     {isProfile && <UserProfileBio username={user.username} mine={!!isMyProfile} bio_source={profile.profile.bio_source} bio_html={profile.profile.bio_html} />}
                     {isPosts && <UserProfilePosts username={user.username} />}
                     {isComments && <UserProfileComments username={user.username} />}

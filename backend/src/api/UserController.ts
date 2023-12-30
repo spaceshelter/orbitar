@@ -17,7 +17,7 @@ import {
     UserSaveGenderRequest,
     UserSaveGenderResponse,
     UserSavePublicKeyRequest,
-    UserSavePublicKeyResponse
+    UserSavePublicKeyResponse, UserGetNoteRequest, UserSaveNoteRequest, UserGetNoteResponse, UserSaveNoteResponse
 } from './types/requests/UserProfile';
 import {UserPostsRequest, UserPostsResponse} from './types/requests/UserPosts';
 import PostManager from '../managers/PostManager';
@@ -82,6 +82,15 @@ export default class UserController {
             publicKey: Joi.string().max(128).allow('')
         });
 
+        const getNoteSchema = Joi.object<UserGetNoteRequest>({
+            username: joiUsername.required()
+        });
+
+        const saveNoteSchema = Joi.object<UserSaveNoteRequest>({
+            username: joiUsername.required(),
+            note: Joi.string().max(1024 * 4).allow('')
+        });
+
         const settingsSaveLimiter = rateLimit({
             windowMs: 1000 * 60,
             max: 20,
@@ -109,6 +118,8 @@ export default class UserController {
         this.router.post('/user/barmalini', settingsSaveLimiter, (req, res) => this.barmaliniPassword(req, res));
         this.router.post('/user/suggest-username', suggestUsernameLimiter, (req, res) => this.suggestUsername(req, res));
         this.router.post('/user/save-public-key', settingsSaveLimiter, validate(publicKeySchema), (req, res) => this.savePublicKey(req, res));
+        this.router.post('/user/get-note', validate(getNoteSchema), (req, res) => this.getUserNote(req, res));
+        this.router.post('/user/save-note', validate(saveNoteSchema), (req, res) => this.saveUserNote(req, res));
     }
 
     async profile(request: APIRequest<UserProfileRequest>, response: APIResponse<UserProfileResponse>) {
@@ -139,6 +150,7 @@ export default class UserController {
             const trialProgress = await this.userManager.tryEndTrial(profileInfo.id, false);
             const numberOfPosts = await this.postManager.getPostsByUserTotal(profileInfo.id, '') || 0;
             const numberOfComments = await this.postManager.getUserCommentsTotal(profileInfo.id, '') || 0;
+            const userNote = await this.userManager.getUserNote(userId, profileInfo.id);
 
             // if viewing own profile, get available invites number
             let numberOfInvitesAvailable = 0;
@@ -173,7 +185,8 @@ export default class UserController {
                 numberOfComments,
                 numberOfInvitesAvailable,
                 isBarmalini: this.userManager.isBarmaliniUser(profileInfo.id),
-                publicKey
+                publicKey,
+                userNote
             });
         } catch (error) {
             this.logger.error('Could not get user profile', {username});
@@ -459,6 +472,46 @@ export default class UserController {
         } catch (error) {
             this.logger.error('Could not update user public key', { error });
             return res.error('error', `Could not update public key`, 500);
+        }
+    }
+
+    async getUserNote(req: APIRequest<UserGetNoteRequest>, res: APIResponse<UserGetNoteResponse>) {
+        if (!req.session.data.userId) {
+            return res.authRequired();
+        }
+        const {username} = req.body;
+        try {
+            const targetUserId = (await this.userManager.getByUsername(username))?.id;
+            if (targetUserId === undefined) {
+                return res.error('error', `User is not found`, 404);
+            }
+            const note = await this.userManager.getUserNote(req.session.data.userId, targetUserId);
+            return res.success({note});
+        } catch (error) {
+            this.logger.error('Could not get user note', { error });
+            return res.error('error', `Could not get user note`, 500);
+        }
+    }
+
+async saveUserNote(req: APIRequest<UserSaveNoteRequest>, res: APIResponse<UserSaveNoteResponse>) {
+        if (!req.session.data.userId) {
+            return res.authRequired();
+        }
+        const {username, note} = req.body;
+        try {
+            const targetUserId = (await this.userManager.getByUsername(username))?.id;
+            if (targetUserId === undefined) {
+                return res.error('error', `User is not found`, 404);
+            }
+            if (!note.trim().length) {
+                await this.userManager.deleteUserNote(req.session.data.userId, targetUserId);
+                return res.success({note: undefined});
+            }
+            await this.userManager.saveUserNote(req.session.data.userId, targetUserId, note);
+            return res.success({note});
+        } catch (error) {
+            this.logger.error('Could not save user note', { error });
+            return res.error('error', `Could not save user note`, 500);
         }
     }
 }
