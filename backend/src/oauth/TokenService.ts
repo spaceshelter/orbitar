@@ -5,8 +5,7 @@ const accessTokenExpiresInHours = 24;
 
 export default class TokenService {
   static getSecretKey(): string {
-    return process.env.JWT_SECRET_KEY ||
-    'b32e958a7b81375fc041215956df893ee61a7bc6dcd937deaed2102ba9533858f6fb1cafb764afbaf096e4dfde5558fe310527fd1651ddec0df0a79884960dc6';
+    return process.env.JWT_SECRET_KEY;
   }
 
   static generateAccessToken(sub: string, name: string, aud: string, scope: string, exp: number, iat: number, authTime: number, nonce?: string): string {

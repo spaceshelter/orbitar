@@ -136,7 +136,6 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
 
   const { client, scope } = props;
 
-  console.log(client.isPublic);
   return (<div className={classNames({[styles.appCard]: true, [styles.inCatalog]: !scope, [styles.isMy]: client.isMy})}>
     <div className={styles.nameContainer}>
       {scope ? 'Приложение ' : ''}

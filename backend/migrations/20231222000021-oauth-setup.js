@@ -65,9 +65,10 @@ exports.up = async function(db) {
 };
 
 exports.down = async function(db) {
-  await db.dropTable('oauth_consents');
-  await db.dropTable('oauth_tokens');
   await db.dropTable('oauth_clients');
+  await db.dropTable('oauth_consents');
+  await db.dropTable('oauth_codes');
+  await db.dropTable('oauth_tokens');
   return null;
 };
 
