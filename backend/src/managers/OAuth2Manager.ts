@@ -51,7 +51,6 @@ export default class OAuth2Manager {
   async listClients(userId: number): Promise<OAuth2ClientEntity[]> {
     try {
       const clients = await this.oauthRepository.getClients(userId);
-      console.log()
       return await Promise.all(clients.map(async (client) => {
         const author = await this.userManager.getById(client.user_id);
         return {
