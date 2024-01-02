@@ -26,6 +26,12 @@ function deleteFromUserSessions(userId: number, sessionId: string) {
     }
 }
 
+export enum SessionType {
+    SessionId,
+    OAuth2Token,
+    OAuth2RefreshToken
+}
+
 export default class Session {
     private request: Request;
     private response: Response;
@@ -35,12 +41,23 @@ export default class Session {
     public id?: string;
     public data?: SessionData;
     public created: Date;
+    public sessionType: SessionType;
+    public availableScopes: string[];
 
-    constructor(db: DB, logger: Logger, request: Request, response: Response) {
+    constructor(db: DB, logger: Logger, request: Request, response: Response, sessionType: SessionType, availableScopes: string[] = []) {
         this.request = request;
         this.response = response;
         this.db = db;
         this.logger = logger;
+        this.sessionType = sessionType;
+        if (sessionType === SessionType.OAuth2Token) {
+            this.logger.info('OAuth2 verified session', { availableScopes: availableScopes });
+            this.availableScopes = availableScopes;
+        }
+
+        if (sessionType === SessionType.OAuth2RefreshToken) {
+            this.logger.info('OAuth2 verified refresh token request');
+        }
 
         this.id = request.header(Session.SESSION_HEADER);
     }
@@ -206,7 +223,14 @@ export class SessionData {
 
 export function session(db: DB, logger: Logger): RequestHandler {
     return (req, res, next) => {
-        req.session = new Session(db, logger, req, res);
+        if (
+          req.session && req.session.sessionType === SessionType.OAuth2Token ||
+          req.session && req.session.sessionType === SessionType.OAuth2RefreshToken
+        ) {
+            logger.info(`Have verified token session, skip session middleware`, { userId: req.session.data.userId });
+            return next();
+        }
+        req.session = new Session(db, logger, req, res, SessionType.SessionId);
         // create async block to encapsulate async logic
         const asyncBlock = async () => {
             try {

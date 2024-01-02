@@ -17,6 +17,7 @@ export type UploadData = UploadDataUri | UploadDataFile;
 
 export type MediaUploaderProps = {
     onCancel: () => void;
+    onError?: (error: string) => void;
     onSuccess: (uri: string, type: 'video' | 'image') => void;
     mediaData?: File
 };
@@ -161,6 +162,13 @@ export default function MediaUploader(props: MediaUploaderProps) {
         setUploadEnabled(true);
     };
 
+    const handleError = (error: string) => {
+        toast.error(error);
+        if (props.onError) {
+            props.onError(error);
+        }
+    };
+
     const handleUpload = (e:  React.SyntheticEvent) => {
         e.preventDefault();
 
@@ -200,12 +208,12 @@ export default function MediaUploader(props: MediaUploaderProps) {
                                     '/' + data.url, uploadData.type);
                             } else {
                                 console.log('UPLOAD FAILED: no link', data, file.type);
-                                toast.error('Произошла ошибка при загрузке 🥺');
+                                handleError('Произошла ошибка при загрузке 🥺');
                             }
                         })
                         .catch(error => {
                             console.error('UPLOAD FAILED', error, file.type);
-                            toast.error('Произошла ошибка при загрузке 🥺');
+                            handleError('Произошла ошибка при загрузке 🥺');
                         });
                 }
                 else {
@@ -215,12 +223,12 @@ export default function MediaUploader(props: MediaUploaderProps) {
                         console.error('UPLOAD FAILED', response.status, file.type, response, err);
                     });
 
-                    toast.error('Произошла ошибка при загрузке 🥺');
+                    handleError('Произошла ошибка при загрузке 🥺');
                 }
             }).catch(error => {
                 setUploading(false);
                 console.error('UPLOAD FAILED', file.type, error);
-                toast.error('Произошла ошибка при загрузке 🥺');
+                handleError('Произошла ошибка при загрузке 🥺');
             });
         }
     };

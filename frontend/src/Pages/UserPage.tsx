@@ -15,6 +15,7 @@ import {UserGender, UserProfileInfo} from '../Types/UserInfo';
 import UserProfileSettings from '../Components/UserProfileSettings';
 import UserProfileBio from '../Components/UserProfileBio';
 import UserProfileName from '../Components/UserProfileName';
+import UserProfileClientsApps from '../Components/UserProfileClientsApps';
 
 export const UserPage = observer(() => {
     const {userInfo, userRestrictions: restrictions} = useAppState();
@@ -33,8 +34,9 @@ export const UserPage = observer(() => {
     const isInvites = page === 'invites';
     const isKarma = page === 'karma';
     const isSettings = page === 'settings';
+    const isApps = page === 'apps';
 
-    const isProfile = !isPosts && !isComments && !isInvites && !isKarma && !isSettings;
+    const isProfile = !isPosts && !isComments && !isInvites && !isKarma && !isSettings && !isApps;
 
     useEffect(() => {
         if (state.status === 'ready') {
@@ -119,6 +121,7 @@ export const UserPage = observer(() => {
                     <Link className={`${styles.control} ${isKarma ? styles.active : ''}`} to={base + '/karma'}>Саморегуляция</Link>
                     <Link className={`${styles.control} ${isInvites ? styles.active : ''}`} to={base + '/invites'}>Инвайты {isMyProfile && profile.numberOfInvitesAvailable ? ('(' + profile.numberOfInvitesAvailable.toLocaleString() + ')') : '' }</Link>
                     {isMyProfile && <Link className={`${styles.control} ${isSettings ? styles.active : ''}`} to={base + '/settings'}>Настройки</Link>}
+                    {isMyProfile && <Link className={`${styles.control} ${isApps ? styles.active : ''}`} to={base + '/apps'}>Приложения</Link>}
                 </div>
 
                 <div className={styles.userinfo}>
@@ -147,6 +150,7 @@ export const UserPage = observer(() => {
                         barmaliniAccess={restrictions?.canVoteKarma && !profile.isBarmalini}
                         isBarmalini={profile.isBarmalini}
                     />}
+                    {isApps && <UserProfileClientsApps />}
                 </div>
             </div>
         );

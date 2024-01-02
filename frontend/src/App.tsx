@@ -31,6 +31,7 @@ import ResetPasswordPage from './Pages/ResetPasswordPage';
 import SearchPage from './Pages/SearchPage';
 import classNames from 'classnames';
 import {ForcedReload} from './Components/ForcedReload';
+import { OAuthClientPage } from './Pages/OAuthClientPage';
 
 export const App = observer(() => {
     const {appLoadingState} = useAppState();
@@ -152,6 +153,11 @@ const Ready = observer(() => {
                         <Route path="create" element={<CreatePostPage />} />
                         <Route path="p:postId" element={<PostPage />} />
                     </Route>
+
+                    <Route path="oauth2">
+                        <Route path="authorize" element={<OAuthClientPage />} />
+                    </Route>
+
                 </Route>
             </Routes>
         </>

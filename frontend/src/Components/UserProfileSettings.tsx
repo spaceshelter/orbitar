@@ -13,6 +13,7 @@ import classNames from 'classnames';
 import {confirmAlert} from 'react-confirm-alert';
 import {useUserProfile} from '../API/use/useUserProfile';
 import {SecretMailKeyGeneratorForm} from './SecretMailbox';
+import {selectElementText} from '../Utils/utils';
 
 type UserProfileSettingsProps = {
   onChange: any;
@@ -218,26 +219,13 @@ const BarmaliniAccess = observer(() => {
         }
     };
 
-    // selects all text in the element
-    const selectText = (e: React.MouseEvent) => {
-        e.preventDefault();
-        const element = e.target as HTMLElement;
-        const range = document.createRange();
-        range.selectNodeContents(element);
-        const selection = window.getSelection();
-        if (selection) {
-            selection.removeAllRanges();
-            selection.addRange(range);
-        }
-    };
-
     return (
         <div className={styles.barmalini}>
             {access && <div>
                 <div>
                 <span className={styles.label}>Логин:</span> {access.login}</div>
                 <div><span className={styles.label}>Пароль:</span>&nbsp;
-                    <span className={styles.password} onClick={selectText}>{access.password}</span>
+                    <span className={styles.password} onClick={selectElementText}>{access.password}</span>
                     &nbsp;<button className={buttonStyles.linkButton} onClick={handleCopy}>скопировать</button>
                 </div>
                 <div><span className={styles.label}>Счастливого бармаления. Пароль истекает через час.</span></div>

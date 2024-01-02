@@ -1,0 +1,146 @@
+.appsContainer {
+  display: flex;
+  flex-direction: column;
+  .createAppContainer {
+    margin-left: 20px;
+    align-self: center;
+
+    form {
+      label {
+        b {
+          display: block;
+          margin-bottom: 6px;
+        }
+
+        p {
+          font-size: 0.875rem;
+          color: var(--fgSoft);
+          margin: 0 0 10px 0;
+
+          em {
+            font-family: Consolas, "Lucida Console", Monaco, monospace;
+            font-style: normal;
+            font-weight: 600;
+          }
+
+          span {
+            opacity: 0.8;
+          }
+        }
+
+        input {
+          display: block;
+          box-sizing: border-box;
+          width: 100%;
+          padding: 5px;
+          font-size: 0.75rem;
+          margin-bottom: 16px;
+
+          &:disabled {
+            opacity: 0.6;
+          }
+        }
+
+        textarea {
+          display: block;
+          box-sizing: border-box;
+          width: 100%;
+          padding: 5px;
+          font-size: 0.875rem;
+          margin-bottom: 16px;
+          height: 6rem;
+        }
+      }
+
+      p.error {
+        color: var(--danger);
+        font-size: 0.75rem
+      }
+
+      p.error::before {
+        display: inline;
+        content: "⚠ ";
+      }
+
+      .publishApp {
+        display: flex;
+        flex-direction: row;
+
+        input {
+          margin-right: 10px;
+          width: auto;
+        }
+      }
+
+      .submitContainer {
+        display: flex;
+
+        p.error {
+          margin-left: 10px;
+        }
+      }
+
+    }
+  }
+
+  .clientSecretCopyContainer {
+    h3 {
+      margin: 0;
+    }
+
+    div span.code, div.span.clientId {
+      max-width: 100%;
+      display: block;
+      font-family: Consolas, "Lucida Console", Monaco, monospace;
+      font-size: 1.5rem;
+      overflow-wrap: break-word;
+      margin-bottom: 10px;
+    }
+
+    div b {
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    div span.codeInfo {
+      display: block;
+      margin-bottom: 10px;
+    }
+  }
+
+  .appsListContainer {
+    .appListHeaderContainer {
+      min-width: 100%;
+    }
+
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    flex-direction: row;
+    margin-bottom: 2rem;
+    h2 {
+      white-space: nowrap;
+      align-self: center;
+      margin: 10px 0;
+    }
+  }
+
+  .forDevContainer {
+    h4 {
+      margin: 10px 0;
+    }
+    .create {
+      opacity: 0;
+      height: 0;
+      overflow: hidden;
+      visibility: hidden;
+
+      &.active {
+        opacity: 1;
+        height: auto;
+        visibility: visible;
+        overflow: auto;
+      }
+    }
+  }
+}

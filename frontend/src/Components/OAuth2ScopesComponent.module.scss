@@ -1,0 +1,17 @@
+.container {
+  label {
+    display: flex;
+    margin-bottom: 20px;
+    align-items: center;
+
+    input {
+      align-self: start;
+      margin: 4px 10px;
+    }
+
+    .warningNote {
+      color: var(--negative-fg);
+      font-size: 0.8rem;
+    }
+  }
+}
