@@ -51,7 +51,7 @@ exports.up = async function(db) {
     create table if not exists oauth_codes (
       user_id int not null,
       client_id int not null,
-      code varchar(255) unique not null,
+      code_hash varchar(255) unique not null,
       scope varchar(255) not null,
       redirect_url varchar(255) not null,
       expires_at datetime,

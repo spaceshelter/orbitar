@@ -22,6 +22,9 @@ export default class OAuth2Manager {
     this.warmUpCache();
   }
 
+  /**
+   * Load revoked tokens from the database and put them into the cache. This should be called on startup.
+   */
   warmUpCache() {
     this.oauthRepository.getRevokedTokens().then((tokens) => {
       if (!tokens) {
@@ -34,6 +37,10 @@ export default class OAuth2Manager {
     });
   }
 
+  /**
+   * Registers a new OAuth2 client with the provided details.
+   * Generates a unique client ID and secret, then stores the client information in the repository.
+   */
   async registerClient(name: string, description: string, logoUrl: string, initialAuthorizationUrl: string, redirectUrls: string, userId: number, isPublic: boolean): Promise<OAuth2ClientRaw> {
     try {
       const clientId = TokenService.generateClientId();
@@ -48,6 +55,9 @@ export default class OAuth2Manager {
     }
   }
 
+  /**
+   * Lists OAuth2 clients. userId is used to determine which clients are authorized by the user and which clients were created by the user.
+   */
   async listClients(userId: number): Promise<OAuth2ClientEntity[]> {
     try {
       const clients = await this.oauthRepository.getClients(userId);
@@ -75,6 +85,11 @@ export default class OAuth2Manager {
     }
   }
 
+  /**
+   * Gets an OAuth2 client by its client ID (not numeric `id` from the table)
+   * It is used on consent page to show client details.
+   * If includeSecret is true, the client secret hash will be included in the result, which is needed to verify client secret provided to the token endpoint.
+   */
   async getClientByClientId(clientId: string, includeSecret = false): Promise<OAuth2ClientEntity | undefined> {
     try {
       const client = await this.oauthRepository.getClientByClientId(clientId);
@@ -104,10 +119,16 @@ export default class OAuth2Manager {
     }
   }
 
+  /**
+   * called to authorize a client by the user (when they click "Yes" on the consent page)
+   * Generates an authorization code and stores it's hash in the repository. This code is then returned to consent page and included into redirect to redirect_url of the client.
+   * Then it is used by the client to get an access token, server would compare provided code with hashed code from the repository.
+   */
   async authorizeClientAndGetAuthorizationCode(client: OAuth2ClientEntity, userId: number, scope: string, redirectUrl: string): Promise<string | undefined> {
     try {
       const authorizationCode = TokenService.generateAuthorizationCode(authorizationCodeTtlSeconds);
-      if (await this.oauthRepository.authorizeClient(client.id, userId, scope, redirectUrl, authorizationCode.code, authorizationCode.expiresAt)) {
+      const authorizationCodeHash = TokenService.hashString(authorizationCode.code);
+      if (await this.oauthRepository.authorizeClient(client.id, userId, scope, redirectUrl, authorizationCodeHash, authorizationCode.expiresAt)) {
         return authorizationCode.code;
       }
       return;
@@ -117,13 +138,16 @@ export default class OAuth2Manager {
     }
   }
 
-  async generateTokenWithAuthorizationCode(client: OAuth2ClientEntity, grantType: string, code?: string, refreshToken?: string, nonce?: string): Promise<OAuth2Token> {
+  /**
+   * called to generate an access token using authorization code
+   */
+  async generateTokenUsingAuthorizationCode(client: OAuth2ClientEntity, grantType: string, codeHash?: string, refreshToken?: string, nonce?: string): Promise<OAuth2Token> {
     const clientNumericId = client.id;
-    if (!code) {
+    if (!codeHash) {
       throw new Error('Missing authorization code');
     }
 
-    const authorizationCode = await this.oauthRepository.getAuthorizationCode(code);
+    const authorizationCode = await this.oauthRepository.getAuthorizationCode(codeHash);
     if (!authorizationCode) {
       throw new Error('Invalid authorization code');
     }
@@ -164,7 +188,10 @@ export default class OAuth2Manager {
     }
   }
 
-  async generateTokenWithRefreshToken(refreshTokenHash: string): Promise<OAuth2Token> {
+  /**
+   * called to generate an access token using refresh token
+   */
+  async generateTokenUsingRefreshToken(refreshTokenHash: string): Promise<OAuth2Token> {
     const token = await this.oauthRepository.getTokenByRefreshTokenHash(refreshTokenHash);
     if (!token) {
       throw new Error('Invalid refresh token');
@@ -189,6 +216,9 @@ export default class OAuth2Manager {
     }
   }
 
+  /**
+   * called to change client secret code
+   */
   async regenerateClientSecret(id: number, authorId: number): Promise<string | undefined> {
     try {
       const clientSecret = TokenService.generateClientSecret();

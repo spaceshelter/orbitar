@@ -1,9 +1,9 @@
 import APIBase from './APIBase';
 import { OAuth2ClientEntity } from '../Types/OAuth2';
 
-export type OAuth2ListClientsRequest = Record<string, never>;
+export type OAuth2ClientsListRequest = Record<string, never>;
 
-export type OAuth2ListClientsResponse = {
+export type OAuth2ClientsListResponse = {
   clients: OAuth2ClientEntity[];
 };
 
@@ -81,8 +81,8 @@ export default class OAuth2Api {
     });
   }
 
-  async listClients(): Promise<OAuth2ListClientsResponse> {
-    return await this.api.request<OAuth2ListClientsRequest, OAuth2ListClientsResponse>('/oauth2/clients', {});
+  async listClients(): Promise<OAuth2ClientsListResponse> {
+    return await this.api.request<OAuth2ClientsListRequest, OAuth2ClientsListResponse>('/oauth2/clients', {});
   }
 
   async getClient(clientId: string): Promise<OAuth2GetClientResponse> {

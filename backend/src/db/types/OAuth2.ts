@@ -36,7 +36,7 @@ export interface OAuth2TokenRaw {
 export interface OAuth2AuthorizationCodeRaw {
   client_id: number;
   user_id: number;
-  code: string;
+  code_hash: string;
   expires_at: Date;
   scope: string;
   redirect_url: string;

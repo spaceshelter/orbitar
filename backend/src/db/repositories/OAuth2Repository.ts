@@ -65,7 +65,7 @@ export default class OAuth2Repository {
     } as OAuth2ClientRaw;
   }
 
-  async authorizeClient(clientId: number, userId: number, scope: string, redirectUrl: string, authorizationCode: string, authorizationCodeExpiresAt: Date): Promise<boolean> {
+  async authorizeClient(clientId: number, userId: number, scope: string, redirectUrl: string, authorizationCodeHash: string, authorizationCodeExpiresAt: Date): Promise<boolean> {
     await this.db.inTransaction(async (db) => {
       // save consent
       await this.db.query('insert into oauth_consents (user_id, client_id, scope) values (:user_id, :client_id, :scope) on duplicate key update scope=:scope', {
@@ -84,7 +84,7 @@ export default class OAuth2Repository {
       await db.insert('oauth_codes', {
         client_id: clientId,
         user_id: userId,
-        code: authorizationCode,
+        code_hash: authorizationCodeHash,
         expires_at: authorizationCodeExpiresAt,
         scope,
         redirect_url: redirectUrl
@@ -93,9 +93,9 @@ export default class OAuth2Repository {
     return true;
   }
 
-  async getAuthorizationCode(code: string): Promise<OAuth2AuthorizationCodeRaw | undefined> {
-    return await this.db.fetchOne<OAuth2AuthorizationCodeRaw>(`select * from oauth_codes where code = :code`, {
-      code
+  async getAuthorizationCode(codeHash: string): Promise<OAuth2AuthorizationCodeRaw | undefined> {
+    return await this.db.fetchOne<OAuth2AuthorizationCodeRaw>(`select * from oauth_codes where code_hash = :code_hash`, {
+      code_hash: codeHash
     });
   }
 

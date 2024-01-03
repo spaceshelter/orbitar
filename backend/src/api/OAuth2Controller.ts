@@ -89,7 +89,6 @@ const getTokenSchema = Joi.object({
     .when('grant_type', { is: 'refresh_token', then: Joi.required(), otherwise: Joi.optional() })
 });
 
-
 const clientManageSchema = Joi.object<OAuth2ClientManageRequest>({
   id: Joi.number().required()
 });
@@ -135,6 +134,9 @@ export default class OAuth2Controller {
     this.router.post('/oauth2/token', validate(getTokenSchema), (req, res) => this.generateToken(req, res));
   }
 
+  /**
+   * Create (register) new OAuth2 client
+   */
   async register(request: APIRequest<OAuth2RegisterRequest>, response: APIResponse<OAuth2RegisterResponse>) {
     if (!request.session.data.userId) {
       return response.authRequired();
@@ -172,6 +174,9 @@ export default class OAuth2Controller {
     }
   }
 
+  /**
+   * List clients: returns public clients, clients created by this user and clients authorized by this user
+   */
   async listClients(request: APIRequest<OAuth2ClientsListRequest>, response: APIResponse<OAuth2ClientsListResponse>) {
     if (!request.session.data.userId) {
       return response.authRequired();
@@ -189,6 +194,10 @@ export default class OAuth2Controller {
     }
   }
 
+  /**
+   * Authorize client by user from a client consent page
+   * Generates authorization code and redirects user to the client's redirect URL which will be able to exchange the code for an access token
+   */
   async authorizeClient(request: APIRequest<OAuth2AuthorizeRequest>, response: APIResponse<OAuth2AuthorizeResponse>) {
     if (!request.session.data.userId) {
       return response.authRequired();
@@ -214,6 +223,9 @@ export default class OAuth2Controller {
     }
   }
 
+  /**
+   * Get client by client ID to be displayed on the client consent page
+   */
   async getClientByClientId(request: APIRequest<OAuth2ClientRequest>, response: APIResponse<OAuth2ClientResponse>) {
     if (!request.session.data.userId) {
       return response.authRequired();
@@ -229,28 +241,31 @@ export default class OAuth2Controller {
     return;
   }
 
+  /**
+   * Generate token by authorization code or refresh token on the grant_type provided by the client
+   */
   async generateToken(request: APIRequest<OAuth2TokenRequest>, response: APIResponse<OAuth2TokenResponse>) {
     const { client_id, client_secret, grant_type, code, nonce, refresh_token } = request.body;
     let token: OAuth2Token;
 
     if (grant_type === 'refresh_token') {
-      token = await this.oauth2Manager.generateTokenWithRefreshToken(refresh_token);
+      token = await this.oauth2Manager.generateTokenUsingRefreshToken(refresh_token);
       if (!token) {
         return response.error('error', 'Failed to get new access token', 500);
       }
       return response.success({ token });
     }
 
-    const clientSecretHashed = TokenService.hashString(client_secret);
+    const clientSecretHash = TokenService.hashString(client_secret);
     const client = await this.oauth2Manager.getClientByClientId(client_id, true);
 
-    if (!client || client_id !== client.clientId || clientSecretHashed !== client.clientSecretHash) {
+    if (!client || client_id !== client.clientId || clientSecretHash !== client.clientSecretHash) {
       this.logger.error('Invalid client id or secret', { client_id, client_secret });
       return response.error('invalid-client', 'Invalid client ID', 400);
     }
 
     try {
-      token = await this.oauth2Manager.generateTokenWithAuthorizationCode(client, grant_type, code, nonce);
+      token = await this.oauth2Manager.generateTokenUsingAuthorizationCode(client, grant_type, code, nonce);
       if (!token) {
         return response.error('invalid-client', 'Failed to generate token', 500);
       }
@@ -261,6 +276,9 @@ export default class OAuth2Controller {
     }
   }
 
+  /**
+   * Regenerate client secret in case it was compromised or lost
+   */
   async regenerateClientSecret(request: APIRequest<OAuth2ClientManageRequest>, response: APIResponse<OAuth2ClientRegenerateSecretResponse>) {
     if (!request.session.data.userId) {
       return response.authRequired();
@@ -273,6 +291,9 @@ export default class OAuth2Controller {
     response.success({ newSecret });
   }
 
+  /**
+   * Delete client, initiated by client author, when client is deleted, all tokens issued for it are marked as revoked
+   */
   async deleteClient(request: APIRequest<OAuth2ClientManageRequest>, response: APIResponse<Record<string, never>>) {
     const userId = request.session.data.userId;
     if (!userId) {
@@ -284,6 +305,9 @@ export default class OAuth2Controller {
     }
   }
 
+  /**
+   * Unauthorize client, initiated by client user, when client is unathorized, all tokens issued for it are marked as revoked
+   */
   async unAuthorizeClient(request: APIRequest<OAuth2ClientManageRequest>, response: APIResponse<Record<string, never>>) {
     const userId = request.session.data.userId;
     if (!userId) {
@@ -301,6 +325,9 @@ export default class OAuth2Controller {
     response.success({});
   }
 
+  /**
+   * Update client logo URL, initiated by client author
+   */
   async updateClientLogoUrl(request: APIRequest<OAuth2ClientUpdateLogoUrlRequest>, response: APIResponse<Record<string, never>>) {
     const userId = request.session.data.userId;
     if (!userId) {
@@ -314,6 +341,10 @@ export default class OAuth2Controller {
     response.success({});
   }
 
+  /**
+   * Change client visibility (0 or 1), initiated by client author, when client is not public, it is not displayed in the list of public clients
+   * This does not accept visibility value because it is just flipping the current value
+   */
   async changeClientVisibility(request: APIRequest<OAuth2ClientManageRequest>, response: APIResponse<Record<string, never>>) {
     const userId = request.session.data.userId;
     if (!userId) {

@@ -4,7 +4,7 @@ session_start();
 
 $authUrl = 'http://orbitar.local/oauth2/authorize';
 $tokenUrl = 'http://api.orbitar.local/api/v1/oauth2/token';
-$feedUrl = 'http://api.orbitar.local/api/v1/feed/posts';
+$feedUrl = 'http://api.orbitar.local/api/v1/feed/all';
 
 $clientId = getenv('CLIENT_ID');
 $clientSecret = getenv('CLIENT_SECRET');
@@ -100,7 +100,7 @@ switch ($action) {
             'client_id' => $clientId,
             'client_secret' => $clientSecret,
             'grant_type' => 'authorization_code',
-            'code' => $code,
+            'code' => hash('sha256', $code),
             'redirect_url' => urldecode($redirectUrl),
             'nonce' => bin2hex(random_bytes(32))
         ];
