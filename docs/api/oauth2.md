@@ -88,7 +88,7 @@ Authorization: Bearer <access_token>
 - `client_id` (string, required when `grant_type` is `authorization_code`, max: 255): The client ID.
 - `client_secret` (string, required when `grant_type` is `authorization_code`, max: 255): The client secret.
 - `grant_type` (string, required): The grant type (`authorization_code` or `refresh_token`).
-- `code` (string, required when `grant_type` is `authorization_code`, max: 255): The authorization code.
+- `code` (string, required when `grant_type` is `authorization_code`, max: 255): The authorization code SHA256 hash.
 - `nonce` (string, required when `grant_type` is `authorization_code`, max: 255): A nonce value.
 - `redirect_url` (string, required when `grant_type` is `authorization_code`, max: 255): The redirect URL.
 - `refresh_token` (string, required when `grant_type` is `authorization_code`, max: 255): The refresh token.
