@@ -11,13 +11,34 @@ import crypto from 'crypto';
 import { OAuth2RefreshTokenCheckResult } from '../db/types/OAuth2';
 import { checkOAuthAccess } from './utils/OAuth2-scopes-map';
 
+/**
+ * OAuth2 middleware
+ *
+ * This middleware depends on `express.urlencoded` middleware
+ * It checks for the presence of `Authorization` header in the incoming request and validates it accordingly.
+ *
+ * Requests with Access token should have this header:
+ * `Authorization: Bearer <access_token>`
+ *
+ * Requests with Refresh token should have this header:
+ * `Authorization: Basic <base64(client_id:sha256(client_secret))>`
+ *
+ * Refresh token should be able only to refresh access token, so it should not be used for any other requests.
+ *
+ * If no token is provided, it calls next() to pass control to the session middleware.
+ *
+ **/
+
 export default function OAuth2Middleware(db: DB, logger: Logger, oauth2Manager: OAuth2Manager): RequestHandler {
   return async (req, res, next) => {
+
+    // check if authorization header is present, if not, pass to session middleware
     const authHeaderAccessToken = req.get('Authorization');
     if (!authHeaderAccessToken) {
       return next();
     }
 
+    // Detect token type
     const [tokenType, token] = authHeaderAccessToken.split(' ');
     if (tokenType && !['Basic', 'Bearer'].includes(tokenType)) {
       logger.info('Authorization header was sent with invalid token type', { tokenType });
