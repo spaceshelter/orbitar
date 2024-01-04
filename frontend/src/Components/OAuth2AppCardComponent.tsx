@@ -195,6 +195,9 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
       scope && <>
         <div className={styles.scopeContainer}>
           <h3>Что будет доступно приложению:</h3>
+          <div className={styles.consentDisclaimer}>
+            Внимание! Приложение <b>не сможет писать или читать шифровки</b>. Подробнее о том, как работают шифровки, можно почитать <a href="https://orbitar.space/p16835">тут</a>
+          </div>
           <div>
             <OAuth2ScopesComponent appRequests={scope}/>
           </div>

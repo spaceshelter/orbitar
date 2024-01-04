@@ -4,14 +4,14 @@ session_start();
 
 $authUrl = 'http://orbitar.local/oauth2/authorize';
 $tokenUrl = 'http://api.orbitar.local/api/v1/oauth2/token';
-$feedUrl = 'http://api.orbitar.local/api/v1/feed/all';
+$feedUrl = 'http://api.orbitar.local/api/v1/feed/watch';
 
 $clientId = getenv('CLIENT_ID');
 $clientSecret = getenv('CLIENT_SECRET');
 
 $redirectUrl = urlencode('http://localhost:8088/callback');
-$scope = urlencode('openid,feed:all');
-
+//$scope = urlencode('openid, feed, feed:all, feed:posts, feed:sorting, feed:subscriptions, feed:watch, invite, invite:check, invite:create, invite:delete, invite:list, invite:regenerate, invite:use, notifications, notifications:hide, notifications:hide:all, notifications:list, notifications:read, notifications:read:all, notifications:subscribe, post, post:bookmark, post:comment, post:create, post:edit, post:edit-comment, post:get, post:get-comment, post:get-public-key, post:history, post:preview, post:read, post:translate, post:watch, search, site, site:create, site:list, site:subscribe, site:subscriptions, status, user, user:comments, user:karma, user:posts, user:profile, user:restrictions, user:save-public-key, user:savebio, user:savegender, user:savename, user:suggest-username, vote, vote:list, vote:set');
+$scope = 'feed';
 $action = $_REQUEST['action'] ?? 'start';
 
 function postRequest($url, $params, $accessToken = '', $refreshToken = '') {

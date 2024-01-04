@@ -3,6 +3,7 @@ import classNames from 'classnames';
 import React, { useState } from 'react';
 import MediaUploader from './MediaUploader';
 import {toast} from 'react-toastify';
+import {ReactComponent as EditIcon} from '../Assets/edit.svg';
 
 interface OAuth2ClientLogoComponentProps {
   url?: string;
@@ -35,7 +36,6 @@ export default function OAuth2ClientLogoComponent(props: OAuth2ClientLogoCompone
   return (
     <>
       {mediaUploaderOpen && <MediaUploader onSuccess={handleMediaUpload} onCancel={handleMediaUploadCancel} onError={() => {
-        // handleMediaUpload('http://localhost:8088/logos/ura-bot.png', 'image');
         setMediaUploaderOpen(false);
         toast('Не удалось обновить логотип', {type: 'error'});
       }} />}
@@ -51,6 +51,11 @@ export default function OAuth2ClientLogoComponent(props: OAuth2ClientLogoCompone
           }
         } : {})}
       >
+        {!logoUrl && (
+          <div className={styles.editIconContainer}>
+            <EditIcon  />
+          </div>
+        )}
       </div>
     </>
   );

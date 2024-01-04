@@ -9,7 +9,7 @@ import { ResponseErrorHandler } from './ApiMiddleware';
 import OAuth2Manager from '../managers/OAuth2Manager';
 import crypto from 'crypto';
 import { OAuth2RefreshTokenCheckResult } from '../db/types/OAuth2';
-import { checkOAuthAccess } from './utils/OAuth2-scopes-map';
+import { checkOAuthAccess } from './utils/OAuth2-scopes';
 
 /**
  * OAuth2 middleware
