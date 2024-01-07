@@ -41,12 +41,12 @@ export default class OAuth2Manager {
    * Registers a new OAuth2 client with the provided details.
    * Generates a unique client ID and secret, then stores the client information in the repository.
    */
-  async registerClient(name: string, description: string, logoUrl: string, initialAuthorizationUrl: string, redirectUrls: string, userId: number, isPublic: boolean): Promise<OAuth2ClientRaw> {
+  async registerClient(name: string, description: string, logoUrl: string, initialAuthorizationUrl: string, redirectUris: string, userId: number, isPublic: boolean): Promise<OAuth2ClientRaw> {
     try {
       const clientId = TokenService.generateClientId();
       const clientSecret = TokenService.generateClientSecret();
       const clientSecretHash = TokenService.hashString(clientSecret);
-      const result: OAuth2ClientRaw = await this.oauthRepository.createClient(name, description, logoUrl, initialAuthorizationUrl, clientId, clientSecretHash, redirectUrls, userId, isPublic);
+      const result: OAuth2ClientRaw = await this.oauthRepository.createClient(name, description, logoUrl, initialAuthorizationUrl, clientId, clientSecretHash, redirectUris, userId, isPublic);
       result.client_secret_original = clientSecret;
       return result;
     } catch (error) {
@@ -69,7 +69,7 @@ export default class OAuth2Manager {
           description: client.description,
           clientId: client.client_id,
           initialAuthorizationUrl: client.initial_authorization_url,
-          redirectUrls: client.redirect_urls,
+          redirectUris: client.redirect_uris,
           grants: client.grants,
           userId: client.user_id,
           logoUrl: client.logo_url,
@@ -107,7 +107,7 @@ export default class OAuth2Manager {
         clientId: client.client_id,
         ...(includeSecret ? { clientSecretHash: client.client_secret_hash } : {}),
         initialAuthorizationUrl: client.initial_authorization_url,
-        redirectUrls: client.redirect_urls,
+        redirectUris: client.redirect_uris,
         grants: client.grants,
         userId: client.user_id,
         logoUrl: client.logo_url,
@@ -121,14 +121,14 @@ export default class OAuth2Manager {
 
   /**
    * called to authorize a client by the user (when they click "Yes" on the consent page)
-   * Generates an authorization code and stores it's hash in the repository. This code is then returned to consent page and included into redirect to redirect_url of the client.
+   * Generates an authorization code and stores it's hash in the repository. This code is then returned to consent page and included into redirect to redirect_uri of the client.
    * Then it is used by the client to get an access token, server would compare provided code with hashed code from the repository.
    */
-  async authorizeClientAndGetAuthorizationCode(client: OAuth2ClientEntity, userId: number, scope: string, redirectUrl: string): Promise<string | undefined> {
+  async authorizeClientAndGetAuthorizationCode(client: OAuth2ClientEntity, userId: number, scope: string, redirectUri: string): Promise<string | undefined> {
     try {
       const authorizationCode = TokenService.generateAuthorizationCode(authorizationCodeTtlSeconds);
       const authorizationCodeHash = TokenService.hashString(authorizationCode.code);
-      if (await this.oauthRepository.authorizeClient(client.id, userId, scope, redirectUrl, authorizationCodeHash, authorizationCode.expiresAt)) {
+      if (await this.oauthRepository.authorizeClient(client.id, userId, scope, redirectUri, authorizationCodeHash, authorizationCode.expiresAt)) {
         return authorizationCode.code;
       }
       return;
@@ -141,7 +141,7 @@ export default class OAuth2Manager {
   /**
    * called to generate an access token using authorization code
    */
-  async generateTokenUsingAuthorizationCode(client: OAuth2ClientEntity, grantType: string, codeHash?: string, refreshToken?: string, nonce?: string): Promise<OAuth2Token> {
+  async generateTokenUsingAuthorizationCode(client: OAuth2ClientEntity, grantType: string, codeHash?: string, refreshToken?: string): Promise<OAuth2Token> {
     const clientNumericId = client.id;
     if (!codeHash) {
       throw new Error('Missing authorization code');
@@ -162,7 +162,7 @@ export default class OAuth2Manager {
 
     if (
       authorizationCode.user_id !== authorizationCode.user_id ||
-      authorizationCode.redirect_url !== authorizationCode.redirect_url
+      authorizationCode.redirect_uri !== authorizationCode.redirect_uri
     ) {
       throw new Error('Invalid authorization code');
     }
@@ -171,7 +171,7 @@ export default class OAuth2Manager {
       const user = await this.userManager.getById(authorizationCode.user_id);
       const nowTs = Math.floor(Date.now() / 1000);
       const accessTokenExpiresAtTs = nowTs + accessToktenTtlSeconds;
-      const accessToken = TokenService.generateAccessToken(authorizationCode.user_id.toString(), user.username, client.clientId, authorizationCode.scope, accessTokenExpiresAtTs, nowTs, nowTs, nonce);
+      const accessToken = TokenService.generateAccessToken(authorizationCode.user_id.toString(), user.username, client.clientId, authorizationCode.scope, accessTokenExpiresAtTs, nowTs, nowTs);
       const refreshToken = TokenService.generateRefreshToken();
       const accessTokenHash = TokenService.hashString(accessToken);
       const refreshTokenHash = TokenService.hashString(refreshToken);

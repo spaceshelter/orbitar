@@ -9,7 +9,7 @@ export type OAuth2ClientEntity = {
   clientSecretOriginal?: string;
   initialAuthorizationUrl?: string;
   logoUrl?: string;
-  redirectUrls: string;
+  redirectUris: string;
   grants: string;
   userId: number;
   author: UserInfo;

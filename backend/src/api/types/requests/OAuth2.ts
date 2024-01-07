@@ -6,7 +6,7 @@ export type OAuth2RegisterRequest = {
   description: string;
   logoUrl?: string;
   initialAuthorizationUrl?: string;
-  redirectUrls: string;
+  redirectUris: string;
   isPublic: boolean;
 };
 
@@ -35,7 +35,7 @@ export type OAuth2ClientsListResponse = {
 export type OAuth2AuthorizeRequest = {
   clientId: string;
   scope: string;
-  redirectUrl: string;
+  redirectUri: string;
 };
 
 export type OAuth2AuthorizeResponse = {
@@ -46,9 +46,8 @@ export type OAuth2TokenRequest = {
   client_id: string;
   client_secret: string;
   grant_type: string;
-  redirect_url?: string;
+  redirect_uri?: string;
   code?: string;
-  nonce?: string;
   refresh_token?: string;
 };
 

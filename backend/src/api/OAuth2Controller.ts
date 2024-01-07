@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { Logger } from 'winston';
-import { APIRequest, APIResponse, validate, urlsListValidator } from './ApiMiddleware';
+import { APIRequest, APIResponse, validate, urisListValidator } from './ApiMiddleware';
 import OAuth2Manager from '../managers/OAuth2Manager';
 import {
   OAuth2RegisterRequest,
@@ -44,11 +44,11 @@ const clientRegisterSchema = Joi.object<OAuth2RegisterRequest>({
     .messages({
       'string.uri': 'The field must be a valid URL.'
     }),
-  redirectUrls: urlsListValidator
+  redirectUris: urisListValidator
     .max(255).required()
     .messages({
-      'any.required': 'Redirect URLs are required.',
-      'any.invalid': 'Please enter valid comma-separated URLs.'
+      'any.required': 'Redirect URIs are required.',
+      'any.invalid': 'Please enter valid comma-separated URIs.'
     }),
   isPublic: Joi.boolean().required()
 });
@@ -56,7 +56,7 @@ const clientRegisterSchema = Joi.object<OAuth2RegisterRequest>({
 const clientAuthorizeSchema = Joi.object<OAuth2AuthorizeRequest>({
   clientId: Joi.string().max(255).required(),
   scope: Joi.string().max(255).required(),
-  redirectUrl: Joi.string()
+  redirectUri: Joi.string()
     .uri({
       scheme: ['http', 'https']
     })
@@ -81,9 +81,7 @@ const getTokenSchema = Joi.object({
   grant_type: Joi.string().valid('authorization_code', 'refresh_token').required(),
   code: Joi.string().max(255)
     .when('grant_type', { is: 'refresh_token', then: Joi.optional(), otherwise: Joi.required() }),
-  nonce: Joi.string().max(255)
-    .when('grant_type', { is: 'refresh_token', then: Joi.optional(), otherwise: Joi.required() }),
-  redirect_url: Joi.string().uri({ scheme: ['http', 'https'] }).max(255)
+  redirect_uri: Joi.string().uri({ scheme: ['http', 'https'] }).max(255)
     .when('grant_type', { is: 'refresh_token', then: Joi.optional() }),
   refresh_token: Joi.string().max(255)
     .when('grant_type', { is: 'refresh_token', then: Joi.required(), otherwise: Joi.optional() })
@@ -142,12 +140,12 @@ export default class OAuth2Controller {
       return response.authRequired();
     }
 
-    const { name, description, logoUrl, initialAuthorizationUrl, redirectUrls, isPublic } = request.body;
+    const { name, description, logoUrl, initialAuthorizationUrl, redirectUris, isPublic } = request.body;
     const userId = request.session.data.userId;
     const author = await this.userManager.getById(userId);
 
     try {
-      const client: OAuth2ClientRaw = await this.oauth2Manager.registerClient(name, description, logoUrl, initialAuthorizationUrl, redirectUrls, userId, isPublic);
+      const client: OAuth2ClientRaw = await this.oauth2Manager.registerClient(name, description, logoUrl, initialAuthorizationUrl, redirectUris, userId, isPublic);
       const responseData: OAuth2RegisterResponse = {
         client: {
           id: client.id,
@@ -157,7 +155,7 @@ export default class OAuth2Controller {
           clientSecretOriginal: client.client_secret_original,
           clientSecretHash: client.client_secret_hash,
           initialAuthorizationUrl: client.initial_authorization_url,
-          redirectUrls: client.redirect_urls,
+          redirectUris: client.redirect_uris,
           grants: client.grants,
           userId: client.user_id,
           author,
@@ -203,7 +201,7 @@ export default class OAuth2Controller {
       return response.authRequired();
     }
 
-    const { clientId, scope, redirectUrl } = request.body;
+    const { clientId, scope, redirectUri } = request.body;
 
     try {
       const client = await this.oauth2Manager.getClientByClientId(clientId);
@@ -211,7 +209,7 @@ export default class OAuth2Controller {
         return response.error('invalid-client', 'Invalid client ID', 400);
       }
 
-      const authorizationCode = await this.oauth2Manager.authorizeClientAndGetAuthorizationCode(client, request.session.data.userId, scope, redirectUrl);
+      const authorizationCode = await this.oauth2Manager.authorizeClientAndGetAuthorizationCode(client, request.session.data.userId, scope, redirectUri);
       if (!authorizationCode) {
         return response.error('invalid-client', 'Failed to generate authorization code', 500);
       }
@@ -245,7 +243,7 @@ export default class OAuth2Controller {
    * Generate token by authorization code or refresh token on the grant_type provided by the client
    */
   async generateToken(request: APIRequest<OAuth2TokenRequest>, response: APIResponse<OAuth2TokenResponse>) {
-    const { client_id, client_secret, grant_type, code, nonce, refresh_token } = request.body;
+    const { client_id, client_secret, grant_type, code, refresh_token } = request.body;
     let token: OAuth2Token;
 
     if (grant_type === 'refresh_token') {
@@ -265,7 +263,7 @@ export default class OAuth2Controller {
     }
 
     try {
-      token = await this.oauth2Manager.generateTokenUsingAuthorizationCode(client, grant_type, code, nonce);
+      token = await this.oauth2Manager.generateTokenUsingAuthorizationCode(client, grant_type, code);
       if (!token) {
         return response.error('invalid-client', 'Failed to generate token', 500);
       }

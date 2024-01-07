@@ -11,7 +11,7 @@ import { OAuth2ClientEntity } from '../Types/OAuth2';
 type AppSubmitFormValues = {
   name: string;
   description: string;
-  redirectUrls: string;
+  redirectUris: string;
   grants: string;
   logoUrl?: string;
   initialAuthorizationUrl: string;
@@ -27,9 +27,9 @@ export default function UserProfileClientAppsCreateForm(props: UserProfileClient
 
   const onSubmit: SubmitHandler<AppSubmitFormValues> = data => {
     setSubmitting(true);
-    const { name, description, redirectUrls, logoUrl, initialAuthorizationUrl, isPublic } = data;
+    const { name, description, redirectUris, logoUrl, initialAuthorizationUrl, isPublic } = data;
 
-    api.oauth2Api.registerClient(name, description, redirectUrls, logoUrl, initialAuthorizationUrl, isPublic).then((data) => {
+    api.oauth2Api.registerClient(name, description, redirectUris, logoUrl, initialAuthorizationUrl, isPublic).then((data) => {
       props.onClientRegisterSuccess(data.client);
     }).catch((err) => {
       setSubmitError(err.message);
@@ -105,9 +105,9 @@ export default function UserProfileClientAppsCreateForm(props: UserProfileClient
 
           <label><b>Разрешённые URL для редиректов (через запятую):</b>
             <input type="text" placeholder={'Пример: https://mybot.com/*, https://mybotbackup.com/*'}
-                   {...register('redirectUrls', { validate: validateUrls })}
+                   {...register('redirectUris', { validate: validateUrls })}
             />
-            {errors.redirectUrls && <p className={styles.error}>{errors.redirectUrls.message}</p>}
+            {errors.redirectUris && <p className={styles.error}>{errors.redirectUris.message}</p>}
           </label>
 
           <label><b>URL установки приложения:</b>

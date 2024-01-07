@@ -20,7 +20,7 @@ exports.up = async function(db) {
         client_id varchar(255) unique not null,
         client_secret_hash varchar(255) not null,
         initial_authorization_url varchar(255) default null,
-        redirect_urls text not null,
+        redirect_uris text not null,
         grants varchar(255),
         user_id int not null,
         is_public tinyint(1) not null default 0,
@@ -53,7 +53,7 @@ exports.up = async function(db) {
       client_id int not null,
       code_hash varchar(255) unique not null,
       scope varchar(255) not null,
-      redirect_url varchar(255) not null,
+      redirect_uri varchar(255) not null,
       expires_at datetime,
       foreign key (user_id) references users(user_id) on delete cascade,
       foreign key (client_id) references oauth_clients(id) on delete cascade

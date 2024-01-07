@@ -13,7 +13,7 @@ export const OAuthClientPage = observer(() => {
   const clientId = urlParams.get('client_id') || '';
   const scope = urlParams.get('scope') || 'openid';
   const responseType = urlParams.get('response_type') || 'code';
-  const redirectUrl = urlParams.get('redirect_uri') || '';
+  const redirectUri = urlParams.get('redirect_uri') || '';
   const state = urlParams.get('state') || '';
 
   const [error, setError] = React.useState<string | null>(null);
@@ -21,8 +21,8 @@ export const OAuthClientPage = observer(() => {
 
   const [submitting, setSubmitting] = React.useState<boolean>(false);
 
-  const validateRedirectUrl = (url: string, allowedRedirectUrls: string): boolean => {
-    const allowedUrls = allowedRedirectUrls.split(',').map(u => u.trim());
+  const validateRedirectUri = (url: string, allowedRedirectUris: string): boolean => {
+    const allowedUrls = allowedRedirectUris.split(',').map(u => u.trim());
 
     for (const allowedUrl of allowedUrls) {
       if (allowedUrl.endsWith('/*')) {
@@ -42,11 +42,11 @@ export const OAuthClientPage = observer(() => {
   const onAccept = () => {
     setSubmitting(true);
     // TODO: gather only checked scopes
-    api.oauth2Api.authorizeClient(clientId, scope, redirectUrl).then((data) => {
-      window.location.href = redirectUrl +
+    api.oauth2Api.authorizeClient(clientId, scope, redirectUri).then((data) => {
+      window.location.href = redirectUri +
         '?code=' + encodeURIComponent(data.authorizationCode) +
         '&state=' + encodeURIComponent(state) +
-        '&redirect_uri=' + encodeURIComponent(redirectUrl);
+        '&redirect_uri=' + encodeURIComponent(redirectUri);
     }).catch((err) => {
       setError(err.message);
     }).finally(() => {
@@ -60,12 +60,12 @@ export const OAuthClientPage = observer(() => {
 
   // todo: handle auth, if user is not logged, redirect to login page and then redirect back to this page with URL params preserved
   useEffect(() => {
-    if (!clientId || !scope || !responseType || !redirectUrl) {
+    if (!clientId || !scope || !responseType || !redirectUri) {
       setError('Невалидный запрос');
       return;
     }
     api.oauth2Api.getClient(clientId).then((data) => {
-      if (!validateRedirectUrl(redirectUrl, data.client.redirectUrls)) {
+      if (!validateRedirectUri(redirectUri, data.client.redirectUris)) {
         setError('Невалидный redirect_uri');
         return;
       }
@@ -75,7 +75,7 @@ export const OAuthClientPage = observer(() => {
     });
   }, []);
 
-  if (!state || clientId === '' || !responseType || !redirectUrl || !scope) {
+  if (!state || clientId === '' || !responseType || !redirectUri || !scope) {
     return (<div className={styles.container}>
       Невалидный запрос.
     </div>);

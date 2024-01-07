@@ -36,7 +36,7 @@ export default class OAuth2Repository {
     );
   }
 
-  async createClient(name: string, description: string, logoUrl: string, initialAuthorizationUrl: string, clientId: string, clientSecretHash: string, redirectUrls: string, userId: number, isPublic: boolean): Promise<OAuth2ClientRaw> {
+  async createClient(name: string, description: string, logoUrl: string, initialAuthorizationUrl: string, clientId: string, clientSecretHash: string, redirectUris: string, userId: number, isPublic: boolean): Promise<OAuth2ClientRaw> {
     const clientAutoincrementId = await this.db.insert('oauth_clients', {
       name,
       description,
@@ -44,7 +44,7 @@ export default class OAuth2Repository {
       client_id: clientId,
       client_secret_hash: clientSecretHash,
       initial_authorization_url: initialAuthorizationUrl,
-      redirect_urls: redirectUrls,
+      redirect_uris: redirectUris,
       user_id: userId,
       grants: 'authorization_code,refresh_token',
       is_public: isPublic ? 1 : 0
@@ -58,14 +58,14 @@ export default class OAuth2Repository {
       client_id: clientId,
       client_secret_hash: clientSecretHash,
       initial_authorization_url: initialAuthorizationUrl,
-      redirect_urls: redirectUrls,
+      redirect_uris: redirectUris,
       user_id: userId,
       grants: 'authorization_code,refresh_token',
       is_public: isPublic ? 1 : 0
     } as OAuth2ClientRaw;
   }
 
-  async authorizeClient(clientId: number, userId: number, scope: string, redirectUrl: string, authorizationCodeHash: string, authorizationCodeExpiresAt: Date): Promise<boolean> {
+  async authorizeClient(clientId: number, userId: number, scope: string, redirectUri: string, authorizationCodeHash: string, authorizationCodeExpiresAt: Date): Promise<boolean> {
     await this.db.inTransaction(async (db) => {
       // save consent
       await this.db.query('insert into oauth_consents (user_id, client_id, scope) values (:user_id, :client_id, :scope) on duplicate key update scope=:scope', {
@@ -87,7 +87,7 @@ export default class OAuth2Repository {
         code_hash: authorizationCodeHash,
         expires_at: authorizationCodeExpiresAt,
         scope,
-        redirect_url: redirectUrl
+        redirect_uri: redirectUri
       });
     });
     return true;

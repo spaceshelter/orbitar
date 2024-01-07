@@ -7,7 +7,7 @@ export interface OAuth2ClientRaw {
   client_secret_hash: string;
   client_secret_original?: string;
   initial_authorization_url: string;
-  redirect_urls: string;
+  redirect_uris: string;
   grants: string;
   user_id: number;
   is_public: number;
@@ -39,7 +39,7 @@ export interface OAuth2AuthorizationCodeRaw {
   code_hash: string;
   expires_at: Date;
   scope: string;
-  redirect_url: string;
+  redirect_uri: string;
 }
 
 export interface OAuth2RefreshTokenCheckResult {

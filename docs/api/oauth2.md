@@ -11,7 +11,7 @@ Registers a new OAuth2 client.
 - `description` (string, required, max: 255): A description of the client.
 - `logoUrl` (string, optional, max: 255): URL to the client's logo.
 - `initialAuthorizationUrl` (string, optional, max: 255): Initial authorization URL.
-- `redirectUrls` (string, required, max: 255): Comma-separated list of redirect URLs.
+- `redirectUris` (string, required, max: 255): Comma-separated list of redirect URLs.
 - `isPublic` (boolean, required): Whether the client is public.
 
 ### Response: [`OAuth2RegisterResponse`](#OAuth2RegisterResponse)
@@ -56,7 +56,7 @@ Generates an authorization code for an OAuth2 client.
 ### Request: [`OAuth2AuthorizeRequest`](#OAuth2AuthorizeRequest)
 - `clientId` (string, required, max: 255): The client ID.
 - `scope` (string, required, max: 255): The requested scope.
-- `redirectUrl` (string, required, max: 255): The redirect URL.
+- `redirectUri` (string, required, max: 255): The redirect URL.
 
 ### Response: [`OAuth2AuthorizeResponse`](#OAuth2AuthorizeResponse)
 - `authorizationCode` (string): The generated authorization code.
@@ -90,7 +90,7 @@ Authorization: Bearer <access_token>
 - `grant_type` (string, required): The grant type (`authorization_code` or `refresh_token`).
 - `code` (string, required when `grant_type` is `authorization_code`, max: 255): The authorization code SHA256 hash.
 - `nonce` (string, required when `grant_type` is `authorization_code`, max: 255): A nonce value.
-- `redirect_url` (string, required when `grant_type` is `authorization_code`, max: 255): The redirect URL.
+- `redirect_uri` (string, required when `grant_type` is `authorization_code`, max: 255): The redirect URI.
 - `refresh_token` (string, required when `grant_type` is `authorization_code`, max: 255): The refresh token.
 
 ### Response: [`OAuth2TokenResponse`](#OAuth2TokenResponse)
@@ -178,7 +178,7 @@ Represents an OAuth2 client entity with the following properties:
 - `clientSecretOriginal` (string, optional): The original client secret.
 - `initialAuthorizationUrl` (string, optional): Initial authorization URL.
 - `logoUrl` (string, optional): URL to the client's logo.
-- `redirectUrls` (string): Comma-separated list of redirect URLs.
+- `redirectUris` (string): Comma-separated list of redirect URLs.
 - `grants` (string): The type of grants allowed for the client.
 - `userId` (number): The user ID of the client's owner.
 - `author` (`UserInfo`): Information about the user who owns the client.
@@ -206,7 +206,7 @@ Represents a request to register a new OAuth2 client, with the following propert
 - `description` (string): A description of the client.
 - `logoUrl` (string, optional): URL to the client's logo.
 - `initialAuthorizationUrl` (string, optional): Initial authorization URL.
-- `redirectUrls` (string): Comma-separated list of redirect URLs.
+- `redirectUris` (string): Comma-separated list of redirect URLs.
 - `isPublic` (boolean): Whether the client is public.
 
 ### OAuth2RegisterResponse
@@ -237,7 +237,7 @@ Represents the response for a client list request:
 Represents a request to authorize an OAuth2 client:
 - `clientId` (string): The client ID.
 - `scope` (string): The requested scope.
-- `redirectUrl` (string): The redirect URL.
+- `redirectUri` (string): The redirect URL.
 
 ### OAuth2AuthorizeResponse
 Represents the response for an authorization request:
@@ -248,7 +248,7 @@ Represents a request to generate an OAuth2 token:
 - `client_id` (string): The client ID.
 - `client_secret` (string): The client secret.
 - `grant_type` (string): The grant type.
-- `redirect_url` (string, optional): The redirect URL.
+- `redirect_uri` (string, optional): The redirect URI.
 - `code` (string, optional): The authorization code.
 - `nonce` (string, optional): A nonce value.
 - `refresh_token` (string, optional): The refresh token.

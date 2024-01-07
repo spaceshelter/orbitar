@@ -11,7 +11,7 @@ export type OAuth2RegisterRequest = {
   name: string;
   description: string;
   logoUrl?: string;
-  redirectUrls: string;
+  redirectUris: string;
   initialAuthorizationUrl?: string;
   isPublic: boolean;
 };
@@ -23,7 +23,7 @@ export type OAuth2RegisterResponse = {
 export type OAuth2AuthorizeRequest = {
   clientId: string;
   scope: string;
-  redirectUrl: string;
+  redirectUri: string;
 };
 
 export type OAuth2AuthorizeResponse = {
@@ -70,12 +70,12 @@ export default class OAuth2Api {
     this.api = api;
   }
 
-  async registerClient(name: string, description: string, redirectUrls: string, logoUrl = '', initialAuthorizationUrl = '', isPublic: boolean): Promise<OAuth2RegisterResponse> {
+  async registerClient(name: string, description: string, redirectUris: string, logoUrl = '', initialAuthorizationUrl = '', isPublic: boolean): Promise<OAuth2RegisterResponse> {
     return await this.api.request<OAuth2RegisterRequest, OAuth2RegisterResponse>('/oauth2/client/register', {
       name,
       description,
       logoUrl,
-      redirectUrls,
+      redirectUris: redirectUris,
       initialAuthorizationUrl,
       isPublic
     });
@@ -89,11 +89,11 @@ export default class OAuth2Api {
     return await this.api.request<OAuth2GetClientRequest, OAuth2GetClientResponse>(`/oauth2/client`, { clientId });
   }
 
-  async authorizeClient(clientId: string, scope: string, redirectUrl: string): Promise<OAuth2AuthorizeResponse> {
+  async authorizeClient(clientId: string, scope: string, redirectUri: string): Promise<OAuth2AuthorizeResponse> {
     return await this.api.request<OAuth2AuthorizeRequest, OAuth2AuthorizeResponse>('/oauth2/authorize', {
       clientId,
       scope,
-      redirectUrl
+      redirectUri: redirectUri
     });
   }
 
