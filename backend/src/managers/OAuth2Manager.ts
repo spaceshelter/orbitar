@@ -183,7 +183,8 @@ export default class OAuth2Manager {
         refresh_token: refreshToken
       } as OAuth2Token;
     } catch (error) {
-      this.logger.error('Error generating OAuth token', { error });
+      this.logger.error('Error generating OAuth token');
+      this.logger.error(error);
       throw error;
     }
   }
