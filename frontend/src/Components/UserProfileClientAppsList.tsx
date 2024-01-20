@@ -13,32 +13,26 @@ type UserProfileClientAppsListProps = {
 };
 
 export default function UserProfileClientAppsList(props: UserProfileClientAppsListProps) {
-  const { list, isAuthorized } = props;
-  if (isAuthorized && !list.length) {
-    return <></>;
-  }
+    const {list, isAuthorized} = props;
+    if (isAuthorized && !list.length) {
+        return <></>;
+    }
 
-  return <div className={styles.appsListContainer}>
-    {
-      isAuthorized && <div className={styles.appListHeaderContainer}>
-        <h2>{'Установленные приложения'}</h2>
-      </div>
-    }
-    {
-      !isAuthorized && <div className={styles.appListHeaderContainer}>
-        <h2>{'Каталог приложений'}</h2>
-      </div>
-    }
-    {isAuthorized && list.length === 0 && <div>Вы пока не установили ни одного приложения.</div>}
-    {!isAuthorized && list.length === 0 && <div>Тут пока ничего нового.</div>}
-    {list.map((client) => (
-      <OAuth2AppCardComponent
-        client={client}
-        key={client.id}
-        onClientSecretUpdate={props?.onClientSecretUpdate}
-        onClientUnauthorize={props?.onClientUnauthorize}
-        onClientChangeVisibility={props?.onClientPublish}
-      />
-    ))}
-  </div>;
+    return <div className={styles.appsListContainer}>
+        <div className={styles.appListHeaderContainer}>
+            <h2>{isAuthorized ? 'Установленные приложения' : 'Каталог приложений'}</h2>
+        </div>
+        {list.length === 0 &&
+            <div>{isAuthorized ? 'Вы пока не установили ни одного приложения.' : 'Тут пока ничего нет.'}</div>}
+
+        {list.map((client) => (
+            <OAuth2AppCardComponent
+                client={client}
+                key={client.id}
+                onClientSecretUpdate={props?.onClientSecretUpdate}
+                onClientUnauthorize={props?.onClientUnauthorize}
+                onClientChangeVisibility={props?.onClientPublish}
+            />
+        ))}
+    </div>;
 }
