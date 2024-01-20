@@ -30,101 +30,59 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
     }
   };
 
-  const changeVisibility = () => {
-    confirmAlert({
-      title: 'Астанавитесь!',
-      message: `Вы уверены, что хотите ${client.isPublic ? 'спрятать' : 'опубликовать'} ваше приложение? ${!client.isPublic ? 'После публикации приложение увидят другие пользователи и смогут использовать его.' : 'Пользователи, которые установили приложение, всё равно смогут им пользоваться.'}`,
-      buttons: [
-        {
-          label: 'Да!',
-          onClick: () => {
-            api.oauth2Api.changeVisibility(client.id).then(() => {
-              props.onClientChangeVisibility?.();
-            }).catch(() => {
-              toast.error('Не удалось перегенерировать секретный код приложения');
-            });
-          }
-        },
-        {
-          label: 'Отмена',
-          className: 'cancel'
-        }
-      ],
-      overlayClassName: 'orbitar-confirm-overlay'
-    });
-  };
+    const confirmAction = (title: string, message: string, action: () => void) => {
+        confirmAlert({
+            title,
+            message,
+            buttons: [
+                {
+                    label: 'Да!',
+                    onClick: action
+                },
+                {
+                    label: 'Отмена',
+                    className: 'cancel'
+                }
+            ],
+            overlayClassName: 'orbitar-confirm-overlay'
+        });
+    };
 
-  const handleClientSecretUpdate = () => {
-    confirmAlert({
-      title: 'Астанавитесь!',
-      message: 'Вы уверены, что хотите перегенерировать секретный код вашего приложения? Не забудьте потом обновить настройки вашего приложения, т.к. старый секретный код перестанет работать.',
-      buttons: [
-        {
-          label: 'Да!',
-          onClick: () => {
-            api.oauth2Api.regenerateClientSecret(client.id).then((data) => {
-              props.onClientSecretUpdate?.(data.newSecret);
-            }).catch(() => {
-              toast.error('Не удалось перегенерировать секретный код приложения');
-            });
-          }
-        },
-        {
-          label: 'Отмена',
-          className: 'cancel'
-        }
-      ],
-      overlayClassName: 'orbitar-confirm-overlay'
-    });
-  };
+    const changeVisibility = () => {
+        const message = `Вы уверены, что хотите ${client.isPublic ? 'спрятать' : 'опубликовать'} ваше приложение? ${!client.isPublic ? 'После публикации приложение увидят другие пользователи и смогут использовать его.' : 'Пользователи, которые установили приложение, всё равно смогут им пользоваться.'}`;
+        confirmAction('Астанавитесь!', message, () => api.oauth2Api.changeVisibility(client.id).then(() => {
+            props.onClientChangeVisibility?.();
+        }).catch(() => {
+            toast.error('Не удалось перегенерировать секретный код приложения');
+        }));
+    };
 
-  const handleClientDelete = () => {
-    confirmAlert({
-      title: 'Астанавитесь!',
-      message: 'Вы уверены, что хотите удалить приложение? Для всех пользователей, авторизовавших ваше приложение, оно перестанет работать.',
-      buttons: [
-        {
-          label: 'Да!',
-          onClick: () => {
-            api.oauth2Api.deleteClient(client.id).then(() => {
-              props.onClientUnauthorize?.();
-            }).catch(() => {
-              toast.error('Не удалось удалить приложение');
-            });
-          }
-        },
-        {
-          label: 'Отмена',
-          className: 'cancel'
-        }
-      ],
-      overlayClassName: 'orbitar-confirm-overlay'
-    });
-  };
+    const handleClientSecretUpdate = () => {
+        const message = 'Вы уверены, что хотите перегенерировать секретный код вашего приложения? Не забудьте потом обновить настройки вашего приложения, т.к. старый секретный код перестанет работать.';
+        confirmAction('Астанавитесь!', message, () => api.oauth2Api.regenerateClientSecret(client.id).then((data) => {
+            props.onClientSecretUpdate?.(data.newSecret);
+        }).catch(() => {
+            toast.error('Не удалось перегенерировать секретный код приложения');
+        }));
+    };
 
-  const handleUnInstallClick = () => {
-    confirmAlert({
-      title: 'Астанавитесь!',
-      message: 'Вы уверены, что хотите отозвать авторизацию приложения? В принципе, это не страшно, потом сможете добавить его снова.',
-      buttons: [
-        {
-          label: 'Да!',
-          onClick: () => {
-            api.oauth2Api.unauthorizeClient(client.id).then(() => {
-              props.onClientUnauthorize?.();
-            }).catch((err) => {
-              toast.error('Не удалось отозвать авторизацию приложения');
-            });
-          }
-        },
-        {
-          label: 'Отмена',
-          className: 'cancel'
-        }
-      ],
-      overlayClassName: 'orbitar-confirm-overlay'
-    });
-  };
+    const handleClientDelete = () => {
+        const message = 'Вы уверены, что хотите удалить приложение? Для всех пользователей, авторизовавших ваше приложение, оно перестанет работать.';
+        confirmAction('Астанавитесь!', message, () => api.oauth2Api.deleteClient(client.id).then(() => {
+            props.onClientUnauthorize?.();
+        }).catch(() => {
+            toast.error('Не удалось удалить приложение');
+        }));
+    };
+
+    const handleUnInstallClick = () => {
+        const message = 'Вы уверены, что хотите отозвать авторизацию приложения? В принципе, это не страшно, потом сможете добавить его снова.';
+        confirmAction('Астанавитесь!', message, () => api.oauth2Api.unauthorizeClient(client.id).then(() => {
+            props.onClientUnauthorize?.();
+        }).catch(() => {
+            toast.error('Не удалось отозвать авторизацию приложения');
+        }));
+    };
 
   const handleNewLogo = (url: string) => {
     api.oauth2Api.updateClientLogo(client.id, url).then(() => {
@@ -153,14 +111,9 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
         <button onClick={handleClientSecretUpdate} className={buttonStyles.linkButton}>обновить секрет</button>
         <button onClick={handleClientSecretUpdate} className={buttonStyles.linkButton}>обновить лого</button>
         <button onClick={handleClientDelete} className={classNames(buttonStyles.linkButton, buttonStyles.danger)}>удалить</button>
-        {
-          client.isPublic &&
-          <button onClick={changeVisibility} className={classNames(buttonStyles.linkButton, buttonStyles.danger)}>спрятать</button>
-        }
-        {
-          !client.isPublic &&
-          <button onClick={changeVisibility} className={classNames(buttonStyles.linkButton, buttonStyles.danger)}>опубликовать</button>
-        }
+        <button onClick={changeVisibility} className={classNames(buttonStyles.linkButton, buttonStyles.danger)}>
+            {client.isPublic ? 'спрятать' : 'опубликовать'}
+        </button>
       </div>
     }
 
