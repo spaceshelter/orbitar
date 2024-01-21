@@ -141,7 +141,7 @@ export default class OAuth2Manager {
   /**
    * called to generate an access token using authorization code
    */
-  async generateTokenUsingAuthorizationCode(client: OAuth2ClientEntity, grantType: string, codeHash?: string, refreshToken?: string): Promise<OAuth2Token> {
+  async generateTokenUsingAuthorizationCode(client: OAuth2ClientEntity, grantType: string, codeHash?: string): Promise<OAuth2Token> {
     const clientNumericId = client.id;
     if (!codeHash) {
       throw new Error('Missing authorization code');
@@ -180,6 +180,7 @@ export default class OAuth2Manager {
         access_token: accessToken,
         expires_in: accessToktenTtlSeconds,
         token_type: 'Bearer',
+        scope: authorizationCode.scope,
         refresh_token: refreshToken
       } as OAuth2Token;
     } catch (error) {

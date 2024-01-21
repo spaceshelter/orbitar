@@ -188,7 +188,7 @@ const OAuth2ScopeEndpointsMap = {
     'site:create'
   ],
   '/api/v1/status': [
-    'status'
+    'openid'
   ],
   '/api/v1/user/profile': [
     'user',
@@ -245,6 +245,7 @@ const OAuth2ScopeEndpointsMap = {
 };
 
 export const checkOAuthAccess = (url: string, scopes: string[]): boolean => {
+  scopes = [...scopes, 'openid'];
   const allowedScopes = OAuth2ScopeEndpointsMap[url];
   if (!allowedScopes) {
     return false;
