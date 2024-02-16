@@ -12,9 +12,11 @@ import {UserProfileInvites} from '../Components/UserProfileInvites';
 import {observer} from 'mobx-react-lite';
 import {UserProfileKarma} from '../Components/UserProfileKarma';
 import {UserGender, UserProfileInfo} from '../Types/UserInfo';
-import UserProfileSettings from '../Components/UserProfileSettings';
+import UserProfileSettings, {getBobAround} from '../Components/UserProfileSettings';
 import UserProfileBio from '../Components/UserProfileBio';
 import UserProfileName from '../Components/UserProfileName';
+
+import { draw as drawBob } from 'orbitar-bob';
 
 export const UserPage = observer(() => {
     const {userInfo, userRestrictions: restrictions} = useAppState();
@@ -88,12 +90,27 @@ export const UserPage = observer(() => {
             refreshProfile();
         };
 
+        // FIXME: is not reactive!
+        const bobAround = getBobAround();
+
+        let bob;
+        if (bobAround)
+            bob = drawBob(1, 0);
+
         return (
             <div className={styles.container}>
                 <div className={styles.header}>
                     <div className={styles.row}>
                         <div>
-                            <div className={styles.username}>{user.username}</div>
+                            <div className={styles.username}>
+                                {bobAround &&
+                                <div className={styles.bobage}>
+                                    <div className={styles.row}>
+                                        <img src={bob} />
+                                    </div>
+                                </div>}
+                                {user.username}
+                            </div>
                         </div>
 
                         <div className={styles.karma}>

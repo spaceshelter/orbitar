@@ -67,6 +67,28 @@
     font-size: 40px;
 }
 
+.bobage {
+    $dim: 48px;
+
+    position: relative;
+    display: inline-block;
+    vertical-align: middle;
+    left: - $dim * 1.5;
+    margin-right: -48px;
+
+    img {
+        image-rendering: pixelated;
+        width: $dim;
+        height: $dim;
+    }
+
+    @media only screen and (max-width: 600px) {
+        float: right;
+        left: $dim / 4;
+
+    }
+}
+
 .name {
     font-size: 25px;
 }

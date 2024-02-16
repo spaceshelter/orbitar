@@ -14,6 +14,8 @@ import {confirmAlert} from 'react-confirm-alert';
 import {useUserProfile} from '../API/use/useUserProfile';
 import {SecretMailKeyGeneratorForm} from './SecretMailbox';
 
+import { draw as drawBob, rand31 } from 'orbitar-bob';
+
 type UserProfileSettingsProps = {
   onChange: any;
   gender: UserGender;
@@ -146,6 +148,12 @@ const confirmWrapper = (message: string, callback: () => void) => (e: React.Mous
     });
   };
 
+    // FIXME: is not actually reactive
+    let bobs = Array.from(Array(10)).map(() => rand31());
+    const makeBobs = () => {
+        bobs = bobs.map(() => rand31());
+    };
+
     useEffect(() => {
         localStorage.setItem('autoStopVideos', JSON.stringify(autoStop));
     }, [autoStop]);
@@ -153,6 +161,10 @@ const confirmWrapper = (message: string, callback: () => void) => (e: React.Mous
     useEffect(() => {
         localStorage.setItem('legacyZoom', JSON.stringify(legacyZoom));
     }, [legacyZoom]);
+
+    useEffect(() => {
+        localStorage.setItem('bobAround', JSON.stringify(bobAround));
+    }, [bobAround]);
 
     useEffect(() => {
         localStorage.setItem('preferredLang', preferredLang);
@@ -185,6 +197,19 @@ const confirmWrapper = (message: string, callback: () => void) => (e: React.Mous
                 <select onChange={changeLang} value={preferredLang}>
                     {Array.from(languages.entries()).map(([lang, name]) => <option key={lang} value={lang}>{name}</option>)}
                 </select>
+            </div>
+            <span>Выбор головастика:</span>
+            <div className={styles.bobage}>
+                <button className={buttonStyles.settingsButton}
+                        onClick={makeBobs}>
+                    Больше!
+                </button>
+                {bobs.map((seed) =>
+                    <img src={drawBob(1, seed)} data-seed={seed} />
+                )}
+                <button className={buttonStyles.settingsButton}>
+                    Cохранить
+                </button>
             </div>
             <MailboxSettings/>
             {props.barmaliniAccess && <BarmaliniAccess/>}

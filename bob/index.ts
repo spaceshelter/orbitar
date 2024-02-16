@@ -37,7 +37,6 @@ const draw = (version, seed) => {
     }
     const canvas = createCanvas(16, 16);
     const ctx = canvas.getContext('2d');
-    ctx.globalAl
     ctx.antialias = 'none';
     ctx.imageSmoothingEnabled = false;
     if (seed === 0) {

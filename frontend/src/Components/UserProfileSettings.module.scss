@@ -46,6 +46,16 @@ select:hover {
   background: var(--dim3);
 }
 
+.bobage {
+  margin-top: 1rem;
+  img {
+    image-rendering: pixelated;
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+  }
+}
+
 .mailbox {
   display: flex;
   flex-direction: column;
@@ -87,5 +97,5 @@ select:hover {
 }
 
 .modalWrapper {
-    position: absolute;
+  position: absolute;
 }
