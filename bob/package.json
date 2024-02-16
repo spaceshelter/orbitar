@@ -1,0 +1,10 @@
+{
+  "name": "orbitar-bob",
+  "main": "index.js",
+  "scripts": {
+    "make": "python3 make_layers.py"
+  },
+  "dependencies": {
+    "canvas": "^2.11.2"
+  }
+}

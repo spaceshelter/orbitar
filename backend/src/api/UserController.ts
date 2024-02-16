@@ -1,4 +1,4 @@
-import {Router} from 'express';
+import {Response, Router} from 'express';
 import UserManager from '../managers/UserManager';
 import {APIRequest, APIResponse, joiFormat, joiUsername, validate} from './ApiMiddleware';
 import Joi from 'joi';
@@ -109,6 +109,11 @@ export default class UserController {
         this.router.post('/user/barmalini', settingsSaveLimiter, (req, res) => this.barmaliniPassword(req, res));
         this.router.post('/user/suggest-username', suggestUsernameLimiter, (req, res) => this.suggestUsername(req, res));
         this.router.post('/user/save-public-key', settingsSaveLimiter, validate(publicKeySchema), (req, res) => this.savePublicKey(req, res));
+        this.router.get('/bob/:username', async (req, res) => {
+            const imageData = await this.userManager.bob(req.params.username)
+            res.set('Content-Type', 'image/png');
+            res.send(imageData);
+        });
     }
 
     async profile(request: APIRequest<UserProfileRequest>, response: APIResponse<UserProfileResponse>) {

@@ -18,6 +18,7 @@ export type UserInfo = UserBaseInfo & {
     registered: Date;
     bio_source?: string;
     bio_html?: string;
+    bob?: string;
 };
 
 export type UserStats = {

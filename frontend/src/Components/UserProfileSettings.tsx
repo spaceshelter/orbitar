@@ -49,6 +49,10 @@ export function getLegacyZoom(): boolean {
     return localStorage.getItem('legacyZoom') === 'true';
 }
 
+export function getBobAround(): boolean {
+    return localStorage.getItem('bobAround') === 'true';
+}
+
 export function getPreferredLang(): string {
     return localStorage.getItem('preferredLang') || 'ru';
 }
@@ -66,6 +70,7 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
 
 const [autoStop, setAutoStop] = React.useState<boolean>(getVideoAutopause());
 const [legacyZoom, setLegacyZoom] = React.useState<boolean>(getLegacyZoom());
+const [bobAround, setBobAround] = React.useState<boolean>(getBobAround());
 const [preferredLang, setPreferredLang] = React.useState<string>(getPreferredLang());
 
 const confirmWrapper = (message: string, callback: () => void) => (e: React.MouseEvent) => {
@@ -110,6 +115,10 @@ const confirmWrapper = (message: string, callback: () => void) => (e: React.Mous
 
     const toggleLegacyZoom = () => {
         setLegacyZoom(!legacyZoom);
+    };
+
+    const toggleBobAround = () => {
+        setBobAround(!bobAround);
     };
 
   const changeLang = (ev:  React.FormEvent<HTMLSelectElement>) => {
@@ -165,6 +174,9 @@ const confirmWrapper = (message: string, callback: () => void) => (e: React.Mous
                 </button>
                 <button className={buttonStyles.settingsButton} onClick={toggleLegacyZoom}>
                     Легаси зум: {legacyZoom ? 'Вкл' : 'Выкл'}
+                </button>
+                <button className={buttonStyles.settingsButton} onClick={toggleBobAround}>
+                    Головы повсюду: {bobAround ? 'Вкл' : 'Выкл'}
                 </button>
                 {<ThemeToggleComponent dynamic={true} buttonLabel="Сменить тему"/>}
             </div>

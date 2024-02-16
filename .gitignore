@@ -3,5 +3,5 @@
 /tmp
 /docker-compose.yml
 /backup
-/.env
+/.env*
 node_modules

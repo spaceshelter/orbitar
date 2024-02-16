@@ -74,6 +74,16 @@ export default class UserManager {
         this.parser = parser;
     }
 
+    async bob(username: string): Promise<Buffer> {
+        const defaultBob = 'iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAW5JREFUWEdjZCASHGFQ+Q9SqsH9nCgdIl+/MhKjkChFIIMGzAGkWozua0IhQTAEBswBMIthPiI27omJd5AaWMjgDIFB5wBifUasOhuGO2DPEx0CxBpMrDqSHfBoaRuxZoPVyUVXoaiHWYhuCNEhQHcHwFy6bOkqcAn4ZE4ZSSEgk9IFVh8VHYY3qxMsBwbMAbE60mCfe1b2g30SyRmGPwTc70PkdyqCqeXfV4Hp7e2FYHrxladYPYszBEYdMOAhgJ4LyE0DVMsFg8YBsNSNK0vAHApTR/UQoLsD0NMCjN/W3oQSCFWVdSh8Qj6HKSZYEg6kA8AlIQyYmpiAmYWFkDoBVwj090PqgNNnzqAnE9JKQgYGhgFzAFaLYd6BhQCuXAALAZg8oZDAFiwD5gC8FsN81H/mAy7PQ9KIiQBWeVwhgRwCg8sB6Kkfxj91eg3eEDAzDUGRx+JzlCIAZwgMGgegO4TYEMDjc9JCgNYOAACo5+4hqim75wAAAABJRU5ErkJggg==';
+
+        let user = await this.userCache.getByUsername(username);
+        let bob64 = defaultBob;
+        if (user && user.bob)
+            bob64 = user.bob;
+        return Buffer.from(bob64, 'base64');
+    }
+
     // TODO migrate all usage to direct calls to userCache
     public async getById(userId: number): Promise<UserInfo | undefined> {
         return this.userCache.getById(userId);
