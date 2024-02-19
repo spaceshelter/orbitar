@@ -212,11 +212,14 @@ function updateInternalExpandButton(expandButton: HTMLElement, appState: AppStat
     // Extract post and comment numbers from data-attributes
     const postId = expandButton.getAttribute('data-post-id');
     const commentId = expandButton.getAttribute('data-comment-id');
+    const nextLink = expandButton.nextElementSibling;
 
     // Add click event listener to the expand button
-    const listener =  () => {
+    const listener =  (e: Event) => {
+        const link = nextLink as HTMLAnchorElement;
+
+        e.preventDefault();
         // after the expand button there is a link
-        const link = expandButton.nextElementSibling as HTMLAnchorElement;
         const rect = link.nextElementSibling as HTMLDivElement;
 
         if (rect && rect.className === 'internal-link-rect') {
@@ -246,8 +249,12 @@ function updateInternalExpandButton(expandButton: HTMLElement, appState: AppStat
                 newRect
             );
         }
+        return false;
     };
-    expandButton.addEventListener('click', listener);
+    if (nextLink && nextLink.tagName === 'A') {
+        expandButton.addEventListener('click', listener);
+        nextLink.addEventListener('click', listener);
+    }
 }
 
 
