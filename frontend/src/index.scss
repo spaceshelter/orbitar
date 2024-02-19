@@ -147,6 +147,7 @@ details.expand {
       height: 20px;
       position: absolute;
       transition: transform .25s;
+      user-select: none;
     }
   }
 

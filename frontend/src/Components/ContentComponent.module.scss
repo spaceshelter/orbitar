@@ -140,6 +140,29 @@
       padding-right: 4px;
     }
   }
+
+  :global(.expand-button) {
+    display: inline-block;
+    padding: 0 6px 1px 2px;
+    font-size: 22px;
+    cursor: pointer;
+    color: var(--fgMedium);
+    vertical-align: middle;
+    user-select: none;
+
+    transform: rotate(0deg);
+    transition: transform .25s;
+    transform-origin: 40% center; // Add this line
+
+    &:hover {
+      color: var(--primaryHover);
+    }
+
+    &:global(.expanded) {
+      transform: rotate(90deg);
+      transition: transform .25s;
+    }
+  }
 }
 
 .overlayCloseButton {
