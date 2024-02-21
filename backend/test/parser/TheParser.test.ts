@@ -2,8 +2,11 @@
 import TheParser from "../../src/parser/TheParser";
 
 const p = new TheParser({
-    url: 'https://orbitar.media',
-    dimsAesKey: ''
+    mediaHosting: {
+        url: 'https://orbitar.media',
+        dimsAesKey: ''
+    },
+    siteDomain: 'orbitar.local'
 });
 
 test('parse A tag', () => {
@@ -398,4 +401,30 @@ test('base64 validation', () => {
 
     expect(TheParser.isValidBase64('=SGVsbG8')).toEqual(false);
     expect(TheParser.isValidBase64('"SGVsbG8=')).toEqual(false);
+});
+
+describe('processInternalUrl', () => {
+    test('valid internal url', () => {
+        const url = 'https://orbitar.local/s/site/p123';
+        const result = p.processInternalUrl(url);
+        expect(result).toEqual('<span role="button" class="expand-button i i-expand" data-post-id="123"></span><a href="https://orbitar.local/s/site/p123" target="_blank">https://orbitar.local/s/site/p123</a>');
+    });
+
+    test('invalid internal url', () => {
+        const url = 'https://invalid.com/s/site/p123';
+        const result = p.processInternalUrl(url);
+        expect(result).toEqual(false);
+    });
+
+    test('internal url with comment id', () => {
+        const url = 'https://orbitar.local/s/site/p123#456';
+        const result = p.processInternalUrl(url);
+        expect(result).toEqual('<span role="button" class="expand-button i i-expand" data-post-id="123" data-comment-id="456"></span><a href="https://orbitar.local/s/site/p123#456" target="_blank">https://orbitar.local/s/site/p123#456</a>');
+    });
+
+    test('internal url without comment id', () => {
+        const url = 'https://orbitar.local/s/site/p123';
+        const result = p.processInternalUrl(url);
+        expect(result).toEqual('<span role="button" class="expand-button i i-expand" data-post-id="123"></span><a href="https://orbitar.local/s/site/p123" target="_blank">https://orbitar.local/s/site/p123</a>');
+    });
 });
