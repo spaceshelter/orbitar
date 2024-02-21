@@ -42,15 +42,15 @@ export const FakeRoot: React.FunctionComponent<{
     children: React.ReactNode;
     appState?: AppState;
 }> = ({appState, children}) => {
-    const inner = () => <MobXAwareRouter>
+    const inner = <MobXAwareRouter>
         <ThemeProvider themeCollection={getThemes()}>
             {children}
         </ThemeProvider>
     </MobXAwareRouter>;
 
     return (appState ?
-            <AppStateContext.Provider value={{appState}}>{inner()}</AppStateContext.Provider> :
-            <AppStateProvider>{inner()}</AppStateProvider>
+            <AppStateContext.Provider value={{appState}}>{inner}</AppStateContext.Provider> :
+            <AppStateProvider>{inner}</AppStateProvider>
     );
 };
 
@@ -59,7 +59,7 @@ const root = createRoot(container);
 root.render(
     <FakeRoot>
         <ReloadOnUpdate>
-        <App/>
+            <App/>
         </ReloadOnUpdate>
     </FakeRoot>
 );

@@ -3,7 +3,7 @@ import TheParser from "../../src/parser/TheParser";
 
 const p = new TheParser({
     mediaHosting: {
-    url: 'https://orbitar.media',
+        url: 'https://orbitar.media',
         dimsAesKey: ''
     },
     siteDomain: 'orbitar.local'

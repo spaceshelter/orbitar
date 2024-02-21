@@ -4,7 +4,7 @@ import {escape as htmlEscape} from 'html-escaper';
 import escapeHTML from 'escape-html';
 import Url from 'url-parse';
 import qs from 'qs';
-import {mentionsRegex, urlRegex, urlRegexExact} from './regexprs';
+import {escapeRegExp, mentionsRegex, urlRegex, urlRegexExact} from './regexprs';
 import {MediaHostingConfig} from '../config';
 import render from 'dom-serializer';
 import {joiSite} from '../api/ApiMiddleware';
@@ -237,7 +237,7 @@ export default class TheParser {
     }
 
     processInternalUrl(url: string, text?: string) {
-        const internalUrlPattern = new RegExp(`^(https?://${this.parserConfig.siteDomain})/(?:s/([^/]+)/)?p(\\d+)(?:#(\\d+))?$`, 'i');
+        const internalUrlPattern = new RegExp(`^(https?://${escapeRegExp(this.parserConfig.siteDomain)})/(?:s/([^/]+)/)?p(\\d+)(?:#(\\d+))?$`, 'i');
 
         const match = url.match(internalUrlPattern);
         const site = match && match[2] || null;
