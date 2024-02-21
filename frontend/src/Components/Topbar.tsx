@@ -90,7 +90,7 @@ const HomeButton = () => {
     }, [savedRoute, routes.map(_ => _[1]).join(':')]);
 
     return (
-        <ReloadingLink to={savedRoute}><MonsterIcon/></ReloadingLink>
+        <ReloadingLink className={styles.kote} to={savedRoute}><MonsterIcon/></ReloadingLink>
     );
 };
 
