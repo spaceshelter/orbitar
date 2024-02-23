@@ -1,7 +1,7 @@
 import React, {FunctionComponent} from 'react';
 import {createRoot} from 'react-dom/client';
 import {App} from './App';
-import {AppStateProvider, useAppState} from './AppState/AppState';
+import {AppState, AppStateContext, AppStateProvider, useAppState} from './AppState/AppState';
 import {getThemes, ThemeProvider} from './Theme/ThemeProvider';
 import {Router} from 'react-router-dom';
 import './icons.font';
@@ -23,7 +23,7 @@ if (!container) {
     throw new Error('No root container found');
 }
 
-const MobXAwareRouter: FunctionComponent = (props) => {
+export const MobXAwareRouter: FunctionComponent = (props) => {
     const {router} = useAppState();
     const [state, setState] = React.useState({
         action: router.history.action,
@@ -38,16 +38,28 @@ const MobXAwareRouter: FunctionComponent = (props) => {
     );
 };
 
+export const FakeRoot: React.FunctionComponent<{
+    children: React.ReactNode;
+    appState?: AppState;
+}> = ({appState, children}) => {
+    const inner = <MobXAwareRouter>
+        <ThemeProvider themeCollection={getThemes()}>
+            {children}
+        </ThemeProvider>
+    </MobXAwareRouter>;
+
+    return (appState ?
+            <AppStateContext.Provider value={{appState}}>{inner}</AppStateContext.Provider> :
+            <AppStateProvider>{inner}</AppStateProvider>
+    );
+};
+
 const root = createRoot(container);
 
 root.render(
-    <AppStateProvider>
-        <MobXAwareRouter>
-            <ThemeProvider themeCollection={ getThemes() }>
-                <ReloadOnUpdate>
-                    <App />
-                </ReloadOnUpdate>
-            </ThemeProvider>
-        </MobXAwareRouter>
-    </AppStateProvider>
+    <FakeRoot>
+        <ReloadOnUpdate>
+            <App/>
+        </ReloadOnUpdate>
+    </FakeRoot>
 );

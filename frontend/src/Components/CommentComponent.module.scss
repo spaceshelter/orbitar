@@ -48,6 +48,10 @@
     }
 }
 
+:global(.internalLinkExpand) .comment {
+  margin-bottom: 12px;
+}
+
 .controls {
     display: flex;
     margin-top: 4px;

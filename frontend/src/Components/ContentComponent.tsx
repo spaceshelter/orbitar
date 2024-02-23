@@ -10,6 +10,12 @@ import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import {useHotkeys} from 'react-hotkeys-hook';
 import {SecretMailEncoderForm, SecretMailDecoderForm} from './SecretMailbox';
 import {b64DecodeUnicode} from '../Utils/utils';
+import InternalLinkExpandComponent from './InternalLinkExpandComponent';
+import {
+    AppState,
+    useAppState
+} from '../AppState/AppState';
+import {FakeRoot} from '../index';
 
 interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
     content: string;
@@ -51,6 +57,7 @@ type MailKey = {
 };
 
 function updateContent(
+    appState: AppState,
     div: HTMLDivElement,
     setZoomedImg: (img: ZoomedImg | null) => void,
     setMailboxKey: (key: MailboxKey | MailKey | null) => void,
@@ -85,6 +92,10 @@ function updateContent(
 
     div.querySelectorAll('span.secret-mail').forEach(mail => {
         updateMail(mail as HTMLSpanElement, setMailboxKey, currentUsername);
+    });
+
+    div.querySelectorAll('span.expand-button').forEach(expandButton => {
+        updateInternalExpandButton(expandButton as HTMLElement, appState);
     });
 }
 
@@ -196,6 +207,56 @@ function updateMail(mail: HTMLSpanElement,
                 }}/>, mail);
     });
 }
+
+function updateInternalExpandButton(expandButton: HTMLElement, appState: AppState) {
+    // Extract post and comment numbers from data-attributes
+    const postId = expandButton.getAttribute('data-post-id');
+    const commentId = expandButton.getAttribute('data-comment-id');
+    const nextLink = expandButton.nextElementSibling;
+
+    // Add click event listener to the expand button
+    const listener =  (e: Event) => {
+        const link = nextLink as HTMLAnchorElement;
+
+        e.preventDefault();
+        // after the expand button there is a link
+        const rect = link.nextElementSibling as HTMLDivElement;
+
+        if (rect && rect.className === 'internal-link-rect') {
+            // If rect exists, unmount the component and remove the rect
+            ReactDOM.unmountComponentAtNode(rect);
+            rect.remove();
+            expandButton.classList.remove('expanded');
+        } else {
+            expandButton.classList.add('expanded');
+            // If rect doesn't exist, create a new rect and mount the component
+            const newRect = document.createElement('div');
+            newRect.className = 'internal-link-rect';
+
+            // Add the rect after the link
+            link.parentNode?.insertBefore(newRect, link.nextSibling);
+
+            // render the component
+            ReactDOM.render(
+                <FakeRoot appState={appState}>
+                    <InternalLinkExpandComponent
+                        postId={Number(postId)} commentId={commentId ? Number(commentId) : undefined}
+                        onClose={() => {
+                            ReactDOM.unmountComponentAtNode(newRect);
+                            newRect.remove();
+                        }}
+                    /></FakeRoot>,
+                newRect
+            );
+        }
+        return false;
+    };
+    if (nextLink && nextLink.tagName === 'A') {
+        expandButton.addEventListener('click', listener);
+        nextLink.addEventListener('click', listener);
+    }
+}
+
 
 function updateVideo(video: HTMLVideoElement) {
     video.addEventListener('play', () => stopInnerVideos(document.body, video));
@@ -489,6 +550,7 @@ export default function ContentComponent(props: ContentComponentProps) {
     const [cut, setCut] = useState(false);
     const [zoomedImg, setZoomedImg] = useState<ZoomedImg | null>(null);
     const [mailboxKey, setMailboxKey] = useState<MailboxKey | MailKey | null>(null);
+    const appState = useAppState();
 
     const checkAutoCut = (content: HTMLElement) => {
         if (props.autoCut) {
@@ -507,7 +569,7 @@ export default function ContentComponent(props: ContentComponentProps) {
             return;
         }
 
-        updateContent(content, setZoomedImg, setMailboxKey, props.currentUsername);
+        updateContent(appState, content, setZoomedImg, setMailboxKey, props.currentUsername);
         let resizeObserver: ResizeObserver | null = null;
 
         if (props.lowRating) {

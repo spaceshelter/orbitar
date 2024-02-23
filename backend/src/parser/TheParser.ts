@@ -4,15 +4,21 @@ import {escape as htmlEscape} from 'html-escaper';
 import escapeHTML from 'escape-html';
 import Url from 'url-parse';
 import qs from 'qs';
-import {mentionsRegex, urlRegex, urlRegexExact} from './regexprs';
+import {escapeRegExp, mentionsRegex, urlRegex, urlRegexExact} from './regexprs';
 import {MediaHostingConfig} from '../config';
 import render from 'dom-serializer';
+import {joiSite} from '../api/ApiMiddleware';
 
 export type ParseResult = {
     text: string;
     mentions: string[];
     urls: string[];
     images: string[];
+};
+
+export type ParserConfig = {
+    mediaHosting: MediaHostingConfig;
+    siteDomain: string;
 };
 
 class ParserExtended extends Parser {
@@ -32,10 +38,12 @@ export default class TheParser {
     static readonly VERSION = 2;
 
     private readonly mediaHostingConfig: MediaHostingConfig;
+    private readonly parserConfig: ParserConfig;
     private readonly mediaHostingUrlOrigin: string;
 
-    constructor(mediaHosting: MediaHostingConfig) {
-        this.mediaHostingConfig = mediaHosting;
+    constructor(parserConfig: ParserConfig) {
+        this.parserConfig = parserConfig;
+        this.mediaHostingConfig = parserConfig.mediaHosting;
         // add origin. subdomain to the url
         this.mediaHostingUrlOrigin =
             this.mediaHostingConfig.url.replace(/^https?:\/\//, 'https://origin.');
@@ -203,7 +211,8 @@ export default class TheParser {
             this.processVimeo(pUrl) ||
             this.processImage(pUrl) ||
             this.processCoub(pUrl) ||
-            this.processVideo(pUrl);
+            this.processVideo(pUrl) ||
+            this.processInternalUrl(url);
         if (res !== false) {
             return res;
         }
@@ -226,6 +235,26 @@ export default class TheParser {
 
         return false;
     }
+
+    processInternalUrl(url: string, text?: string) {
+        const internalUrlPattern = new RegExp(`^(https?://${escapeRegExp(this.parserConfig.siteDomain)})/(?:s/([^/]+)/)?p(\\d+)(?:#(\\d+))?$`, 'i');
+
+        const match = url.match(internalUrlPattern);
+        const site = match && match[2] || null;
+        if (match && (!site || !joiSite.validate(site).error)) {
+            const host = match[1];
+            const postId = match[3];
+            const commentId = match[4] || null;
+
+            const origUrl = `${host}/${site ? 's/' + site + '/' : ''}p${postId}${commentId ? '#' + commentId : ''}`;
+            const expandButton = `<span role="button" class="expand-button i i-expand" data-post-id="${postId}"${commentId ? ' data-comment-id="' + commentId + '"' : ''}></span>`;
+
+            return `${expandButton}<a href="${encodeURI(origUrl)}" target="_blank">${text || url}</a>`;
+        }
+
+        return false;
+    }
+
 
     processCoub(url: Url<string>) {
         const coubIdPattern = /^\/view\/(\w+)$/;
@@ -365,7 +394,9 @@ export default class TheParser {
         if (result.urls.length > 0 || result.mentions.length > 0) {
             return result;
         }
-        const text = `<a href="${encodeURI(decodeURI(url))}" target="_blank">${result.text}</a>`;
+        const parsedInternalUrl = this.processInternalUrl(url, result.text);
+        const text = parsedInternalUrl ||
+            `<a href="${encodeURI(decodeURI(url))}" target="_blank">${result.text}</a>`;
 
         return { ...result, text, urls: [ ...result.urls, url ] } ;
     }
