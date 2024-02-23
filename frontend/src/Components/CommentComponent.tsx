@@ -2,7 +2,7 @@ import {CommentInfo, PostLinkInfo} from '../Types/PostInfo';
 import styles from './CommentComponent.module.scss';
 import postStyles from './PostComponent.module.scss';
 import RatingSwitch from './RatingSwitch';
-import React, {useMemo, useState} from 'react';
+import React, {useMemo, useState, useEffect} from 'react';
 import {CreateCommentComponentRestricted} from './CreateCommentComponent';
 import ContentComponent, {LARGE_AUTO_CUT} from './ContentComponent';
 import {ReactComponent as OptionsIcon} from '../Assets/options.svg';
@@ -14,6 +14,7 @@ import Conf from '../Conf';
 import {useInterpreter} from '../API/use/useInterpreter';
 import OutsideClickHandler from 'react-outside-click-handler';
 import {AltTranslateButton, AnnotateButton, TranslateButton} from './ContentButtons';
+import { getIndentScale } from './UserProfileSettings';
 
 interface CommentProps {
     comment: CommentInfo;
@@ -30,6 +31,10 @@ interface CommentProps {
 }
 
 export default function CommentComponent(props: CommentProps) {
+    useEffect(() => {
+        getIndentScale();
+      }, []); // Empty array means this useEffect will run once after the initial render
+    
     const [answerOpen, setAnswerOpen] = useState(false);
     const [editingText, setEditingText] = useState<false | string>(false);
     const [showHistory, setShowHistory] = useState(false);

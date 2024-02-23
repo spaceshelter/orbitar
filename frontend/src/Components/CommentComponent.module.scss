@@ -123,8 +123,9 @@
     }
 }
 
-$bigShift: 12px;
-$smallShift: 8px;
+$indentScale: var(--indent-scale);
+//$bigShift: calc(6px * $indentScale);
+$smallShift: calc(4px * $indentScale);
 
 .answers {
     margin-top: 8px;
@@ -134,7 +135,7 @@ $smallShift: 8px;
 
     padding-left: $smallShift;
     @media only screen and (min-width: 990px) {
-        padding-left: $bigShift;
+        //padding-left: $bigShift;
         margin-left: 8px; // half of [-] icon width
     }
 }
@@ -162,12 +163,13 @@ $smallShift: 8px;
 
     .isNew {
         border-left: 2px solid var(--primary);
-        margin-left: -$smallShift - 2;
+        margin-left: calc(-1 * $smallShift - 2);
         padding-left: $smallShift ;
 
         @media only screen and (min-width: 990px) {
-            margin-left: -$bigShift - 2;
-            padding-left: $bigShift ;
+            margin-left: 8px; // half of [-] icon width
+            //margin-left: -$bigShift - 2;
+           // padding-left: $bigShift ;
         }
     }
 
