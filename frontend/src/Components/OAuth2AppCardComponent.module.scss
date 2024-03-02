@@ -1,0 +1,105 @@
+.appCard {
+  border-radius: 10px;
+  padding: 10px;
+  max-width: 600px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+
+  @media only screen and (max-width: 600px) {
+    width: auto;
+    max-width: 100%;
+    margin: 0 40px;
+  }
+
+  background-color: var(--appCard-bg);
+
+  > div:not(:last-child) {
+    margin-bottom: 20px;
+  }
+
+  h3, p {
+    margin: 0;
+  }
+
+  h3 {
+    margin-bottom: 10px;
+  }
+
+  .nameContainer .name {
+    font-size: 1.2rem;
+    font-weight: bold;
+    overflow-wrap: break-word;
+    display: inline-block;
+  }
+
+  .logoContainer {
+    width: 100%;
+    height: 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .descriptionContainer {
+    flex: 1;
+    a {
+      display: inline-block;
+    }
+    .description {
+
+    }
+  }
+
+  .buttonsContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    &.ownerButtons {
+      flex-direction: row;
+
+      button {
+        margin: 0;
+        font-size: 0.75rem;
+      }
+    }
+
+    button {
+      margin-bottom: 10px;
+    }
+  }
+
+  &.isMy {
+  }
+
+  &.inCatalog {
+    &:hover {
+      background-color: var(--appCard-hoverBg);
+    }
+
+    max-width: 260px;
+    font-size: smaller;
+
+    h3 {
+      margin-bottom: 6px;
+    }
+
+    .nameContainer {
+      text-align: center;
+      .name {
+        font-size: 1rem;
+        max-width: 240px;
+      }
+    }
+  }
+
+  .consentDisclaimer {
+    font-size: 0.875rem;
+    margin: 20px 20px;
+    color: var(--negative-fg);
+  }
+}

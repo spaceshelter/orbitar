@@ -33,7 +33,7 @@ export default function SignInPage() {
         setSigningIn(true);
         api.auth.signIn(data.username, data.password)
             .then(() => {
-                navigate(location.pathname, {replace: true});
+                navigate(location.pathname + location.search, {replace: true});
                 api.init().then();
             })
             .catch(error => {

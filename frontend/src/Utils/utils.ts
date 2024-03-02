@@ -1,3 +1,5 @@
+import React from 'react';
+
 export function pluralize(count: number, words: string[]) {
     const cases = [2, 0, 1, 1, 1, 2];
     count = Math.abs(count);
@@ -33,3 +35,15 @@ export function b64EncodeUnicode(str: string) {
         return String.fromCharCode(parseInt(p1, 16));
     }));
 }
+
+export const selectElementText = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const element = e.target as HTMLElement;
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    const selection = window.getSelection();
+    if (selection) {
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+};

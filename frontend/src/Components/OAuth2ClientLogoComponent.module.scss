@@ -1,0 +1,25 @@
+.logo {
+  width: 80px;
+  height: 80px;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center center;
+  border-radius: 100px;
+  background-color: var(--appCard-logoBg);
+
+  -webkit-box-shadow: 0 2px 16px -8px rgba(0, 0, 0, 0.85);
+  -moz-box-shadow: 0 2px 16px -8px rgba(0, 0, 0, 0.85);
+  box-shadow: 0 2px 16px -8px rgba(0, 0, 0, 0.85);
+}
+
+.isMy {
+  cursor: pointer;
+}
+
+.editIconContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+}
