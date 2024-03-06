@@ -54,8 +54,8 @@ export function getPreferredLang(): string {
 }
 export function getIndentScale(): string {
   let indentScale = localStorage.getItem('indentScale');
-  if (indentScale === null) {
-    indentScale = '2'; // default value
+  if (indentScale === null || indentScale === undefined || indentScale === 'Auto' ) {
+    indentScale = '2.5'; // auto value
   }
   document.documentElement.style.setProperty('--indent-scale', indentScale);
   return indentScale;
@@ -195,7 +195,7 @@ const confirmWrapper = (message: string, callback: () => void) => (e: React.Mous
             <div className={styles.select}>
               <span className={styles.selectLabel}>Сдвиг комментария:</span>
               <select onChange={changeIndent} value={indentScale}>
-                {['1', '2', '3', '4', '5', '6', '7', '8'].map((value) => (
+                {['Auto', '1', '2', '3', '4', '5', '6', '7', '8'].map((value) => (
                   <option key={value} value={value}>
                     {value}
                   </option>

@@ -128,18 +128,15 @@
 }
 
 $indentScale: var(--indent-scale);
-//$bigShift: calc(6px * $indentScale);
 $smallShift: calc(4px * $indentScale);
 
 .answers {
     margin-top: 8px;
     padding-top: 24px;
-    //margin-bottom: 32px;
     border-left: 1px solid var(--fgAlmostInvisible);
 
     padding-left: $smallShift;
-    @media only screen and (min-width: 990px) {
-        //padding-left: $bigShift;
+    @media only screen and (min-width: 990px) {      
         margin-left: 8px; // half of [-] icon width
     }
 }
@@ -171,9 +168,7 @@ $smallShift: calc(4px * $indentScale);
         padding-left: $smallShift ;
 
         @media only screen and (min-width: 990px) {
-            margin-left: 8px; // half of [-] icon width
-            //margin-left: -$bigShift - 2;
-           // padding-left: $bigShift ;
+            margin-left: 8px; // half of [-] icon width            
         }
     }
 
