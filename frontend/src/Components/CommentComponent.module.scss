@@ -127,18 +127,16 @@
     }
 }
 
-$bigShift: 12px;
-$smallShift: 8px;
+$indentScale: var(--indent-scale);
+$smallShift: calc(4px * $indentScale);
 
 .answers {
     margin-top: 8px;
     padding-top: 24px;
-    //margin-bottom: 32px;
     border-left: 1px solid var(--fgAlmostInvisible);
 
     padding-left: $smallShift;
-    @media only screen and (min-width: 990px) {
-        padding-left: $bigShift;
+    @media only screen and (min-width: 990px) {      
         margin-left: 8px; // half of [-] icon width
     }
 }
@@ -166,12 +164,11 @@ $smallShift: 8px;
 
     .isNew {
         border-left: 2px solid var(--primary);
-        margin-left: -$smallShift - 2;
+        margin-left: calc(-1 * $smallShift - 2);
         padding-left: $smallShift ;
 
         @media only screen and (min-width: 990px) {
-            margin-left: -$bigShift - 2;
-            padding-left: $bigShift ;
+            margin-left: 8px; // half of [-] icon width            
         }
     }
 

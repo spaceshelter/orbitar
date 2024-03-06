@@ -52,6 +52,14 @@ export function getLegacyZoom(): boolean {
 export function getPreferredLang(): string {
     return localStorage.getItem('preferredLang') || 'ru';
 }
+export function getIndentScale(): string {
+  let indentScale = localStorage.getItem('indentScale');
+  if (indentScale === null || indentScale === undefined || indentScale === 'Auto' ) {
+    indentScale = '2.5'; // auto value
+  }
+  document.documentElement.style.setProperty('--indent-scale', indentScale);
+  return indentScale;
+}
 
 export default function UserProfileSettings(props: UserProfileSettingsProps) {
   useEffect(() => {
@@ -67,6 +75,7 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
 const [autoStop, setAutoStop] = React.useState<boolean>(getVideoAutopause());
 const [legacyZoom, setLegacyZoom] = React.useState<boolean>(getLegacyZoom());
 const [preferredLang, setPreferredLang] = React.useState<string>(getPreferredLang());
+const [indentScale, setIndentScale] = React.useState<string>(getIndentScale());
 
 const confirmWrapper = (message: string, callback: () => void) => (e: React.MouseEvent) => {
     e.preventDefault();
@@ -117,6 +126,11 @@ const confirmWrapper = (message: string, callback: () => void) => (e: React.Mous
       setPreferredLang(lang);
   };
 
+  const changeIndent = (ev: React.FormEvent<HTMLSelectElement>) => {
+    const indentScale = ev.currentTarget.value;
+    setIndentScale(indentScale);
+  };
+
   const handleGenderChange = (e: React.MouseEvent) => {
     e.preventDefault();
     if (gender === undefined) {
@@ -149,6 +163,10 @@ const confirmWrapper = (message: string, callback: () => void) => (e: React.Mous
         localStorage.setItem('preferredLang', preferredLang);
     }, [preferredLang]);
 
+    useEffect(() => {
+      localStorage.setItem('indentScale', indentScale);
+    }, [indentScale]);
+
     return (
         <>
             <div>
@@ -173,6 +191,17 @@ const confirmWrapper = (message: string, callback: () => void) => (e: React.Mous
                 <select onChange={changeLang} value={preferredLang}>
                     {Array.from(languages.entries()).map(([lang, name]) => <option key={lang} value={lang}>{name}</option>)}
                 </select>
+            </div>
+            <div className={styles.select}>
+              <span className={styles.selectLabel}>Сдвиг комментария:</span>
+              <select onChange={changeIndent} value={indentScale}>
+                {['Auto', '1', '2', '3', '4', '5', '6', '7', '8'].map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                )
+                )}
+              </select>
             </div>
             <MailboxSettings/>
             {props.barmaliniAccess && <BarmaliniAccess/>}
