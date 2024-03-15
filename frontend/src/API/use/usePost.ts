@@ -17,7 +17,7 @@ type UsePost = {
     editPost(title: string, content: string): Promise<PostInfo>;
     setVote(value: number): void;
     setCommentVote(commentId: number, vote: number): void;
-    reload(showUnreadOnly?: boolean): void;
+    reload(showUnreadOnly?: boolean): Promise<void>;
     updatePost(partial: Partial<PostInfo>): void;
 };
 
@@ -150,7 +150,7 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
             // reset error
             setError(undefined);
             // request post
-            api.post.get(postId)
+            return api.post.get(postId)
                 .then(result => {
                     setPost(result.post);
                     setSite(result.site);
