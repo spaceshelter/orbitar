@@ -174,7 +174,7 @@ const confirmWrapper = (message: string, callback: () => void) => (e: React.Mous
                     {Array.from(languages.entries()).map(([lang, name]) => <option key={lang} value={lang}>{name}</option>)}
                 </select>
             </div>
-            <MailboxSettings/>
+            {/*<MailboxSettings/>*/}
             {props.barmaliniAccess && <BarmaliniAccess/>}
             <div>
             {!props.isBarmalini && <button className={classNames(buttonStyles.settingsButton, styles.dropSessions)} onClick={handleResetSessions}>
