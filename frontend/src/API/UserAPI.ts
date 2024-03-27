@@ -1,5 +1,12 @@
 import APIBase from './APIBase';
-import {BarmaliniAccessResult, UserGender, UserInfo, UsernameSuggestResult, UserProfileInfo} from '../Types/UserInfo';
+import {
+    BarmaliniAccessResult,
+    UserGender, UserGetNoteRequest,
+    UserGetNoteResponse,
+    UserInfo,
+    UsernameSuggestResult,
+    UserProfileInfo, UserSaveNoteRequest, UserSaveNoteResponse
+} from '../Types/UserInfo';
 import {SiteInfo} from '../Types/SiteInfo';
 import {CommentEntity, ContentFormat, PostEntity} from './PostAPI';
 import PostAPIHelper from './PostAPIHelper';
@@ -27,6 +34,7 @@ type UserProfileResponse = {
     numberOfInvitesAvailable?: number;
     isBarmalini?: boolean;
     publicKey: string;
+    userNote?: string;
 };
 type UserProfilePostsRequest = {
     username: string;
@@ -170,4 +178,13 @@ export default class UserAPI {
     async getUsernameSuggestions(start: string): Promise<UsernameSuggestResult> {
         return this.api.request<{start: string}, UsernameSuggestResult>('/user/suggest-username', {start});
     }
+
+    async getUserNote(username: string): Promise<UserGetNoteResponse> {
+        return this.api.request<UserGetNoteRequest, UserGetNoteResponse>('/user/get-note', {username});
+    }
+
+    async saveUserNote(username: string, note: string): Promise<UserSaveNoteResponse> {
+        return this.api.request<UserSaveNoteRequest, UserSaveNoteResponse>('/user/save-note', {username, note});
+    }
+
 }

@@ -13,6 +13,8 @@ import {b64EncodeUnicode} from '../Utils/utils';
 import {useAPI, useAppState} from '../AppState/AppState';
 import OutsideClickHandler from 'react-outside-click-handler';
 import {scrypt} from 'scrypt-js';
+import {Link} from 'react-router-dom';
+import {confirmAlert} from 'react-confirm-alert';
 
 let rsaKeyCache: RSAKey | null = null;
 
@@ -330,5 +332,186 @@ export function SecretMailKeyGeneratorForm(props: SecretMailKeyGeneratorFormProp
                </form>
             </div>
         </>
+    );
+}
+
+
+
+type SecretUserNoteState = 'empty' | 'encoded' | 'decoding' | 'decoded' | 'editing';
+
+type SecretUserNoteProps = {
+    targetUsername: string;
+    initialNote?: string;
+};
+
+/**
+ * props include target_username and initial note (could be empty or undefined) in encrypted form.
+ * If key cache is available, attempt to decode is performed otherwise text like "заметка зашифрована" is shown
+ * if initial note is empty or undefined, text "создать заметку" is shown
+ * when clicked, if note is not yet decoded, password input is shown
+ * if note is decoded, editing is available (plain text only)
+ * if publickKey for the current user is not available, instead of editing the link to profile is displayed with the prompt to create mailbox/publicKey
+ */
+export function SecretUserNote(props: SecretUserNoteProps) {
+    const decode = (rsaKey: RSAKey | null, note: string) => {
+        if (!rsaKey) {
+            return null;
+        }
+        const decoded = cryptico.decrypt(note, rsaKey);
+        if (decoded.status === 'success') {
+            rsaKeyCache = rsaKey;
+            return decoded.plaintext;
+        }
+        return null;
+    };
+
+    const [encryptedNote, setEncryptedNote] = useState<string | undefined>(props.initialNote);
+    const [decodedNote, setDecodedNote] = useState<string | null>(null);
+
+    const [ownPublicKey, setOwnPublicKey] = useState<false | string | undefined>(false);
+
+    const [noteState, setNoteState] = useState<SecretUserNoteState>('empty');
+
+    const passwordRef = useFocus<HTMLInputElement>();
+    const currentUsername = useAppState().userInfo?.username;
+    const api = useAPI();
+    const [wrongPassword, setWrongPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const decodedNote = rsaKeyCache && decode(rsaKeyCache, props.initialNote || '') || null;
+        setDecodedNote(decodedNote);
+        setNoteState(!props.initialNote ? 'empty' : (decodedNote ? 'decoded' : 'encoded'));
+    }, [props.targetUsername]);
+
+    // fetch own public key
+    useEffect(() => {
+        if (currentUsername) {
+            api.postAPI.getPublicKeyByUsername(currentUsername).then((key) => {
+                setOwnPublicKey(key?.publicKey);
+            });
+        }
+    }, [currentUsername]);
+
+    const handleDecode = useDebouncedCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+        setLoading(true);
+        try {
+            const password = e.target.value;
+            const res = decode(await getRSAKey(password), encryptedNote || '');
+            if (res) {
+                setDecodedNote(res);
+                setNoteState('decoded');
+            }
+            setWrongPassword(!!password.length && !res);
+        } finally {
+            setLoading(false);
+        }
+    }, 300);
+
+    const handleNoteChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setDecodedNote(e.target.value);
+    };
+
+    const handleSubmitNote = async () => {
+        if (ownPublicKey) {
+            setLoading(true);
+            const encoded =
+                !decodedNote || decodedNote === '' ? '' :
+                (cryptico.encrypt(decodedNote, ownPublicKey, undefined as any) as any).cipher;
+
+            setEncryptedNote(encoded || undefined);
+            setNoteState(encoded ? 'decoded' : 'empty');
+
+            await api.userAPI.saveUserNote(
+                props.targetUsername,
+                encoded
+            );
+
+            setLoading(false);
+        }
+    };
+
+    const handleNoteDelete = async () => {
+        confirmAlert({
+            title: 'Точно?',
+            message: (`Вы собираетесь удалить вашу заметку о ${props.targetUsername}. 
+                Это действие нельзя будет отменить. Вы уверены?`),
+            buttons: [
+                {
+                    label: 'Да!',
+                    onClick: () => {
+                        setEncryptedNote(undefined);
+                        setNoteState('empty');
+                        api.userAPI.saveUserNote(
+                            props.targetUsername,
+                            ''
+                        );
+                    }
+                },
+                {
+                    label: 'Отмена',
+                    className: 'cancel'
+                }
+            ],
+            overlayClassName: 'orbitar-confirm-overlay'
+        });
+    };
+
+    return (
+        <div>
+            {!ownPublicKey && noteState === 'editing' ? (
+                <div>
+                    Для редактирования заметок нужно <Link to={`/profile/settings`}>создать шифрованный почтовый
+                    ящик.</Link>
+                </div>
+            ) : (
+                noteState === 'empty' && (
+                    <div className={styles.emptyNote} onClick={() => setNoteState('editing')}>
+                        <span className={classNames('i', 'i-note')}></span>
+                        <span>Создать заметку</span>
+                    </div>
+                ) ||
+                noteState === 'encoded' && (
+                    <div className={styles.encodedNote}>
+                        <span className={classNames('i', 'i-note')}></span>
+                        <span onClick={() => setNoteState('decoding')}>Расшифровать заметку</span>
+                        &nbsp;
+                        <span onClick={handleNoteDelete}>Удалить заметку</span>
+                    </div>
+                ) ||
+                noteState === 'decoding' && (
+                    <>
+                        <input autoFocus={true} ref={passwordRef} className={styles.decodeInput} type="password"
+                               placeholder="Пароль от почтового ящика" onChange={handleDecode}
+                               onBlur={() => setNoteState(decodedNote ? 'decoded' : 'encoded')}
+                        />{(loading || wrongPassword) && <div className={styles.hint}>
+                            {loading &&
+                                <span className={classNames(mediaFormStyles.warning, 'i i-slow')}>Проверяем...</span>}
+                            {!loading && <span className={classNames(mediaFormStyles.error, 'i i-close')}>Пароль не подходит.</span>}
+                        </div>}
+                    </>
+                ) ||
+                noteState === 'decoded' && (
+                    <div className={styles.decodedNote} onClick={() => setNoteState('editing')}>
+                        <span className={classNames('i', 'i-note')}></span>
+                        <pre>{decodedNote}</pre>
+                    </div>
+                ) ||
+                noteState === 'editing' && (
+                    <>
+                        <div className={styles.editingNote}>
+                            <TextareaAutosize placeholder={'Текст заметки'}
+                                              minRows={3} maxRows={25} maxLength={1024 * 2}
+                                              value={decodedNote || ''} onChange={handleNoteChange}/>
+                        </div>
+                        <div className={createCommentStyles.final}>
+                            <button className={classNames(styles.copyButton, mediaFormStyles.choose)}
+                                    onClick={handleSubmitNote}>Готово
+                            </button>
+                        </div>
+                    </>
+                ) || 'Что-то пошло не так'
+            )}
+        </div>
     );
 }

@@ -294,4 +294,38 @@ export default class UserRepository {
         return this.db.fetchOne<{public_key: string}>(`SELECT public_key FROM users WHERE user_id = :userId`, {userId})
             .then(res => res?.public_key);
     }
+
+    async saveUserNote(authorId: number, userId: number, note: string): Promise<void> {
+        await this.db.query(`
+            INSERT INTO user_notes (author_id, user_id, note)
+            VALUES (:author_id, :user_id, :note)
+            ON DUPLICATE KEY UPDATE note = :note
+        `, {
+            author_id: authorId,
+            user_id: userId,
+            note: note
+        });
+    }
+
+    async deleteUserNote(authorId: number, userId: number): Promise<void> {
+        await this.db.query(`
+            DELETE FROM user_notes
+            WHERE author_id = :author_id AND user_id = :user_id
+        `, {
+            author_id: authorId,
+            user_id: userId
+        });
+    }
+
+    async getUserNote(autohrId: number, userId: number): Promise<string | undefined> {
+        const res = await this.db.fetchOne<{note: string}>(`
+            SELECT note
+            FROM user_notes
+            WHERE author_id = :author_id AND user_id = :user_id
+        `, {
+            author_id: autohrId,
+            user_id: userId
+        });
+        return res?.note;
+    }
 }
