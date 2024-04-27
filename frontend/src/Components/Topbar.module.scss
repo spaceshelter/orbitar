@@ -18,9 +18,7 @@
     .left, .right {
         display: flex;
         gap: 16px;
-        >*{
-            pointer-events: auto;
-        }
+        pointer-events: auto;
     }
 
    //:global{ }
