@@ -154,7 +154,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         if ((e.ctrlKey || e.metaKey) && key === 'KeyB') applyTag('b');
         if ((e.ctrlKey || e.metaKey) && key === 'KeyI') applyTag('i');
         if ((e.ctrlKey || e.metaKey) && key === 'KeyU') applyTag('u');
-        if ((e.ctrlKey || e.metaKey) && key === 'KeyA') applyTag('a');
+        if ((e.ctrlKey || e.metaKey) && key === 'KeyK') applyTag('a');
         if ((e.ctrlKey || e.metaKey) && e.shiftKey && key === 'KeyX') applyTag('strike');
         if ((e.ctrlKey || e.metaKey) && key === 'Enter') handleAnswer();
     };
