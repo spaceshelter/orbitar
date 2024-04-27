@@ -7,6 +7,7 @@ export type InviteInfo = {
     issuedCount: number;
     leftCount: number;
     reason?: string;
+    reasonSource?: string;
     restricted: boolean;
 };
 

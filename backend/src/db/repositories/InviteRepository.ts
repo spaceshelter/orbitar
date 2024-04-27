@@ -49,6 +49,17 @@ export default class InviteRepository {
         return result.changedRows > 0;
     }
 
+    async updateReason(code: string, reason: string, reason_source: string) {
+        const result = await this.db.query<ResultSetHeader>(
+            'update invites set reason=:reason, reason_source=:reason_source where code=:code', {
+            code,
+            reason,
+            reason_source
+        });
+
+        return result.changedRows > 0;
+    }
+
     getInviteReason(userId: number): Promise<string | undefined> {
         return this.db.fetchOne<{reason: string}>(
             `select reason
@@ -61,12 +72,13 @@ export default class InviteRepository {
             }).then(_ => _?.reason);
     }
 
-    async createInvite(forUserId: number, code: string, reason: string, restricted=true) {
+    async createInvite(forUserId: number, code: string, reason: string, reason_source: string, restricted=true) {
         await this.db.query<ResultSetHeader>(
-            'insert into invites (code, issued_by, issued_at, issued_count, left_count, reason, restricted) values (:code, :forUserId, now(), 1, 1, :reason, :restricted)', {
+            'insert into invites (code, issued_by, issued_at, issued_count, left_count, reason, invites.reason_source, restricted) values (:code, :forUserId, now(), 1, 1, :reason, :reason_source,:restricted)', {
             code,
             forUserId,
             reason,
+            reason_source,
             restricted
         });
     }

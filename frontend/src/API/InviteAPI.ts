@@ -28,6 +28,7 @@ export type InviteEntity = {
     invited: UserBaseInfo[];
     leftCount: number;
     reason?: string;
+    reasonSource?: string;
     restricted: boolean;
 };
 export type InviteListRequest = {
@@ -55,6 +56,11 @@ export type InviteRegenerateResponse = {
 };
 
 export type InviteCreateRequest = {
+    reason: string;
+};
+
+export type InviteEditRequest = {
+    code: string;
     reason: string;
 };
 
@@ -104,5 +110,9 @@ export default class InviteAPI {
         return await this.api.request<InviteDeleteRequest, boolean>('/invite/delete', {
             code
         });
+    }
+
+    async edit(code: string, reason: string): Promise<InviteEntity> {
+        return await this.api.request<InviteEditRequest, InviteEntity>('/invite/edit', {code, reason});
     }
 }

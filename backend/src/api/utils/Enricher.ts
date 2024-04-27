@@ -157,6 +157,7 @@ export class Enricher {
             invited: [],
             leftCount: invite.leftCount,
             reason: invite.reason,
+            reasonSource: invite.reasonSource,
             restricted: invite.restricted
         };
         if ((invite as InviteInfoWithInvited).invited) {

@@ -17,6 +17,7 @@ import {InviteRawWithIssuer} from '../db/types/InviteRaw';
 import { ERROR_CODES } from './utils/error-codes';
 import {InviteCreateRequest, InviteDeleteRequest} from './types/requests/Invite';
 import {Enricher} from './utils/Enricher';
+import {InviteEditRequest} from './types/requests/InviteEdit';
 
 export default class InviteController {
     public router = Router();
@@ -55,6 +56,10 @@ export default class InviteController {
         const codeSchema = Joi.object<InviteCheckRequest>({
             code: Joi.string().alphanum().required()
         });
+        const editSchema = Joi.object<InviteEditRequest>({
+            code: Joi.string().alphanum().required(),
+            reason: Joi.string().min(1).max(50000).required(),
+        });
         const createSchema = Joi.object<InviteCreateRequest>({
             reason: Joi.string().min(1).max(50000).required(),
         });
@@ -68,6 +73,7 @@ export default class InviteController {
         this.router.post('/invite/regenerate', limiter, validate(codeSchema), (req, res) => this.regenerate(req, res));
         this.router.post('/invite/create', limiter, validate(createSchema), (req, res) => this.create(req, res));
         this.router.post('/invite/delete', limiter, validate(codeSchema), (req, res) => this.delete(req, res));
+        this.router.post('/invite/edit', limiter, validate(editSchema), (req, res) => this.edit(req, res));
     }
 
     async verifyInvitePermissions(invite: InviteRawWithIssuer) {
@@ -267,6 +273,26 @@ export default class InviteController {
         }
         catch (err) {
             this.logger.error(`Invite creation failed`, {error: err});
+            return response.error('unknown', 'Unknown error', 500);
+        }
+    }
+
+    async edit(request: APIRequest<InviteEditRequest>, response: APIResponse<InviteEntity>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+
+        const userId = request.session.data.userId;
+        const {code, reason} = request.body;
+
+        try {
+            const invite = await this.inviteManager.editInvite(userId, code, reason);
+            const entity = this.enricher.inviteToEntity(invite);
+
+            return response.success(entity);
+        }
+        catch (err) {
+            this.logger.error(`Invite edit failed`, {error: err});
             return response.error('unknown', 'Unknown error', 500);
         }
     }
