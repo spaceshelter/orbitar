@@ -16,7 +16,7 @@ const FeedPage = observer(() => {
     const { site, siteInfo } = useAppState();
     const api = useAPI();
 
-    const [search] = useSearchParams();
+    const [search, setSearch] = useSearchParams();
 
     const matchRoutePosts = !!useMatch('/posts');
     const matchRouteAll = !!useMatch('/all');
@@ -61,8 +61,14 @@ const FeedPage = observer(() => {
         document.title = docTitle;
     }, [siteInfo, feedType]);
 
+    const resetPage = () => {
+        search.delete('page');
+        setSearch(search); 
+    };
+
     const handleFeedSortingChange = (newFeedSorting: FeedSorting) => async (e: React.MouseEvent) => {
         e.preventDefault();
+        resetPage();
         setLoading(true);
         await api.feed.saveSorting(site, newFeedSorting);
         setSorting(newFeedSorting);
