@@ -14,7 +14,7 @@ import {SiteRequest, SiteResponse} from './types/requests/Site';
 import FeedManager from '../managers/FeedManager';
 import {Enricher} from './utils/Enricher';
 import {SiteListRequest, SiteListResponse} from './types/requests/SiteList';
-import Joi, { valid } from 'joi';
+import Joi from 'joi';
 import {SiteCreateRequest, SiteCreateResponse} from './types/requests/SiteCreate';
 import CodeError from '../CodeError';
 import rateLimit from 'express-rate-limit';
