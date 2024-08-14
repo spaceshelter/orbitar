@@ -5,7 +5,8 @@ export interface SiteRaw {
     owner_id: number;
     created_at: Date;
     subscribers: number;
-    site_info?: string;
+    info_source?: string;
+    info_html?: string;
 }
 
 export type UserSiteSubscription = {

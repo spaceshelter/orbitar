@@ -69,7 +69,6 @@ export const SiteSidebar = observer((props: SidebarProps) => {
                             <button className='not-subscribed' disabled={!siteInfo || subsDisabled} onClick={() => handleSubscribe(true)}>Подписаться</button>
                         }
                     </div>}
-                    {siteInfo?.siteInfo && <div className='site-info'>{siteInfo.siteInfo}</div>}
                     <div className='subsites'>
                         { subscriptions && subscriptions.map(site => {
                             return <div key={site.site}><Link onClick={menuToggle} to={site.site === 'main' ? '/' : `/s/${site.site}`}>{site.name}</Link></div>;

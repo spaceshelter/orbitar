@@ -163,4 +163,12 @@ export default class SiteRepository {
                 user_id: forUserId
             }).then((rows) => rows.map((row) => row.site_id));
     }
+
+    async updateInfo(info: string, infoHtml: string, siteId: number): Promise<boolean> {
+        return this.db.query(`update sites set info_source = :info, info_html = :info_html where site_id = :site_id`, {
+            info,
+            info_html: infoHtml,
+            site_id: siteId
+        });
+    }
 }

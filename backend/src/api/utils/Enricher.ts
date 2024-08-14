@@ -137,7 +137,8 @@ export class Enricher {
             site: siteInfo.site,
             name: siteInfo.name,
             subscribers: siteInfo.subscribers,
-            siteInfo: siteInfo.siteInfo,
+            infoSource: siteInfo.infoSource,
+            infoHtml: siteInfo.infoHtml,
             owner: {
                 id: siteInfo.owner.id,
                 username: siteInfo.owner.username,

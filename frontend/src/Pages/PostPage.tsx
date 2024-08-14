@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import styles from './PostPage.module.css';
+import styles from './PostPage.module.scss';
 import {Link, useLocation, useParams, useSearchParams} from 'react-router-dom';
 import {CommentInfo, PostInfo, PostLinkInfo} from '../Types/PostInfo';
 import PostComponent from '../Components/PostComponent';
@@ -16,7 +16,7 @@ export default function PostPage() {
     const postId = params.postId ? parseInt(params.postId, 10) : 0;
     const location = useLocation();
     const [scrolledToComment, setScrolledToComment] = useState<{postId: number, commentId: number}>();
-    const {site, userInfo} = useAppState();
+    const {site, siteInfo, userInfo} = useAppState();
     const containerRef = useRef<HTMLDivElement>(null);
     const unreadOnly = search.get('new') !== null;
     const {post, comments, anonymousUser, postComment, editComment, editPost, error, reload, updatePost} = usePost(site, postId, unreadOnly);
@@ -103,6 +103,7 @@ export default function PostPage() {
     return (
         <div className={styles.container} ref={containerRef}>
             <div className={styles.feed}>
+                {siteInfo?.site !== 'main' && <Link className='site-name' to={`/s/${site}`}> {siteInfo?.name || '...'}</Link>}
                 {post ? <div>
                         <PostComponent key={post.id} post={post} onChange={(_, partial) => updatePost(partial)} onEdit={handlePostEdit} />
                         {anonymousUser && <div className={styles.anon}><span className={'i i-anon'}></span> Внимание, анонимность!<br/>Комментарии в этом посте публикуются лица <Username user={anonymousUser}/>.</div>}

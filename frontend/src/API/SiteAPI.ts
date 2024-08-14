@@ -77,4 +77,8 @@ export default class SiteAPI {
             page, perpage
         });
     }
+
+    async saveFeedInfo(site: string, info: string): Promise<{info: string}> {
+        return this.api.request<{info: string, site: string}, {info: string}>('/site/updateinfo', {info, site});
+    }
 }

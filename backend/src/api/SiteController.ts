@@ -14,12 +14,13 @@ import {SiteRequest, SiteResponse} from './types/requests/Site';
 import FeedManager from '../managers/FeedManager';
 import {Enricher} from './utils/Enricher';
 import {SiteListRequest, SiteListResponse} from './types/requests/SiteList';
-import Joi from 'joi';
+import Joi, { valid } from 'joi';
 import {SiteCreateRequest, SiteCreateResponse} from './types/requests/SiteCreate';
 import CodeError from '../CodeError';
 import rateLimit from 'express-rate-limit';
 import UserManager from '../managers/UserManager';
 import {SubscriptionsRequest, SubscriptionsResponse} from './types/requests/Subscriptions';
+import { SiteUpdateInfoRequest, SiteUpdateInfoResponse } from './types/requests/SiteUpdateInfo';
 
 export default class SiteController {
     public readonly router = Router();
@@ -33,6 +34,15 @@ export default class SiteController {
     private readonly subscribeRateLimiter = rateLimit({
         max: 60,
         windowMs: 3600 * 1000,
+        skipSuccessfulRequests: false,
+        standardHeaders: false,
+        legacyHeaders: false,
+        keyGenerator: (req) => String(req.session.data?.userId)
+    });
+
+    private readonly updateInfoRateLimiter = rateLimit({
+        max: 10,
+        windowMs: 60 * 1000,
         skipSuccessfulRequests: false,
         standardHeaders: false,
         legacyHeaders: false,
@@ -64,11 +74,17 @@ export default class SiteController {
             name: joiSiteName.required()
         });
 
+        const siteUpdateInfoSchema = Joi.object<SiteUpdateInfoRequest>({
+            site: joiSite.min(siteDomainMinLengthChars).required(),
+            info: Joi.string().min(1).max(50000).required()
+        });
+
         this.router.post('/site', validate(siteSchema), (req, res) => this.site(req, res));
         this.router.post('/site/subscribe', this.subscribeRateLimiter, validate(siteSubscribeSchema), (req, res) => this.subscribe(req, res));
         this.router.post('/site/subscriptions', (req, res) => this.subscriptions(req, res));
         this.router.post('/site/list', validate(siteListSchema), (req, res) => this.list(req, res));
         this.router.post('/site/create', validate(siteCreateSchema), (req, res) => this.create(req, res));
+        this.router.post('/site/updateinfo', this.updateInfoRateLimiter, validate(siteUpdateInfoSchema), (req, res) => this.updateInfo(req, res));
     }
 
     async site(request: APIRequest<SiteRequest>, response: APIResponse<SiteResponse>) {
@@ -188,6 +204,31 @@ export default class SiteController {
             }
 
             return response.error('error', 'Unknown error', 500);
+        }
+    }
+
+    async updateInfo(request: APIRequest<SiteUpdateInfoRequest>, response: APIResponse<SiteUpdateInfoResponse>) {
+        if (!request.session.data.userId) {
+            return response.authRequired();
+        }
+
+        const {info, site} = request.body;
+        if (!site) {
+            return response.authRequired();
+        }
+
+        const siteData = await this.siteManager.getSiteByName(site);
+        if (siteData.owner.id !== request.session.data.userId) {
+            return response.authRequired();
+        }
+
+        try {
+            const newInfoPreview = await this.siteManager.  updateInfo(info, siteData.id);
+            this.siteManager.clearCache(site, siteData.id);
+            return response.success({info: newInfoPreview});
+        } catch (error) {
+            this.logger.error('Could not update user bio', { error });
+            return response.error('error', `Could not update bio`, 500);
         }
     }
 }

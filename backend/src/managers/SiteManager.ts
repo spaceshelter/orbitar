@@ -2,16 +2,19 @@ import {SiteBaseInfo, SiteInfo, SiteWithUserInfo} from './types/SiteInfo';
 import UserManager from './UserManager';
 import SiteRepository from '../db/repositories/SiteRepository';
 import {SiteWithUserInfoRaw, UserSiteSubscription} from '../db/types/SiteRaw';
+import TheParser from '../parser/TheParser';
 
 export default class SiteManager {
     private siteRepository: SiteRepository;
     private cache: Record<string, SiteInfo | undefined> = {};
     private cacheId: Record<number, SiteInfo | undefined> = {};
     private userManager: UserManager;
+    private readonly parser: TheParser;
 
-    constructor(siteRepository: SiteRepository, userManager: UserManager) {
+    constructor(siteRepository: SiteRepository, userManager: UserManager, parser: TheParser) {
         this.siteRepository = siteRepository;
         this.userManager = userManager;
+        this.parser = parser;
     }
 
     async getSiteByName(siteName: string): Promise<SiteInfo | undefined> {
@@ -37,6 +40,11 @@ export default class SiteManager {
         this.cache[siteName] = site;
 
         return site;
+    }
+
+    public clearCache(site: string, id: number) {
+        delete this.cache[site];
+        delete this.cacheId[id];
     }
 
     async getSiteByNameWithUserInfo(forUserId: number, siteName: string): Promise<SiteWithUserInfo | undefined> {
@@ -127,8 +135,9 @@ export default class SiteManager {
                 owner: owner,
             };
 
-            if (withSiteInfo && siteRaw.site_info) {
-                site.siteInfo = siteRaw.site_info;
+            if (withSiteInfo) {
+                site.infoSource = siteRaw.info_source;
+                site.infoHtml = siteRaw.info_html;
             }
 
             if (siteRaw.feed_bookmarks || siteRaw.feed_main) {
@@ -142,5 +151,11 @@ export default class SiteManager {
         }
 
         return sites;
+    }
+
+    async updateInfo(info: string, siteId: number): Promise<string> {
+        const parseResult = this.parser.parse(info);
+        await this.siteRepository.updateInfo(info, parseResult.text, siteId);
+        return parseResult.text;
     }
 }

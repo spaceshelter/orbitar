@@ -1,5 +1,11 @@
-.container {
+@import '../Styles/mixins';
 
+.container {
+    :global {
+        .site-name {
+            @include site-name;
+        }
+    }
 }
 
 .paginatorContainer {

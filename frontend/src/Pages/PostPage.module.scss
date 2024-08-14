@@ -1,12 +1,21 @@
+@import '../Styles/mixins';
+
 .container {
     width: 100%;
     max-width: 880px;
-    margin: 56px auto 0;
+    margin: 16px auto 0;
 }
 
 .feed {
 
     transition-duration: 0s;
+
+    :global {
+        .site-name {
+            @include site-name;
+            margin-bottom: 40px;
+        }
+    }
 }
 
 .comments {

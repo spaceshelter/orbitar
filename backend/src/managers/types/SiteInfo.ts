@@ -9,7 +9,8 @@ export type SiteBaseInfo = {
 export type SiteInfo = SiteBaseInfo & {
     owner: UserInfo;
     subscribers: number;
-    siteInfo?: string;
+    infoSource?: string;
+    infoHtml?: string;
 };
 
 export type SiteWithUserInfo = SiteInfo & {

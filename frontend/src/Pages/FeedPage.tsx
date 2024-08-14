@@ -11,12 +11,14 @@ import classNames from 'classnames';
 import {observer} from 'mobx-react-lite';
 import {LARGE_AUTO_CUT, SMALL_AUTO_CUT} from '../Components/ContentComponent';
 import {ReloadingLink} from '../Components/ReloadingLink';
+import SiteInfo from '../Components/FeedInfo';
 
 const FeedPage = observer(() => {
     const { site, siteInfo } = useAppState();
     const api = useAPI();
 
     const [search] = useSearchParams();
+    const {userInfo} = useAppState();
 
     const matchRoutePosts = !!useMatch('/posts');
     const matchRouteAll = !!useMatch('/all');
@@ -74,6 +76,8 @@ const FeedPage = observer(() => {
     return (
         <div className={styles.container}>
             <div className={styles.feed}>
+                {siteInfo?.site !== 'main' && <Link className='site-name' to={`/s/${site}`}> {siteInfo?.name || '...'}</Link>}
+                {siteInfo?.site && siteInfo.site !== 'main' && <SiteInfo site={siteInfo?.site} html={siteInfo?.infoHtml} source={siteInfo?.infoSource} mine={!!(userInfo && siteInfo && siteInfo.owner && (userInfo.id === siteInfo.owner.id))} />}
                 <div className={styles.feedControlsWrapper}>
                     {siteInfo && <div className={styles.feedControls}>
                       <a href='#' className={classNames({[styles.active]: liveSorting})} onClick={handleFeedSortingChange(FeedSorting.postCommentedAt)}><i className='i i-live'></i>LIVE</a>
