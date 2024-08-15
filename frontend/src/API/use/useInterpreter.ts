@@ -12,7 +12,7 @@ export type AltContentType = 'translate' | TranslateModes;
 
 // show annotate only if message is longer than
 export const ANNOTATE_LIMIT = 1024;
-export const ALT_TRANSLATE_LIMIT = 2048;
+export const ALT_TRANSLATE_LIMIT = 4*1024;
 
 export function useInterpreter(originalContent: string, originalTitle: string | undefined, id: number, type: 'post' | 'comment') {
     const api = useAPI();
