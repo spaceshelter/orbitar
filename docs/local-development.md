@@ -2,7 +2,7 @@
 
 1. Запустить контейнер с базой и веб-роутером (в корне проекта):
     ```
-    docker-compose -p orbitar-dev -f docker-compose.dev.yml up
+    docker compose -p orbitar-dev -f docker-compose.dev.yml up
     ```
    mysql повиснет на стандартном 3306 порту, redis на 6379.
 
