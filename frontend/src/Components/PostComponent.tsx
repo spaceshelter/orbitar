@@ -1,6 +1,6 @@
 import styles from './PostComponent.module.scss';
 import RatingSwitch from './RatingSwitch';
-import React, {useMemo, useState} from 'react';
+import React, {useMemo, useRef, useState} from 'react';
 import {PostInfo} from '../Types/PostInfo';
 import ContentComponent from './ContentComponent';
 import {ReactComponent as CommentsIcon} from '../Assets/comments.svg';
@@ -31,6 +31,7 @@ interface PostComponentProps {
 
 
 export default function PostComponent(props: PostComponentProps) {
+    const contentRef = useRef<HTMLDivElement>(null);
     const api = useAPI();
     const currentUsername = useAppState().userInfo?.username;
     const [showOptions, setShowOptions] = useState(false);
@@ -38,8 +39,8 @@ export default function PostComponent(props: PostComponentProps) {
     const [editingTitle, setEditingTitle] = useState<string>(props.post.title || '');
     const [showHistory, setShowHistory] = useState(false);
     const {currentMode, altTitle, altContent, inProgress,
-        contentRef, translate, annotate, altTranslate, calcShowAltTranslate, calcShowAnnotate
-    } = useInterpreter(props.post.content, props.post.title, props.post.id, 'post');
+         translate, annotate, altTranslate, calcShowAltTranslate, calcShowAnnotate
+    } = useInterpreter(contentRef, props.post.content, props.post.title, props.post.id, 'post');
 
     const handleVote = useMemo(() => {
         return (value: number, vote?: number) => {
