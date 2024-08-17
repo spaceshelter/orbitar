@@ -29,11 +29,11 @@
 
 Пересборка фронта и бэка (если необходимо):
 ```
-docker-compose -p orbitar -f docker-compose.local.yml build --no-cache frontend backend
+docker compose -p orbitar -f docker-compose.local.yml build --no-cache frontend backend
 ```
 Запуск:
 ```
-docker-compose -p orbitar -f docker-compose.local.yml up
+docker compose -p orbitar -f docker-compose.local.yml up
 ```
 
 ## Утилиты
