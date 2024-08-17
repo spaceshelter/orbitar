@@ -24,9 +24,14 @@ export default class OAuth2Repository {
   async getClient(clientId: string, clientSecret: string) {
     let clientFromDB;
     if (clientSecret) {
-      clientFromDB = await this.getClientByClientIdAndClientSecretHash(clientId, TokenService.hashString(clientSecret));
+      const secretHash = TokenService.hashString(clientSecret);
+      clientFromDB = await this.getClientByClientIdAndClientSecretHash(clientId, secretHash);
     } else {
       clientFromDB = await this.getClientByClientId(clientId);
+    }
+
+    if (!clientFromDB) {
+      return null;
     }
 
     return {
@@ -223,7 +228,7 @@ export default class OAuth2Repository {
   }
 
   async getClientByClientIdAndClientSecretHash(clientId: string, clientSecretHash: string): Promise<OAuth2ClientRaw | undefined> {
-    return await this.db.fetchOne<OAuth2ClientRaw>('select * from oauth_clients where client_id=:client_id and client_secret_hash', { client_id: clientId, client_secret_hash: clientSecretHash });
+    return await this.db.fetchOne<OAuth2ClientRaw>('select * from oauth_clients where client_id=:client_id and client_secret_hash=:client_secret_hash', { client_id: clientId, client_secret_hash: clientSecretHash });
   }
 
   async getClientById(id: number): Promise<OAuth2ClientRaw | undefined> {
