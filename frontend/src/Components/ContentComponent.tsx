@@ -1,4 +1,4 @@
-import React, {useContext, useEffect, useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import ReactDOM from 'react-dom';
 import classNames from 'classnames';
 import styles from './ContentComponent.module.scss';
@@ -16,7 +16,6 @@ import {
     useAppState
 } from '../AppState/AppState';
 import {FakeRoot} from '../index';
-import {InviewContext} from '../Pages/PostPage';
 
 interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
     content: string;
@@ -563,11 +562,10 @@ export default function ContentComponent(props: ContentComponentProps) {
         }
         return false;
     };
-    const isInView = useContext(InviewContext);
 
     useEffect(() => {
         const content = contentDiv.current;
-        if (!content || !isInView) {
+        if (!content) {
             return;
         }
 
@@ -611,7 +609,7 @@ export default function ContentComponent(props: ContentComponentProps) {
             };
         }
 
-    }, [isInView, props.content, contentDiv, props.autoCut, props.lowRating]);
+    }, [props.content, contentDiv, props.autoCut, props.lowRating]);
 
     useEffect(() => {
         if (!props.autoCut && cut) {
