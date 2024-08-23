@@ -13,7 +13,7 @@ import {InView} from 'react-intersection-observer';
 
 const THREAD_GROUP_SIZE = 10;
 
-export const InviewContext = createContext<boolean>(false);
+export const InviewContext = createContext<boolean>(true);
 
 export default function PostPage() {
     const params = useParams<{postId: string}>();

@@ -11,7 +11,6 @@ import {UserGender} from '../Types/UserInfo';
 import classNames from 'classnames';
 import {useCache} from '../API/use/useCache';
 import {LARGE_AUTO_CUT} from '../Components/ContentComponent';
-import {InviewContext} from './PostPage';
 
 type SearchForm = {
     term: string;
@@ -27,7 +26,6 @@ function SearchResult(props: {
             {!total.value ? 'Ничего не найдено' :
                 <>{total.value.toLocaleString()} найдено {total.value > 250 && <>(250 показано)</>}</>}
         </div>
-        <InviewContext.Provider value={true}>
 
         {results.map((resultItem: SearchResultEntity) => {
             const author = {username: resultItem.author, id: 0, gender: UserGender.fluid};
@@ -64,7 +62,6 @@ function SearchResult(props: {
                                   showSite={true} hideRating={true}/>;
 
         })}
-        </InviewContext.Provider>
     </>;
 }
 
