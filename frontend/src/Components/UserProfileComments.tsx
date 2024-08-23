@@ -7,7 +7,6 @@ import {useCache} from '../API/use/useCache';
 import {CommentInfo} from '../Types/PostInfo';
 import CommentComponent from './CommentComponent';
 import {useDebouncedCallback} from 'use-debounce';
-import {InviewContext} from '../Pages/PostPage';
 
 type UserProfileCommentsProps = {
   username: string;
@@ -99,9 +98,7 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
                 {loading ? <div className={styles.loading}></div> :
                  <>
                     {error && <div className={styles.error}>{styles.error}</div> }
-                    <InviewContext.Provider value={true}>
-
-                    {comments ?
+                     {comments ?
                          comments.map(comment =>
                              <CommentComponent idx={getParentComment(comment.parentComment) ? 1 : 0}
                                                parent={getParentComment(comment.parentComment)} key={comment.id}
@@ -113,7 +110,6 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
                                  : <div className={styles.loading}>Загрузка...</div>
                          )
                      }
-                    </InviewContext.Provider>
                     <div className={styles.paginatorContainer}>
                         <Paginator page={page} pages={pages} base={`/u/${props.username}/comments`} queryStringParams={params} />
                     </div>
