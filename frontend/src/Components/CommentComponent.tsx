@@ -177,7 +177,6 @@ export default function CommentComponent(props: CommentProps) {
                         />) : <></>}
                 </div>
                 : <></>}
-
         </div>
     );
 }

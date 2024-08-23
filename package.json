@@ -1,0 +1,20 @@
+{
+  "name": "orbitar",
+  "version": "3.0.0",
+  "description": "Self-regulating community blog engine",
+  "workspaces": [
+    "backend/",
+    "frontend/"
+  ],
+  "scripts": {
+    "start": "./node_modules/.bin/concurrently \"cd backend && npm run start:dev\" \"cd frontend && npm run start\"",
+    "prettier": "prettier --check ./backend/src/ ./frontend/src/",
+    "prettier:fix": "prettier --write frontend/src/Pages/PostPage.tsx",
+    "1prettier:fix": "prettier --write ./backend/src/ ./frontend/src/"
+  },
+  "devDependencies": {
+    "@ianvs/prettier-plugin-sort-imports": "^4.3.1",
+    "concurrently": "^8.2.2",
+    "prettier": "^3.3.3"
+  }
+}

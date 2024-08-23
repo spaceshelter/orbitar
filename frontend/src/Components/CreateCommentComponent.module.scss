@@ -1,14 +1,14 @@
-
 .answer {
     margin-bottom: 24px;
-    textarea, .preview {
+    textarea,
+    .preview {
         width: 100%;
         padding: 10px;
         min-height: 100px;
         font-size: 16px;
         line-height: 1.5em;
     }
-    .preview{
+    .preview {
         box-sizing: border-box;
         min-height: 120px;
         background: var(--dim1);
@@ -26,7 +26,8 @@
         justify-content: center;
     }
 
-    button, a {
+    button,
+    a {
         width: 32px;
         height: 32px;
         background: none;
@@ -43,7 +44,7 @@
         color: var(--fgSofter);
         text-decoration: none;
 
-        &:hover{
+        &:hover {
             color: var(--primaryHover);
             fill: var(--primaryHover);
         }
@@ -52,22 +53,19 @@
             fill: var(--primaryHover);
             font-weight: bold;
         }
-
     }
     a {
-         margin: 0 2px;
+        margin: 0 2px;
     }
     button:disabled {
-         color: var(--fgGhost);
-         fill: var(--fgGhost);
+        color: var(--fgGhost);
+        fill: var(--fgGhost);
     }
 
     .label {
         margin-left: 5px;
     }
-
 }
-
 
 button.bold {
     font-weight: bold;
@@ -148,9 +146,8 @@ button.strike {
             fill: var(--fgGhost);
             cursor: default;
         }
-        &.buttonSend{
-           margin-right: -8px;
+        &.buttonSend {
+            margin-right: -8px;
         }
-
     }
 }
