@@ -68,46 +68,71 @@ export default function PostPage() {
     };
 
     useEffect(() => {
+        console.log('>>> scrolling to comment', location.hash, comments);
+
         if (!comments) {
+            console.log('no comments');
             return;
         }
 
-        let scrollToComment: HTMLDivElement | null | undefined;
+        let commentToScrollTo: HTMLDivElement | null | undefined;
         let commentId: number | undefined;
         if (location.hash) {
             commentId = parseInt(location.hash.substring(1));
-            scrollToComment = document.querySelector<HTMLDivElement>(`[data-comment-id="${commentId}"]`);
-        }
-        else if (unreadOnly) {
+            commentToScrollTo = document.querySelector<HTMLDivElement>(`[data-comment-id="${commentId}"]`);
+            console.log('scrollToComment', commentToScrollTo);
+        } else if (unreadOnly) {
             // find first new comment
-             scrollToComment = document.querySelector<HTMLDivElement>(`.isNew`);
-             commentId = scrollToComment?.dataset.commentId ? parseInt(scrollToComment.dataset.commentId) : undefined;
+             commentToScrollTo = document.querySelector<HTMLDivElement>(`.isNew`);
+             commentId = commentToScrollTo?.dataset.commentId ? parseInt(commentToScrollTo.dataset.commentId) : undefined;
+             console.log('unreadOnly', commentToScrollTo, commentId);
         }
         // do nothing if element is focused already
-        if (!scrollToComment || scrollToComment.className.indexOf(styles.focusing) >= 0 ||
-            (scrolledToComment && scrolledToComment.postId === postId && scrolledToComment.commentId === commentId)
+        if (!commentToScrollTo || commentToScrollTo.className.indexOf(styles.focusing) >= 0 ||
+            (scrolledToComment?.postId === postId && scrolledToComment?.commentId === commentId)
         ) {
+            console.log('do nothing', scrolledToComment, {postId, commentId}, commentToScrollTo);
+            // debug condition
+            if (!commentToScrollTo) {
+                console.log('no commentToScrollTo');
+            }
+            if (commentToScrollTo && commentToScrollTo.className.indexOf(styles.focusing) >= 0) {
+                console.log('focusing');
+            }
+            if (scrolledToComment?.postId === postId && scrolledToComment?.commentId === commentId) {
+                console.log('already scrolled', scrolledToComment, {postId, commentId});
+            }
+            setScrolledToComment(commentId && commentToScrollTo ? {postId, commentId} : undefined);
             return;
         }
 
-        const commentBody = scrollToComment.querySelector<HTMLDivElement>('.commentBody');
+        const commentBody = commentToScrollTo.querySelector<HTMLDivElement>('.commentBody');
         if (!commentBody) {
+            console.log('no commentBody', commentToScrollTo);
             return;
         }
         const containerNode = containerRef.current;
         // disable anchoring for all post&comments and anchor the comment
         containerNode?.classList.add(styles.focusing);
-        scrollToComment.classList.add(styles.focused);
+        commentToScrollTo.classList.add(styles.focused);
         commentBody.classList.add(styles.highlight);
 
-        commentId && setScrolledToComment({postId, commentId});
+        setScrolledToComment(commentId && commentToScrollTo? {postId, commentId} : undefined);
 
-        scrollUnderTopbar(commentBody);
+        console.log('scrolling to comment', commentToScrollTo);
+        scrollUnderTopbar(() => {
+            console.log(commentId);
+            const commentToScrollTo = document.querySelector<HTMLDivElement>(`[data-comment-id="${commentId}"]`);
+            console.log(commentToScrollTo);
+            const res = commentToScrollTo?.querySelector<HTMLDivElement>('.commentBody') || null;
+            console.log(res);
+            return res;
+        });
 
         return () => {
             commentBody.classList.remove(styles.highlight);
             containerNode?.classList.remove(styles.focusing);
-            scrollToComment?.classList.remove(styles.focused);
+            commentToScrollTo?.classList.remove(styles.focused);
         };
     }, [location.hash, comments, unreadOnly, postId]);
 
