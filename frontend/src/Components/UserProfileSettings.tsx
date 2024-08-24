@@ -14,6 +14,7 @@ import ThemeToggleComponent from './ThemeToggleComponent';
 
 import {ReactComponent as LogoutIcon} from '../Assets/logout.svg';
 import {ReactComponent as UserIcon} from '../Assets/user.svg';
+import {ReactComponent as TranslateIcon} from '../Assets/translate.svg';
 import buttonStyles from '../Components/Buttons.module.scss';
 import styles from './UserProfileSettings.module.scss';
 
@@ -186,9 +187,6 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
                 <button className={buttonStyles.settingsButton} onClick={toggleLegacyZoom}>
                     Легаси зум: {legacyZoom ? 'Вкл' : 'Выкл'}
                 </button>
-                <button className={buttonStyles.settingsButton} onClick={toggleShowInlineTranslateButton}>
-                    Кнопка перевода под комментариями: {showInlineTranslateButton ? 'Да' : 'Нет'}
-                </button>
                 {<ThemeToggleComponent dynamic={true} buttonLabel="Сменить тему" />}
             </div>
             <div className={styles.select}>
@@ -200,10 +198,13 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
                         </option>
                     ))}
                 </select>
+                <button className={buttonStyles.settingsButton} onClick={toggleShowInlineTranslateButton}>
+                    Показывать <TranslateIcon/>: {showInlineTranslateButton ? 'Авто' : 'Под ...'}
+                </button>
             </div>
 
             {/*<MailboxSettings/>*/}
-            {props.barmaliniAccess && <BarmaliniAccess />}
+            {props.barmaliniAccess && <BarmaliniAccess/>}
             <div>
                 {!props.isBarmalini && (
                     <button
