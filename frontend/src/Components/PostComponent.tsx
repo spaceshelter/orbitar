@@ -17,7 +17,7 @@ import {SignatureComponent} from './SignatureComponent';
 import Conf from '../Conf';
 import {useInterpreter} from '../API/use/useInterpreter';
 import {AltTranslateButton, AnnotateButton, TranslateButton, UnwatchButton, WatchButton} from './ContentButtons';
-import {getPreferredLang} from './UserProfileSettings';
+import {getPreferredLang, getShowInlineTranslateButton} from './UserProfileSettings';
 
 interface PostComponentProps {
     post: PostInfo;
@@ -137,7 +137,7 @@ export default function PostComponent(props: PostComponentProps) {
     const altMode = currentMode !== undefined || inProgress;
     const autoCut = altMode ? undefined : props.autoCut;
     const showTranslateButtonInline = useMemo(() => {
-        return props.post.language !== getPreferredLang();
+        return getShowInlineTranslateButton() && props.post.language !== getPreferredLang();
     }, [props.post]);
 
     return (

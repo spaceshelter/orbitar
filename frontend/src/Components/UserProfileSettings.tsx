@@ -1,24 +1,27 @@
-import React, {useEffect} from 'react';
-import buttonStyles from '../Components/Buttons.module.scss';
+import React, {useEffect, useState} from 'react';
+import {useLocation, useNavigate} from 'react-router-dom';
+
+import classNames from 'classnames';
+import {observer} from 'mobx-react-lite';
+import {confirmAlert} from 'react-confirm-alert';
+import {toast} from 'react-toastify';
+
+import {useUserProfile} from '../API/use/useUserProfile';
+import {useAPI, useAppState} from '../AppState/AppState';
+import {BarmaliniAccessResult, UserGender} from '../Types/UserInfo';
+import {SecretMailKeyGeneratorForm} from './SecretMailbox';
+import ThemeToggleComponent from './ThemeToggleComponent';
+
 import {ReactComponent as LogoutIcon} from '../Assets/logout.svg';
 import {ReactComponent as UserIcon} from '../Assets/user.svg';
-import {useAPI, useAppState} from '../AppState/AppState';
-import {useLocation, useNavigate} from 'react-router-dom';
-import ThemeToggleComponent from './ThemeToggleComponent';
-import {BarmaliniAccessResult, UserGender} from '../Types/UserInfo';
-import {toast} from 'react-toastify';
-import {observer} from 'mobx-react-lite';
+import buttonStyles from '../Components/Buttons.module.scss';
 import styles from './UserProfileSettings.module.scss';
-import classNames from 'classnames';
-import {confirmAlert} from 'react-confirm-alert';
-import {useUserProfile} from '../API/use/useUserProfile';
-import {SecretMailKeyGeneratorForm} from './SecretMailbox';
 
 type UserProfileSettingsProps = {
-  onChange: any;
-  gender: UserGender;
-  barmaliniAccess?: boolean;
-  isBarmalini?: boolean;
+    onChange: () => void;
+    gender: UserGender;
+    barmaliniAccess?: boolean;
+    isBarmalini?: boolean;
 };
 
 const languages = new Map([
@@ -52,57 +55,65 @@ export function getLegacyZoom(): boolean {
 export function getPreferredLang(): string {
     return localStorage.getItem('preferredLang') || 'ru';
 }
+export function getShowInlineTranslateButton(): boolean {
+    return localStorage.getItem('showInlineTranslateButton') === 'true';
+}
 
 export default function UserProfileSettings(props: UserProfileSettingsProps) {
-  useEffect(() => {
-    window.scrollTo({ top: 0 });
-  }, []);
+    useEffect(() => {
+        window.scrollTo({top: 0});
+    }, []);
 
-  const api = useAPI();
-  const navigate = useNavigate();
-  const location = useLocation();
+    const api = useAPI();
+    const navigate = useNavigate();
+    const location = useLocation();
 
-  let gender = props.gender;
+    let gender = props.gender;
 
-const [autoStop, setAutoStop] = React.useState<boolean>(getVideoAutopause());
-const [legacyZoom, setLegacyZoom] = React.useState<boolean>(getLegacyZoom());
-const [preferredLang, setPreferredLang] = React.useState<string>(getPreferredLang());
+    const [autoStop, setAutoStop] = useState<boolean>(getVideoAutopause());
+    const [legacyZoom, setLegacyZoom] = useState<boolean>(getLegacyZoom());
+    const [preferredLang, setPreferredLang] = useState<string>(getPreferredLang());
+    const [showInlineTranslateButton, setShowInlineTranslateButton] =
+        useState<boolean>(getShowInlineTranslateButton());
 
-const confirmWrapper = (message: string, callback: () => void) => (e: React.MouseEvent) => {
-    e.preventDefault();
-    confirmAlert({
-        title: 'Астанавитесь! Подумайте!',
-        message,
-        buttons: [
-            {
-                label: 'Да!',
-                onClick: callback
-            },
-            {
-                label: 'Отмена',
-                className: 'cancel'
-            }
-        ],
-        overlayClassName: 'orbitar-confirm-overlay'
-    });
-};
+    const confirmWrapper = (message: string, callback: () => void) => (e: React.MouseEvent) => {
+        e.preventDefault();
+        confirmAlert({
+            title: 'Астанавитесь! Подумайте!',
+            message,
+            buttons: [
+                {
+                    label: 'Да!',
+                    onClick: callback,
+                },
+                {
+                    label: 'Отмена',
+                    className: 'cancel',
+                },
+            ],
+            overlayClassName: 'orbitar-confirm-overlay',
+        });
+    };
 
-  const handleLogout = confirmWrapper(
-      'Вы действительно хотите выйти? Вы будете вынуждены войти в аккаунт заново.', () => {
-          api.auth.signOut().then(() => {
-              navigate(location.pathname);
-          });
-      });
+    const handleLogout = confirmWrapper(
+        'Вы действительно хотите выйти? Вы будете вынуждены войти в аккаунт заново.',
+        () => {
+            api.auth.signOut().then(() => {
+                navigate(location.pathname);
+            });
+        },
+    );
 
-  const handleResetSessions = confirmWrapper(
-      `Вы действительно хотите сбросить пароль и все сессии?
+    const handleResetSessions = confirmWrapper(
+        `Вы действительно хотите сбросить пароль и все сессии?
       Вы будете разлогинены на ВСЕХ устройствах, текущий пароль больше не будет работать.
-      На почту использованную при регистрации (у вас же всё ещё есть доступ к ней?) придет ссылка для сброса пароля через которую вы сможете войти в аккаунт заново и установить новый пароль.`, () => {
-          api.auth.dropPasswordAndSessions().then(() => {
-              navigate(location.pathname);
-          });
-      }
-  );
+      На почту использованную при регистрации (у вас же всё ещё есть доступ к ней?) придет ссылка для сброса пароля через которую вы сможете войти в аккаунт заново и установить новый пароль.`,
+        () => {
+            api.auth.dropPasswordAndSessions().then(() => {
+                navigate(location.pathname);
+            });
+        },
+    );
 
     const toggleAutoStop = () => {
         setAutoStop(!autoStop);
@@ -112,30 +123,37 @@ const confirmWrapper = (message: string, callback: () => void) => (e: React.Mous
         setLegacyZoom(!legacyZoom);
     };
 
-  const changeLang = (ev:  React.FormEvent<HTMLSelectElement>) => {
-      const lang = ev.currentTarget.value;
-      setPreferredLang(lang);
-  };
+    const toggleShowInlineTranslateButton = () => {
+        setShowInlineTranslateButton(!showInlineTranslateButton);
+    };
 
-  const handleGenderChange = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (gender === undefined) {
-      return;
-    }
+    const changeLang = (ev: React.FormEvent<HTMLSelectElement>) => {
+        const lang = ev.currentTarget.value;
+        setPreferredLang(lang);
+    };
 
-    if (gender === UserGender.fluid) {
-      gender = UserGender.he;
-    } else if (gender === UserGender.he) {
-      gender = UserGender.she;
-    } else {
-      gender = UserGender.fluid;
-    }
-    api.userAPI.saveGender(gender).then((data) => {
-      props.onChange();
-    }).catch((error) => {
-        toast.error(error?.message || 'Не удалось сохранить.');
-    });
-  };
+    const handleGenderChange = (e: React.MouseEvent) => {
+        e.preventDefault();
+        if (gender === undefined) {
+            return;
+        }
+
+        if (gender === UserGender.fluid) {
+            gender = UserGender.he;
+        } else if (gender === UserGender.he) {
+            gender = UserGender.she;
+        } else {
+            gender = UserGender.fluid;
+        }
+        api.userAPI
+            .saveGender(gender)
+            .then(() => {
+                props.onChange();
+            })
+            .catch((error) => {
+                toast.error(error?.message || 'Не удалось сохранить.');
+            });
+    };
 
     useEffect(() => {
         localStorage.setItem('autoStopVideos', JSON.stringify(autoStop));
@@ -146,45 +164,62 @@ const confirmWrapper = (message: string, callback: () => void) => (e: React.Mous
     }, [legacyZoom]);
 
     useEffect(() => {
+        localStorage.setItem('showInlineTranslateButton', JSON.stringify(showInlineTranslateButton));
+    }, [showInlineTranslateButton]);
+
+    useEffect(() => {
         localStorage.setItem('preferredLang', preferredLang);
     }, [preferredLang]);
 
     return (
         <>
             <div>
-                {gender !== undefined &&
-                    <button className={buttonStyles.logoutButton} onClick={handleGenderChange}><UserIcon/> Пол: {
-                        gender === UserGender.fluid ? 'не указан' : (
-                            gender === UserGender.she ? 'женщина' : (
-                                'мужчина'
-                            )
-                        )
-                    } </button>}
+                {gender !== undefined && (
+                    <button className={buttonStyles.logoutButton} onClick={handleGenderChange}>
+                        <UserIcon /> Пол:{' '}
+                        {gender === UserGender.fluid ? 'не указан' : gender === UserGender.she ? 'женщина' : 'мужчина'}{' '}
+                    </button>
+                )}
                 <button className={buttonStyles.settingsButton} onClick={toggleAutoStop}>
                     Видео автопауза: {autoStop ? 'Вкл' : 'Выкл'}
                 </button>
                 <button className={buttonStyles.settingsButton} onClick={toggleLegacyZoom}>
                     Легаси зум: {legacyZoom ? 'Вкл' : 'Выкл'}
                 </button>
-                {<ThemeToggleComponent dynamic={true} buttonLabel="Сменить тему"/>}
+                <button className={buttonStyles.settingsButton} onClick={toggleShowInlineTranslateButton}>
+                    Кнопка перевода под комментариями: {showInlineTranslateButton ? 'Да' : 'Нет'}
+                </button>
+                {<ThemeToggleComponent dynamic={true} buttonLabel="Сменить тему" />}
             </div>
             <div className={styles.select}>
                 <span className={styles.selectLabel}>Язык перевода:</span>
                 <select onChange={changeLang} value={preferredLang}>
-                    {Array.from(languages.entries()).map(([lang, name]) => <option key={lang} value={lang}>{name}</option>)}
+                    {Array.from(languages.entries()).map(([lang, name]) => (
+                        <option key={lang} value={lang}>
+                            {name}
+                        </option>
+                    ))}
                 </select>
             </div>
+
             {/*<MailboxSettings/>*/}
-            {props.barmaliniAccess && <BarmaliniAccess/>}
+            {props.barmaliniAccess && <BarmaliniAccess />}
             <div>
-            {!props.isBarmalini && <button className={classNames(buttonStyles.settingsButton, styles.dropSessions)} onClick={handleResetSessions}>
-                <span className={classNames('i i-ghost' )}/> Сброс пароля и сессий </button>}
-                <button className={buttonStyles.logoutButton} onClick={handleLogout}><LogoutIcon/> Выйти </button>
+                {!props.isBarmalini && (
+                    <button
+                        className={classNames(buttonStyles.settingsButton, styles.dropSessions)}
+                        onClick={handleResetSessions}
+                    >
+                        <span className={classNames('i i-ghost')} /> Сброс пароля и сессий{' '}
+                    </button>
+                )}
+                <button className={buttonStyles.logoutButton} onClick={handleLogout}>
+                    <LogoutIcon /> Выйти{' '}
+                </button>
             </div>
         </>
     );
 }
-
 
 /**
  * Component that displays the button, when clicked,
@@ -195,24 +230,28 @@ const BarmaliniAccess = observer(() => {
     const api = useAPI();
     const [access, setAccess] = React.useState<BarmaliniAccessResult | undefined>();
 
-
     const handleCopy = (e: React.MouseEvent) => {
         e.preventDefault();
         if (access === undefined) {
             return;
         }
-        navigator.clipboard?.writeText(access.password)
-            ?.then(() => toast('В буфере!'))?.catch();
+        navigator.clipboard
+            ?.writeText(access.password)
+            ?.then(() => toast('В буфере!'))
+            ?.catch();
     };
 
     const handleShowPassword = (e: React.MouseEvent) => {
         e.preventDefault();
         if (!access) {
-            api.userAPI.getBarmaliniAccess().then((data) => {
-                setAccess(data);
-            }).catch((error) => {
-                toast.error(error?.message || 'Не удалось получить пароль.');
-            });
+            api.userAPI
+                .getBarmaliniAccess()
+                .then((data) => {
+                    setAccess(data);
+                })
+                .catch((error) => {
+                    toast.error(error?.message || 'Не удалось получить пароль.');
+                });
         } else {
             setAccess(undefined);
         }
@@ -233,16 +272,30 @@ const BarmaliniAccess = observer(() => {
 
     return (
         <div className={styles.barmalini}>
-            {access && <div>
+            {(access && (
                 <div>
-                <span className={styles.label}>Логин:</span> {access.login}</div>
-                <div><span className={styles.label}>Пароль:</span>&nbsp;
-                    <span className={styles.password} onClick={selectText}>{access.password}</span>
-                    &nbsp;<button className={buttonStyles.linkButton} onClick={handleCopy}>скопировать</button>
+                    <div>
+                        <span className={styles.label}>Логин:</span> {access.login}
+                    </div>
+                    <div>
+                        <span className={styles.label}>Пароль:</span>&nbsp;
+                        <span className={styles.password} onClick={selectText}>
+                            {access.password}
+                        </span>
+                        &nbsp;
+                        <button className={buttonStyles.linkButton} onClick={handleCopy}>
+                            скопировать
+                        </button>
+                    </div>
+                    <div>
+                        <span className={styles.label}>Счастливого бармаления. Пароль истекает через час.</span>
+                    </div>
                 </div>
-                <div><span className={styles.label}>Счастливого бармаления. Пароль истекает через час.</span></div>
-            </div> || <button className={buttonStyles.settingsButton} onClick={handleShowPassword}>
-                Бармалинить</button>}
+            )) || (
+                <button className={buttonStyles.settingsButton} onClick={handleShowPassword}>
+                    Бармалинить
+                </button>
+            )}
         </div>
     );
 });
@@ -272,25 +325,29 @@ export const MailboxSettings = observer(() => {
         e.preventDefault();
         confirmAlert({
             title: 'Астанавитесь! Подумайте!',
-            message: ('Вы действительно хотите удалить почтовый ящик? Вы больше не сможете получать новые шифровки, ' +
-                'но вы сможете читать старые шифровки, адресованные вам.'),
+            message:
+                'Вы действительно хотите удалить почтовый ящик? Вы больше не сможете получать новые шифровки, ' +
+                'но вы сможете читать старые шифровки, адресованные вам.',
             buttons: [
                 {
                     label: 'Да!',
                     onClick: () => {
-                        api.userAPI.savePublicKey('').then(() => {
-                            refreshProfile();
-                        }).catch((error) => {
-                            toast.error(error?.message || 'Не удалось удалить почтовый ящик.');
-                        });
-                    }
+                        api.userAPI
+                            .savePublicKey('')
+                            .then(() => {
+                                refreshProfile();
+                            })
+                            .catch((error) => {
+                                toast.error(error?.message || 'Не удалось удалить почтовый ящик.');
+                            });
+                    },
                 },
                 {
                     label: 'Отмена',
-                    className: 'cancel'
-                }
+                    className: 'cancel',
+                },
             ],
-            overlayClassName: 'orbitar-confirm-overlay'
+            overlayClassName: 'orbitar-confirm-overlay',
         });
     };
 
@@ -298,53 +355,93 @@ export const MailboxSettings = observer(() => {
         e.preventDefault();
         if (publicKey) {
             // Copy to clipboard
-            navigator.clipboard?.writeText(publicKey)
-                ?.then(() => toast('В буфере!'))?.catch();
+            navigator.clipboard
+                ?.writeText(publicKey)
+                ?.then(() => toast('В буфере!'))
+                ?.catch();
         }
     };
 
     const handleCreatePublicKey = (key: string) => {
-        api.userAPI.savePublicKey(key).then(() => {
-            refreshProfile();
-        }).catch((error) => {
-            toast.error(error?.message || 'Не удалось создать почтовый ящик.');
-        }).finally(() => {
-            setCreatingMailbox(false);
-        });
+        api.userAPI
+            .savePublicKey(key)
+            .then(() => {
+                refreshProfile();
+            })
+            .catch((error) => {
+                toast.error(error?.message || 'Не удалось создать почтовый ящик.');
+            })
+            .finally(() => {
+                setCreatingMailbox(false);
+            });
     };
 
-    return <>{state.status === 'ready' &&
-        <div className={styles.mailbox}>
-            {publicKey &&
-                <>{/*mailbox exists*/}
-                    <div className={styles.mailboxHeader}>
-                        <span className={classNames('i i-mailbox-secure', {[styles.mailboxCreated]: !!publicKey})}/>
-                        Почтовый ящик готов!
-                    </div>
-                    <div className={styles.mailboxActions}>
-                        <button className={classNames(buttonStyles.settingsButton, styles.delete)}
-                                onClick={handleDelete}>Удалить</button>
-                        {!revealPublicKey && <button className={buttonStyles.settingsButton} onClick={() =>
-                            setRevealPublicKey(!revealPublicKey)
-                        }>Показать публичный ключ</button>}
-                        {revealPublicKey && <div>
-                            <span className={styles.label}>Публичный ключ:</span><br/>
-                            <span className={styles.publicKey} onClick={handleShowPublicKey}>{publicKey}</span>
-                        </div>}
-                    </div>
-                </> ||
-                <div>{/*Mailbox doesn't exist*/}
-                    <button className={buttonStyles.settingsButton} onClick={() => {
-                        setCreatingMailbox(true);
-                    }}>
-                        <span className={classNames('i i-mailbox-secure', {[styles.mailboxCreated]: !!publicKey})}/>
-                        Создать ключ для приема шифровок
-                    </button>
-                </div>}
-        </div> || null}
-        {creatingMailbox && <div className={styles.modalWrapper}><SecretMailKeyGeneratorForm
-            onSuccess={handleCreatePublicKey}
-            onCancel={() => setCreatingMailbox(false)}
-        /></div>}
-    </>;
+    return (
+        <>
+            {(state.status === 'ready' && (
+                <div className={styles.mailbox}>
+                    {(publicKey && (
+                        <>
+                            {/*mailbox exists*/}
+                            <div className={styles.mailboxHeader}>
+                                <span
+                                    className={classNames('i i-mailbox-secure', {[styles.mailboxCreated]: !!publicKey})}
+                                />
+                                Почтовый ящик готов!
+                            </div>
+                            <div className={styles.mailboxActions}>
+                                <button
+                                    className={classNames(buttonStyles.settingsButton, styles.delete)}
+                                    onClick={handleDelete}
+                                >
+                                    Удалить
+                                </button>
+                                {!revealPublicKey && (
+                                    <button
+                                        className={buttonStyles.settingsButton}
+                                        onClick={() => setRevealPublicKey(!revealPublicKey)}
+                                    >
+                                        Показать публичный ключ
+                                    </button>
+                                )}
+                                {revealPublicKey && (
+                                    <div>
+                                        <span className={styles.label}>Публичный ключ:</span>
+                                        <br />
+                                        <span className={styles.publicKey} onClick={handleShowPublicKey}>
+                                            {publicKey}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    )) || (
+                        <div>
+                            {/*Mailbox doesn't exist*/}
+                            <button
+                                className={buttonStyles.settingsButton}
+                                onClick={() => {
+                                    setCreatingMailbox(true);
+                                }}
+                            >
+                                <span
+                                    className={classNames('i i-mailbox-secure', {[styles.mailboxCreated]: !!publicKey})}
+                                />
+                                Создать ключ для приема шифровок
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )) ||
+                null}
+            {creatingMailbox && (
+                <div className={styles.modalWrapper}>
+                    <SecretMailKeyGeneratorForm
+                        onSuccess={handleCreatePublicKey}
+                        onCancel={() => setCreatingMailbox(false)}
+                    />
+                </div>
+            )}
+        </>
+    );
 });

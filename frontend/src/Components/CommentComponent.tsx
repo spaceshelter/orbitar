@@ -15,7 +15,7 @@ import {useInterpreter} from '../API/use/useInterpreter';
 import OutsideClickHandler from 'react-outside-click-handler';
 import {AltTranslateButton, AnnotateButton, TranslateButton} from './ContentButtons';
 import {InviewContext} from '../Pages/PostPage';
-import {getPreferredLang} from './UserProfileSettings';
+import {getPreferredLang, getShowInlineTranslateButton} from './UserProfileSettings';
 
 interface CommentProps {
     comment: CommentInfo;
@@ -171,7 +171,7 @@ function Controls({contentRef, comment, setEditingText, hideRating, onEdit, onAn
     };
     useEffect(() => setCommentAltContent(altContent), [setCommentAltContent, altContent]);
     const showTranslateButtonInline = useMemo(() => {
-        return comment.language !== getPreferredLang();
+        return getShowInlineTranslateButton() && comment.language !== getPreferredLang();
     }, [comment]);
 
     return (
