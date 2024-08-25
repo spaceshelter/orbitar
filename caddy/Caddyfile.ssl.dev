@@ -1,6 +1,19 @@
 {$SERVER_DOMAIN} {
 	tls /certs/orbitar.crt /certs/orbitar.key
 
+	@cors {
+		header Origin https://{$SERVER_DOMAIN}
+	}
+	header @cors {
+		Access-Control-Allow-Origin "{header.Origin}"
+		Vary Origin
+	}
+
+	header {
+		?Access-Control-Allow-Origin https://{$SERVER_DOMAIN}
+		Vary Origin
+	}
+
 	# idiod.video proxy
 	handle_path /upload {
 		rewrite * /api/upload.php
@@ -24,13 +37,4 @@
 	header Access-Control-Expose-Headers "X-Fingerprint"
 
 	reverse_proxy http://host.docker.internal:5001
-}
-
-*.{$SERVER_DOMAIN} {
-	@post {
-		path_regexp post ^\/post\/([0-9]+)$
-	}
-	redir @post https://{$SERVER_DOMAIN}/s/{http.request.host.labels.2}/p{re.post.1}
-
-	redir / https://{$SERVER_DOMAIN}/s/{http.request.host.labels.2}
 }

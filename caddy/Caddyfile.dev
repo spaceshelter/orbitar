@@ -1,32 +1,36 @@
 http://{$SERVER_DOMAIN} {
-  # idiod.video proxy
-  handle_path /upload {
-    rewrite * /api/upload.php
-    reverse_proxy {$MEDIA_HOSTING_URL} {
-      header_up Host {upstream_hostport}
-      header_up +authorization "Client-ID {$MEDIA_HOSTING_CLIENT_ID}"
-      header_up -origin
-      header_up -referer
-    }
-  }
+	@cors {
+		header Origin https://{$SERVER_DOMAIN}
+	}
+	header @cors {
+		Access-Control-Allow-Origin "{header.Origin}"
+		Vary Origin
+	}
 
-  handle {
-    reverse_proxy http://host.docker.internal:5000
-  }
+	header {
+		?Access-Control-Allow-Origin https://{$SERVER_DOMAIN}
+		Vary Origin
+	}
+
+	# idiod.video proxy
+	handle_path /upload {
+		rewrite * /api/upload.php
+		reverse_proxy {$MEDIA_HOSTING_URL} {
+			header_up Host {upstream_hostport}
+			header_up +authorization "Client-ID {$MEDIA_HOSTING_CLIENT_ID}"
+			header_up -origin
+			header_up -referer
+		}
+	}
+
+	handle {
+		reverse_proxy http://host.docker.internal:5000
+	}
 }
 
 http://{$API_DOMAIN} {
-  header X-Fingerprint "{$FINGERPRINT}"
-  header Access-Control-Expose-Headers "X-Fingerprint"
+	header X-Fingerprint "{$FINGERPRINT}"
+	header Access-Control-Expose-Headers "X-Fingerprint"
 
-  reverse_proxy http://host.docker.internal:5001
-}
-
-http://*.{$SERVER_DOMAIN} {
-  @post {
-    path_regexp post ^\/post\/([0-9]+)$
-  }
-  redir @post http://{$SERVER_DOMAIN}/s/{http.request.host.labels.2}/p{re.post.1}
-
-  redir / http://{$SERVER_DOMAIN}/s/{http.request.host.labels.2}
+	reverse_proxy http://host.docker.internal:5001
 }
