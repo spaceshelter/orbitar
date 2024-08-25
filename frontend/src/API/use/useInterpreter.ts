@@ -1,5 +1,5 @@
 import {useAPI} from '../../AppState/AppState';
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {TranslateModes} from '../PostAPI';
 import googleTranslate from '../../Utils/googleTranslate';
 import {toast} from 'react-toastify';
@@ -12,11 +12,10 @@ export type AltContentType = 'translate' | TranslateModes;
 
 // show annotate only if message is longer than
 export const ANNOTATE_LIMIT = 1024;
-export const ALT_TRANSLATE_LIMIT = 2048;
+export const ALT_TRANSLATE_LIMIT = 4*1024;
 
-export function useInterpreter(originalContent: string, originalTitle: string | undefined, id: number, type: 'post' | 'comment') {
+export function useInterpreter(contentRef: React.RefObject<HTMLDivElement>, originalContent: string, originalTitle: string | undefined, id: number, type: 'post' | 'comment') {
     const api = useAPI();
-    const contentRef = useRef<HTMLDivElement>(null);
     const [currentMode, setCurrentMode] = React.useState<AltContentType | undefined>();
     const [cachedTitleTranslation, setCachedTitleTranslation] = useState<string | undefined>();
     const [cachedContentTranslation, setCachedContentTranslation] = useState<string | undefined>();
@@ -35,7 +34,7 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
 
     const calcShowAltTranslate = () =>
         // content.length is used intentionally, we don't want to use it on the long content
-        originalContent.length < ALT_TRANSLATE_LIMIT && calcStrippedOriginalContentLength() >= 6;
+      originalContent && originalContent.length < ALT_TRANSLATE_LIMIT && calcStrippedOriginalContentLength() >= 6;
     const calcShowAnnotate = () => calcStrippedOriginalContentLength() >= ANNOTATE_LIMIT;
 
     const altTitle = currentMode === 'translate' && cachedTitleTranslation ? xssFilter(cachedTitleTranslation) : undefined;
@@ -130,6 +129,9 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
 
     // bring top of the content into view when updating content
     useEffect(() => {
+        if (!currentMode) {
+            return;
+        }
         if(contentRef.current) {
             const rect = contentRef.current.getBoundingClientRect();
             const topbarHeight = document.getElementById('topbar')?.clientHeight;
@@ -146,7 +148,7 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
             }
         }
 
-    }, [currentMode]);
+    }, [currentMode, contentRef]);
 
     return {contentRef, currentMode, inProgress, altTitle, altContent, translate, annotate, altTranslate,
         calcShowAltTranslate, calcShowAnnotate

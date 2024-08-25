@@ -15,14 +15,16 @@ exports.setup = function (options, seedLink) {
 };
 
 exports.up = async function (db) {
-    // update content source title from posts
+    // add public_key to users table
     await db.runSql(`
-        UPDATE content_source
-        SET title = (SELECT title FROM posts WHERE posts.content_source_id = content_source.content_source_id)
+        ALTER TABLE users ADD COLUMN public_key VARCHAR(128) NOT NULL DEFAULT ''
     `);
 };
 
 exports.down = async function (db) {
+    await db.runSql(`
+        ALTER TABLE users DROP COLUMN public_key;
+    `);
 };
 
 exports._meta = {

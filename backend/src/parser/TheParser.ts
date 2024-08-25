@@ -4,14 +4,21 @@ import {escape as htmlEscape} from 'html-escaper';
 import escapeHTML from 'escape-html';
 import Url from 'url-parse';
 import qs from 'qs';
-import {mentionsRegex, urlRegex, urlRegexExact} from './regexprs';
+import {escapeRegExp, mentionsRegex, urlRegex, urlRegexExact} from './regexprs';
 import {MediaHostingConfig} from '../config';
+import render from 'dom-serializer';
+import {joiSite} from '../api/ApiMiddleware';
 
 export type ParseResult = {
     text: string;
     mentions: string[];
     urls: string[];
     images: string[];
+};
+
+export type ParserConfig = {
+    mediaHosting: MediaHostingConfig;
+    siteDomain: string;
 };
 
 class ParserExtended extends Parser {
@@ -31,10 +38,12 @@ export default class TheParser {
     static readonly VERSION = 2;
 
     private readonly mediaHostingConfig: MediaHostingConfig;
+    private readonly parserConfig: ParserConfig;
     private readonly mediaHostingUrlOrigin: string;
 
-    constructor(mediaHosting: MediaHostingConfig) {
-        this.mediaHostingConfig = mediaHosting;
+    constructor(parserConfig: ParserConfig) {
+        this.parserConfig = parserConfig;
+        this.mediaHostingConfig = parserConfig.mediaHosting;
         // add origin. subdomain to the url
         this.mediaHostingUrlOrigin =
             this.mediaHostingConfig.url.replace(/^https?:\/\//, 'https://origin.');
@@ -46,6 +55,8 @@ export default class TheParser {
             spoiler: (node) => this.parseSpoiler(node),
             expand: (node) => this.parseExpand(node),
             video: (node) => this.parseVideo(node),
+            mailbox: (node) => this.parseSecretMailbox(node),
+            mail: (node) => this.parseSecretMail(node),
             blockquote: true,
             b: true,
             i: true,
@@ -200,7 +211,8 @@ export default class TheParser {
             this.processVimeo(pUrl) ||
             this.processImage(pUrl) ||
             this.processCoub(pUrl) ||
-            this.processVideo(pUrl);
+            this.processVideo(pUrl) ||
+            this.processInternalUrl(url);
         if (res !== false) {
             return res;
         }
@@ -223,6 +235,26 @@ export default class TheParser {
 
         return false;
     }
+
+    processInternalUrl(url: string, text?: string) {
+        const internalUrlPattern = new RegExp(`^(https?://${escapeRegExp(this.parserConfig.siteDomain)})/(?:s/([^/]+)/)?p(\\d+)(?:#(\\d+))?$`, 'i');
+
+        const match = url.match(internalUrlPattern);
+        const site = match && match[2] || null;
+        if (match && (!site || !joiSite.validate(site).error)) {
+            const host = match[1];
+            const postId = match[3];
+            const commentId = match[4] || null;
+
+            const origUrl = `${host}/${site ? 's/' + site + '/' : ''}p${postId}${commentId ? '#' + commentId : ''}`;
+            const expandButton = `<span role="button" class="expand-button i i-expand" data-post-id="${postId}"${commentId ? ' data-comment-id="' + commentId + '"' : ''}></span>`;
+
+            return `${expandButton}<a href="${encodeURI(origUrl)}" target="_blank">${text || url}</a>`;
+        }
+
+        return false;
+    }
+
 
     processCoub(url: Url<string>) {
         const coubIdPattern = /^\/view\/(\w+)$/;
@@ -357,12 +389,14 @@ export default class TheParser {
         if (!this.validUrl(url)) {
             return this.parseDisallowedTag(node);
         }
-
+        this.removeInnerMailTagsRec(node);
         const result = this.parseChildNodes(node.children);
         if (result.urls.length > 0 || result.mentions.length > 0) {
             return result;
         }
-        const text = `<a href="${encodeURI(decodeURI(url))}" target="_blank">${result.text}</a>`;
+        const parsedInternalUrl = this.processInternalUrl(url, result.text);
+        const text = parsedInternalUrl ||
+            `<a href="${encodeURI(decodeURI(url))}" target="_blank">${result.text}</a>`;
 
         return { ...result, text, urls: [ ...result.urls, url ] } ;
     }
@@ -374,6 +408,63 @@ export default class TheParser {
         }
 
         return { text: `<img src="${encodeURI(url)}" alt=""/>`, mentions: [], urls: [], images: [url] };
+    }
+
+    removeInnerMailTagsRec(node: Element): Element {
+        // Iterate over all child nodes
+        for (let i = node.children.length-1; i >= 0 ; i--) {
+            const child = node.children[i];
+
+            // If the child node is a mailbox tag, remove it
+            if (child.type === 'tag') {
+                if (child.name === 'mailbox' || child.name === 'mail') {
+                    node.children.splice(i, 1);
+                } else {
+                    // If the child node is not a mailbox tag, recursively call this function
+                    this.removeInnerMailTagsRec(child);
+                }
+            }
+        }
+        return node;
+    }
+
+    static isValidBase64(str: string) {
+        const regex = /^[A-Za-z0-9+/]*={0,3}$/;
+        return regex.test(str);
+    }
+
+    parseSecretMailbox(node: Element): ParseResult {
+        // retain secret attribute and content
+        const secret = node.attribs['secret'];
+        if (!secret || !TheParser.isValidBase64(secret)) {
+            return this.parseDisallowedTag(node);
+        }
+        this.removeInnerMailTagsRec(node);
+
+        const result = this.parseChildNodes(node.children);
+        // render node.children back to html
+        const rawNodes = node.children.map((n) => render(n, {
+            encodeEntities: false,
+        })).join('');
+
+        const rawNodesBase64 = Buffer.from(rawNodes).toString('base64');
+        const text =  `<span class="i i-mailbox-secure secret-mailbox" data-secret="${secret}" `+
+            `data-raw-text="${rawNodesBase64}">${result.text}</span>`;
+        return { ...result, text };
+    }
+
+    parseSecretMail(node: Element): ParseResult {
+        // retain secret attribute and content
+        const secret = node.attribs['secret'];
+        if (!secret || !TheParser.isValidBase64(secret)) {
+            return this.parseDisallowedTag(node);
+        }
+        this.removeInnerMailTagsRec(node);
+
+        const result = this.parseChildNodes(node.children);
+
+        const text =  `<span class="i i-mail-secure secret-mail" data-secret="${secret}">${result.text}</span>`;
+        return { ...result, text };
     }
 
     parseVideo(node: Element): ParseResult {

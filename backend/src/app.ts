@@ -91,7 +91,10 @@ const redis = new Redis(config.redis, logger.child({ service: 'REDIS' }));
 
 const db = new DB(config.mysql, logger.child({ service: 'DB' }));
 
-const theParser = new TheParser(config.mediaHosting);
+const theParser = new TheParser({
+    mediaHosting: config.mediaHosting,
+    siteDomain: config.site.domain,
+});
 
 const bookmarkRepository = new BookmarkRepository(db);
 const commentRepository = new CommentRepository(db);

@@ -100,6 +100,19 @@ export const UserProfileInvites = observer((props: UserProfileInvitesProps) => {
         }
     };
 
+    const handleEdit = async (code: string, content: string) => {
+        try {
+            const result = await api.inviteAPI.edit(code, content);
+            console.log('EDIT', result);
+            forceRefresh();
+            return result.reason;
+        } catch (error: any) {
+            console.log('EDIT ERR', error);
+            toast.error(error?.message || 'Не удалось отредактировать инвайт.');
+            throw error;
+        }
+    };
+
     const resetUsernameFilter = () => {
         window.location.hash = '';
     };
@@ -176,7 +189,9 @@ export const UserProfileInvites = observer((props: UserProfileInvitesProps) => {
                                     regeneratedIdx={regeneratedIdx}
                                     active={true}
                                     handleRegenerate={handleRegenerate}
-                                    handleDelete={handleDelete}/>)}
+                                    handleDelete={handleDelete}
+                                    handleEdit={handleEdit}
+                            />)}
                     </div>
                 </>}
 
@@ -190,6 +205,7 @@ export const UserProfileInvites = observer((props: UserProfileInvitesProps) => {
                                         handleRegenerate={handleRegenerate}
                                         handleDelete={handleDelete}
                                         usernameFilter={usernameFilter}
+                                        handleEdit={handleEdit}
                                 />
                             )}
                         </div>
@@ -209,11 +225,13 @@ const Invite = (props: {
     active: boolean,
     handleRegenerate: (code: string, idx: number | undefined) => void,
     handleDelete: (code: string) => void,
+    handleEdit: (code: string, content: string) => Promise<any>,
     usernameFilter?: string,
     idx?: number,
     regeneratedIdx?: number
 }) => {
     const {invite, idx, regeneratedIdx} = props;
+    const [editing, setEditing] = useState(false);
 
     const handleCopyInvite = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -234,7 +252,20 @@ const Invite = (props: {
                                                       user={user}/>)}
             </div>}
 
-        {!!invite.reason && <div className={classNames(commentStyles.content, styles.content)}><ContentComponent content={invite.reason}/></div>}
+        {!!invite.reason && <div className={classNames(commentStyles.content, styles.content)}>
+            {editing ?
+                <CreateCommentComponent open={true} onAnswer={async (text) => {
+                    if (text === invite.reasonSource) {
+                        setEditing(false);
+                        return invite.reason;
+                    }
+                    const res = await props.handleEdit(invite.code, text);
+                    setEditing(false);
+                    return res.content;
+                }} text={invite.reasonSource}/>
+                : <ContentComponent content={invite.reason}/>}
+            </div>
+        }
 
         {props.active && !!invite.code && <>
             <div className={classNames('code', {'regenerated': idx === regeneratedIdx})}><Link to={`//${process.env.REACT_APP_ROOT_DOMAIN}/invite/${invite.code}`}
@@ -244,6 +275,7 @@ const Invite = (props: {
             <ConfirmButton onAction={() => props.handleRegenerate(invite.code, props.idx)}
                 message={`Вы уверены, что хотите сгенерировать новый код для приглашения?`}
             >Отозвать</ConfirmButton>
+            <button onClick={() => setEditing(!editing)}>{editing ? 'Отмена' : 'Редактировать'}</button>
             {invite.restricted && props.active && !invite.invited?.length &&
                 <ConfirmButton onAction={() => props.handleDelete(invite.code)}
                     message={`Вы уверены, что хотите удалить приглашение?`}

@@ -18,9 +18,7 @@
     .left, .right {
         display: flex;
         gap: 16px;
-        >*{
-            pointer-events: auto;
-        }
+        pointer-events: auto;
     }
 
    //:global{ }
@@ -81,6 +79,10 @@
             }
         }
 
+        &.kote{
+            padding: 12px;
+            margin: -10px;
+        }
     }
 
     //button.menuClosed {

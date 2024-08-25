@@ -686,4 +686,22 @@ export default class UserManager {
     async dropPassword(userId: number) {
         await this.userRepository.dropPassword(userId);
     }
+
+    savePublicKey(publicKey: string, userId: number) {
+        const res = this.userRepository.savePublicKey(publicKey, userId);
+        this.userCache.clearPublicKeysCache(userId);
+        return res;
+    }
+
+    async getPublicKey(userId: number) {
+        return this.userCache.getPublicKey(userId);
+    }
+
+    async getUserVisitedDaysAgo(userId: number): Promise<number | null> {
+        const lastVisited = await this.userRepository.getUserLastVisited(userId);
+
+        return lastVisited ?
+            Math.floor(Math.abs(new Date().getTime() - lastVisited.getTime()) / (3600 * 24 * 1000)) : null;
+    }
+
 }

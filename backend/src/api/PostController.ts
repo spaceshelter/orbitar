@@ -26,6 +26,10 @@ import rateLimit from 'express-rate-limit';
 import {TranslateRequest, TranslateResponse} from './types/requests/Translate';
 import TranslationManager, {TRANSLATION_MODES} from '../managers/TranslationManager';
 import {APIError, AuthenticationError, RateLimitError} from 'openai';
+import {
+    GetPublicKeyByUsernameRequest,
+    GetPublicKeyByUsernameResponse
+} from './types/requests/GetPublicKeyByPostOrComment';
 
 const commonRateLimitConfig = {
     skipSuccessfulRequests: false,
@@ -133,6 +137,9 @@ export default class PostController {
             type: Joi.valid('post', 'comment').required(),
             format: joiFormat
         });
+        const getPostPublicKeySchema = Joi.object<GetPublicKeyByUsernameRequest>({
+            username: Joi.string().required()
+        });
 
         this.router.post('/post/get', validate(getSchema), (req, res) => this.postGet(req, res));
         this.router.post('/post/create', this.postCreateRateLimiter, validate(postCreateSchema), (req, res) => this.create(req, res));
@@ -146,6 +153,8 @@ export default class PostController {
         this.router.post('/post/get-comment', validate(getCommentSchema), (req, res) => this.getComment(req, res));
         this.router.post('/post/edit-comment', this.commentRateLimiter, validate(editCommentSchema), (req, res) => this.editComment(req, res));
         this.router.post('/post/history', validate(historySchema), (req, res) => this.history(req, res));
+        this.router.post('/post/get-public-key', validate(getPostPublicKeySchema), (req, res) =>
+            this.getPublicKeyByUsername(req, res));
     }
 
     async postGet(request: APIRequest<PostGetRequest>, response: APIResponse<PostGetResponse>) {
@@ -555,5 +564,16 @@ export default class PostController {
 
             return response.error('error', 'Unknown error', 500);
         }
+    }
+
+    private async getPublicKeyByUsername(req: APIRequest<GetPublicKeyByUsernameRequest>, res: APIResponse<GetPublicKeyByUsernameResponse>) {
+        const {username} = req.body;
+        const targetUser = await this.userManager.getByUsername(username);
+
+        if (!targetUser) {
+            return res.success({publicKey: undefined});
+        }
+        const publicKey = await this.userManager.getPublicKey(targetUser.id);
+        return res.success({publicKey});
     }
 }

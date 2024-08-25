@@ -155,7 +155,7 @@ export class AppState {
     }
 }
 
-const AppStateContext = createContext<AppStateContextState>({} as AppStateContextState);
+export const AppStateContext = createContext<AppStateContextState>({} as AppStateContextState);
 
 export const AppStateProvider = (props: {children: ReactNode}) => {
     const appState = useMemo(() => {

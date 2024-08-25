@@ -15,7 +15,7 @@ const openai = new OpenAI({
     apiKey: config.openai.apiKey
 });
 
-const TEXT_SIZE_LIMIT = 4096;
+const TEXT_SIZE_LIMIT = 64*1024;
 
 export const TRANSLATION_MODES = ['altTranslate', 'annotate'] as const;
 export type TranslationMode = typeof TRANSLATION_MODES[number];
@@ -65,28 +65,18 @@ export default class TranslationManager {
             'Постарайся сохранить или уменьшить объем текста.';
         const FILTERS = [
             ['как пьяный викинг', 'викинг mode'],
-            ['как пьяница в крайней степени опьянения', 'пьяница mode'],
             ['как неандерталец', 'неандерталец mode'],
             ['на emoji', 'emoji mode'],
             ['на языке танца', 'язык танца mode'],
             ['как занудный мегаинтеллектуал', 'интеллектуал mode'],
-            ['как крестьянин 18-го века', 'крестьянин mode'],
             ['как заносчивый аристократ 19-го века', 'аристократ mode'],
-            ['как заика', 'заика mode'],
             ['как философ', 'философ mode'],
-            ['как похотливая монашка', 'монашка mode'],
-            ['как уголовник', 'урка mode'],
             ['как одессит', 'Одесса mode'],
-            ['как житель закарпатья', 'закарпатье mode'],
-            ['как Шекспир', 'Шекспир mode'],
             ['как панк', 'панк mode'],
             ['в стиле аниме', 'аниме mode'],
             ['как рассказываешь сказку', 'сказка mode'],
-            ['как злой пират', 'пират mode'],
             ['как зомби', 'зомби mode'],
-            ['на рыбий', 'рыба mode'],
-            ['на кошачий', 'кот mode'],
-            ['на l33t', 'хакер mode']
+            ['на языке l33t', 'хакер mode']
         ];
 
         const [role, hint] = FILTERS[Math.floor(Math.random()*FILTERS.length)];
@@ -117,10 +107,16 @@ export default class TranslationManager {
 
         return openai.chat.completions.create({
             messages : messages,
-            model: 'gpt-4-1106-preview',
+            model: 'gpt-4o-mini',
             stream: true,
             temperature: temperature,
         });
+    }
+
+    static stripMailboxTags(text: string): string {
+        return stripHtml(text, {
+            onlyStripTags: ['mail', 'mailbox']
+        }).result;
     }
 
     async translateEntity(ref_id: number, type: 'post' | 'comment', mode: TranslationMode, write: (str: string) => void): Promise<void> {
@@ -153,7 +149,8 @@ export default class TranslationManager {
             throw new Error('Invalid prompt');
         }
         // TODO review limitations to fit into budget
-        const parsingResult = this.parser.parse(contentSource.source).text;
+        const parsingResult = this.parser.parse(
+            TranslationManager.stripMailboxTags(contentSource.source)).text;
         const content = parsingResult.substring(0, TEXT_SIZE_LIMIT);
 
         // if parsingResult without html tags and whitespace is too short, don't do anything

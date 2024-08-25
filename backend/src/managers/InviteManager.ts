@@ -55,6 +55,7 @@ export default class InviteManager {
             issuedCount: invite.issued_count,
             leftCount: invite.left_count,
             reason: invite.reason,
+            reasonSource: invite.reason_source,
             invited: [],
             restricted: invite.restricted === 1
         };
@@ -79,7 +80,20 @@ export default class InviteManager {
     async createInvite(forUserId: number, reasonRaw: string): Promise<InviteInfo> {
         const reasonParseResult = this.parser.parse(reasonRaw);
         const code = crypto.randomBytes(16).toString('hex');
-        await this.inviteRepository.createInvite(forUserId, code, reasonParseResult.text, true);
+        await this.inviteRepository.createInvite(forUserId, code, reasonParseResult.text, reasonRaw, true);
+        const invite = await this.inviteRepository.getInviteWithIssuer(code);
+        delete this.invitesAvailabilityCache[forUserId];
+        return this.mapInvite(invite);
+    }
+
+    async editInvite(forUserId: number, code: string, reasonRaw: string): Promise<InviteInfo> {
+        await this.verifyInviteExistsAndAvailable(forUserId, code);
+
+        const reasonParseResult = this.parser.parse(reasonRaw);
+        const updated = await this.inviteRepository.updateReason(code, reasonParseResult.text, reasonRaw);
+        if (!updated) {
+            throw new CodeError('unknown', 'Could not update invite reason');
+        }
         const invite = await this.inviteRepository.getInviteWithIssuer(code);
         delete this.invitesAvailabilityCache[forUserId];
         return this.mapInvite(invite);
@@ -89,9 +103,18 @@ export default class InviteManager {
         return this.inviteRepository.getInviteReason(userId);
     }
 
-    delete(userId: number, code: string) {
+    async delete(userId: number, code: string) {
+        await this.verifyInviteExistsAndAvailable(userId, code);
+
         delete this.invitesAvailabilityCache[userId];
         return this.inviteRepository.deleteInvite(userId, code);
+    }
+
+    async verifyInviteExistsAndAvailable(userId: number, code: string): Promise<void> {
+        const invite = await this.get(code);
+        if (!invite || invite.issued_by !== userId || invite.left_count <= 0) {
+            throw new CodeError('invite-not-available', 'Invite not available');
+        }
     }
 
     async getInvitesAvailability(userId: number, skipCache=false): Promise<InvitesAvailability> {

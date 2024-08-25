@@ -210,4 +210,10 @@ export default class CommentRepository {
             parserVersion
         });
     }
+
+    getUserIdByCommentId(commentId: number): Promise<number | undefined> {
+        return this.db.fetchOne<{ author_id: number }>(`select author_id from comments where comment_id = :commentId`, {
+            commentId
+        }).then((res) => res?.author_id);
+    }
 }

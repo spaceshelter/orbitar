@@ -188,12 +188,20 @@ export default class UserRepository {
 
     logVisit(userId: number, date: Date): Promise<void> {
         // insert format: 2022-05-26 12:00:00.000
-        const dateToInsert = date.toISOString().replace(/T/, ' ').substring(0, 19) +
+        const dateToInsert = date.toISOString().replace('T', ' ').substring(0, 19) +
             '.' + date.getMilliseconds();
 
         return this.db.query(`
             insert ignore into activity_db.user_activity (user_id, visited_at) values (:user_id, :visited_at)
         `, {user_id: userId, visited_at: dateToInsert});
+    }
+
+    async getUserLastVisited(userId: number): Promise<Date | null> {
+        const res = await this.db.fetchOne(`
+            select max(visited_at) from activity_db.user_activity where user_id=:user_id`,
+            {user_id: userId});
+
+        return res['max(visited_at)'];
     }
 
     getLastActiveUsers(): Promise<UserRaw[]> {
@@ -279,5 +287,19 @@ export default class UserRepository {
 
     async dropPassword(userId: number) {
         return this.db.query(`update users set password = '' where user_id = :user_id`, {user_id: userId});
+    }
+
+    async savePublicKey(publicKey: string, userId: number) {
+        return this.db.query(`UPDATE users
+                              SET public_key = :publicKey
+                              WHERE user_id = :userId`, {
+            publicKey,
+            userId
+        });
+    }
+
+    getPublicKey(userId: number) {
+        return this.db.fetchOne<{public_key: string}>(`SELECT public_key FROM users WHERE user_id = :userId`, {userId})
+            .then(res => res?.public_key);
     }
 }

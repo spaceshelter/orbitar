@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Build backend & frontend
-        run: docker-compose -f ${{ matrix.dc-file }} build --no-cache backend frontend feed
+        run: docker compose -f ${{ matrix.dc-file }} build --no-cache backend frontend feed
 
   validate-docker-compose:
     runs-on: ubuntu-latest
@@ -33,14 +33,14 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Validate docker-compose.dev.yml
-        run: docker-compose -f docker-compose.dev.yml config
+        run: docker compose -f docker-compose.dev.yml config
 
       - name: Validate docker-compose.ssl.dev.yml
-        run: docker-compose -f docker-compose.ssl.dev.yml config
+        run: docker compose -f docker-compose.ssl.dev.yml config
 
       - name: Validate docker-compose.local.yml
-        run: docker-compose -f docker-compose.local.yml config
+        run: docker compose -f docker-compose.local.yml config
 
       - name: Validate docker-compose.ssl.local.yml
-        run: docker-compose -f docker-compose.ssl.local.yml config
+        run: docker compose -f docker-compose.ssl.local.yml config
 

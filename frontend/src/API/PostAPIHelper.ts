@@ -48,8 +48,8 @@ export default class PostAPIHelper {
         this.appState = appState;
     }
 
-    async get(postId: number): Promise<PostResult> {
-        const response = await this.postAPI.get(postId);
+    async get(postId: number, noComments = false): Promise<PostResult> {
+        const response = await this.postAPI.get(postId, 'html', noComments);
         const siteInfo = this.appState.cache.setSite(response.site);
 
         const post: PostInfo = { ...response.post } as unknown as PostInfo;
@@ -68,6 +68,11 @@ export default class PostAPIHelper {
             lastCommentId: lastCommentId,
             anonymousUser: response.anonymousUser
         };
+    }
+
+    async getComment(commentId: number): Promise<CommentInfo> {
+        const response = await this.postAPI.getComment(commentId, 'html');
+        return this.fixComment(response.comment, response.users);
     }
 
     async feedPosts(site: string, page: number, perPage: number): Promise<FeedPostsResult> {

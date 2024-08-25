@@ -44,4 +44,15 @@ export default class VoteManager {
     async getUserVotes(userId: number): Promise<VoteWithUsername[]> {
         return await this.voteRepository.getUserVotes(userId);
     }
+
+    getUserIdByVote(entityId: number, type: 'post' | 'comment' | 'user'): Promise<number | undefined> {
+        switch (type) {
+            case 'post':
+                return this.postManager.getUserIdByPostId(entityId);
+            case 'comment':
+                return this.postManager.getUserIdByCommentId(entityId);
+            case 'user':
+                return Promise.resolve(entityId);
+        }
+    }
 }

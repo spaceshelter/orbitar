@@ -15,6 +15,7 @@ import {UserGender, UserProfileInfo} from '../Types/UserInfo';
 import UserProfileSettings from '../Components/UserProfileSettings';
 import UserProfileBio from '../Components/UserProfileBio';
 import UserProfileName from '../Components/UserProfileName';
+import moment from 'moment';
 
 export const UserPage = observer(() => {
     const {userInfo, userRestrictions: restrictions} = useAppState();
@@ -97,13 +98,15 @@ export const UserPage = observer(() => {
                         </div>
 
                         <div className={styles.karma}>
-                            {user.active && <span className={styles.active}
-                                                  title={`Активно посещал${a} сайт в эту неделю`}><span
-                                className={'i i-alive'}></span>&nbsp;{sheHer ? 'активна' : 'активен'}</span>}
-                            {!user.active && <span className={styles.active}
-                                                   title={`В последнюю неделю не заходил${a} на сайт или заходил${a} недостаточно часто, чтобы считаться ${sheHer ? 'активной' : 'активным'}`}><span
-                                className={'i i-ghost'}></span>&nbsp;{sheHer ? 'неактивна' : 'неактивен'}</span>}
-
+                            <span className={styles.active}>
+                                <span className={user.active ? 'i i-alive' : 'i i-ghost'}></span>
+                                &nbsp;{user.active ? (sheHer ? 'активна' : 'активен') : (sheHer ? 'неактивна' : 'неактивен')}
+                                { profile.visitedDaysAgo != null &&
+                                    <span className={styles.tooltipText}>
+                                        {`Был${a} в сети ${profile.visitedDaysAgo ? moment.duration(-profile.visitedDaysAgo, 'days').humanize(true) : 'сегодня'}`}
+                                    </span>
+                                }
+                            </span>
                             <RatingSwitch rating={rating} type='user' id={user.id} double={true} votingDisabled={!restrictions?.canVoteKarma} onVote={handleOnVote}/>
                         </div>
                     </div>

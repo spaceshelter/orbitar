@@ -350,4 +350,10 @@ export default class PostRepository {
             postId
         }).then((row) => row?.user_id);
     }
+
+    async getUserIdByPostId(postId: number) {
+        return await this.db.fetchOne<{ author_id: number }>('select author_id from posts where post_id=:postId', {
+            postId
+        }).then((row) => row?.author_id);
+    }
 }

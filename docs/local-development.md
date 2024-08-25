@@ -1,13 +1,13 @@
-# Запуск для отладки
+# Локальная разработка
+
+## Запуск для отладки
 
 1. Запустить контейнер с базой и веб-роутером (в корне проекта):
-    ```
-TODO    docker-compose -p orbitar-dev up
-    ```
+
+```docker compose -p orbitar-dev up```
    mysql повиснет на стандартных 3306 и 33060 портах, redis на 6379, feed на 6767.
 
    Веб-роутер на 80 порту будет перенаправлять запросы с `*.orbitar.local` на `localhost:5000` (фронт), а `api.orbitar.local` на `localhost:5001` (бэк).
-
 
 2. Запустить фронт в режиме отладки (в папке `frontend`):
 
@@ -37,7 +37,7 @@ TODO    docker-compose -p orbitar-dev up
 
 После первого запуска можно открыть приглашение http://orbitar.local/invite/initial и зарегистрировать первый юзернейм.
 
-### Настройка загрузки изображений на orbitar.media (опционально)
+## Настройка загрузки изображений на orbitar.media (опционально)
 
 Указать в .env, frontend/.env.development, backend/.env.development файле правильные:
 
@@ -45,8 +45,8 @@ TODO    docker-compose -p orbitar-dev up
 2. MEDIA_HOSTING_CLIENT_ID - авторизация загрузки
 3. MEDIA_HOSTING_DIMS_AES_KEY - ключ для расшифровки размеров изображений
 
+## Настройка локального https (опционально)
 
-### Настройка локального https (опционально)
 1. В `frontend/.env.local` добавить `WDS_SOCKET_PORT=0`
 2. Сгенерировать самоподписанный сертификат для https:
    ```
@@ -60,7 +60,7 @@ TODO    docker-compose -p orbitar-dev up
 TODO 3. Для запуска контейнеров использовать конфиг `docker-compose.ssl.dev.yml`
 
 
-### Настройка Web Push Notifications (опционально)
+## Настройка Web Push Notifications (опционально)
 1. Настроить https, либо разрешить в браузере работу Service Workers по http.
 
 2. В директории `backend` выполнить генерацию VAPID-ключей:

@@ -102,7 +102,7 @@ svg#spoiler-mask {
   }
 }
 
-a.mention:before {
+.mention:before {
   content: '@';
   color: transparent;
   background: url('./Assets/user.svg') no-repeat -1px 2px;
@@ -147,6 +147,7 @@ details.expand {
       height: 20px;
       position: absolute;
       transition: transform .25s;
+      user-select: none;
     }
   }
 

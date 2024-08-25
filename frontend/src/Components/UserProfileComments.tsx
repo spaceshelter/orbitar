@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {useAPI} from '../AppState/AppState';
+import {useAPI, useAppState} from '../AppState/AppState';
 import styles from '../Pages/FeedPage.module.scss';
 import Paginator from '../Components/Paginator';
 import {useLocation, useSearchParams} from 'react-router-dom';
@@ -30,6 +30,7 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
     const [filter, setFilter] = useState(defaultFilter || null);
     const {search} = useLocation();
     const filterInputRef = useRef<HTMLInputElement>(null);
+    const currentUsername = useAppState().userInfo?.username;
 
     const setDebouncedFilter = useDebouncedCallback((value: string) => {
         setFilter(value);
@@ -98,7 +99,11 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
                  <>
                     {error && <div className={styles.error}>{styles.error}</div> }
                      {comments ?
-                         comments.map(comment => <CommentComponent idx={getParentComment(comment.parentComment) ? 1 : 0} parent={getParentComment(comment.parentComment)} key={comment.id} comment={comment} showSite={comment.site !== 'main'} />)
+                         comments.map(comment =>
+                             <CommentComponent idx={getParentComment(comment.parentComment) ? 1 : 0}
+                                               parent={getParentComment(comment.parentComment)} key={comment.id}
+                                               currentUsername={currentUsername}
+                                               comment={comment} showSite={comment.site !== 'main'} />)
                          :
                          (
                              error ? <div className={styles.error}>{error}<div><button onClick={reload}>Повторить</button></div></div>

@@ -7,6 +7,7 @@ export type InviteRaw = {
     restricted: number;
     left_count: number;
     reason?: string;
+    reason_source?: string;
 };
 
 export type InviteRawWithIssuer = InviteRaw & {

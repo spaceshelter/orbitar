@@ -6,6 +6,10 @@
   margin-bottom: 32px;
 }
 
+:global(.internalLinkExpand) .post {
+  margin-bottom: 12px;
+}
+
 .title, .title a {
     color: var(--fgHard);
     font-size: 24px;

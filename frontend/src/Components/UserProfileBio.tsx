@@ -4,7 +4,7 @@ import ContentComponent from './ContentComponent';
 import postStyles from './PostComponent.module.scss';
 import CreateCommentComponent from './CreateCommentComponent';
 import {ReactComponent as EditIcon} from '../Assets/edit.svg';
-import {useAPI} from '../AppState/AppState';
+import {useAPI, useAppState} from '../AppState/AppState';
 import {toast} from 'react-toastify';
 
 type UserProfileBioProps = {
@@ -19,6 +19,7 @@ export default function UserProfileBio(props: UserProfileBioProps) {
   const [source, setSource] = useState(props.bio_source);
   const [html, setHtml] = useState(props.bio_html);
   const api = useAPI();
+  const currentUsername = useAppState().userInfo?.username;
 
   useEffect(() => {
     setHtml(props.bio_html);
@@ -37,12 +38,11 @@ export default function UserProfileBio(props: UserProfileBioProps) {
       toast.error(error?.message || 'Не удалось сохранить.');
       throw error;
     }
-    return undefined;
   };
 
   return <div className={styles.bio}>
     <div>
-      {!editing && <ContentComponent content={html} />}
+      {!editing && <ContentComponent currentUsername={currentUsername} content={html} />}
       {editing && <CreateCommentComponent open={true} text={source} onAnswer={handleUpdateBio}/>}
     </div>
     <div className={styles.controls}>

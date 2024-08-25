@@ -8,6 +8,7 @@ import {VoteListRequest, VoteListResponse} from './types/requests/VoteList';
 import {VoteListItemEntity} from './types/entities/VoteEntity';
 import UserManager from '../managers/UserManager';
 import rateLimit from 'express-rate-limit';
+import {RateLimiterMemory} from 'rate-limiter-flexible';
 
 export default class VoteController {
     public router = Router();
@@ -25,19 +26,14 @@ export default class VoteController {
         keyGenerator: (req) => String(req.session.data?.userId)
     });
 
-    // 100 requests per day for each (voterId, userId) pair
-    private readonly voteDayRateLimiter = rateLimit({
-        max: 100,
-        windowMs: 24 * 60 * 60 * 1000, // 24 hours
-        skipSuccessfulRequests: false,
-        standardHeaders: false,
-        legacyHeaders: false,
-        keyGenerator: (req) => {
-            // Combine voterId and userId into a single key
-            const voterId = String(req.session.data?.userId);
-            const userId = String(req.body.id);
-            return `${voterId}:${userId}`;
-        }
+    private readonly voteDailyRateLimiter = new RateLimiterMemory({
+        points: 100,
+        duration: 24 * 60 * 60, // Per day
+    });
+
+    private readonly commentVoteHourlyRateLimiter = new RateLimiterMemory({
+        points: 30,
+        duration: 60 * 60, // Per hour
     });
 
     constructor(voteManager: VoteManager, userManager: UserManager, logger: Logger) {
@@ -55,7 +51,7 @@ export default class VoteController {
             id: Joi.number().required()
         });
 
-        this.router.post('/vote/set', this.voteRateLimiter, validate(voteSchema), this.voteDayRateLimiter, (req, res) => this.setVote(req, res));
+        this.router.post('/vote/set', this.voteRateLimiter, validate(voteSchema), (req, res) => this.setVote(req, res));
         this.router.post('/vote/list', validate(listSchema), (req, res) => this.list(req, res));
     }
 
@@ -75,6 +71,19 @@ export default class VoteController {
         try {
             const max = type === 'user' ? 2 : 1;
             const rangedVote = Math.max(Math.min(vote, max), -max);
+
+            const targetUserId = await this.voteManager.getUserIdByVote(id, type);
+            if (targetUserId && type !== 'user') {
+                const voteKey = `${userId}:${targetUserId}`;
+                try {
+                    await this.voteDailyRateLimiter.consume(voteKey);
+                    if (rangedVote < 0) {
+                        await this.commentVoteHourlyRateLimiter.consume(voteKey);
+                    }
+                } catch (err) {
+                    return response.error('too-many-votes', 'Too many votes', 403);
+                }
+            }
 
             let rating;
             switch (type) {

@@ -1,6 +1,6 @@
 import styles from './PostComponent.module.scss';
 import RatingSwitch from './RatingSwitch';
-import React, {useMemo, useState} from 'react';
+import React, {useMemo, useRef, useState} from 'react';
 import {PostInfo} from '../Types/PostInfo';
 import ContentComponent from './ContentComponent';
 import {ReactComponent as CommentsIcon} from '../Assets/comments.svg';
@@ -9,7 +9,7 @@ import {ReactComponent as EditIcon} from '../Assets/edit.svg';
 import OutsideClickHandler from 'react-outside-click-handler';
 
 import PostLink from './PostLink';
-import {useAPI} from '../AppState/AppState';
+import {useAPI, useAppState} from '../AppState/AppState';
 import {toast} from 'react-toastify';
 import CreateCommentComponent from './CreateCommentComponent';
 import { HistoryComponent } from './HistoryComponent';
@@ -17,6 +17,7 @@ import {SignatureComponent} from './SignatureComponent';
 import Conf from '../Conf';
 import {useInterpreter} from '../API/use/useInterpreter';
 import {AltTranslateButton, AnnotateButton, TranslateButton, UnwatchButton, WatchButton} from './ContentButtons';
+import {getPreferredLang, getShowInlineTranslateButton} from './UserProfileSettings';
 
 interface PostComponentProps {
     post: PostInfo;
@@ -31,14 +32,16 @@ interface PostComponentProps {
 
 
 export default function PostComponent(props: PostComponentProps) {
+    const contentRef = useRef<HTMLDivElement>(null);
     const api = useAPI();
+    const currentUsername = useAppState().userInfo?.username;
     const [showOptions, setShowOptions] = useState(false);
     const [editingText, setEditingText] = useState<false | string>(false);
     const [editingTitle, setEditingTitle] = useState<string>(props.post.title || '');
     const [showHistory, setShowHistory] = useState(false);
     const {currentMode, altTitle, altContent, inProgress,
-        contentRef, translate, annotate, altTranslate, calcShowAltTranslate, calcShowAnnotate
-    } = useInterpreter(props.post.content, props.post.title, props.post.id, 'post');
+         translate, annotate, altTranslate, calcShowAltTranslate, calcShowAnnotate
+    } = useInterpreter(contentRef, props.post.content, props.post.title, props.post.id, 'post');
 
     const handleVote = useMemo(() => {
         return (value: number, vote?: number) => {
@@ -133,6 +136,9 @@ export default function PostComponent(props: PostComponentProps) {
 
     const altMode = currentMode !== undefined || inProgress;
     const autoCut = altMode ? undefined : props.autoCut;
+    const showTranslateButtonInline = useMemo(() => {
+        return getShowInlineTranslateButton() && props.post.language !== getPreferredLang();
+    }, [props.post]);
 
     return (
         <div className={'postComponent ' + styles.post} ref={contentRef}>
@@ -147,8 +153,8 @@ export default function PostComponent(props: PostComponentProps) {
                                         props.dangerousHtmlTitle ? <span dangerouslySetInnerHTML={{__html: title}} /> : title
                                     }</PostLink></div>}
                                     <div className={styles.content}>
-                                        <ContentComponent className={styles.content} content={content}
-                                                          autoCut={autoCut}
+                                        <ContentComponent className={styles.content}
+                                                          {...{autoCut, content, currentUsername}}
                                                           lowRating={rating <= Conf.POST_LOW_RATING_THRESHOLD || props.post.vote === -1} />
                                     </div>
                                 </>
@@ -170,9 +176,9 @@ export default function PostComponent(props: PostComponentProps) {
                 {/*<div className={styles.control}><button disabled={true} onClick={toggleBookmark} className={bookmark ? styles.active : ''}><BookmarkIcon /><span className={styles.label}></span></button></div>*/}
                 {props.post.canEdit && props.onEdit && <div className={styles.control}><button onClick={handleEdit}><EditIcon /></button></div>}
                 <div className={styles.control + ' ' + styles.options}>
-                    {currentMode === 'translate' &&
+                    {(showTranslateButtonInline || currentMode === 'translate') &&
                         <div className={styles.control}>
-                            <TranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={translate}/>
+                            <TranslateButton iconOnly={true} isActive={currentMode === 'translate'} inProgress={inProgress} onClick={translate}/>
                         </div>}
                     {currentMode === 'altTranslate' &&
                         <div className={styles.control}>
@@ -187,7 +193,7 @@ export default function PostComponent(props: PostComponentProps) {
                     {showOptions &&
                         <OutsideClickHandler onOutsideClick={() => setShowOptions(false)}>
                         <div className={styles.optionsList}>
-                            <TranslateButton className={styles.control} inProgress={inProgress} onClick={() => {setShowOptions(false);translate();}} isActive={currentMode === 'translate'} />
+                            {!showTranslateButtonInline && <TranslateButton className={styles.control} inProgress={inProgress} onClick={() => {setShowOptions(false);translate();}} isActive={currentMode === 'translate'} />}
                             {calcShowAltTranslate() &&
                                 <AltTranslateButton className={styles.control} inProgress={inProgress} onClick={() => {setShowOptions(false);altTranslate();}} isActive={currentMode === 'altTranslate'}/>}
                             {calcShowAnnotate() &&

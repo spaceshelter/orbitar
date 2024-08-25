@@ -58,6 +58,14 @@ export default class PostManager {
         return await this.feedManager.convertRawPosts(forUserId, posts, format);
     }
 
+    getUserIdByPostId(postId: number): Promise<number | undefined> {
+        return this.postRepository.getUserIdByPostId(postId);
+    }
+
+    getUserIdByCommentId(commentId: number): Promise<number | undefined> {
+        return this.commentRepository.getUserIdByCommentId(commentId);
+    }
+
     getPostWithoutUserData(postId: number): Promise<PostRaw | undefined> {
         return this.postRepository.getPost(postId);
     }
