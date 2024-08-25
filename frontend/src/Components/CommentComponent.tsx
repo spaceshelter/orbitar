@@ -15,6 +15,7 @@ import {useInterpreter} from '../API/use/useInterpreter';
 import OutsideClickHandler from 'react-outside-click-handler';
 import {AltTranslateButton, AnnotateButton, TranslateButton} from './ContentButtons';
 import {InviewContext} from '../Pages/PostPage';
+import {getPreferredLang, getShowInlineTranslateButton} from './UserProfileSettings';
 
 interface CommentProps {
     comment: CommentInfo;
@@ -135,7 +136,7 @@ interface ControlsProps {
     setAltContent: (value: string | undefined) => void;
 }
 
-function Controls({contentRef, comment, setEditingText, hideRating, onEdit, onAnswer, answerOpen, setAnswerOpen, setAltContent}: ControlsProps) {
+function Controls({contentRef, comment, setEditingText, hideRating, onEdit, onAnswer, answerOpen, setAnswerOpen, setAltContent: setCommentAltContent}: ControlsProps) {
     const api = useAPI();
 
     const handleVote = useMemo(() => {
@@ -168,7 +169,10 @@ function Controls({contentRef, comment, setEditingText, hideRating, onEdit, onAn
         e.preventDefault();
         setAnswerOpen(!answerOpen);
     };
-    useEffect(() => setAltContent(altContent), [altContent]);
+    useEffect(() => setCommentAltContent(altContent), [setCommentAltContent, altContent]);
+    const showTranslateButtonInline = useMemo(() => {
+        return getShowInlineTranslateButton() && comment.language !== getPreferredLang();
+    }, [comment]);
 
     return (
       <div className={styles.controls}>
@@ -179,9 +183,9 @@ function Controls({contentRef, comment, setEditingText, hideRating, onEdit, onAn
         {comment.canEdit && onEdit && <div className={styles.control}><button onClick={handleEdit} className='i i-edit' /></div>}
 
         <div className={styles.control + ' ' + postStyles.options}>
-            {currentMode === 'translate' &&
+            {(showTranslateButtonInline || currentMode === 'translate') &&
               <div className={styles.control}>
-                  <TranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={translate} />
+                  <TranslateButton iconOnly={true} isActive={currentMode === 'translate'} inProgress={inProgress} onClick={translate} />
               </div>}
             {currentMode === 'altTranslate' &&
               <div className={styles.control}>
@@ -196,7 +200,7 @@ function Controls({contentRef, comment, setEditingText, hideRating, onEdit, onAn
             {showOptions &&
               <OutsideClickHandler onOutsideClick={() => setShowOptions(false)}>
                   <div className={postStyles.optionsList}>
-                      <TranslateButton inProgress={inProgress} onClick={() => {setShowOptions(false);translate();}} isActive={currentMode === 'translate'} />
+                      {!showTranslateButtonInline && <TranslateButton inProgress={inProgress} onClick={() => {setShowOptions(false);translate();}} isActive={currentMode === 'translate'} />}
                       {calcShowAltTranslate() &&
                         <AltTranslateButton inProgress={inProgress} onClick={() => {setShowOptions(false);altTranslate();}} isActive={currentMode === 'altTranslate'}/>}
                       {calcShowAnnotate() &&

@@ -17,6 +17,7 @@ import {SignatureComponent} from './SignatureComponent';
 import Conf from '../Conf';
 import {useInterpreter} from '../API/use/useInterpreter';
 import {AltTranslateButton, AnnotateButton, TranslateButton, UnwatchButton, WatchButton} from './ContentButtons';
+import {getPreferredLang, getShowInlineTranslateButton} from './UserProfileSettings';
 
 interface PostComponentProps {
     post: PostInfo;
@@ -135,6 +136,9 @@ export default function PostComponent(props: PostComponentProps) {
 
     const altMode = currentMode !== undefined || inProgress;
     const autoCut = altMode ? undefined : props.autoCut;
+    const showTranslateButtonInline = useMemo(() => {
+        return getShowInlineTranslateButton() && props.post.language !== getPreferredLang();
+    }, [props.post]);
 
     return (
         <div className={'postComponent ' + styles.post} ref={contentRef}>
@@ -172,9 +176,9 @@ export default function PostComponent(props: PostComponentProps) {
                 {/*<div className={styles.control}><button disabled={true} onClick={toggleBookmark} className={bookmark ? styles.active : ''}><BookmarkIcon /><span className={styles.label}></span></button></div>*/}
                 {props.post.canEdit && props.onEdit && <div className={styles.control}><button onClick={handleEdit}><EditIcon /></button></div>}
                 <div className={styles.control + ' ' + styles.options}>
-                    {currentMode === 'translate' &&
+                    {(showTranslateButtonInline || currentMode === 'translate') &&
                         <div className={styles.control}>
-                            <TranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={translate}/>
+                            <TranslateButton iconOnly={true} isActive={currentMode === 'translate'} inProgress={inProgress} onClick={translate}/>
                         </div>}
                     {currentMode === 'altTranslate' &&
                         <div className={styles.control}>
@@ -189,7 +193,7 @@ export default function PostComponent(props: PostComponentProps) {
                     {showOptions &&
                         <OutsideClickHandler onOutsideClick={() => setShowOptions(false)}>
                         <div className={styles.optionsList}>
-                            <TranslateButton className={styles.control} inProgress={inProgress} onClick={() => {setShowOptions(false);translate();}} isActive={currentMode === 'translate'} />
+                            {!showTranslateButtonInline && <TranslateButton className={styles.control} inProgress={inProgress} onClick={() => {setShowOptions(false);translate();}} isActive={currentMode === 'translate'} />}
                             {calcShowAltTranslate() &&
                                 <AltTranslateButton className={styles.control} inProgress={inProgress} onClick={() => {setShowOptions(false);altTranslate();}} isActive={currentMode === 'altTranslate'}/>}
                             {calcShowAnnotate() &&
