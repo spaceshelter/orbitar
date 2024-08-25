@@ -16,6 +16,9 @@ http://{$SERVER_DOMAIN} {
 }
 
 http://{$API_DOMAIN} {
+  header X-Fingerprint "{$FINGERPRINT}"
+  header Access-Control-Expose-Headers "X-Fingerprint"
+
   reverse_proxy http://host.docker.internal:5001
 }
 
@@ -26,11 +29,4 @@ http://*.{$SERVER_DOMAIN} {
   redir @post http://{$SERVER_DOMAIN}/s/{http.request.host.labels.2}/p{re.post.1}
 
   redir / http://{$SERVER_DOMAIN}/s/{http.request.host.labels.2}
-}
-
-http://api.{$SERVER_DOMAIN} {
-  header X-Fingerprint "{$FINGERPRINT}"
-  header Access-Control-Expose-Headers "X-Fingerprint"
-
-  reverse_proxy http://host.docker.internal:5001
 }

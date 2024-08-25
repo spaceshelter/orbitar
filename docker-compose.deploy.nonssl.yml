@@ -3,4 +3,4 @@ services:
     ports:
       - "80:80"
     volumes:
-      - $PWD/caddy/Caddyfile.local:/etc/caddy/Caddyfile
+      - $PWD/caddy/Caddyfile.local:/etc/caddy/Caddyfile:ro
