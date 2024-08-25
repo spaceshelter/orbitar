@@ -14,12 +14,14 @@
 
 В hosts добавить:
 
-```127.0.0.1 orbitar.local api.orbitar.local
+```hosts
+127.0.0.1 orbitar.local api.orbitar.local
 ```
 
 Можно дополнить списком подсайтов по вкусу (опционально)
 
-```127.0.0.1 idiod.orbitar.local
+```hosts
+127.0.0.1 idiod.orbitar.local
 ```
 
 ### Особенности
@@ -31,10 +33,14 @@
 
 Пересборка фронта и бэка (если необходимо):
 
-```docker compose -p orbitar -f docker-compose.local.yml build --no-cache frontend backend```
+```sh
+docker compose -p orbitar -f docker-compose.local.yml build --no-cache frontend backend
+```
+
 Запуск:
 
-```docker compose -p orbitar -f docker-compose.local.yml up
+```sh
+docker compose -p orbitar -f docker-compose.local.yml up
 ```
 
 ## Утилиты
@@ -47,17 +53,20 @@
 
 (в папке `backend`, перед первым запуском выполнить `npm install`)
 
-```npm run generate-dummy-content -- --help
+```sh
+npm run generate-dummy-content -- --help
 ```
 
 Например:
 
-```npm run generate-dummy-content -- -u 10 -s 8 -p 20 -c 100
+```sh
+npm run generate-dummy-content -- -u 10 -s 8 -p 20 -c 100
 ```
 
 Для генерации осмысленных текстов используйте параметр `-f 1`, например:
 
-```npm run generate-dummy-content -- -u 10 -s 8 -p 20 -c 100 -f 1
+```sh
+npm run generate-dummy-content -- -u 10 -s 8 -p 20 -c 100 -f 1
 ```
 
 Для генерации осмысленных текстов используется API https://fish-text.ru/, соответственно, нужно интернет-соединение.
