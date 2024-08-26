@@ -1,5 +1,5 @@
 import {useAPI} from '../../AppState/AppState';
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {TranslateModes} from '../PostAPI';
 import googleTranslate from '../../Utils/googleTranslate';
 import {toast} from 'react-toastify';
@@ -14,8 +14,9 @@ export type AltContentType = 'translate' | TranslateModes;
 export const ANNOTATE_LIMIT = 1024;
 export const ALT_TRANSLATE_LIMIT = 4*1024;
 
-export function useInterpreter(contentRef: React.RefObject<HTMLDivElement>, originalContent: string, originalTitle: string | undefined, id: number, type: 'post' | 'comment') {
+export function useInterpreter(originalContent: string, originalTitle: string | undefined, id: number, type: 'post' | 'comment') {
     const api = useAPI();
+    const contentRef = useRef<HTMLDivElement>(null);
     const [currentMode, setCurrentMode] = React.useState<AltContentType | undefined>();
     const [cachedTitleTranslation, setCachedTitleTranslation] = useState<string | undefined>();
     const [cachedContentTranslation, setCachedContentTranslation] = useState<string | undefined>();
@@ -148,7 +149,7 @@ export function useInterpreter(contentRef: React.RefObject<HTMLDivElement>, orig
             }
         }
 
-    }, [currentMode, contentRef]);
+    }, [currentMode]);
 
     return {contentRef, currentMode, inProgress, altTitle, altContent, translate, annotate, altTranslate,
         calcShowAltTranslate, calcShowAnnotate

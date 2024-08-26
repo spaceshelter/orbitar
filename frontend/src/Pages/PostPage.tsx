@@ -1,4 +1,4 @@
-import React, {createContext, useEffect, useMemo, useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import styles from './PostPage.module.css';
 import {Link, useLocation, useParams, useSearchParams} from 'react-router-dom';
 import {CommentInfo, PostInfo, PostLinkInfo} from '../Types/PostInfo';
@@ -9,11 +9,6 @@ import {usePost} from '../API/use/usePost';
 import {useAppState} from '../AppState/AppState';
 import Username from '../Components/Username';
 import {scrollUnderTopbar} from '../Utils/utils';
-import {InView} from 'react-intersection-observer';
-
-const THREAD_GROUP_SIZE = 10;
-
-export const InviewContext = createContext<boolean>(true);
 
 export default function PostPage() {
     const params = useParams<{postId: string}>();
@@ -25,18 +20,6 @@ export default function PostPage() {
     const containerRef = useRef<HTMLDivElement>(null);
     const unreadOnly = search.get('new') !== null;
     const {post, comments, anonymousUser, postComment, editComment, editPost, error, reload, updatePost} = usePost(site, postId, unreadOnly);
-
-    // Group top-level threads to render some content inside only when they are in view
-    const groupedComments = useMemo(() => {
-        if (!comments) {
-            return;
-        }
-        const groups: CommentInfo[][] = [];
-        for (let i = 0; i < comments.length; i += THREAD_GROUP_SIZE) {
-            groups.push(comments.slice(i, i + THREAD_GROUP_SIZE));
-        }
-        return groups;
-    }, [comments]);
 
     useEffect(() => {
         let docTitle = `Пост #${postId}`;
@@ -125,21 +108,11 @@ export default function PostPage() {
                         {anonymousUser && <div className={styles.anon}><span className={'i i-anon'}></span> Внимание, анонимность!<br/>Комментарии в этом посте публикуются лица <Username user={anonymousUser}/>.</div>}
                         <div className={styles.postButtons}><Link to={`${baseRoute}p${post.id}`} className={unreadOnly ? '' : 'bold'}>все комментарии</Link> • <Link to={`${baseRoute}p${post.id}?new`} className={unreadOnly ? 'bold' : ''}>только новые</Link></div>
                         <div className={styles.comments + (unreadOnly ? ' unreadOnly' : '')}>
-                            {groupedComments ?
-                                groupedComments.map((comments, ii) =>
-                                  <InView key={ii} threshold={0.01} triggerOnce={true}>
-                                      {({ inView, ref, entry }) => (
-                                        <div ref={ref}>
-                                            <InviewContext.Provider value={inView}>
-                                              {comments.map(comment =>
-                                                <CommentComponent maxTreeDepth={12} key={comment.id} comment={comment}
-                                                                  onAnswer={handleAnswer} unreadOnly={unreadOnly} onEdit={handleCommentEdit}
-                                                                  currentUsername={userInfo?.username} />
-                                              )}
-                                            </InviewContext.Provider>
-                                        </div>
-                                      )}
-                                  </InView>
+                            {comments ?
+                                comments.map(comment =>
+                                    <CommentComponent maxTreeDepth={12} key={comment.id} comment={comment}
+                                                      onAnswer={handleAnswer} unreadOnly={unreadOnly} onEdit={handleCommentEdit}
+                                                      currentUsername={userInfo?.username} />
                                 )
                                 :
                                 (
