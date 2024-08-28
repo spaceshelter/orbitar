@@ -2,12 +2,14 @@ services:
   caddy:
     ports:
       - "443:443"
-    volumes:
-      - $PWD/caddy/Caddyfile.ssl.dev:/etc/caddy/Caddyfile:ro
-      - $PWD/caddy/certs:/certs:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
-
+    environment:
+      SERVER_HOST: https://${SERVER_DOMAIN}
+      API_HOST: https://${API_DOMAIN}
+    volumes:
+      - $PWD/caddy/on-tls.Caddyfile:/etc/caddy/working.tls.Caddyfile:ro
+      - $PWD/caddy/certs:/certs:ro
 
   mysql:
     ports:

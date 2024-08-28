@@ -4,7 +4,9 @@ services:
       - "80:80"
     extra_hosts:
       - "host.docker.internal:host-gateway"
-
+    environment:
+      SERVER_HOST: http://${SERVER_DOMAIN}
+      API_HOST: http://${API_DOMAIN}
 
   mysql:
     ports:

@@ -7,11 +7,14 @@ services:
     environment:
       SERVER_DOMAIN: ${SERVER_DOMAIN}
       API_DOMAIN: ${API_DOMAIN}
+      BACKEND_DOMAIN: host.docker.internal
       MEDIA_HOSTING_URL: ${MEDIA_HOSTING_URL}
       MEDIA_HOSTING_CLIENT_ID: ${MEDIA_HOSTING_CLIENT_ID}
       FINGERPRINT: ${FINGERPRINT}
     volumes:
-      - $PWD/caddy/Caddyfile.dev:/etc/caddy/Caddyfile
+      - $PWD/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - $PWD/caddy/dev.frontend.Caddyfile:/etc/caddy/working.frontend.Caddyfile:ro
+      - $PWD/caddy/off.tls.Caddyfile:/etc/caddy/working.tls.Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     # Default caddy command borrowed from https://github.com/caddyserver/caddy-docker/blob/master/Dockerfile.tmpl

@@ -1,0 +1,47 @@
+import *.tls.Caddyfile
+import *.frontend.Caddyfile 
+
+{$SERVER_HOST:http://orbitar.local} {
+	import tls
+
+	# idiod.video proxy
+	handle_path /upload {
+		rewrite * /api/upload.php
+		reverse_proxy {$MEDIA_HOSTING_URL} {
+			header_up Host {upstream_hostport}
+			header_up +authorization "Client-ID {$MEDIA_HOSTING_CLIENT_ID}"
+			header_up -origin
+			header_up -referer
+		}
+	}
+
+	import frontend
+}
+
+www.{$SERVER_DOMAIN:orbitar.local} {
+	import tls
+	redir {$SERVER_HOST}{uri}
+}
+
+{$API_HOST:api.orbitar.local} {
+	import tls
+
+	header X-Fingerprint "{$FINGERPRINT}"
+	header Access-Control-Expose-Headers "X-Fingerprint"
+
+	header Access-Control-Allow-Origin {$SERVER_HOST}
+
+	@cors_preflight method OPTIONS
+	handle @cors_preflight {
+		header {
+			Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE"
+			Access-Control-Max-Age "3600"
+			Access-Control-Allow-Headers *
+		}
+		respond "" 204
+	}
+
+	reverse_proxy http://{$BACKEND_DOMAIN}:5001 {
+		header_down -Access-Control-*
+	}
+}

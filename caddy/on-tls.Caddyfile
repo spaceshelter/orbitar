@@ -1,0 +1,5 @@
+# This file's name is intentionally with dash instead of dot before 'tls' for easy local plugging in
+
+(tls) {
+	tls {$TLS_CERT_FILE:/certs/orbitar.crt} {$TLS_KEY_FILE:/certs/orbitar.key}
+}

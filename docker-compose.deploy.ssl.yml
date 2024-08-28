@@ -2,6 +2,9 @@ services:
   caddy:
     ports:
       - "443:443"
+    environment:
+      SERVER_HOST: https://${SERVER_DOMAIN}
+      API_HOST: https://${API_DOMAIN}
     volumes:
-      - $PWD/caddy/Caddyfile.ssl.local:/etc/caddy/Caddyfile:ro
+      - $PWD/caddy/on-tls.Caddyfile:/etc/caddy/working.tls.Caddyfile:ro
       - $PWD/caddy/certs:/certs:ro

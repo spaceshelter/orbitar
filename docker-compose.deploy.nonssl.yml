@@ -2,5 +2,6 @@ services:
   caddy:
     ports:
       - "80:80"
-    volumes:
-      - $PWD/caddy/Caddyfile.local:/etc/caddy/Caddyfile:ro
+    environment:
+      SERVER_HOST: http://${SERVER_DOMAIN}
+      API_HOST: http://${API_DOMAIN}

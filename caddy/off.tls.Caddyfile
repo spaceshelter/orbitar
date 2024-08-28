@@ -1,0 +1,4 @@
+# Dummy file with no TLS configuration for Caddy
+
+(tls) {
+}

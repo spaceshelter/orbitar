@@ -1,0 +1,10 @@
+# frontend served directly by Caddy
+# This file's name is intentionally with dash instead of dot before 'frontend' for easy local plugging in
+
+(frontend) {
+	handle {
+		root * /srv
+		file_server
+		try_files {path} /index.html
+	}
+}

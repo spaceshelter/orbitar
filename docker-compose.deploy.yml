@@ -1,7 +1,10 @@
 services:
   caddy:
+    environment:
+      BACKEND_DOMAIN: backend
     volumes:
       - frontend_build:/srv
+      - $PWD/caddy/deploy-frontend.Caddyfile:/etc/caddy/working.frontend.Caddyfile:ro
     depends_on:
       - backend
     # Default caddy command borrowed from https://github.com/caddyserver/caddy-docker/blob/master/Dockerfile.tmpl
