@@ -17,7 +17,7 @@ jobs:
     env:
       SERVER_DOMAIN: orbitar.test
       BACKEND_DOMAIN: orbitar.backend
-      TLS_CERT_PATH:
+      TLS_CERT_PATH: '{}'
       TLS_KEY_PATH:
     steps:
       - name: Checkout
@@ -26,16 +26,6 @@ jobs:
         env:
           SERVER_HOST: http://orbitar.test
           API_HOST: http://api.orbitar.test    
-        run: caddy validate --config caddy/Caddyfile
-      - name: Enable TLS
-        run: |
-          cd caddy
-          rm off.tls.Caddyfile
-          mv on-tls.Caddyfile on.tls.Caddyfile
-      - name: Validate Caddyfile with TLS
-        env:
-          SERVER_HOST: https://orbitar.test
-          API_HOST: https://api.orbitar.test    
         run: caddy validate --config caddy/Caddyfile
       - name: Switch to deploy-frontend
         run: |
