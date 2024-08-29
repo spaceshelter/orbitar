@@ -18,15 +18,12 @@ on:
 jobs:
   build-docker:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        dc-file: [docker-compose.override.yml, docker-compose.deploy.yml]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build backend & frontend
-        run: docker compose -f docker-compose.yml -f ${{ matrix.dc-file }} build --no-cache backend frontend feed
+      - name: Build backend, frontend & feed
+        run: docker compose -f docker-compose.yml -f docker-compose.deploy.yml build --no-cache backend frontend feed
 
   validate-docker-compose:
     runs-on: ubuntu-latest
