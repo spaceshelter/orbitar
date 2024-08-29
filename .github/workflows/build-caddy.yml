@@ -27,8 +27,10 @@ jobs:
         run: caddy validate --config caddy/Caddyfile
       - name: Enable TLS
         run: |
-          rm caddy/off.tls.Caddyfile
-          mv caddy/on-tls.Caddyfile caddy/on.tls.Caddyfile
+          cd caddy
+          rm off.tls.Caddyfile
+          mv on-tls.Caddyfile on.tls.Caddyfile
+          openssl req -x509 -sha256 -nodes -newkey rsa:2048 -days 365 -config openssl.cnf -extensions req_ext -subj "/C=US/CN=orbitar.test" -keyout certs/orbitar.key -out certs/orbitar.crt
       - name: Validate Caddyfile with TLS
         env:
           SERVER_HOST: https://orbitar.test
