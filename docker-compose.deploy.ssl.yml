@@ -2,6 +2,7 @@ services:
   caddy:
     ports:
       - "443:443"
+      - "443:443/udp"
     environment:
       SERVER_HOST: https://${SERVER_DOMAIN}
       API_HOST: https://${API_DOMAIN}

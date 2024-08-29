@@ -17,6 +17,8 @@ jobs:
     env:
       SERVER_DOMAIN: orbitar.test
       BACKEND_DOMAIN: orbitar.backend
+      TLS_CERT_PATH:
+      TLS_KEY_PATH:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,7 +32,6 @@ jobs:
           cd caddy
           rm off.tls.Caddyfile
           mv on-tls.Caddyfile on.tls.Caddyfile
-          openssl req -x509 -sha256 -nodes -newkey rsa:2048 -days 365 -config openssl.cnf -extensions req_ext -subj "/C=US/CN=orbitar.test" -keyout certs/orbitar.key -out certs/orbitar.crt
       - name: Validate Caddyfile with TLS
         env:
           SERVER_HOST: https://orbitar.test
