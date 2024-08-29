@@ -5,6 +5,8 @@ services:
     environment:
       SERVER_HOST: https://${SERVER_DOMAIN}
       API_HOST: https://${API_DOMAIN}
+      TLS_CERT_PATH: /certs/${TLS_CERT_FILE}
+      TLS_KEY_PATH: /certs/${TLS_KEY_FILE}
     volumes:
       - $PWD/caddy/on-tls.Caddyfile:/etc/caddy/working.tls.Caddyfile:ro
       - $PWD/caddy/certs:/certs:ro
