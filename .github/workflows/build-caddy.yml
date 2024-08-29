@@ -1,0 +1,26 @@
+name: Validate Caddyfile
+on:
+  push:
+    branches:
+      - dev
+      - main
+  pull_request:
+    paths:
+      - .github/workflows/build-caddy.yml
+      - caddy/**/*
+  workflow_dispatch:
+        
+jobs:
+  validate-caddyfile:
+    runs-on: ubuntu-latest
+    container: caddy
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Validate Caddyfile
+        run: caddy validate --config caddy/Caddyfile
+      - name: Enable TLS
+        run: mv caddy/on-tls.Caddyfile caddy/on.tls.Caddyfile
+      - name: Validate Caddyfile with TLS
+        run: caddy validate --config caddy/Caddyfile
+

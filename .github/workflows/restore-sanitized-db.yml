@@ -27,7 +27,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Download DB backup
         id: get-db
@@ -39,7 +39,7 @@ jobs:
       - name: Load DB
         run: cat ${{ steps.get-db.outputs.db-dump-file }} | /usr/bin/mysql -h 127.0.0.1 -u root -p$MYSQL_ROOT_PASSWORD
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Remove PII
         run: |
@@ -72,7 +72,7 @@ jobs:
     environment: Staging
     runs-on: [self-hosted, stage]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Download DB backup
         uses: ./.github/actions/get-db
@@ -82,14 +82,14 @@ jobs:
 
       - name: Stop backend
         working-directory: /orbitar
-        run: docker compose -f docker-compose.ssl.local.yml stop backend
+        run: docker compose -f docker-compose.yml -f docker-compose.deploy.yml stop backend
 
       - name: Restore backup
         working-directory: /orbitar
         env:
             MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
         run: |
-          docker compose -f docker-compose.ssl.local.yml exec -T mysql /usr/bin/mysql \
+          docker compose -f docker-compose.yml -f docker-compose.deploy.yml exec -T mysql /usr/bin/mysql \
             -u root --password=$MYSQL_ROOT_PASSWORD --default-character-set=utf8mb4 \
             < ${{ steps.get-db.outputs.db-dump-file }}
 
@@ -97,8 +97,8 @@ jobs:
         working-directory: /orbitar
         env:
           REDIS_PASSWORD: orbitar
-        run: docker compose -f docker-compose.ssl.local.yml exec -e REDISCLI_AUTH=$REDIS_PASSWORD redis redis-cli FLUSHALL
+        run: docker compose -f docker-compose.yml -f docker-compose.deploy.yml exec -e REDISCLI_AUTH=$REDIS_PASSWORD redis redis-cli FLUSHALL
 
       - name: Restart backend
         working-directory: /orbitar
-        run: docker compose -f docker-compose.ssl.local.yml start backend
+        run: docker compose -f docker-compose.yml -f docker-compose.deploy.yml start backend
