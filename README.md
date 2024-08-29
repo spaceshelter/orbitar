@@ -18,12 +18,6 @@
 127.0.0.1 orbitar.local api.orbitar.local
 ```
 
-Можно дополнить списком подсайтов по вкусу (опционально)
-
-```hosts
-127.0.0.1 idiod.orbitar.local
-```
-
 ### Особенности
 
 * [Локальный запуск в дебаг режиме](docs/local-development.md)
