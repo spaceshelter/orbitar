@@ -14,21 +14,33 @@ jobs:
   validate-caddyfile:
     runs-on: ubuntu-latest
     container: caddy
+    env:
+      SERVER_DOMAIN: orbitar.test
+      BACKEND_DOMAIN: orbitar.backend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Validate Caddyfile
+        env:
+          SERVER_HOST: http://orbitar.test
+          API_HOST: http://api.orbitar.test    
         run: caddy validate --config caddy/Caddyfile
       - name: Enable TLS
         run: |
           rm caddy/off.tls.Caddyfile
           mv caddy/on-tls.Caddyfile caddy/on.tls.Caddyfile
       - name: Validate Caddyfile with TLS
+        env:
+          SERVER_HOST: https://orbitar.test
+          API_HOST: https://api.orbitar.test    
         run: caddy validate --config caddy/Caddyfile
       - name: Switch to deploy-frontend
         run: |
           rm caddy/dev.frontend.Caddyfile
           mv caddy/deploy-frontend.Caddyfile caddy/deploy.frontend.Caddyfile
-      - name: Validate Caddyfile with TLS
+      - name: Validate Caddyfile with deploy-frontend
+        env:
+          SERVER_HOST: https://orbitar.test
+          API_HOST: https://api.orbitar.test    
         run: caddy validate --config caddy/Caddyfile
 
