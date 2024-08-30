@@ -1,3 +1,7 @@
+{
+	debug
+}
+
 import *.tls.Caddyfile
 import *.frontend.Caddyfile 
 
@@ -27,9 +31,8 @@ www.{$SERVER_DOMAIN:orbitar.local} {
 	import tls
 
 	header X-Fingerprint "{$FINGERPRINT}"
-	header Access-Control-Expose-Headers "X-Fingerprint"
-
 	header Access-Control-Allow-Origin {$SERVER_HOST}
+	header Access-Control-Expose-Headers "X-Fingerprint, X-Session-Id"
 
 	@cors_preflight method OPTIONS
 	handle @cors_preflight {
