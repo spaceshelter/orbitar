@@ -1,7 +1,3 @@
-{
-	debug
-}
-
 import *.tls.Caddyfile
 import *.frontend.Caddyfile 
 
