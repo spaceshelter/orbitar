@@ -1,10 +1,15 @@
 printWidth: 120
-semi: true
+semi: false
 singleQuote: true
+jsxSingleQuote: true
 trailingComma: "all"
 useTabs: false
-tabWidth: 4
-bracketSpacing: false
+tabWidth: 2
+bracketSpacing: true
+bracketSameLine: false
+arrowParens: "always"
+endOfLine: "lf"
+quoteProps: "as-needed"
 plugins:
   - "@ianvs/prettier-plugin-sort-imports"
 importOrder:
