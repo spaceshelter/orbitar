@@ -1,22 +1,22 @@
-import APIBase from './APIBase';
-import {FeedSorting} from '../Types/FeedSortingSettings';
+import { FeedSorting } from '../Types/FeedSortingSettings'
+import APIBase from './APIBase'
 
 export type FeedSortingSaveRequest = {
-    site: string;
-    feedSorting: FeedSorting;
-};
+  site: string
+  feedSorting: FeedSorting
+}
 
 export default class FeedAPI {
-    api: APIBase;
+  api: APIBase
 
-    constructor(api: APIBase) {
-        this.api = api;
-    }
+  constructor(api: APIBase) {
+    this.api = api
+  }
 
-    saveSorting(site: string, feedSorting: FeedSorting): Promise<void> {
-        return this.api.request<FeedSortingSaveRequest, void>('/feed/sorting', {
-            site,
-            feedSorting
-        });
-    }
+  saveSorting(site: string, feedSorting: FeedSorting): Promise<void> {
+    return this.api.request<FeedSortingSaveRequest, void>('/feed/sorting', {
+      site,
+      feedSorting,
+    })
+  }
 }

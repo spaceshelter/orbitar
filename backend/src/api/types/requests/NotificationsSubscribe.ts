@@ -1,7 +1,7 @@
-import {PushSubscription} from 'web-push';
+import { PushSubscription } from 'web-push'
 
 export type NotificationsSubscribeRequest = {
-    subscription: PushSubscription;
-};
+  subscription: PushSubscription
+}
 
-export type NotificationsSubscribeResponse = Record<string, unknown>;
+export type NotificationsSubscribeResponse = Record<string, unknown>

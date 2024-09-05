@@ -1,7 +1,7 @@
 export type InviteCreateRequest = {
-    reason: string;
-};
+  reason: string
+}
 
 export type InviteDeleteRequest = {
-    code: string;
-};
+  code: string
+}

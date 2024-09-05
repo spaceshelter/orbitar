@@ -6,9 +6,9 @@
     margin-top: 16px;
   }
 
-  mark{
+  mark {
     color: var(--fg);
-    background-color:var(--primaryGhost);
+    background-color: var(--primaryGhost);
   }
 
   form {
@@ -26,23 +26,23 @@
     font-size: 22px;
     border: none;
     border-radius: 50px;
-    &::placeholder{
-      opacity: .8;
+    &::placeholder {
+      opacity: 0.8;
       font-size: 16px;
     }
     transition: all ease-in-out 500ms 200ms;
     -webkit-appearance: none;
   }
 
-  .icon{
-     font-size: 24px;
-     position: absolute;
-     top: 12px;
-     left: 16px;
-     transition: all ease-in-out 500ms 200ms;
+  .icon {
+    font-size: 24px;
+    position: absolute;
+    top: 12px;
+    left: 16px;
+    transition: all ease-in-out 500ms 200ms;
   }
 
-  @media only screen and (min-width: 1180px) and ( max-height: 900px ) {
+  @media only screen and (min-width: 1180px) and (max-height: 900px) {
     &:not(.empty) {
       margin-top: -64px;
       input[type='search'] {
@@ -51,7 +51,7 @@
         font-size: 16px;
         width: 80%;
       }
-      .icon{
+      .icon {
         top: 8px;
         left: 12px;
       }
@@ -60,24 +60,24 @@
 
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
-  input:-webkit-autofill:focus{
+  input:-webkit-autofill:focus {
     transition: background-color 0s 50000s;
     -webkit-text-fill-color: var(--fg);
   }
 
-  input[type="search"]::-webkit-search-cancel-button {
+  input[type='search']::-webkit-search-cancel-button {
     -webkit-appearance: none;
     height: 16px;
     width: 16px;
-    background: var(--fg) no-repeat 50% 50% ;
+    background: var(--fg) no-repeat 50% 50%;
     -webkit-mask-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z' fill='white'/%3E%3C/svg%3E%0A");
     mask-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z' fill='white'/%3E%3C/svg%3E%0A");
     background-size: contain;
     opacity: 0;
     pointer-events: none;
   }
-  input[type="search"]:focus::-webkit-search-cancel-button {
-    opacity: .9;
+  input[type='search']:focus::-webkit-search-cancel-button {
+    opacity: 0.9;
     pointer-events: all;
   }
 
@@ -85,7 +85,7 @@
     color: var(--danger);
     &::before {
       display: inline;
-      content: "⚠ ";
+      content: '⚠ ';
     }
   }
 

@@ -1,67 +1,65 @@
 .container {
-    width: 100%;
-    max-width: 880px;
-    margin: 56px auto 0;
+  width: 100%;
+  max-width: 880px;
+  margin: 56px auto 0;
 }
 
 .feed {
-
-    transition-duration: 0s;
+  transition-duration: 0s;
 }
 
 .comments {
-    border-radius: 6px;
+  border-radius: 6px;
 }
 
 .postButtons {
-    margin: 30px 0;
-    border-radius: 6px;
-    font-size: 14px;
-    transition-duration: 0s;
-    color: var(--fgSoftest);
+  margin: 30px 0;
+  border-radius: 6px;
+  font-size: 14px;
+  transition-duration: 0s;
+  color: var(--fgSoftest);
 }
 
 .postButtons a {
-
 }
 
 .loading {
-    margin: 20px;
+  margin: 20px;
 }
 
 .error {
-    color: var(--danger);
-    margin: 20px;
+  color: var(--danger);
+  margin: 20px;
 }
 
 @keyframes highlight-flash {
-    from {
-        background-color: transparent;
-    }
-    to {
-        background-color: var(--highlight-bg);
-    }
+  from {
+    background-color: transparent;
+  }
+  to {
+    background-color: var(--highlight-bg);
+  }
 }
 
 .highlight {
-    animation-duration: 0.5s;
-    animation-name: highlight-flash;
-    animation-iteration-count: 10;
-    animation-direction: alternate;
+  animation-duration: 0.5s;
+  animation-name: highlight-flash;
+  animation-iteration-count: 10;
+  animation-direction: alternate;
 }
 
 .focused :global(.commentBody) {
-    overflow-anchor: auto !important;
+  overflow-anchor: auto !important;
 }
 
-.focusing :global(.postComponent){
-    overflow-anchor: none;
+.focusing :global(.postComponent) {
+  overflow-anchor: none;
 }
 
 .focusing :global(.commentBody) {
-    overflow-anchor: none;
+  overflow-anchor: none;
 }
 
 .anon > * {
-    display: inline !important; /* FIXME it's a hack to override flex in UserName component styles. */
+  display: inline !important; /* FIXME it's a hack to override flex in UserName component styles. */
 }

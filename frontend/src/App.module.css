@@ -25,16 +25,18 @@
   left: 20px;
   bottom: 0;
   height: 50px;
-  width: 50px
+  width: 50px;
 }
 
 .monsterNy {
-    height:60px;
-    width: 50px
+  height: 60px;
+  width: 50px;
 }
 
 @media only screen and (max-width: 600px) {
-  .monster {  display: none; }
+  .monster {
+    display: none;
+  }
 }
 .monster svg {
   height: 100%;

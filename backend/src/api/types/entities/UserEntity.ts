@@ -1,22 +1,22 @@
 export enum UserGender {
-    fluid,
-    he,
-    she,
+  fluid,
+  he,
+  she,
 }
 
 export type UserBaseEntity = {
-    id: number;
-    username: string;
-    gender: UserGender;
-};
+  id: number
+  username: string
+  gender: UserGender
+}
 
 export type UserEntity = UserBaseEntity & {
-    karma: number;
-    name?: string;
-    vote?: number;
-};
+  karma: number
+  name?: string
+  vote?: number
+}
 
 export type UserProfileEntity = UserEntity & {
-    registered: string;
-    active: boolean;
-};
+  registered: string
+  active: boolean
+}

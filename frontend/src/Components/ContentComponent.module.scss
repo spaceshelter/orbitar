@@ -2,32 +2,43 @@
   max-height: fit-content;
 
   :global(iframe, video) {
-      max-width: 100%;
-      aspect-ratio: 16 / 9;
-      height: auto;
+    max-width: 100%;
+    aspect-ratio: 16 / 9;
+    height: auto;
   }
 
   :global(iframe, video):not(.coub-embed) {
-      aspect-ratio: 16 / 9;
-      height: auto;
+    aspect-ratio: 16 / 9;
+    height: auto;
   }
 
   &.cut {
     overflow: hidden;
-    -webkit-mask-image: -webkit-gradient(linear, left 70%, left 90%, from(rgba(0,0,0,1)), to(rgba(0,0,0,0)));
-    mask-image: linear-gradient(to top, rgba(0,0,0,0) 50px, rgba(0,0,0,1) 100px);
+    -webkit-mask-image: -webkit-gradient(linear, left 70%, left 90%, from(rgba(0, 0, 0, 1)), to(rgba(0, 0, 0, 0)));
+    mask-image: linear-gradient(to top, rgba(0, 0, 0, 0) 50px, rgba(0, 0, 0, 1) 100px);
   }
 
-  b, i, u, strike, blockquote{
+  b,
+  i,
+  u,
+  strike,
+  blockquote {
     color: var(--fg);
   }
 
-  img, :global(a.youtube-embed) img, :global(a.video-embed) img, :global(a.coub-embed) img, :global(a.vimeo-embed) img {
+  img,
+  :global(a.youtube-embed) img,
+  :global(a.video-embed) img,
+  :global(a.coub-embed) img,
+  :global(a.vimeo-embed) img {
     max-width: 100%;
     max-height: 500px;
   }
 
-  :global(a.youtube-embed), :global(a.video-embed), :global(a.coub-embed), :global(a.vimeo-embed) {
+  :global(a.youtube-embed),
+  :global(a.video-embed),
+  :global(a.coub-embed),
+  :global(a.vimeo-embed) {
     position: relative;
     display: inline-block;
 
@@ -53,7 +64,6 @@
   }
 
   :global(a.video-embed) {
-
     &:after {
       background: url(../Assets/play.svg) no-repeat center center;
 
@@ -65,7 +75,6 @@
   }
 
   :global(a.coub-embed) {
-
     &:after {
       background: url(../Assets/coub.svg) no-repeat center center;
       opacity: 0.8;
@@ -76,7 +85,6 @@
   }
 
   :global(a.vimeo-embed) {
-
     &:after {
       background: url(../Assets/vimeo.svg) no-repeat center center;
 
@@ -97,7 +105,8 @@
     }
   }
 
-  :global(.secret-mailbox), :global(.secret-mail) {
+  :global(.secret-mailbox),
+  :global(.secret-mail) {
     border: 1px solid var(--dim3);
     background-color: var(--dim2);
     color: var(--fgMedium);
@@ -112,11 +121,13 @@
     display: block;
     vertical-align: middle;
 
-    &:global(.secret-mail-disabled), &:global(.secret-mail-error) {
+    &:global(.secret-mail-disabled),
+    &:global(.secret-mail-error) {
       cursor: default;
       opacity: 0.5;
     }
-    &:global(.secret-mail-decoded), &:global(.secret-mail-decoding) {
+    &:global(.secret-mail-decoded),
+    &:global(.secret-mail-decoding) {
       cursor: default;
     }
     &:global(.secret-mail-decoded) {
@@ -127,8 +138,12 @@
       background-color: var(--dangerGhost);
     }
 
-    &:hover:not(:global(.secret-mail-disabled), :global(.secret-mail-error), :global(.secret-mail-decoded),
-      :global(.secret-mail-decoding)) {
+    &:hover:not(
+        :global(.secret-mail-disabled),
+        :global(.secret-mail-error),
+        :global(.secret-mail-decoded),
+        :global(.secret-mail-decoding)
+      ) {
       color: var(--primaryHover);
       background-color: var(--dim3);
       border-color: var(--primaryHover);
@@ -151,7 +166,7 @@
     user-select: none;
 
     transform: rotate(0deg);
-    transition: transform .25s;
+    transition: transform 0.25s;
     transform-origin: 40% center; // Add this line
 
     &:hover {
@@ -160,7 +175,7 @@
 
     &:global(.expanded) {
       transform: rotate(90deg);
-      transition: transform .25s;
+      transition: transform 0.25s;
     }
   }
 }
@@ -171,7 +186,11 @@
   right: 30px;
   font-size: 40px;
   cursor: pointer;
-  text-shadow: -1px 1px 2px #000, 1px 1px 2px #000, 1px -1px 2px #000, -1px -1px 2px #000;
+  text-shadow:
+    -1px 1px 2px #000,
+    1px 1px 2px #000,
+    1px -1px 2px #000,
+    -1px -1px 2px #000;
 }
 
 .cutCover {
@@ -189,7 +208,7 @@
   padding: 8px;
   border-radius: 4px;
   font-size: 15px;
-  &:hover{
+  &:hover {
     background: var(--dim3);
   }
 }
