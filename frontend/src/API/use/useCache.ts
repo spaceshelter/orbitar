@@ -16,9 +16,7 @@ function getCachedValue<T>(name: string, deps: unknown[]): T | undefined {
           cached = jsonValue
           localCache[name] = cached
         }
-      } catch {
-        // do nothing
-      }
+      } catch {}
     }
   }
 

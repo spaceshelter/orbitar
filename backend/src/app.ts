@@ -246,7 +246,6 @@ for (const request of requests) {
 app.all('*', (req, res) => {
   res.status(404).json({ result: 'error', code: '404', message: 'Unknown endpoint' })
 })
-
 ;(async () => {
   await db.ping()
   await redis.connect()

@@ -93,24 +93,23 @@ export default function PostComponent(props: PostComponentProps) {
     setShowOptions(false)
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const toggleBookmark = () => {
-    const oldState = !!props.post.bookmark
-    const newState = !oldState
-    props.post.bookmark = newState
-
-    api.post
-      .bookmark(id, newState)
-      .then(({ bookmark }) => {
-        if (props.onChange) {
-          props.onChange(props.post.id, { bookmark })
-        }
-      })
-      .catch(() => {
-        props.post.bookmark = oldState
-        toast.error('Кладмен мудак - закладка не найдена')
-      })
-  }
+  // const toggleBookmark = () => {
+  //   const oldState = !!props.post.bookmark
+  //   const newState = !oldState
+  //   props.post.bookmark = newState
+  //
+  //   api.post
+  //     .bookmark(id, newState)
+  //     .then(({ bookmark }) => {
+  //       if (props.onChange) {
+  //         props.onChange(props.post.id, { bookmark })
+  //       }
+  //     })
+  //     .catch(() => {
+  //       props.post.bookmark = oldState
+  //       toast.error('Кладмен мудак - закладка не найдена')
+  //     })
+  // }
 
   const handleEditComplete = async (text: string) => {
     try {
