@@ -61,7 +61,7 @@ jobs:
           zip -m -P $STAGING_BACKUP_PASSWORD stage-backup.zip stage-backup.sql
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: stage-backup
           path: stage-backup.zip
