@@ -35,7 +35,7 @@ export function useInterpreter(originalContent: string, originalTitle: string | 
 
     const calcShowAltTranslate = () =>
         // content.length is used intentionally, we don't want to use it on the long content
-        originalContent.length < ALT_TRANSLATE_LIMIT && calcStrippedOriginalContentLength() >= 6;
+      originalContent && originalContent.length < ALT_TRANSLATE_LIMIT && calcStrippedOriginalContentLength() >= 6;
     const calcShowAnnotate = () => calcStrippedOriginalContentLength() >= ANNOTATE_LIMIT;
 
     const altTitle = currentMode === 'translate' && cachedTitleTranslation ? xssFilter(cachedTitleTranslation) : undefined;

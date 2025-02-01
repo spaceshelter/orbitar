@@ -14,6 +14,7 @@ import Conf from '../Conf';
 import {useInterpreter} from '../API/use/useInterpreter';
 import OutsideClickHandler from 'react-outside-click-handler';
 import {AltTranslateButton, AnnotateButton, TranslateButton} from './ContentButtons';
+import {getPreferredLang, getShowInlineTranslateButton} from './UserProfileSettings';
 
 interface CommentProps {
     comment: CommentInfo;
@@ -99,6 +100,11 @@ export default function CommentComponent(props: CommentProps) {
     const depth = props.depth || 0;
     const maxDepth = props.maxTreeDepth || 0;
     const isFlat = depth > maxDepth;
+
+    const showTranslateButtonInline = useMemo(() => {
+        return getShowInlineTranslateButton() && props.comment.language !== getPreferredLang();
+    }, [props.comment]);
+
     return (
         <div className={`comment ${styles.comment} ${props.comment.isNew ? ' isNew': ''} ${isFlat?' isFlat':''}`} data-comment-id={props.comment.id}>
             <div className='commentBody' ref={contentRef}>
@@ -131,10 +137,10 @@ export default function CommentComponent(props: CommentProps) {
                     {props.comment.canEdit && props.onEdit && <div className={styles.control}><button onClick={handleEdit} className='i i-edit' /></div>}
 
                     <div className={styles.control + ' ' + postStyles.options}>
-                        {currentMode === 'translate' &&
-                            <div className={styles.control}>
-                                <TranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={translate} />
-                            </div>}
+                        {(showTranslateButtonInline || currentMode === 'translate') &&
+                          <div className={styles.control}>
+                              <TranslateButton iconOnly={true} isActive={currentMode === 'translate'} inProgress={inProgress} onClick={translate} />
+                          </div>}
                         {currentMode === 'altTranslate' &&
                             <div className={styles.control}>
                                 <AltTranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={altTranslate}/>

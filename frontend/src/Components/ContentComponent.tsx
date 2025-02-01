@@ -61,6 +61,7 @@ function updateContent(
     div: HTMLDivElement,
     setZoomedImg: (img: ZoomedImg | null) => void,
     setMailboxKey: (key: MailboxKey | MailKey | null) => void,
+    setCut: (cut: boolean) => void,
     currentUsername?: string
 ) {
     div.querySelectorAll('img').forEach(img => {
@@ -83,7 +84,7 @@ function updateContent(
     });
 
     div.querySelectorAll('details.expand').forEach(expand => {
-        updateExpand(expand as HTMLDetailsElement);
+        updateExpand(expand as HTMLDetailsElement, setCut);
     });
 
     div.querySelectorAll('span.secret-mailbox').forEach(mailbox => {
@@ -491,11 +492,12 @@ function updateSpoiler(spoiler: HTMLSpanElement) {
     spoiler.addEventListener('click', spoilerOnClickHandler);
 }
 
-function updateExpand(expand: HTMLDetailsElement) {
+function updateExpand(expand: HTMLDetailsElement, setCut: (cut: boolean) => void) {
     expand.addEventListener('toggle', () => {
         if (!expand.open) {
             stopInnerVideos(expand);
         }
+        setCut(false);
     });
 
     const expandClose = expand.querySelector('div[role="button"]');
@@ -569,7 +571,7 @@ export default function ContentComponent(props: ContentComponentProps) {
             return;
         }
 
-        updateContent(appState, content, setZoomedImg, setMailboxKey, props.currentUsername);
+        updateContent(appState, content, setZoomedImg, setMailboxKey, setCut, props.currentUsername);
         let resizeObserver: ResizeObserver | null = null;
 
         if (props.lowRating) {
