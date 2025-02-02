@@ -239,8 +239,8 @@ export default class OAuth2Controller {
     }
 
     try {
-      const { id } = request.body;
-      const newSecret = await this.oauth2Manager.regenerateClientSecret(id, request.session.data.userId);
+      const { id : clientId } = request.body;
+      const newSecret = await this.oauth2Manager.regenerateClientSecret(clientId, request.session.data.userId);
       if (!newSecret) {
         return response.error('error', 'Failed to generate new client secret', 500);
       }
@@ -260,8 +260,8 @@ export default class OAuth2Controller {
       return response.authRequired();
     }
     try {
-      const {id} = request.body;
-      if (await this.oauth2Manager.deleteClient(id, request.session.data.userId)) {
+      const {id : clientId} = request.body;
+      if (await this.oauth2Manager.deleteClient(clientId, request.session.data.userId)) {
         return response.success({});
       }
     } catch (err) {
@@ -279,12 +279,12 @@ export default class OAuth2Controller {
       return response.authRequired();
     }
     try {
-      const { id } = request.body;
-      if (typeof id !== 'number') {
-        this.logger.error('Failed to unauthorize client, invalid ID', { id });
+      const { id : clientId } = request.body;
+      if (typeof clientId !== 'number') {
+        this.logger.error('Failed to unauthorize client, invalid ID', { clientId });
         return response.error('error', 'Failed to unauthorize client, invalid ID', 500);
       }
-      const result = await this.oauth2Manager.unAuthorizeClient(id, userId);
+      const result = await this.oauth2Manager.unAuthorizeClient(clientId, userId);
       if (!result) {
         return response.error('error', 'Failed to unauthorize client', 500);
       }
@@ -304,8 +304,8 @@ export default class OAuth2Controller {
       return response.authRequired();
     }
     try {
-      const {id, url} = request.body;
-      const result = await this.oauth2Manager.updateClientLogoUrl(id, userId, url);
+      const {id : clientId, url} = request.body;
+      const result = await this.oauth2Manager.updateClientLogoUrl(clientId, userId, url);
       if (!result) {
         return response.error('error', 'Failed to update client logo', 500);
       }
@@ -326,8 +326,8 @@ export default class OAuth2Controller {
       return response.authRequired();
     }
     try {
-      const {id} = request.body;
-      const result = await this.oauth2Manager.changeClientVisibility(id, userId);
+      const {id : clientId} = request.body;
+      const result = await this.oauth2Manager.changeClientVisibility(clientId, userId);
       if (!result) {
         return response.error('error', 'Failed to publish client', 500);
       }
