@@ -16,7 +16,9 @@ export default function OAuth2ClientLogoComponent(props: OAuth2ClientLogoCompone
   const [logoUrl, setLogoUrl] = useState<string | undefined>(props.url);
 
   const handleLogoClick = () => {
-    setMediaUploaderOpen(true);
+    if (props.isMy) {
+      setMediaUploaderOpen(true);
+    }
   };
 
   const handleMediaUpload = (url: string, type: 'video' | 'image') => {
