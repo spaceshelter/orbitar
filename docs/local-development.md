@@ -61,15 +61,15 @@
 2. Сгенерировать самоподписанный сертификат для https:
 
    ```sh
-   cd caddy
+   cd caddy/certs
    openssl req -x509 -sha256 -nodes -newkey rsa:2048 -days 365 \
      -config openssl.cnf -extensions req_ext \
-     -keyout certs/orbitar.key -out certs/orbitar.crt
+     -keyout orbitar.key -out orbitar.crt
    ```
 
-   Сгенерированный `certs/orbitar.crt` добавить в систему/браузер как доверенный.
+   Сгенерированный `orbitar.crt` добавить в систему/браузер как доверенный.
 
-3. Для запуска контейнеров использовать команду `docker compose -f docker-compose.yml -f docker-compose.dev.ssl.yml up`
+3. Для запуска контейнеров использовать команду `docker compose -f compose-dev-ssl.yml up`
 
 
 ### Настройка Web Push Notifications (опционально)

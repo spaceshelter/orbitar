@@ -7,12 +7,16 @@ on:
   pull_request:
     paths:
       - .github/workflows/build-docker-dev.yml
-      - docker-compose.yml
-      - docker-compose.override.yml
-      - docker-compose.dev.ssl.yml
-      - docker-compose.deploy.yml
-      - docker-compose.deploy.nonssl.yml
-      - docker-compose.deploy.ssl.yml
+      - _compose.base.yml
+      - _compose.deploy.base.yml
+      - _compose.deploy.nonssl.yml
+      - _compose.deploy.ssl.yml
+      - _compose.dev.nonssl.yml
+      - _compose.dev.ssl.yml
+      - compose-deploy-nonssl.yml
+      - compose-deploy-ssl.yml
+      - compose-dev-ssl.yml
+      - compose.yml      
   workflow_dispatch:
         
 jobs:
@@ -23,7 +27,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build backend, frontend & feed
-        run: docker compose -f docker-compose.yml -f docker-compose.deploy.yml build --no-cache backend frontend feed
+        run: docker compose -f compose-deploy-nonssl.yml build --no-cache backend frontend feed
 
   validate-docker-compose:
     runs-on: ubuntu-latest
@@ -31,14 +35,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate docker-compose
+      - name: Validate compose.yml
         run: docker compose config
 
-      - name: Validate docker-compose.dev.ssl.yml
-        run: docker compose -f docker-compose.yml -f docker-compose.dev.ssl.yml config
+      - name: Validate compose-dev-ssl.yml
+        run: docker compose -f compose-dev-ssl.yml config
 
-      - name: Validate docker-compose.deploy.yml with SSL
-        run: docker compose -f docker-compose.yml -f docker-compose.deploy.yml -f docker-compose.deploy.ssl.yml config
+      - name: Validate compose-deploy-ssl.yml
+        run: docker compose -f compose-deploy-ssl.yml config
 
-      - name: Validate docker-compose.deploy.yml with NoSSL
-        run: docker compose -f docker-compose.yml -f docker-compose.deploy.yml -f docker-compose.deploy.nonssl.yml config
+      - name: Validate compose-deploy-nonssl.yml
+        run: docker compose -f compose-deploy-nonssl.yml config

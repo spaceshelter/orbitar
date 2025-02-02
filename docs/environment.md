@@ -9,7 +9,7 @@
     A place to add dynamic (env-specific) variables, like API keys, etc. 
 
     Names of the new variables should be added to `.env.sample` 
-    and passed to either frontend or backend via `docker-compose.yml`.
+    and passed to either frontend or backend via `compose.yml`.
     This file is overridden in production environment.
 
 
