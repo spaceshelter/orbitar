@@ -66,10 +66,10 @@
      -config openssl.cnf -extensions req_ext \
      -keyout orbitar.key -out orbitar.crt
    ```
-
    Сгенерированный `orbitar.crt` добавить в систему/браузер как доверенный.
+3. В `.env`-файле сменить настройку на `TLS_MODE=tls_on`.
 
-3. Для запуска контейнеров использовать команду `docker compose -f compose-dev-ssl.yml up`
+4. Перезапустить контейнер Caddy: `docker compose down caddy; docker compose up caddy`
 
 
 ### Настройка Web Push Notifications (опционально)

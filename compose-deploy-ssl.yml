@@ -1,5 +1,0 @@
-include:
-  - path:
-      - _compose.base.yml
-      - _compose.deploy.base.yml
-      - _compose.deploy.ssl.yml

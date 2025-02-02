@@ -28,7 +28,7 @@ jobs:
           SERVER_HOST: http://orbitar.test
           API_HOST: http://api.orbitar.test    
         run: caddy validate --config caddy/Caddyfile
-      - name: Validate Caddyfile in deploy configuration
+      - name: Validate Caddyfile in prod configuration
         env:
           SERVER_HOST: https://orbitar.test
           API_HOST: https://api.orbitar.test    

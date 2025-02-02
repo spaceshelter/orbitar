@@ -1,4 +1,5 @@
 include:
   - path:
       - _compose.base.yml
-      - _compose.dev.nonssl.yml
+      - _compose.${ENVIRONMENT:-development}.base.yml
+      - _compose.${ENVIRONMENT:-development}.${TLS_MODE:-tls_off}.yml

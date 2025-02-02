@@ -82,14 +82,14 @@ jobs:
 
       - name: Stop backend
         working-directory: /orbitar
-        run: docker compose -f docker-compose.yml -f docker-compose.deploy.yml stop backend
+        run: docker compose stop backend
 
       - name: Restore backup
         working-directory: /orbitar
         env:
             MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
         run: |
-          docker compose -f docker-compose.yml -f docker-compose.deploy.yml exec -T mysql /usr/bin/mysql \
+          docker compose exec -T mysql /usr/bin/mysql \
             -u root --password=$MYSQL_ROOT_PASSWORD --default-character-set=utf8mb4 \
             < ${{ steps.get-db.outputs.db-dump-file }}
 
@@ -97,8 +97,8 @@ jobs:
         working-directory: /orbitar
         env:
           REDIS_PASSWORD: orbitar
-        run: docker compose -f docker-compose.yml -f docker-compose.deploy.yml exec -e REDISCLI_AUTH=$REDIS_PASSWORD redis redis-cli FLUSHALL
+        run: docker compose exec -e REDISCLI_AUTH=$REDIS_PASSWORD redis redis-cli FLUSHALL
 
       - name: Restart backend
         working-directory: /orbitar
-        run: docker compose -f docker-compose.yml -f docker-compose.deploy.yml start backend
+        run: docker compose start backend

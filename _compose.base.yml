@@ -13,7 +13,6 @@ services:
       FINGERPRINT: ${FINGERPRINT}
     volumes:
       - $PWD/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - $PWD/caddy/off.tls.Caddyfile:/etc/caddy/working.tls.Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     # Default caddy command borrowed from https://github.com/caddyserver/caddy-docker/blob/master/Dockerfile.tmpl

@@ -22,12 +22,14 @@ on:
 jobs:
   build-docker:
     runs-on: ubuntu-latest
+    env:
+      ENVIRONMENT: production
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Build backend, frontend & feed
-        run: docker compose -f compose-deploy-nonssl.yml build --no-cache backend frontend feed
+        run: docker compose build --no-cache backend frontend feed
 
   validate-docker-compose:
     runs-on: ubuntu-latest
@@ -39,10 +41,18 @@ jobs:
         run: docker compose config
 
       - name: Validate compose-dev-ssl.yml
-        run: docker compose -f compose-dev-ssl.yml config
+        env:
+          TLS_MODE: tls_on
+        run: docker compose config
 
-      - name: Validate compose-deploy-ssl.yml
-        run: docker compose -f compose-deploy-ssl.yml config
+      - name: Validate compose-prod-ssl.yml
+        env:
+          TLS_MODE: tls_on
+          ENVIRONMENT: production
+        run: docker compose config
 
-      - name: Validate compose-deploy-nonssl.yml
-        run: docker compose -f compose-deploy-nonssl.yml config
+      - name: Validate compose-prod-nonssl.yml
+        env:
+          TLS_MODE: tls_off
+          ENVIRONMENT: production
+        run: docker compose config

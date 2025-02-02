@@ -1,7 +1,16 @@
-import *.tls.Caddyfile
-
-(dev) {
+(setup) {
 	@is_dev expression {env.DEV} == "true"
+}
+
+(tls_on) {
+	tls {env.TLS_CERT_PATH} {env.TLS_KEY_PATH}
+}
+
+(tls_internal) {
+	tls internal
+}
+
+(tls_off) {
 }
 
 (upload) {
@@ -18,8 +27,6 @@ import *.tls.Caddyfile
 }
 
 (frontend) {
-	import dev
-
 	handle @is_dev {
 		reverse_proxy http://host.docker.internal:5000
 	}
@@ -32,7 +39,9 @@ import *.tls.Caddyfile
 }
 
 {$SERVER_HOST:http://orbitar.local} {
-	import tls
+	import setup
+
+	import {$TLS_MODE:tls_off}
 
 	import upload
 
@@ -40,13 +49,14 @@ import *.tls.Caddyfile
 }
 
 www.{$SERVER_DOMAIN:orbitar.local} {
-	import tls
+	import setup
+	import {$TLS_MODE:tls_off}
 	redir {$SERVER_HOST}{uri}
 }
 
 {$API_HOST:api.orbitar.local} {
-	import dev
-	import tls
+	import setup
+	import {$TLS_MODE:tls_off}
 
 	header X-Fingerprint "{$FINGERPRINT}"
 	header Access-Control-Allow-Origin {$SERVER_HOST}
