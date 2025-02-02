@@ -17,7 +17,7 @@ function ScopeControl(props: { name: string, description: string, checked: boole
 }
 
 export default function OAuth2ScopesComponent(props: { appRequests: string | null }) {
-  const requestedScopesNames = ['openid'].concat(props.appRequests?.split(',').map(s => s.trim()) || []);
+  const requestedScopesNames = ['openid'].concat(props.appRequests?.split(' ').map(s => s.trim()) || []);
   return (<div className={styles.container}>
     {
       Object.keys(OAuth2ScopesLabels)

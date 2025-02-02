@@ -95,7 +95,7 @@ export default class OAuth2Repository implements AuthorizationCodeModel {
     return {
       accessToken,
       accessTokenExpiresAt: new Date(tokenFromDb.access_token_expires_at),
-      scope: tokenFromDb.scope?.split(','),
+      scope: tokenFromDb.scope?.split(' ')?.filter(scope => scope.trim() !== ''),
       client: {
         id: tokenFromDb.client_client_id,
         grants: [] //FIXME return grants
@@ -228,7 +228,13 @@ export default class OAuth2Repository implements AuthorizationCodeModel {
   }
 
   async verifyScope(accessToken, requestedScopes): Promise<boolean> {
-    const tokenScope = accessToken.scope;
+    let tokenScope = accessToken.scope;
+    if (!tokenScope) {
+      return false;
+    }
+    if (typeof tokenScope === 'string') {
+      tokenScope = tokenScope.split(' ').filter(scope => scope.trim() !== '');
+    }
     return [...tokenScope, 'openid'].some(scope => requestedScopes.includes(scope));
   }
   // end of node-oauth2-server model methods

@@ -6,7 +6,7 @@ import Session, {SessionData} from '../session/Session';
 export default function OAuth2Authenticate(app, db, logger) {
   return (options: AuthenticateOptions) => {
     return async (req, res, next) => {
-      const authorizationHeader = req.headers['authorization'];
+      const authorizationHeader = req.headers['authorization'] || req.headers['Authorization'];
 
       // If no authorization header, proceed to the next middleware that checks cookie-based session
       if (!authorizationHeader) {
