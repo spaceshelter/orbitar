@@ -48,7 +48,6 @@ import OAuth2Manager from './managers/OAuth2Manager';
 import OAuth2Repository from './db/repositories/OAuth2Repository';
 import OAuth2Controller from './api/OAuth2Controller';
 import OAuthServer from 'express-oauth-server';
-import {AuthorizationCodeModel} from 'oauth2-server';
 import OAuth2Authenticate from './api/OAuth2Middleware';
 
 const app = express();
@@ -116,7 +115,7 @@ const translationRepository = new TranslationRepository(db);
 const oauthRepository = new OAuth2Repository(db);
 
 app.oauth = new OAuthServer({
-    model: oauthRepository as unknown as AuthorizationCodeModel,
+    model: oauthRepository,
     accessTokenLifetime: 60 * 60 * 24 *7,
     allowEmptyState: true,
     allowExtendedTokenAttributes: true

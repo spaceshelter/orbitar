@@ -3,14 +3,14 @@ import {
   OAuth2AuthorizationCodeRaw,
   OAuth2ClientRaw,
   OAuth2ConsentRaw,
-  OAuth2ServerAccessToken,
   OAuth2TokenRaw
 } from '../types/OAuth2';
 import {ResultSetHeader} from 'mysql2';
 import TokenService from '../../oauth/TokenService';
 import {config} from '../../config';
+import {AuthorizationCode, AuthorizationCodeModel, Falsey, Token} from 'oauth2-server';
 
-export default class OAuth2Repository {
+export default class OAuth2Repository implements AuthorizationCodeModel {
   private db: DB;
 
   constructor(db: DB) {
@@ -49,10 +49,13 @@ export default class OAuth2Repository {
     return TokenService.generateAccessToken(user.id.toString(), client.id, scope, accessTokenExpiresAtTs, nowTs, nowTs);
   }
 
-  async saveToken(token, client, user) {
+  async saveToken(token, client, user) : Promise<Token | Falsey> {
     let clientId, userId;
     if (token.authorizationCode) {
       const authorizationCodeFromDb = await this.getAuthorizationCode(token.authorizationCode, true);
+      if (!authorizationCodeFromDb) {
+        return null;
+      }
       clientId = authorizationCodeFromDb.client.numeric_id;
       userId = authorizationCodeFromDb.user.id;
     } else {
@@ -75,7 +78,8 @@ export default class OAuth2Repository {
       accessTokenExpiresAt: token.accessTokenExpiresAt,
       refreshToken: token.refreshToken,
       client: {
-        id: clientId
+        id: clientId,
+        grants: [] //FIXME return grants
       },
       user: {
         id: userId
@@ -83,7 +87,7 @@ export default class OAuth2Repository {
     };
   }
 
-  async getAccessToken(accessToken: string): Promise<OAuth2ServerAccessToken> {
+  async getAccessToken(accessToken: string): Promise<Token | Falsey> {
     const tokenFromDb = await this.getTokenByAccessTokenHash(TokenService.hashString(accessToken));
     if (!tokenFromDb) {
       return null;
@@ -93,7 +97,8 @@ export default class OAuth2Repository {
       accessTokenExpiresAt: new Date(tokenFromDb.access_token_expires_at),
       scope: tokenFromDb.scope?.split(','),
       client: {
-        id: tokenFromDb.client_client_id
+        id: tokenFromDb.client_client_id,
+        grants: [] //FIXME return grants
       },
       user: {
         id: tokenFromDb.user_id
@@ -152,7 +157,8 @@ export default class OAuth2Repository {
     };
   }
 
-  async getAuthorizationCode(code: string, getExpired = false) {
+  // @ts-expect-error  //FIXME getExpired is not compatible with the interface!!!
+  async getAuthorizationCode(code: string, getExpired = false): Promise<AuthorizationCode | Falsey> {
     const codeHash = TokenService.hashString(code);
     const codeFromDb = await this.db.fetchOne<OAuth2AuthorizationCodeRaw>(`select oc.*, ocl.client_id as client_client_id from oauth_codes oc, oauth_clients ocl where oc.code_hash = :code_hash and ocl.id = oc.client_id`, {
       code_hash: codeHash
@@ -169,7 +175,8 @@ export default class OAuth2Repository {
       scope: codeFromDb.scope,
       client: {
         id: codeFromDb.client_client_id,
-        numeric_id: codeFromDb.client_id
+        numeric_id: codeFromDb.client_id,
+        grants: [] //FIXME return grants
       },
       user: {
         id: codeFromDb.user_id
@@ -356,7 +363,7 @@ export default class OAuth2Repository {
   }
 
   async getTokenByAccessTokenHash(accessTokenHash: string): Promise<OAuth2TokenRaw | undefined> {
-    return await this.db.fetchOne<OAuth2TokenRaw>(`select ot.*, oc.client_id as client_client_id from oauth_tokens ot, oauth_clients oc where ot.access_token_hash = :access_token_hash and ot.revoked != 1 and ot.client_id = oc.id`, {
+    return await this.db.fetchOne<OAuth2TokenRaw>(`select ot.*, oc.client_id, oc.grants as client_client_id from oauth_tokens ot, oauth_clients oc where ot.access_token_hash = :access_token_hash and ot.revoked != 1 and ot.client_id = oc.id`, {
       access_token_hash: accessTokenHash
     });
   }
