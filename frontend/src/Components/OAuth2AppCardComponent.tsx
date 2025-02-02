@@ -113,7 +113,7 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
         <button onClick={handleClientDelete} className={classNames(buttonStyles.linkButton, buttonStyles.danger)}>удалить</button>
         <label className={classNames(buttonStyles.linkButton, buttonStyles.danger)}>
             <input type="checkbox" onChange={changeVisibility} checked={client.isPublic} />
-            {client.isPublic ? 'публичное' : 'приватное'}
+            публичное
         </label>
       </div>
     }
