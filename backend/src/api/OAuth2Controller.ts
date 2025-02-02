@@ -146,11 +146,11 @@ export default class OAuth2Controller {
       return response.authRequired();
     }
 
-    const { name, description, logoUrl, initialAuthorizationUrl, redirectUris, isPublic } = request.body;
-    const userId = request.session.data.userId;
-    const author = await this.userManager.getById(userId);
-
     try {
+      const {name, description, logoUrl, initialAuthorizationUrl, redirectUris, isPublic} = request.body;
+      const userId = request.session.data.userId;
+      const author = await this.userManager.getById(userId);
+
       const client: OAuth2ClientRaw = await this.oauth2Manager.registerClient(name, description, logoUrl, initialAuthorizationUrl, redirectUris, userId, isPublic);
       const responseData: OAuth2RegisterResponse = {
         client: {
@@ -206,14 +206,18 @@ export default class OAuth2Controller {
       return response.authRequired();
     }
 
-    const { clientId } = request.body;
-    const client = await this.oauth2Manager.getClientByClientId(clientId);
-    if (!client) {
-      this.logger.error('Failed to fetch client data', { clientId });
-      return response.error('error', 'Failed to fetch client data', 500);
+    try {
+      const { clientId } = request.body;
+      const client = await this.oauth2Manager.getClientByClientId(clientId);
+      if (!client) {
+        this.logger.error('Failed to fetch client data', { clientId });
+        return response.error('error', 'Failed to fetch client data', 500);
+      }
+      response.success({ client });
+    } catch (err) {
+        this.logger.error('Failed to fetch client data', { error: err });
+        return response.error('error', 'Failed to fetch client data', 500);
     }
-    response.success({ client });
-    return;
   }
 
   /**
@@ -223,12 +227,18 @@ export default class OAuth2Controller {
     if (!request.session.data.userId) {
       return response.authRequired();
     }
-    const { id } = request.body;
-    const newSecret = await this.oauth2Manager.regenerateClientSecret(id, request.session.data.userId);
-    if (!newSecret) {
-      return response.error('error', 'Failed to generate new client secret', 500);
+
+    try {
+      const { id } = request.body;
+      const newSecret = await this.oauth2Manager.regenerateClientSecret(id, request.session.data.userId);
+      if (!newSecret) {
+        return response.error('error', 'Failed to generate new client secret', 500);
+      }
+      response.success({ newSecret });
+    } catch (err) {
+        this.logger.error('Failed to generate new client secret', { error: err });
+        return response.error('error', 'Failed to generate new client secret', 500);
     }
-    response.success({ newSecret });
   }
 
   /**
@@ -239,9 +249,14 @@ export default class OAuth2Controller {
     if (!userId) {
       return response.authRequired();
     }
-    const { id } = request.body;
-    if (await this.oauth2Manager.deleteClient(id, request.session.data.userId)) {
-      return response.success({});
+    try {
+      const {id} = request.body;
+      if (await this.oauth2Manager.deleteClient(id, request.session.data.userId)) {
+        return response.success({});
+      }
+    } catch (err) {
+        this.logger.error('Failed to delete client', { error: err });
+        return response.error('error', 'Failed to delete client', 500);
     }
   }
 
@@ -253,16 +268,21 @@ export default class OAuth2Controller {
     if (!userId) {
       return response.authRequired();
     }
-    const { id } = request.body;
-    if (typeof id !== 'number') {
-      this.logger.error('Failed to unauthorize client, invalid ID', { id });
-      return response.error('error', 'Failed to unauthorize client, invalid ID', 500);
+    try {
+      const { id } = request.body;
+      if (typeof id !== 'number') {
+        this.logger.error('Failed to unauthorize client, invalid ID', { id });
+        return response.error('error', 'Failed to unauthorize client, invalid ID', 500);
+      }
+      const result = await this.oauth2Manager.unAuthorizeClient(id, userId);
+      if (!result) {
+        return response.error('error', 'Failed to unauthorize client', 500);
+      }
+      response.success({});
+    } catch (err) {
+        this.logger.error('Failed to unauthorize client', { error: err });
+        return response.error('error', 'Failed to unauthorize client', 500);
     }
-    const result = await this.oauth2Manager.unAuthorizeClient(id, userId);
-    if (!result) {
-      return response.error('error', 'Failed to unauthorize client', 500);
-    }
-    response.success({});
   }
 
   /**
@@ -273,12 +293,17 @@ export default class OAuth2Controller {
     if (!userId) {
       return response.authRequired();
     }
-    const { id, url } = request.body;
-    const result = await this.oauth2Manager.updateClientLogoUrl(id, userId, url);
-    if (!result) {
-      return response.error('error', 'Failed to update client logo', 500);
+    try {
+      const {id, url} = request.body;
+      const result = await this.oauth2Manager.updateClientLogoUrl(id, userId, url);
+      if (!result) {
+        return response.error('error', 'Failed to update client logo', 500);
+      }
+      response.success({});
+    } catch (err) {
+        this.logger.error('Failed to update client logo', { error: err });
+        return response.error('error', 'Failed to update client logo', 500);
     }
-    response.success({});
   }
 
   /**
@@ -290,11 +315,16 @@ export default class OAuth2Controller {
     if (!userId) {
       return response.authRequired();
     }
-    const { id } = request.body;
-    const result = await this.oauth2Manager.changeClientVisibility(id, userId);
-    if (!result) {
-      return response.error('error', 'Failed to publish client', 500);
+    try {
+      const {id} = request.body;
+      const result = await this.oauth2Manager.changeClientVisibility(id, userId);
+      if (!result) {
+        return response.error('error', 'Failed to publish client', 500);
+      }
+      response.success({});
+    } catch (err) {
+        this.logger.error('Failed to publish client', { error: err });
+        return response.error('error', 'Failed to publish client', 500);
     }
-    response.success({});
   }
 }
