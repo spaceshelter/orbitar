@@ -22,16 +22,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Validate Caddyfile
+      - name: Validate Caddyfile in dev configuration
         env:
+          DEV: true
           SERVER_HOST: http://orbitar.test
           API_HOST: http://api.orbitar.test    
         run: caddy validate --config caddy/Caddyfile
-      - name: Switch to deploy-frontend
-        run: |
-          rm caddy/dev.frontend.Caddyfile
-          mv caddy/deploy-frontend.Caddyfile caddy/deploy.frontend.Caddyfile
-      - name: Validate Caddyfile with deploy-frontend
+      - name: Validate Caddyfile in deploy configuration
         env:
           SERVER_HOST: https://orbitar.test
           API_HOST: https://api.orbitar.test    
