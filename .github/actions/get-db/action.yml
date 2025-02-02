@@ -35,7 +35,7 @@ runs:
 
     - name: Download DB backup
       if: ${{ inputs.workflow == '' }}
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         path: ${{ env.BACKUP_DIR }}
 
