@@ -1,7 +1,0 @@
-# frontend served from the developer's host machine
-
-(frontend) {
-	handle {
-		reverse_proxy http://host.docker.internal:5000
-	}
-}

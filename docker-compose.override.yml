@@ -5,6 +5,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
+      DEV: true
       SERVER_HOST: http://${SERVER_DOMAIN}
       API_HOST: http://${API_DOMAIN}
 

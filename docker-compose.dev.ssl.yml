@@ -6,6 +6,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
+      DEV: true
       SERVER_HOST: https://${SERVER_DOMAIN}
       API_HOST: https://${API_DOMAIN}
       TLS_CERT_PATH: /certs/${TLS_CERT_FILE}

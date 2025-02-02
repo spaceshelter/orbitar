@@ -1,9 +1,10 @@
 import *.tls.Caddyfile
-import *.frontend.Caddyfile 
 
-{$SERVER_HOST:http://orbitar.local} {
-	import tls
+(dev) {
+	@is_dev expression {env.DEV} == "true"
+}
 
+(upload) {
 	# idiod.video proxy
 	handle_path /upload {
 		rewrite * /api/upload.php
@@ -14,6 +15,26 @@ import *.frontend.Caddyfile
 			header_up -referer
 		}
 	}
+}
+
+(frontend) {
+	import dev
+
+	handle @is_dev {
+		reverse_proxy http://host.docker.internal:5000
+	}
+
+	handle {
+		root * /srv
+		file_server
+		try_files {path} /index.html
+	}
+}
+
+{$SERVER_HOST:http://orbitar.local} {
+	import tls
+
+	import upload
 
 	import frontend
 }
@@ -24,6 +45,7 @@ www.{$SERVER_DOMAIN:orbitar.local} {
 }
 
 {$API_HOST:api.orbitar.local} {
+	import dev
 	import tls
 
 	header X-Fingerprint "{$FINGERPRINT}"
@@ -38,6 +60,10 @@ www.{$SERVER_DOMAIN:orbitar.local} {
 			Access-Control-Allow-Headers *
 		}
 		respond "" 204
+	}
+
+	reverse_proxy @is_dev http://host.docker.internal:5001 {
+		header_down -Access-Control-*
 	}
 
 	reverse_proxy http://{$BACKEND_DOMAIN}:5001 {
