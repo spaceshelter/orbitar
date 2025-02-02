@@ -110,11 +110,11 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
     {client.isMy &&
       <div className={classNames([styles.buttonsContainer, styles.ownerButtons])}>
         <button onClick={handleClientSecretUpdate} className={buttonStyles.linkButton}>обновить секрет</button>
-        <button onClick={handleClientSecretUpdate} className={buttonStyles.linkButton}>обновить лого</button>
         <button onClick={handleClientDelete} className={classNames(buttonStyles.linkButton, buttonStyles.danger)}>удалить</button>
-        <button onClick={changeVisibility} className={classNames(buttonStyles.linkButton, buttonStyles.danger)}>
-            {client.isPublic ? 'спрятать' : 'опубликовать'}
-        </button>
+        <label className={classNames(buttonStyles.linkButton, buttonStyles.danger)}>
+            <input type="checkbox" onChange={changeVisibility} checked={client.isPublic} />
+            {client.isPublic ? 'публичное' : 'приватное'}
+        </label>
       </div>
     }
 
