@@ -52,7 +52,7 @@ export default class OAuth2Repository implements AuthorizationCodeModel {
   async saveToken(token, client, user) : Promise<Token | Falsey> {
     let clientId, userId;
     if (token.authorizationCode) {
-      const authorizationCodeFromDb = await this.getAuthorizationCode(token.authorizationCode, true);
+      const authorizationCodeFromDb = await this.getAuthorizationCodePossiblyExpired(token.authorizationCode);
       if (!authorizationCodeFromDb) {
         return null;
       }
@@ -157,16 +157,11 @@ export default class OAuth2Repository implements AuthorizationCodeModel {
     };
   }
 
-  // @ts-expect-error  //FIXME getExpired is not compatible with the interface!!!
-  async getAuthorizationCode(code: string, getExpired = false): Promise<AuthorizationCode | Falsey> {
+  async getAuthorizationCodePossiblyExpired(code: string): Promise<AuthorizationCode | Falsey> {
     const codeHash = TokenService.hashString(code);
     const codeFromDb = await this.db.fetchOne<OAuth2AuthorizationCodeRaw>(`select oc.*, ocl.client_id as client_client_id from oauth_codes oc, oauth_clients ocl where oc.code_hash = :code_hash and ocl.id = oc.client_id`, {
       code_hash: codeHash
     });
-
-    if (!getExpired && codeFromDb.expires_at < new Date()) {
-      return null;
-    }
 
     return {
       authorizationCode: code,
@@ -182,6 +177,14 @@ export default class OAuth2Repository implements AuthorizationCodeModel {
         id: codeFromDb.user_id
       }
     };
+  }
+
+  async getAuthorizationCode(code: string): Promise<AuthorizationCode | Falsey> {
+    const authCode =  await this.getAuthorizationCodePossiblyExpired(code);
+    if ( !authCode || authCode.expiresAt < new Date()) {
+      return null;
+    }
+    return authCode;
   }
 
   async revokeAuthorizationCode(code) {
