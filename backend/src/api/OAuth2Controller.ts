@@ -17,6 +17,7 @@ import UserManager from '../managers/UserManager';
 import {OAuth2ClientEntity} from './types/entities/OAuth2ClientEntity';
 import {OAuth2ClientRaw} from '../db/types/OAuth2';
 import ExpressOAuthServer from 'express-oauth-server';
+import {config} from '../config';
 
 const clientRegisterSchema = Joi.object<OAuth2RegisterRequest>({
   name: Joi.string().max(32).required(),
@@ -81,10 +82,12 @@ const clientManageSchema = Joi.object<OAuth2ClientManageRequest>({
 const updateLogoUrlSchema = Joi.object<OAuth2ClientUpdateLogoUrlRequest>({
   id: Joi.number().required(),
   url: Joi.string()
-    .uri({
-      scheme: ['http', 'https']
-    })
-    .max(255).required()
+      .uri({
+        scheme: ['http', 'https']
+      })
+      .max(255)
+      .pattern(new RegExp(`^${config.mediaHosting.url}`))
+      .required()
 });
 
 export default class OAuth2Controller {
@@ -195,7 +198,7 @@ export default class OAuth2Controller {
     const userId = request.session.data.userId;
 
     try {
-      const clients: OAuth2ClientEntity[] = await this.oauth2Manager.listClients(userId);
+      const clients: OAuth2ClientEntity[] = await this.oauth2Manager.listClients(userId, userId);
       const responseData: OAuth2ClientsListResponse = { clients };
       response.success(responseData);
     } catch (err) {
@@ -214,7 +217,8 @@ export default class OAuth2Controller {
 
     try {
       const { clientId } = request.body;
-      const client = await this.oauth2Manager.getClientByClientId(clientId);
+      const userId = request.session.data.userId;
+      const client = await this.oauth2Manager.getClientByClientId(clientId, userId);
       if (!client) {
         this.logger.error('Failed to fetch client data', { clientId });
         return response.error('error', 'Failed to fetch client data', 500);

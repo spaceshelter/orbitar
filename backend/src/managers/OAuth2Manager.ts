@@ -55,7 +55,7 @@ export default class OAuth2Manager {
   /**
    * Lists OAuth2 clients. userId is used to determine which clients are authorized by the user and which clients were created by the user.
    */
-  async listClients(userId: number): Promise<OAuth2ClientEntity[]> {
+  async listClients(userId: number, currentUser: number): Promise<OAuth2ClientEntity[]> {
     try {
       const clients = await this.oauthRepository.getClients(userId);
       return await Promise.all(clients.map(async (client) => {
@@ -72,7 +72,7 @@ export default class OAuth2Manager {
           logoUrl: client.logo_url,
           author,
           isAuthorized: !!client.is_authorized,
-          isMy: !!client.is_my,
+          isMy: author.id === currentUser,
           isPublic: !!client.is_public
         } as OAuth2ClientEntity;
       }));
@@ -87,7 +87,7 @@ export default class OAuth2Manager {
    * It is used on consent page to show client details.
    * If includeSecret is true, the client secret hash will be included in the result, which is needed to verify client secret provided to the token endpoint.
    */
-  async getClientByClientId(clientId: string, includeSecret = false): Promise<OAuth2ClientEntity | undefined> {
+  async getClientByClientId(clientId: string, currentUser:number, includeSecret = false): Promise<OAuth2ClientEntity | undefined> {
     try {
       const client = await this.oauthRepository.getClientByClientId(clientId);
       if (!client) {
@@ -108,7 +108,8 @@ export default class OAuth2Manager {
         grants: client.grants,
         userId: client.user_id,
         logoUrl: client.logo_url,
-        author
+        author,
+        isMy: author.id === currentUser,
       } as OAuth2ClientEntity;
     } catch (error) {
       this.logger.error('Error getting OAuth client by client ID', {error});
