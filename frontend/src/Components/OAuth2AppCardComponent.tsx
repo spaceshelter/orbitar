@@ -100,7 +100,7 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
   return (<div className={classNames({[styles.appCard]: true, [styles.inCatalog]: !scope, [styles.isMy]: client.isMy})}>
     <div className={styles.nameContainer}>
       {scope ? 'Приложение ' : ''}
-      <span className={styles.name}>{client.name}</span>
+      <span className={styles.name}>{client.name} {!client.isMy && <>от&nbsp;<Username className={styles.author} user={client.author} /></>}</span>
       {scope ? ' запрашивает доступ к вашему аккаунту.' : ''}
     </div>
     <div className={styles.logoContainer}>
@@ -119,7 +119,6 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
     }
 
     <div className={styles.descriptionContainer}>
-      <h3>Описание от автора <Username className={styles.author} user={client.author} /></h3>
       <p className={styles.description}>
         {client.description}
       </p>
