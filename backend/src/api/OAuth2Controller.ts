@@ -101,22 +101,29 @@ export default class OAuth2Controller {
     this.oauthExpressServer = oauth2ExpressServer;
 
     const registerLimiter = rateLimit({
-      windowMs: 60 * 60 * 1000,
+      windowMs: 60 * 60 * 1000 /* 1 hour */,
       max: 10,
       skipSuccessfulRequests: true,
       standardHeaders: false,
       legacyHeaders: false
     });
 
+    const commonLimiter = rateLimit({
+        windowMs: 60 * 1000 /* 1 minute */,
+        max: 60,
+        standardHeaders: false,
+        legacyHeaders: false,
+        keyGenerator: (req) => String(req.session.data?.userId)
+    });
 
-    this.router.post('/oauth2/clients', validate(listClientsSchema), (req, res) => this.listClients(req, res));
-    this.router.post('/oauth2/client', validate(getClientSchema), (req, res) => this.getClientByClientId(req, res));
+    this.router.post('/oauth2/clients', commonLimiter, validate(listClientsSchema), (req, res) => this.listClients(req, res));
+    this.router.post('/oauth2/client', commonLimiter, validate(getClientSchema), (req, res) => this.getClientByClientId(req, res));
     this.router.post('/oauth2/client/register', registerLimiter, validate(clientRegisterSchema), (req, res) => this.register(req, res));
-    this.router.post('/oauth2/client/regenerate-secret', validate(clientManageSchema), (req, res) => this.regenerateClientSecret(req, res));
-    this.router.post('/oauth2/client/update-logo', validate(updateLogoUrlSchema), (req, res) => this.updateClientLogoUrl(req, res));
-    this.router.post('/oauth2/client/delete', validate(clientManageSchema), (req, res) => this.deleteClient(req, res));
-    this.router.post('/oauth2/client/change-visibility', validate(clientManageSchema), (req, res) => this.changeClientVisibility(req, res));
-    this.router.post('/oauth2/authorize', (req, res) => this.oauthExpressServer.authorize({
+    this.router.post('/oauth2/client/regenerate-secret', commonLimiter, validate(clientManageSchema), (req, res) => this.regenerateClientSecret(req, res));
+    this.router.post('/oauth2/client/update-logo', commonLimiter, validate(updateLogoUrlSchema), (req, res) => this.updateClientLogoUrl(req, res));
+    this.router.post('/oauth2/client/delete', commonLimiter, validate(clientManageSchema), (req, res) => this.deleteClient(req, res));
+    this.router.post('/oauth2/client/change-visibility', commonLimiter, validate(clientManageSchema), (req, res) => this.changeClientVisibility(req, res));
+    this.router.post('/oauth2/authorize', commonLimiter, (req, res) => this.oauthExpressServer.authorize({
       authenticateHandler: {
         handle: async (req) => {
           await req.session.restore(req.body['X-Session-Id']);
@@ -124,7 +131,6 @@ export default class OAuth2Controller {
             await req.session.destroy();
             return null;
           }
-
           if (!req?.session?.data?.userId) {
             return null;
           }
@@ -134,8 +140,8 @@ export default class OAuth2Controller {
         }
       }
     })(req, res, () => {}));
-    this.router.post('/oauth2/unauthorize', validate(clientManageSchema), (req, res) => this.unAuthorizeClient(req, res));
-    this.router.post('/oauth2/token', validate(getTokenSchema), (req, res) => this.oauthExpressServer.token({})(req, res, () => {}));
+    this.router.post('/oauth2/unauthorize', commonLimiter, validate(clientManageSchema), (req, res) => this.unAuthorizeClient(req, res));
+    this.router.post('/oauth2/token', commonLimiter, validate(getTokenSchema), (req, res) => this.oauthExpressServer.token({})(req, res, () => {}));
   }
 
   /**
