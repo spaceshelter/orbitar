@@ -1,7 +1,6 @@
 import { UserInfo } from '../../../managers/types/UserInfo';
 
 export type OAuth2ClientEntity = {
-  id: number;
   name: string;
   description: string;
   clientId: string;
@@ -13,7 +12,6 @@ export type OAuth2ClientEntity = {
   grants: string;
   userId: number;
   author: UserInfo;
-  isPublic: boolean;
   isAuthorized?: boolean;
   isMy?: boolean;
 };

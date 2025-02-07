@@ -15,7 +15,6 @@ type AppSubmitFormValues = {
   grants: string;
   logoUrl?: string;
   initialAuthorizationUrl: string;
-  isPublic: boolean;
 };
 
 type UserProfileClientAppsCreateFormProps = {
@@ -27,9 +26,9 @@ export default function UserProfileClientAppsCreateForm(props: UserProfileClient
 
   const onSubmit: SubmitHandler<AppSubmitFormValues> = data => {
     setSubmitting(true);
-    const { name, description, redirectUris, logoUrl, initialAuthorizationUrl, isPublic } = data;
+    const { name, description, redirectUris, logoUrl, initialAuthorizationUrl } = data;
 
-    api.oauth2Api.registerClient(name, description, redirectUris, logoUrl, initialAuthorizationUrl, isPublic).then((data) => {
+    api.oauth2Api.registerClient(name, description, redirectUris, logoUrl, initialAuthorizationUrl).then((data) => {
       props.onClientRegisterSuccess(data.client);
     }).catch((err) => {
       setSubmitError(err.message);
@@ -122,10 +121,6 @@ export default function UserProfileClientAppsCreateForm(props: UserProfileClient
           <label><b>Типы грантов (через запятую):</b>
             <p><span className={classNames('i', 'i-info')}></span> Пока поддерживаются только <em>authorization_code</em> и <em>refresh_token</em></p>
             <input type="text" value={'authorization_code, refresh_token'} disabled={true} />
-          </label>
-
-          <label className={styles.publishApp}>
-            <input type="checkbox" {...register('isPublic')} /><p>Eсли отмечено, другие пользователи увидят приложение и смогут его установить.</p>
           </label>
 
           <div className={styles.submitContainer}>

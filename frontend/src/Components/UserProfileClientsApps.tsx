@@ -73,8 +73,7 @@ export default function UserProfileClientsApps(props: UserProfileClientsAppsProp
       });
   };
 
-  const authorizedClients = clients.filter((client) => client.isAuthorized);
-  const otherClients = clients.filter((client) => !client.isAuthorized);
+  const clientsToShow = clients.filter((client) => client.isMy || client.isAuthorized);
   return (
     <div className={styles.appsContainer}>
       {
@@ -108,15 +107,7 @@ export default function UserProfileClientsApps(props: UserProfileClientsAppsProp
         onClientSecretUpdate={handleClientSecretUpdate}
         onClientUnauthorize={handleClientUnauthorized}
         onClientPublish={handleClientPublish}
-        list={authorizedClients}
-        isAuthorized={true}
-      />
-      <UserProfileClientAppsList
-        onClientSecretUpdate={handleClientSecretUpdate}
-        onClientUnauthorize={handleClientUnauthorized}
-        onClientPublish={handleClientPublish}
-        list={otherClients}
-        isAuthorized={false}
+        list={clientsToShow}
       />
 
       <div className={styles.forDevContainer}>

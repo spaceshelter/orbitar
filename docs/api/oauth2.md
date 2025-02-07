@@ -12,7 +12,6 @@ Registers a new OAuth2 client.
 - `logoUrl` (string, optional, max: 255): URL to the client's logo.
 - `initialAuthorizationUrl` (string, optional, max: 255): Initial authorization URL.
 - `redirectUris` (string, required, max: 255): Comma-separated list of redirect URLs.
-- `isPublic` (boolean, required): Whether the client is public.
 
 ### Response: [`OAuth2RegisterResponse`](#OAuth2RegisterResponse)
 - `client` (`[`OAuth2ClientEntity`](#OAuth2ClientEntity)`): The registered client entity.
@@ -182,7 +181,6 @@ Represents an OAuth2 client entity with the following properties:
 - `grants` (string): The type of grants allowed for the client.
 - `userId` (number): The user ID of the client's owner.
 - `author` (`UserInfo`): Information about the user who owns the client.
-- `isPublic` (boolean): Indicates whether the client is public.
 - `isAuthorized` (boolean, optional): Indicates whether the client is authorized.
 - `isMy` (boolean, optional): Indicates whether the client belongs to the authenticated user.
 
@@ -207,7 +205,6 @@ Represents a request to register a new OAuth2 client, with the following propert
 - `logoUrl` (string, optional): URL to the client's logo.
 - `initialAuthorizationUrl` (string, optional): Initial authorization URL.
 - `redirectUris` (string): Comma-separated list of redirect URLs.
-- `isPublic` (boolean): Whether the client is public.
 
 ### OAuth2RegisterResponse
 Represents the response for a client registration request:

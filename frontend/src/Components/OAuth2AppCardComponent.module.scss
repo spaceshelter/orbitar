@@ -45,6 +45,7 @@
   }
 
   .descriptionContainer {
+    word-break: break-word;
     flex: 1;
     a {
       display: inline-block;

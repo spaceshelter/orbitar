@@ -13,7 +13,6 @@ export type OAuth2RegisterRequest = {
   logoUrl?: string;
   redirectUris: string;
   initialAuthorizationUrl?: string;
-  isPublic: boolean;
 };
 
 export type OAuth2RegisterResponse = {
@@ -33,11 +32,11 @@ export type OAuth2AuthorizeResponse = {
 };
 
 export type OAuth2UnAuthorizeRequest = {
-  id: number;
+  client_id: string;
 };
 
 export type OAuth2GetClientRequest = {
-  clientId: string;
+  client_id: string;
 };
 
 export type OAuth2GetClientResponse = {
@@ -45,7 +44,7 @@ export type OAuth2GetClientResponse = {
 };
 
 export type OAuth2RegenerateClientSecretRequest = {
-  id: number;
+  client_id: string;
 };
 
 export type OAuth2RegenerateClientSecretResponse = {
@@ -53,16 +52,20 @@ export type OAuth2RegenerateClientSecretResponse = {
 };
 
 export type OAuth2UpdateLogoRequest = {
-  id: number;
+  client_id: string;
   url: string;
 };
 
 export type OAuth2DeleteClientRequest = {
-  id: number;
+  client_id: string;
 };
 
 export type OAuth2PublisheClientRequest = OAuth2DeleteClientRequest;
 export type OAuth2HideClientRequest = OAuth2PublisheClientRequest;
+
+export type OAuth2VisibilityRequest = {
+  client_id: string;
+};
 
 export default class OAuth2Api {
   private api: APIBase;
@@ -71,14 +74,13 @@ export default class OAuth2Api {
     this.api = api;
   }
 
-  async registerClient(name: string, description: string, redirectUris: string, logoUrl = '', initialAuthorizationUrl = '', isPublic: boolean): Promise<OAuth2RegisterResponse> {
+  async registerClient(name: string, description: string, redirectUris: string, logoUrl = '', initialAuthorizationUrl = ''): Promise<OAuth2RegisterResponse> {
     return await this.api.request<OAuth2RegisterRequest, OAuth2RegisterResponse>('/oauth2/client/register', {
       name,
       description,
       logoUrl,
       redirectUris: redirectUris,
-      initialAuthorizationUrl,
-      isPublic
+      initialAuthorizationUrl
     });
   }
 
@@ -87,32 +89,38 @@ export default class OAuth2Api {
   }
 
   async getClient(clientId: string): Promise<OAuth2GetClientResponse> {
-    return await this.api.request<OAuth2GetClientRequest, OAuth2GetClientResponse>(`/oauth2/client`, { clientId });
+    return await this.api.request<OAuth2GetClientRequest, OAuth2GetClientResponse>(`/oauth2/client`, { client_id: clientId });
   }
 
-  async unauthorizeClient(id: number): Promise<Record<string, never>> {
+  async unauthorizeClient(clientId: string): Promise<Record<string, never>> {
     return await this.api.request<OAuth2UnAuthorizeRequest, Record<string, never>>('/oauth2/unauthorize', {
-      id
+      client_id: clientId
     });
   }
 
-  async regenerateClientSecret(id: number): Promise<OAuth2RegenerateClientSecretResponse> {
-    return await this.api.request<OAuth2RegenerateClientSecretRequest, OAuth2RegenerateClientSecretResponse>(`/oauth2/client/regenerate-secret`, { id });
+  async regenerateClientSecret(clientId: string): Promise<OAuth2RegenerateClientSecretResponse> {
+    return await this.api.request<OAuth2RegenerateClientSecretRequest, OAuth2RegenerateClientSecretResponse>(
+      `/oauth2/client/regenerate-secret`, 
+      { client_id: clientId }
+    );
   }
 
-  async updateClientLogo(id: number, url: string): Promise<Record<string, never>> {
-    return await this.api.request<OAuth2UpdateLogoRequest, Record<string, never>>(`/oauth2/client/update-logo`, { id, url });
+  async updateClientLogo(clientId: string, url: string): Promise<Record<string, never>> {
+    return await this.api.request<OAuth2UpdateLogoRequest, Record<string, never>>(
+      `/oauth2/client/update-logo`, 
+      { client_id: clientId, url }
+    );
   }
 
-  async deleteClient(id: number): Promise<Record<string, never>> {
+  async deleteClient(clientId: string): Promise<Record<string, never>> {
     return await this.api.request<OAuth2DeleteClientRequest, Record<string, never>>('/oauth2/client/delete', {
-      id
+      client_id: clientId
     });
   }
 
-  async changeVisibility(id: number): Promise<Record<string, never>> {
-    return await this.api.request<OAuth2DeleteClientRequest, Record<string, never>>('/oauth2/client/change-visibility', {
-      id
+  async changeVisibility(clientId: string): Promise<boolean> {
+    return await this.api.request<OAuth2VisibilityRequest, boolean>('/oauth2/client/change-visibility', {
+      client_id: clientId
     });
   }
 }

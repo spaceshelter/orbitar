@@ -22,7 +22,6 @@ export interface OAuth2ClientRaw {
   redirect_uris: string;
   grants: string;
   user_id: number;
-  is_public: number;
   is_my?: number;
   is_authorized?: number;
 }

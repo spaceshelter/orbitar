@@ -47,40 +47,25 @@ const clientRegisterSchema = Joi.object<OAuth2RegisterRequest>({
     .messages({
       'any.required': 'Redirect URIs are required.',
       'any.invalid': 'Please enter valid comma-separated URIs.'
-    }),
-  isPublic: Joi.boolean().required()
+    })
 });
 
 const listClientsSchema = Joi.object<OAuth2ClientsListRequest>({})
   .pattern(/.*/, Joi.any().forbidden());
 
 const getClientSchema = Joi.object<OAuth2ClientRequest>({
-  clientId: Joi.alternatives().try(
+  client_id: Joi.alternatives().try(
     Joi.string().max(255),
     Joi.number()
   ).required()
 });
 
-const getTokenSchema = Joi.object({
-  client_id: Joi.string().max(255)
-    .when('grant_type', { is: 'refresh_token', then: Joi.optional(), otherwise: Joi.required() }),
-  client_secret: Joi.string().max(255)
-    .when('grant_type', { is: 'refresh_token', then: Joi.optional(), otherwise: Joi.required() }),
-  grant_type: Joi.string().valid('authorization_code', 'refresh_token').required(),
-  code: Joi.string().max(255)
-    .when('grant_type', { is: 'refresh_token', then: Joi.optional(), otherwise: Joi.required() }),
-  redirect_uri: Joi.string().uri({ scheme: ['http', 'https'] }).max(255)
-    .when('grant_type', { is: 'refresh_token', then: Joi.optional() }),
-  refresh_token: Joi.string().max(255)
-    .when('grant_type', { is: 'refresh_token', then: Joi.required(), otherwise: Joi.optional() })
-});
-
 const clientManageSchema = Joi.object<OAuth2ClientManageRequest>({
-  id: Joi.number().required()
+  client_id: Joi.string().max(36).min(36).required()
 });
 
 const updateLogoUrlSchema = Joi.object<OAuth2ClientUpdateLogoUrlRequest>({
-  id: Joi.number().required(),
+  client_id: Joi.string().max(36).min(36).required(),
   url: Joi.string()
       .uri({
         scheme: ['http', 'https']
@@ -125,7 +110,6 @@ export default class OAuth2Controller {
     this.router.post('/oauth2/client/regenerate-secret', commonLimiter, validate(clientManageSchema), (req, res) => this.regenerateClientSecret(req, res));
     this.router.post('/oauth2/client/update-logo', commonLimiter, validate(updateLogoUrlSchema), (req, res) => this.updateClientLogoUrl(req, res));
     this.router.post('/oauth2/client/delete', commonLimiter, validate(clientManageSchema), (req, res) => this.deleteClient(req, res));
-    this.router.post('/oauth2/client/change-visibility', commonLimiter, validate(clientManageSchema), (req, res) => this.changeClientVisibility(req, res));
     this.router.post('/oauth2/authorize', commonLimiter, (req, res) => this.oauthExpressServer.authorize({
       authenticateHandler: {
         handle: async (req) => {
@@ -144,7 +128,7 @@ export default class OAuth2Controller {
       }
     })(req, res, () => {}));
     this.router.post('/oauth2/unauthorize', commonLimiter, validate(clientManageSchema), (req, res) => this.unAuthorizeClient(req, res));
-    this.router.post('/oauth2/token', commonLimiter, validate(getTokenSchema), (req, res) => this.oauthExpressServer.token({})(req, res, () => {}));
+    this.router.post('/oauth2/token', commonLimiter, (req, res) => this.oauthExpressServer.token({})(req, res, () => {}));
   }
 
   /**
@@ -156,14 +140,13 @@ export default class OAuth2Controller {
     }
 
     try {
-      const {name, description, logoUrl, initialAuthorizationUrl, redirectUris, isPublic} = request.body;
+      const {name, description, logoUrl, initialAuthorizationUrl, redirectUris} = request.body;
       const userId = request.session.data.userId;
       const author = await this.userManager.getById(userId);
 
-      const client: OAuth2ClientRaw = await this.oauth2Manager.registerClient(name, description, logoUrl, initialAuthorizationUrl, redirectUris, userId, isPublic);
+      const client: OAuth2ClientRaw = await this.oauth2Manager.registerClient(name, description, logoUrl, initialAuthorizationUrl, redirectUris, userId);
       const responseData: OAuth2RegisterResponse = {
         client: {
-          id: client.id,
           name: client.name,
           description: client.description,
           clientId: client.client_id,
@@ -173,8 +156,7 @@ export default class OAuth2Controller {
           redirectUris: client.redirect_uris,
           grants: client.grants,
           userId: client.user_id,
-          author,
-          isPublic: client.is_public === 1
+          author
         }
       };
       response.success(responseData);
@@ -188,7 +170,7 @@ export default class OAuth2Controller {
   }
 
   /**
-   * List clients: returns public clients, clients created by this user and clients authorized by this user
+   * List clients: returns clients created by this user and clients authorized by this user
    */
   async listClients(request: APIRequest<OAuth2ClientsListRequest>, response: APIResponse<OAuth2ClientsListResponse>) {
     if (!request.session.data.userId) {
@@ -216,7 +198,7 @@ export default class OAuth2Controller {
     }
 
     try {
-      const { clientId } = request.body;
+      const { client_id : clientId } = request.body;
       const userId = request.session.data.userId;
       const client = await this.oauth2Manager.getClientByClientId(clientId, userId);
       if (!client) {
@@ -239,8 +221,8 @@ export default class OAuth2Controller {
     }
 
     try {
-      const { id : clientId } = request.body;
-      const newSecret = await this.oauth2Manager.regenerateClientSecret(clientId, request.session.data.userId);
+      const { client_id : clientId } = request.body;
+      const newSecret = await this.oauth2Manager.regenerateClientSecret(clientId.toString(), request.session.data.userId);
       if (!newSecret) {
         return response.error('error', 'Failed to generate new client secret', 500);
       }
@@ -260,8 +242,8 @@ export default class OAuth2Controller {
       return response.authRequired();
     }
     try {
-      const {id : clientId} = request.body;
-      if (await this.oauth2Manager.deleteClient(clientId, request.session.data.userId)) {
+      const {client_id : clientId} = request.body;
+      if (await this.oauth2Manager.deleteClient(clientId.toString(), request.session.data.userId)) {
         return response.success({});
       }
     } catch (err) {
@@ -279,11 +261,7 @@ export default class OAuth2Controller {
       return response.authRequired();
     }
     try {
-      const { id : clientId } = request.body;
-      if (typeof clientId !== 'number') {
-        this.logger.error('Failed to unauthorize client, invalid ID', { clientId });
-        return response.error('error', 'Failed to unauthorize client, invalid ID', 500);
-      }
+      const { client_id : clientId } = request.body;
       const result = await this.oauth2Manager.unAuthorizeClient(clientId, userId);
       if (!result) {
         return response.error('error', 'Failed to unauthorize client', 500);
@@ -304,8 +282,8 @@ export default class OAuth2Controller {
       return response.authRequired();
     }
     try {
-      const {id : clientId, url} = request.body;
-      const result = await this.oauth2Manager.updateClientLogoUrl(clientId, userId, url);
+      const {client_id : clientId, url} = request.body;
+      const result = await this.oauth2Manager.updateClientLogoUrl(clientId.toString(), userId, url);
       if (!result) {
         return response.error('error', 'Failed to update client logo', 500);
       }
@@ -313,28 +291,6 @@ export default class OAuth2Controller {
     } catch (err) {
         this.logger.error('Failed to update client logo', { error: err });
         return response.error('error', 'Failed to update client logo', 500);
-    }
-  }
-
-  /**
-   * Change client visibility (0 or 1), initiated by client author, when client is not public, it is not displayed in the list of public clients
-   * This does not accept visibility value because it is just flipping the current value
-   */
-  async changeClientVisibility(request: APIRequest<OAuth2ClientManageRequest>, response: APIResponse<Record<string, never>>) {
-    const userId = request.session.data.userId;
-    if (!userId) {
-      return response.authRequired();
-    }
-    try {
-      const {id : clientId} = request.body;
-      const result = await this.oauth2Manager.changeClientVisibility(clientId, userId);
-      if (!result) {
-        return response.error('error', 'Failed to publish client', 500);
-      }
-      response.success({});
-    } catch (err) {
-        this.logger.error('Failed to publish client', { error: err });
-        return response.error('error', 'Failed to publish client', 500);
     }
   }
 }

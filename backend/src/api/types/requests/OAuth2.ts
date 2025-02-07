@@ -7,7 +7,6 @@ export type OAuth2RegisterRequest = {
   logoUrl?: string;
   initialAuthorizationUrl?: string;
   redirectUris: string;
-  isPublic: boolean;
 };
 
 export type OAuth2RegisterResponse = {
@@ -15,11 +14,11 @@ export type OAuth2RegisterResponse = {
 };
 
 export type OAuth2ClientRequest = {
-  clientId: string;
+  client_id: string;
 };
 
 export type OAuth2ClientManageRequest = {
-  id: number;
+  client_id: string;
 };
 
 export type OAuth2ClientResponse = {
@@ -33,9 +32,9 @@ export type OAuth2ClientsListResponse = {
 };
 
 export type OAuth2AuthorizeRequest = {
-  clientId: string;
+  client_id: string;
   scope: string;
-  redirectUri: string;
+  redirect_uri: string;
 };
 
 export type OAuth2AuthorizeResponse = {
@@ -60,7 +59,7 @@ export type OAuth2ClientRegenerateSecretResponse = {
 };
 
 export type OAuth2ClientUpdateLogoUrlRequest = {
-  id: number;
+  client_id: string;
   url: string;
 };
 

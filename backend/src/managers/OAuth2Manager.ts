@@ -9,41 +9,23 @@ export default class OAuth2Manager {
   private oauthRepository: OAuth2Repository;
   private userManager: UserManager;
   private logger: Logger;
-  private revokedTokensCache;
 
   constructor(oauthRepository: OAuth2Repository, userManager: UserManager, logger: Logger) {
     this.oauthRepository = oauthRepository;
     this.userManager = userManager;
     this.logger = logger;
-    this.revokedTokensCache = new OAuth2RevokedTokensCache(this.logger);
-    this.warmUpCache();
-  }
-
-  /**
-   * Load revoked tokens from the database and put them into the cache. This should be called on startup.
-   */
-  warmUpCache() {
-    this.oauthRepository.getRevokedTokens().then((tokens) => {
-      if (!tokens) {
-        return;
-      }
-      tokens.forEach((token) => {
-        this.revokedTokensCache.revoke(token.access_token_hash);
-        this.revokedTokensCache.revoke(token.refresh_token_hash);
-      });
-    });
   }
 
   /**
    * Registers a new OAuth2 client with the provided details.
    * Generates a unique client ID and secret, then stores the client information in the repository.
    */
-  async registerClient(name: string, description: string, logoUrl: string, initialAuthorizationUrl: string, redirectUris: string, userId: number, isPublic: boolean): Promise<OAuth2ClientRaw> {
+  async registerClient(name: string, description: string, logoUrl: string, initialAuthorizationUrl: string, redirectUris: string, userId: number): Promise<OAuth2ClientRaw> {
     try {
       const clientId = TokenService.generateClientId();
       const clientSecret = TokenService.generateClientSecret();
       const clientSecretHash = TokenService.hashString(clientSecret);
-      const result: OAuth2ClientRaw = await this.oauthRepository.createClient(name, description, logoUrl, initialAuthorizationUrl, clientId, clientSecretHash, redirectUris, userId, isPublic);
+      const result: OAuth2ClientRaw = await this.oauthRepository.createClient(name, description, logoUrl, initialAuthorizationUrl, clientId, clientSecretHash, redirectUris, userId);
       result.client_secret_original = clientSecret;
       return result;
     } catch (error) {
@@ -61,7 +43,6 @@ export default class OAuth2Manager {
       return await Promise.all(clients.map(async (client) => {
         const author = await this.userManager.getById(client.user_id);
         return {
-          id: client.id,
           name: client.name,
           description: client.description,
           clientId: client.client_id,
@@ -72,8 +53,7 @@ export default class OAuth2Manager {
           logoUrl: client.logo_url,
           author,
           isAuthorized: !!client.is_authorized,
-          isMy: author.id === currentUser,
-          isPublic: !!client.is_public
+          isMy: author.id === currentUser
         } as OAuth2ClientEntity;
       }));
     } catch (error) {
@@ -87,7 +67,7 @@ export default class OAuth2Manager {
    * It is used on consent page to show client details.
    * If includeSecret is true, the client secret hash will be included in the result, which is needed to verify client secret provided to the token endpoint.
    */
-  async getClientByClientId(clientId: string, currentUser:number, includeSecret = false): Promise<OAuth2ClientEntity | undefined> {
+  async getClientByClientId(clientId: string, currentUser: number, includeSecret = false): Promise<OAuth2ClientEntity | undefined> {
     try {
       const client = await this.oauthRepository.getClientByClientId(clientId);
       if (!client) {
@@ -98,7 +78,6 @@ export default class OAuth2Manager {
         return undefined;
       }
       return {
-        id: client.id,
         name: client.name,
         description: client.description,
         clientId: client.client_id,
@@ -120,11 +99,11 @@ export default class OAuth2Manager {
   /**
    * called to change client secret code
    */
-  async regenerateClientSecret(id: number, authorId: number): Promise<string | undefined> {
+  async regenerateClientSecret(clientId: string, authorId: number): Promise<string | undefined> {
     try {
       const clientSecret = TokenService.generateClientSecret();
       const clientSecretHash = TokenService.hashString(clientSecret);
-      if (await this.oauthRepository.updateClientSecret(clientSecretHash, id, authorId)) {
+      if (await this.oauthRepository.updateClientSecret(clientSecretHash, clientId, authorId)) {
         return clientSecret;
       }
       return null;
@@ -134,89 +113,35 @@ export default class OAuth2Manager {
     }
   }
 
-  async deleteClient(id: number, byUserId: number): Promise<boolean> {
-    const client = await this.oauthRepository.getClientById(id);
+  async deleteClient(clientId: string, byUserId: number): Promise<boolean> {
+    const client = await this.oauthRepository.getClientByClientId(clientId);
     if (!client) {
-      this.logger.error('Error deleting OAuth client, no such client', {id});
+      this.logger.error('Error deleting OAuth client, no such client', {clientId});
       return false;
     }
 
     if (client.user_id !== byUserId) {
       this.logger.error('Error deleting OAuth client, not client owner initiated', {
-        id,
+        clientId,
         byUserId,
         authorId: client.user_id
       });
       return false;
     }
 
-    const revokeTokensResult = await this.revokeClientTokens(id);
-    if (!revokeTokensResult) {
-      this.logger.error('Failed to revoke some of tokens when deleting a client', {id});
-    }
-
-    return await this.oauthRepository.deleteClient(id, byUserId);
+    return await this.oauthRepository.deleteClient(clientId, byUserId);
   }
 
-  async unAuthorizeClient(clientNumericId: number, userId: number): Promise<boolean> {
+  async unAuthorizeClient(clientId: string, userId: number): Promise<boolean> {
     try {
-      const revokeTokensResult = await this.revokeClientTokens(clientNumericId, userId);
-      if (!revokeTokensResult) {
-        this.logger.error('Failed to revoke some of tokens when unauthorizing a client', {clientNumericId, userId});
-      }
-      return await this.oauthRepository.unAuthorizeClient(clientNumericId, userId);
+      return await this.oauthRepository.unAuthorizeClient(clientId, userId);
     } catch (error) {
       this.logger.error('Error unauthorizing OAuth client', {error});
       throw error;
     }
   }
 
-  async revokeClientTokens(id: number, userId?: number): Promise<boolean> {
-    let tokens;
-    try {
-      if (userId) {
-        tokens = await this.oauthRepository.getRawTokensByClientAndUserId(id, userId);
-      } else {
-        tokens = await this.oauthRepository.getRawTokensByClientId(id);
-      }
-      if (!tokens) {
-        console.log(`No tokens found`);
-        return true;
-      }
-      tokens.forEach((token) => {
-        this.logger.info('Revoking token', {token});
-        this.revokedTokensCache.revoke(token.access_token_hash);
-        this.revokedTokensCache.revoke(token.refresh_token_hash);
-      });
-      return true;
-    } catch (error) {
-      this.logger.error('Error revoking OAuth client tokens', {error});
-      throw error;
-    }
-  }
-
-  async updateClientLogoUrl(id: number, userId: number, logoUrl: string): Promise<boolean> {
-    return await this.oauthRepository.updateClientLogoUrl(id, userId, logoUrl);
-  }
-
-  async changeClientVisibility(id: number, userId: number): Promise<boolean> {
-    return await this.oauthRepository.changeClientVisibility(id, userId);
-  }
-}
-
-class OAuth2RevokedTokensCache {
-  revokedTokens?: string[] = [];
-  logger: Logger;
-
-  constructor(logger: Logger) {
-    this.logger = logger;
-  }
-
-  revoke(tokenHash: string) {
-    this.revokedTokens.push(tokenHash);
-  }
-
-  isRevoked(tokenHash: string): boolean {
-    return this.revokedTokens.includes(tokenHash);
+  async updateClientLogoUrl(clientId: string, userId: number, logoUrl: string): Promise<boolean> {
+    return await this.oauthRepository.updateClientLogoUrl(clientId, userId, logoUrl);
   }
 }

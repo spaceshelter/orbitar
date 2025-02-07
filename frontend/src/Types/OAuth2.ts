@@ -12,7 +12,6 @@ export type OAuth2ClientEntity = {
   redirectUris: string;
   grants: string[];
   author: UserInfo;
-  isPublic: boolean;
   isAuthorized?: boolean;
   isMy?: boolean;
 };
