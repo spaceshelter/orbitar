@@ -12,6 +12,5 @@ export type OAuth2ClientEntity = {
   grants: string;
   userId: number;
   author: UserInfo;
-  isAuthorized?: boolean;
-  isMy?: boolean;
+  scopes?: string
 };

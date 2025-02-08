@@ -181,8 +181,6 @@ Represents an OAuth2 client entity with the following properties:
 - `grants` (string): The type of grants allowed for the client.
 - `userId` (number): The user ID of the client's owner.
 - `author` (`UserInfo`): Information about the user who owns the client.
-- `isAuthorized` (boolean, optional): Indicates whether the client is authorized.
-- `isMy` (boolean, optional): Indicates whether the client belongs to the authenticated user.
 
 ### OAuth2Token
 Represents an OAuth2 token with the following properties:

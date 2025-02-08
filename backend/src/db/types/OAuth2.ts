@@ -22,8 +22,8 @@ export interface OAuth2ClientRaw {
   redirect_uris: string;
   grants: string;
   user_id: number;
-  is_my?: number;
-  is_authorized?: number;
+  scopes?: string;
+  last_revoked_ts?: Date;
 }
 
 export interface OAuth2Token {

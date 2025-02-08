@@ -1,5 +1,5 @@
 import styles from './UserProfileClientApps.module.scss';
-import { useAPI } from '../AppState/AppState';
+import {useAPI, useAppState} from '../AppState/AppState';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import UserProfileClientAppsList from './UserProfileClientAppsList';
@@ -12,11 +12,13 @@ import classNames from 'classnames';
 import { OAuth2ClientEntity } from '../Types/OAuth2';
 
 interface UserProfileClientsAppsProps {
+  forUserName: string;
   onClientUnauthorized?: () => void;
 }
 
 export default function UserProfileClientsApps(props: UserProfileClientsAppsProps) {
   const api = useAPI();
+  const userId = useAppState().userInfo?.id;
   const [loading, setLoading] = useState(true);
   const [clients, setClients] = useState<OAuth2ClientEntity[]>([]);
   const [lastClientCreatedSecretCode, setLastClientCreatedSecretCode] = useState<string | undefined>(undefined);
@@ -28,7 +30,10 @@ export default function UserProfileClientsApps(props: UserProfileClientsAppsProp
 
   useEffect(() => {
     setLoading(true);
-    api.oauth2Api.listClients().then((data) => {
+    if (!userId) {
+      return;
+    }
+    api.oauth2Api.listClients(props.forUserName).then((data) => {
       setClients(data.clients);
       setLoading(false);
     }).catch((err) => {
@@ -73,7 +78,10 @@ export default function UserProfileClientsApps(props: UserProfileClientsAppsProp
       });
   };
 
-  const clientsToShow = clients.filter((client) => client.isMy || client.isAuthorized);
+  const ownAppsList = clients.filter((client) => client.author.id === userId);
+  const installedAppsList = clients.filter((client) => client.author.id !== userId);
+
+
   return (
     <div className={styles.appsContainer}>
       {
@@ -103,12 +111,25 @@ export default function UserProfileClientsApps(props: UserProfileClientsAppsProp
         )
       }
       {loading && <span>Loading...</span>}
+
       <UserProfileClientAppsList
-        onClientSecretUpdate={handleClientSecretUpdate}
-        onClientUnauthorize={handleClientUnauthorized}
-        onClientPublish={handleClientPublish}
-        list={clientsToShow}
+          onClientSecretUpdate={handleClientSecretUpdate}
+          onClientUnauthorize={handleClientUnauthorized}
+          onClientPublish={handleClientPublish}
+          list={installedAppsList}
       />
+
+      {ownAppsList.length > 0 && (
+          <div className={styles.ownAppsContainer}>
+          <h4>Ваши приложения</h4>
+          <UserProfileClientAppsList
+              onClientSecretUpdate={handleClientSecretUpdate}
+              onClientUnauthorize={handleClientUnauthorized}
+              onClientPublish={handleClientPublish}
+              list={ownAppsList}
+          />
+          </div>
+      )}
 
       <div className={styles.forDevContainer}>
         <h4>Для разработчиков</h4>

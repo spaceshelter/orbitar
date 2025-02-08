@@ -1,7 +1,9 @@
 import APIBase from './APIBase';
 import {OAuth2ClientEntity} from '../Types/OAuth2';
 
-export type OAuth2ClientsListRequest = Record<string, never>;
+export type OAuth2ClientsListRequest = {
+  username: string;
+};
 
 export type OAuth2ClientsListResponse = {
   clients: OAuth2ClientEntity[];
@@ -84,8 +86,10 @@ export default class OAuth2Api {
     });
   }
 
-  async listClients(): Promise<OAuth2ClientsListResponse> {
-    return await this.api.request<OAuth2ClientsListRequest, OAuth2ClientsListResponse>('/oauth2/clients', {});
+  async listClients(forUserName: string): Promise<OAuth2ClientsListResponse> {
+    return await this.api.request<OAuth2ClientsListRequest, OAuth2ClientsListResponse>('/oauth2/clients', {
+        username: forUserName
+    });
   }
 
   async getClient(clientId: string): Promise<OAuth2GetClientResponse> {
@@ -100,14 +104,14 @@ export default class OAuth2Api {
 
   async regenerateClientSecret(clientId: string): Promise<OAuth2RegenerateClientSecretResponse> {
     return await this.api.request<OAuth2RegenerateClientSecretRequest, OAuth2RegenerateClientSecretResponse>(
-      `/oauth2/client/regenerate-secret`, 
+      `/oauth2/client/regenerate-secret`,
       { client_id: clientId }
     );
   }
 
   async updateClientLogo(clientId: string, url: string): Promise<Record<string, never>> {
     return await this.api.request<OAuth2UpdateLogoRequest, Record<string, never>>(
-      `/oauth2/client/update-logo`, 
+      `/oauth2/client/update-logo`,
       { client_id: clientId, url }
     );
   }

@@ -23,6 +23,7 @@ export default function UserProfileClientAppsList(props: UserProfileClientAppsLi
                 onClientSecretUpdate={props?.onClientSecretUpdate}
                 onClientUnauthorize={props?.onClientUnauthorize}
                 onClientChangeVisibility={props?.onClientPublish}
+                authorizedScopes={client.scopes}
             />
         ))}
     </div>;

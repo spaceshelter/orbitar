@@ -4,11 +4,11 @@ import { ResultSetHeader } from 'mysql2';
 
 /**
  * Repository for handling OAuth2 client and consent data.
- * 
+ *
  * OAuth2 Flow Details:
  *   - Clients (applications) are registered and stored in the 'oauth_clients' table.
  *   - User consents are tracked in the 'oauth_consents' table.
- * 
+ *
  * Note on Data Storage:
  *   - All persistent client and consent data is stored in a MySQL database.
  */
@@ -21,7 +21,7 @@ export default class OAuth2Repository {
 
   /**
    * Retrieves a client by its client ID.
-   * 
+   *
    * OAuth2 Flow Context:
    *   When a client tries to access protected resources, its details must be verified via its unique client_id.
    *
@@ -36,55 +36,58 @@ export default class OAuth2Repository {
   }
 
   /**
-   * Retrieves a client by its client id and client secret hash.
-   * 
-   * Security Note:
-   *   This method is used during token exchanges to verify that the provided secret (after hash) matches what is stored.
+   * Retrieves a list of OAuth2 clients.
    *
-   * @param clientId Unique client id.
-   * @param clientSecretHash Hashed representation of the client secret.
-   * @returns The raw client data if authentication passes; otherwise, undefined.
+   * Flow Context:
+   *   - This method fetches clients either owned by the author or those for which the user has given consent.
+   *   - The clients are retrieved from the 'oauth_clients' table, optionally joined with the 'oauth_consents' table.
+   *
+   * @param authorId The ID of the author (owner) of the clients.
+   * @param consentUserId The ID of the user who has given consent to the clients.
+   * @returns A promise that resolves to an array of OAuth2ClientRaw objects.
    */
-  async getClientByClientIdAndClientSecretHash(clientId: string, clientSecretHash: string): Promise<OAuth2ClientRaw | undefined> {
-    return await this.db.fetchOne<OAuth2ClientRaw>(
-      'select * from oauth_clients where client_id = :client_id and client_secret_hash = :client_secret_hash',
+  async getClients(authorId: number, consentUserId: number): Promise<OAuth2ClientRaw[]> {
+    return await this.db.fetchAll<OAuth2ClientRaw>(
+      `select 
+          oauth_clients.*,
+          oauth_consents.scope as scopes,
+          oauth_consents.last_revoked_ts as last_revoked_ts
+        from 
+          oauth_clients 
+        left outer join oauth_consents on oauth_consents.client_id = oauth_clients.client_id
+            and oauth_consents.user_id = :user_id
+        where 
+          oauth_clients.user_id = :author_id`,
       {
-        client_id: clientId,
-        client_secret_hash: clientSecretHash,
+        author_id: authorId,
+        user_id: consentUserId
       }
     );
   }
 
   /**
-   * Retrieves a list of clients associated with a given user.
-   * 
-   * Client Management API Context:
-   *   This method is used to list both:
-   *     - Clients that have been created by the user.
-   *     - Clients for which the user has given consent (found via a left join on oauth_consents).
+   * Retrieves an OAuth client along with the user's consent details.
    *
-   * Data Storage Details:
-   *   - The query uses a JOIN between 'oauth_clients' and 'oauth_consents'.
-   *   - Fields like `is_authorized` and `is_my` are computed to indicate authorization status.
+   * OAuth2 Flow Context:
+   *   - This method fetches the client details along with the user's consent scope and revocation timestamp.
    *
-   * @param userId The user's unique identifier.
-   * @returns Array of raw client records, enriched with authorization flags.
+   * @param clientId Unique client identifier.
+   * @param userId User identifier.
+   * @returns The client data with consent details if found; otherwise, undefined.
    */
-  async getClients(userId: number): Promise<OAuth2ClientRaw[]> {
-    return await this.db.fetchAll<OAuth2ClientRaw>(
+  async getClientWithConsent(clientId: string, userId: number): Promise<OAuth2ClientRaw | undefined> {
+    return await this.db.fetchOne<OAuth2ClientRaw>(
       `select 
           oauth_clients.*,
-          oauth_consents.user_id as is_authorized,
-          if(oauth_clients.user_id = :user_id, 1, 0) as is_my
+          oauth_consents.scope as scopes,
+          oauth_consents.last_revoked_ts as last_revoked_ts
         from 
           oauth_clients 
-        left outer join oauth_consents on oauth_consents.user_id = :user_id 
-          and oauth_consents.client_id = oauth_clients.client_id
-          and oauth_consents.last_revoked_ts is null
+        left outer join oauth_consents on oauth_consents.client_id = oauth_clients.client_id
+            and oauth_consents.user_id = :user_id
         where 
-          oauth_clients.user_id = :user_id or
-          oauth_consents.user_id is not null`,
-      { user_id: userId }
+          oauth_clients.client_id = :client_id`,
+      { user_id: userId, client_id: clientId }
     );
   }
 
@@ -94,7 +97,7 @@ export default class OAuth2Repository {
    * OAuth2 Registration Flow:
    *   - When an application registers as an OAuth client, a unique client_id and a client secret are generated.
    *   - The secret is hashed for secure storage.
-   * 
+   *
    * Data Storage Details:
    *   The new client record is inserted into the 'oauth_clients' table along with details such as:
    *     - name, description, logo URL, initial authorization URL, redirect URIs, and supported grant types.
@@ -252,12 +255,12 @@ export default class OAuth2Repository {
    *     - scope (space-separated list of permissions)
    *     - last_revoked_ts to track revocation events.
    *
-   * @param userId The user's unique identifier.
    * @param clientId The OAuth client's unique identifier.
+   * @param userId The user's unique identifier.
    * @param scope The scope string (space-separated) granted by the user.
    * @returns True if the consent was saved or updated successfully; otherwise, false.
    */
-  async saveOrUpdateConsent(userId: number, clientId: string, scope: string): Promise<boolean> {
+  async saveOrUpdateConsent(clientId: string, userId: number, scope: string): Promise<boolean> {
     try {
       // Try to fetch an existing consent record.
       const existingConsent = await this.db.fetchOne<{ scope: string }>(
@@ -288,5 +291,12 @@ export default class OAuth2Repository {
       console.error('Failed to save oauth consent', error);
       return false;
     }
+  }
+
+  async resetConsentScope(clientId: string, userId: number): Promise<boolean> {
+    return await this.db.query<ResultSetHeader>(
+      `update oauth_consents set scope = '' where user_id = :user_id and client_id = :client_id`,
+      { user_id: userId, client_id: clientId }
+    ).then(result => result.affectedRows > 0);
   }
 }

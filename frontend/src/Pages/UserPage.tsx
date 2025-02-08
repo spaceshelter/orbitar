@@ -153,7 +153,7 @@ export const UserPage = observer(() => {
                         barmaliniAccess={restrictions?.canVoteKarma && !profile.isBarmalini}
                         isBarmalini={profile.isBarmalini}
                     />}
-                    {isApps && <UserProfileClientsApps />}
+                    {isApps && username && <UserProfileClientsApps forUserName={username} />}
                 </div>
             </div>
         );

@@ -12,8 +12,7 @@ export type OAuth2ClientEntity = {
   redirectUris: string;
   grants: string[];
   author: UserInfo;
-  isAuthorized?: boolean;
-  isMy?: boolean;
+  scopes?: string;
 };
 
 export const OAuth2ScopesLabels: { [key: string]: string; } = {

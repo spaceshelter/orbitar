@@ -1,10 +1,19 @@
-import { AuthorizationCode, AuthorizationCodeModel, Callback, Token, Client, Falsey, User } from 'oauth2-server';
-import { randomBytes } from 'crypto';
+import {
+  AuthorizationCode,
+  AuthorizationCodeModel,
+  Callback,
+  Token,
+  Client,
+  Falsey,
+  User,
+  RefreshTokenModel,
+  RefreshToken
+} from 'oauth2-server';
+import {randomBytes} from 'crypto';
 import OAuth2Repository from '../db/repositories/OAuth2Repository';
-import { OAuthConfig } from '../config';
-import { RedisClientType } from 'redis';
-import { OAuth2ClientRaw } from '../db/types/OAuth2';
-import jwt from 'jsonwebtoken';
+import {OAuthConfig} from '../config';
+import {RedisClientType} from 'redis';
+import jwt, {JwtPayload} from 'jsonwebtoken';
 import crypto from 'crypto';
 
 /**
@@ -19,7 +28,7 @@ enum TokenType {
  * AuthorizationCodeModelImpl implements the `AuthorizationCodeModel` interface required by the oauth2-server.
  *
  * See model description here: https://oauth2-server.readthedocs.io/en/latest/model/overview.html
- * 
+ *
  * This class encapsulates the logic necessary for an OAuth2 Authorization Code Grant Flow. Key responsibilities
  * include:
  *  - Generating and verifying JWT-based access and refresh tokens.
@@ -27,7 +36,7 @@ enum TokenType {
  *  - Persisting authorization codes in Redis with expiration (TTL) handling.
  *  - Interfacing with a database repository to retrieve and update OAuth2 client and consent information stored in MySQL.
  */
-export default class AuthorizationCodeModelImpl implements AuthorizationCodeModel {
+export default class AuthorizationCodeModelImpl implements AuthorizationCodeModel, RefreshTokenModel {
   private repo: OAuth2Repository;
   private readonly redis: RedisClientType;
   private config: OAuthConfig;
@@ -40,7 +49,7 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
 
   /**
    * Generates a JWT token for either access or refresh purposes.
-   * 
+   *
    * @param sub - Subject identifier (typically the user id).
    * @param exp - Expiration timestamp (in seconds).
    * @param iat - Issued-at timestamp.
@@ -77,7 +86,7 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
 
   /**
    * Generates SHA-256 hash for a given string.
-   * 
+   *
    * @param value - The string value to hash.
    * @returns A hex string representing the computed hash.
    */
@@ -87,11 +96,11 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
 
   /**
    * Retrieves and verifies an access token by decoding its JWT.
-   * 
+   *
    * OAuth2 Flow Details:
    *   - The JWT is verified using a secret key.
    *   - The function also checks whether the token has expired.
-   * 
+   *
    * @param accessToken - The JWT string used as the access token.
    * @returns A Token object if verification passes; otherwise, null.
    */
@@ -119,28 +128,22 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
 
   /**
    * Retrieves the client details from the database repository.
-   * 
+   *
    * OAuth2 Flow Details:
    *   - When an OAuth2 client is authenticating, its credentials (ID and secret) are validated.
    *   - If the clientSecret is provided, it is hashed and compared with the stored hash.
-   * 
+   *
    * @param clientId - The unique OAuth2 client identifier.
    * @param clientSecret - Optional plaintext client secret.
    * @returns A Client object conforming to oauth2-server if valid; otherwise, null.
    */
   async getClient(clientId: string, clientSecret?: string): Promise<Falsey | Client> {
-    let clientFromDB: OAuth2ClientRaw;
-    if (clientSecret) {
-      const secretHash = this.hashString(clientSecret);
-      clientFromDB = await this.repo.getClientByClientIdAndClientSecretHash(clientId, secretHash);
-    } else {
-      clientFromDB = await this.repo.getClientByClientId(clientId);
-    }
-
-    if (!clientFromDB) {
+    const clientFromDB = await this.repo.getClientByClientId(clientId);
+    if (!clientFromDB ||
+        (clientSecret && clientFromDB.client_secret_hash !== this.hashString(clientSecret))
+    ) {
       return null;
     }
-
     return {
       id: clientId,
       redirectUris: clientFromDB.redirect_uris.split(',').map(uri => uri.trim()),
@@ -150,11 +153,11 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
 
   /**
    * Generates a JWT access token.
-   * 
+   *
    * OAuth2 Flow Details:
    *   - Access tokens are created with a defined TTL.
    *   - The token includes client and user information within its payload.
-   * 
+   *
    * @param client - The OAuth2 client for which the token is issued.
    * @param user - The user associated with the token.
    * @param scope - Permissions granted.
@@ -179,19 +182,17 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
 
   /**
    * Saves an access token and a refresh token once generated.
-   * 
+   *
    * OAuth2 Flow Details:
    *   - Upon token generation, user consent for the client may also be updated.
    *   - This persists token details for future validation.
-   * 
+   *
    * @param token - Token object containing access and refresh tokens.
    * @param client - The client associated with the token.
    * @param user - The user for whom the token was generated.
    * @returns The token object if saved successfully; otherwise, null.
    */
   async saveToken(token: Token, client: Client, user: User): Promise<Token | Falsey> {
-    const scopeStr = Array.isArray(token.scope) ? token.scope.join(' ') : token.scope;
-    await this.repo.saveOrUpdateConsent(user.id, client.id, scopeStr);
     return {
       accessToken: token.accessToken,
       accessTokenExpiresAt: token.accessTokenExpiresAt,
@@ -204,11 +205,11 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
 
   /**
    * Verifies that the token has the required scopes.
-   * 
+   *
    * OAuth2 Flow Details:
    *   - The scopes embedded in the token are compared against required scopes.
    *   - Parent scopes (without colons) can cover child scopes (with colons).
-   * 
+   *
    * @param token - The token object containing granted scopes.
    * @param scope - The required scope(s), provided as a string or array.
    * @param callback - (Optional) Callback that receives the verification result.
@@ -249,12 +250,12 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
 
   /**
    * Saves an authorization code in Redis with an expiration.
-   * 
+   *
    * OAuth2 Flow Details:
    *   - Used during the authorization code grant flow.
    *   - Verifies the client exists before storing the code.
    *   - Stores the code along with its expiration, redirect URI, and associated user/client data.
-   * 
+   *
    * @param code - The authorization code object.
    * @param client - The client associated with this code.
    * @param user - The user who authorized the client.
@@ -293,12 +294,12 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
 
   /**
    * Retrieves an authorization code from Redis.
-   * 
+   *
    * OAuth2 Flow Details:
    *   - Finds the code in Redis.
    *   - Converts the stored expiration time back into a Date object.
    *   - If the code is expired, it is revoked.
-   * 
+   *
    * @param code - The authorization code string.
    * @returns The authorization code object if valid; otherwise, null.
    */
@@ -324,10 +325,10 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
 
   /**
    * Revokes an authorization code by deleting it from Redis.
-   * 
+   *
    * OAuth2 Flow Details:
    *   - Once the code is used (or expired), it is removed to prevent reuse.
-   * 
+   *
    * @param code - The authorization code object to revoke.
    * @returns True if the code was successfully revoked; otherwise, false.
    */
@@ -342,11 +343,11 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
 
   /**
    * Generates a JWT refresh token.
-   * 
+   *
    * OAuth2 Flow Details:
    *   - Refresh tokens are used to obtain new access tokens.
    *   - A separate expiration time is configured for refresh tokens.
-   * 
+   *
    * @param client - The client for which the token is issued.
    * @param user - The user associated with the token.
    * @param scope - The scope granted.
@@ -359,19 +360,15 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
     scope: string | string[],
     callback?: (err: Error | null, refreshToken?: string) => void
   ): Promise<string> {
-    const nowTs = Math.floor(Date.now() / 1000);
-    const expiresTs = nowTs + this.config.refreshTokenTtlSeconds;
+    const nowTs = Date.now();
+    const expiresTs = nowTs + this.config.refreshTokenTtlSeconds * 1000;
     const token = AuthorizationCodeModelImpl.generateJwtToken(
-      user.id.toString(),
-      expiresTs,
-      nowTs,
-      client.id,
-      scope,
-      TokenType.Refresh,
-      {
-        client,
-        user
-      }
+      /*sub*/client.id,
+      /*exp*/expiresTs,
+      /*iat*/nowTs,
+      /*aud*/user.id.toString(),
+      /*scope*/scope,
+      /*type*/TokenType.Refresh
     );
     if (callback && typeof callback === 'function') {
       callback(null, token);
@@ -379,13 +376,74 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
     return token;
   }
 
+  async getRefreshToken(refreshToken: string, callback?: Callback<RefreshToken>): Promise<Falsey | RefreshToken> {
+    try {
+      // Decode and verify the JWT
+      const {
+        aud,
+        exp,
+        iat,
+        sub,
+        scope,
+        type
+      } = jwt.verify(refreshToken, process.env.JWT_SECRET_KEY) as JwtPayload;
+      if (type !== TokenType.Refresh) {
+        throw new Error('Invalid token type');
+      }
+      const clientId = sub;
+      const userId = parseInt(aud as string);
+      const clientWithConsent = await this.repo.getClientWithConsent(clientId, userId);
+      if (!clientWithConsent) {
+        throw new Error('Client not found');
+      }
+      // check expiration
+      if (exp && new Date(exp) < new Date()) {
+          throw new Error('Token expired');
+      }
+      // check revocation
+      if (clientWithConsent.last_revoked_ts && new Date(iat) < clientWithConsent.last_revoked_ts) {
+          throw new Error('Token revoked');
+      }
+      const decoded: RefreshToken = {
+        refreshToken,
+        refreshTokenExpiresAt: new Date(exp),
+        scope,
+        client: {
+          id: clientId,
+          grants: clientWithConsent.grants ? clientWithConsent.grants : []
+        },
+        user: { id: userId }
+      };
+      if (callback) {
+          callback(null, decoded);
+      }
+      return decoded;
+
+    } catch (error) {
+      // Error handling: token may be expired or have an invalid signature.
+      if (callback) {
+        callback(error, null);
+      }
+      return null;
+    }
+  }
+
+  revokeToken(token: RefreshToken | Token, callback?: Callback<boolean>): Promise<boolean> {
+    // revocation of the individual tokens is not supported
+    if (callback) {
+      callback(null, true);
+    }
+    return Promise.resolve(true);
+  }
+
+
   /**
    * Generates a secure random authorization code.
-   * 
+   *
    * OAuth2 Flow Details:
    *   - Used within the authorization code grant flow.
    *   - Generates a random hex string using 32 bytes of randomness.
-   * 
+   *
    * @param client - The client associated with this request.
    * @param user - The user authorizing the client.
    * @param scope - The granted scope.
@@ -399,6 +457,10 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
     callback?: (err: Error | null, authorizationCode?: string) => void
   ): Promise<string> {
     const authCode = randomBytes(32).toString('hex');
+
+    const scopeStr = Array.isArray(scope) ? scope.join(' ') : scope;
+    await this.repo.saveOrUpdateConsent(client.id, user.id, scopeStr);
+
     if (callback && typeof callback === 'function') {
       callback(null, authCode);
     }
@@ -407,7 +469,7 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
 
   /**
    * Generates a unique client identifier.
-   * 
+   *
    * @returns A UUID string.
    */
   static generateClientId = (): string => {
@@ -416,7 +478,7 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
 
   /**
    * Generates a secure client secret.
-   * 
+   *
    * @returns A hexadecimal string representing the new client secret.
    */
   static generateClientSecret = (): string => {
@@ -425,7 +487,7 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
 
   /**
    * Computes the SHA-256 hash of a given string.
-   * 
+   *
    * @param value - The string to hash.
    * @returns The computed hash as a hex string.
    */

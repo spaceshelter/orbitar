@@ -64,23 +64,13 @@ export default class OAuth2Manager {
     }
   }
 
-  /**
-   * Lists OAuth2 clients for a given user.
-   *
-   * Clients Management API Context:
-   *   - Retrieves clients that were either created or authorized by the user.
-   *   - Merges client data from 'oauth_clients' with consent information from 'oauth_consents'.
-   *   - Enriches each record with the author's detailed information.
-   *
-   * @param userId Identifier for which clients (authorized or owned) are to be listed.
-   * @param currentUser Identifier of the current logged-in user (for UI distinction).
-   * @returns Array of OAuth2ClientEntity objects containing detailed client information.
-   */
-  async listClients(userId: number, currentUser: number): Promise<OAuth2ClientEntity[]> {
+
+  async listClients(authorId: number, consentUserId?: number): Promise<OAuth2ClientEntity[]> {
     try {
-      const clients = await this.oauthRepository.getClients(userId);
+      const clients = await this.oauthRepository.getClients(authorId, consentUserId || authorId);
       return await Promise.all(clients.map(async (client) => {
         const author = await this.userManager.getById(client.user_id);
+
         return {
           name: client.name,
           description: client.description,
@@ -91,8 +81,7 @@ export default class OAuth2Manager {
           userId: client.user_id,
           logoUrl: client.logo_url,
           author,
-          isAuthorized: !!client.is_authorized,
-          isMy: author.id === currentUser
+          scopes: client.scopes,
         } as OAuth2ClientEntity;
       }));
     } catch (error) {
@@ -115,7 +104,7 @@ export default class OAuth2Manager {
    */
   async getClientByClientId(clientId: string, currentUser: number, includeSecret = false): Promise<OAuth2ClientEntity | undefined> {
     try {
-      const client = await this.oauthRepository.getClientByClientId(clientId);
+      const client = await this.oauthRepository.getClientWithConsent(clientId, currentUser);
       if (!client) {
         return undefined;
       }
@@ -134,7 +123,7 @@ export default class OAuth2Manager {
         userId: client.user_id,
         logoUrl: client.logo_url,
         author,
-        isMy: author.id === currentUser,
+        scopes: client.scopes,
       } as OAuth2ClientEntity;
     } catch (error) {
       this.logger.error('Error getting OAuth client by client ID', {error});
@@ -211,6 +200,7 @@ export default class OAuth2Manager {
    */
   async unAuthorizeClient(clientId: string, userId: number): Promise<boolean> {
     try {
+      await this.oauthRepository.resetConsentScope(clientId, userId);
       return await this.oauthRepository.updateConsentLastRevokeDate(clientId, userId);
     } catch (error) {
       this.logger.error('Error unauthorizing OAuth client', {error});

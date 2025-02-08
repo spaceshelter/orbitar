@@ -8,12 +8,15 @@ import React from 'react';
 import { OAuth2ClientEntity } from '../Types/OAuth2';
 import { confirmAlert } from 'react-confirm-alert';
 import { toast } from 'react-toastify';
-import { useAPI } from '../AppState/AppState';
+import {useAPI, useAppState} from '../AppState/AppState';
 import APIBase from '../API/APIBase';
 
 interface OAuthAppCardComponentProps {
   client: OAuth2ClientEntity;
-  scope?: string;
+  // scopes that are requested by the new authorization
+  newlyRequestedScopes?: string;
+  // scopes that were previously authorized
+  authorizedScopes?: string;
   redirectUri?: string;
   state?: string;
   sessionId?: string;
@@ -26,7 +29,11 @@ interface OAuthAppCardComponentProps {
 
 export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps) {
   const api = useAPI();
-  const { client, scope } = props;
+  const { client, newlyRequestedScopes, authorizedScopes } = props;
+  const { userInfo } = useAppState();
+  const userId = userInfo?.id;
+  const isMy = client.author.id === userId;
+  const [showCurrentScopes, setShowCurrentScopes] = React.useState(false);
 
   const handleInstallClick = () => {
     if (client.initialAuthorizationUrl) {
@@ -112,28 +119,28 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
     <div
       className={classNames({
         [styles.appCard]: true,
-        [styles.inCatalog]: !scope,
-        [styles.isMy]: client.isMy,
+        [styles.inCatalog]: !newlyRequestedScopes,
+        [styles.isMy]: isMy,
       })}
     >
       <div className={styles.nameContainer}>
-        {scope ? 'Приложение ' : ''}
+        {newlyRequestedScopes ? 'Приложение ' : ''}
         <span className={styles.name}>
           {client.name}{' '}
-          {!client.isMy && (
+          {!isMy && (
             <>
               от&nbsp;
               <Username className={styles.author} user={client.author} />
             </>
           )}
         </span>
-        {scope ? ' запрашивает доступ к вашему аккаунту.' : ''}
+        {newlyRequestedScopes ? ' запрашивает доступ к вашему аккаунту.' : ''}
       </div>
       <div className={styles.logoContainer}>
-        <OAuth2ClientLogoComponent url={client.logoUrl} isMy={!!client.isMy && !scope} onNewLogo={handleNewLogo} />
+        <OAuth2ClientLogoComponent url={client.logoUrl} isMy onNewLogo={handleNewLogo} />
       </div>
 
-      {client.isMy && !scope && (
+      {isMy && (
         <div className={classNames([styles.buttonsContainer, styles.ownerButtons])}>
           <button onClick={handleClientSecretUpdate} className={buttonStyles.linkButton}>
             обновить секрет
@@ -149,20 +156,34 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
       </div>
 
       <div className={styles.buttonsContainer}>
-        {!scope && client.initialAuthorizationUrl && !client.isAuthorized && (
+        {!newlyRequestedScopes && client.initialAuthorizationUrl && (
           <button
             onClick={handleInstallClick}
             className={classNames({
               [buttonStyles.settingsButton]: true,
               [buttonStyles.positiveButton]: true,
-              [buttonStyles.bigger]: !!scope,
+              [buttonStyles.bigger]: !!newlyRequestedScopes,
             })}
           >
             Установить
           </button>
         )}
-        {client.isAuthorized && (
-          <button
+        {!!authorizedScopes && (
+            <>
+              {showCurrentScopes && (
+                  <div className={styles.scopeContainer}>
+                    <h3>Что доступно приложению:</h3>
+                    <OAuth2ScopesComponent appRequests={authorizedScopes}/>
+                  </div>
+              )}
+
+              <button className="button" type='button'
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setShowCurrentScopes(!showCurrentScopes);
+                      }}><span className={classNames('i', 'i-info')}></span>Инфо
+              </button>
+              <button
             onClick={handleUnInstallClick}
             className={classNames({
               [buttonStyles.settingsButton]: true,
@@ -170,9 +191,10 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
           >
             Отозвать авторизацию
           </button>
+            </>
         )}
       </div>
-      {scope && (
+      {newlyRequestedScopes && (
         <>
           <div className={styles.scopeContainer}>
             <h3>Что будет доступно приложению:</h3>
@@ -182,11 +204,11 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
               <a href="https://orbitar.space/p16835">тут</a>
             </div>
             <div>
-              <OAuth2ScopesComponent appRequests={scope} />
+              <OAuth2ScopesComponent appRequests={newlyRequestedScopes} />
             </div>
           </div>
           <form className={styles.buttonsContainer} method="POST" action={APIBase.endpoint + '/oauth2/authorize'}>
-            <input type="hidden" name="scope" value={props.scope} />
+            <input type="hidden" name="scope" value={props.newlyRequestedScopes} />
             <input type="hidden" name="state" value={props.state} />
             <input type="hidden" name="client_id" value={client.clientId} />
             <input type="hidden" name="redirect_uri" value={props.redirectUri} />

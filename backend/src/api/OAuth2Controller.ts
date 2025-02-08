@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { Logger } from 'winston';
-import {APIRequest, APIResponse, validate, urisListValidator, joiClientId} from './ApiMiddleware';
+import {APIRequest, APIResponse, validate, urisListValidator, joiClientId, joiUsername} from './ApiMiddleware';
 import OAuth2Manager from '../managers/OAuth2Manager';
 import {
   OAuth2RegisterRequest,
@@ -51,8 +51,9 @@ const clientRegisterSchema = Joi.object<OAuth2RegisterRequest>({
     })
 });
 
-const listClientsSchema = Joi.object<OAuth2ClientsListRequest>({})
-  .pattern(/.*/, Joi.any().forbidden());
+const listClientsSchema = Joi.object<OAuth2ClientsListRequest>({
+  username: joiUsername.required()
+});
 
 const getClientSchema = Joi.object<OAuth2ClientRequest>({
   client_id: Joi.alternatives().try(
@@ -178,10 +179,18 @@ export default class OAuth2Controller {
       return response.authRequired();
     }
 
-    const userId = request.session.data.userId;
+    const { username } = request.body;
 
     try {
-      const clients: OAuth2ClientEntity[] = await this.oauth2Manager.listClients(userId, userId);
+      const requestedUser = await this.userManager.getByUsername(username);
+      if (!requestedUser) {
+        return response.error('not-found', 'User not found', 404);
+      }
+      const requestedUserId = requestedUser.id;
+      const currentUserId = request.session.data.userId;
+
+      // Load clients created by the given user with current user consent
+      const clients: OAuth2ClientEntity[] = await this.oauth2Manager.listClients(requestedUserId, currentUserId);
       const responseData: OAuth2ClientsListResponse = { clients };
       response.success(responseData);
     } catch (err) {

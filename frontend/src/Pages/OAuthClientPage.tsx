@@ -91,7 +91,7 @@ export const OAuthClientPage = observer(() => {
             <h2>Авторизация приложения</h2>
             <OAuth2AppCardComponent
                 client={client}
-                scope={scope}
+                newlyRequestedScopes={scope}
                 redirectUri={redirectUri}
                 state={state}
                 sessionId={sessionId}
