@@ -1,14 +1,8 @@
 import DB from '../DB';
-import {
-  OAuth2ClientRaw,
-  OAuth2ConsentRaw
-} from '../types/OAuth2';
-import {ResultSetHeader} from 'mysql2';
-import TokenService from '../../oauth/TokenService';
-import {config} from '../../config';
-import {AuthorizationCode, AuthorizationCodeModel, Falsey, Token} from 'oauth2-server';
+import { OAuth2ClientRaw } from '../types/OAuth2';
+import { ResultSetHeader } from 'mysql2';
 
-export default class OAuth2Repository implements AuthorizationCodeModel {
+export default class OAuth2Repository {
   private db: DB;
 
   constructor(db: DB) {
@@ -16,190 +10,7 @@ export default class OAuth2Repository implements AuthorizationCodeModel {
   }
 
   /**
-   * Returns the OAuth client (using client_id as the identifier).
-   */
-  async getClient(clientId: string, clientSecret?: string) {
-    let clientFromDB;
-    if (clientSecret) {
-      const secretHash = TokenService.hashString(clientSecret);
-      clientFromDB = await this.getClientByClientIdAndClientSecretHash(clientId, secretHash);
-    } else {
-      clientFromDB = await this.getClientByClientId(clientId);
-    }
-
-    if (!clientFromDB) {
-      return null;
-    }
-
-    return {
-      id: clientId,
-      redirectUris: clientFromDB.redirect_uris.split(',').map(uri => uri.trim()),
-      grants: clientFromDB.grants.split(',').map(grant => grant.trim()),
-    };
-  }
-
-  /**
-   * Generates an access token.
-   * This method does not persist the token.
-   */
-  async generateAccessToken(client, user, scope) {
-    const nowTs = Math.floor(Date.now() / 1000);
-    const accessTokenExpiresAtTs = nowTs + (parseInt(process.env.ACCESS_TOKEN_TTL_SECONDS, 10) || 3600 * 24 * 7);
-    return TokenService.generateAccessToken(user.id.toString(), client.id, scope, accessTokenExpiresAtTs, nowTs, nowTs);
-  }
-
-  /**
-   * Saves a token.
-   *
-   * Since we don't persist tokens to a database anymore,
-   * this implementation simply returns a token object.
-   */
-  async saveToken(token, client, user): Promise<Token | Falsey> {
-    return {
-      accessToken: token.accessToken,
-      accessTokenExpiresAt: token.accessTokenExpiresAt,
-      refreshToken: token.refreshToken,
-      client: {
-        id: client.id,
-        grants: client.grants ? client.grants : [],
-      },
-      user: {
-        id: user.id,
-      },
-      scope: token.scope,
-    };
-  }
-
-  /**
-   * Retrieves an access token.
-   *
-   * Since tokens are not stored, we always return null.
-   */
-  async getAccessToken(accessToken: string): Promise<Token | Falsey> {
-    return null;
-  }
-
-  /**
-   * Retrieves a refresh token.
-   *
-   * Since tokens are not stored, we always return null.
-   */
-  async getRefreshToken(refreshToken: string): Promise<Token | Falsey> {
-    return null;
-  }
-
-  /**
-   * Revokes a token.
-   *
-   * As tokens are not persisted, nothing needs to be revoked.
-   */
-  async revokeToken(token): Promise<boolean> {
-    return true;
-  }
-
-  /**
-   * Verifies token scope.
-   *
-   * With token persistence removed, this method can't perform any real verification.
-   * Adjust this implementation as needed.
-   */
-  async verifyScope(accessToken, requestedScopes): Promise<boolean> {
-    return false;
-  }
-
-  /**
-   * Saves an authorization code.
-   */
-  private static authorizationCodes = new Map<string, {
-    code: AuthorizationCode;
-    expiresAt: Date;
-  }>();
-
-  async saveAuthorizationCode(code, client, user) {
-    const userId = user.id;
-    const clientId = client.id;
-    const scope = code.scope;
-    const redirectUri = code.redirectUri;
-
-    const expiresAt = new Date((Date.now() / 1000 + config.oauth.authorizationCodeTtlSeconds) * 1000);
-
-    try {
-      // Check if the client exists
-      const clientRecord = await this.getClientByClientId(clientId);
-      if (!clientRecord) {
-        return null;
-      }
-
-      // Save consent
-      await this.db.query(
-        `insert into oauth_consents (user_id, client_id, scope)
-         values (:user_id, :client_id, :scope)
-         on duplicate key update scope=:scope`,
-        {
-          user_id: userId,
-          client_id: clientId,
-          scope,
-        }
-      );
-
-      // Store the code in memory
-      const authCode = {
-        authorizationCode: code.authorizationCode,
-        expiresAt,
-        redirectUri,
-        scope,
-        client,
-        user,
-      };
-      
-      OAuth2Repository.authorizationCodes.set(code.authorizationCode, {
-        code: authCode,
-        expiresAt
-      });
-
-      // Clean up expired codes
-      this.cleanupExpiredCodes();
-
-      return authCode;
-    } catch (error) {
-      return null;
-    }
-  }
-
-  private cleanupExpiredCodes() {
-    const now = new Date();
-    for (const [hash, data] of OAuth2Repository.authorizationCodes) {
-      if (data.expiresAt < now) {
-        OAuth2Repository.authorizationCodes.delete(hash);
-      }
-    }
-  }
-
-  /**
-   * Retrieves an authorization code (ensuring it is not expired).
-   */
-  async getAuthorizationCode(code: string): Promise<AuthorizationCode | Falsey> {
-    const authCode = OAuth2Repository.authorizationCodes.get(code);
-    if (!authCode || authCode.expiresAt < new Date()) {
-      return null;
-    }
-    return authCode.code;
-  }
-
-  /**
-   * Revokes an authorization code.
-   */
-  async revokeAuthorizationCode(code): Promise<boolean> {
-    try {
-      OAuth2Repository.authorizationCodes.delete(code.authorizationCode);
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  /**
-   * Retrieves a client by its client_id.
+   * Retrieves a client by its client id.
    */
   async getClientByClientId(clientId: string): Promise<OAuth2ClientRaw | undefined> {
     return await this.db.fetchOne<OAuth2ClientRaw>(
@@ -209,7 +20,7 @@ export default class OAuth2Repository implements AuthorizationCodeModel {
   }
 
   /**
-   * Retrieves a client by its client_id and client secret hash.
+   * Retrieves a client by its client id and client secret hash.
    */
   async getClientByClientIdAndClientSecretHash(clientId: string, clientSecretHash: string): Promise<OAuth2ClientRaw | undefined> {
     return await this.db.fetchOne<OAuth2ClientRaw>(
@@ -222,7 +33,7 @@ export default class OAuth2Repository implements AuthorizationCodeModel {
   }
 
   /**
-   * Retrieves a list of clients (with consent info) for a given user.
+   * Retrieves a list of clients for a given user.
    */
   async getClients(userId: number): Promise<OAuth2ClientRaw[]> {
     return await this.db.fetchAll<OAuth2ClientRaw>(

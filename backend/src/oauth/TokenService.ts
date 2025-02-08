@@ -3,20 +3,27 @@ import crypto from 'crypto';
 
 const accessTokenExpiresInHours = 24;
 
+export enum TokenType {
+  Access,
+  Refresh
+}
+
 export default class TokenService {
   static getSecretKey(): string {
     return process.env.JWT_SECRET_KEY;
   }
 
-  static generateAccessToken(sub: string, aud: string, scope: string, exp: number, iat: number, authTime: number): string {
+  static generateJwtToken(sub: string, exp: number, iat: number, aud: string, scope: string | string[], type: TokenType): string {
+    const iss = 'https://orbitar.space';
+    scope = Array.isArray(scope) ? scope.join(' ') : scope;
     const payload = {
-      iss: process.env.JWT_ISSUER || 'https://orbitar.space',
-      sub,
       aud,
+      iss,
       exp,
       iat,
-      auth_time: authTime,
-      scope
+      sub,
+      scope,
+      type
     };
 
     const secretKey = TokenService.getSecretKey();
@@ -48,11 +55,4 @@ export default class TokenService {
   static hashString = (value: string): string => {
     return crypto.createHash('sha256').update(value).digest('hex');
   };
-
-  static generateAuthorizationCode(ttlSeconds: number): { code: string; expiresAt: Date } {
-    return {
-      code: crypto.randomBytes(16).toString('hex'),
-      expiresAt: new Date(Date.now() + (ttlSeconds) * 1000)
-    };
-  }
 }

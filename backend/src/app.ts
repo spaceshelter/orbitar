@@ -49,6 +49,7 @@ import OAuth2Repository from './db/repositories/OAuth2Repository';
 import OAuth2Controller from './api/OAuth2Controller';
 import OAuthServer from 'express-oauth-server';
 import OAuth2Authenticate from './api/OAuth2Middleware';
+import AuthorizationCodeModelImpl from './oauth/AuthorizationCodeModelImpl';
 
 const app = express();
 
@@ -114,9 +115,11 @@ const webPushRepository = new WebPushRepository(db);
 const translationRepository = new TranslationRepository(db);
 const oauthRepository = new OAuth2Repository(db);
 
+const oauthModel = new AuthorizationCodeModelImpl(oauthRepository, redis.client, config.oauth);
+
 app.oauth = new OAuthServer({
-    model: oauthRepository,
-    accessTokenLifetime: 60 * 60 * 24 *7,
+    model: oauthModel,
+    accessTokenLifetime: config.oauth.accessTokenTtlSeconds,
     allowEmptyState: true,
     allowExtendedTokenAttributes: true
 });
