@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { Logger } from 'winston';
-import { APIRequest, APIResponse, validate, urisListValidator } from './ApiMiddleware';
+import {APIRequest, APIResponse, validate, urisListValidator, joiClientId} from './ApiMiddleware';
 import OAuth2Manager from '../managers/OAuth2Manager';
 import {
   OAuth2RegisterRequest,
@@ -18,6 +18,7 @@ import {OAuth2ClientEntity} from './types/entities/OAuth2ClientEntity';
 import {OAuth2ClientRaw} from '../db/types/OAuth2';
 import ExpressOAuthServer from 'express-oauth-server';
 import {config} from '../config';
+import {escapeRegExp} from '../parser/regexprs';
 
 const clientRegisterSchema = Joi.object<OAuth2RegisterRequest>({
   name: Joi.string().max(32).required(),
@@ -55,23 +56,23 @@ const listClientsSchema = Joi.object<OAuth2ClientsListRequest>({})
 
 const getClientSchema = Joi.object<OAuth2ClientRequest>({
   client_id: Joi.alternatives().try(
-    Joi.string().max(255),
+      joiClientId,
     Joi.number()
   ).required()
 });
 
 const clientManageSchema = Joi.object<OAuth2ClientManageRequest>({
-  client_id: Joi.string().max(36).min(36).required()
+  client_id: joiClientId.required()
 });
 
 const updateLogoUrlSchema = Joi.object<OAuth2ClientUpdateLogoUrlRequest>({
-  client_id: Joi.string().max(36).min(36).required(),
+  client_id: joiClientId.required(),
   url: Joi.string()
       .uri({
         scheme: ['http', 'https']
       })
       .max(255)
-      .pattern(new RegExp(`^${config.mediaHosting.url}`))
+      .pattern(new RegExp(`^${escapeRegExp(config.mediaHosting.url)}`))
       .required()
 });
 

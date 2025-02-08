@@ -133,6 +133,8 @@ export const joiFormat = Joi.valid('html', 'source').default('html');
 export const joiSite = Joi.string().max(siteDomainMaxLengthChars).regex(/^[a-z\d-]*$/i);
 export const joiSiteName = Joi.string().min(siteNameMinLengthChars).max(siteNameMaxLengthChars);
 
+export const joiClientId = Joi.string().max(36).min(36);
+
 export const urisListValidator = Joi.string().custom((value, helpers) => {
     // remove optional trailing slash with star to support urls like https://example.com/*
     const urls = value.split(',').map(url => url.trim().replace(/\/*$/, ''));
