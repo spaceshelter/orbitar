@@ -33,6 +33,7 @@ import {ERROR_CODES} from './utils/error-codes';
 import InviteManager from '../managers/InviteManager';
 import rateLimit from 'express-rate-limit';
 import {OAuth2ScopeEndpointsMap} from './utils/OAuth2-scopes';
+import OAuth2Manager from '../managers/OAuth2Manager';
 
 export default class UserController {
     public readonly router = Router();
@@ -42,13 +43,16 @@ export default class UserController {
     private readonly inviteManager: InviteManager;
     private readonly logger: Logger;
     private readonly enricher: Enricher;
+    private readonly oauthManager: OAuth2Manager;
 
-    constructor(enricher: Enricher, userManager: UserManager, postManager: PostManager, voteManager: VoteManager, inviteManager: InviteManager, oauthMiddlewareGenerator, logger: Logger) {
+    constructor(enricher: Enricher, userManager: UserManager, postManager: PostManager, voteManager: VoteManager,
+                inviteManager: InviteManager, oauthMiddlewareGenerator, oauthManager: OAuth2Manager, logger: Logger) {
         this.enricher = enricher;
         this.userManager = userManager;
         this.postManager = postManager;
         this.voteManager = voteManager;
         this.inviteManager = inviteManager;
+        this.oauthManager = oauthManager;
         this.logger = logger;
 
         const profileSchema = Joi.object<UserProfileRequest>({
@@ -141,6 +145,7 @@ export default class UserController {
             const numberOfPosts = await this.postManager.getPostsByUserTotal(profileInfo.id, '') || 0;
             const numberOfComments = await this.postManager.getUserCommentsTotal(profileInfo.id, '') || 0;
             const visitedDaysAgo = await this.userManager.getUserVisitedDaysAgo(profileInfo.id);
+            const hasOwnApps = await this.oauthManager.hasOwnApps(profileInfo.id);
 
             // if viewing own profile, get available invites number
             let numberOfInvitesAvailable = 0;
@@ -176,7 +181,8 @@ export default class UserController {
                 numberOfInvitesAvailable,
                 isBarmalini: this.userManager.isBarmaliniUser(profileInfo.id),
                 publicKey,
-                visitedDaysAgo: visitedDaysAgo
+                visitedDaysAgo: visitedDaysAgo,
+                hasOwnApps
             });
         } catch (error) {
             this.logger.error('Could not get user profile', {username});

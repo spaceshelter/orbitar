@@ -137,7 +137,7 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
         {newlyRequestedScopes ? ' запрашивает доступ к вашему аккаунту.' : ''}
       </div>
       <div className={styles.logoContainer}>
-        <OAuth2ClientLogoComponent url={client.logoUrl} isMy onNewLogo={handleNewLogo} />
+        <OAuth2ClientLogoComponent url={client.logoUrl} isMy={isMy} onNewLogo={handleNewLogo} />
       </div>
 
       {isMy && (

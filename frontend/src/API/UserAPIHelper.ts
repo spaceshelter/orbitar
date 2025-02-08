@@ -16,6 +16,7 @@ export type UserProfileResult = {
     isBarmalini?: boolean;
     publicKey: string;
     visitedDaysAgo: number;
+    hasOwnApps: boolean;
 };
 
 export default class UserAPIHelper {

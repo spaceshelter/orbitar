@@ -55,9 +55,10 @@ export default class OAuth2Repository {
         from 
           oauth_clients 
         left outer join oauth_consents on oauth_consents.client_id = oauth_clients.client_id
-            and oauth_consents.user_id = :user_id
-        where 
-          oauth_clients.user_id = :author_id`,
+        where
+         oauth_consents.user_id = :user_id 
+            or (oauth_consents.user_id is null and oauth_clients.user_id = :author_id)  
+          `,
       {
         author_id: authorId,
         user_id: consentUserId
@@ -84,9 +85,10 @@ export default class OAuth2Repository {
         from 
           oauth_clients 
         left outer join oauth_consents on oauth_consents.client_id = oauth_clients.client_id
-            and oauth_consents.user_id = :user_id
-        where 
-          oauth_clients.client_id = :client_id`,
+        where
+           oauth_consents.user_id = :user_id
+           or (oauth_consents.user_id is null and oauth_clients.user_id = :author_id)
+          `,
       { user_id: userId, client_id: clientId }
     );
   }
@@ -298,5 +300,11 @@ export default class OAuth2Repository {
       `update oauth_consents set scope = '' where user_id = :user_id and client_id = :client_id`,
       { user_id: userId, client_id: clientId }
     ).then(result => result.affectedRows > 0);
+  }
+
+
+  hasOwnApps(userId: number) {
+      return this.db.fetchOne<{cnt: number}>(`SELECT 1 as cnt FROM oauth_clients WHERE user_id = :userId limit 1` , {userId})
+          .then(res => res?.cnt > 0);
   }
 }

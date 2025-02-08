@@ -221,4 +221,8 @@ export default class OAuth2Manager {
   async updateClientLogoUrl(clientId: string, userId: number, logoUrl: string): Promise<boolean> {
     return await this.oauthRepository.updateClientLogoUrl(clientId, userId, logoUrl);
   }
+
+  async hasOwnApps(userId: number) {
+    return this.oauthRepository.hasOwnApps(userId);
+  }
 }

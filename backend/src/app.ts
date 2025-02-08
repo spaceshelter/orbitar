@@ -147,7 +147,7 @@ const requests = [
     new PostController(apiEnricher, postManager, feedManager, siteManager, userManager, translationManager, oauthMiddlewareGenerator, logger.child({ service: 'POST' })),
     new StatusController(apiEnricher, siteManager, userManager, oauthMiddlewareGenerator, logger.child({ service: 'STATUS' })),
     new VoteController(voteManager, userManager, oauthMiddlewareGenerator, logger.child({ service: 'VOTE' })),
-    new UserController(apiEnricher, userManager, postManager, voteManager, inviteManager, oauthMiddlewareGenerator, logger.child({ service: 'USER' })),
+    new UserController(apiEnricher, userManager, postManager, voteManager, inviteManager, oauthMiddlewareGenerator, oauth2Manager, logger.child({ service: 'USER' })),
     new FeedController(apiEnricher, feedManager, siteManager, userManager, postManager, oauthMiddlewareGenerator, logger.child({ service: 'FEED' })),
     new SiteController(apiEnricher, feedManager, siteManager, userManager, oauthMiddlewareGenerator, logger.child( { service: 'SITE' })),
     new NotificationsController(notificationManager, userManager, oauthMiddlewareGenerator, logger.child({ service: 'NOTIFY' })),

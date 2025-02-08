@@ -18,7 +18,8 @@ interface UserProfileClientsAppsProps {
 
 export default function UserProfileClientsApps(props: UserProfileClientsAppsProps) {
   const api = useAPI();
-  const userId = useAppState().userInfo?.id;
+  const myUsername = useAppState().userInfo?.username;
+  const myUserId = useAppState().userInfo?.id;
   const [loading, setLoading] = useState(true);
   const [clients, setClients] = useState<OAuth2ClientEntity[]>([]);
   const [lastClientCreatedSecretCode, setLastClientCreatedSecretCode] = useState<string | undefined>(undefined);
@@ -30,7 +31,7 @@ export default function UserProfileClientsApps(props: UserProfileClientsAppsProp
 
   useEffect(() => {
     setLoading(true);
-    if (!userId) {
+    if (!myUserId) {
       return;
     }
     api.oauth2Api.listClients(props.forUserName).then((data) => {
@@ -78,8 +79,8 @@ export default function UserProfileClientsApps(props: UserProfileClientsAppsProp
       });
   };
 
-  const ownAppsList = clients.filter((client) => client.author.id === userId);
-  const installedAppsList = clients.filter((client) => client.author.id !== userId);
+  const ownAppsList = clients.filter((client) => client.author.id === myUserId);
+  const installedAppsList = clients.filter((client) => client.author.id !== myUserId);
 
 
   return (
@@ -112,12 +113,13 @@ export default function UserProfileClientsApps(props: UserProfileClientsAppsProp
       }
       {loading && <span>Loading...</span>}
 
-      <UserProfileClientAppsList
-          onClientSecretUpdate={handleClientSecretUpdate}
-          onClientUnauthorize={handleClientUnauthorized}
-          onClientPublish={handleClientPublish}
-          list={installedAppsList}
-      />
+      {installedAppsList.length > 0 && <><h4>Установленные приложения</h4>
+        <UserProfileClientAppsList
+            onClientSecretUpdate={handleClientSecretUpdate}
+            onClientUnauthorize={handleClientUnauthorized}
+            onClientPublish={handleClientPublish}
+            list={installedAppsList}
+        /></>}
 
       {ownAppsList.length > 0 && (
           <div className={styles.ownAppsContainer}>
@@ -131,7 +133,9 @@ export default function UserProfileClientsApps(props: UserProfileClientsAppsProp
           </div>
       )}
 
-      <div className={styles.forDevContainer}>
+      {!installedAppsList.length && !ownAppsList.length && !loading && <span>Тут пока пусто</span>}
+
+      {myUsername == props.forUserName && <div className={styles.forDevContainer}>
         <h4>Для разработчиков</h4>
         <button {...(creating && { disabled: true })} className={buttonStyles.linkButton} onClick={() => {
           setCreating(true);
@@ -145,7 +149,7 @@ export default function UserProfileClientsApps(props: UserProfileClientsAppsProp
             </div>
           </>
         )}
-      </div>
+      </div>}
     </div>
   );
 }
