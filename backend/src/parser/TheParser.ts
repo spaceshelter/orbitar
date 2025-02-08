@@ -40,6 +40,7 @@ export default class TheParser {
     private readonly mediaHostingConfig: MediaHostingConfig;
     private readonly parserConfig: ParserConfig;
     private readonly mediaHostingUrlOrigin: string;
+    private readonly mediaHostingUrlBunny: string;
 
     constructor(parserConfig: ParserConfig) {
         this.parserConfig = parserConfig;
@@ -47,6 +48,8 @@ export default class TheParser {
         // add origin. subdomain to the url
         this.mediaHostingUrlOrigin =
             this.mediaHostingConfig.url.replace(/^https?:\/\//, 'https://origin.');
+
+        this.mediaHostingUrlBunny = this.mediaHostingConfig.url.replace(/^https?:\/\//, 'https://b.');
 
         this.allowedTags = {
             a: (node) => this.parseA(node),
@@ -222,7 +225,14 @@ export default class TheParser {
 
     processImage(url: Url<string>) {
         if (url.pathname.match(/\.(jpg|gif|png|webp|jpeg|svg)$/)) {
-            return `<img src="${encodeURI(url.toString())}" alt=""/>`;
+            let img = url.toString();
+            // replace media url with bunny cdn
+            if (img.startsWith(this.mediaHostingConfig.url) || img.startsWith(this.mediaHostingUrlOrigin)) {
+                img = img.replace(new RegExp(`^(${escapeRegExp(this.mediaHostingUrlOrigin)}|${escapeRegExp(this.mediaHostingConfig.url)})`),
+                    this.mediaHostingUrlBunny);
+            }
+
+            return `<img src="${encodeURI(img)}" alt=""/>`;
         }
 
         return false;
@@ -264,7 +274,7 @@ export default class TheParser {
             if (match) {
                 const coubId = match[1];
                 const origUrl = `https://coub.com/view/${coubId}`;
-                const previewUrl = `${this.mediaHostingConfig.url}/coub/${coubId}`;
+                const previewUrl = `${this.mediaHostingUrlBunny}/coub/${coubId}`;
                 const embedUrl = `https://coub.com/embed/${coubId}`;
 
                 return `<a class="coub-embed" href="${encodeURI(origUrl)}" target="_blank">` +
@@ -348,7 +358,7 @@ export default class TheParser {
         const startTime = url.hash ? parseTime(qs.parse(url.hash.substring(1)).t) : 0;
 
         const origUrl = `https://vimeo.com/${videoId}${startTime ? '#t=' + startTime : ''}`;
-        const previewUrl = `${this.mediaHostingConfig.url}/vimeo/${videoId}`;
+        const previewUrl = `${this.mediaHostingUrlBunny}/vimeo/${videoId}`;
         const embedUrl = `https://player.vimeo.com/video/${videoId}${startTime ? '#t=' + startTime : ''}`;
 
         return `<a class="vimeo-embed" href="${encodeURI(origUrl)}" target="_blank">` +
@@ -402,12 +412,17 @@ export default class TheParser {
     }
 
     parseImg(node: Element): ParseResult {
-        const url = node.attribs['src'] || '';
+        let url = node.attribs['src'] || '';
         if (!this.validUrl(url)) {
             return this.parseDisallowedTag(node);
         }
+        // replace media url with bunny cdn
+        if (url.startsWith(this.mediaHostingConfig.url) || url.startsWith(this.mediaHostingUrlOrigin)) {
+            url = url.replace(new RegExp(`^(${escapeRegExp(this.mediaHostingUrlOrigin)}|${escapeRegExp(this.mediaHostingConfig.url)})`),
+                this.mediaHostingUrlBunny);
+        }
 
-        return { text: `<img src="${encodeURI(url)}" alt=""/>`, mentions: [], urls: [], images: [url] };
+        return {text: `<img src="${encodeURI(url)}" alt=""/>`, mentions: [], urls: [], images: [url]};
     }
 
     removeInnerMailTagsRec(node: Element): Element {
@@ -487,10 +502,11 @@ export default class TheParser {
                 `https://idiod.video/${encodeURI(match[1])}`];
         };
         const orbitarMediaPoster = () => {
-            if (url.startsWith(this.mediaHostingConfig.url) || url.startsWith(this.mediaHostingUrlOrigin)) {
+            if (url.startsWith(this.mediaHostingConfig.url) || url.startsWith(this.mediaHostingUrlOrigin) ||
+                url.startsWith(this.mediaHostingUrlBunny)) {
                 const match = url.match(/.*\/([^.]+\.mp4)(\/raw)?$/);
-                return match && [`${this.mediaHostingConfig.url}/preview/${encodeURI(match[1])}`,
-                    `${this.mediaHostingUrlOrigin}/${encodeURI(match[1])}/raw`];
+                return match && [`${this.mediaHostingUrlBunny}/preview/${encodeURI(match[1])}`,
+                    `${this.mediaHostingUrlBunny}/${encodeURI(match[1])}/raw`];
             }
         };
         const dumpVideoPoster = () => {
@@ -502,7 +518,7 @@ export default class TheParser {
         if (posterUrl) {
             const [poster, video] = posterUrl;
             if (url.startsWith(this.mediaHostingUrlOrigin)) {
-                url = url.replace(this.mediaHostingUrlOrigin, this.mediaHostingConfig.url);
+                url = url.replace(this.mediaHostingUrlOrigin, this.mediaHostingUrlBunny);
             }
             return `<a class="video-embed" href="${encodeURI(url)}" target="_blank">` +
                 `<img src="${encodeURI(poster)}" alt="" data-video="${encodeURI(video)}"${loop?' data-loop="true"':''}/></a>`;
