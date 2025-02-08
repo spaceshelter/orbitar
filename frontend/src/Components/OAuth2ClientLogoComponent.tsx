@@ -53,7 +53,7 @@ export default function OAuth2ClientLogoComponent(props: OAuth2ClientLogoCompone
           }
         } : {})}
       >
-        {!logoUrl && (
+        {!logoUrl && props.isMy && (
           <div className={styles.editIconContainer}>
             <EditIcon  />
           </div>

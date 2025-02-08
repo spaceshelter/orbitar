@@ -29,6 +29,7 @@ exports.up = async function(db) {
       user_id int not null,
       client_id varchar(255) not null,
       scope varchar(255),
+      last_revoked_ts datetime default null,
       primary key (user_id, client_id),
       foreign key (user_id) references users(user_id) on delete cascade,
       foreign key (client_id) references oauth_clients(client_id) on delete cascade
