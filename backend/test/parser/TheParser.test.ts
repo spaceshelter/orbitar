@@ -67,7 +67,7 @@ test('vimeo player embed', () => {
         p.parse('https://www.vimeo.com/123456789').text
     ).toEqual(
         `<a class="vimeo-embed" href="https://vimeo.com/123456789" target="_blank">` +
-        `<img src="https://orbitar.media/vimeo/123456789" alt="" data-vimeo="https://player.vimeo.com/video/123456789"/></a>`
+        `<img src="https://b.orbitar.media/vimeo/123456789" alt="" data-vimeo="https://player.vimeo.com/video/123456789"/></a>`
     );
 });
 
@@ -87,19 +87,25 @@ test('idiod video embed', () => {
 
 test('orbitar video embed', () => {
     expect(p.parse('https://orbitar.media/8feuw2.mp4').text).toEqual(
-        `<a class="video-embed" href="https://orbitar.media/8feuw2.mp4" target="_blank"><img src="https://orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://origin.orbitar.media/8feuw2.mp4/raw"/></a>`
+        `<a class="video-embed" href="https://orbitar.media/8feuw2.mp4" target="_blank"><img src="https://b.orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://b.orbitar.media/8feuw2.mp4/raw"/></a>`
+    );
+});
+
+test('orbitar video embed origin', () => {
+    expect(p.parse('https://origin.orbitar.media/8feuw2.mp4').text).toEqual(
+        `<a class="video-embed" href="https://b.orbitar.media/8feuw2.mp4" target="_blank"><img src="https://b.orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://b.orbitar.media/8feuw2.mp4/raw"/></a>`
     );
 });
 
 test('raw orbitar video embed', () => {
     expect(p.parse('https://orbitar.media/8feuw2.mp4/raw').text).toEqual(
-        `<a class="video-embed" href="https://orbitar.media/8feuw2.mp4/raw" target="_blank"><img src="https://orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://origin.orbitar.media/8feuw2.mp4/raw"/></a>`
+        `<a class="video-embed" href="https://orbitar.media/8feuw2.mp4/raw" target="_blank"><img src="https://b.orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://b.orbitar.media/8feuw2.mp4/raw"/></a>`
     );
 });
 
 test('origin orbitar video embed', () => {
     expect(p.parse('https://origin.orbitar.media/8feuw2.mp4/raw').text).toEqual(
-        `<a class="video-embed" href="https://orbitar.media/8feuw2.mp4/raw" target="_blank"><img src="https://orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://origin.orbitar.media/8feuw2.mp4/raw"/></a>`
+        `<a class="video-embed" href="https://b.orbitar.media/8feuw2.mp4/raw" target="_blank"><img src="https://b.orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://b.orbitar.media/8feuw2.mp4/raw"/></a>`
     );
 });
 
@@ -111,7 +117,7 @@ test('mp4 video element', () => {
 
 test('coub embed', () => {
     expect(p.parse('https://coub.com/view/1eyshv').text).toEqual(
-        `<a class="coub-embed" href="https://coub.com/view/1eyshv" target="_blank"><img src="https://orbitar.media/coub/1eyshv" alt="" data-coub="https://coub.com/embed/1eyshv"/></a>`
+        `<a class="coub-embed" href="https://coub.com/view/1eyshv" target="_blank"><img src="https://b.orbitar.media/coub/1eyshv" alt="" data-coub="https://coub.com/embed/1eyshv"/></a>`
     );
 });
 
