@@ -28,6 +28,11 @@
   width: 50px
 }
 
+.monsterPink {
+   /*colorize svg*/
+    fill: #FFC0CB;
+}
+
 .monsterNy {
     height:60px;
     width: 50px
