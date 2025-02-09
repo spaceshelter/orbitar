@@ -6,26 +6,6 @@ import Session, { SessionData } from '../session/Session';
 import DB from '../db/DB';
 import { Logger } from 'winston';
 
-/**
- * OAuth2 authentication middleware.
- *
- * OAuth2 Flow Integration:
- *   - Checks for the presence of an Authorization header.
- *   - Invokes the express‑oauth‑server middleware (configured on the app) to authenticate the request.
- *   - If authentication is successful, the token (containing user information) is available via res.locals.oauth.token.
- *
- * Additional Checks:
- *   - Verifies the token's associated user; for example, it ensures a particular disallowed userId is not allowed.
- *
- * Session Integration:
- *   - When authentication succeeds, the middleware updates session data
- *     via the Session class.
- *
- * @param app Express application instance that has been configured with OAuth2.
- * @param db Database instance (used for sessions persistence).
- * @param logger Logger instance for logging errors and warnings.
- * @returns An Express middleware function that handles OAuth2 authentication.
- */
 export default function OAuth2Authenticate(app: Application, db: DB, logger: Logger) {
   return (options: AuthenticateOptions) => {
     return async (req: Request, res: Response, next: NextFunction) => {
@@ -53,8 +33,6 @@ export default function OAuth2Authenticate(app: Application, db: DB, logger: Log
         logger.error(`Failed OAuth access attempt: ${err || 'authentication error'}`);
         return new ResponseErrorHandler('500', 'Internal Server Error', undefined, res);
       }
-
-      // TODO: Add a check to ensure that consent is granted for the client.
 
       // Ensure the OAuth middleware placed the token on res.locals.
       const token = res.locals.oauth && res.locals.oauth.token;

@@ -16,9 +16,6 @@ import {RedisClientType} from 'redis';
 import jwt, {JwtPayload} from 'jsonwebtoken';
 import crypto from 'crypto';
 
-/**
- * TokenType enum indicates whether a token is an Access Token or Refresh Token.
- */
 enum TokenType {
   Access,
   Refresh
@@ -29,12 +26,6 @@ enum TokenType {
  *
  * See model description here: https://oauth2-server.readthedocs.io/en/latest/model/overview.html
  *
- * This class encapsulates the logic necessary for an OAuth2 Authorization Code Grant Flow. Key responsibilities
- * include:
- *  - Generating and verifying JWT-based access and refresh tokens.
- *  - Hashing client secrets and other sensitive data using SHA-256.
- *  - Persisting authorization codes in Redis with expiration (TTL) handling.
- *  - Interfacing with a database repository to retrieve and update OAuth2 client and consent information stored in MySQL.
  */
 export default class AuthorizationCodeModelImpl implements AuthorizationCodeModel, RefreshTokenModel {
   private repo: OAuth2Repository;
@@ -47,100 +38,10 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
     this.config = config;
   }
 
-  /**
-   * Generates a JWT token for either access or refresh purposes.
-   *
-   * @param sub - Subject identifier (typically the user id).
-   * @param exp - Expiration timestamp (in seconds).
-   * @param iat - Issued-at timestamp.
-   * @param aud - Audience, typically the client id.
-   * @param scope - The list of permissions (as a string or array of strings).
-   * @param type - The type of token (Access or Refresh).
-   * @param additionalFields - An object containing any extra payload fields to merge into the token.
-   * @returns A signed JWT token string.
-   */
-  static generateJwtToken(
-    sub: string,
-    exp: number,
-    iat: number,
-    aud: string,
-    scope: string | string[],
-    type: TokenType,
-    additionalFields: Record<string, unknown> = {}
-  ): string {
-    const iss = 'https://orbitar.space';
-    scope = Array.isArray(scope) ? scope.join(' ') : scope;
-    const payload = {
-      aud,
-      iss,
-      exp,
-      iat,
-      sub,
-      scope,
-      type,
-      ...additionalFields
-    };
-
-    return jwt.sign(payload, process.env.JWT_SECRET_KEY);
-  }
-
-  /**
-   * Generates SHA-256 hash for a given string.
-   *
-   * @param value - The string value to hash.
-   * @returns A hex string representing the computed hash.
-   */
-  hashString(value: string): string {
-    return crypto.createHash('sha256').update(value).digest('hex');
-  }
-
-  /**
-   * Retrieves and verifies an access token by decoding its JWT.
-   *
-   * OAuth2 Flow Details:
-   *   - The JWT is verified using a secret key.
-   *   - The function also checks whether the token has expired.
-   *
-   * @param accessToken - The JWT string used as the access token.
-   * @returns A Token object if verification passes; otherwise, null.
-   */
-  async getAccessToken(accessToken: string): Promise<Falsey | Token> {
-    try {
-      // Decode and verify the JWT
-      const decoded = jwt.verify(accessToken, process.env.JWT_SECRET_KEY) as Token;
-
-      // Ensure the token has not expired.
-      if (decoded.accessTokenExpiresAt && new Date(decoded.accessTokenExpiresAt) < new Date()) {
-        return null;
-      }
-      return {
-        accessToken,
-        accessTokenExpiresAt: new Date(decoded.exp),
-        scope: decoded.scope,
-        client: decoded.client,
-        user: decoded.user
-      };
-    } catch (error) {
-      // Error handling: token may be expired or have an invalid signature.
-      return null;
-    }
-  }
-
-  /**
-   * Retrieves the client details from the database repository.
-   *
-   * OAuth2 Flow Details:
-   *   - When an OAuth2 client is authenticating, its credentials (ID and secret) are validated.
-   *   - If the clientSecret is provided, it is hashed and compared with the stored hash.
-   *
-   * @param clientId - The unique OAuth2 client identifier.
-   * @param clientSecret - Optional plaintext client secret.
-   * @returns A Client object conforming to oauth2-server if valid; otherwise, null.
-   */
   async getClient(clientId: string, clientSecret?: string): Promise<Falsey | Client> {
     const clientFromDB = await this.repo.getClientByClientId(clientId);
     if (!clientFromDB ||
-        (clientSecret && clientFromDB.client_secret_hash !== this.hashString(clientSecret))
+        (clientSecret && clientFromDB.client_secret_hash !== AuthorizationCodeModelImpl.hashString(clientSecret))
     ) {
       return null;
     }
@@ -151,18 +52,6 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
     };
   }
 
-  /**
-   * Generates a JWT access token.
-   *
-   * OAuth2 Flow Details:
-   *   - Access tokens are created with a defined TTL.
-   *   - The token includes client and user information within its payload.
-   *
-   * @param client - The OAuth2 client for which the token is issued.
-   * @param user - The user associated with the token.
-   * @param scope - Permissions granted.
-   * @returns A signed JWT string representing the access token.
-   */
   async generateAccessToken(client: Client, user: User, scope: string | string[]): Promise<string> {
     const nowTs = Math.floor(Date.now() / 1000);
     const expiresTs = nowTs + this.config.accessTokenTtlSeconds;
@@ -180,18 +69,55 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
     );
   }
 
-  /**
-   * Saves an access token and a refresh token once generated.
-   *
-   * OAuth2 Flow Details:
-   *   - Upon token generation, user consent for the client may also be updated.
-   *   - This persists token details for future validation.
-   *
-   * @param token - Token object containing access and refresh tokens.
-   * @param client - The client associated with the token.
-   * @param user - The user for whom the token was generated.
-   * @returns The token object if saved successfully; otherwise, null.
-   */
+  async getAccessToken(accessToken: string, callback?: Callback<Token>): Promise<Falsey | Token> {
+    try {
+      const {
+        aud,
+        exp,
+        iat,
+        sub,
+        scope,
+        type
+      } = jwt.verify(accessToken, process.env.JWT_SECRET_KEY) as JwtPayload;
+
+      const clientId = aud.toString();
+      const userId = parseInt(sub, 10);
+
+      // Verify token validity (returns Error object on error and grants on success)
+      const result = await AuthorizationCodeModelImpl.verifyTokenValidity(
+          this.repo,
+          type,
+          TokenType.Access,
+          exp,
+          iat,
+          clientId,
+          userId
+      );
+      if (result instanceof Error) {
+        throw result;
+      }
+
+      const decoded: Token = {
+        accessToken,
+        accessTokenExpiresAt: new Date(exp * 1000),
+        scope,
+        client: {
+          id: clientId,
+          grants: result ? result : []
+        },
+        user: { id: userId }
+      };
+      if (callback) {
+        callback(null, decoded);
+      }
+      return decoded;
+    } catch (error) {
+      if (callback) {
+        callback(error, null);
+      }
+    }
+  }
+
   async saveToken(token: Token, client: Client, user: User): Promise<Token | Falsey> {
     return {
       accessToken: token.accessToken,
@@ -203,18 +129,6 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
     };
   }
 
-  /**
-   * Verifies that the token has the required scopes.
-   *
-   * OAuth2 Flow Details:
-   *   - The scopes embedded in the token are compared against required scopes.
-   *   - Parent scopes (without colons) can cover child scopes (with colons).
-   *
-   * @param token - The token object containing granted scopes.
-   * @param scope - The required scope(s), provided as a string or array.
-   * @param callback - (Optional) Callback that receives the verification result.
-   * @returns True if the token includes the required scope; otherwise, false.
-   */
   async verifyScope(token: Token, scope: string | string[], callback?: Callback<boolean>): Promise<boolean> {
     // Convert the token's scopes into an array.
     let tokenScopes: string[] = [];
@@ -248,19 +162,6 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
     return valid;
   }
 
-  /**
-   * Saves an authorization code in Redis with an expiration.
-   *
-   * OAuth2 Flow Details:
-   *   - Used during the authorization code grant flow.
-   *   - Verifies the client exists before storing the code.
-   *   - Stores the code along with its expiration, redirect URI, and associated user/client data.
-   *
-   * @param code - The authorization code object.
-   * @param client - The client associated with this code.
-   * @param user - The user who authorized the client.
-   * @returns The stored authorization code object if successful; otherwise, null.
-   */
   async saveAuthorizationCode(code: AuthorizationCode, client: Client, user: User): Promise<AuthorizationCode> {
     const clientId = client.id;
     const scope = code.scope;
@@ -292,17 +193,6 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
     }
   }
 
-  /**
-   * Retrieves an authorization code from Redis.
-   *
-   * OAuth2 Flow Details:
-   *   - Finds the code in Redis.
-   *   - Converts the stored expiration time back into a Date object.
-   *   - If the code is expired, it is revoked.
-   *
-   * @param code - The authorization code string.
-   * @returns The authorization code object if valid; otherwise, null.
-   */
   async getAuthorizationCode(code: string): Promise<AuthorizationCode> {
     try {
       const authCodeStr = await this.redis.get(`oauth2code:${code}`);
@@ -323,15 +213,6 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
     }
   }
 
-  /**
-   * Revokes an authorization code by deleting it from Redis.
-   *
-   * OAuth2 Flow Details:
-   *   - Once the code is used (or expired), it is removed to prevent reuse.
-   *
-   * @param code - The authorization code object to revoke.
-   * @returns True if the code was successfully revoked; otherwise, false.
-   */
   async revokeAuthorizationCode(code: AuthorizationCode): Promise<boolean> {
     try {
       await this.redis.del(`oauth2code:${code.authorizationCode}`);
@@ -341,19 +222,6 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
     }
   }
 
-  /**
-   * Generates a JWT refresh token.
-   *
-   * OAuth2 Flow Details:
-   *   - Refresh tokens are used to obtain new access tokens.
-   *   - A separate expiration time is configured for refresh tokens.
-   *
-   * @param client - The client for which the token is issued.
-   * @param user - The user associated with the token.
-   * @param scope - The scope granted.
-   * @param callback - (Optional) Callback for handling the generated token asynchronously.
-   * @returns A signed JWT string representing the refresh token.
-   */
   async generateRefreshToken(
     client: Client,
     user: User,
@@ -363,10 +231,10 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
     const nowTs = Date.now();
     const expiresTs = nowTs + this.config.refreshTokenTtlSeconds * 1000;
     const token = AuthorizationCodeModelImpl.generateJwtToken(
-      /*sub*/client.id,
+      /*sub*/user.id.toString(),
       /*exp*/expiresTs,
       /*iat*/nowTs,
-      /*aud*/user.id.toString(),
+      /*aud*/client.id,
       /*scope*/scope,
       /*type*/TokenType.Refresh
     );
@@ -378,7 +246,6 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
 
   async getRefreshToken(refreshToken: string, callback?: Callback<RefreshToken>): Promise<Falsey | RefreshToken> {
     try {
-      // Decode and verify the JWT
       const {
         aud,
         exp,
@@ -387,30 +254,31 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
         scope,
         type
       } = jwt.verify(refreshToken, process.env.JWT_SECRET_KEY) as JwtPayload;
-      if (type !== TokenType.Refresh) {
-        throw new Error('Invalid token type');
+
+      const clientId = aud.toString();
+      const userId = parseInt(sub, 10);
+
+      // Verify token validity (returns Error object on error and grants on success)
+      const result = await AuthorizationCodeModelImpl.verifyTokenValidity(
+        this.repo,
+        type,
+        TokenType.Refresh,
+        exp,
+        iat,
+        clientId,
+        userId
+      );
+      if (result instanceof Error) {
+        throw result;
       }
-      const clientId = sub;
-      const userId = parseInt(aud as string);
-      const clientWithConsent = await this.repo.getClientWithConsent(clientId, userId);
-      if (!clientWithConsent) {
-        throw new Error('Client not found');
-      }
-      // check expiration
-      if (exp && new Date(exp) < new Date()) {
-          throw new Error('Token expired');
-      }
-      // check revocation
-      if (clientWithConsent.last_revoked_ts && new Date(iat) < clientWithConsent.last_revoked_ts) {
-          throw new Error('Token revoked');
-      }
+
       const decoded: RefreshToken = {
         refreshToken,
-        refreshTokenExpiresAt: new Date(exp),
+        refreshTokenExpiresAt: new Date(exp * 1000),
         scope,
         client: {
           id: clientId,
-          grants: clientWithConsent.grants ? clientWithConsent.grants : []
+          grants: result ? result : []
         },
         user: { id: userId }
       };
@@ -428,28 +296,14 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
     }
   }
 
-  revokeToken(token: RefreshToken | Token, callback?: Callback<boolean>): Promise<boolean> {
+  async revokeToken(token: RefreshToken | Token, callback?: Callback<boolean>): Promise<boolean> {
     // revocation of the individual tokens is not supported
     if (callback) {
       callback(null, true);
     }
-    return Promise.resolve(true);
+    return true;
   }
 
-
-  /**
-   * Generates a secure random authorization code.
-   *
-   * OAuth2 Flow Details:
-   *   - Used within the authorization code grant flow.
-   *   - Generates a random hex string using 32 bytes of randomness.
-   *
-   * @param client - The client associated with this request.
-   * @param user - The user authorizing the client.
-   * @param scope - The granted scope.
-   * @param callback - (Optional) Callback for handling the generated code asynchronously.
-   * @returns A randomly generated authorization code string.
-   */
   async generateAuthorizationCode(
     client: Client,
     user: User,
@@ -467,31 +321,74 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
     return authCode;
   }
 
-  /**
-   * Generates a unique client identifier.
-   *
-   * @returns A UUID string.
-   */
+  static generateJwtToken(
+      sub: string,
+      exp: number,
+      iat: number,
+      aud: string,
+      scope: string | string[],
+      type: TokenType,
+      additionalFields: Record<string, unknown> = {}
+  ): string {
+    const iss = 'https://orbitar.space';
+    scope = Array.isArray(scope) ? scope.join(' ') : scope;
+    const payload = {
+      aud,
+      iss,
+      exp,
+      iat,
+      sub,
+      scope,
+      type,
+      ...additionalFields
+    };
+
+    return jwt.sign(payload, process.env.JWT_SECRET_KEY);
+  }
+
   static generateClientId = (): string => {
     return crypto.randomUUID();
   };
 
-  /**
-   * Generates a secure client secret.
-   *
-   * @returns A hexadecimal string representing the new client secret.
-   */
   static generateClientSecret = (): string => {
     return crypto.randomBytes(32).toString('hex');
   };
 
-  /**
-   * Computes the SHA-256 hash of a given string.
-   *
-   * @param value - The string to hash.
-   * @returns The computed hash as a hex string.
-   */
   static hashString(value: string): string {
     return crypto.createHash('sha256').update(value).digest('hex');
+  }
+
+  static async verifyTokenValidity(
+    repo: OAuth2Repository,
+    type: TokenType,
+    expectedType: TokenType,
+    exp: number,
+    iat: number,
+    clientId: string,
+    userId: number
+  ): Promise<Error | string | string[]> {
+    // Check that the token type matches the expected type.
+    if (type !== expectedType) {
+      return new Error('Invalid token type');
+    }
+    
+    // Check token expiration.
+    if (exp && new Date(exp * 1000) < new Date()) {
+      return new Error('Token expired');
+    }
+    
+    // Retrieve the client with consent using the repo.
+    const clientWithConsent = await repo.getClientWithConsent(clientId, userId);
+    if (!clientWithConsent) {
+      return new Error('Client not found');
+    }
+    
+    // Check for token revocation.
+    if (clientWithConsent.last_revoked_ts && new Date(iat * 1000) < clientWithConsent.last_revoked_ts) {
+      return new Error('Token revoked');
+    }
+    
+    // All validations pass, return grants
+    return clientWithConsent.grants;
   }
 }
