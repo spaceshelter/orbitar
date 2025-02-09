@@ -4,12 +4,41 @@ import Username from './Username';
 import OAuth2ScopesComponent from './OAuth2ScopesComponent';
 import classNames from 'classnames';
 import buttonStyles from './Buttons.module.scss';
-import React from 'react';
+import React, {MouseEvent} from 'react';
 import { OAuth2ClientEntity } from '../Types/OAuth2';
 import { confirmAlert } from 'react-confirm-alert';
 import { toast } from 'react-toastify';
 import {useAPI, useAppState} from '../AppState/AppState';
 import APIBase from '../API/APIBase';
+
+
+interface OAuthEmbeddedAppComponentProps {
+  clientId: string;
+}
+
+export function OAuthEmbeddedAppComponent(props: OAuthEmbeddedAppComponentProps) {
+    const api = useAPI();
+    const [client, setClient] = React.useState<OAuth2ClientEntity | null>(null);
+    const [error, setError] = React.useState<string | null>(null);
+
+    React.useEffect(() => {
+        api.oauth2Api.getClient(props.clientId).then((data) => {
+            setClient(data.client);
+        }).catch(() => {
+            setError('Произошла ужасная ошибка!');
+        });
+    }, [props.clientId]);
+
+    if (error) {
+        return <div>{error}</div>;
+    }
+    if (!client) {
+        return <div>Загрузка...</div>;
+    } else {
+        return <OAuth2AppCardComponent client={client} embedded={true} />;
+    }
+}
+
 
 interface OAuthAppCardComponentProps {
   client: OAuth2ClientEntity;
@@ -25,6 +54,7 @@ interface OAuthAppCardComponentProps {
   onClientSecretUpdate?: (newSecret: string) => void;
   onClientUnauthorize?: () => void;
   onClientChangeVisibility?: () => void;
+  embedded?: boolean;
 }
 
 export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps) {
@@ -32,8 +62,10 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
   const { client, newlyRequestedScopes, authorizedScopes } = props;
   const { userInfo } = useAppState();
   const userId = userInfo?.id;
-  const isMy = client.author.id === userId;
+  const isMy = client.author.id === userId && !props.embedded;
   const [showCurrentScopes, setShowCurrentScopes] = React.useState(false);
+  const [showCopyCode, setShowCopyCode] = React.useState(false);
+  const embedCode = `<app>${client.clientId}</app>`;
 
   const handleInstallClick = () => {
     if (client.initialAuthorizationUrl) {
@@ -115,6 +147,25 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
       });
   };
 
+  const handleCopyEmbedCode = (e: MouseEvent) => {
+      e.preventDefault();
+
+      // select the text
+      const embedCodeElement = e.currentTarget as HTMLDivElement;
+      const range = document.createRange();
+      range.selectNodeContents(embedCodeElement);
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+
+      navigator.clipboard?.writeText(embedCode)
+          ?.then(() => {
+              toast.success('Код вставки скопирован в буфер обмена');
+          }).catch(() => {
+          toast.error('Не удалось скопировать код вставки');
+      });
+  };
+
   return (
     <div
       className={classNames({
@@ -168,6 +219,12 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
             Установить
           </button>
         )}
+          {!showCopyCode && (
+          <button className="i i-embed button" type='button' onClick={()=>setShowCopyCode(!showCopyCode)}>
+                  код вставки
+          </button>) || <div className={styles.embedCodeContainer} onClick={handleCopyEmbedCode}>
+                  {embedCode}
+              </div>}
         {!!authorizedScopes && (
             <>
               {showCurrentScopes && (

@@ -16,6 +16,7 @@ import {
     useAppState
 } from '../AppState/AppState';
 import {FakeRoot} from '../index';
+import {OAuthEmbeddedAppComponent} from './OAuth2AppCardComponent';
 
 interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
     content: string;
@@ -97,6 +98,10 @@ function updateContent(
 
     div.querySelectorAll('span.expand-button').forEach(expandButton => {
         updateInternalExpandButton(expandButton as HTMLElement, appState);
+    });
+
+    div.querySelectorAll('div.oauth-app').forEach(appEl => {
+        updateOauthAppEmbed(appEl as HTMLDivElement, appState);
     });
 }
 
@@ -256,6 +261,19 @@ function updateInternalExpandButton(expandButton: HTMLElement, appState: AppStat
         expandButton.addEventListener('click', listener);
         nextLink.addEventListener('click', listener);
     }
+}
+
+function updateOauthAppEmbed(appEl: HTMLDivElement, appState: AppState) {
+    const clientId = appEl.dataset.clientId;
+    if (!clientId) {
+        return;
+    }
+    ReactDOM.render(
+        <FakeRoot appState={appState}>
+            <OAuthEmbeddedAppComponent clientId={clientId} />
+        </FakeRoot>,
+        appEl
+    );
 }
 
 
