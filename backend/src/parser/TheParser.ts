@@ -301,7 +301,7 @@ export default class TheParser {
         };
 
         if (
-            (url.host === 'youtube.com' || url.host === 'www.youtube.com') &&
+            (url.host === 'youtube.com' || url.host === 'www.youtube.com' || url.host === 'm.youtube.com') &&
             url.query &&
             url.pathname === '/watch'
         ) {
