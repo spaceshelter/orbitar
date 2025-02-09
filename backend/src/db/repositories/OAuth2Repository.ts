@@ -52,12 +52,13 @@ export default class OAuth2Repository {
           oauth_clients.*,
           oauth_consents.scope as scopes,
           oauth_consents.last_revoked_ts as last_revoked_ts
-        from 
-          oauth_clients 
-        left outer join oauth_consents on oauth_consents.client_id = oauth_clients.client_id
-        where
-         oauth_consents.user_id = :user_id 
-            or (oauth_consents.user_id is null and oauth_clients.user_id = :author_id)  
+       from
+           oauth_clients
+       left outer join oauth_consents
+            on oauth_consents.client_id = oauth_clients.client_id
+                and oauth_consents.user_id = :user_id
+       where
+           oauth_clients.user_id = :author_id or oauth_consents.user_id = :user_id
           `,
       {
         author_id: authorId,
@@ -73,23 +74,24 @@ export default class OAuth2Repository {
    *   - This method fetches the client details along with the user's consent scope and revocation timestamp.
    *
    * @param clientId Unique client identifier.
-   * @param userId User identifier.
+   * @param consentUserId User identifier.
    * @returns The client data with consent details if found; otherwise, undefined.
    */
-  async getClientWithConsent(clientId: string, userId: number): Promise<OAuth2ClientRaw | undefined> {
+  async getClientWithConsent(clientId: string, consentUserId: number): Promise<OAuth2ClientRaw | undefined> {
     return await this.db.fetchOne<OAuth2ClientRaw>(
       `select 
           oauth_clients.*,
           oauth_consents.scope as scopes,
           oauth_consents.last_revoked_ts as last_revoked_ts
-        from 
-          oauth_clients 
-        left outer join oauth_consents on oauth_consents.client_id = oauth_clients.client_id
-        where
-           oauth_consents.user_id = :user_id
-           or (oauth_consents.user_id is null and oauth_clients.user_id = :author_id)
-          `,
-      { user_id: userId, client_id: clientId }
+       from
+           oauth_clients
+       left outer join oauth_consents
+           on oauth_consents.client_id = oauth_clients.client_id
+               and oauth_consents.user_id = :user_id
+       where
+           oauth_clients.client_id = :client_id
+      `,
+      { user_id: consentUserId, client_id: clientId }
     );
   }
 
