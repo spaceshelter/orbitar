@@ -62,10 +62,11 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
   const { client, newlyRequestedScopes, authorizedScopes } = props;
   const { userInfo } = useAppState();
   const userId = userInfo?.id;
-  const isMy = client.author.id === userId && !props.embedded;
+  const shouldShowManagementControls = client.author.id === userId && !props.embedded && !newlyRequestedScopes;
   const [showCurrentScopes, setShowCurrentScopes] = React.useState(false);
-  const [showCopyCode, setShowCopyCode] = React.useState(false);
-  const embedCode = `<app>${client.clientId}</app>`;
+  const embedCode = `<app>
+  ${client.clientId}
+</app>`;
 
   const handleInstallClick = () => {
     if (client.initialAuthorizationUrl) {
@@ -170,15 +171,14 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
     <div
       className={classNames({
         [styles.appCard]: true,
-        [styles.inCatalog]: !newlyRequestedScopes,
-        [styles.isMy]: isMy,
+        [styles.inCatalog]: !newlyRequestedScopes
       })}
     >
       <div className={styles.nameContainer}>
         {newlyRequestedScopes ? 'Приложение ' : ''}
         <span className={styles.name}>
           {client.name}{' '}
-          {!isMy && (
+          {!shouldShowManagementControls && (
             <>
               от&nbsp;
               <Username className={styles.author} user={client.author} />
@@ -188,10 +188,10 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
         {newlyRequestedScopes ? ' запрашивает доступ к вашему аккаунту.' : ''}
       </div>
       <div className={styles.logoContainer}>
-        <OAuth2ClientLogoComponent url={client.logoUrl} isMy={isMy} onNewLogo={handleNewLogo} />
+        <OAuth2ClientLogoComponent url={client.logoUrl} canManage={shouldShowManagementControls} onNewLogo={handleNewLogo} />
       </div>
 
-      {isMy && (
+      {shouldShowManagementControls && (
         <div className={classNames([styles.buttonsContainer, styles.ownerButtons])}>
           <button onClick={handleClientSecretUpdate} className={buttonStyles.linkButton}>
             обновить секрет
@@ -219,12 +219,18 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
             Установить
           </button>
         )}
-          {!showCopyCode && (
-          <button className="i i-embed button" type='button' onClick={()=>setShowCopyCode(!showCopyCode)}>
-                  код вставки
-          </button>) || <div className={styles.embedCodeContainer} onClick={handleCopyEmbedCode}>
-                  {embedCode}
-              </div>}
+        {
+          shouldShowManagementControls &&
+          <>
+            <div className={styles.embedCodeHeader}>
+              <h3>Код вставки:</h3>
+            </div>
+            <div className={styles.embedCodeContainer} onClick={handleCopyEmbedCode}>
+              {embedCode}
+            </div>
+          </>
+        }
+
         {!!authorizedScopes && (
             <>
               {showCurrentScopes && (

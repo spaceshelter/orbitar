@@ -7,7 +7,7 @@ import {ReactComponent as EditIcon} from '../Assets/edit.svg';
 
 interface OAuth2ClientLogoComponentProps {
   url?: string;
-  isMy: boolean;
+  canManage: boolean;
   onNewLogo?: (url: string) => void;
 }
 
@@ -16,7 +16,7 @@ export default function OAuth2ClientLogoComponent(props: OAuth2ClientLogoCompone
   const [logoUrl, setLogoUrl] = useState<string | undefined>(props.url);
 
   const handleLogoClick = () => {
-    if (props.isMy) {
+    if (props.canManage) {
       setMediaUploaderOpen(true);
     }
   };
@@ -45,7 +45,7 @@ export default function OAuth2ClientLogoComponent(props: OAuth2ClientLogoCompone
         onClick={handleLogoClick}
         className={classNames({
           [styles.logo]: true,
-          [styles.isMy]: props.isMy
+          [styles.canManage]: props.canManage
         })}
         {...(logoUrl ? {
           style: {
@@ -53,7 +53,7 @@ export default function OAuth2ClientLogoComponent(props: OAuth2ClientLogoCompone
           }
         } : {})}
       >
-        {!logoUrl && props.isMy && (
+        {!logoUrl && props.canManage && (
           <div className={styles.editIconContainer}>
             <EditIcon  />
           </div>

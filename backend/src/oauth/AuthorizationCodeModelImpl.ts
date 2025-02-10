@@ -228,8 +228,8 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
     scope: string | string[],
     callback?: (err: Error | null, refreshToken?: string) => void
   ): Promise<string> {
-    const nowTs = Date.now();
-    const expiresTs = nowTs + this.config.refreshTokenTtlSeconds * 1000;
+    const nowTs = Math.floor(Date.now() / 1000);
+    const expiresTs = nowTs + this.config.refreshTokenTtlSeconds;
     const token = AuthorizationCodeModelImpl.generateJwtToken(
       /*sub*/user.id.toString(),
       /*exp*/expiresTs,
