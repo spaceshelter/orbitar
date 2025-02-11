@@ -115,7 +115,7 @@ const webPushRepository = new WebPushRepository(db);
 const translationRepository = new TranslationRepository(db);
 const oauthRepository = new OAuth2Repository(db);
 
-const oauthModel = new AuthorizationCodeModelImpl(oauthRepository, redis.client, config.oauth);
+const oauthModel = new AuthorizationCodeModelImpl(oauthRepository, redis.client, config.oauth, logger.child({ service: 'OAUTH2' }));
 
 app.oauth = new OAuthServer({
     model: oauthModel,

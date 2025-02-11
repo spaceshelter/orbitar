@@ -48,7 +48,7 @@ export default function UserProfileClientAppsCreateForm(props: UserProfileClient
   const validateUrls = (value: string) => {
     const urls = value.split(',').map(url => url.trim());
     return urls.every((url) => isURL(url, {
-      ...(process.env.NODE_ENV === 'development' && { host_whitelist: ['localhost', '1ffe-2600-1700-1b0-23b0-b123-655f-7110-c44a.ngrok-free.app'] }),
+      ...(process.env.NODE_ENV === 'development' && { host_whitelist: ['localhost'] }),
       require_protocol: true,
       protocols: ['https', ...(process.env.NODE_ENV === 'development' ? ['http', 'https'] : [])]
     })) || 'Введите URL-адреса, разделенные запятыми';
@@ -56,7 +56,7 @@ export default function UserProfileClientAppsCreateForm(props: UserProfileClient
 
   const validateOptionalUrl = (value: string) => {
     return value.trim() === '' || isURL(value, {
-      ...(process.env.NODE_ENV === 'development' && { host_whitelist: ['localhost', '1ffe-2600-1700-1b0-23b0-b123-655f-7110-c44a.ngrok-free.app'] }),
+      ...(process.env.NODE_ENV === 'development' && { host_whitelist: ['localhost'] }),
       require_protocol: true,
       protocols: ['https', ...(process.env.NODE_ENV === 'development' ? ['http', 'https'] : [])]
     }) || 'Введите валидный URL-адрес или оставьте поле пустым';

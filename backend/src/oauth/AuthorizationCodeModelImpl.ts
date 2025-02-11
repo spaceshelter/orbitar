@@ -2,19 +2,19 @@ import {
   AuthorizationCode,
   AuthorizationCodeModel,
   Callback,
-  Token,
   Client,
   Falsey,
-  User,
+  RefreshToken,
   RefreshTokenModel,
-  RefreshToken
+  Token,
+  User
 } from 'oauth2-server';
-import {randomBytes} from 'crypto';
+import crypto, { randomBytes } from 'crypto';
 import OAuth2Repository from '../db/repositories/OAuth2Repository';
-import {OAuthConfig} from '../config';
-import {RedisClientType} from 'redis';
-import jwt, {JwtPayload} from 'jsonwebtoken';
-import crypto from 'crypto';
+import { OAuthConfig } from '../config';
+import { RedisClientType } from 'redis';
+import jwt, { JwtPayload } from 'jsonwebtoken';
+import { Logger } from 'winston';
 
 enum TokenType {
   Access,
@@ -31,11 +31,13 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
   private repo: OAuth2Repository;
   private readonly redis: RedisClientType;
   private config: OAuthConfig;
+  private logger: Logger;
 
-  constructor(repo: OAuth2Repository, redisClient: RedisClientType, config: OAuthConfig) {
+  constructor(repo: OAuth2Repository, redisClient: RedisClientType, config: OAuthConfig, logger: Logger) {
     this.repo = repo;
     this.redis = redisClient;
     this.config = config;
+    this.logger = logger;
   }
 
   async getClient(clientId: string, clientSecret?: string): Promise<Falsey | Client> {
@@ -55,18 +57,15 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
   async generateAccessToken(client: Client, user: User, scope: string | string[]): Promise<string> {
     const nowTs = Math.floor(Date.now() / 1000);
     const expiresTs = nowTs + this.config.accessTokenTtlSeconds;
-    return AuthorizationCodeModelImpl.generateJwtToken(
-      user.id.toString(),
-      expiresTs,
-      nowTs,
-      client.id,
+    return AuthorizationCodeModelImpl.generateJwtToken({
+      sub: user.id.toString(),
+      exp: expiresTs,
+      iat: nowTs,
+      aud: client.id,
       scope,
-      TokenType.Access,
-      {
-        client,
-        user
-      }
-    );
+      type: TokenType.Access,
+      additionalFields: { client, user }
+    }, this.logger);
   }
 
   async getAccessToken(accessToken: string, callback?: Callback<Token>): Promise<Falsey | Token> {
@@ -225,23 +224,18 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
   async generateRefreshToken(
     client: Client,
     user: User,
-    scope: string | string[],
-    callback?: (err: Error | null, refreshToken?: string) => void
+    scope: string | string[]
   ): Promise<string> {
     const nowTs = Math.floor(Date.now() / 1000);
     const expiresTs = nowTs + this.config.refreshTokenTtlSeconds;
-    const token = AuthorizationCodeModelImpl.generateJwtToken(
-      /*sub*/user.id.toString(),
-      /*exp*/expiresTs,
-      /*iat*/nowTs,
-      /*aud*/client.id,
-      /*scope*/scope,
-      /*type*/TokenType.Refresh
-    );
-    if (callback && typeof callback === 'function') {
-      callback(null, token);
-    }
-    return token;
+    return AuthorizationCodeModelImpl.generateJwtToken({
+      sub: user.id.toString(),
+      exp: expiresTs,
+      iat: nowTs,
+      aud: client.id,
+      scope,
+      type: TokenType.Refresh
+    }, this.logger);
   }
 
   async getRefreshToken(refreshToken: string, callback?: Callback<RefreshToken>): Promise<Falsey | RefreshToken> {
@@ -321,16 +315,27 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
     return authCode;
   }
 
-  static generateJwtToken(
-      sub: string,
-      exp: number,
-      iat: number,
-      aud: string,
-      scope: string | string[],
-      type: TokenType,
-      additionalFields: Record<string, unknown> = {}
-  ): string {
+  static generateJwtToken(params: {
+      sub: string;
+      exp: number;
+      iat: number;
+      aud: string;
+      scope: string | string[];
+      type: TokenType;
+      additionalFields?: Record<string, unknown>;
+  }, logger?: Logger): string {
+    if (!process.env.JWT_SECRET_KEY) {
+      if (logger) {
+        logger.error('empty or not set JWT_SECRET_KEY');
+      }
+      return null;
+    }
+
     const iss = 'https://orbitar.space';
+    const { sub, exp, iat, aud,  type } = params;
+    let { additionalFields, scope } = params;
+
+    additionalFields = additionalFields || {};
     scope = Array.isArray(scope) ? scope.join(' ') : scope;
     const payload = {
       aud,
