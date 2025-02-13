@@ -187,3 +187,9 @@ $smallShift: 8px;
     color: var(--primary);
     font-style: italic;
 }
+
+pre {   
+    max-width: 100%;
+    max-height: 400px;    
+    overflow: auto;
+}
