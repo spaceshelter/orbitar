@@ -60,11 +60,12 @@ export default class TheParser {
             video: (node) => this.parseVideo(node),
             mailbox: (node) => this.parseSecretMailbox(node),
             mail: (node) => this.parseSecretMail(node),
+            pre: (node) => this.parsePre(node),
             blockquote: true,
             b: true,
             i: true,
             u: true,
-            strike: true,
+            strike: true,            
         };
     }
 
@@ -372,6 +373,7 @@ export default class TheParser {
     }
 
     parseAllowedTag(node: Element): ParseResult {
+        
         const haveChild = node.children.length > 0;
         let text = `<${node.name}${haveChild ? '' : '/'}>`;
         const res = this.parseChildNodes(node.children);
@@ -423,6 +425,15 @@ export default class TheParser {
         }
 
         return {text: `<img src="${encodeURI(url)}" alt=""/>`, mentions: [], urls: [], images: [url]};
+    }
+
+    parsePre(node: Element): ParseResult {
+        const result = this.parseChildNodes(node.children);
+        const escapedContent = htmlEscape(render(node.children, { encodeEntities: false }));
+        return {
+            ...result,
+            text: `<pre>${escapedContent}</pre>`
+        };
     }
 
     removeInnerMailTagsRec(node: Element): Element {

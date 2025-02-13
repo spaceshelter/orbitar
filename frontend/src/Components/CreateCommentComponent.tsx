@@ -11,6 +11,7 @@ import {ReactComponent as ExpandIcon} from '../Assets/expand.svg';
 import {ReactComponent as LinkIcon} from '../Assets/link.svg';
 import {ReactComponent as QuoteIcon} from '../Assets/quote.svg';
 import {ReactComponent as SendIcon} from '../Assets/send.svg';
+import {ReactComponent as CodeIcon} from '../Assets/code-slash.svg';
 import ContentComponent from './ContentComponent';
 import classNames from 'classnames';
 import MediaUploader from './MediaUploader';
@@ -412,6 +413,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('i')} title="Италик" className={styles.italic}>I</button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('u')} title="Подчеркнуть" className={styles.underline}>U</button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('strike')} title="Перечеркнуть" className={styles.strike}>S</button></div>
+                <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('pre')} title="Форматированный текст" className={styles.pre}><CodeIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('irony')} title="Ирония"><IronyIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('blockquote')} title="Цитировать"><QuoteIcon /></button></div>
                 <div className={styles.control}><button disabled={disabledButtons} onClick={() => applyTag('img')} title="Вставить картинку/видео"><ImageIcon /></button></div>
