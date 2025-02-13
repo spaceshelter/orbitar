@@ -55,6 +55,13 @@ export default class OAuth2Repository {
     );
   }
 
+  async getNumberOfClientsCreatedByUser(userId: number): Promise<number> {
+    const numberOfClientByUser = await this.db.fetchOne<{ cnt: string }>(`select count(*) as cnt from oauth_clients where user_id = :user_id`, {
+      user_id: userId
+    });
+    return parseInt(numberOfClientByUser?.cnt || '0');
+  }
+
   async createClient(
     name: string,
     description: string,

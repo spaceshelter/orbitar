@@ -21,6 +21,7 @@ import rateLimit from 'express-rate-limit';
 import UserManager from '../managers/UserManager';
 import {SubscriptionsRequest, SubscriptionsResponse} from './types/requests/Subscriptions';
 import {OAuth2ScopeEndpointsMap} from './utils/OAuth2-scopes';
+import {OAuth2MiddlewareGenerator} from './OAuth2Middleware';
 
 export default class SiteController {
     public readonly router = Router();
@@ -40,7 +41,7 @@ export default class SiteController {
         keyGenerator: (req) => String(req.session.data?.userId)
     });
 
-    constructor(enricher: Enricher, feedManager: FeedManager, siteManager: SiteManager, userManager: UserManager, oauthMiddlewareGenerator, logger: Logger) {
+    constructor(enricher: Enricher, feedManager: FeedManager, siteManager: SiteManager, userManager: UserManager, oauthMiddlewareGenerator: OAuth2MiddlewareGenerator, logger: Logger) {
         this.enricher = enricher;
         this.logger = logger;
         this.feedManager = feedManager;

@@ -28,7 +28,7 @@ exports.up = async function(db) {
     create table if not exists oauth_consents (
       user_id int not null,
       client_id varchar(255) not null,
-      scope varchar(255),
+      scope text,
       last_revoked_ts datetime default null,
       primary key (user_id, client_id),
       foreign key (user_id) references users(user_id) on delete cascade,

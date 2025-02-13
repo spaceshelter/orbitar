@@ -6,8 +6,47 @@ import Session, { SessionData } from '../session/Session';
 import DB from '../db/DB';
 import { Logger } from 'winston';
 
-export default function OAuth2Authenticate(app: Application, db: DB, logger: Logger) {
+/**
+ * Creates an OAuth2 middleware generator.
+ * 
+ * This function initializes a middleware generator by accepting the application instance, 
+ * database, and logger. It returns a middleware generator function that controllers can use 
+ * to create endpoint-specific OAuth2 middleware by passing the appropriate authentication options.
+ * 
+ * @param app - The Express application instance.
+ * @param db - The database instance.
+ * @param logger - The logger instance for error and debug logging.
+ * @returns A middleware generator function for creating OAuth2 middleware.
+ */
+export default function CreateOauth2MiddlewareGenerator(app: Application, db: DB, logger: Logger): OAuth2MiddlewareGenerator {
+  /**
+   * Middleware Generator Function.
+   * 
+   * This function accepts OAuth2 authentication options and returns an Express middleware 
+   * function specific to the endpoint. The middleware that it creates will validate the OAuth2 
+   * token and initialize session data as needed.
+   * 
+   * @param options - The OAuth2 authentication configuration options.
+   * @returns An Express middleware function for OAuth2 authentication.
+   */
   return (options: AuthenticateOptions) => {
+    /**
+     * Express Middleware for OAuth2 Authentication.
+     * 
+     * This asynchronous middleware function performs the following steps:
+     * 1. Retrieves the authorization header from the incoming request (supports case-insensitive lookup).
+     * 2. If an authorization header is present, it uses the configured OAuth2 server middleware to 
+     *    validate the token.
+     * 3. If authentication fails, an error response is sent using the ResponseErrorHandler.
+     * 4. If authentication succeeds, it checks that the token contains the required data and, 
+     *    if valid, initializes (or updates) the session with the authenticated user's information.
+     * 5. Finally, the middleware calls the next handler in the Express pipeline.
+     * 
+     * @param req - The Express Request object.
+     * @param res - The Express Response object.
+     * @param next - The callback function to pass control to the next middleware.
+     * @returns A Promise that resolves to either void or a ResponseErrorHandler instance in case of an error.
+     */
     return async (req: Request, res: Response, next: NextFunction) => {
       // Retrieve the authorization header (supports lower or upper case naming)
       const authorizationHeader =
@@ -55,3 +94,7 @@ export default function OAuth2Authenticate(app: Application, db: DB, logger: Log
     };
   };
 }
+
+export type OAuth2Middleware = (req: Request, res: Response, next: NextFunction) => Promise<void | ResponseErrorHandler>;
+
+export type OAuth2MiddlewareGenerator = (options: AuthenticateOptions) => OAuth2Middleware;

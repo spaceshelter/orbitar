@@ -13,6 +13,7 @@ import {Enricher} from './utils/Enricher';
 import {FeedSorting} from './types/entities/common';
 import {FeedSortingSaveRequest, FeedSortingSaveResponse} from './types/requests/FeedSortingSave';
 import {OAuth2ScopeEndpointsMap} from './utils/OAuth2-scopes';
+import {OAuth2MiddlewareGenerator} from './OAuth2Middleware';
 
 export default class FeedController {
     public readonly router = Router();
@@ -23,7 +24,7 @@ export default class FeedController {
     private readonly logger: Logger;
     private readonly enricher: Enricher;
 
-    constructor(enricher: Enricher, feedManager: FeedManager, siteManager: SiteManager, userManager: UserManager, postManager: PostManager, oauthMiddlewareGenerator, logger: Logger) {
+    constructor(enricher: Enricher, feedManager: FeedManager, siteManager: SiteManager, userManager: UserManager, postManager: PostManager, oauthMiddlewareGenerator: OAuth2MiddlewareGenerator, logger: Logger) {
         this.enricher = enricher;
         this.feedManager = feedManager;
         this.siteManager = siteManager;

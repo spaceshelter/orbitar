@@ -10,6 +10,7 @@ import UserManager from '../managers/UserManager';
 import rateLimit from 'express-rate-limit';
 import {RateLimiterMemory} from 'rate-limiter-flexible';
 import {OAuth2ScopeEndpointsMap} from './utils/OAuth2-scopes';
+import {OAuth2MiddlewareGenerator} from './OAuth2Middleware';
 
 export default class VoteController {
     public router = Router();
@@ -37,7 +38,7 @@ export default class VoteController {
         duration: 60 * 60, // Per hour
     });
 
-    constructor(voteManager: VoteManager, userManager: UserManager, oauthMiddlewareGenerator, logger: Logger) {
+    constructor(voteManager: VoteManager, userManager: UserManager, oauthMiddlewareGenerator: OAuth2MiddlewareGenerator, logger: Logger) {
         this.voteManager = voteManager;
         this.userManager = userManager;
         this.logger = logger;

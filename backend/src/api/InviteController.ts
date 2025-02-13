@@ -19,6 +19,7 @@ import {InviteCreateRequest, InviteDeleteRequest} from './types/requests/Invite'
 import {Enricher} from './utils/Enricher';
 import {InviteEditRequest} from './types/requests/InviteEdit';
 import {OAuth2ScopeEndpointsMap} from './utils/OAuth2-scopes';
+import {OAuth2MiddlewareGenerator} from './OAuth2Middleware';
 
 export default class InviteController {
     public router = Router();
@@ -27,7 +28,7 @@ export default class InviteController {
     private enricher: Enricher;
     private logger: Logger;
 
-    constructor(inviteManager: InviteManager, userManager: UserManager, enricher: Enricher, oauthMiddlewareGenerator, logger: Logger) {
+    constructor(inviteManager: InviteManager, userManager: UserManager, enricher: Enricher, oauthMiddlewareGenerator: OAuth2MiddlewareGenerator, logger: Logger) {
         this.inviteManager = inviteManager;
         this.userManager = userManager;
         this.enricher = enricher;

@@ -167,7 +167,7 @@ export default class OAuth2Controller {
       if (err.code === 'ER_DUP_ENTRY') {
         return response.error('duplicate-client', 'A client app with that name already exists', 400);
       }
-      return response.error('error', 'Failed to register', 500);
+      return response.error('error', 'Failed to register: ' + err, 500);
     }
   }
 

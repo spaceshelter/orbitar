@@ -6,6 +6,7 @@ import SiteManager from '../managers/SiteManager';
 import {StatusRequest, StatusResponse} from './types/requests/Status';
 import {Enricher} from './utils/Enricher';
 import {OAuth2ScopeEndpointsMap} from './utils/OAuth2-scopes';
+import {OAuth2MiddlewareGenerator} from './OAuth2Middleware';
 
 export default class StatusController {
     public readonly router = Router();
@@ -14,7 +15,7 @@ export default class StatusController {
     private readonly logger: Logger;
     private readonly enricher: Enricher;
 
-    constructor(enricher: Enricher, siteManager: SiteManager, userManager: UserManager, oauthMiddlewareGenerator, logger: Logger) {
+    constructor(enricher: Enricher, siteManager: SiteManager, userManager: UserManager, oauthMiddlewareGenerator: OAuth2MiddlewareGenerator, logger: Logger) {
         this.siteManager = siteManager;
         this.userManager = userManager;
         this.enricher = enricher;

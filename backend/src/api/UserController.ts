@@ -27,6 +27,7 @@ import {UserProfileEntity} from './types/entities/UserEntity';
 import VoteManager from '../managers/VoteManager';
 import {UserGender, UserRatingBySubsite} from '../managers/types/UserInfo';
 import {SuggestUsernameRequest, SuggestUsernameResponse} from './types/requests/UsernameSuggest';
+import {OAuth2MiddlewareGenerator} from './OAuth2Middleware';
 
 // constant variables
 import {ERROR_CODES} from './utils/error-codes';
@@ -46,7 +47,7 @@ export default class UserController {
     private readonly oauthManager: OAuth2Manager;
 
     constructor(enricher: Enricher, userManager: UserManager, postManager: PostManager, voteManager: VoteManager,
-                inviteManager: InviteManager, oauthMiddlewareGenerator, oauthManager: OAuth2Manager, logger: Logger) {
+                inviteManager: InviteManager, oauthMiddlewareGenerator: OAuth2MiddlewareGenerator, oauthManager: OAuth2Manager, logger: Logger) {
         this.enricher = enricher;
         this.userManager = userManager;
         this.postManager = postManager;

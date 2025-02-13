@@ -48,7 +48,7 @@ import OAuth2Manager from './managers/OAuth2Manager';
 import OAuth2Repository from './db/repositories/OAuth2Repository';
 import OAuth2Controller from './api/OAuth2Controller';
 import OAuthServer from 'express-oauth-server';
-import OAuth2Authenticate from './api/OAuth2Middleware';
+import CreateOauth2MiddlewareGenerator from './api/OAuth2Middleware';
 import AuthorizationCodeModelImpl from './oauth/AuthorizationCodeModelImpl';
 
 const app = express();
@@ -139,7 +139,7 @@ const oauth2Manager = new OAuth2Manager(oauthRepository, userManager, logger.chi
 
 const apiEnricher = new Enricher(siteManager, userManager);
 
-const oauthMiddlewareGenerator = OAuth2Authenticate(app, db, logger);
+const oauthMiddlewareGenerator = CreateOauth2MiddlewareGenerator(app, db, logger);
 
 const requests = [
     new AuthController(userManager, logger.child({ service: 'AUTH' })),

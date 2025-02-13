@@ -31,6 +31,7 @@ import {
     GetPublicKeyByUsernameResponse
 } from './types/requests/GetPublicKeyByPostOrComment';
 import {OAuth2ScopeEndpointsMap} from './utils/OAuth2-scopes';
+import { OAuth2MiddlewareGenerator } from './OAuth2Middleware';
 
 const commonRateLimitConfig = {
     skipSuccessfulRequests: false,
@@ -71,7 +72,7 @@ export default class PostController {
     });
 
     constructor(enricher: Enricher, postManager: PostManager, feedManager: FeedManager, siteManager: SiteManager,
-                userManager: UserManager, translationManager: TranslationManager, oauthMiddlewareGenerator, logger: Logger) {
+                userManager: UserManager, translationManager: TranslationManager, oauthMiddlewareGenerator: OAuth2MiddlewareGenerator, logger: Logger) {
         this.enricher = enricher;
         this.postManager = postManager;
         this.userManager = userManager;

@@ -18,6 +18,7 @@ import {NotificationsSubscribeRequest, NotificationsSubscribeResponse} from './t
 import {NotificationEntity} from './types/entities/NotificationEntity';
 import Joi from 'joi';
 import {OAuth2ScopeEndpointsMap} from './utils/OAuth2-scopes';
+import {OAuth2MiddlewareGenerator} from './OAuth2Middleware';
 
 const hideAllSchema = Joi.object<NotificationsHideAllRequest>({
     readOnly: Joi.boolean()
@@ -29,7 +30,7 @@ export default class NotificationsController {
     private readonly userManager: UserManager;
     private readonly logger: Logger;
 
-    constructor(notificationManager: NotificationManager, userManager: UserManager, oauthMiddlewareGenerator, logger) {
+    constructor(notificationManager: NotificationManager, userManager: UserManager, oauthMiddlewareGenerator: OAuth2MiddlewareGenerator, logger) {
         this.notificationManager = notificationManager;
         this.userManager = userManager;
 

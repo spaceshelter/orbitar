@@ -4,6 +4,7 @@ import {OAuth2ClientEntity} from '../api/types/entities/OAuth2ClientEntity';
 import UserManager from './UserManager';
 import {OAuth2ClientRaw} from '../db/types/OAuth2';
 import AuthorizationCodeModelImpl from '../oauth/AuthorizationCodeModelImpl';
+import {config} from '../config';
 
 export default class OAuth2Manager {
   private oauthRepository: OAuth2Repository;
@@ -18,6 +19,11 @@ export default class OAuth2Manager {
 
   async registerClient(name: string, description: string, logoUrl: string, initialAuthorizationUrl: string, redirectUris: string, userId: number): Promise<OAuth2ClientRaw> {
     try {
+      const currentNumberOfClientsByUser = await this.oauthRepository.getNumberOfClientsCreatedByUser(userId);
+      if (currentNumberOfClientsByUser >= config.oauth.maxNumberOfClientsPerDeveloper) {
+        throw 'Too many clients already created';
+      }
+
       const clientId = AuthorizationCodeModelImpl.generateClientId();
       const clientSecret = AuthorizationCodeModelImpl.generateClientSecret();
       const clientSecretHash = AuthorizationCodeModelImpl.hashString(clientSecret);

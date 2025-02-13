@@ -5,6 +5,7 @@ import Joi from 'joi';
 import UserManager from '../managers/UserManager';
 import SearchManager from '../managers/SearchManager';
 import {OAuth2ScopeEndpointsMap} from './utils/OAuth2-scopes';
+import {OAuth2MiddlewareGenerator} from './OAuth2Middleware';
 
 export enum SearchScope {
     Post = 'post',
@@ -68,7 +69,7 @@ export default class SearchController {
     private userManager: UserManager;
     private searchManager: SearchManager;
 
-    constructor(userManager: UserManager, searchManager: SearchManager, oauthMiddlewareGenerator, logger: Logger) {
+    constructor(userManager: UserManager, searchManager: SearchManager, oauthMiddlewareGenerator: OAuth2MiddlewareGenerator, logger: Logger) {
         this.logger = logger;
         this.userManager = userManager;
         this.searchManager = searchManager;
