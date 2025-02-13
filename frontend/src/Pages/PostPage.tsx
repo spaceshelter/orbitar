@@ -21,6 +21,10 @@ export default function PostPage() {
     const unreadOnly = search.get('new') !== null;
     const {post, comments, anonymousUser, postComment, editComment, editPost, error, reload, updatePost} = usePost(site, postId, unreadOnly);
 
+    // indicates that scrollToComment wasn't able to find the comment, and we've tried fetching it
+    // needed to prevent infinite loop
+    const [fetchingComment, setFetchingComment] = useState<number | undefined>(undefined);
+
     useEffect(() => {
         let docTitle = `Пост #${postId}`;
         if (post) {
@@ -60,6 +64,11 @@ export default function PostPage() {
         if (location.hash) {
             commentId = parseInt(location.hash.substring(1));
             scrollToComment = document.querySelector<HTMLDivElement>(`[data-comment-id="${commentId}"]`);
+
+            if (!scrollToComment && fetchingComment !== commentId) {
+                reload(unreadOnly).then(() => setFetchingComment(commentId));
+                return;
+            }
         }
         else if (unreadOnly) {
             // find first new comment
@@ -92,7 +101,7 @@ export default function PostPage() {
             containerNode?.classList.remove(styles.focusing);
             scrollToComment?.classList.remove(styles.focused);
         };
-    }, [location.hash, comments, unreadOnly, postId]);
+    }, [location.hash, comments, unreadOnly, postId, fetchingComment]);
 
     const handlePostEdit = async (post: PostInfo, text: string, title?: string): Promise<PostInfo | undefined> => {
         return await editPost(title || '', text);
