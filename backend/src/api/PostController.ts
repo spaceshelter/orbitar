@@ -30,7 +30,6 @@ import {
     GetPublicKeyByUsernameRequest,
     GetPublicKeyByUsernameResponse
 } from './types/requests/GetPublicKeyByPostOrComment';
-import {OAuth2ScopeEndpointsMap} from './utils/OAuth2-scopes';
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware';
 
 const commonRateLimitConfig = {
@@ -72,7 +71,7 @@ export default class PostController {
     });
 
     constructor(enricher: Enricher, postManager: PostManager, feedManager: FeedManager, siteManager: SiteManager,
-                userManager: UserManager, translationManager: TranslationManager, oauthMiddlewareGenerator: OAuth2MiddlewareGenerator, logger: Logger) {
+                userManager: UserManager, translationManager: TranslationManager, oauth: OAuth2MiddlewareGenerator, logger: Logger) {
         this.enricher = enricher;
         this.postManager = postManager;
         this.userManager = userManager;
@@ -143,19 +142,19 @@ export default class PostController {
             username: Joi.string().required()
         });
 
-        this.router.post('/post/get', validate(getSchema), oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/post/get']}), (req, res) => this.postGet(req, res));
-        this.router.post('/post/create', this.postCreateRateLimiter, validate(postCreateSchema), oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/post/create']}), (req, res) => this.create(req, res));
-        this.router.post('/post/edit', this.postEditRateLimiter, validate(editSchema), oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/notifications/list']}), (req, res) => this.postEdit(req, res));
-        this.router.post('/post/comment', this.commentRateLimiter, validate(commentSchema), oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/post/comment']}), (req, res) => this.comment(req, res));
-        this.router.post('/post/preview', validate(previewSchema), oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/post/preview']}), (req, res) => this.preview(req, res));
-        this.router.post('/post/read', validate(readSchema), oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/post/read']}), (req, res) => this.read(req, res));
-        this.router.post('/post/bookmark', validate(bookmarkSchema), oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/post/bookmark']}), (req, res) => this.bookmark(req, res));
-        this.router.post('/post/watch', validate(watchingSchema), oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/post/watch']}), (req, res) => this.watch(req, res));
-        this.router.post('/post/translate', validate(translateSchema), oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/post/translate']}), (req, res) => this.translate(req, res));
-        this.router.post('/post/get-comment', validate(getCommentSchema), oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/post/get-comment']}), (req, res) => this.getComment(req, res));
-        this.router.post('/post/edit-comment', this.commentRateLimiter, oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/post/edit-comment']}), validate(editCommentSchema), (req, res) => this.editComment(req, res));
-        this.router.post('/post/history', validate(historySchema), oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/post/history']}), (req, res) => this.history(req, res));
-        this.router.post('/post/get-public-key', validate(getPostPublicKeySchema), oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/post/get-public-key']}), (req, res) =>
+        this.router.post('/post/get', validate(getSchema), oauth(), (req, res) => this.postGet(req, res));
+        this.router.post('/post/create', this.postCreateRateLimiter, validate(postCreateSchema), oauth(), (req, res) => this.create(req, res));
+        this.router.post('/post/edit', this.postEditRateLimiter, validate(editSchema), oauth(), (req, res) => this.postEdit(req, res));
+        this.router.post('/post/comment', this.commentRateLimiter, validate(commentSchema), oauth(), (req, res) => this.comment(req, res));
+        this.router.post('/post/preview', validate(previewSchema), oauth(), (req, res) => this.preview(req, res));
+        this.router.post('/post/read', validate(readSchema), oauth(), (req, res) => this.read(req, res));
+        this.router.post('/post/bookmark', validate(bookmarkSchema), oauth(), (req, res) => this.bookmark(req, res));
+        this.router.post('/post/watch', validate(watchingSchema), oauth(), (req, res) => this.watch(req, res));
+        this.router.post('/post/translate', validate(translateSchema), oauth(), (req, res) => this.translate(req, res));
+        this.router.post('/post/get-comment', validate(getCommentSchema), oauth(), (req, res) => this.getComment(req, res));
+        this.router.post('/post/edit-comment', this.commentRateLimiter, oauth(), validate(editCommentSchema), (req, res) => this.editComment(req, res));
+        this.router.post('/post/history', validate(historySchema), oauth(), (req, res) => this.history(req, res));
+        this.router.post('/post/get-public-key', validate(getPostPublicKeySchema), oauth(), (req, res) =>
             this.getPublicKeyByUsername(req, res));
     }
 

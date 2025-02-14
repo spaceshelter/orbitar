@@ -4,7 +4,6 @@ import {validate, APIRequest, APIResponse} from './ApiMiddleware';
 import Joi from 'joi';
 import UserManager from '../managers/UserManager';
 import SearchManager from '../managers/SearchManager';
-import {OAuth2ScopeEndpointsMap} from './utils/OAuth2-scopes';
 import {OAuth2MiddlewareGenerator} from './OAuth2Middleware';
 
 export enum SearchScope {
@@ -69,7 +68,7 @@ export default class SearchController {
     private userManager: UserManager;
     private searchManager: SearchManager;
 
-    constructor(userManager: UserManager, searchManager: SearchManager, oauthMiddlewareGenerator: OAuth2MiddlewareGenerator, logger: Logger) {
+    constructor(userManager: UserManager, searchManager: SearchManager, oauth: OAuth2MiddlewareGenerator, logger: Logger) {
         this.logger = logger;
         this.userManager = userManager;
         this.searchManager = searchManager;
@@ -88,7 +87,7 @@ export default class SearchController {
             search_direction: Joi.string().valid(SearchSortingDirection.Asc, SearchSortingDirection.Desc)
         });
 
-        this.router.post('/search', validate(searchSchema), oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/search']}), (req, res) => this.search(req, res));
+        this.router.post('/search', validate(searchSchema), oauth(), (req, res) => this.search(req, res));
     }
 
     async search(request: APIRequest<SearchRequest>, response: APIResponse<SearchResponse> ) {

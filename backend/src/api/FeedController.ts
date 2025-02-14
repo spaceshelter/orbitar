@@ -12,7 +12,6 @@ import PostManager from '../managers/PostManager';
 import {Enricher} from './utils/Enricher';
 import {FeedSorting} from './types/entities/common';
 import {FeedSortingSaveRequest, FeedSortingSaveResponse} from './types/requests/FeedSortingSave';
-import {OAuth2ScopeEndpointsMap} from './utils/OAuth2-scopes';
 import {OAuth2MiddlewareGenerator} from './OAuth2Middleware';
 
 export default class FeedController {
@@ -24,7 +23,7 @@ export default class FeedController {
     private readonly logger: Logger;
     private readonly enricher: Enricher;
 
-    constructor(enricher: Enricher, feedManager: FeedManager, siteManager: SiteManager, userManager: UserManager, postManager: PostManager, oauthMiddlewareGenerator: OAuth2MiddlewareGenerator, logger: Logger) {
+    constructor(enricher: Enricher, feedManager: FeedManager, siteManager: SiteManager, userManager: UserManager, postManager: PostManager, oauth: OAuth2MiddlewareGenerator, logger: Logger) {
         this.enricher = enricher;
         this.feedManager = feedManager;
         this.siteManager = siteManager;
@@ -54,11 +53,11 @@ export default class FeedController {
             feedSorting: Joi.number().valid(FeedSorting.postCreatedAt, FeedSorting.postCommentedAt)
         });
 
-        this.router.post('/feed/subscriptions', oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/feed/subscriptions']}), validate(feedSubscriptionsSchema), (req, res) => this.feedSubscriptions(req, res));
-        this.router.post('/feed/all', oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/feed/all']}), validate(feedSubscriptionsSchema), (req, res) => this.feedAll(req, res));
-        this.router.post('/feed/posts', oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/feed/posts']}), validate(feedPostsSchema), (req, res) => this.feedPosts(req, res));
-        this.router.post('/feed/watch', oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/feed/watch']}), validate(feedWatchSchema), (req, res) => this.feedWatch(req, res));
-        this.router.post('/feed/sorting', oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/feed/sorting']}), validate(feedSortingSchema), (req, res) => this.saveFeedSorting(req, res));
+        this.router.post('/feed/subscriptions', oauth(), validate(feedSubscriptionsSchema), (req, res) => this.feedSubscriptions(req, res));
+        this.router.post('/feed/all', oauth(), validate(feedSubscriptionsSchema), (req, res) => this.feedAll(req, res));
+        this.router.post('/feed/posts', oauth(), validate(feedPostsSchema), (req, res) => this.feedPosts(req, res));
+        this.router.post('/feed/watch', oauth(), validate(feedWatchSchema), (req, res) => this.feedWatch(req, res));
+        this.router.post('/feed/sorting', oauth(), validate(feedSortingSchema), (req, res) => this.saveFeedSorting(req, res));
     }
 
     async feedSubscriptions(request: APIRequest<FeedSubscriptionsRequest>, response: APIResponse<FeedSubscriptionsResponse>) {

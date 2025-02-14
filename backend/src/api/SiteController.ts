@@ -20,7 +20,6 @@ import CodeError from '../CodeError';
 import rateLimit from 'express-rate-limit';
 import UserManager from '../managers/UserManager';
 import {SubscriptionsRequest, SubscriptionsResponse} from './types/requests/Subscriptions';
-import {OAuth2ScopeEndpointsMap} from './utils/OAuth2-scopes';
 import {OAuth2MiddlewareGenerator} from './OAuth2Middleware';
 
 export default class SiteController {
@@ -41,7 +40,7 @@ export default class SiteController {
         keyGenerator: (req) => String(req.session.data?.userId)
     });
 
-    constructor(enricher: Enricher, feedManager: FeedManager, siteManager: SiteManager, userManager: UserManager, oauthMiddlewareGenerator: OAuth2MiddlewareGenerator, logger: Logger) {
+    constructor(enricher: Enricher, feedManager: FeedManager, siteManager: SiteManager, userManager: UserManager, oauth: OAuth2MiddlewareGenerator, logger: Logger) {
         this.enricher = enricher;
         this.logger = logger;
         this.feedManager = feedManager;
@@ -66,11 +65,11 @@ export default class SiteController {
             name: joiSiteName.required()
         });
 
-        this.router.post('/site', validate(siteSchema), oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/site']}), (req, res) => this.site(req, res));
-        this.router.post('/site/subscribe', this.subscribeRateLimiter, validate(siteSubscribeSchema), oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/site/subscribe']}), (req, res) => this.subscribe(req, res));
-        this.router.post('/site/subscriptions', oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/site/subscriptions']}), (req, res) => this.subscriptions(req, res));
-        this.router.post('/site/list', validate(siteListSchema), oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/site/list']}), (req, res) => this.list(req, res));
-        this.router.post('/site/create', validate(siteCreateSchema), oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/site/create']}), (req, res) => this.create(req, res));
+        this.router.post('/site', validate(siteSchema), oauth(), (req, res) => this.site(req, res));
+        this.router.post('/site/subscribe', this.subscribeRateLimiter, validate(siteSubscribeSchema), oauth(), (req, res) => this.subscribe(req, res));
+        this.router.post('/site/subscriptions', oauth(), (req, res) => this.subscriptions(req, res));
+        this.router.post('/site/list', validate(siteListSchema), oauth(), (req, res) => this.list(req, res));
+        this.router.post('/site/create', validate(siteCreateSchema), oauth(), (req, res) => this.create(req, res));
     }
 
     async site(request: APIRequest<SiteRequest>, response: APIResponse<SiteResponse>) {

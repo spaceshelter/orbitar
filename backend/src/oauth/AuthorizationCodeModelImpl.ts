@@ -128,6 +128,16 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
     };
   }
 
+
+  /**
+   * scope parameter contains the hierarchical list of scopes:
+   *  e.g. for api route '/oauth2/client/register' => [
+   *      'oauth2',
+   *      'oauth2:client',
+   *      'oauth2:client:register'
+   *    ]
+   *   if **any** of the scopes in the list is present in the token's scope, the function returns true
+   */
   async verifyScope(token: Token, scope: string | string[], callback?: Callback<boolean>): Promise<boolean> {
     // Convert the token's scopes into an array.
     let tokenScopes: string[] = [];
@@ -144,16 +154,7 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
       ? scope.split(' ').filter((s) => s.trim())
       : scope;
 
-    const valid = requiredScopes.every(requiredScope => {
-      return tokenScopes.some(tokenScope => {
-        // Exact match check.
-        if (tokenScope === requiredScope) {
-          return true;
-        }
-        // Parent scope covers child scopes: if token has no colon, it covers any scope starting with this token followed by a colon.
-        return !tokenScope.includes(':') && requiredScope.startsWith(`${tokenScope}:`);
-      });
-    });
+    const valid = requiredScopes.some((requiredScope) => tokenScopes.includes(requiredScope));
 
     if (callback && typeof callback === 'function') {
       callback(null, valid);
@@ -376,23 +377,23 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
     if (type !== expectedType) {
       return new Error('Invalid token type');
     }
-    
+
     // Check token expiration.
     if (exp && new Date(exp * 1000) < new Date()) {
       return new Error('Token expired');
     }
-    
+
     // Retrieve the client with consent using the repo.
     const clientWithConsent = await repo.getClientWithConsent(clientId, userId);
     if (!clientWithConsent) {
       return new Error('Client not found');
     }
-    
+
     // Check for token revocation.
     if (clientWithConsent.last_revoked_ts && new Date(iat * 1000) < clientWithConsent.last_revoked_ts) {
       return new Error('Token revoked');
     }
-    
+
     // All validations pass, return grants
     return clientWithConsent.grants;
   }

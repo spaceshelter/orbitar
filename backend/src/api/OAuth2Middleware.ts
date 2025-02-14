@@ -29,7 +29,31 @@ export default function createOauth2MiddlewareGenerator(app: Application, db: DB
    * @param options - The OAuth2 authentication configuration options.
    * @returns An Express middleware function for OAuth2 authentication.
    */
-  return (options: AuthenticateOptions) => {
+  return () => {
+    let options: AuthenticateOptions | undefined = undefined;
+
+    const lazyGetOptions = (req: Request) => {
+      if (options === undefined) {
+        const path = req.route.path;
+        // split path by '/' and generate the scope by nesting the path chunks with ':'
+        // e.g. '/oauth2/client/register' => [
+        //     'oauth2',
+        //     'oauth2:client',
+        //     'oauth2:client:register'
+        //   ]
+        const scopes = path.split('/').slice(1).reduce((acc, chunk) => {
+          chunk = chunk.trim();
+          acc.push(acc.length > 0 ? `${acc[acc.length - 1]}:${chunk}` : chunk);
+          return acc;
+        }, []);
+        options = {
+          scope: scopes
+        };
+      }
+      return options;
+    };
+
+
     /**
      * Express Middleware for OAuth2 Authentication.
      *
@@ -58,7 +82,7 @@ export default function createOauth2MiddlewareGenerator(app: Application, db: DB
       }
 
       // The express-oauth-server middleware handles the OAuth2 authentication.
-      const oauthMiddleware = app.oauth.authenticate(options);
+      const oauthMiddleware = app.oauth.authenticate(lazyGetOptions(req));
       try {
         await new Promise<void>((resolve, reject) => {
           oauthMiddleware(req, res, (err: Error | string | undefined) => {
@@ -97,4 +121,4 @@ export default function createOauth2MiddlewareGenerator(app: Application, db: DB
 
 export type OAuth2Middleware = (req: Request, res: Response, next: NextFunction) => Promise<void | ResponseErrorHandler>;
 
-export type OAuth2MiddlewareGenerator = (options: AuthenticateOptions) => OAuth2Middleware;
+export type OAuth2MiddlewareGenerator = () => OAuth2Middleware;

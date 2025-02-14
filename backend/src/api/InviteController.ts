@@ -18,7 +18,6 @@ import { ERROR_CODES } from './utils/error-codes';
 import {InviteCreateRequest, InviteDeleteRequest} from './types/requests/Invite';
 import {Enricher} from './utils/Enricher';
 import {InviteEditRequest} from './types/requests/InviteEdit';
-import {OAuth2ScopeEndpointsMap} from './utils/OAuth2-scopes';
 import {OAuth2MiddlewareGenerator} from './OAuth2Middleware';
 
 export default class InviteController {
@@ -28,7 +27,7 @@ export default class InviteController {
     private enricher: Enricher;
     private logger: Logger;
 
-    constructor(inviteManager: InviteManager, userManager: UserManager, enricher: Enricher, oauthMiddlewareGenerator: OAuth2MiddlewareGenerator, logger: Logger) {
+    constructor(inviteManager: InviteManager, userManager: UserManager, enricher: Enricher, oauth: OAuth2MiddlewareGenerator, logger: Logger) {
         this.inviteManager = inviteManager;
         this.userManager = userManager;
         this.enricher = enricher;
@@ -69,13 +68,13 @@ export default class InviteController {
             username: joiUsername
         });
 
-        this.router.post('/invite/check', limiter, validate(checkSchema), oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/invite/check']}), (req, res) => this.checkInvite(req, res));
-        this.router.post('/invite/use', limiter, validate(useSchema), oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/invite/use']}), (req, res) => this.useInvite(req, res));
-        this.router.post('/invite/list', limiter, validate(listSchema), oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/invite/list']}), (req, res) => this.list(req, res));
-        this.router.post('/invite/regenerate', limiter, validate(codeSchema), oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/invite/regenerate']}), (req, res) => this.regenerate(req, res));
-        this.router.post('/invite/create', limiter, validate(createSchema), oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/invite/create']}), (req, res) => this.create(req, res));
-        this.router.post('/invite/delete', limiter, validate(codeSchema), oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/invite/delete']}), (req, res) => this.delete(req, res));
-        this.router.post('/invite/edit', limiter, validate(editSchema), oauthMiddlewareGenerator({scope: OAuth2ScopeEndpointsMap['/invite/edit']}), (req, res) => this.edit(req, res));
+        this.router.post('/invite/check', limiter, validate(checkSchema), oauth(), (req, res) => this.checkInvite(req, res));
+        this.router.post('/invite/use', limiter, validate(useSchema), oauth(), (req, res) => this.useInvite(req, res));
+        this.router.post('/invite/list', limiter, validate(listSchema), oauth(), (req, res) => this.list(req, res));
+        this.router.post('/invite/regenerate', limiter, validate(codeSchema), oauth(), (req, res) => this.regenerate(req, res));
+        this.router.post('/invite/create', limiter, validate(createSchema), oauth(), (req, res) => this.create(req, res));
+        this.router.post('/invite/delete', limiter, validate(codeSchema), oauth(), (req, res) => this.delete(req, res));
+        this.router.post('/invite/edit', limiter, validate(editSchema), oauth(), (req, res) => this.edit(req, res));
     }
 
     async verifyInvitePermissions(invite: InviteRawWithIssuer) {
