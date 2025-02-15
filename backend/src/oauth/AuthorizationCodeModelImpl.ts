@@ -64,20 +64,15 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
       aud: client.id,
       scope,
       type: TokenType.Access,
-      additionalFields: { client, user }
+      client,
+      user
     }, this.logger);
   }
 
   async getAccessToken(accessToken: string, callback?: Callback<Token>): Promise<Falsey | Token> {
     try {
-      const {
-        aud,
-        exp,
-        iat,
-        sub,
-        scope,
-        type
-      } = jwt.verify(accessToken, process.env.JWT_SECRET_KEY) as JwtPayload;
+      const {aud, exp, iat, sub, scope, type, user, client} =
+          jwt.verify(accessToken, process.env.JWT_SECRET_KEY) as JwtPayload;
 
       const clientId = aud.toString();
       const userId = parseInt(sub, 10);
@@ -100,11 +95,8 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
         accessToken,
         accessTokenExpiresAt: new Date(exp * 1000),
         scope,
-        client: {
-          id: clientId,
-          grants: result ? result : []
-        },
-        user: { id: userId }
+        client,
+        user
       };
       if (callback) {
         callback(null, decoded);
@@ -235,20 +227,15 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
       iat: nowTs,
       aud: client.id,
       scope,
-      type: TokenType.Refresh
+      type: TokenType.Refresh,
+      user
     }, this.logger);
   }
 
   async getRefreshToken(refreshToken: string, callback?: Callback<RefreshToken>): Promise<Falsey | RefreshToken> {
     try {
-      const {
-        aud,
-        exp,
-        iat,
-        sub,
-        scope,
-        type
-      } = jwt.verify(refreshToken, process.env.JWT_SECRET_KEY) as JwtPayload;
+      const {aud, exp, iat, sub, scope, type, user} =
+          jwt.verify(refreshToken, process.env.JWT_SECRET_KEY) as JwtPayload;
 
       const clientId = aud.toString();
       const userId = parseInt(sub, 10);
@@ -275,7 +262,7 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
           id: clientId,
           grants: result ? result : []
         },
-        user: { id: userId }
+        user,
       };
       if (callback) {
           callback(null, decoded);
@@ -323,8 +310,7 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
       aud: string;
       scope: string | string[];
       type: TokenType;
-      additionalFields?: Record<string, unknown>;
-  }, logger?: Logger): string {
+  } & Record<string, unknown>, logger?: Logger): string {
     if (!process.env.JWT_SECRET_KEY) {
       if (logger) {
         logger.error('empty or not set JWT_SECRET_KEY');
@@ -333,20 +319,13 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
     }
 
     const iss = 'https://orbitar.space';
-    const { sub, exp, iat, aud,  type } = params;
-    let { additionalFields, scope } = params;
-
-    additionalFields = additionalFields || {};
+    let { scope } = params;
     scope = Array.isArray(scope) ? scope.join(' ') : scope;
+
     const payload = {
-      aud,
+      ... params,
       iss,
-      exp,
-      iat,
-      sub,
-      scope,
-      type,
-      ...additionalFields
+      scope
     };
 
     return jwt.sign(payload, process.env.JWT_SECRET_KEY);

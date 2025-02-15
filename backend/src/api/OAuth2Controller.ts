@@ -116,16 +116,22 @@ export default class OAuth2Controller {
       authenticateHandler: {
         handle: async (req) => {
           await req.session.restore(req.body['X-Session-Id']);
-          if (req.session.isBarmalini() && req.session.getAgeMillis() > /*1 hour*/ 60 * 60 * 1000) {
-            await req.session.destroy();
+          if (req.session.isBarmalini()) {
             return null;
           }
           if (!req?.session?.data?.userId) {
             return null;
           }
-          return {
-            id: req.session.data.userId
-          };
+          try {
+            const user = await this.userManager.getById(req.session.data.userId);
+            return {
+              id: req.session.data.userId,
+              username: user.username,
+            };
+          } catch (err) {
+            this.logger.error('Failed to fetch user data', { error: err });
+            return null;
+          }
         }
       }
     })(req, res, () => {}));
