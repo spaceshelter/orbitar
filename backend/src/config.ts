@@ -103,7 +103,7 @@ export const config: Config = {
         apiKey: process.env.OPENAI_API_KEY || '',
     },
     oauth: {
-        maxNumberOfClientsPerDeveloper: parseInt(process.env.OAUTH_MAX_CLIENTS_PER_DEVELOPER) || 3,
+        maxNumberOfClientsPerDeveloper: parseInt(process.env.OAUTH_MAX_CLIENTS_PER_DEVELOPER) || 32,
         authorizationCodeTtlSeconds: parseInt(process.env.OAUTH_AUTHORIZATION_CODE_TTL_SECONDS) || 300,
         accessTokenTtlSeconds: parseInt(process.env.OAUTH_ACCESS_TOKEN_TTL_SECONDS) || 1800,
         refreshTokenTtlSeconds: parseInt(process.env.OAUTH_REFRESH_TOKEN_TTL_SECONDS) || 3600 * 24 * 7
