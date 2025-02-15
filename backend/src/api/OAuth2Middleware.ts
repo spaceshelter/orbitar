@@ -1,5 +1,5 @@
 import { Application, Request, Response, NextFunction } from 'express';
-import { AuthenticateOptions } from 'oauth2-server';
+import { AuthenticateOptions } from '@node-oauth/oauth2-server';
 import { config } from '../config';
 import { ResponseErrorHandler } from './ApiMiddleware';
 import Session, { SessionData } from '../session/Session';

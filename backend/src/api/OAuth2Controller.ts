@@ -16,7 +16,7 @@ import rateLimit from 'express-rate-limit';
 import UserManager from '../managers/UserManager';
 import {OAuth2ClientEntity} from './types/entities/OAuth2ClientEntity';
 import {OAuth2ClientRaw} from '../db/types/OAuth2';
-import ExpressOAuthServer from 'express-oauth-server';
+import ExpressOAuthServer from '@node-oauth/express-oauth-server';
 import {config} from '../config';
 import {escapeRegExp} from '../parser/regexprs';
 

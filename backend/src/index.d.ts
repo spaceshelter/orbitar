@@ -1,5 +1,5 @@
 import Session from './session/Session';
-import ExpressOAuthServer from 'express-oauth-server';
+import ExpressOAuthServer from '@node-oauth/express-oauth-server';
 
 type ResponseSuccess<T> = {
     result: 'success';

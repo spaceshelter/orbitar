@@ -47,7 +47,7 @@ import {UserCache} from './managers/UserCache';
 import OAuth2Manager from './managers/OAuth2Manager';
 import OAuth2Repository from './db/repositories/OAuth2Repository';
 import OAuth2Controller from './api/OAuth2Controller';
-import OAuthServer from 'express-oauth-server';
+import OAuthServer from '@node-oauth/express-oauth-server';
 import createOauth2MiddlewareGenerator from './api/OAuth2Middleware';
 import AuthorizationCodeModelImpl from './oauth/AuthorizationCodeModelImpl';
 

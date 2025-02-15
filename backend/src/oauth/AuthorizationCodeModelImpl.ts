@@ -1,20 +1,20 @@
 import {
   AuthorizationCode,
   AuthorizationCodeModel,
-  Callback,
   Client,
   Falsey,
   RefreshToken,
   RefreshTokenModel,
   Token,
   User
-} from 'oauth2-server';
-import crypto, { randomBytes } from 'crypto';
+} from '@node-oauth/oauth2-server';
+import crypto, {randomBytes} from 'crypto';
 import OAuth2Repository from '../db/repositories/OAuth2Repository';
-import { OAuthConfig } from '../config';
-import { RedisClientType } from 'redis';
-import jwt, { JwtPayload } from 'jsonwebtoken';
-import { Logger } from 'winston';
+import {OAuthConfig} from '../config';
+import {RedisClientType} from 'redis';
+import jwt, {JwtPayload} from 'jsonwebtoken';
+import {Logger} from 'winston';
+import {logger} from 'express-winston';
 
 enum TokenType {
   Access,
@@ -54,7 +54,7 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
     };
   }
 
-  async generateAccessToken(client: Client, user: User, scope: string | string[]): Promise<string> {
+  async generateAccessToken(client: Client, user: User, scope: string[]): Promise<string> {
     const nowTs = Math.floor(Date.now() / 1000);
     const expiresTs = nowTs + this.config.accessTokenTtlSeconds;
     return AuthorizationCodeModelImpl.generateJwtToken({
@@ -68,7 +68,7 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
     }, this.logger);
   }
 
-  async getAccessToken(accessToken: string, callback?: Callback<Token>): Promise<Falsey | Token> {
+  async getAccessToken(accessToken: string): Promise<Falsey | Token> {
     try {
       const {aud, exp, iat, sub, scope, type, user} =
           jwt.verify(accessToken, process.env.JWT_SECRET_KEY) as JwtPayload;
@@ -87,27 +87,21 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
           userId
       );
       if (result instanceof Error) {
-        throw result;
+        return null;
       }
 
-      const decoded: Token = {
+      return {
         accessToken,
         accessTokenExpiresAt: new Date(exp * 1000),
         scope,
         client: {
-            id: clientId,
-            grants: result ? result : []
+          id: clientId,
+          grants: result ? result : []
         },
         user
       };
-      if (callback) {
-        callback(null, decoded);
-      }
-      return decoded;
     } catch (error) {
-      if (callback) {
-        callback(error, null);
-      }
+      return null;
     }
   }
 
@@ -132,28 +126,9 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
    *    ]
    *   if **any** of the scopes in the list is present in the token's scope, the function returns true
    */
-  async verifyScope(token: Token, scope: string | string[], callback?: Callback<boolean>): Promise<boolean> {
-    // Convert the token's scopes into an array.
-    let tokenScopes: string[] = [];
-    if (token && token.scope) {
-      if (typeof token.scope === 'string') {
-        tokenScopes = token.scope.split(' ').filter((s) => s.trim());
-      } else if (Array.isArray(token.scope)) {
-        tokenScopes = token.scope;
-      }
-    }
-
-    // Convert the required scope(s) into an array.
-    const requiredScopes = typeof scope === 'string'
-      ? scope.split(' ').filter((s) => s.trim())
-      : scope;
-
-    const valid = requiredScopes.some((requiredScope) => tokenScopes.includes(requiredScope));
-
-    if (callback && typeof callback === 'function') {
-      callback(null, valid);
-    }
-    return valid;
+  async verifyScope(token: Token, scope: string[]): Promise<boolean> {
+    const tokenScopes = token && token.scope || [];
+    return scope.some((requiredScope) => tokenScopes.includes(requiredScope));
   }
 
   async saveAuthorizationCode(code: AuthorizationCode, client: Client, user: User): Promise<AuthorizationCode> {
@@ -219,7 +194,7 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
   async generateRefreshToken(
     client: Client,
     user: User,
-    scope: string | string[]
+    scope: string[]
   ): Promise<string> {
     const nowTs = Math.floor(Date.now() / 1000);
     const expiresTs = nowTs + this.config.refreshTokenTtlSeconds;
@@ -234,7 +209,7 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
     }, this.logger);
   }
 
-  async getRefreshToken(refreshToken: string, callback?: Callback<RefreshToken>): Promise<Falsey | RefreshToken> {
+  async getRefreshToken(refreshToken: string): Promise<Falsey | RefreshToken> {
     try {
       const {aud, exp, iat, sub, scope, type, user} =
           jwt.verify(refreshToken, process.env.JWT_SECRET_KEY) as JwtPayload;
@@ -253,10 +228,10 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
         userId
       );
       if (result instanceof Error) {
-        throw result;
+        return null;
       }
 
-      const decoded: RefreshToken = {
+      return {
         refreshToken,
         refreshTokenExpiresAt: new Date(exp * 1000),
         scope,
@@ -266,42 +241,28 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
         },
         user,
       };
-      if (callback) {
-          callback(null, decoded);
-      }
-      return decoded;
 
     } catch (error) {
       // Error handling: token may be expired or have an invalid signature.
-      if (callback) {
-        callback(error, null);
-      }
       return null;
     }
   }
 
-  async revokeToken(token: RefreshToken | Token, callback?: Callback<boolean>): Promise<boolean> {
+  async revokeToken(token: RefreshToken | Token): Promise<boolean> {
     // revocation of the individual tokens is not supported
-    if (callback) {
-      callback(null, true);
-    }
     return true;
   }
 
   async generateAuthorizationCode(
     client: Client,
     user: User,
-    scope: string | string[],
-    callback?: (err: Error | null, authorizationCode?: string) => void
+    scope: string[]
   ): Promise<string> {
     const authCode = randomBytes(32).toString('hex');
 
-    const scopeStr = Array.isArray(scope) ? scope.join(' ') : scope;
+    const scopeStr = scope.join(' ');
     await this.repo.saveOrUpdateConsent(client.id, user.id, scopeStr);
 
-    if (callback && typeof callback === 'function') {
-      callback(null, authCode);
-    }
     return authCode;
   }
 
@@ -310,7 +271,7 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
       exp: number;
       iat: number;
       aud: string;
-      scope: string | string[];
+      scope: string[];
       type: TokenType;
   } & Record<string, unknown>, logger?: Logger): string {
     if (!process.env.JWT_SECRET_KEY) {
@@ -320,14 +281,9 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
       return null;
     }
 
-    const iss = 'https://orbitar.space';
-    let { scope } = params;
-    scope = Array.isArray(scope) ? scope.join(' ') : scope;
-
     const payload = {
       ... params,
-      iss,
-      scope
+      iss: 'https://orbitar.space'
     };
 
     return jwt.sign(payload, process.env.JWT_SECRET_KEY);
