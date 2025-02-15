@@ -17,6 +17,13 @@ export type OAuth2RegisterRequest = {
   initialAuthorizationUrl?: string;
 };
 
+export type OAuth2EditRequest = {
+  clientId: string;
+  description: string;
+  redirectUris: string;
+  initialAuthorizationUrl?: string;
+};
+
 export type OAuth2RegisterResponse = {
   client: OAuth2ClientEntity;
 };
@@ -86,6 +93,15 @@ export default class OAuth2Api {
     });
   }
 
+  async editClient(clientId: string, description: string, redirectUris: string, initialAuthorizationUrl = ''): Promise<void> {
+    return await this.api.request<OAuth2EditRequest, void>('/oauth2/client/edit', {
+      clientId,
+      description,
+      redirectUris,
+      initialAuthorizationUrl
+    });
+  }
+
   async listClients(forUserName: string): Promise<OAuth2ClientsListResponse> {
     return await this.api.request<OAuth2ClientsListRequest, OAuth2ClientsListResponse>('/oauth2/clients', {
         username: forUserName
@@ -118,12 +134,6 @@ export default class OAuth2Api {
 
   async deleteClient(clientId: string): Promise<Record<string, never>> {
     return await this.api.request<OAuth2DeleteClientRequest, Record<string, never>>('/oauth2/client/delete', {
-      client_id: clientId
-    });
-  }
-
-  async changeVisibility(clientId: string): Promise<boolean> {
-    return await this.api.request<OAuth2VisibilityRequest, boolean>('/oauth2/client/change-visibility', {
       client_id: clientId
     });
   }

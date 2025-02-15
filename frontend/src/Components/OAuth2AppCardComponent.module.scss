@@ -1,7 +1,7 @@
 .appCard {
   border-radius: 10px;
   padding: 10px;
-  max-width: 600px;
+  max-width: 340px;
 
   display: flex;
   flex-direction: column;
@@ -16,20 +16,11 @@
 
   background-color: var(--appCard-bg);
 
-  > div:not(:last-child) {
-    margin-bottom: 20px;
-  }
-
-  h3, p {
+  h2, h3, h4, p {
     margin: 0;
   }
 
-  h3 {
-    margin-bottom: 10px;
-  }
-
   .nameContainer .name {
-    font-size: 1.2rem;
     font-weight: bold;
     overflow-wrap: break-word;
     display: inline-block;
@@ -41,7 +32,6 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 20px;
   }
 
   .descriptionContainer {
@@ -59,6 +49,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    width: auto;
 
     &.ownerButtons {
       flex-direction: row;
@@ -67,10 +58,6 @@
         margin: 0;
         font-size: 0.75rem;
       }
-    }
-
-    button {
-      margin-bottom: 10px;
     }
   }
 
@@ -82,22 +69,16 @@
     max-width: 340px;
     font-size: smaller;
 
-    h3 {
-      margin-bottom: 6px;
-    }
-
     .nameContainer {
       text-align: center;
       .name {
-        font-size: 1rem;
-        max-width: 240px;
+        max-width: 340px;
       }
     }
   }
 
   .consentDisclaimer {
     font-size: 0.875rem;
-    margin: 20px 20px;
     color: var(--negative-fg);
   }
 
@@ -105,24 +86,27 @@
     text-align: left;
     font-size: 1rem;
     font-weight: bold;
-    margin-top: 10px;
     width: 100%;
+    margin: 0;
   }
 
   .embedCodeContainer {
     position: relative;
     background-color: var(--popup-bg);
     border: 1px solid var(--rating-list-border);
-    padding: 0.8rem;
     border-radius: 4px;
-    font-size: 0.85rem;
+    font-size: 0.80rem;
+    overflow: hidden;
     color: var(--text-fg);
     white-space: pre;
     overflow-x: auto;
     overflow-wrap: break-word;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 5px;
 
     &::after {
-      content: "📋";
+      content: "";
       position: absolute;
       top: 0.5rem;
       right: 0.5rem;
@@ -134,5 +118,5 @@
 }
 
 .author {
-  display: inline;
+  display: inline-block;
 }

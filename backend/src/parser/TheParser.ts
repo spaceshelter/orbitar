@@ -453,7 +453,7 @@ export default class TheParser {
         // app tag with client_id (uuid) as text inside
         let clientId = '';
         if (node.children.length === 1 || node.children[0].type === 'text') {
-            clientId = (node.children[0] as unknown as Text).data;
+            clientId = (node.children[0] as unknown as Text).data.trim();
         }
         if (!clientId || joiClientId.validate(clientId).error) {
             return this.parseDisallowedTag(node);

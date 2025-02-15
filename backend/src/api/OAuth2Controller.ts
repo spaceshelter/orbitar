@@ -9,7 +9,10 @@ import {
   OAuth2ClientsListResponse,
   OAuth2ClientRequest,
   OAuth2ClientResponse,
-  OAuth2ClientRegenerateSecretResponse, OAuth2ClientUpdateLogoUrlRequest, OAuth2ClientManageRequest
+  OAuth2ClientRegenerateSecretResponse,
+  OAuth2ClientUpdateLogoUrlRequest,
+  OAuth2ClientManageRequest,
+  OAuth2EditRequest
 } from './types/requests/OAuth2';
 import Joi from 'joi';
 import rateLimit from 'express-rate-limit';
@@ -33,6 +36,27 @@ const clientRegisterSchema = Joi.object<OAuth2RegisterRequest>({
     .messages({
       'string.uri': 'The field must be a valid URL.'
     }),
+  initialAuthorizationUrl: Joi.string()
+    .uri({
+      scheme: ['http', 'https']
+    })
+    .max(255)
+    .allow(null)
+    .allow('')
+    .messages({
+      'string.uri': 'The field must be a valid URL.'
+    }),
+  redirectUris: urisListValidator
+    .max(255).required()
+    .messages({
+      'any.required': 'Redirect URIs are required.',
+      'any.invalid': 'Please enter valid comma-separated URIs.'
+    })
+});
+
+const clientEditSchema = Joi.object<OAuth2EditRequest>({
+  clientId: Joi.string().min(36).max(36).required(),
+  description: Joi.string().max(255).required(),
   initialAuthorizationUrl: Joi.string()
     .uri({
       scheme: ['http', 'https']
@@ -109,6 +133,7 @@ export default class OAuth2Controller {
     this.router.post('/oauth2/clients', commonLimiter, validate(listClientsSchema), (req, res) => this.listClients(req, res));
     this.router.post('/oauth2/client', commonLimiter, validate(getClientSchema), (req, res) => this.getClientByClientId(req, res));
     this.router.post('/oauth2/client/register', registerLimiter, validate(clientRegisterSchema), (req, res) => this.register(req, res));
+    this.router.post('/oauth2/client/edit', commonLimiter, validate(clientEditSchema), (req, res) => this.edit(req, res));
     this.router.post('/oauth2/client/regenerate-secret', commonLimiter, validate(clientManageSchema), (req, res) => this.regenerateClientSecret(req, res));
     this.router.post('/oauth2/client/update-logo', commonLimiter, validate(updateLogoUrlSchema), (req, res) => this.updateClientLogoUrl(req, res));
     this.router.post('/oauth2/client/delete', commonLimiter, validate(clientManageSchema), (req, res) => this.deleteClient(req, res));
@@ -174,6 +199,32 @@ export default class OAuth2Controller {
         return response.error('duplicate-client', 'A client app with that name already exists', 400);
       }
       return response.error('error', 'Failed to register: ' + err, 500);
+    }
+  }
+
+  /**
+   * edit a client, name cannot be edited
+   */
+  async edit(request: APIRequest<OAuth2EditRequest>, response: APIResponse<Record<string, never>>) {
+    if (!request.session.data.userId) {
+      return response.authRequired();
+    }
+
+    try {
+      const {clientId, description, redirectUris, initialAuthorizationUrl} = request.body;
+      const userId = request.session.data.userId;
+      const client = await this.oauth2Manager.getClientByClientId(clientId, userId);
+      if (!client) {
+        return response.error('error', 'Client not found', 404);
+      }
+      const result = await this.oauth2Manager.editClient(clientId, description, redirectUris, initialAuthorizationUrl);
+      if (!result) {
+        return response.error('error', 'Failed to update client', 500);
+      }
+      response.success({});
+    } catch (err) {
+      this.logger.error('Failed to update client', { error: err });
+      return response.error('error', 'Failed to update client', 500);
     }
   }
 

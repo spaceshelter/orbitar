@@ -30,6 +30,7 @@ export default function UserProfileClientsApps(props: UserProfileClientsAppsProp
   const [reload, setReload] = useState(0);
 
   useEffect(() => {
+    console.log(`Here `, reload);
     setLoading(true);
     if (!myUserId) {
       return;
@@ -128,6 +129,9 @@ export default function UserProfileClientsApps(props: UserProfileClientsAppsProp
               onClientSecretUpdate={handleClientSecretUpdate}
               onClientUnauthorize={handleClientUnauthorized}
               onClientPublish={handleClientPublish}
+              onClientEdit={() => {
+                setReload(reload + 1);
+              }}
               list={ownAppsList}
           />
           </div>
@@ -135,7 +139,7 @@ export default function UserProfileClientsApps(props: UserProfileClientsAppsProp
 
       {!installedAppsList.length && !ownAppsList.length && !loading && <span>Тут пока пусто</span>}
 
-      {myUsername == props.forUserName && <div className={styles.forDevContainer}>
+      {myUsername === props.forUserName && <div className={styles.forDevContainer}>
         <h4>Для разработчиков</h4>
         <button {...(creating && { disabled: true })} className={buttonStyles.linkButton} onClick={() => {
           setCreating(true);
@@ -145,7 +149,12 @@ export default function UserProfileClientsApps(props: UserProfileClientsAppsProp
           <>
             <Overlay onClick={() => { setCreating(false); }}/>
             <div className={styles.createAppContainer}>
-              <UserProfileClientAppsCreateForm onClientRegisterSuccess={handleCreatedClient} />
+              <UserProfileClientAppsCreateForm onClientEditSuccess={
+                () => {
+                  setCreating(false);
+                  setReload(prev => prev + 1);
+                }
+              } onClientRegisterSuccess={handleCreatedClient} />
             </div>
           </>
         )}

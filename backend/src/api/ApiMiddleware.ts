@@ -140,10 +140,9 @@ export const urisListValidator = Joi.string().custom((value, helpers) => {
     const urls = value.split(',').map(url => url.trim().replace(/\/*$/, ''));
     for (const url of urls) {
         if (!isURL(url, {
-            ...(process.env.NODE_ENV === 'development' && { host_whitelist: ['localhost'] }),
             require_protocol: true,
             allow_fragments: false, /*RFC 6749 Section 3.1.2: The redirection endpoint URI MUST NOT include a fragment component.*/
-            protocols: ['https', ...(process.env.NODE_ENV === 'development' ? ['http'] : [])]
+            protocols: ['https', ...(process.env.NODE_ENV === 'development' ? ['https', 'http'] : [])]
         })) {
             return helpers.error('any.invalid');
         }

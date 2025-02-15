@@ -5,12 +5,14 @@ import OAuth2ScopesComponent from './OAuth2ScopesComponent';
 import classNames from 'classnames';
 import buttonStyles from './Buttons.module.scss';
 import React, {MouseEvent} from 'react';
-import { OAuth2ClientEntity } from '../Types/OAuth2';
-import { confirmAlert } from 'react-confirm-alert';
-import { toast } from 'react-toastify';
+import {OAuth2ClientEntity} from '../Types/OAuth2';
+import {confirmAlert} from 'react-confirm-alert';
+import {toast} from 'react-toastify';
 import {useAPI, useAppState} from '../AppState/AppState';
 import APIBase from '../API/APIBase';
-
+import Overlay from './Overlay';
+import UserProfileClientAppsCreateForm from './UserProfileClientAppsCreateForm';
+import createFormStyles from './UserProfileClientApps.module.scss';
 
 interface OAuthEmbeddedAppComponentProps {
   clientId: string;
@@ -39,7 +41,6 @@ export function OAuthEmbeddedAppComponent(props: OAuthEmbeddedAppComponentProps)
     }
 }
 
-
 interface OAuthAppCardComponentProps {
   client: OAuth2ClientEntity;
   // scopes that are requested by the new authorization
@@ -54,6 +55,7 @@ interface OAuthAppCardComponentProps {
   onClientSecretUpdate?: (newSecret: string) => void;
   onClientUnauthorize?: () => void;
   onClientChangeVisibility?: () => void;
+  onClientEdited?: () => void;
   embedded?: boolean;
 }
 
@@ -64,9 +66,8 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
   const userId = userInfo?.id;
   const shouldShowManagementControls = client.author.id === userId && !props.embedded && !newlyRequestedScopes;
   const [showCurrentScopes, setShowCurrentScopes] = React.useState(false);
-  const embedCode = `<app>
-  ${client.clientId}
-</app>`;
+  const embedCode = `<app>${client.clientId}</app>`;
+  const [editing, setEditing] = React.useState(false);
 
   const handleInstallClick = () => {
     if (client.initialAuthorizationUrl) {
@@ -92,6 +93,10 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
     });
   };
 
+  const handleEdit = () => {
+    setEditing(true);
+  };
+
   const handleClientSecretUpdate = () => {
     const message =
       'Вы уверены, что хотите перегенерировать секретный код вашего приложения? Не забудьте потом обновить настройки вашего приложения, т.к. старый секретный код перестанет работать.';
@@ -109,7 +114,7 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
 
   const handleClientDelete = () => {
     const message =
-      'Вы уверены, что хотите удалить приложение? Для всех пользователей, авторизовавших ваше приложение, оно перестанет работать.';
+      'Вы уверены, что хотите удалить приложение? Для всех пользователей, подключивших ваше приложение, оно перестанет работать.';
     confirmAction('Астанавитесь!', message, () =>
       api.oauth2Api
         .deleteClient(client.clientId)
@@ -176,7 +181,7 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
     >
       <div className={styles.nameContainer}>
         {newlyRequestedScopes ? 'Приложение ' : ''}
-        <span className={styles.name}>
+        <h3 className={styles.name}>
           {client.name}{' '}
           {!shouldShowManagementControls && (
             <>
@@ -184,7 +189,7 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
               <Username className={styles.author} user={client.author} />
             </>
           )}
-        </span>
+        </h3>
         {newlyRequestedScopes ? ' запрашивает доступ к вашему аккаунту.' : ''}
       </div>
       <div className={styles.logoContainer}>
@@ -192,14 +197,17 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
       </div>
 
       {shouldShowManagementControls && (
-        <div className={classNames([styles.buttonsContainer, styles.ownerButtons])}>
-          <button onClick={handleClientSecretUpdate} className={buttonStyles.linkButton}>
-            обновить секрет
-          </button>
-          <button onClick={handleClientDelete} className={classNames(buttonStyles.linkButton, buttonStyles.danger)}>
-            удалить
-          </button>
-        </div>
+          <div className={classNames([styles.buttonsContainer, styles.ownerButtons])}>
+            <button onClick={handleEdit} className={buttonStyles.linkButton}>
+              редактировать
+            </button>
+            <button onClick={handleClientSecretUpdate} className={buttonStyles.linkButton}>
+              обновить секрет
+            </button>
+            <button onClick={handleClientDelete} className={classNames(buttonStyles.linkButton, buttonStyles.danger)}>
+              удалить
+            </button>
+          </div>
       )}
 
       <div className={styles.descriptionContainer}>
@@ -207,7 +215,7 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
       </div>
 
       <div className={styles.buttonsContainer}>
-        {!newlyRequestedScopes && client.initialAuthorizationUrl && (
+        {!authorizedScopes && !newlyRequestedScopes && client.initialAuthorizationUrl && (
           <button
             onClick={handleInstallClick}
             className={classNames({
@@ -216,21 +224,8 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
               [buttonStyles.bigger]: !!newlyRequestedScopes,
             })}
           >
-            Установить
           </button>
         )}
-        {
-          shouldShowManagementControls &&
-          <>
-            <div className={styles.embedCodeHeader}>
-              <h3>Код вставки:</h3>
-            </div>
-            <div className={styles.embedCodeContainer} onClick={handleCopyEmbedCode}>
-              {embedCode}
-            </div>
-          </>
-        }
-
         {!!authorizedScopes && (
             <>
               {showCurrentScopes && (
@@ -257,22 +252,34 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
             </>
         )}
       </div>
+
+      {!newlyRequestedScopes && (
+          <>
+            <div className={styles.embedCodeHeader}>
+              <h4>Код вставки:</h4>
+            </div>
+            <div className={styles.embedCodeContainer} onClick={handleCopyEmbedCode}>
+              {embedCode}
+            </div>
+          </>
+      )}
+
       {newlyRequestedScopes && (
         <>
           <div className={styles.scopeContainer}>
             <h3>Что будет доступно приложению:</h3>
+            <div>
+              <OAuth2ScopesComponent appRequests={newlyRequestedScopes}/>
+            </div>
             <div className={styles.consentDisclaimer}>
               Внимание! Приложение <b>не сможет писать или читать шифровки</b>.
               Подробнее о том, как работают шифровки, можно почитать{' '}
               <a href="https://orbitar.space/p16835">тут</a>
             </div>
-            <div>
-              <OAuth2ScopesComponent appRequests={newlyRequestedScopes} />
-            </div>
           </div>
           <form className={styles.buttonsContainer} method="POST" action={APIBase.endpoint + '/oauth2/authorize'}>
-            <input type="hidden" name="scope" value={props.newlyRequestedScopes} />
-            <input type="hidden" name="state" value={props.state} />
+            <input type="hidden" name="scope" value={props.newlyRequestedScopes}/>
+            <input type="hidden" name="state" value={props.state}/>
             <input type="hidden" name="client_id" value={client.clientId} />
             <input type="hidden" name="redirect_uri" value={props.redirectUri} />
             <input type="hidden" name="X-Session-Id" value={props.sessionId} />
@@ -293,6 +300,23 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
             </button>
           </form>
         </>
+      )}
+
+      {editing && (
+          <>
+            <Overlay onClick={() => { setEditing(false); }}/>
+            <div className={createFormStyles.createAppContainer}>
+              <UserProfileClientAppsCreateForm
+                editingClient={client}
+                onClientEditSuccess={() => {
+                  setEditing(false);
+                  if (props.onClientEdited) {
+                    props.onClientEdited();
+                  }
+                }}
+              />
+            </div>
+          </>
       )}
     </div>
   );

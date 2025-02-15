@@ -188,9 +188,29 @@ export default class OAuth2Repository {
     ).then(result => result.affectedRows > 0);
   }
 
-
   hasOwnApps(userId: number) {
       return this.db.fetchOne<{cnt: number}>(`SELECT 1 as cnt FROM oauth_clients WHERE user_id = :userId limit 1` , {userId})
           .then(res => res?.cnt > 0);
+  }
+
+  async editClient(
+    clientId: string,
+    description: string,
+    redirectUris: string,
+    initialAuthorizationUrl: string
+  ): Promise<boolean> {
+    return await this.db.query<ResultSetHeader>(`
+      update oauth_clients set
+        description = :description,
+        redirect_uris = :redirect_uris,
+        initial_authorization_url = :initial_authorization_url
+      where client_id = :client_id`,
+      {
+        description: description,
+        redirect_uris: redirectUris,
+        initial_authorization_url: initialAuthorizationUrl,
+        client_id: clientId,
+      }
+    ).then(result => result.affectedRows > 0);
   }
 }

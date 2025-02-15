@@ -18,18 +18,36 @@ type AppSubmitFormValues = {
 };
 
 type UserProfileClientAppsCreateFormProps = {
-  onClientRegisterSuccess: (newClient?: OAuth2ClientEntity) => void;
+  onClientRegisterSuccess?: (newClient?: OAuth2ClientEntity) => void;
+  editingClient?: OAuth2ClientEntity;
+  onClientEditSuccess?: () => void;
 };
 
 export default function UserProfileClientAppsCreateForm(props: UserProfileClientAppsCreateFormProps) {
   const api = useAPI();
+  const {editingClient, onClientRegisterSuccess, onClientEditSuccess} = props;
 
   const onSubmit: SubmitHandler<AppSubmitFormValues> = data => {
     setSubmitting(true);
     const { name, description, redirectUris, logoUrl, initialAuthorizationUrl } = data;
 
+    if (editingClient) {
+      api.oauth2Api.editClient(editingClient.clientId, description, redirectUris, initialAuthorizationUrl).then(() => {
+        if (onClientEditSuccess) {
+          onClientEditSuccess();
+        }
+      }).catch((err) => {
+        setSubmitError(err.message);
+      }).finally(() => {
+        setSubmitting(false);
+      });
+      return;
+    }
+
     api.oauth2Api.registerClient(name, description, redirectUris, logoUrl, initialAuthorizationUrl).then((data) => {
-      props.onClientRegisterSuccess(data.client);
+      if (onClientRegisterSuccess) {
+        onClientRegisterSuccess(data.client);
+      }
     }).catch((err) => {
       setSubmitError(err.message);
     }).finally(() => {
@@ -48,7 +66,6 @@ export default function UserProfileClientAppsCreateForm(props: UserProfileClient
   const validateUrls = (value: string) => {
     const urls = value.split(',').map(url => url.trim());
     return urls.every((url) => isURL(url, {
-      ...(process.env.NODE_ENV === 'development' && { host_whitelist: ['localhost'] }),
       require_protocol: true,
       protocols: ['https', ...(process.env.NODE_ENV === 'development' ? ['http', 'https'] : [])]
     })) || 'Введите URL-адреса, разделенные запятыми';
@@ -56,13 +73,12 @@ export default function UserProfileClientAppsCreateForm(props: UserProfileClient
 
   const validateOptionalUrl = (value: string) => {
     return value.trim() === '' || isURL(value, {
-      ...(process.env.NODE_ENV === 'development' && { host_whitelist: ['localhost'] }),
       require_protocol: true,
       protocols: ['https', ...(process.env.NODE_ENV === 'development' ? ['http', 'https'] : [])]
     }) || 'Введите валидный URL-адрес или оставьте поле пустым';
   };
 
-  const [submitting,setSubmitting ] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
   return (
@@ -74,20 +90,21 @@ export default function UserProfileClientAppsCreateForm(props: UserProfileClient
       })}>
         <form onSubmit={handleSubmit(onSubmit)}>
           <label><b>Название приложения:</b>
-            <input type="text" placeholder={'Пример: ТГ-бот для нотификаций'}
-                   {...register('name', {
+            <input type="text" {...(!editingClient ? register('name', {
                      required: 'Без названия никак',
                      pattern: {
                        value: /^[a-zа-яё\d -]{2,32}$/i,
                        message: 'Только буквы, цифры, дефис и пробел, от 2 до 32 символов'
                      }
-                   })}
+                   }) : {})}
+                   disabled={Boolean(editingClient)}
+                   defaultValue={editingClient ? editingClient.name : ''}
             />
             {errors.name && <p className={styles.error}>{errors.name.message}</p>}
           </label>
 
           <label><b>Описание:</b>
-            <textarea maxLength={255} placeholder={'Пример:\nТГ-бот, который может присылать уведомления о новых нотификациях. Бот также может присылать вам уведомления о новых постах'}
+            <textarea maxLength={255}
                       {...register('description', {
                         required: 'Описание даст пользователям понять, зачем нужно ваше приложение.',
                         maxLength: {
@@ -98,31 +115,35 @@ export default function UserProfileClientAppsCreateForm(props: UserProfileClient
                           value: 32,
                           message: 'Описание должно быть не менее 32 символов'
                         }
-                      })}></textarea>
+                      })}
+              defaultValue={editingClient ? editingClient.description : ''}
+            ></textarea>
             {errors.description && <p className={styles.error}>{errors.description.message}</p>}
           </label>
 
           <label><b>Разрешённые URL для редиректов (через запятую):</b>
-            <input type="text" placeholder={'Пример: https://mybot.com/*, https://mybotbackup.com/*'}
-                   {...register('redirectUris', { validate: validateUrls })}
+            <input
+                type="text"
+                {...register('redirectUris', { validate: validateUrls })}
+                defaultValue={editingClient ? editingClient.redirectUris : ''}
             />
             {errors.redirectUris && <p className={styles.error}>{errors.redirectUris.message}</p>}
           </label>
 
-          <label><b>URL установки приложения:</b>
-            <p><span className={classNames('i', 'i-info')}></span> Опционально. Если этот URL указан, мы покажем пользователям кнопку "Установить", нажав на которую они будут перенаправлены на этот URL, откуда вы сможете либо сразу перенаправить пользователя обратно к нам для авторизации вашего приложения либо показать инструкцию вашего приложения</p>
-            <input type="text" placeholder={'Пример: https://mybot.com/start/orbitar'}
+          <label id={styles.startUrlContainer}><b>URL подключения приложения:</b>
+            <input type="text"
                    {...register('initialAuthorizationUrl', {
                      validate: validateOptionalUrl
-                   })} />
+                   })}
+              defaultValue={editingClient ? editingClient.initialAuthorizationUrl : ''}
+            />
+            <p><span className={classNames('i', 'i-info')}></span> Опционально. Если этот URL указан, мы покажем
+              пользователям кнопку "Подключить", нажав на которую они будут перенаправлены на этот URL, откуда вы
+              сможете либо сразу перенаправить пользователя обратно к нам для авторизации вашего приложения либо
+              показать инструкцию вашего приложения</p>
             {errors.initialAuthorizationUrl && <p className={styles.error}>{errors.initialAuthorizationUrl.message}</p>}
           </label>
-
-          <label><b>Типы грантов (через запятую):</b>
-            <p><span className={classNames('i', 'i-info')}></span> Пока поддерживаются только <em>authorization_code</em> и <em>refresh_token</em></p>
-            <input type="text" value={'authorization_code, refresh_token'} disabled={true} />
-          </label>
-
+          <input type="hidden" value={'authorization_code, refresh_token'} {...register('grants')} />
           <div className={styles.submitContainer}>
             <input type="submit" value="Отправить" disabled={submitting || !newAppformReady()} />
             {submitError && <p className={styles.error}>{submitError}</p>}

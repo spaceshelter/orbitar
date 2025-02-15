@@ -13,6 +13,13 @@ export type OAuth2RegisterResponse = {
   client: OAuth2ClientEntity;
 };
 
+export type OAuth2EditRequest = {
+  clientId: string;
+  description: string;
+  redirectUris: string;
+  initialAuthorizationUrl: string;
+};
+
 export type OAuth2ClientRequest = {
   client_id: string;
 };
@@ -31,29 +38,6 @@ export type OAuth2ClientsListRequest = {
 
 export type OAuth2ClientsListResponse = {
   clients: OAuth2ClientEntity[];
-};
-
-export type OAuth2AuthorizeRequest = {
-  client_id: string;
-  scope: string;
-  redirect_uri: string;
-};
-
-export type OAuth2AuthorizeResponse = {
-  authorizationCode: string;
-};
-
-export type OAuth2TokenRequest = {
-  client_id: string;
-  client_secret: string;
-  grant_type: string;
-  redirect_uri?: string;
-  code?: string;
-  refresh_token?: string;
-};
-
-export type OAuth2TokenResponse = {
-  token: OAuth2Token;
 };
 
 export type OAuth2ClientRegenerateSecretResponse = {

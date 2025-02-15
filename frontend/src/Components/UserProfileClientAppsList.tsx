@@ -9,6 +9,7 @@ type UserProfileClientAppsListProps = {
   onClientSecretUpdate?: (newSecret: string) => void;
   onClientUnauthorize?: () => void;
   onClientPublish?: () => void;
+  onClientEdit?: () => void;
 };
 
 export default function UserProfileClientAppsList(props: UserProfileClientAppsListProps) {
@@ -24,6 +25,7 @@ export default function UserProfileClientAppsList(props: UserProfileClientAppsLi
                 onClientUnauthorize={props?.onClientUnauthorize}
                 onClientChangeVisibility={props?.onClientPublish}
                 authorizedScopes={client.scopes}
+                onClientEdited={props?.onClientEdit}
             />
         ))}
     </div>;

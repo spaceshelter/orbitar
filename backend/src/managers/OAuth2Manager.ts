@@ -140,4 +140,13 @@ export default class OAuth2Manager {
   async hasOwnApps(userId: number) {
     return this.oauthRepository.hasOwnApps(userId);
   }
+
+  async editClient(
+    clientId: string,
+    description: string,
+    redirectUris: string,
+    initialAuthorizationUrl: string
+  ): Promise<boolean> {
+    return await this.oauthRepository.editClient(clientId, description, redirectUris, initialAuthorizationUrl);
+  }
 }
