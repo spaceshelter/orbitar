@@ -14,7 +14,6 @@ import {OAuthConfig} from '../config';
 import {RedisClientType} from 'redis';
 import jwt, {JwtPayload} from 'jsonwebtoken';
 import {Logger} from 'winston';
-import {logger} from 'express-winston';
 
 enum TokenType {
   Access,

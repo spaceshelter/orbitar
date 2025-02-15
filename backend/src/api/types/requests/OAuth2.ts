@@ -1,5 +1,4 @@
 import { OAuth2ClientEntity } from '../entities/OAuth2ClientEntity';
-import { OAuth2Token } from '../../../db/types/OAuth2';
 
 export type OAuth2RegisterRequest = {
   name: string;
