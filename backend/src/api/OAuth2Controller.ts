@@ -161,9 +161,7 @@ export default class OAuth2Controller {
       }
     })(req, res, () => {}));
     this.router.post('/oauth2/unauthorize', commonLimiter, validate(clientManageSchema), (req, res) => this.unAuthorizeClient(req, res));
-    this.router.post('/oauth2/token', commonLimiter, (req, res) => this.oauthExpressServer.token({})(req, res, () => {
-      console.log(1);
-    }));
+    this.router.post('/oauth2/token', commonLimiter, (req, res) => this.oauthExpressServer.token({})(req, res, () => {}));
   }
 
   /**
