@@ -15,7 +15,7 @@ exports.up = async function(db) {
     create table if not exists oauth_clients (
         client_id varchar(255) unique not null,
         client_secret_hash varchar(255) not null,
-        name varchar(32) unique not null,
+        name varchar(32) not null,
         description varchar(255),
         logo_url varchar(255) default null,
         initial_authorization_url varchar(255) default null,
