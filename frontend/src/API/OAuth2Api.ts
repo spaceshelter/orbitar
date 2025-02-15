@@ -27,19 +27,6 @@ export type OAuth2EditRequest = {
 export type OAuth2RegisterResponse = {
   client: OAuth2ClientEntity;
 };
-
-export type OAuth2AuthorizeRequest = {
-  client_id: string;
-  scope: string;
-  redirect_uri: string;
-  response_type: 'code';
-};
-
-export type OAuth2AuthorizeResponse = {
-  clientId: string;
-  authorizationCode: string;
-};
-
 export type OAuth2UnAuthorizeRequest = {
   client_id: string;
 };
@@ -66,13 +53,6 @@ export type OAuth2UpdateLogoRequest = {
 };
 
 export type OAuth2DeleteClientRequest = {
-  client_id: string;
-};
-
-export type OAuth2PublisheClientRequest = OAuth2DeleteClientRequest;
-export type OAuth2HideClientRequest = OAuth2PublisheClientRequest;
-
-export type OAuth2VisibilityRequest = {
   client_id: string;
 };
 
