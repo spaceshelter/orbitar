@@ -71,7 +71,7 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
 
   const handleInstallClick = () => {
     if (client.initialAuthorizationUrl) {
-      window.location.href = client.initialAuthorizationUrl;
+      window.open(client.initialAuthorizationUrl, '_blank');
     }
   };
 
@@ -223,7 +223,7 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
               [buttonStyles.positiveButton]: true,
               [buttonStyles.bigger]: !!newlyRequestedScopes,
             })}
-          >
+          >Подключить
           </button>
         )}
         {!!authorizedScopes && (
