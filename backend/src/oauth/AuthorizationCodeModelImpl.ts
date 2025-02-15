@@ -64,14 +64,13 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
       aud: client.id,
       scope,
       type: TokenType.Access,
-      client,
       user
     }, this.logger);
   }
 
   async getAccessToken(accessToken: string, callback?: Callback<Token>): Promise<Falsey | Token> {
     try {
-      const {aud, exp, iat, sub, scope, type, user, client} =
+      const {aud, exp, iat, sub, scope, type, user} =
           jwt.verify(accessToken, process.env.JWT_SECRET_KEY) as JwtPayload;
 
       const clientId = aud.toString();
@@ -95,7 +94,10 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
         accessToken,
         accessTokenExpiresAt: new Date(exp * 1000),
         scope,
-        client,
+        client: {
+            id: clientId,
+            grants: result ? result : []
+        },
         user
       };
       if (callback) {
