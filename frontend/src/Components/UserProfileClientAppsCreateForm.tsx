@@ -66,13 +66,16 @@ export default function UserProfileClientAppsCreateForm(props: UserProfileClient
   const validateUrls = (value: string) => {
     const urls = value.split(',').map(url => url.trim());
     return urls.every((url) => isURL(url, {
+      require_tld: process.env.NODE_ENV !== 'development',
       require_protocol: true,
-      protocols: ['https', ...(process.env.NODE_ENV === 'development' ? ['http', 'https'] : [])]
+      allow_fragments: false, /*RFC 6749 Section 3.1.2: The redirection endpoint URI MUST NOT include a fragment component.*/
+      protocols: ['https', ...(process.env.NODE_ENV === 'development' ? ['https', 'http'] : [])]
     })) || 'Введите URL-адреса, разделенные запятыми';
   };
 
   const validateOptionalUrl = (value: string) => {
     return value.trim() === '' || isURL(value, {
+      require_tld: process.env.NODE_ENV !== 'development',
       require_protocol: true,
       protocols: ['https', ...(process.env.NODE_ENV === 'development' ? ['http', 'https'] : [])]
     }) || 'Введите валидный URL-адрес или оставьте поле пустым';
