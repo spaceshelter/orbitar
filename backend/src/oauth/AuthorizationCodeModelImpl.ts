@@ -320,7 +320,7 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
     }
 
     // Retrieve the client with consent using the repo.
-    const clientWithConsent = await repo.getClientWithConsent(clientId, userId);
+    const clientWithConsent = await repo.getClientByClientIdWithConsent(clientId, userId);
     if (!clientWithConsent) {
       return new Error('Client not found');
     }

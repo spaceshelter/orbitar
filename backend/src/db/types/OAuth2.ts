@@ -1,15 +1,3 @@
-export interface OAuth2ServerAccessToken {
-  accessToken: string;
-  accessTokenExpiresAt: Date;
-  scope: string[];
-  client: {
-    id: string;
-  };
-  user: {
-    id: number;
-  }
-}
-
 export interface OAuth2ClientRaw {
   id: number;
   name: string;
@@ -24,44 +12,5 @@ export interface OAuth2ClientRaw {
   user_id: number;
   scopes?: string;
   last_revoked_ts?: Date;
-}
-
-export interface OAuth2Token {
-  access_token: string;
-  expires_in: number;
-  token_type: 'Bearer';
-  refresh_token?: string;
-  scope: string;
-}
-
-export interface OAuth2TokenRaw {
-  access_token_hash: string;
-  access_token_expires_at: Date;
-  refresh_token_hash: string;
-  client_id: number;
-  client_client_id: string,
-  user_id: number;
-  scope: string;
-  revoked: number;
-}
-
-export interface OAuth2AuthorizationCodeRaw {
-  client_id: number;
-  client_client_id: string;
-  user_id: number;
-  code_hash: string;
-  expires_at: Date;
-  scope: string;
-  redirect_uri: string;
-}
-
-export interface OAuth2RefreshTokenCheckResult {
-  userId: number;
-  scope: string;
-}
-
-export interface OAuth2ConsentRaw {
-  user_id: number;
-  client_id: number;
-  scope: string;
+  installations_count?: number;
 }

@@ -129,7 +129,7 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
 
   const handleUnInstallClick = () => {
     const message =
-      'Вы уверены, что хотите отозвать авторизацию приложения? В принципе, это не страшно, потом сможете добавить его снова.';
+      'Вы уверены, что хотите отключить приложение? В принципе, это не страшно, потом сможете добавить его снова.';
     confirmAction('Астанавитесь!', message, () =>
       api.oauth2Api
         .unauthorizeClient(client.clientId)
@@ -137,7 +137,7 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
           props.onClientUnauthorize?.();
         })
         .catch(() => {
-          toast.error('Не удалось отозвать авторизацию приложения');
+          toast.error('Не удалось отключить приложение');
         })
     );
   };
@@ -196,6 +196,17 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
         <OAuth2ClientLogoComponent url={client.logoUrl} canManage={shouldShowManagementControls} onNewLogo={handleNewLogo} />
       </div>
 
+      {
+        client.installationsCount !== undefined &&
+        <div className={styles.installationsCountContainer}>
+          <span>
+            {client.installationsCount === 0 && 'Пока никто не подключал.'}
+            {client.installationsCount > 0 && <><b>Подключений</b>: {client.installationsCount}</>}
+          </span>
+        </div>
+      }
+
+
       {shouldShowManagementControls && (
           <div className={classNames([styles.buttonsContainer, styles.ownerButtons])}>
             <button onClick={handleEdit} className={buttonStyles.linkButton}>
@@ -242,13 +253,11 @@ export default function OAuth2AppCardComponent(props: OAuthAppCardComponentProps
                       }}><span className={classNames('i', 'i-info')}></span>Инфо
               </button>
               <button
-            onClick={handleUnInstallClick}
-            className={classNames({
-              [buttonStyles.settingsButton]: true,
-            })}
-          >
-            Отозвать авторизацию
-          </button>
+                onClick={handleUnInstallClick}
+                  className={classNames({
+                    [buttonStyles.settingsButton]: true,
+                  })}>Отключить
+              </button>
             </>
         )}
       </div>

@@ -5,6 +5,19 @@ import { ResultSetHeader } from 'mysql2';
 export default class OAuth2Repository {
   private db: DB;
 
+  // Define a base SQL query that both methods share.
+  private clientBaseQuery = `
+    select 
+      oauth_clients.*,
+      oauth_consents.scope as scopes,
+      oauth_consents.last_revoked_ts as last_revoked_ts,
+      (select count(oauth_consents.user_id) from oauth_consents where client_id = oauth_clients.client_id) as installations_count 
+    from oauth_clients
+    left outer join oauth_consents
+      on oauth_consents.client_id = oauth_clients.client_id
+         and oauth_consents.user_id = :user_id
+  `;
+
   constructor(db: DB) {
     this.db = db;
   }
@@ -17,42 +30,23 @@ export default class OAuth2Repository {
   }
 
   async getClients(authorId: number, consentUserId: number): Promise<OAuth2ClientRaw[]> {
-    return await this.db.fetchAll<OAuth2ClientRaw>(
-      `select 
-          oauth_clients.*,
-          oauth_consents.scope as scopes,
-          oauth_consents.last_revoked_ts as last_revoked_ts
-       from
-           oauth_clients
-       left outer join oauth_consents
-            on oauth_consents.client_id = oauth_clients.client_id
-                and oauth_consents.user_id = :user_id
-       where
-           oauth_clients.user_id = :author_id or oauth_consents.user_id = :user_id
-          `,
-      {
-        author_id: authorId,
-        user_id: consentUserId
-      }
-    );
+    return await this.db.fetchAll<OAuth2ClientRaw>(`
+      ${this.clientBaseQuery}
+      where oauth_clients.user_id = :author_id or oauth_consents.user_id = :user_id
+    `, {
+      author_id: authorId,
+      user_id: consentUserId,
+    });
   }
 
-  async getClientWithConsent(clientId: string, consentUserId: number): Promise<OAuth2ClientRaw | undefined> {
-    return await this.db.fetchOne<OAuth2ClientRaw>(
-      `select 
-          oauth_clients.*,
-          oauth_consents.scope as scopes,
-          oauth_consents.last_revoked_ts as last_revoked_ts
-       from
-           oauth_clients
-       left outer join oauth_consents
-           on oauth_consents.client_id = oauth_clients.client_id
-               and oauth_consents.user_id = :user_id
-       where
-           oauth_clients.client_id = :client_id
-      `,
-      { user_id: consentUserId, client_id: clientId }
-    );
+  async getClientByClientIdWithConsent(clientId: string, consentUserId: number): Promise<OAuth2ClientRaw | undefined> {
+    return await this.db.fetchOne<OAuth2ClientRaw>(`
+      ${this.clientBaseQuery}
+      where oauth_clients.client_id = :client_id
+    `, { 
+      client_id: clientId, 
+      user_id: consentUserId 
+    });
   }
 
   async getNumberOfClientsCreatedByUser(userId: number): Promise<number> {
@@ -188,9 +182,12 @@ export default class OAuth2Repository {
     ).then(result => result.affectedRows > 0);
   }
 
-  hasOwnApps(userId: number) {
-      return this.db.fetchOne<{cnt: number}>(`SELECT 1 as cnt FROM oauth_clients WHERE user_id = :userId limit 1` , {userId})
-          .then(res => res?.cnt > 0);
+  async hasOwnApps(userId: number): Promise<boolean> {
+    const res = await this.db.fetchOne<{ cnt: number }>(
+      `SELECT 1 as cnt FROM oauth_clients WHERE user_id = :userId LIMIT 1`,
+      { userId }
+    );
+    return res?.cnt > 0;
   }
 
   async editClient(

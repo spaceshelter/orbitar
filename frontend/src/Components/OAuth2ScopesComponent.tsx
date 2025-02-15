@@ -24,6 +24,9 @@ export default function OAuth2ScopesComponent(props: { appRequests: string | nul
         .filter(scope => requestedScopesNames && requestedScopesNames.includes(scope))
         .map((scope) => {
         if ((requestedScopesNames && requestedScopesNames.includes(scope))) {
+          if (scope === 'openid') {
+            return <></>;
+          }
           return (<ScopeControl key={scope} name={scope} checked={requestedScopesNames.includes(scope)} description={OAuth2ScopesLabels[scope]} />);
         }
         return null;

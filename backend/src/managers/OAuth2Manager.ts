@@ -53,6 +53,7 @@ export default class OAuth2Manager {
           logoUrl: client.logo_url,
           author,
           scopes: client.scopes,
+          installationsCount: client.installations_count
         } as OAuth2ClientEntity;
       }));
     } catch (error) {
@@ -63,7 +64,7 @@ export default class OAuth2Manager {
 
   async getClientByClientId(clientId: string, currentUser: number, includeSecret = false): Promise<OAuth2ClientEntity | undefined> {
     try {
-      const client = await this.oauthRepository.getClientWithConsent(clientId, currentUser);
+      const client = await this.oauthRepository.getClientByClientIdWithConsent(clientId, currentUser);
       if (!client) {
         return undefined;
       }
@@ -83,6 +84,7 @@ export default class OAuth2Manager {
         logoUrl: client.logo_url,
         author,
         scopes: client.scopes,
+        installationsCount: client.installations_count
       } as OAuth2ClientEntity;
     } catch (error) {
       this.logger.error('Error getting OAuth client by client ID', {error});

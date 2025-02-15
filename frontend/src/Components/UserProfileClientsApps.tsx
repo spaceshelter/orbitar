@@ -30,7 +30,6 @@ export default function UserProfileClientsApps(props: UserProfileClientsAppsProp
   const [reload, setReload] = useState(0);
 
   useEffect(() => {
-    console.log(`Here `, reload);
     setLoading(true);
     if (!myUserId) {
       return;

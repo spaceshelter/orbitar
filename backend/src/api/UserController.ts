@@ -181,7 +181,7 @@ export default class UserController {
                 numberOfInvitesAvailable,
                 isBarmalini: this.userManager.isBarmaliniUser(profileInfo.id),
                 publicKey,
-                visitedDaysAgo: visitedDaysAgo,
+                visitedDaysAgo,
                 hasOwnApps
             });
         } catch (error) {

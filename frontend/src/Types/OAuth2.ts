@@ -13,6 +13,7 @@ export type OAuth2ClientEntity = {
   grants: string[];
   author: UserInfo;
   scopes?: string;
+  installationsCount?: number;
 };
 
 export const OAuth2ScopesLabels: { [key: string]: string; } = {
