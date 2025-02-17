@@ -34,9 +34,13 @@ export function OAuthEmbeddedAppComponent(props: OAuthEmbeddedAppComponentProps)
 
     const handleFullView = () => {
         client && appState.setModal(
-            <OAuth2AppCardModalComponent client={client} onClose={() =>
-                appState.setModal(undefined)
-            }/>
+            <OAuth2AppCardModalComponent
+                client={client}
+                disallowEditing={true}
+                onClose={() =>
+                    appState.setModal(undefined)
+                }
+            />
         );
     };
 
