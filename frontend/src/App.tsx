@@ -105,6 +105,8 @@ const ReadyContainer = observer(() => {
         new Date().getMonth() === 11 && new Date().getDate() >= 26 ||
         new Date().getMonth() === 0 && new Date().getDate() <= 7;
 
+    const isFeb14th = new Date().getMonth() === 1 && new Date().getDate() === 14;
+
     return (
         <>
             <Topbar menuState={menuState} onMenuToggle={handleMenuToggle} />
@@ -121,7 +123,9 @@ const ReadyContainer = observer(() => {
             </div>
 
             {isNewYear && <div className={classNames(styles.monster, styles.monsterNy)}><MonsterIconNy /></div>}
-            {!isNewYear && <div className={styles.monster}><MonsterIcon /></div>}
+            {!isNewYear && <div className={classNames(styles.monster,
+                {[styles.monsterPink]: isFeb14th},
+            )}><MonsterIcon /></div>}
             <ModalContainer />
             <ToastContainer theme={theme as Theme} />
             <SpoilerMask/>
