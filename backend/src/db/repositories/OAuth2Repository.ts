@@ -219,4 +219,11 @@ export default class OAuth2Repository {
       }
     ).then(result => result.affectedRows > 0);
   }
+
+  async getClientsByClientIds(clientIds: string[], userId: number) {
+    return await this.db.fetchAll<OAuth2ClientRaw>(
+      `${this.clientBaseQuery} where oauth_clients.client_id in (:client_ids)`,
+      { client_ids: clientIds, user_id: userId }
+    );
+  }
 }

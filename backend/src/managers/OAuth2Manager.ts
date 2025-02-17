@@ -39,23 +39,7 @@ export default class OAuth2Manager {
   async listClients(authorId: number, consentUserId?: number): Promise<OAuth2ClientEntity[]> {
     try {
       const clients = await this.oauthRepository.getClients(authorId, consentUserId || authorId);
-      return await Promise.all(clients.map(async (client) => {
-        const author = await this.userManager.getById(client.user_id);
-
-        return {
-          name: client.name,
-          description: client.description,
-          clientId: client.client_id,
-          initialAuthorizationUrl: client.initial_authorization_url,
-          redirectUris: client.redirect_uris,
-          grants: client.grants,
-          userId: client.user_id,
-          logoUrl: client.logo_url,
-          author,
-          scopes: client.scopes,
-          installationsCount: client.installations_count
-        } as OAuth2ClientEntity;
-      }));
+      return await this.enrichClientEntities(clients);
     } catch (error) {
       this.logger.error('Error listing OAuth clients', {error});
       throw error;
@@ -68,24 +52,7 @@ export default class OAuth2Manager {
       if (!client) {
         return undefined;
       }
-      const author = await this.userManager.getById(client.user_id);
-      if (!author) {
-        return undefined;
-      }
-      return {
-        name: client.name,
-        description: client.description,
-        clientId: client.client_id,
-        ...(includeSecret ? {clientSecretHash: client.client_secret_hash} : {}),
-        initialAuthorizationUrl: client.initial_authorization_url,
-        redirectUris: client.redirect_uris,
-        grants: client.grants,
-        userId: client.user_id,
-        logoUrl: client.logo_url,
-        author,
-        scopes: client.scopes,
-        installationsCount: client.installations_count
-      } as OAuth2ClientEntity;
+      return await this.enrichClientEntity(client, includeSecret);
     } catch (error) {
       this.logger.error('Error getting OAuth client by client ID', {error});
       throw error;
@@ -150,5 +117,43 @@ export default class OAuth2Manager {
     initialAuthorizationUrl: string
   ): Promise<boolean> {
     return await this.oauthRepository.editClient(clientId, description, redirectUris, initialAuthorizationUrl);
+  }
+
+  async getClientsByClientIds(clientIds: string[], userId: number) {
+    const clients =  await this.oauthRepository.getClientsByClientIds(clientIds, userId);
+    return await this.enrichClientEntities(clients);
+  }
+
+  private async enrichClientEntity(client: OAuth2ClientRaw, includeSecret = false): Promise<OAuth2ClientEntity | undefined> {
+    const author = await this.userManager.getById(client.user_id);
+    if (!author) {
+      return undefined;
+    }
+    return {
+      name: client.name,
+      description: client.description,
+      clientId: client.client_id,
+      ...(includeSecret ? {clientSecretHash: client.client_secret_hash} : {}),
+      initialAuthorizationUrl: client.initial_authorization_url,
+      redirectUris: client.redirect_uris,
+      grants: client.grants,
+      userId: client.user_id,
+      logoUrl: client.logo_url,
+      author,
+      scopes: client.scopes,
+      installationsCount: client.installations_count
+    } as OAuth2ClientEntity;
+  }
+
+  private async enrichClientEntities(clients: OAuth2ClientRaw[], includeSecret = false): Promise<OAuth2ClientEntity[]> {
+    const enriched = [];
+    for (const client of clients) {
+      // we deliberately want to do this sequentially as to not overload the database
+      const enrichedClient = await this.enrichClientEntity(client, includeSecret);
+      if (enrichedClient) {
+        enriched.push(enrichedClient);
+      }
+    }
+    return enriched;
   }
 }

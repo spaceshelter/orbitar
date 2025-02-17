@@ -6,7 +6,7 @@ import {
   OAuth2ClientManageRequest,
   OAuth2ClientRegenerateSecretResponse,
   OAuth2ClientRequest,
-  OAuth2ClientResponse,
+  OAuth2ClientResponse, OAuth2ClientsBatchRequest, OAuth2ClientsBatchResponse,
   OAuth2ClientsListRequest,
   OAuth2ClientsListResponse,
   OAuth2ClientUpdateLogoUrlRequest,
@@ -86,10 +86,12 @@ const listClientsSchema = Joi.object<OAuth2ClientsListRequest>({})
     .pattern(/.*/, Joi.any().forbidden());
 
 const getClientSchema = Joi.object<OAuth2ClientRequest>({
-  client_id: Joi.alternatives().try(
-      joiClientId,
-    Joi.number()
-  ).required()
+  client_id: joiClientId.required()
+});
+
+// clients batch
+const getClientBatchSchema = Joi.object<OAuth2ClientsBatchRequest>({
+  client_ids: Joi.array().items(joiClientId).max(256).required()
 });
 
 const clientManageSchema = Joi.object<OAuth2ClientManageRequest>({
@@ -137,7 +139,8 @@ export default class OAuth2Controller {
     });
 
     this.router.post('/oauth2/clients', commonLimiter, validate(listClientsSchema), (req, res) => this.listClients(req, res));
-    this.router.post('/oauth2/client', validate(getClientSchema), (req, res) => this.getClientByClientId(req, res));
+    this.router.post('/oauth2/client', commonLimiter, validate(getClientSchema), (req, res) => this.getClientByClientId(req, res));
+    this.router.post('/oauth2/clients-batch', commonLimiter, validate(getClientBatchSchema), (req, res) => this.getClientsByClientIdsBatch(req, res));
     this.router.post('/oauth2/client/register', registerLimiter, validate(clientRegisterSchema), (req, res) => this.register(req, res));
     this.router.post('/oauth2/client/edit', commonLimiter, validate(clientEditSchema), (req, res) => this.edit(req, res));
     this.router.post('/oauth2/client/regenerate-secret', commonLimiter, validate(clientManageSchema), (req, res) => this.regenerateClientSecret(req, res));
@@ -279,6 +282,45 @@ export default class OAuth2Controller {
     } catch (err) {
         this.logger.error('Failed to fetch client data', { error: err });
         return response.error('error', 'Failed to fetch client data', 500);
+    }
+  }
+
+  /**
+   * Get clients by client IDs
+   */
+  async getClientsByClientIdsBatch(request: APIRequest<OAuth2ClientsBatchRequest>, response: APIResponse<OAuth2ClientsBatchResponse>) {
+    if (!request.session.data.userId) {
+      return response.authRequired();
+    }
+
+    try {
+      let { client_ids: clientIds } = request.body;
+      // dedup
+      clientIds = Array.from(new Set(clientIds));
+
+      if (clientIds.length === 0) {
+        return response.success({clients: {}});
+      }
+
+      const userId = request.session.data.userId;
+      const clients: OAuth2ClientEntity[] = await this.oauth2Manager.getClientsByClientIds(clientIds, userId);
+
+      // map clients to object by client_id
+      const clientsMap: Record<string, OAuth2ClientEntity | null> = {};
+      clients.forEach(client => {
+          clientsMap[client.clientId] = client;
+      });
+
+      // fill the gaps
+      clientIds.forEach(clientId => {
+          if (!clientsMap[clientId]) {
+              clientsMap[clientId] = null;
+          }
+      });
+      response.success({ clients: clientsMap });
+    } catch (err) {
+      this.logger.error('Failed to fetch clients data', { error: err });
+      return response.error('error', 'Failed to fetch clients data', 500);
     }
   }
 

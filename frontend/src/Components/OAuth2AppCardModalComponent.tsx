@@ -41,8 +41,8 @@ export function OAuthEmbeddedAppComponent(props: OAuthEmbeddedAppComponentProps)
     };
 
     React.useEffect(() => {
-        api.oauth2Api.getClient(props.clientId).then((data) => {
-            setClient(data.client);
+        api.oauth2Api.getClientCached(props.clientId).then((client) => {
+            setClient(client);
         }).catch(() => {
             setError('Произошла ужасная ошибка!');
         });

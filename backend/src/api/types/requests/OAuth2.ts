@@ -37,6 +37,14 @@ export type OAuth2ClientsListResponse = {
   clients: OAuth2ClientEntity[];
 };
 
+export type OAuth2ClientsBatchRequest = {
+  client_ids: string[];
+};
+
+export type OAuth2ClientsBatchResponse = {
+  clients: Record<string, OAuth2ClientEntity | null>;
+};
+
 export type OAuth2ClientRegenerateSecretResponse = {
   newSecret: string;
 };
