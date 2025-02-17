@@ -235,8 +235,8 @@ export default function MediaUploader(props: MediaUploaderProps) {
 
     return (
         <>
-            <Overlay onClick={props.onCancel} />
-            <div className={styles.container}>
+            <Overlay onClick={props.onCancel}  zIndex={9999}/>
+            <div className={styles.container} style={{zIndex: 10000}}>
                 <form className={styles.controls} onSubmit={handleUpload}>
                     <div className={styles.upload}>
                         <input disabled={uploading} className={styles.url} ref={uriRef} type="text" placeholder="https://" title='Вставьте ссылку или картинку' value={uri} onChange={handleUriChange} />

@@ -31,9 +31,7 @@ export type OAuth2ClientResponse = {
   client: OAuth2ClientEntity;
 };
 
-export type OAuth2ClientsListRequest = {
-  username: string;
-};
+export type OAuth2ClientsListRequest = Record<string, never>;
 
 export type OAuth2ClientsListResponse = {
   clients: OAuth2ClientEntity[];

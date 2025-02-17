@@ -238,9 +238,7 @@ export const themes: ThemeCollection = {
             appCard: {
                 bg: 'rgba(223,223,223,0.2)',
                 hoverBg: 'rgba(223,223,223,0.3)',
-                logoBg: '#ffffff',
-                border: '#d9d9d9',
-                shadow: 'rgba(0,0,0,0.15)',
+                logoBg: '#ffffff'
             }
         },
     },
@@ -354,9 +352,7 @@ export const themes: ThemeCollection = {
             appCard: {
                 bg: 'rgba(223,223,223,0.2)',
                 hoverBg: 'rgba(223,223,223,0.3)',
-                logoBg: '#ffffff',
-                border: '#d9d9d9',
-                shadow: 'rgba(0,0,0,0.15)',
+                logoBg: 'rgba(78,78,78,0.44)',
             }
         },
     },

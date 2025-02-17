@@ -1,18 +1,18 @@
-import { Router } from 'express';
-import { Logger } from 'winston';
-import {APIRequest, APIResponse, validate, urisListValidator, joiClientId, joiUsername} from './ApiMiddleware';
+import {Router} from 'express';
+import {Logger} from 'winston';
+import {APIRequest, APIResponse, joiClientId, urisListValidator, validate} from './ApiMiddleware';
 import OAuth2Manager from '../managers/OAuth2Manager';
 import {
-  OAuth2RegisterRequest,
-  OAuth2RegisterResponse,
-  OAuth2ClientsListRequest,
-  OAuth2ClientsListResponse,
+  OAuth2ClientManageRequest,
+  OAuth2ClientRegenerateSecretResponse,
   OAuth2ClientRequest,
   OAuth2ClientResponse,
-  OAuth2ClientRegenerateSecretResponse,
+  OAuth2ClientsListRequest,
+  OAuth2ClientsListResponse,
   OAuth2ClientUpdateLogoUrlRequest,
-  OAuth2ClientManageRequest,
-  OAuth2EditRequest
+  OAuth2EditRequest,
+  OAuth2RegisterRequest,
+  OAuth2RegisterResponse
 } from './types/requests/OAuth2';
 import Joi from 'joi';
 import rateLimit from 'express-rate-limit';
@@ -23,9 +23,16 @@ import ExpressOAuthServer from '@node-oauth/express-oauth-server';
 import {config} from '../config';
 import {escapeRegExp} from '../parser/regexprs';
 
+
 const clientRegisterSchema = Joi.object<OAuth2RegisterRequest>({
-  name: Joi.string().max(32).required(),
-  description: Joi.string().max(255).required(),
+  name: Joi.string()
+      .pattern(/^[a-zа-яё_\d .-]{2,32}$/i)
+      .required()
+      .messages({
+        'string.pattern.base': 'Only letters, numbers, space, and some special characters are allowed, 2 to 32 characters',
+        'any.required': 'Name is required'
+      }),
+  description: Joi.string().max(255).required().allow(''),
   logoUrl: Joi.string()
     .uri({
       scheme: ['http', 'https']
@@ -56,7 +63,7 @@ const clientRegisterSchema = Joi.object<OAuth2RegisterRequest>({
 
 const clientEditSchema = Joi.object<OAuth2EditRequest>({
   clientId: Joi.string().min(36).max(36).required(),
-  description: Joi.string().max(255).required(),
+  description: Joi.string().max(255).required().allow(''),
   initialAuthorizationUrl: Joi.string()
     .uri({
       scheme: ['http', 'https']
@@ -75,9 +82,8 @@ const clientEditSchema = Joi.object<OAuth2EditRequest>({
     })
 });
 
-const listClientsSchema = Joi.object<OAuth2ClientsListRequest>({
-  username: joiUsername.required()
-});
+const listClientsSchema = Joi.object<OAuth2ClientsListRequest>({})
+    .pattern(/.*/, Joi.any().forbidden());
 
 const getClientSchema = Joi.object<OAuth2ClientRequest>({
   client_id: Joi.alternatives().try(
@@ -131,7 +137,7 @@ export default class OAuth2Controller {
     });
 
     this.router.post('/oauth2/clients', commonLimiter, validate(listClientsSchema), (req, res) => this.listClients(req, res));
-    this.router.post('/oauth2/client', commonLimiter, validate(getClientSchema), (req, res) => this.getClientByClientId(req, res));
+    this.router.post('/oauth2/client', validate(getClientSchema), (req, res) => this.getClientByClientId(req, res));
     this.router.post('/oauth2/client/register', registerLimiter, validate(clientRegisterSchema), (req, res) => this.register(req, res));
     this.router.post('/oauth2/client/edit', commonLimiter, validate(clientEditSchema), (req, res) => this.edit(req, res));
     this.router.post('/oauth2/client/regenerate-secret', commonLimiter, validate(clientManageSchema), (req, res) => this.regenerateClientSecret(req, res));
@@ -205,7 +211,7 @@ export default class OAuth2Controller {
   /**
    * edit a client, name cannot be edited
    */
-  async edit(request: APIRequest<OAuth2EditRequest>, response: APIResponse<Record<string, never>>) {
+  async edit(request: APIRequest<OAuth2EditRequest>, response: APIResponse<OAuth2ClientResponse>) {
     if (!request.session.data.userId) {
       return response.authRequired();
     }
@@ -221,7 +227,11 @@ export default class OAuth2Controller {
       if (!result) {
         return response.error('error', 'Failed to update client', 500);
       }
-      response.success({});
+      const newClient = await this.oauth2Manager.getClientByClientId(clientId, userId);
+      if (!newClient) {
+          return response.error('error', 'Failed to update client', 500);
+      }
+      response.success({ client: newClient });
     } catch (err) {
       this.logger.error('Failed to update client', { error: err });
       return response.error('error', 'Failed to update client', 500);
@@ -236,18 +246,11 @@ export default class OAuth2Controller {
       return response.authRequired();
     }
 
-    const { username } = request.body;
-
     try {
-      const requestedUser = await this.userManager.getByUsername(username);
-      if (!requestedUser) {
-        return response.error('not-found', 'User not found', 404);
-      }
-      const requestedUserId = requestedUser.id;
       const currentUserId = request.session.data.userId;
 
       // Load clients created by the given user with current user consent
-      const clients: OAuth2ClientEntity[] = await this.oauth2Manager.listClients(requestedUserId, currentUserId);
+      const clients: OAuth2ClientEntity[] = await this.oauth2Manager.listClients(currentUserId, currentUserId);
       const responseData: OAuth2ClientsListResponse = { clients };
       response.success(responseData);
     } catch (err) {
@@ -322,7 +325,7 @@ export default class OAuth2Controller {
   /**
    * Unauthorize client, initiated by client user, when client is unathorized, all tokens issued for it are marked as revoked
    */
-  async unAuthorizeClient(request: APIRequest<OAuth2ClientManageRequest>, response: APIResponse<Record<string, never>>) {
+  async unAuthorizeClient(request: APIRequest<OAuth2ClientManageRequest>, response: APIResponse<OAuth2ClientResponse>) {
     const userId = request.session.data.userId;
     if (!userId) {
       return response.authRequired();
@@ -333,7 +336,11 @@ export default class OAuth2Controller {
       if (!result) {
         return response.error('error', 'Failed to unauthorize client', 500);
       }
-      response.success({});
+      const newClient = await this.oauth2Manager.getClientByClientId(clientId, userId);
+      if (!newClient) {
+          return response.error('error', 'Failed to unauthorize client', 500);
+      }
+      response.success({client: newClient});
     } catch (err) {
         this.logger.error('Failed to unauthorize client', { error: err });
         return response.error('error', 'Failed to unauthorize client', 500);

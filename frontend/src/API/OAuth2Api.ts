@@ -1,9 +1,7 @@
 import APIBase from './APIBase';
 import {OAuth2ClientEntity} from '../Types/OAuth2';
 
-export type OAuth2ClientsListRequest = {
-  username: string;
-};
+export type OAuth2ClientsListRequest = Record<string, never>;
 
 export type OAuth2ClientsListResponse = {
   clients: OAuth2ClientEntity[];
@@ -29,6 +27,10 @@ export type OAuth2RegisterResponse = {
 };
 export type OAuth2UnAuthorizeRequest = {
   client_id: string;
+};
+
+export type OAuth2UnAuthorizeResponse = {
+  client: OAuth2ClientEntity;
 };
 
 export type OAuth2GetClientRequest = {
@@ -73,18 +75,17 @@ export default class OAuth2Api {
     });
   }
 
-  async editClient(clientId: string, description: string, redirectUris: string, initialAuthorizationUrl = ''): Promise<void> {
-    return await this.api.request<OAuth2EditRequest, void>('/oauth2/client/edit', {
+  async editClient(clientId: string, description: string, redirectUris: string, initialAuthorizationUrl = ''): Promise<OAuth2ClientEntity> {
+    return await this.api.request<OAuth2EditRequest, OAuth2GetClientResponse>('/oauth2/client/edit', {
       clientId,
       description,
       redirectUris,
       initialAuthorizationUrl
-    });
+    }).then(response => response.client);
   }
 
-  async listClients(forUserName: string): Promise<OAuth2ClientsListResponse> {
+  async listClients(): Promise<OAuth2ClientsListResponse> {
     return await this.api.request<OAuth2ClientsListRequest, OAuth2ClientsListResponse>('/oauth2/clients', {
-        username: forUserName
     });
   }
 
@@ -92,10 +93,10 @@ export default class OAuth2Api {
     return await this.api.request<OAuth2GetClientRequest, OAuth2GetClientResponse>(`/oauth2/client`, { client_id: clientId });
   }
 
-  async unauthorizeClient(clientId: string): Promise<Record<string, never>> {
-    return await this.api.request<OAuth2UnAuthorizeRequest, Record<string, never>>('/oauth2/unauthorize', {
+  async unauthorizeClient(clientId: string): Promise<OAuth2ClientEntity> {
+    return await this.api.request<OAuth2UnAuthorizeRequest, OAuth2UnAuthorizeResponse>('/oauth2/unauthorize', {
       client_id: clientId
-    });
+    }).then(response => response.client);
   }
 
   async regenerateClientSecret(clientId: string): Promise<OAuth2RegenerateClientSecretResponse> {

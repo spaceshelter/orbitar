@@ -3,8 +3,9 @@ import styles from './OAuthClientPage.module.scss';
 import {observer} from 'mobx-react-lite';
 import {useAPI} from '../AppState/AppState';
 import {OAuth2ClientEntity} from '../Types/OAuth2';
-import OAuth2AppCardComponent from '../Components/OAuth2AppCardComponent';
+import {OAuth2AppCardModalComponent} from '../Components/OAuth2AppCardModalComponent';
 import Cookies from 'js-cookie';
+import {OAuth2AuthorizeComponent} from '../Components/OAuth2AuthorizeComponent';
 
 export const OAuthClientPage = observer(() => {
     const api = useAPI();
@@ -41,7 +42,11 @@ export const OAuthClientPage = observer(() => {
     };
 
     const onDecline = () => {
-        window.history.back();
+        if (window.history.length > 1) {
+            window.history.back();
+        } else {
+            window.location.href = '/';
+        }
     };
 
     useEffect(() => {
@@ -89,14 +94,22 @@ export const OAuthClientPage = observer(() => {
     return (
         <div className={styles.container}>
             <h2>Авторизация приложения</h2>
-            <OAuth2AppCardComponent
+            <OAuth2AppCardModalComponent
                 client={client}
-                newlyRequestedScopes={scope}
-                redirectUri={redirectUri}
-                state={state}
-                sessionId={sessionId}
-                onAuthorizeDeny={onDecline}
-            />
+                onClose={() => {}}
+                disallowEditing={true}
+                hideShareButton={true}
+                forceInline={true}
+            >
+                <OAuth2AuthorizeComponent
+                    client={client}
+                    newlyRequestedScopes={scope}
+                    redirectUri={redirectUri}
+                    state={state}
+                    sessionId={sessionId}
+                    onAuthorizeDeny={onDecline}
+                />
+            </OAuth2AppCardModalComponent>
         </div>
     );
 });

@@ -20,7 +20,7 @@ type AppSubmitFormValues = {
 type UserProfileClientAppsCreateFormProps = {
   onClientRegisterSuccess?: (newClient?: OAuth2ClientEntity) => void;
   editingClient?: OAuth2ClientEntity;
-  onClientEditSuccess?: () => void;
+  onClientEditSuccess?: (newClient: OAuth2ClientEntity) => void;
 };
 
 export default function UserProfileClientAppsCreateForm(props: UserProfileClientAppsCreateFormProps) {
@@ -32,9 +32,9 @@ export default function UserProfileClientAppsCreateForm(props: UserProfileClient
     const { name, description, redirectUris, logoUrl, initialAuthorizationUrl } = data;
 
     if (editingClient) {
-      api.oauth2Api.editClient(editingClient.clientId, description, redirectUris, initialAuthorizationUrl).then(() => {
+      api.oauth2Api.editClient(editingClient.clientId, description, redirectUris, initialAuthorizationUrl).then((newClient) => {
         if (onClientEditSuccess) {
-          onClientEditSuccess();
+          onClientEditSuccess(newClient);
         }
       }).catch((err) => {
         setSubmitError(err.message);
@@ -85,7 +85,7 @@ export default function UserProfileClientAppsCreateForm(props: UserProfileClient
   const [submitError, setSubmitError] = useState('');
 
   return (
-    <React.Fragment>
+    <>
       <div className={classNames({
         [mediaFormStyles.container]: true,
         [styles.create]: true,
@@ -96,8 +96,8 @@ export default function UserProfileClientAppsCreateForm(props: UserProfileClient
             <input type="text" {...(!editingClient ? register('name', {
                      required: 'Без названия никак',
                      pattern: {
-                       value: /^[a-zа-яё\d -]{2,32}$/i,
-                       message: 'Только буквы, цифры, дефис и пробел, от 2 до 32 символов'
+                       value: /^[a-zа-яё_\d .-]{2,32}$/i,
+                       message: 'Только буквы, цифры, пробел, и некоторые символы, от 2 до 32 символов'
                      }
                    }) : {})}
                    disabled={Boolean(editingClient)}
@@ -108,15 +108,11 @@ export default function UserProfileClientAppsCreateForm(props: UserProfileClient
 
           <label><b>Описание:</b>
             <textarea maxLength={255}
+                      placeholder={'Описание даст пользователям понять, зачем нужно ваше приложение.'}
                       {...register('description', {
-                        required: 'Описание даст пользователям понять, зачем нужно ваше приложение.',
                         maxLength: {
                           value: 255,
                           message: 'Описание не должно быть длиннее 255 символов'
-                        },
-                        minLength: {
-                          value: 32,
-                          message: 'Описание должно быть не менее 32 символов'
                         }
                       })}
               defaultValue={editingClient ? editingClient.description : ''}
@@ -153,7 +149,7 @@ export default function UserProfileClientAppsCreateForm(props: UserProfileClient
           </div>
         </form>
       </div>
-    </React.Fragment>
+    </>
   );
 }
 

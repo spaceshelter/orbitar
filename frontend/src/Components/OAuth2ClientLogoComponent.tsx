@@ -1,64 +1,62 @@
 import styles from './OAuth2ClientLogoComponent.module.scss';
 import classNames from 'classnames';
-import React, { useState } from 'react';
-import MediaUploader from './MediaUploader';
+import React from 'react';
 import {toast} from 'react-toastify';
 import {ReactComponent as EditIcon} from '../Assets/edit.svg';
+import {useAppState} from '../AppState/AppState';
 
 interface OAuth2ClientLogoComponentProps {
-  url?: string;
-  canManage: boolean;
-  onNewLogo?: (url: string) => void;
+    url?: string;
+    canManage: boolean;
+    onNewLogo?: (url: string) => void;
 }
 
 export default function OAuth2ClientLogoComponent(props: OAuth2ClientLogoComponentProps) {
-  const [mediaUploaderOpen, setMediaUploaderOpen] = useState(false);
-  const [logoUrl, setLogoUrl] = useState<string | undefined>(props.url);
+    const appState = useAppState();
 
-  const handleLogoClick = () => {
-    if (props.canManage) {
-      setMediaUploaderOpen(true);
-    }
-  };
+    const handleLogoClick = () => {
+        if (props.canManage) {
+            appState.mediaUploader(
+                {
+                    onCancel: () => {
+                    },
+                    onSuccess: handleMediaUpload,
+                    onError: () => {
+                        toast('Не удалось обновить логотип', {type: 'error'});
+                    }
+                }
+            );
+        }
+    };
 
-  const handleMediaUpload = (url: string, type: 'video' | 'image') => {
-    if (type === 'video') {
-      toast('Нужна именно картинка', {type: 'error'});
-      return;
-    }
-    setMediaUploaderOpen(false);
-    setLogoUrl(url);
-    props.onNewLogo?.(url);
-  };
+    const handleMediaUpload = (url: string, type: 'video' | 'image') => {
+        if (type === 'video') {
+            toast('Нужна именно картинка', {type: 'error'});
+            return;
+        }
+        props.onNewLogo?.(url);
+    };
 
-  const handleMediaUploadCancel = () => {
-    setMediaUploaderOpen(false);
-  };
-
-  return (
-    <>
-      {mediaUploaderOpen && <MediaUploader onSuccess={handleMediaUpload} onCancel={handleMediaUploadCancel} onError={() => {
-        setMediaUploaderOpen(false);
-        toast('Не удалось обновить логотип', {type: 'error'});
-      }} />}
-      <div
-        onClick={handleLogoClick}
-        className={classNames({
-          [styles.logo]: true,
-          [styles.canManage]: props.canManage
-        })}
-        {...(logoUrl ? {
-          style: {
-            backgroundImage: `url(${logoUrl})`
-          }
-        } : {})}
-      >
-        {!logoUrl && props.canManage && (
-          <div className={styles.editIconContainer}>
-            <EditIcon  />
-          </div>
-        )}
-      </div>
-    </>
-  );
+    return (
+        <>
+            <div
+                onClick={handleLogoClick}
+                className={classNames({
+                    [styles.logo]: true,
+                    [styles.canManage]: props.canManage
+                })}
+                {...(props.url ? {
+                    style: {
+                        backgroundImage: `url(${props.url})`
+                    }
+                } : {})}
+            >
+                {!props.url && props.canManage && (
+                    <div className={styles.editIconContainer}>
+                        <EditIcon/>
+                    </div>
+                )}
+            </div>
+        </>
+    );
 }

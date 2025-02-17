@@ -11,7 +11,7 @@ export default class OAuth2Repository {
       oauth_clients.*,
       oauth_consents.scope as scopes,
       oauth_consents.last_revoked_ts as last_revoked_ts,
-      (select count(oauth_consents.user_id) from oauth_consents where client_id = oauth_clients.client_id) as installations_count 
+      (select count(oauth_consents.user_id) from oauth_consents where client_id = oauth_clients.client_id and scope != '') as installations_count 
     from oauth_clients
     left outer join oauth_consents
       on oauth_consents.client_id = oauth_clients.client_id
@@ -43,9 +43,9 @@ export default class OAuth2Repository {
     return await this.db.fetchOne<OAuth2ClientRaw>(`
       ${this.clientBaseQuery}
       where oauth_clients.client_id = :client_id
-    `, { 
-      client_id: clientId, 
-      user_id: consentUserId 
+    `, {
+      client_id: clientId,
+      user_id: consentUserId
     });
   }
 

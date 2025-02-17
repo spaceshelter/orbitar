@@ -1,110 +1,106 @@
 import styles from './UserProfileClientApps.module.scss';
 import {useAPI, useAppState} from '../AppState/AppState';
-import React, { useEffect, useState } from 'react';
-import { toast } from 'react-toastify';
+import React, {useEffect, useState} from 'react';
+import {toast} from 'react-toastify';
 import UserProfileClientAppsList from './UserProfileClientAppsList';
 import buttonStyles from './Buttons.module.scss';
 import mediaFormStyles from './MediaUploader.module.scss';
 import UserProfileClientAppsCreateForm from './UserProfileClientAppsCreateForm';
 import Overlay from './Overlay';
-import { selectElementText } from '../Utils/utils';
 import classNames from 'classnames';
-import { OAuth2ClientEntity } from '../Types/OAuth2';
+import {OAuth2ClientEntity} from '../Types/OAuth2';
+import CopyableEmbedCodeComponent from './CopyableEmbedCodeComponent';
 
 interface UserProfileClientsAppsProps {
   forUserName: string;
   onClientUnauthorized?: () => void;
 }
 
+type SecretState = {
+  type: 'regenerated' | 'new';
+  clientId: string;
+  secret: string;
+};
+
 export default function UserProfileClientsApps(props: UserProfileClientsAppsProps) {
   const api = useAPI();
   const myUsername = useAppState().userInfo?.username;
   const myUserId = useAppState().userInfo?.id;
-  const [loading, setLoading] = useState(true);
   const [clients, setClients] = useState<OAuth2ClientEntity[]>([]);
-  const [lastClientCreatedSecretCode, setLastClientCreatedSecretCode] = useState<string | undefined>(undefined);
-  const [lastClientCreatedClientId, setLastClientCreatedClientId] = useState<string | undefined>(undefined);
+
+  const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
-  const copyButtonLabel = 'скопировать в буфер';
-  const [copyLastClientCreatedSecretCodeLabel, setCopyLastClientCreatedSecretCodeLabel] = useState(copyButtonLabel);
-  const [reload, setReload] = useState(0);
+  const [generatedSecret, setGeneratedSecret] = useState<SecretState | undefined>(undefined);
 
   useEffect(() => {
     setLoading(true);
     if (!myUserId) {
       return;
     }
-    api.oauth2Api.listClients(props.forUserName).then((data) => {
+    api.oauth2Api.listClients().then((data) => {
       setClients(data.clients);
       setLoading(false);
-    }).catch((err) => {
+    }).catch(() => {
       toast.error('Не удалось загрузить список приложений');
     }).finally(() => {
       setLoading(false);
     });
-  }, [reload]);
+  }, []);
 
-  const handleClientSecretUpdate = (newSecret: string) => {
-    setLastClientCreatedSecretCode(newSecret);
+  const handleClientSecretUpdate = (clientId: string, newSecret: string) => {
+    setGeneratedSecret({type: 'regenerated', clientId, secret: newSecret});
   };
 
-  const handleClientUnauthorized = () => {
-    setReload(reload + 1);
+  const handleUpdatedClient = (updatedClient?: OAuth2ClientEntity) => {
+    if (updatedClient) {
+      setClients(clients.map((client) => (client.clientId === updatedClient.clientId) ? updatedClient : client));
+    }
   };
 
-  const handleClientPublish = () => {
-    setReload(reload + 1);
+  const handleClientDelete = (deletedClientId: string) => {
+    setClients(clients.filter((client) => client.clientId !== deletedClientId));
   };
 
   const handleCreatedClient = (newClient?: OAuth2ClientEntity) => {
     if (newClient) {
       setCreating(false);
-      setLastClientCreatedSecretCode(newClient.clientSecretOriginal);
-      setLastClientCreatedClientId(newClient.clientId);
+      setGeneratedSecret({type: 'new', clientId: newClient.clientId, secret: newClient.clientSecretOriginal || ''});
       setClients([...clients, newClient]);
     }
-  };
-
-  const handleCopy = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (lastClientCreatedSecretCode === undefined) {
-      return;
-    }
-    navigator.clipboard?.writeText(lastClientCreatedSecretCode)
-      ?.then(() => {
-        setCopyLastClientCreatedSecretCodeLabel('скопировано!');
-        setTimeout(() => {
-          setCopyLastClientCreatedSecretCodeLabel(copyButtonLabel);
-        }, 5000);
-      });
   };
 
   const ownAppsList = clients.filter((client) => client.author.id === myUserId);
   const installedAppsList = clients.filter((client) => client.author.id !== myUserId);
 
-
   return (
     <div className={styles.appsContainer}>
       {
-        lastClientCreatedSecretCode && (
+        generatedSecret && (
         <div className={styles.clientSecretCopyContainer}>
-          <Overlay onClick={() => { setLastClientCreatedSecretCode(undefined); }} />
-          <div className={classNames([mediaFormStyles.container, styles.clientSecretCopyContainer])}>
-            <h3>Приложение зарегистрировано!</h3>
+          <Overlay
+              onClick={() => { setGeneratedSecret(undefined); }}
+              zIndex={10000}
+          />
+          <div className={classNames([mediaFormStyles.container, styles.clientSecretCopyContainer])}
+                style={{zIndex: 10001}}
+          >
+            <h3>{generatedSecret.type === 'new' ? 'Приложение зарегистрировано!' : 'Секрет обновлен!'}</h3>
             <div>
-              <b>ID вашего приложения (client_id)</b>
-              <span className={styles.clientId}>{lastClientCreatedClientId}</span>
+              <h4>ID вашего приложения (client_id)</h4>
+              <CopyableEmbedCodeComponent text={generatedSecret.clientId} />
             </div>
             <div>
-              <b>Секретный код приложения</b>
-              <span className={styles.code} onClick={selectElementText}>{lastClientCreatedSecretCode}</span>
+              <h4>Секретный код приложения (client_secret)</h4>
+              <CopyableEmbedCodeComponent text={generatedSecret.secret} />
+
               <span className={styles.codeInfo}>
                 Скопируйте ID приложения (client_id) и секретный код и сохраните эти данные в надёжном месте.<br />
                 Мы храним секретные коды в зашифрованном виде и не можем их восстановить.<br /><br />
+                {generatedSecret.type !== 'new' && <>
                 Правда, вы сможете перегенерировать его в любое время,
                 но тогда вам также придётся обновить код в своём приложении.
+                </>}
               </span>
-              <button className={buttonStyles.linkButton} onClick={handleCopy}>{copyLastClientCreatedSecretCodeLabel}</button>
               <span className={styles.clientSecret}>{}</span>
             </div>
           </div>
@@ -113,11 +109,11 @@ export default function UserProfileClientsApps(props: UserProfileClientsAppsProp
       }
       {loading && <span>Loading...</span>}
 
-      {installedAppsList.length > 0 && <><h4>Установленные приложения</h4>
+      {installedAppsList.length > 0 && <><h4>Подключенные приложения</h4>
         <UserProfileClientAppsList
             onClientSecretUpdate={handleClientSecretUpdate}
-            onClientUnauthorize={handleClientUnauthorized}
-            onClientPublish={handleClientPublish}
+            onClientUpdate={handleUpdatedClient}
+            onClientDelete={handleClientDelete}
             list={installedAppsList}
         /></>}
 
@@ -126,11 +122,8 @@ export default function UserProfileClientsApps(props: UserProfileClientsAppsProp
           <h4>Ваши приложения</h4>
           <UserProfileClientAppsList
               onClientSecretUpdate={handleClientSecretUpdate}
-              onClientUnauthorize={handleClientUnauthorized}
-              onClientPublish={handleClientPublish}
-              onClientEdit={() => {
-                setReload(reload + 1);
-              }}
+              onClientUpdate={handleUpdatedClient}
+              onClientDelete={handleClientDelete}
               list={ownAppsList}
           />
           </div>
@@ -149,9 +142,9 @@ export default function UserProfileClientsApps(props: UserProfileClientsAppsProp
             <Overlay onClick={() => { setCreating(false); }}/>
             <div className={styles.createAppContainer}>
               <UserProfileClientAppsCreateForm onClientEditSuccess={
-                () => {
+                (newClient) => {
                   setCreating(false);
-                  setReload(prev => prev + 1);
+                  handleUpdatedClient(newClient);
                 }
               } onClientRegisterSuccess={handleCreatedClient} />
             </div>

@@ -72,6 +72,16 @@ function Unauthorized() {
     );
 }
 
+const ModalContainer = observer(() => {
+    const appState = useAppState();
+    return (
+        <>
+            {appState.modal}
+            {appState.mediaUploaderModal}
+        </>
+    );
+});
+
 const ReadyContainer = observer(() => {
     const {theme} = useTheme();
     const [menuState, setMenuState] = useState<TopbarMenuState>(localStorage.getItem('menuState') === 'close' ? 'close' : 'open');
@@ -112,6 +122,7 @@ const ReadyContainer = observer(() => {
 
             {isNewYear && <div className={classNames(styles.monster, styles.monsterNy)}><MonsterIconNy /></div>}
             {!isNewYear && <div className={styles.monster}><MonsterIcon /></div>}
+            <ModalContainer />
             <ToastContainer theme={theme as Theme} />
             <SpoilerMask/>
         </>

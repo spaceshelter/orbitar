@@ -260,7 +260,7 @@ body::-webkit-scrollbar-thumb {
 }
 
 .react-confirm-alert-overlay.orbitar-confirm-overlay {
-  z-index: 200;
+  z-index: 2000;
   background:linear-gradient(0deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5));
   backdrop-filter: blur(5px);
   background-size:cover;
