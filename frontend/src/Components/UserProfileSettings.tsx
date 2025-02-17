@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {useLocation, useNavigate} from 'react-router-dom';
+import {Link, useLocation, useNavigate} from 'react-router-dom';
 
 import classNames from 'classnames';
 import {observer} from 'mobx-react-lite';
@@ -22,6 +22,7 @@ import styles from './UserProfileSettings.module.scss';
 type UserProfileSettingsProps = {
     onChange: () => void;
     gender: UserGender;
+    hasApps: boolean;
     barmaliniAccess?: boolean;
     isBarmalini?: boolean;
 };
@@ -206,6 +207,11 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
 
             {/*<MailboxSettings/>*/}
             {props.barmaliniAccess && <BarmaliniAccess/>}
+
+            {!props.hasApps && <div>
+            <Link className={`${styles.control}`} to={'/profile/apps'}>OAuth2 Приложения</Link>
+            </div>}
+
             <div>
                 {!props.isBarmalini && (
                     <button

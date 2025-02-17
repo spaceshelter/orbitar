@@ -145,6 +145,7 @@ const Ready = observer(() => {
                         <Route path="" element={<UserPage />} />
                         <Route path=":page" element={<UserPage />} />
                         <Route path="settings" element={<MonsterIcon />} />
+                        <Route path="apps" element={<MonsterIcon />} />
                     </Route>
                     <Route path="profile">
                         <Route path="" element={<UserPage />} />

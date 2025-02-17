@@ -11,20 +11,14 @@ import classNames from 'classnames';
 import {OAuth2ClientEntity} from '../Types/OAuth2';
 import CopyableEmbedCodeComponent from './CopyableEmbedCodeComponent';
 
-interface UserProfileClientsAppsProps {
-  forUserName: string;
-  onClientUnauthorized?: () => void;
-}
-
 type SecretState = {
   type: 'regenerated' | 'new';
   clientId: string;
   secret: string;
 };
 
-export default function UserProfileClientsApps(props: UserProfileClientsAppsProps) {
+export default function UserProfileClientsApps() {
   const api = useAPI();
-  const myUsername = useAppState().userInfo?.username;
   const myUserId = useAppState().userInfo?.id;
   const [clients, setClients] = useState<OAuth2ClientEntity[]>([]);
 
@@ -131,7 +125,7 @@ export default function UserProfileClientsApps(props: UserProfileClientsAppsProp
 
       {!installedAppsList.length && !ownAppsList.length && !loading && <span>Тут пока пусто</span>}
 
-      {myUsername === props.forUserName && <div className={styles.forDevContainer}>
+      <div className={styles.forDevContainer}>
         <h4>Для разработчиков</h4>
         <button {...(creating && { disabled: true })} className={buttonStyles.linkButton} onClick={() => {
           setCreating(true);
@@ -150,7 +144,7 @@ export default function UserProfileClientsApps(props: UserProfileClientsAppsProp
             </div>
           </>
         )}
-      </div>}
+      </div>
     </div>
   );
 }

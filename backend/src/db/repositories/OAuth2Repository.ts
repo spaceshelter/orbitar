@@ -184,7 +184,16 @@ export default class OAuth2Repository {
 
   async hasOwnApps(userId: number): Promise<boolean> {
     const res = await this.db.fetchOne<{ cnt: number }>(
-      `SELECT 1 as cnt FROM oauth_clients WHERE user_id = :userId LIMIT 1`,
+      `select sum(cnt) as cnt
+        from (SELECT 1 as cnt
+              FROM oauth_clients
+              WHERE user_id = :userId
+              UNION
+              SELECT 1 as cnt
+              FROM oauth_consents
+              WHERE user_id = :userId
+                AND scope != ''
+              LIMIT 1) as t`,
       { userId }
     );
     return res?.cnt > 0;

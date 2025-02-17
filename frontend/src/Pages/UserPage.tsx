@@ -123,8 +123,8 @@ export const UserPage = observer(() => {
                     <Link className={`${styles.control} ${isComments ? styles.active : ''}`} to={base + '/comments'}>Комментарии ({profile.numberOfComments.toLocaleString()})</Link>
                     <Link className={`${styles.control} ${isKarma ? styles.active : ''}`} to={base + '/karma'}>Саморегуляция</Link>
                     <Link className={`${styles.control} ${isInvites ? styles.active : ''}`} to={base + '/invites'}>Инвайты {isMyProfile && profile.numberOfInvitesAvailable ? ('(' + profile.numberOfInvitesAvailable.toLocaleString() + ')') : '' }</Link>
+                    {(isMyProfile && profile.hasOwnApps) && <Link className={`${styles.control} ${isApps ? styles.active : ''}`} to={base + '/apps'}>Приложения</Link>}
                     {isMyProfile && <Link className={`${styles.control} ${isSettings ? styles.active : ''}`} to={base + '/settings'}>Настройки</Link>}
-                    {(isMyProfile || profile.hasOwnApps) && <Link className={`${styles.control} ${isApps ? styles.active : ''}`} to={base + '/apps'}>Приложения</Link>}
                 </div>
 
                 <div className={styles.userinfo}>
@@ -148,12 +148,13 @@ export const UserPage = observer(() => {
                     {isComments && <UserProfileComments username={user.username} />}
                     {isInvites && <UserProfileInvites username={user.username} onInvitesChange={handleInvitesChange} />}
                     {isKarma && <UserProfileKarma username={user.username} profile={profile} />}
+                    {isApps && <UserProfileClientsApps/>}
                     {isSettings && <UserProfileSettings
                         gender={user.gender} onChange={refreshProfile}
                         barmaliniAccess={restrictions?.canVoteKarma && !profile.isBarmalini}
                         isBarmalini={profile.isBarmalini}
+                        hasApps={profile.hasOwnApps}
                     />}
-                    {isApps && username && <UserProfileClientsApps forUserName={username} />}
                 </div>
             </div>
         );
