@@ -158,7 +158,7 @@ export default class OAuth2Repository {
         const mergedScopeStr = mergedScopes.join(' ');
 
         await this.db.query(
-          'update oauth_consents set scope = :scope, last_revoked_ts = NULL where user_id = :user_id and client_id = :client_id',
+          'update oauth_consents set scope = :scope where user_id = :user_id and client_id = :client_id',
           { scope: mergedScopeStr, user_id: userId, client_id: clientId }
         );
       } else {
