@@ -125,6 +125,7 @@ export class ExpressOauth2ScopesFilter {
     private paths: Record<string, string> | undefined = undefined;
     private allScopes: string[] | undefined = undefined;
     private allScopesSet: Set<string> | undefined = undefined;
+    private allLeafScopes: string[] | undefined = undefined;
     private scopesToDescriptions: Record<string, string> | undefined = undefined;
 
     constructor(app: Application) {
@@ -174,6 +175,14 @@ export class ExpressOauth2ScopesFilter {
         return this.allScopesSet;
     }
 
+    getAllLeafScopes() {
+        if (this.allLeafScopes === undefined) {
+            this.allLeafScopes =
+                Object.keys(this.getPaths()).map(path => ExpressOauth2ScopesFilter.pathToScope(path));
+        }
+        return this.allLeafScopes;
+    }
+
     getScopesToDescriptions() {
         if (this.scopesToDescriptions === undefined) {
             this.scopesToDescriptions = Object.keys(this.getPaths()).reduce((acc, path) => {
@@ -189,7 +198,7 @@ export class ExpressOauth2ScopesFilter {
      * @param scopes
      */
     resolveScopes(scopes: string[]) {
-        return this.allScopes.filter(scope =>
+        return this.getAllLeafScopes().filter(scope =>
             scopes.some(superscope => ExpressOauth2ScopesFilter.isSubscope(scope, superscope))
         );
     }

@@ -6,13 +6,17 @@ import {
   OAuth2ClientManageRequest,
   OAuth2ClientRegenerateSecretResponse,
   OAuth2ClientRequest,
-  OAuth2ClientResponse, OAuth2ClientsBatchRequest, OAuth2ClientsBatchResponse,
+  OAuth2ClientResponse,
+  OAuth2ClientsBatchRequest,
+  OAuth2ClientsBatchResponse,
   OAuth2ClientsListRequest,
   OAuth2ClientsListResponse,
   OAuth2ClientUpdateLogoUrlRequest,
   OAuth2EditRequest,
   OAuth2RegisterRequest,
-  OAuth2RegisterResponse, OAuth2VerifyScopesRequest, OAuth2VerifyScopesResponse
+  OAuth2RegisterResponse,
+  OAuth2VerifyScopesRequest,
+  OAuth2VerifyScopesResponse
 } from './types/requests/OAuth2';
 import Joi from 'joi';
 import rateLimit from 'express-rate-limit';
@@ -429,9 +433,15 @@ export default class OAuth2Controller {
                 ExpressOauth2ScopesFilter.splitScope(request.body.scopes)
             ));
 
-    const resolvedScopes = this.oauthScopesFilter.resolveScopes(scopes);
-    const scopesToDescription = this.oauthScopesFilter.mapScopesToDescriptions(resolvedScopes);
+    // group resolved scopes that are subscopes of the same parent scope
+    const groupedDescs: Record<string, string> = scopes.reduce((acc, scope) => {
+      const resolvedScopes = this.oauthScopesFilter.resolveScopes([scope]);
+      const scopesToDescription = this.oauthScopesFilter.mapScopesToDescriptions(resolvedScopes);
+      // join description values
+      acc[scope] = Object.values(scopesToDescription).join(', ');
+       return acc;
+    }, {});
 
-    response.success({scopes: scopesToDescription});
+    response.success({scopes: groupedDescs});
   }
 }
