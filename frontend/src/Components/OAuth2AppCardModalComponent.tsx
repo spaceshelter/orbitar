@@ -3,7 +3,7 @@ import OAuth2ClientLogoComponent from './OAuth2ClientLogoComponent';
 import Username from './Username';
 import classNames from 'classnames';
 import buttonStyles from './Buttons.module.scss';
-import React, {useState} from 'react';
+import React, {MouseEventHandler, useState} from 'react';
 import {OAuth2ClientEntity} from '../Types/OAuth2';
 import {confirmAlert} from 'react-confirm-alert';
 import {toast} from 'react-toastify';
@@ -102,7 +102,13 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
         });
     };
 
-    const handleClientSecretUpdate = () => {
+    const handleClientEdit: MouseEventHandler = (e) => {
+        e.preventDefault();
+        setEditing(true);
+    };
+
+    const handleClientSecretUpdate: MouseEventHandler = (e) => {
+        e.preventDefault();
         confirmAction(
             'Attention!',
             'Regenerate client secret?',
@@ -136,7 +142,8 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
         }
     };
 
-    const handleClientDelete = () => {
+    const handleClientDelete: MouseEventHandler = (e) => {
+        e.preventDefault();
         const message =
             'Вы уверены, что хотите удалить приложение? Для всех пользователей, подключивших ваше приложение, оно перестанет работать.';
         confirmAction('Астанавитесь!', message, () =>
@@ -221,7 +228,7 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
 
                 {shouldShowManagementControls && (
                     <div className={classNames(styles.buttonsContainer, styles.ownerButtons)}>
-                        <button onClick={() => setEditing(true)} className={buttonStyles.linkButton}>
+                        <button onClick={handleClientEdit} className={buttonStyles.linkButton}>
                             <FaEdit />редактировать
                         </button>
                         <button onClick={handleClientSecretUpdate} className={buttonStyles.linkButton}>
