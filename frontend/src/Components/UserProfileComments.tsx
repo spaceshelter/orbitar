@@ -7,7 +7,6 @@ import {useCache} from '../API/use/useCache';
 import {CommentInfo} from '../Types/PostInfo';
 import CommentComponent from './CommentComponent';
 import {useDebouncedCallback} from 'use-debounce';
-import {toast} from 'react-toastify';
 
 type UserProfileCommentsProps = {
   username: string;
@@ -93,22 +92,21 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
         try {
             const res = await api.postAPI.editComment(text, comment.id);  // text comes first, then id
             if (!res) return undefined;
-            
+
             // Create an updated comment that preserves all CommentInfo properties
             const updatedComment: CommentInfo = {
                 ...comment,
                 content: res.comment.content  // access content through res.comment
             };
-            
+
             // Update the comment in the local state
-            setComments(comments?.map(c => 
+            setComments(comments?.map(c =>
                 c.id === comment.id ? updatedComment : c
             ));
-            
+
             return updatedComment;
         } catch (err) {
             console.log('Could not edit comment', err);
-            toast.error('Не удалось отредактировать комментарий');
             throw err;
         }
     };
