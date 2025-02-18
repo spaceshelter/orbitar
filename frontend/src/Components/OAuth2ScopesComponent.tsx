@@ -1,5 +1,6 @@
 import styles from './OAuth2ScopesComponent.module.scss';
-import { OAuth2ScopesLabels } from '../Types/OAuth2';
+import {useEffect, useState} from 'react';
+import {useAPI} from '../AppState/AppState';
 
 function ScopeControl(props: { name: string, description: string, checked: boolean }) {
   return (
@@ -17,17 +18,26 @@ function ScopeControl(props: { name: string, description: string, checked: boole
 }
 
 export default function OAuth2ScopesComponent(props: { appRequests: string | null }) {
-  const requestedScopesNames = ['openid'].concat(props.appRequests?.split(' ').map(s => s.trim()) || []);
-  return (<div className={styles.container}>
-    {
-      Object.keys(OAuth2ScopesLabels)
-        .filter(scope => requestedScopesNames && requestedScopesNames.includes(scope))
-        .map((scope) => {
-        if ((requestedScopesNames && requestedScopesNames.includes(scope))) {
-          return (<ScopeControl key={scope} name={scope} checked={requestedScopesNames.includes(scope)} description={OAuth2ScopesLabels[scope]} />);
-        }
-        return null;
-      })
+
+    const [scopes, setScopes] = useState<Record<string, string> | undefined>(undefined);
+    const {oauth2Api} = useAPI();
+
+    useEffect(() => {
+        oauth2Api.verifyScopes(props.appRequests || '').then((response) => {
+            setScopes(response);
+        });
+    }, []);
+
+    if (!scopes) {
+        return <div>Загрузка...</div>;
     }
-  </div>);
+
+    return <div className={styles.container}>
+        {
+            Object.keys(scopes)
+                .map((scope) =>
+                    <ScopeControl key={scope} name={scope} checked={true} description={scopes[scope]}/>
+                )
+        }
+    </div>;
 }

@@ -142,19 +142,19 @@ export default class PostController {
             username: Joi.string().required()
         });
 
-        this.router.post('/post/get', validate(getSchema), oauth(), (req, res) => this.postGet(req, res));
-        this.router.post('/post/create', this.postCreateRateLimiter, validate(postCreateSchema), oauth(), (req, res) => this.create(req, res));
-        this.router.post('/post/edit', this.postEditRateLimiter, validate(editSchema), oauth(), (req, res) => this.postEdit(req, res));
-        this.router.post('/post/comment', this.commentRateLimiter, validate(commentSchema), oauth(), (req, res) => this.comment(req, res));
-        this.router.post('/post/preview', validate(previewSchema), oauth(), (req, res) => this.preview(req, res));
-        this.router.post('/post/read', validate(readSchema), oauth(), (req, res) => this.read(req, res));
-        this.router.post('/post/bookmark', validate(bookmarkSchema), oauth(), (req, res) => this.bookmark(req, res));
-        this.router.post('/post/watch', validate(watchingSchema), oauth(), (req, res) => this.watch(req, res));
-        this.router.post('/post/translate', validate(translateSchema), oauth(), (req, res) => this.translate(req, res));
-        this.router.post('/post/get-comment', validate(getCommentSchema), oauth(), (req, res) => this.getComment(req, res));
-        this.router.post('/post/edit-comment', this.commentRateLimiter, oauth(), validate(editCommentSchema), (req, res) => this.editComment(req, res));
-        this.router.post('/post/history', validate(historySchema), oauth(), (req, res) => this.history(req, res));
-        this.router.post('/post/get-public-key', validate(getPostPublicKeySchema), oauth(), (req, res) =>
+        this.router.post('/post/get', validate(getSchema), oauth('читать посты'), (req, res) => this.postGet(req, res));
+        this.router.post('/post/create', this.postCreateRateLimiter, validate(postCreateSchema), oauth('создавать посты'), (req, res) => this.create(req, res));
+        this.router.post('/post/edit', this.postEditRateLimiter, validate(editSchema), oauth('редактировать посты'), (req, res) => this.postEdit(req, res));
+        this.router.post('/post/comment', this.commentRateLimiter, validate(commentSchema), oauth('комментировать в постах'), (req, res) => this.comment(req, res));
+        this.router.post('/post/preview', validate(previewSchema), oauth('превью контента (парсер)'), (req, res) => this.preview(req, res));
+        this.router.post('/post/read', validate(readSchema), oauth('помечать посты как прочитанные'), (req, res) => this.read(req, res));
+        this.router.post('/post/bookmark', validate(bookmarkSchema), oauth('отслеживать посты'), (req, res) => this.bookmark(req, res));
+        this.router.post('/post/watch', validate(watchingSchema), oauth('следить за постами'), (req, res) => this.watch(req, res));
+        this.router.post('/post/translate', validate(translateSchema), oauth('AI-действия с контентом'), (req, res) => this.translate(req, res));
+        this.router.post('/post/get-comment', validate(getCommentSchema), oauth('читать комментарии поста'), (req, res) => this.getComment(req, res));
+        this.router.post('/post/edit-comment', this.commentRateLimiter, oauth('редактировать комментарии'), validate(editCommentSchema), (req, res) => this.editComment(req, res));
+        this.router.post('/post/history', validate(historySchema), oauth('смотреть историю редактирования'), (req, res) => this.history(req, res));
+        this.router.post('/post/get-public-key', validate(getPostPublicKeySchema), oauth('получать публичный ключ автора поста'), (req, res) =>
             this.getPublicKeyByUsername(req, res));
     }
 

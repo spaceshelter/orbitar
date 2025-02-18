@@ -87,7 +87,7 @@ export default class SearchController {
             search_direction: Joi.string().valid(SearchSortingDirection.Asc, SearchSortingDirection.Desc)
         });
 
-        this.router.post('/search', validate(searchSchema), oauth(), (req, res) => this.search(req, res));
+        this.router.post('/search', validate(searchSchema), oauth('поиск'), (req, res) => this.search(req, res));
     }
 
     async search(request: APIRequest<SearchRequest>, response: APIResponse<SearchResponse> ) {

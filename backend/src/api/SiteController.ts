@@ -65,11 +65,13 @@ export default class SiteController {
             name: joiSiteName.required()
         });
 
-        this.router.post('/site', validate(siteSchema), oauth(), (req, res) => this.site(req, res));
-        this.router.post('/site/subscribe', this.subscribeRateLimiter, validate(siteSubscribeSchema), oauth(), (req, res) => this.subscribe(req, res));
-        this.router.post('/site/subscriptions', oauth(), (req, res) => this.subscriptions(req, res));
-        this.router.post('/site/list', validate(siteListSchema), oauth(), (req, res) => this.list(req, res));
-        this.router.post('/site/create', validate(siteCreateSchema), oauth(), (req, res) => this.create(req, res));
+        // TODO: legacy, ideally we'd need to migrate all clients to use /site/get
+        this.router.post('/site', validate(siteSchema), (req, res) => this.site(req, res));
+        this.router.post('/site/get', validate(siteSchema), oauth('читать информацию о подсайте'), (req, res) => this.site(req, res));
+        this.router.post('/site/subscribe', this.subscribeRateLimiter, validate(siteSubscribeSchema), oauth('подписываться на подсайты'), (req, res) => this.subscribe(req, res));
+        this.router.post('/site/subscriptions', oauth('получать список подписок на подсайты'), (req, res) => this.subscriptions(req, res));
+        this.router.post('/site/list', validate(siteListSchema), oauth('получать список подсайтов'), (req, res) => this.list(req, res));
+        this.router.post('/site/create', validate(siteCreateSchema), oauth('создавать подсайты'), (req, res) => this.create(req, res));
     }
 
     async site(request: APIRequest<SiteRequest>, response: APIResponse<SiteResponse>) {

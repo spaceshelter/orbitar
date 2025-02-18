@@ -54,3 +54,10 @@ export type OAuth2ClientUpdateLogoUrlRequest = {
   url: string;
 };
 
+export type OAuth2VerifyScopesRequest = {
+  scopes: string;
+};
+
+export type OAuth2VerifyScopesResponse = {
+  scopes: Record<string, string>
+};

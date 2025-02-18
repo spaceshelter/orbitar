@@ -66,6 +66,14 @@ export type OAuth2DeleteClientRequest = {
   client_id: string;
 };
 
+export type OAuth2VerifyScopesRequest = {
+  scopes: string;
+};
+
+export type OAuth2VerifyScopesResponse = {
+  scopes: Record<string, string>;
+};
+
 export default class OAuth2Api {
   private api: APIBase;
   private batchedCache: OAuthClientBatchedCache;
@@ -138,9 +146,12 @@ export default class OAuth2Api {
       client_id: clientId
     });
   }
+
+  async verifyScopes(scopes: string): Promise<Record<string, string>> {
+      return await this.api.request<OAuth2VerifyScopesRequest, OAuth2VerifyScopesResponse>('/oauth2/verify-scopes', { scopes })
+      .then(response => response.scopes);
+  }
 }
-
-
 
 
 // The result from your batch endpoint

@@ -12,7 +12,7 @@ import {
   OAuth2ClientUpdateLogoUrlRequest,
   OAuth2EditRequest,
   OAuth2RegisterRequest,
-  OAuth2RegisterResponse
+  OAuth2RegisterResponse, OAuth2VerifyScopesRequest, OAuth2VerifyScopesResponse
 } from './types/requests/OAuth2';
 import Joi from 'joi';
 import rateLimit from 'express-rate-limit';
@@ -22,7 +22,7 @@ import {OAuth2ClientRaw} from '../db/types/OAuth2';
 import ExpressOAuthServer from '@node-oauth/express-oauth-server';
 import {config} from '../config';
 import {escapeRegExp} from '../parser/regexprs';
-
+import {ExpressOauth2ScopesFilter} from './OAuth2Middleware';
 
 const clientRegisterSchema = Joi.object<OAuth2RegisterRequest>({
   name: Joi.string()
@@ -109,18 +109,24 @@ const updateLogoUrlSchema = Joi.object<OAuth2ClientUpdateLogoUrlRequest>({
       .required()
 });
 
+const verifyScopesSchema = Joi.object({
+  scopes: Joi.string().required()
+});
+
 export default class OAuth2Controller {
   router = Router();
   private readonly oauth2Manager: OAuth2Manager;
   private readonly userManager: UserManager;
   private readonly logger: Logger;
   private readonly oauthExpressServer: ExpressOAuthServer;
+  private readonly oauthScopesFilter: ExpressOauth2ScopesFilter;
 
-  constructor(oauth2Manager: OAuth2Manager, userManager: UserManager, oauth2ExpressServer: ExpressOAuthServer, logger: Logger) {
+  constructor(oauth2Manager: OAuth2Manager, userManager: UserManager, scopesFilter:ExpressOauth2ScopesFilter, oauth2ExpressServer: ExpressOAuthServer, logger: Logger) {
     this.oauth2Manager = oauth2Manager;
     this.userManager = userManager;
     this.logger = logger;
     this.oauthExpressServer = oauth2ExpressServer;
+    this.oauthScopesFilter = scopesFilter;
 
     const registerLimiter = rateLimit({
       windowMs: 60 * 60 * 1000 /* 1 hour */,
@@ -146,6 +152,7 @@ export default class OAuth2Controller {
     this.router.post('/oauth2/client/regenerate-secret', commonLimiter, validate(clientManageSchema), (req, res) => this.regenerateClientSecret(req, res));
     this.router.post('/oauth2/client/update-logo', commonLimiter, validate(updateLogoUrlSchema), (req, res) => this.updateClientLogoUrl(req, res));
     this.router.post('/oauth2/client/delete', commonLimiter, validate(clientManageSchema), (req, res) => this.deleteClient(req, res));
+    this.router.post('/oauth2/verify-scopes', commonLimiter, validate(verifyScopesSchema), (req, res) => this.verifyScopes(req, res));
     this.router.post('/oauth2/authorize', commonLimiter, (req, res) => this.oauthExpressServer.authorize({
       authenticateHandler: {
         handle: async (req) => {
@@ -408,5 +415,23 @@ export default class OAuth2Controller {
         this.logger.error('Failed to update client logo', { error: err });
         return response.error('error', 'Failed to update client logo', 500);
     }
+  }
+
+  private verifyScopes(request: APIRequest<OAuth2VerifyScopesRequest>, response: APIResponse<OAuth2VerifyScopesResponse>) {
+    const userId = request.session.data.userId;
+    if (!userId) {
+      return response.authRequired();
+    }
+
+    const scopes =
+        ExpressOauth2ScopesFilter.minimizeScopes(
+            this.oauthScopesFilter.filterScopes(
+                ExpressOauth2ScopesFilter.splitScope(request.body.scopes)
+            ));
+
+    const resolvedScopes = this.oauthScopesFilter.resolveScopes(scopes);
+    const scopesToDescription = this.oauthScopesFilter.mapScopesToDescriptions(resolvedScopes);
+
+    response.success({scopes: scopesToDescription});
   }
 }

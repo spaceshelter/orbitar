@@ -53,11 +53,11 @@ export default class FeedController {
             feedSorting: Joi.number().valid(FeedSorting.postCreatedAt, FeedSorting.postCommentedAt)
         });
 
-        this.router.post('/feed/subscriptions', oauth(), validate(feedSubscriptionsSchema), (req, res) => this.feedSubscriptions(req, res));
-        this.router.post('/feed/all', oauth(), validate(feedSubscriptionsSchema), (req, res) => this.feedAll(req, res));
-        this.router.post('/feed/posts', oauth(), validate(feedPostsSchema), (req, res) => this.feedPosts(req, res));
-        this.router.post('/feed/watch', oauth(), validate(feedWatchSchema), (req, res) => this.feedWatch(req, res));
-        this.router.post('/feed/sorting', oauth(), validate(feedSortingSchema), (req, res) => this.saveFeedSorting(req, res));
+        this.router.post('/feed/subscriptions', oauth('фид подписок'), validate(feedSubscriptionsSchema), (req, res) => this.feedSubscriptions(req, res));
+        this.router.post('/feed/all', oauth('фид /all'), validate(feedSubscriptionsSchema), (req, res) => this.feedAll(req, res));
+        this.router.post('/feed/posts', oauth('фид постов'), validate(feedPostsSchema), (req, res) => this.feedPosts(req, res));
+        this.router.post('/feed/watch', oauth('фид отслеживаемых'), validate(feedWatchSchema), (req, res) => this.feedWatch(req, res));
+        this.router.post('/feed/sorting', oauth('изменение сортировки фидов'), validate(feedSortingSchema), (req, res) => this.saveFeedSorting(req, res));
     }
 
     async feedSubscriptions(request: APIRequest<FeedSubscriptionsRequest>, response: APIResponse<FeedSubscriptionsResponse>) {

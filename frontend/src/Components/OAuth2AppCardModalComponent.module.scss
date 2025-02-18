@@ -21,7 +21,11 @@
 .appModal.fixed {
   z-index: 1000;
   position: fixed;
+
   width: 500px;
+  max-height: calc(100vh - 68px);
+  overflow-y: auto;
+
   border: 1px solid var(--inactive-fg);
   border-radius: 16px;
 

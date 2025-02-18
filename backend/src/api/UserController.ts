@@ -102,18 +102,18 @@ export default class UserController {
             keyGenerator: (req) => String(req.session.data?.userId)
         });
 
-        this.router.post('/user/profile', oauth(), validate(profileSchema), (req, res) => this.profile(req, res));
-        this.router.post('/user/posts', userCommentsAndPostsLimiter, oauth(), validate(postsOrCommentsSchema), (req, res) => this.posts(req, res));
-        this.router.post('/user/comments', userCommentsAndPostsLimiter, validate(postsOrCommentsSchema), oauth(), (req, res) => this.comments(req, res));
-        this.router.post('/user/karma', validate(profileSchema), oauth(), (req, res) => this.karma(req, res));
-        this.router.post('/user/clearCache', validate(profileSchema), oauth(), (req, res) => this.clearCache(req, res));
-        this.router.post('/user/restrictions', validate(profileSchema), oauth(), (req, res) => this.restrictions(req, res));
-        this.router.post('/user/savebio', settingsSaveLimiter, validate(bioSchema), oauth(), (req, res) => this.saveBio(req, res));
-        this.router.post('/user/savename', settingsSaveLimiter, validate(nameSchema), oauth(), (req, res) => this.saveName(req, res));
-        this.router.post('/user/savegender', settingsSaveLimiter, validate(genderSchema), oauth(), (req, res) => this.saveGender(req, res));
+        this.router.post('/user/profile', oauth('читать профиль пользователя'), validate(profileSchema), (req, res) => this.profile(req, res));
+        this.router.post('/user/posts', userCommentsAndPostsLimiter, oauth('читать посты пользователя'), validate(postsOrCommentsSchema), (req, res) => this.posts(req, res));
+        this.router.post('/user/comments', userCommentsAndPostsLimiter, validate(postsOrCommentsSchema), oauth('читать комментарии пользователя'), (req, res) => this.comments(req, res));
+        this.router.post('/user/karma', validate(profileSchema), oauth('читать инфо о карме пользователя'), (req, res) => this.karma(req, res));
+        this.router.post('/user/clearCache', validate(profileSchema), (req, res) => this.clearCache(req, res));
+        this.router.post('/user/restrictions', validate(profileSchema), oauth('читать ограничения пользователя'), (req, res) => this.restrictions(req, res));
+        this.router.post('/user/savebio', settingsSaveLimiter, validate(bioSchema), oauth('менять био в профиле'), (req, res) => this.saveBio(req, res));
+        this.router.post('/user/savename', settingsSaveLimiter, validate(nameSchema), oauth('менять имя в профиле'), (req, res) => this.saveName(req, res));
+        this.router.post('/user/savegender', settingsSaveLimiter, validate(genderSchema), oauth('менять пол в профиле'), (req, res) => this.saveGender(req, res));
         this.router.post('/user/barmalini', settingsSaveLimiter, (req, res) => this.barmaliniPassword(req, res));
-        this.router.post('/user/suggest-username', suggestUsernameLimiter, oauth(), (req, res) => this.suggestUsername(req, res));
-        this.router.post('/user/save-public-key', settingsSaveLimiter, oauth(), validate(publicKeySchema), (req, res) => this.savePublicKey(req, res));
+        this.router.post('/user/suggest-username', suggestUsernameLimiter, oauth('искать юзернеймы по префиксу'), (req, res) => this.suggestUsername(req, res));
+        this.router.post('/user/save-public-key', settingsSaveLimiter, oauth('менять публичный ключ'), validate(publicKeySchema), (req, res) => this.savePublicKey(req, res));
     }
 
     async profile(request: APIRequest<UserProfileRequest>, response: APIResponse<UserProfileResponse>) {

@@ -19,7 +19,7 @@ export default class StatusController {
         this.userManager = userManager;
         this.enricher = enricher;
         this.logger = logger;
-        this.router.post('/status', oauth(), (req, res) => this.status(req, res));
+        this.router.post('/status', oauth('читать статус'), (req, res) => this.status(req, res));
     }
 
     async status(request: APIRequest<StatusRequest>, response: APIResponse<StatusResponse>) {

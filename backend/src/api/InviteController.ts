@@ -68,13 +68,13 @@ export default class InviteController {
             username: joiUsername
         });
 
-        this.router.post('/invite/check', limiter, validate(checkSchema), oauth(), (req, res) => this.checkInvite(req, res));
-        this.router.post('/invite/use', limiter, validate(useSchema), oauth(), (req, res) => this.useInvite(req, res));
-        this.router.post('/invite/list', limiter, validate(listSchema), oauth(), (req, res) => this.list(req, res));
-        this.router.post('/invite/regenerate', limiter, validate(codeSchema), oauth(), (req, res) => this.regenerate(req, res));
-        this.router.post('/invite/create', limiter, validate(createSchema), oauth(), (req, res) => this.create(req, res));
-        this.router.post('/invite/delete', limiter, validate(codeSchema), oauth(), (req, res) => this.delete(req, res));
-        this.router.post('/invite/edit', limiter, validate(editSchema), oauth(), (req, res) => this.edit(req, res));
+        this.router.post('/invite/check', limiter, validate(checkSchema), oauth('проверка инвайта'), (req, res) => this.checkInvite(req, res));
+        this.router.post('/invite/use', limiter, validate(useSchema), oauth('использование инвайта'), (req, res) => this.useInvite(req, res));
+        this.router.post('/invite/list', limiter, validate(listSchema), oauth('список инвайтов'), (req, res) => this.list(req, res));
+        this.router.post('/invite/regenerate', limiter, validate(codeSchema), oauth('перегенерация инвайта'), (req, res) => this.regenerate(req, res));
+        this.router.post('/invite/create', limiter, validate(createSchema), oauth('создание инвайта'), (req, res) => this.create(req, res));
+        this.router.post('/invite/delete', limiter, validate(codeSchema), oauth('удаление инвайта'), (req, res) => this.delete(req, res));
+        this.router.post('/invite/edit', limiter, validate(editSchema), oauth('редактировать инвайты'), (req, res) => this.edit(req, res));
     }
 
     async verifyInvitePermissions(invite: InviteRawWithIssuer) {

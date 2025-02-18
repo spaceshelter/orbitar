@@ -48,7 +48,7 @@ import OAuth2Manager from './managers/OAuth2Manager';
 import OAuth2Repository from './db/repositories/OAuth2Repository';
 import OAuth2Controller from './api/OAuth2Controller';
 import OAuthServer from '@node-oauth/express-oauth-server';
-import createOauth2MiddlewareGenerator from './api/OAuth2Middleware';
+import createOauth2MiddlewareGenerator, {ExpressOauth2ScopesFilter} from './api/OAuth2Middleware';
 import AuthorizationCodeModelImpl from './oauth/AuthorizationCodeModelImpl';
 
 const app = express();
@@ -115,7 +115,8 @@ const webPushRepository = new WebPushRepository(db);
 const translationRepository = new TranslationRepository(db);
 const oauthRepository = new OAuth2Repository(db);
 
-const oauthModel = new AuthorizationCodeModelImpl(oauthRepository, redis.client, config.oauth, logger.child({ service: 'OAUTH2' }));
+const oauthScopesFilter = new ExpressOauth2ScopesFilter(app);
+const oauthModel = new AuthorizationCodeModelImpl(oauthRepository, redis.client, oauthScopesFilter, config.oauth, logger.child({ service: 'OAUTH2' }));
 
 app.oauth = new OAuthServer({
     model: oauthModel,
@@ -152,7 +153,7 @@ const requests = [
     new SiteController(apiEnricher, feedManager, siteManager, userManager, oauthMiddlewareGenerator, logger.child( { service: 'SITE' })),
     new NotificationsController(notificationManager, userManager, oauthMiddlewareGenerator, logger.child({ service: 'NOTIFY' })),
     new SearchController(userManager, searchManager, oauthMiddlewareGenerator, logger.child({ service: 'SEARCH' })),
-    new OAuth2Controller(oauth2Manager, userManager, app.oauth, logger.child({ service: 'OAUTH2' }))
+    new OAuth2Controller(oauth2Manager, userManager, oauthScopesFilter, app.oauth, logger.child({ service: 'OAUTH2' }))
 ];
 
 const filterLog = winston.format((info) => {

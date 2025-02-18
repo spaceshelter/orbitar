@@ -52,8 +52,8 @@ export default class VoteController {
             id: Joi.number().required()
         });
 
-        this.router.post('/vote/set', this.voteRateLimiter, validate(voteSchema), oauth(), (req, res) => this.setVote(req, res));
-        this.router.post('/vote/list', validate(listSchema), oauth(), (req, res) => this.list(req, res));
+        this.router.post('/vote/set', this.voteRateLimiter, validate(voteSchema), oauth('голосовать'), (req, res) => this.setVote(req, res));
+        this.router.post('/vote/list', validate(listSchema), oauth('читать список голосов'), (req, res) => this.list(req, res));
     }
 
     async setVote(request: APIRequest<VoteSetRequest>, response: APIResponse<VoteSetResponse>) {

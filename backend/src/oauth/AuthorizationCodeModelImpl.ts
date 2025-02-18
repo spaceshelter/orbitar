@@ -14,6 +14,7 @@ import {OAuthConfig} from '../config';
 import {RedisClientType} from 'redis';
 import jwt, {JwtPayload} from 'jsonwebtoken';
 import {Logger} from 'winston';
+import {ExpressOauth2ScopesFilter} from '../api/OAuth2Middleware';
 
 enum TokenType {
   Access,
@@ -31,12 +32,14 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
   private readonly redis: RedisClientType;
   private config: OAuthConfig;
   private logger: Logger;
+  private scopesFilter: ExpressOauth2ScopesFilter;
 
-  constructor(repo: OAuth2Repository, redisClient: RedisClientType, config: OAuthConfig, logger: Logger) {
+  constructor(repo: OAuth2Repository, redisClient: RedisClientType, oauthScopesFilter: ExpressOauth2ScopesFilter, config: OAuthConfig, logger: Logger) {
     this.repo = repo;
     this.redis = redisClient;
     this.config = config;
     this.logger = logger;
+    this.scopesFilter = oauthScopesFilter;
   }
 
   async getClient(clientId: string, clientSecret?: string): Promise<Falsey | Client> {
@@ -54,6 +57,8 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
   }
 
   async generateAccessToken(client: Client, user: User, scope: string[]): Promise<string> {
+    scope = this.scopesFilter.minimizeAndFilterScopes(scope);
+
     const nowTs = Math.floor(Date.now() / 1000);
     const expiresTs = nowTs + this.config.accessTokenTtlSeconds;
     return AuthorizationCodeModelImpl.generateJwtToken({
@@ -132,7 +137,7 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
 
   async saveAuthorizationCode(code: AuthorizationCode, client: Client, user: User): Promise<AuthorizationCode> {
     const clientId = client.id;
-    const scope = code.scope;
+    const scope = this.scopesFilter.minimizeAndFilterScopes(code.scope);
     const redirectUri = code.redirectUri;
     const expiresAt = new Date((Date.now() / 1000 + this.config.authorizationCodeTtlSeconds) * 1000);
 
@@ -195,6 +200,7 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
     user: User,
     scope: string[]
   ): Promise<string> {
+    scope = this.scopesFilter.minimizeAndFilterScopes(scope);
     const nowTs = Math.floor(Date.now() / 1000);
     const expiresTs = nowTs + this.config.refreshTokenTtlSeconds;
     return AuthorizationCodeModelImpl.generateJwtToken({
@@ -258,7 +264,7 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
     scope: string[]
   ): Promise<string> {
     const authCode = randomBytes(32).toString('hex');
-
+    scope = this.scopesFilter.minimizeAndFilterScopes(scope);
     const scopeStr = scope.join(' ');
     await this.repo.saveOrUpdateConsent(client.id, user.id, scopeStr);
 
