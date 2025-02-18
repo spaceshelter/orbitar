@@ -9,15 +9,13 @@ import {useDebouncedCallback} from 'use-debounce';
 import {LARGE_AUTO_CUT} from './ContentComponent';
 import {useAPI} from '../AppState/AppState';
 import {PostInfo} from '../Types/PostInfo';
-import {toast} from 'react-toastify';
-
 
 type UserProfilePostsProps = {
   username: string;
 };
 
 export default function UserProfilePosts(props: UserProfilePostsProps) {
-    const api = useAPI();  
+    const api = useAPI();
     const [searchParams, setSearchParams] = useSearchParams();
     const perpage = 20;
     const page = parseInt(searchParams.get('page') || '1');
@@ -74,7 +72,6 @@ export default function UserProfilePosts(props: UserProfilePostsProps) {
           return updatedPost;
       } catch (err) {
           console.log('Could not edit post', err);
-          toast.error('Не удалось отредактировать пост');
           throw err;
       }
   };
