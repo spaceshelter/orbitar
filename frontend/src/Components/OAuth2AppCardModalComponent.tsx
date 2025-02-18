@@ -110,8 +110,10 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
     const handleClientSecretUpdate: MouseEventHandler = (e) => {
         e.preventDefault();
         confirmAction(
-            'Attention!',
-            'Regenerate client secret?',
+            'Астанавитесь!',
+            `Вы точно хотите сгенерировать новый секрет (client_secret) приложения? Это действие необратимо. 
+                Новые авторизации, исользующие старый секрет, не будут работать.
+                Но токены, выданные ранее, работать продолжат.`,
             () => {
                 api.oauth2Api
                     .regenerateClientSecret(client.clientId)
@@ -145,7 +147,7 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
     const handleClientDelete: MouseEventHandler = (e) => {
         e.preventDefault();
         const message =
-            'Вы уверены, что хотите удалить приложение? Для всех пользователей, подключивших ваше приложение, оно перестанет работать.';
+            'Вы уверены, что хотите удалить приложение? Это необратимое действие.';
         confirmAction('Астанавитесь!', message, () =>
             api.oauth2Api
                 .deleteClient(client.clientId)
@@ -161,7 +163,9 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
 
     const handleUnInstallClick = () => {
         const message =
-            'Вы уверены, что хотите отключить приложение? В принципе, это не страшно, потом сможете добавить его снова.';
+            `Вы уверены, что хотите отключить приложение (отозвать его авторизацию)?
+             Это действие отзовет весь доступ, ранее данный вами приложению.
+            В принципе, это не страшно, можно подключить его потом снова.`;
         confirmAction('Астанавитесь!', message, () =>
             api.oauth2Api
                 .unauthorizeClient(client.clientId)
