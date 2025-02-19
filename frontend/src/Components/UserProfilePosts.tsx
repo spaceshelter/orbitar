@@ -7,12 +7,15 @@ import {useLocation, useSearchParams} from 'react-router-dom';
 import {useFeed} from '../API/use/useFeed';
 import {useDebouncedCallback} from 'use-debounce';
 import {LARGE_AUTO_CUT} from './ContentComponent';
+import {useAPI} from '../AppState/AppState';
+import {PostInfo} from '../Types/PostInfo';
 
 type UserProfilePostsProps = {
   username: string;
 };
 
 export default function UserProfilePosts(props: UserProfilePostsProps) {
+    const api = useAPI();
     const [searchParams, setSearchParams] = useSearchParams();
     const perpage = 20;
     const page = parseInt(searchParams.get('page') || '1');
@@ -51,6 +54,28 @@ export default function UserProfilePosts(props: UserProfilePostsProps) {
     }, [page]);
 
     const params = filter ? {filter} : undefined;
+
+    const handlePostEdit = async (post: PostInfo, text: string, title?: string): Promise<PostInfo | undefined> => {
+      try {
+          const res = await api.postAPI.editPost(post.id, title || '', text);
+          if (!res) return undefined;
+
+          const updatedPost: PostInfo = {
+              ...post,
+              content: res.post.content,
+              title: res.post.title
+          };
+
+          // Update the post in local state
+          updatePost(post.id, updatedPost);
+
+          return updatedPost;
+      } catch (err) {
+          console.log('Could not edit post', err);
+          throw err;
+      }
+  };
+
     return (
         <div className={styles.container}>
           <div className={feedStyles.filter}>
@@ -61,7 +86,7 @@ export default function UserProfilePosts(props: UserProfilePostsProps) {
                  <>
                     {error && <div className={styles.error}>{styles.error}</div> }
                     {posts && <div className={styles.posts}>
-                        {posts.map(post => <PostComponent key={post.id} post={post} showSite={true} onChange={updatePost}
+                        {posts.map(post => <PostComponent key={post.id} post={post} showSite={true} onChange={updatePost} onEdit={handlePostEdit}
                                                           autoCut={LARGE_AUTO_CUT} />)}
                     </div>}
                     <div className={styles.paginatorContainer}>
