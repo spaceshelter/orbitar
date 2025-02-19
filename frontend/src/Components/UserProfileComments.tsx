@@ -88,6 +88,28 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
     }, [page]);
 
     const params = filter ? {filter} : undefined;
+    const handleEdit = async (text: string, comment: CommentInfo) => {
+        try {
+            const res = await api.postAPI.editComment(text, comment.id);  // text comes first, then id
+            if (!res) return undefined;
+
+            // Create an updated comment that preserves all CommentInfo properties
+            const updatedComment: CommentInfo = {
+                ...comment,
+                content: res.comment.content  // access content through res.comment
+            };
+
+            // Update the comment in the local state
+            setComments(comments?.map(c =>
+                c.id === comment.id ? updatedComment : c
+            ));
+
+            return updatedComment;
+        } catch (err) {
+            console.log('Could not edit comment', err);
+            throw err;
+        }
+    };
 
     return (
         <div className={styles.container}>
@@ -103,7 +125,8 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
                              <CommentComponent idx={getParentComment(comment.parentComment) ? 1 : 0}
                                                parent={getParentComment(comment.parentComment)} key={comment.id}
                                                currentUsername={currentUsername}
-                                               comment={comment} showSite={comment.site !== 'main'} />)
+                                               comment={comment} showSite={comment.site !== 'main'}
+                                               onEdit={handleEdit} />)
                          :
                          (
                              error ? <div className={styles.error}>{error}<div><button onClick={reload}>Повторить</button></div></div>
