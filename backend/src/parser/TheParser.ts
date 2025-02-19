@@ -61,6 +61,7 @@ export default class TheParser {
             mailbox: (node) => this.parseSecretMailbox(node),
             app: (node) => this.parseOauthApp(node),
             mail: (node) => this.parseSecretMail(node),
+            pre: (node) => this.parsePre(node),
             blockquote: true,
             b: true,
             i: true,
@@ -93,7 +94,7 @@ export default class TheParser {
     private parseChildNodes(doc: ChildNode[]): ParseResult {
         const p = {text: '', mentions: [], urls: [], images: []};
         let prevIsBlock = false; // if previous node was block tag
-        const blockTags = ['blockquote', 'expand'];
+        const blockTags = ['blockquote', 'expand', 'pre'];
         for (let node of doc) {
             if (prevIsBlock && node.type === 'text') {
                 // remove a single newline after block tags, allow only a single one if multiple were present
@@ -373,6 +374,7 @@ export default class TheParser {
     }
 
     parseAllowedTag(node: Element): ParseResult {
+
         const haveChild = node.children.length > 0;
         let text = `<${node.name}${haveChild ? '' : '/'}>`;
         const res = this.parseChildNodes(node.children);
@@ -424,6 +426,15 @@ export default class TheParser {
         }
 
         return {text: `<img src="${encodeURI(url)}" alt=""/>`, mentions: [], urls: [], images: [url]};
+    }
+
+    parsePre(node: Element): ParseResult {
+        const result = this.parseChildNodes(node.children);
+        const escapedContent = htmlEscape(render(node.children, { encodeEntities: false }));
+        return {
+            ...result,
+            text: `<pre>${escapedContent}</pre>`
+        };
     }
 
     removeInnerMailTagsRec(node: Element): Element {

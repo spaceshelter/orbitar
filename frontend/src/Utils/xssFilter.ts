@@ -14,7 +14,8 @@ export default function xssFilter(html: string): string {
             i: [],
             u: [],
             strike: [],
-            br: []
+            br: [],
+            pre: []
         }
     });
 }
