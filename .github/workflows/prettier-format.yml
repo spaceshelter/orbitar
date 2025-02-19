@@ -1,9 +1,54 @@
-name: Prettier Format
+name: Reformat Codebase with Prettier
+
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # Allows you to trigger this workflow manually
+permissions:
+  contents: write
+
 jobs:
-  build:
+  reformat:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Code
+      - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Ensure full history if needed
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies backend
+        # in backend
+        run: npm ci
+        working-directory: backend
+
+      - name: Run Prettier
+        run: npm run prettier:fix
+        working-directory: backend
+
+      - name: Install dependencies frontend
+        # in frontend
+        run: npm ci
+        working-directory: frontend
+
+      - name: Run Prettier
+        run: npm run prettier:fix
+        working-directory: frontend
+
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Commit changes if any
+        run: |
+          git add .
+          git diff --cached --quiet || git commit -m "chore: reformat codebase with Prettier"
+
+      - name: Force push to dedicated branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: git push --force origin HEAD:prettier-format
