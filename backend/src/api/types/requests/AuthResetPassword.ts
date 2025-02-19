@@ -1,24 +1,24 @@
 export type AuthResetPasswordRequest = {
-    email: string;
-};
+  email: string
+}
 
 export type AuthResetPasswordResponse = {
-    result: boolean;
-};
+  result: boolean
+}
 
 export type AuthNewPasswordRequest = {
-    password: string;
-    code: string;
-};
+  password: string
+  code: string
+}
 
 export type AuthNewPasswordResponse = {
-    result: boolean;
-};
+  result: boolean
+}
 
 export type AuthCheckResetPasswordCodeRequest = {
-    code: string;
-};
+  code: string
+}
 
 export type AuthCheckResetPasswordCodeResponse = {
-    result: boolean;
-};
+  result: boolean
+}

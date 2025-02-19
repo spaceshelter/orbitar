@@ -6,7 +6,8 @@ html {
   overflow-y: scroll;
 }
 
-html,body {
+html,
+body {
   height: 100%;
   margin: 0;
   font-family: 'Roboto', sans-serif;
@@ -19,7 +20,11 @@ html,body {
   height: 100%;
 }
 
-input[type="text"], input[type="password"], input[type="email"], input[type="search"], textarea {
+input[type='text'],
+input[type='password'],
+input[type='email'],
+input[type='search'],
+textarea {
   background: var(--lowered);
   box-shadow: inset 0 0 2px var(--shadow);
   border: none;
@@ -30,11 +35,13 @@ input[type="text"], input[type="password"], input[type="email"], input[type="sea
   resize: vertical;
 }
 
-input[type="submit"], button {
+input[type='submit'],
+button {
   cursor: pointer;
 }
 
-input[type="submit"], .button {
+input[type='submit'],
+.button {
   font-family: 'Roboto', sans-serif;
   padding: 8px 16px;
   background: var(--primary);
@@ -43,10 +50,10 @@ input[type="submit"], .button {
   border-radius: 4px;
   font-weight: bold;
 
-  &:hover{
+  &:hover {
     background: var(--primary);
   }
-  &:disabled{
+  &:disabled {
     background: var(--primaryGhost);
     color: var(--onAccentGhost);
     cursor: default;
@@ -86,7 +93,7 @@ svg#spoiler-mask {
 .spoiler {
   background-color: var(--fg);
   filter: blur(2px);
-  opacity: .8;
+  opacity: 0.8;
   /* more blur to img video etc */
   & > * {
     filter: url('#spoiler-mask-filter');
@@ -128,12 +135,12 @@ details.expand {
       display: none;
     }
 
-    &::-moz-list-bullet{
-      list-style-type:none;
+    &::-moz-list-bullet {
+      list-style-type: none;
     }
 
-    &::marker{
-      display:none;
+    &::marker {
+      display: none;
     }
 
     &::before {
@@ -146,20 +153,20 @@ details.expand {
       width: 20px;
       height: 20px;
       position: absolute;
-      transition: transform .25s;
+      transition: transform 0.25s;
       user-select: none;
     }
   }
 
   &[open] > summary {
-    margin-bottom: .5em;
+    margin-bottom: 0.5em;
   }
 
   &[open] > summary::before {
     transform: rotateZ(90deg);
   }
 
-  & > div[role="button"] {
+  & > div[role='button'] {
     display: block;
     background-color: var(--dim1);
     height: 0.5em;
@@ -174,7 +181,8 @@ blockquote {
   background-color: var(--dim1);
   position: relative;
 
-  &::before {//TODO replace icon with font
+  &::before {
+    //TODO replace icon with font
 
     /* somewhat hacky implementation for icon color, source: https://stackoverflow.com/a/42317014/1349366 */
     content: '';
@@ -215,7 +223,9 @@ video {
 img.image-large {
   display: block;
 }
-img.low-rating, video.low-rating, iframe.low-rating {
+img.low-rating,
+video.low-rating,
+iframe.low-rating {
   opacity: 0.5;
   /*blur*/
   filter: blur(2px);
@@ -238,11 +248,10 @@ html.no-scroll {
   box-shadow: inset 0 0 12px 12px var(--fgAlmostInvisible);
   border-radius: 10px;
   border: solid 3px transparent;
-  &:hover{
+  &:hover {
     box-shadow: inset 0 0 12px 12px var(--fgGhost);
   }
 }
-
 
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -254,16 +263,16 @@ body::-webkit-scrollbar {
 }
 body::-webkit-scrollbar-thumb {
   box-shadow: inset 0 0 14px 14px var(--fgGhost);
-  &:hover{
+  &:hover {
     box-shadow: inset 0 0 14px 14px var(--fgSoftest);
   }
 }
 
 .react-confirm-alert-overlay.orbitar-confirm-overlay {
   z-index: 2000;
-  background:linear-gradient(0deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5));
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5));
   backdrop-filter: blur(5px);
-  background-size:cover;
+  background-size: cover;
 
   .react-confirm-alert-body {
     background-color: var(--elevated);

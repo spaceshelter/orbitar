@@ -1,8 +1,8 @@
 export type InviteCheckRequest = {
-    code: string;
-};
+  code: string
+}
 
 export type InviteCheckResponse = {
-    code: string;
-    inviter: string;
-};
+  code: string
+  inviter: string
+}

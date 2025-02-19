@@ -1,131 +1,132 @@
-.fade{
-    display: none;
-    position: fixed;
-    top:0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: var(--glass);
-    backdrop-filter: blur(3px);
-    z-index: 99;
-    opacity: 0;
-    transition: opacity 0.3s ease;
+.fade {
+  display: none;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--glass);
+  backdrop-filter: blur(3px);
+  z-index: 99;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .container {
-    --sidebar-width: 200px;
-    position: fixed;
-    max-width: var(--sidebar-width);
-    width: var(--sidebar-width);
-    left: 0;
-    top: 59px;
-    bottom: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    z-index: 100;
-    transform: translateX(-110%);
-    transition: transform 0.3s ease;
+  --sidebar-width: 200px;
+  position: fixed;
+  max-width: var(--sidebar-width);
+  width: var(--sidebar-width);
+  left: 0;
+  top: 59px;
+  bottom: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 100;
+  transform: translateX(-110%);
+  transition: transform 0.3s ease;
 
-    :global {
-        .fixed {
-            width: 160px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .site-name {
-            display: block;
-            text-decoration: none;
-            color: var(--fg);
-            margin-bottom: 20px;
-            font-size: 20px;
-            font-weight: bold;
-        }
-
-        .subscribe {
-            margin: 20px 0;
-
-            button {
-                padding: 6px 10px;
-                border-radius: 4px;
-
-                &.subscribed {
-                    background: var(--dim2);
-                    color: var(--fg);
-                    border: none;
-                }
-
-                &.not-subscribed {
-                    background: var(--primary);
-                    color: var(--onAccent);
-                    border: none;
-                }
-
-                &:disabled {
-                  background: var(--dim1);
-                  color: var(--fgSofter);
-                }
-            }
-        }
-
-        .site-info {
-
-        }
-
-        .subsites {
-            margin-top: 20px;
-            overflow-y: auto;
-            overflow-x: hidden;
-
-            div {
-                a {
-                    white-space: nowrap;
-                    display: inline-block;
-                    overflow: hidden;
-                    width: calc(var(--sidebar-width) - 20px);
-                    text-overflow: ellipsis;
-                }
-            }
-        }
-
-        .all-subsites {
-            display: block;
-            margin-top: 20px;
-            font-size: 14px;
-            color: var(--fgGhost);
-            &:hover {
-                color: var(--linkHover);
-            }
-        }
+  :global {
+    .fixed {
+      width: 160px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
     }
+
+    .site-name {
+      display: block;
+      text-decoration: none;
+      color: var(--fg);
+      margin-bottom: 20px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .subscribe {
+      margin: 20px 0;
+
+      button {
+        padding: 6px 10px;
+        border-radius: 4px;
+
+        &.subscribed {
+          background: var(--dim2);
+          color: var(--fg);
+          border: none;
+        }
+
+        &.not-subscribed {
+          background: var(--primary);
+          color: var(--onAccent);
+          border: none;
+        }
+
+        &:disabled {
+          background: var(--dim1);
+          color: var(--fgSofter);
+        }
+      }
+    }
+
+    .site-info {
+    }
+
+    .subsites {
+      margin-top: 20px;
+      overflow-y: auto;
+      overflow-x: hidden;
+
+      div {
+        a {
+          white-space: nowrap;
+          display: inline-block;
+          overflow: hidden;
+          width: calc(var(--sidebar-width) - 20px);
+          text-overflow: ellipsis;
+        }
+      }
+    }
+
+    .all-subsites {
+      display: block;
+      margin-top: 20px;
+      font-size: 14px;
+      color: var(--fgGhost);
+      &:hover {
+        color: var(--linkHover);
+      }
+    }
+  }
 }
 
 .sidebar {
-    pointer-events: none;
+  pointer-events: none;
 }
 
 .sidebar.open {
-    pointer-events: all;
-    .fade {
-        opacity: 1;
-    }
-    .container {
-        transform: translateX(0%);
-    }
+  pointer-events: all;
+  .fade {
+    opacity: 1;
+  }
+  .container {
+    transform: translateX(0%);
+  }
 }
 
-@media only screen and (max-width: 1179px){
-    .fade{
-        display: block;
+@media only screen and (max-width: 1179px) {
+  .fade {
+    display: block;
+  }
+  .container {
+    background: var(--bg);
+    box-shadow:
+      0 0 1px var(--shadow),
+      0 16px 16px var(--shadow);
+    :global {
+      .subsites div {
+        padding: 4px 0;
+      }
     }
-    .container {
-        background: var(--bg);
-        box-shadow: 0 0 1px var(--shadow), 0 16px 16px var(--shadow);
-        :global {
-            .subsites div{
-                padding: 4px 0;
-            }
-        }
-    }
+  }
 }

@@ -1,7 +1,7 @@
 export type GetPublicKeyByUsernameRequest = {
-    username: string;
-};
+  username: string
+}
 
 export type GetPublicKeyByUsernameResponse = {
-    publicKey?: string;
-};
+  publicKey?: string
+}

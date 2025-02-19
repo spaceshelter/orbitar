@@ -1,10 +1,10 @@
-import {VoteListItemEntity, VoteType} from '../entities/VoteEntity';
+import { VoteListItemEntity, VoteType } from '../entities/VoteEntity'
 
 export type VoteListRequest = {
-    type: VoteType;
-    id: number;
-};
+  type: VoteType
+  id: number
+}
 
 export type VoteListResponse = {
-    votes: VoteListItemEntity[]
-};
+  votes: VoteListItemEntity[]
+}

@@ -1,131 +1,131 @@
 .overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 100;
-    backdrop-filter: blur(3px);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  backdrop-filter: blur(3px);
 }
 
 .container {
-    /*border: 1px solid black;*/
-    position: fixed;
-    top: 60px;
-    right: 20px;
-    width: 400px;
-    max-height: calc(100% - 65px);
+  /*border: 1px solid black;*/
+  position: fixed;
+  top: 60px;
+  right: 20px;
+  width: 400px;
+  max-height: calc(100% - 65px);
 
-    background: var(--popup-bg);
-    border-radius: 8px;
-    box-shadow: 0 0 2px 0 rgba(0, 0, 0, 0.2);
+  background: var(--popup-bg);
+  border-radius: 8px;
+  box-shadow: 0 0 2px 0 rgba(0, 0, 0, 0.2);
 
-    display: flex;
-    flex-direction: column;
-    z-index: 100;
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
 }
 
 .notifications {
-    flex: 1;
-    overflow: hidden scroll;
-    margin-left: 20px;
-    margin-top: 8px;
+  flex: 1;
+  overflow: hidden scroll;
+  margin-left: 20px;
+  margin-top: 8px;
 }
 
 .notification {
-    /*height: 72px;*/
-    display: flex;
-    align-items: center;
+  /*height: 72px;*/
+  display: flex;
+  align-items: center;
 }
 
 .notification .type {
-    /*margin: 20px;*/
-    margin-right: 20px;
-    fill: var(--notification-date-fg)
+  /*margin: 20px;*/
+  margin-right: 20px;
+  fill: var(--notification-date-fg);
 }
 
 .notification.read .type {
-    fill: var(--fgGhost);
+  fill: var(--fgGhost);
 }
 
 .notification .content {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    padding: 15px 0;
-    border-bottom: 1px solid var(--notification-delimiter-fg);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--notification-delimiter-fg);
 }
 
 .notification .date {
-    font-size: 12px;
-    color: var(--notification-date-fg);
-    margin-bottom: 4px;
+  font-size: 12px;
+  color: var(--notification-date-fg);
+  margin-bottom: 4px;
 }
 
 .notification .text {
-    display: block;
-    font-size: 14px;
-    color: var(--notification-text-fg);
-    text-overflow: ellipsis;
-    width: 270px;
-    white-space: nowrap;
-    overflow: hidden;
+  display: block;
+  font-size: 14px;
+  color: var(--notification-text-fg);
+  text-overflow: ellipsis;
+  width: 270px;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .notification.read .text {
-    color: var(--fgGhost);
+  color: var(--fgGhost);
 }
 
 .notification .remove {
   margin-left: auto;
   margin-right: 5px;
-  fill: var(--fgSoftest)
+  fill: var(--fgSoftest);
 }
 
 .notification .remove svg {
-    width: 24px;
-    height: 24px;
+  width: 24px;
+  height: 24px;
 }
 
 .notification .remove:hover {
-    fill: var(--danger)
+  fill: var(--danger);
 }
 
 .notification:hover .type {
-    fill: var(--fg);
+  fill: var(--fg);
 }
 
 .notification:hover .date {
-    color: var(--notification-text-fg);
+  color: var(--notification-text-fg);
 }
 
 .notification:hover .text {
-    color: var(--fg);
+  color: var(--fg);
 }
 
 .buttons {
-    display: flex;
-    justify-content: right;
-    margin: 16px;
+  display: flex;
+  justify-content: right;
+  margin: 16px;
 }
 
 .buttons button {
-    padding: 8px 16px;
-    border: none;
-    color: var(--button-fg);
-    border-radius: 4px;
-    margin-left: 4px;
+  padding: 8px 16px;
+  border: none;
+  color: var(--button-fg);
+  border-radius: 4px;
+  margin-left: 4px;
 }
 
 .buttons button.buttonClear {
-    background: none;
-    color: var(--danger);
+  background: none;
+  color: var(--danger);
 }
 
 .buttons button.buttonRead {
-    background: none;
-    color: var(--fg);
+  background: none;
+  color: var(--fg);
 }
 
 .buttons button.buttonAll {
@@ -133,11 +133,11 @@
 }
 
 .buttons button:hover.buttonAll {
-    background: var(--button-hover-bg);
+  background: var(--button-hover-bg);
 }
 
 .buttons button:disabled.buttonAll {
-    background: var(--button-dis-bg);
-    color: var(--button-dis-fg);
-    cursor: default;
+  background: var(--button-dis-bg);
+  color: var(--button-dis-fg);
+  cursor: default;
 }

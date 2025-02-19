@@ -1,45 +1,46 @@
 .container {
-    display: flex;
-    height: 100%;
-    margin-top: 64px;
+  display: flex;
+  height: 100%;
+  margin-top: 64px;
 }
 
 .createpost {
-    flex: 1;
+  flex: 1;
 }
 
 .createpost .form {
-    max-width: 720px;
-    margin: 0 auto;
+  max-width: 720px;
+  margin: 0 auto;
 }
 
-.createpost textarea, .createpost .preview  {
-    min-height: 250px;
-    font-size: 16px;
-    line-height: 1.5em;
+.createpost textarea,
+.createpost .preview {
+  min-height: 250px;
+  font-size: 16px;
+  line-height: 1.5em;
 }
 
 .createpost input.title {
-    display: block;
-    box-sizing: border-box;
-    width: 100%;
-    padding: 5px;
-    font-size: 24px;
-    margin-bottom: 16px;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 5px;
+  font-size: 24px;
+  margin-bottom: 16px;
 }
 
 .createpost p.error {
-    color: red;
+  color: red;
 }
 
 .createpost p.error::before {
-    display: inline;
-    content: "⚠ ";
+  display: inline;
+  content: '⚠ ';
 }
 
 .createpost .lastPostMessage {
-    margin-bottom: 20px;
-    border-left: var(--danger) solid 4px;
-    padding-left: 20px;
-    line-height: 1.5em;
+  margin-bottom: 20px;
+  border-left: var(--danger) solid 4px;
+  padding-left: 20px;
+  line-height: 1.5em;
 }

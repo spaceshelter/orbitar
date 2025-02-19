@@ -18,7 +18,7 @@
           margin: 0 0 10px 0;
 
           em {
-            font-family: Consolas, "Lucida Console", Monaco, monospace;
+            font-family: Consolas, 'Lucida Console', Monaco, monospace;
             font-style: normal;
             font-weight: 600;
           }
@@ -54,12 +54,12 @@
 
       p.error {
         color: var(--danger);
-        font-size: 0.75rem
+        font-size: 0.75rem;
       }
 
       p.error::before {
         display: inline;
-        content: "⚠ ";
+        content: '⚠ ';
       }
 
       .publishApp {
@@ -79,7 +79,6 @@
           margin-left: 10px;
         }
       }
-
     }
   }
 
@@ -88,10 +87,11 @@
       margin: 0;
     }
 
-    div span.code, div.span.clientId {
+    div span.code,
+    div.span.clientId {
       max-width: 100%;
       display: block;
-      font-family: Consolas, "Lucida Console", Monaco, monospace;
+      font-family: Consolas, 'Lucida Console', Monaco, monospace;
       font-size: 1.5rem;
       overflow-wrap: break-word;
       margin-bottom: 10px;
