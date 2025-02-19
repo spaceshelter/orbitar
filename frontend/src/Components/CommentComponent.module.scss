@@ -188,9 +188,10 @@ $smallShift: 8px;
     font-style: italic;
 }
 
-pre {   
+pre {
     font-family: monospace;
-    font-size: 90%;  
-    max-height: 400px;    
-    overflow: auto;    
+    font-size: 90%;
+    max-height: 400px;
+    overflow: auto;
+    background: var(--dim1);
 }
