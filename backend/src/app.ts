@@ -44,6 +44,12 @@ import TranslationRepository from './db/repositories/TranslationRepository';
 import SearchController from './api/SearchController';
 import SearchManager from './managers/SearchManager';
 import {UserCache} from './managers/UserCache';
+import OAuth2Manager from './managers/OAuth2Manager';
+import OAuth2Repository from './db/repositories/OAuth2Repository';
+import OAuth2Controller from './api/OAuth2Controller';
+import OAuthServer from '@node-oauth/express-oauth-server';
+import createOauth2MiddlewareGenerator, {ExpressOauth2ScopesFilter} from './api/OAuth2Middleware';
+import AuthorizationCodeModelImpl from './oauth/AuthorizationCodeModelImpl';
 
 const app = express();
 
@@ -107,6 +113,17 @@ const voteRepository = new VoteRepository(db);
 const userRepository = new UserRepository(db);
 const webPushRepository = new WebPushRepository(db);
 const translationRepository = new TranslationRepository(db);
+const oauthRepository = new OAuth2Repository(db);
+
+const oauthScopesFilter = new ExpressOauth2ScopesFilter(app);
+const oauthModel = new AuthorizationCodeModelImpl(oauthRepository, redis.client, oauthScopesFilter, config.oauth, logger.child({ service: 'OAUTH2' }));
+
+app.oauth = new OAuthServer({
+    model: oauthModel,
+    accessTokenLifetime: config.oauth.accessTokenTtlSeconds,
+    allowEmptyState: true,
+    allowExtendedTokenAttributes: true
+});
 
 const userCache = new UserCache(userRepository);
 const notificationManager = new NotificationManager(commentRepository, notificationsRepository, postRepository, siteRepository, userCache, webPushRepository, config.vapid, config.site, logger.child({ service: 'NOTIFY' }));
@@ -119,20 +136,24 @@ const translationManager = new TranslationManager(translationRepository, postRep
 const postManager = new PostManager(bookmarkRepository, commentRepository, postRepository, feedManager, notificationManager, siteManager, userManager, translationManager, theParser);
 const voteManager = new VoteManager(voteRepository, postManager, userManager, redis.client);
 const searchManager = new SearchManager(userManager, siteManager, logger.child({ service: 'SEARCH' }));
+const oauth2Manager = new OAuth2Manager(oauthRepository, userManager, logger.child({ service: 'OAUTH2' }));
 
 const apiEnricher = new Enricher(siteManager, userManager);
 
+const oauthMiddlewareGenerator = createOauth2MiddlewareGenerator(app, db, logger);
+
 const requests = [
     new AuthController(userManager, logger.child({ service: 'AUTH' })),
-    new InviteController(inviteManager, userManager, apiEnricher, logger.child({ service: 'INVITE' })),
-    new PostController(apiEnricher, postManager, feedManager, siteManager, userManager, translationManager, logger.child({ service: 'POST' })),
-    new StatusController(apiEnricher, siteManager, userManager, logger.child({ service: 'STATUS' })),
-    new VoteController(voteManager, userManager, logger.child({ service: 'VOTE' })),
-    new UserController(apiEnricher, userManager, postManager, voteManager, inviteManager, logger.child({ service: 'USER' })),
-    new FeedController(apiEnricher, feedManager, siteManager, userManager, postManager, logger.child({ service: 'FEED' })),
-    new SiteController(apiEnricher, feedManager, siteManager, userManager, logger.child( { service: 'SITE' })),
-    new NotificationsController(notificationManager, userManager, logger.child({ service: 'NOTIFY' })),
-    new SearchController(userManager, searchManager, logger.child({ service: 'SEARCH' })),
+    new InviteController(inviteManager, userManager, apiEnricher, oauthMiddlewareGenerator, logger.child({ service: 'INVITE' })),
+    new PostController(apiEnricher, postManager, feedManager, siteManager, userManager, translationManager, oauthMiddlewareGenerator, logger.child({ service: 'POST' })),
+    new StatusController(apiEnricher, siteManager, userManager, oauthMiddlewareGenerator, logger.child({ service: 'STATUS' })),
+    new VoteController(voteManager, userManager, oauthMiddlewareGenerator, logger.child({ service: 'VOTE' })),
+    new UserController(apiEnricher, userManager, postManager, voteManager, inviteManager, oauthMiddlewareGenerator, oauth2Manager, logger.child({ service: 'USER' })),
+    new FeedController(apiEnricher, feedManager, siteManager, userManager, postManager, oauthMiddlewareGenerator, logger.child({ service: 'FEED' })),
+    new SiteController(apiEnricher, feedManager, siteManager, userManager, oauthMiddlewareGenerator, logger.child( { service: 'SITE' })),
+    new NotificationsController(notificationManager, userManager, oauthMiddlewareGenerator, logger.child({ service: 'NOTIFY' })),
+    new SearchController(userManager, searchManager, oauthMiddlewareGenerator, logger.child({ service: 'SEARCH' })),
+    new OAuth2Controller(oauth2Manager, userManager, oauthScopesFilter, app.oauth, logger.child({ service: 'OAUTH2' }))
 ];
 
 const filterLog = winston.format((info) => {
@@ -166,6 +187,7 @@ app.use(cors({
     maxAge: 60 * 60
 }));
 
+app.use(express.urlencoded({ extended: false }));
 app.use(session(db, logger));
 app.use(apiMiddleware());
 app.use(express.json());

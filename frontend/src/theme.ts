@@ -234,6 +234,11 @@ export const themes: ThemeCollection = {
                     bg: '#279db9',
                     fg: '#000000',
                 }
+            },
+            appCard: {
+                bg: 'rgba(223,223,223,0.2)',
+                hoverBg: 'rgba(223,223,223,0.3)',
+                logoBg: '#ffffff'
             }
         },
     },
@@ -343,6 +348,11 @@ export const themes: ThemeCollection = {
                     bg: '#ffeeff',
                     fg: '#000000',
                 }
+            },
+            appCard: {
+                bg: 'rgba(223,223,223,0.2)',
+                hoverBg: 'rgba(223,223,223,0.3)',
+                logoBg: 'rgba(78,78,78,0.44)',
             }
         },
     },

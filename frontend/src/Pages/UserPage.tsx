@@ -16,6 +16,7 @@ import UserProfileSettings from '../Components/UserProfileSettings';
 import UserProfileBio from '../Components/UserProfileBio';
 import UserProfileName from '../Components/UserProfileName';
 import moment from 'moment';
+import UserProfileClientsApps from '../Components/UserProfileClientsApps';
 
 export const UserPage = observer(() => {
     const {userInfo, userRestrictions: restrictions} = useAppState();
@@ -34,8 +35,9 @@ export const UserPage = observer(() => {
     const isInvites = page === 'invites';
     const isKarma = page === 'karma';
     const isSettings = page === 'settings';
+    const isApps = page === 'apps';
 
-    const isProfile = !isPosts && !isComments && !isInvites && !isKarma && !isSettings;
+    const isProfile = !isPosts && !isComments && !isInvites && !isKarma && !isSettings && !isApps;
 
     useEffect(() => {
         if (state.status === 'ready') {
@@ -121,6 +123,7 @@ export const UserPage = observer(() => {
                     <Link className={`${styles.control} ${isComments ? styles.active : ''}`} to={base + '/comments'}>Комментарии ({profile.numberOfComments.toLocaleString()})</Link>
                     <Link className={`${styles.control} ${isKarma ? styles.active : ''}`} to={base + '/karma'}>Саморегуляция</Link>
                     <Link className={`${styles.control} ${isInvites ? styles.active : ''}`} to={base + '/invites'}>Инвайты {isMyProfile && profile.numberOfInvitesAvailable ? ('(' + profile.numberOfInvitesAvailable.toLocaleString() + ')') : '' }</Link>
+                    {(isMyProfile && profile.hasOwnApps) && <Link className={`${styles.control} ${isApps ? styles.active : ''}`} to={base + '/apps'}>Приложения</Link>}
                     {isMyProfile && <Link className={`${styles.control} ${isSettings ? styles.active : ''}`} to={base + '/settings'}>Настройки</Link>}
                 </div>
 
@@ -145,10 +148,12 @@ export const UserPage = observer(() => {
                     {isComments && <UserProfileComments username={user.username} />}
                     {isInvites && <UserProfileInvites username={user.username} onInvitesChange={handleInvitesChange} />}
                     {isKarma && <UserProfileKarma username={user.username} profile={profile} />}
+                    {isApps && <UserProfileClientsApps/>}
                     {isSettings && <UserProfileSettings
                         gender={user.gender} onChange={refreshProfile}
                         barmaliniAccess={restrictions?.canVoteKarma && !profile.isBarmalini}
                         isBarmalini={profile.isBarmalini}
+                        hasApps={profile.hasOwnApps}
                     />}
                 </div>
             </div>

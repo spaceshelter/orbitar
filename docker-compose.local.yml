@@ -77,6 +77,8 @@ services:
       BARMALINI_USER_ID: ${BARMALINI_USER_ID}
       BARMALINI_KEY: ${BARMALINI_KEY}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      ACCESS_TOKEN_TTL_SECONDS: ${ACCESS_TOKEN_TTL_SECONDS}
     depends_on:
       - mysql
       - redis

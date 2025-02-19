@@ -1,5 +1,6 @@
 .logoutButton,
 .settingsButton,
+.createClientAppButton,
 .themeButton {
   background: var(--dim1);
   color: var(--fgSoft);
@@ -31,4 +32,25 @@ button.linkButton {
     &:hover {
       color: var(--linkHover);
     }
+}
+
+button.positiveButton {
+  color: var(--button-fg);
+  background: var(--positive);
+  opacity: 0.8;
+
+  &:hover {
+    color: var(--button-fg);
+    background: var(--positive);
+    opacity: 1;
+  }
+}
+
+button.bigger {
+  font-size: 1.2rem;
+}
+
+button.disabled {
+  pointer-events: none;
+  opacity: 0.8;
 }

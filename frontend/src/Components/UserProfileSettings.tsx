@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {useLocation, useNavigate} from 'react-router-dom';
+import {Link, useLocation, useNavigate} from 'react-router-dom';
 
 import classNames from 'classnames';
 import {observer} from 'mobx-react-lite';
@@ -10,6 +10,7 @@ import {useUserProfile} from '../API/use/useUserProfile';
 import {useAPI, useAppState} from '../AppState/AppState';
 import {BarmaliniAccessResult, UserGender} from '../Types/UserInfo';
 import {SecretMailKeyGeneratorForm} from './SecretMailbox';
+import {selectElementText} from '../Utils/utils';
 import ThemeToggleComponent from './ThemeToggleComponent';
 
 import {ReactComponent as LogoutIcon} from '../Assets/logout.svg';
@@ -21,6 +22,7 @@ import styles from './UserProfileSettings.module.scss';
 type UserProfileSettingsProps = {
     onChange: () => void;
     gender: UserGender;
+    hasApps: boolean;
     barmaliniAccess?: boolean;
     isBarmalini?: boolean;
 };
@@ -205,6 +207,11 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
 
             {/*<MailboxSettings/>*/}
             {props.barmaliniAccess && <BarmaliniAccess/>}
+
+            {!props.hasApps && <div>
+            <Link className={`${styles.control}`} to={'/profile/apps'}>OAuth2 Приложения</Link>
+            </div>}
+
             <div>
                 {!props.isBarmalini && (
                     <button
@@ -258,19 +265,6 @@ const BarmaliniAccess = observer(() => {
         }
     };
 
-    // selects all text in the element
-    const selectText = (e: React.MouseEvent) => {
-        e.preventDefault();
-        const element = e.target as HTMLElement;
-        const range = document.createRange();
-        range.selectNodeContents(element);
-        const selection = window.getSelection();
-        if (selection) {
-            selection.removeAllRanges();
-            selection.addRange(range);
-        }
-    };
-
     return (
         <div className={styles.barmalini}>
             {(access && (
@@ -280,7 +274,7 @@ const BarmaliniAccess = observer(() => {
                     </div>
                     <div>
                         <span className={styles.label}>Пароль:</span>&nbsp;
-                        <span className={styles.password} onClick={selectText}>
+                        <span className={styles.password} onClick={selectElementText}>
                             {access.password}
                         </span>
                         &nbsp;

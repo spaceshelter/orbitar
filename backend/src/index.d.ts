@@ -1,4 +1,5 @@
 import Session from './session/Session';
+import ExpressOAuthServer from '@node-oauth/express-oauth-server';
 
 type ResponseSuccess<T> = {
     result: 'success';
@@ -25,6 +26,10 @@ declare global {
             success(payload: ResPayload): void;
             error(code: string, message: string, status?: number, meta?: object): void;
             authRequired(): void;
+        }
+
+        export interface Application {
+            oauth: ExpressOAuthServer;
         }
     }
 }

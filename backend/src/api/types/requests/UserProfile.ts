@@ -19,6 +19,7 @@ export type UserProfileResponse = {
     isBarmalini?: boolean;
 
     publicKey: string;
+    hasOwnApps: boolean;
 
     visitedDaysAgo: number;
 };

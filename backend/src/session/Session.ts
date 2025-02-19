@@ -41,21 +41,21 @@ export default class Session {
         this.response = response;
         this.db = db;
         this.logger = logger;
-
         this.id = request.header(Session.SESSION_HEADER);
     }
 
-    async restore() {
-        if (!this.id || this.id === '-') {
+    async restore(sessionIdFromRequest?: string) {
+        const sessId = this.id || sessionIdFromRequest;
+        if (!sessId || sessId === '-') {
             this.data = new SessionData('');
             return;
         }
 
-        const cached = sessionStorage[this.id];
+        const cached = sessionStorage[sessId];
         if (cached) {
             this.data = cached.data;
             this.created = cached.created;
-            this.response.setHeader(Session.SESSION_HEADER, this.id);
+            this.response.setHeader(Session.SESSION_HEADER, sessId);
             return;
         }
 
@@ -63,21 +63,21 @@ export default class Session {
             data: string,
             used: Date
         }>('select used, data from sessions where id=:id', {
-            id: this.id
+            id: sessId
         });
         if (storedData) {
-            this.logger.verbose(`Session ${this.id} restored from DB`, { session: this.id, data: storedData.data });
+            this.logger.verbose(`Session ${sessId} restored from DB`, { session: sessId, data: storedData.data });
             try {
                 const parsedData = JSON.parse(storedData.data);
                 if (parsedData.userId) {
-                    this.data = new SessionData(this.id, parsedData.userId);
+                    this.data = new SessionData(sessId, parsedData.userId);
                     this.created = storedData.used;
-                    sessionStorage[this.id] = {
+                    sessionStorage[sessId] = {
                         created: this.created,
                         data: this.data
                     };
-                    addToUserSessions(this.data.userId, this.id);
-                    this.response.setHeader(Session.SESSION_HEADER, this.id);
+                    addToUserSessions(this.data.userId, sessId);
+                    this.response.setHeader(Session.SESSION_HEADER, sessId);
                     return;
                 }
             }
@@ -210,7 +210,7 @@ export function session(db: DB, logger: Logger): RequestHandler {
         // create async block to encapsulate async logic
         const asyncBlock = async () => {
             try {
-                await req.session.restore();
+                await req.session.restore(req.body['X-Session-Id']);
                 if (req.session.isBarmalini() && req.session.getAgeMillis() > /*1 hour*/ 60 * 60 * 1000) {
                     await req.session.destroy();
                 }

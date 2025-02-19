@@ -15,6 +15,7 @@ import NotificationsAPIHelper from './NotificationsAPIHelper';
 import FeedAPI from './FeedAPI';
 import FeedAPIHelper from './FeedAPIHelper';
 import SearchApi from './SearchApi';
+import OAuth2Api from './OAuth2Api';
 
 export default class APIHelper {
     auth: AuthAPIHelper;
@@ -32,6 +33,7 @@ export default class APIHelper {
     feedAPI: FeedAPI;
     feed: FeedAPIHelper;
     searchApi: SearchApi;
+    oauth2Api: OAuth2Api;
     private baseAPI: APIBase;
     private initRetryCount = 0;
     private appState: AppState;
@@ -55,6 +57,7 @@ export default class APIHelper {
         this.feedAPI = new FeedAPI(api);
         this.feed = new FeedAPIHelper(this.feedAPI, appState);
         this.searchApi = new SearchApi(api);
+        this.oauth2Api = new OAuth2Api(api);
     }
 
     async init() {

@@ -9,6 +9,7 @@ import {VoteListItemEntity} from './types/entities/VoteEntity';
 import UserManager from '../managers/UserManager';
 import rateLimit from 'express-rate-limit';
 import {RateLimiterMemory} from 'rate-limiter-flexible';
+import {OAuth2MiddlewareGenerator} from './OAuth2Middleware';
 
 export default class VoteController {
     public router = Router();
@@ -36,7 +37,7 @@ export default class VoteController {
         duration: 60 * 60, // Per hour
     });
 
-    constructor(voteManager: VoteManager, userManager: UserManager, logger: Logger) {
+    constructor(voteManager: VoteManager, userManager: UserManager, oauth: OAuth2MiddlewareGenerator, logger: Logger) {
         this.voteManager = voteManager;
         this.userManager = userManager;
         this.logger = logger;
@@ -51,8 +52,8 @@ export default class VoteController {
             id: Joi.number().required()
         });
 
-        this.router.post('/vote/set', this.voteRateLimiter, validate(voteSchema), (req, res) => this.setVote(req, res));
-        this.router.post('/vote/list', validate(listSchema), (req, res) => this.list(req, res));
+        this.router.post('/vote/set', this.voteRateLimiter, validate(voteSchema), oauth('голосовать'), (req, res) => this.setVote(req, res));
+        this.router.post('/vote/list', validate(listSchema), oauth('читать список голосов'), (req, res) => this.list(req, res));
     }
 
     async setVote(request: APIRequest<VoteSetRequest>, response: APIResponse<VoteSetResponse>) {

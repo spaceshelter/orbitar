@@ -12,6 +12,7 @@ import PostManager from '../managers/PostManager';
 import {Enricher} from './utils/Enricher';
 import {FeedSorting} from './types/entities/common';
 import {FeedSortingSaveRequest, FeedSortingSaveResponse} from './types/requests/FeedSortingSave';
+import {OAuth2MiddlewareGenerator} from './OAuth2Middleware';
 
 export default class FeedController {
     public readonly router = Router();
@@ -22,7 +23,7 @@ export default class FeedController {
     private readonly logger: Logger;
     private readonly enricher: Enricher;
 
-    constructor(enricher: Enricher, feedManager: FeedManager, siteManager: SiteManager, userManager: UserManager, postManager: PostManager, logger: Logger) {
+    constructor(enricher: Enricher, feedManager: FeedManager, siteManager: SiteManager, userManager: UserManager, postManager: PostManager, oauth: OAuth2MiddlewareGenerator, logger: Logger) {
         this.enricher = enricher;
         this.feedManager = feedManager;
         this.siteManager = siteManager;
@@ -52,11 +53,11 @@ export default class FeedController {
             feedSorting: Joi.number().valid(FeedSorting.postCreatedAt, FeedSorting.postCommentedAt)
         });
 
-        this.router.post('/feed/subscriptions', validate(feedSubscriptionsSchema), (req, res) => this.feedSubscriptions(req, res));
-        this.router.post('/feed/all', validate(feedSubscriptionsSchema), (req, res) => this.feedAll(req, res));
-        this.router.post('/feed/posts', validate(feedPostsSchema), (req, res) => this.feedPosts(req, res));
-        this.router.post('/feed/watch', validate(feedWatchSchema), (req, res) => this.feedWatch(req, res));
-        this.router.post('/feed/sorting', validate(feedSortingSchema), (req, res) => this.saveFeedSorting(req, res));
+        this.router.post('/feed/subscriptions', oauth('фид подписок'), validate(feedSubscriptionsSchema), (req, res) => this.feedSubscriptions(req, res));
+        this.router.post('/feed/all', oauth('фид /all'), validate(feedSubscriptionsSchema), (req, res) => this.feedAll(req, res));
+        this.router.post('/feed/posts', oauth('фид постов'), validate(feedPostsSchema), (req, res) => this.feedPosts(req, res));
+        this.router.post('/feed/watch', oauth('фид отслеживаемых'), validate(feedWatchSchema), (req, res) => this.feedWatch(req, res));
+        this.router.post('/feed/sorting', oauth('изменение сортировки фидов'), validate(feedSortingSchema), (req, res) => this.saveFeedSorting(req, res));
     }
 
     async feedSubscriptions(request: APIRequest<FeedSubscriptionsRequest>, response: APIResponse<FeedSubscriptionsResponse>) {

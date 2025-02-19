@@ -7,7 +7,7 @@ import qs from 'qs';
 import {escapeRegExp, mentionsRegex, urlRegex, urlRegexExact} from './regexprs';
 import {MediaHostingConfig} from '../config';
 import render from 'dom-serializer';
-import {joiSite} from '../api/ApiMiddleware';
+import {joiClientId, joiSite} from '../api/ApiMiddleware';
 
 export type ParseResult = {
     text: string;
@@ -59,6 +59,7 @@ export default class TheParser {
             expand: (node) => this.parseExpand(node),
             video: (node) => this.parseVideo(node),
             mailbox: (node) => this.parseSecretMailbox(node),
+            app: (node) => this.parseOauthApp(node),
             mail: (node) => this.parseSecretMail(node),
             blockquote: true,
             b: true,
@@ -446,6 +447,21 @@ export default class TheParser {
     static isValidBase64(str: string) {
         const regex = /^[A-Za-z0-9+/]*={0,3}$/;
         return regex.test(str);
+    }
+
+    parseOauthApp(node: Element): ParseResult {
+        // app tag with client_id (uuid) as text inside
+        let clientId = '';
+        if (node.children.length === 1 || node.children[0].type === 'text') {
+            clientId = (node.children[0] as unknown as Text).data.trim();
+        }
+        if (!clientId || joiClientId.validate(clientId).error) {
+            return this.parseDisallowedTag(node);
+        } else {
+            return {
+                text: `<div class="oauth-app" data-client-id="${clientId}"></div>`, mentions: [], urls: [], images: []
+            };
+        }
     }
 
     parseSecretMailbox(node: Element): ParseResult {

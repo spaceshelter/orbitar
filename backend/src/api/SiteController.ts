@@ -20,6 +20,7 @@ import CodeError from '../CodeError';
 import rateLimit from 'express-rate-limit';
 import UserManager from '../managers/UserManager';
 import {SubscriptionsRequest, SubscriptionsResponse} from './types/requests/Subscriptions';
+import {OAuth2MiddlewareGenerator} from './OAuth2Middleware';
 
 export default class SiteController {
     public readonly router = Router();
@@ -39,7 +40,7 @@ export default class SiteController {
         keyGenerator: (req) => String(req.session.data?.userId)
     });
 
-    constructor(enricher: Enricher, feedManager: FeedManager, siteManager: SiteManager, userManager: UserManager, logger: Logger) {
+    constructor(enricher: Enricher, feedManager: FeedManager, siteManager: SiteManager, userManager: UserManager, oauth: OAuth2MiddlewareGenerator, logger: Logger) {
         this.enricher = enricher;
         this.logger = logger;
         this.feedManager = feedManager;
@@ -64,11 +65,13 @@ export default class SiteController {
             name: joiSiteName.required()
         });
 
+        // TODO: legacy, ideally we'd need to migrate all clients to use /site/get
         this.router.post('/site', validate(siteSchema), (req, res) => this.site(req, res));
-        this.router.post('/site/subscribe', this.subscribeRateLimiter, validate(siteSubscribeSchema), (req, res) => this.subscribe(req, res));
-        this.router.post('/site/subscriptions', (req, res) => this.subscriptions(req, res));
-        this.router.post('/site/list', validate(siteListSchema), (req, res) => this.list(req, res));
-        this.router.post('/site/create', validate(siteCreateSchema), (req, res) => this.create(req, res));
+        this.router.post('/site/get', validate(siteSchema), oauth('читать информацию о подсайте'), (req, res) => this.site(req, res));
+        this.router.post('/site/subscribe', this.subscribeRateLimiter, validate(siteSubscribeSchema), oauth('подписываться на подсайты'), (req, res) => this.subscribe(req, res));
+        this.router.post('/site/subscriptions', oauth('получать список подписок на подсайты'), (req, res) => this.subscriptions(req, res));
+        this.router.post('/site/list', validate(siteListSchema), oauth('получать список подсайтов'), (req, res) => this.list(req, res));
+        this.router.post('/site/create', validate(siteCreateSchema), oauth('создавать подсайты'), (req, res) => this.create(req, res));
     }
 
     async site(request: APIRequest<SiteRequest>, response: APIResponse<SiteResponse>) {

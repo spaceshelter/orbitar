@@ -27,6 +27,7 @@ type UserProfileResponse = {
     numberOfInvitesAvailable?: number;
     isBarmalini?: boolean;
     publicKey: string;
+    hasOwnApps: boolean;
     visitedDaysAgo: number;
 };
 type UserProfilePostsRequest = {

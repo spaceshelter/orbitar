@@ -17,6 +17,7 @@ import UserManager from '../managers/UserManager';
 import {NotificationsSubscribeRequest, NotificationsSubscribeResponse} from './types/requests/NotificationsSubscribe';
 import {NotificationEntity} from './types/entities/NotificationEntity';
 import Joi from 'joi';
+import {OAuth2MiddlewareGenerator} from './OAuth2Middleware';
 
 const hideAllSchema = Joi.object<NotificationsHideAllRequest>({
     readOnly: Joi.boolean()
@@ -28,17 +29,17 @@ export default class NotificationsController {
     private readonly userManager: UserManager;
     private readonly logger: Logger;
 
-    constructor(notificationManager: NotificationManager, userManager: UserManager, logger) {
+    constructor(notificationManager: NotificationManager, userManager: UserManager, oauth: OAuth2MiddlewareGenerator, logger) {
         this.notificationManager = notificationManager;
         this.userManager = userManager;
 
         this.logger = logger;
-        this.router.post('/notifications/list', (req, res) => this.list(req, res));
-        this.router.post('/notifications/read', (req, res) => this.read(req, res));
-        this.router.post('/notifications/hide', (req, res) => this.hide(req, res));
-        this.router.post('/notifications/read/all', (req, res) => this.readAll(req, res));
-        this.router.post('/notifications/hide/all', validate(hideAllSchema), (req, res) => this.hideAll(req, res));
-        this.router.post('/notifications/subscribe', (req, res) => this.subscribe(req, res));
+        this.router.post('/notifications/list', oauth('список уведомлений'), (req, res) => this.list(req, res));
+        this.router.post('/notifications/read', oauth('помечать уведомления как прочитанные'), (req, res) => this.read(req, res));
+        this.router.post('/notifications/hide', oauth('прятать уведомления'), (req, res) => this.hide(req, res));
+        this.router.post('/notifications/read/all', oauth('помечать все уведомления как прочитанные'), (req, res) => this.readAll(req, res));
+        this.router.post('/notifications/hide/all', oauth('прятать все уведомления'), validate(hideAllSchema), (req, res) => this.hideAll(req, res));
+        this.router.post('/notifications/subscribe', oauth('подписка на уведомления'), (req, res) => this.subscribe(req, res));
     }
 
     async list(request: APIRequest<NotificationsListRequest>, response: APIResponse<NotificationsListResponse>) {

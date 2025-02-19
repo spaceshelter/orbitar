@@ -31,6 +31,7 @@ import ResetPasswordPage from './Pages/ResetPasswordPage';
 import SearchPage from './Pages/SearchPage';
 import classNames from 'classnames';
 import {ForcedReload} from './Components/ForcedReload';
+import { OAuthClientPage } from './Pages/OAuthClientPage';
 
 export const App = observer(() => {
     const {appLoadingState} = useAppState();
@@ -70,6 +71,16 @@ function Unauthorized() {
         </>
     );
 }
+
+const ModalContainer = observer(() => {
+    const appState = useAppState();
+    return (
+        <>
+            {appState.modal}
+            {appState.mediaUploaderModal}
+        </>
+    );
+});
 
 const ReadyContainer = observer(() => {
     const {theme} = useTheme();
@@ -115,6 +126,7 @@ const ReadyContainer = observer(() => {
             {!isNewYear && <div className={classNames(styles.monster,
                 {[styles.monsterPink]: isFeb14th},
             )}><MonsterIcon /></div>}
+            <ModalContainer />
             <ToastContainer theme={theme as Theme} />
             <SpoilerMask/>
         </>
@@ -137,6 +149,7 @@ const Ready = observer(() => {
                         <Route path="" element={<UserPage />} />
                         <Route path=":page" element={<UserPage />} />
                         <Route path="settings" element={<MonsterIcon />} />
+                        <Route path="apps" element={<MonsterIcon />} />
                     </Route>
                     <Route path="profile">
                         <Route path="" element={<UserPage />} />
@@ -156,6 +169,11 @@ const Ready = observer(() => {
                         <Route path="create" element={<CreatePostPage />} />
                         <Route path="p:postId" element={<PostPage />} />
                     </Route>
+
+                    <Route path="oauth2">
+                        <Route path="authorize" element={<OAuthClientPage />} />
+                    </Route>
+
                 </Route>
             </Routes>
         </>

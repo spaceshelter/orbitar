@@ -27,11 +27,13 @@ import {UserProfileEntity} from './types/entities/UserEntity';
 import VoteManager from '../managers/VoteManager';
 import {UserGender, UserRatingBySubsite} from '../managers/types/UserInfo';
 import {SuggestUsernameRequest, SuggestUsernameResponse} from './types/requests/UsernameSuggest';
+import {OAuth2MiddlewareGenerator} from './OAuth2Middleware';
 
 // constant variables
 import {ERROR_CODES} from './utils/error-codes';
 import InviteManager from '../managers/InviteManager';
 import rateLimit from 'express-rate-limit';
+import OAuth2Manager from '../managers/OAuth2Manager';
 
 export default class UserController {
     public readonly router = Router();
@@ -41,13 +43,16 @@ export default class UserController {
     private readonly inviteManager: InviteManager;
     private readonly logger: Logger;
     private readonly enricher: Enricher;
+    private readonly oauthManager: OAuth2Manager;
 
-    constructor(enricher: Enricher, userManager: UserManager, postManager: PostManager, voteManager: VoteManager, inviteManager: InviteManager, logger: Logger) {
+    constructor(enricher: Enricher, userManager: UserManager, postManager: PostManager, voteManager: VoteManager,
+                inviteManager: InviteManager, oauth: OAuth2MiddlewareGenerator, oauthManager: OAuth2Manager, logger: Logger) {
         this.enricher = enricher;
         this.userManager = userManager;
         this.postManager = postManager;
         this.voteManager = voteManager;
         this.inviteManager = inviteManager;
+        this.oauthManager = oauthManager;
         this.logger = logger;
 
         const profileSchema = Joi.object<UserProfileRequest>({
@@ -97,18 +102,18 @@ export default class UserController {
             keyGenerator: (req) => String(req.session.data?.userId)
         });
 
-        this.router.post('/user/profile', validate(profileSchema), (req, res) => this.profile(req, res));
-        this.router.post('/user/posts', userCommentsAndPostsLimiter, validate(postsOrCommentsSchema), (req, res) => this.posts(req, res));
-        this.router.post('/user/comments', userCommentsAndPostsLimiter, validate(postsOrCommentsSchema), (req, res) => this.comments(req, res));
-        this.router.post('/user/karma', validate(profileSchema), (req, res) => this.karma(req, res));
+        this.router.post('/user/profile', oauth('читать профиль пользователя'), validate(profileSchema), (req, res) => this.profile(req, res));
+        this.router.post('/user/posts', userCommentsAndPostsLimiter, oauth('читать посты пользователя'), validate(postsOrCommentsSchema), (req, res) => this.posts(req, res));
+        this.router.post('/user/comments', userCommentsAndPostsLimiter, validate(postsOrCommentsSchema), oauth('читать комментарии пользователя'), (req, res) => this.comments(req, res));
+        this.router.post('/user/karma', validate(profileSchema), oauth('читать инфо о карме пользователя'), (req, res) => this.karma(req, res));
         this.router.post('/user/clearCache', validate(profileSchema), (req, res) => this.clearCache(req, res));
-        this.router.post('/user/restrictions', validate(profileSchema), (req, res) => this.restrictions(req, res));
-        this.router.post('/user/savebio', settingsSaveLimiter, validate(bioSchema), (req, res) => this.saveBio(req, res));
-        this.router.post('/user/savename', settingsSaveLimiter, validate(nameSchema), (req, res) => this.saveName(req, res));
-        this.router.post('/user/savegender', settingsSaveLimiter, validate(genderSchema), (req, res) => this.saveGender(req, res));
+        this.router.post('/user/restrictions', validate(profileSchema), oauth('читать ограничения пользователя'), (req, res) => this.restrictions(req, res));
+        this.router.post('/user/savebio', settingsSaveLimiter, validate(bioSchema), oauth('менять био в профиле'), (req, res) => this.saveBio(req, res));
+        this.router.post('/user/savename', settingsSaveLimiter, validate(nameSchema), oauth('менять имя в профиле'), (req, res) => this.saveName(req, res));
+        this.router.post('/user/savegender', settingsSaveLimiter, validate(genderSchema), oauth('менять пол в профиле'), (req, res) => this.saveGender(req, res));
         this.router.post('/user/barmalini', settingsSaveLimiter, (req, res) => this.barmaliniPassword(req, res));
-        this.router.post('/user/suggest-username', suggestUsernameLimiter, (req, res) => this.suggestUsername(req, res));
-        this.router.post('/user/save-public-key', settingsSaveLimiter, validate(publicKeySchema), (req, res) => this.savePublicKey(req, res));
+        this.router.post('/user/suggest-username', suggestUsernameLimiter, oauth('искать юзернеймы по префиксу'), (req, res) => this.suggestUsername(req, res));
+        this.router.post('/user/save-public-key', settingsSaveLimiter, oauth('менять публичный ключ'), validate(publicKeySchema), (req, res) => this.savePublicKey(req, res));
     }
 
     async profile(request: APIRequest<UserProfileRequest>, response: APIResponse<UserProfileResponse>) {
@@ -140,6 +145,7 @@ export default class UserController {
             const numberOfPosts = await this.postManager.getPostsByUserTotal(profileInfo.id, '') || 0;
             const numberOfComments = await this.postManager.getUserCommentsTotal(profileInfo.id, '') || 0;
             const visitedDaysAgo = await this.userManager.getUserVisitedDaysAgo(profileInfo.id);
+            const hasOwnApps = await this.oauthManager.hasOwnApps(profileInfo.id);
 
             // if viewing own profile, get available invites number
             let numberOfInvitesAvailable = 0;
@@ -175,7 +181,8 @@ export default class UserController {
                 numberOfInvitesAvailable,
                 isBarmalini: this.userManager.isBarmaliniUser(profileInfo.id),
                 publicKey,
-                visitedDaysAgo: visitedDaysAgo
+                visitedDaysAgo,
+                hasOwnApps
             });
         } catch (error) {
             this.logger.error('Could not get user profile', {username});

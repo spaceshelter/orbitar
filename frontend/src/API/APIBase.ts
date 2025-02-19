@@ -25,12 +25,11 @@ export class APIError extends Error {
 
 export default class APIBase {
     private sessionId?: string;
-    private readonly endpoint: string;
+    public static readonly endpoint = '//' + (process.env.REACT_APP_API_DOMAIN || ('api.' + process.env.REACT_APP_ROOT_DOMAIN)) + '/api/v1';
     private sync = 0;
 
     constructor() {
         this.sessionId = Cookies.get('session');
-        this.endpoint = '//' + (process.env.REACT_APP_API_DOMAIN || ('api.' + process.env.REACT_APP_ROOT_DOMAIN)) + '/api/v1';
     }
 
     async request<Req, Res>(url: string, payload: Req, responseCallback?: (resp: Response) => void): Promise<Res> {
@@ -41,7 +40,7 @@ export default class APIBase {
             headers['X-Session-Id'] = this.sessionId;
         }
         const response = await fetch(
-            this.endpoint + url,
+            APIBase.endpoint + url,
             {
                 method: 'POST',
                 body: JSON.stringify(payload),
@@ -92,7 +91,7 @@ export default class APIBase {
             headers['X-Session-Id'] = this.sessionId;
         }
         const response = await fetch(
-            this.endpoint + url,
+            APIBase.endpoint + url,
             {
                 method: 'POST',
                 body: JSON.stringify(payload),
