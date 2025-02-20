@@ -3,7 +3,7 @@ import BookmarkRepository from '../db/repositories/BookmarkRepository'
 import CommentRepository from '../db/repositories/CommentRepository'
 import PostRepository from '../db/repositories/PostRepository'
 import { BookmarkRaw } from '../db/types/BookmarkRaw'
-import { CommentRawWithUserData, PostRaw } from '../db/types/PostRaw'
+import { CommentRawWithUserData, PostRaw, PostRawWithUserData } from '../db/types/PostRaw'
 import TheParser from '../parser/TheParser'
 import FeedManager from './FeedManager'
 import NotificationManager from './NotificationManager'
@@ -68,6 +68,33 @@ export default class PostManager {
   ): Promise<PostInfo[]> {
     const posts = await this.postRepository.getPostsByUser(userId, forUserId, filter, page, perpage)
     return await this.feedManager.convertRawPosts(forUserId, posts, format)
+  }
+
+  async getUserBookmarks(
+    userId: number,
+    options: {
+      page: number
+      perpage: number      
+    }
+  ): Promise<{ rawPosts: PostInfo[]; total: string }> {
+    const { page, perpage } = options
+    
+    const rawPosts = await this.bookmarkRepository.getBookmarkedPosts(
+      userId,
+      page,
+      perpage      
+    )
+    const posts = await this.feedManager.convertRawPosts(
+      userId,
+      rawPosts,
+      'source' 
+    )
+    
+    const total = await this.bookmarkRepository.getBookmarkedPostsTotal(
+      userId
+    )  
+    
+    return { rawPosts: posts, total }
   }
 
   getUserIdByPostId(postId: number): Promise<number | undefined> {
@@ -212,7 +239,7 @@ export default class PostManager {
       const batch = toUpdate.slice(i, i + batchSize)
       await this.commentRepository.updateCommentsHtmlAndParserVersion(batch, TheParser.VERSION)
     }
-  }
+  }  
 
   private async convertRawCommentsWithPostData(
     forUserId: number,

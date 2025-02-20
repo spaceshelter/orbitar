@@ -67,6 +67,26 @@ type UserProfileCommentsResult = {
   total: number
 }
 
+type UserProfileBookmarksRequest = {
+  username: string
+  filter?: string
+  format?: ContentFormat
+  page?: number
+  perpage?: number
+}
+
+type UserProfileBookmarksResponse = {
+  posts: PostEntity[]
+  users: Record<number, UserInfo>
+  total: number
+  sites: Record<string, SiteInfo>
+}
+
+type UserProfileBookmarksResult = {
+  posts: PostInfo[]
+  total: number
+}
+
 export type TrialProgressDebugInfo = {
   effectiveKarmaPart: number
   daysOnSitePart: number
@@ -155,6 +175,25 @@ export default class UserAPI {
     return {
       comments: this.postAPIHelper.fixComments(result.comments, result.users),
       parentComments: this.postAPIHelper.fixCommentsRecords(result.parentComments, result.users),
+      total: result.total,
+    }
+  }
+
+  async userBookmarks(
+    username: string,
+    filter: string | undefined,
+    page: number,
+    perpage: number,
+  ): Promise<UserProfileBookmarksResult> {
+    const result = await this.api.request<UserProfileBookmarksRequest, UserProfileBookmarksResponse>('/user/bookmarks', {
+      username,
+      format: 'html',
+      page,
+      perpage,
+      filter,
+    })
+    return {
+      posts: this.postAPIHelper.fixPosts(result.posts, result.users),
       total: result.total,
     }
   }

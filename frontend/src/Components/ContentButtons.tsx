@@ -52,3 +52,11 @@ export function WatchButton(props: ExtendedButtonProps) {
 export function UnwatchButton(props: ExtendedButtonProps) {
   return <BaseButton {...props} icon='unwatch' label='Не отслеживать' />
 }
+
+export function BookmarkButton(props: ExtendedButtonProps) {
+  return <BaseButton {...props} icon='bookmark' label='В закладки' />
+}
+
+export function UnbookmarkButton(props: ExtendedButtonProps) {
+  return <BaseButton {...props} icon='unbookmark' label='Убрать из закладок' />
+}

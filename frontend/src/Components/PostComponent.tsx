@@ -7,7 +7,7 @@ import { useInterpreter } from '../API/use/useInterpreter'
 import { useAPI, useAppState } from '../AppState/AppState'
 import Conf from '../Conf'
 import { PostInfo } from '../Types/PostInfo'
-import { AltTranslateButton, AnnotateButton, TranslateButton, UnwatchButton, WatchButton } from './ContentButtons'
+import { AltTranslateButton, AnnotateButton, TranslateButton, UnwatchButton, WatchButton, BookmarkButton, UnbookmarkButton } from './ContentButtons'
 import ContentComponent from './ContentComponent'
 import CreateCommentComponent from './CreateCommentComponent'
 import { HistoryComponent } from './HistoryComponent'
@@ -66,7 +66,7 @@ export default function PostComponent(props: PostComponentProps) {
     }
   }, [props])
 
-  const { id, created, site, author, vote, rating, watch } = props.post
+  const { id, created, site, author, vote, rating, watch, bookmark } = props.post
   const title = altTitle || props.post.title
   const content = altContent || props.post.content
 
@@ -281,6 +281,7 @@ export default function PostComponent(props: PostComponentProps) {
                   />
                 )}
                 {watch ? <UnwatchButton onClick={toggleWatch} /> : <WatchButton onClick={toggleWatch} />}
+                {bookmark ? <UnbookmarkButton onClick={toggleBookmark} /> : <BookmarkButton onClick={toggleBookmark} />}
               </div>
             </OutsideClickHandler>
           )}
