@@ -6,7 +6,7 @@
 	tls {env.TLS_CERT_PATH} {env.TLS_KEY_PATH}
 }
 
-(tls_internal) {
+(tls_) {
 	tls internal
 }
 

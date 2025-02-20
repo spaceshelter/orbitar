@@ -1,7 +1,0 @@
-services:
-  caddy:
-    ports:
-      - "80:80"
-    environment:
-      SERVER_HOST: http://${SERVER_DOMAIN}
-      API_HOST: http://${API_DOMAIN}

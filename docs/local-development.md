@@ -3,7 +3,7 @@
 1. Запустить контейнер с базой и веб-роутером (в корне проекта):
 
     ```sh
-    docker compose up
+    docker compose -f compose-dev.yml  up
     ```
 
    mysql повиснет на стандартном 3306 порту, redis на 6379.
@@ -58,18 +58,29 @@
 
 ### Настройка локального https (опционально)
 1. В `frontend/.env.local` добавить `WDS_SOCKET_PORT=0`
-2. Сгенерировать самоподписанный сертификат для https:
 
-   ```sh
-   cd caddy/certs
-   openssl req -x509 -sha256 -nodes -newkey rsa:2048 -days 365 \
-     -config openssl.cnf -extensions req_ext \
-     -keyout orbitar.key -out orbitar.crt
-   ```
-   Сгенерированный `orbitar.crt` добавить в систему/браузер как доверенный.
-3. В `.env`-файле сменить настройку на `TLS_MODE=tls_on`.
+2. В `.env`-файле сменить настройку на `TLS_ENABLED=True`.
 
-4. Перезапустить контейнер Caddy: `docker compose down caddy; docker compose up caddy`
+3. (опционально) Сгенерировать самоподписанный сертификат для https:
+
+      ```sh
+      cd caddy/certs
+      openssl req -x509 -sha256 -nodes -newkey rsa:2048 -days 365 \
+        -config openssl.cnf -extensions req_ext \
+        -keyout orbitar.key -out orbitar.crt
+      ```
+      Сгенерированный `orbitar.crt` добавить в систему/браузер как доверенный.
+
+      в `.env` файл добавить:
+      ```
+      TLS_CERT_FILE=orbitar.crt
+      TLS_KEY_FILE=orbitar.key
+      ``` 
+      
+      весь этот шаг опционален, если просто включить `TLS_ENABLED` в `.env`
+      caddy сгенерирует серификаты сам.
+
+4. Перезапустить контейнер Caddy: `docker compose -f compose-dev.yml down caddy; docker compose -f compose-dev.yml up caddy`
 
 
 ### Настройка Web Push Notifications (опционально)

@@ -7,29 +7,25 @@ on:
   pull_request:
     paths:
       - .github/workflows/build-docker-dev.yml
-      - _compose.base.yml
-      - _compose.deploy.base.yml
-      - _compose.deploy.nonssl.yml
-      - _compose.deploy.ssl.yml
-      - _compose.dev.nonssl.yml
-      - _compose.dev.ssl.yml
-      - compose-deploy-nonssl.yml
-      - compose-deploy-ssl.yml
-      - compose-dev-ssl.yml
-      - compose.yml      
+      - compose.yml
+      - compose-dev.yml
   workflow_dispatch:
 
 jobs:
   build-docker:
     runs-on: ubuntu-latest
-    env:
-      ENVIRONMENT: production
+    strategy:
+        matrix:
+            dc-file: [compose.yml, compose-dev.yml]
+            tls: ["", "True"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build backend, frontend & feed
-        run: docker compose build --no-cache backend frontend feed
+      - name: Build docker
+        env:
+          TLS_ENABLED: "${{ matrix.tls }}"
+        run: docker compose -f ${{ matrix.dc-file }} build --no-cache
 
   validate-docker-compose:
     runs-on: ubuntu-latest
@@ -37,22 +33,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate compose.yml
-        run: docker compose config
+      - name: Validate docker-compose.dev.yml
+        run: docker compose -f docker-compose.dev.yml config
 
-      - name: Validate compose-dev-ssl.yml
-        env:
-          TLS_MODE: tls_on
-        run: docker compose config
-
-      - name: Validate compose-prod-ssl.yml
-        env:
-          TLS_MODE: tls_on
-          ENVIRONMENT: production
-        run: docker compose config
-
-      - name: Validate compose-prod-nonssl.yml
-        env:
-          TLS_MODE: tls_off
-          ENVIRONMENT: production
-        run: docker compose config
+      - name: Validate docker-compose.ssl.dev.yml
+        run: docker compose -f docker-compose.ssl.dev.yml config
