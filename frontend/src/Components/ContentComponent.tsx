@@ -10,10 +10,12 @@ import useOnBack from '../API/use/useOnBack'
 import { AppState, useAppState } from '../AppState/AppState'
 import { FakeRoot } from '../index'
 import { observeOnHidden } from '../Services/ObserverService'
+import { useTheme } from '../Theme/ThemeProvider'
 import { b64DecodeUnicode } from '../Utils/utils'
 import InternalLinkExpandComponent from './InternalLinkExpandComponent'
 import { OAuthEmbeddedAppComponent } from './OAuth2AppCardModalComponent'
 import { SecretMailDecoderForm, SecretMailEncoderForm } from './SecretMailbox'
+import TelegramEmbed from './TelegramEmbed'
 import { getLegacyZoom, getVideoAutopause } from './UserProfileSettings'
 
 import styles from './ContentComponent.module.scss'
@@ -104,6 +106,26 @@ function updateContent(
   div.querySelectorAll('div.oauth-app').forEach((appEl) => {
     updateOauthAppEmbed(appEl as HTMLDivElement, appState)
   })
+  div.querySelectorAll('div[data-telegram-url]').forEach((telegramDiv) => {
+    updateTelegramEmbed(telegramDiv as HTMLElement, appState)
+  })
+}
+
+function updateTelegramEmbed(telegramDiv: HTMLElement, appState: AppState) {
+  const src = telegramDiv.getAttribute('data-telegram-url')
+  if (!src) return
+
+  const ThemeAwareTelegramEmbed = () => {
+    const { theme } = useTheme()
+    return <TelegramEmbed src={src} theme={theme === 'dark' ? 'dark' : undefined} />
+  }
+
+  ReactDOM.render(
+    <FakeRoot appState={appState}>
+      <ThemeAwareTelegramEmbed />
+    </FakeRoot>,
+    telegramDiv,
+  )
 }
 
 function updateMailbox(mailbox: HTMLSpanElement, setMailboxKey: (key: MailboxKey | null) => void) {
@@ -555,14 +577,16 @@ function stopVideo(el: HTMLVideoElement | HTMLIFrameElement) {
 }
 
 function stopInnerVideos(el: Element, except?: HTMLVideoElement | HTMLIFrameElement) {
-  el.querySelectorAll('video,iframe.youtube-embed,iframe.vimeo-embed,iframe.coub-embed').forEach((iframe) => {
-    if (iframe === except) {
-      return
-    }
-    if (iframe instanceof HTMLIFrameElement || iframe instanceof HTMLVideoElement) {
-      stopVideo(iframe as HTMLIFrameElement | HTMLVideoElement)
-    }
-  })
+  el.querySelectorAll('video,iframe.youtube-embed,iframe.vimeo-embed,iframe.coub-embed,iframe.telegram-embed').forEach(
+    (iframe) => {
+      if (iframe === except) {
+        return
+      }
+      if (iframe instanceof HTMLIFrameElement || iframe instanceof HTMLVideoElement) {
+        stopVideo(iframe as HTMLIFrameElement | HTMLVideoElement)
+      }
+    },
+  )
 }
 
 export default function ContentComponent(props: ContentComponentProps) {
