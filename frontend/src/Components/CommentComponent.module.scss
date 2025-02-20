@@ -1,6 +1,6 @@
 .comment {
-    // TODO fix alternative tree lines
-    /*
+  // TODO fix alternative tree lines
+  /*
     position: relative;
     &::after{
         content: '';
@@ -27,25 +27,25 @@
     }
     */
 
-    margin-bottom: 32px;
-    .content>div {
-        font-size: 16px;
-        line-height: 1.5em;
-        color: var(--fg);
-        overflow-wrap: anywhere;
-        @media only screen and (max-width: 600px) {
-            font-size: 14px;
-        }
+  margin-bottom: 32px;
+  .content > div {
+    font-size: 16px;
+    line-height: 1.5em;
+    color: var(--fg);
+    overflow-wrap: anywhere;
+    @media only screen and (max-width: 600px) {
+      font-size: 14px;
     }
-    img {
-         max-width: 100%;
-         max-height: 500px;
-    }
+  }
+  img {
+    max-width: 100%;
+    max-height: 500px;
+  }
 
-    :global(.react-transform-wrapper) img {
-        max-width: unset;
-        max-height: unset;
-    }
+  :global(.react-transform-wrapper) img {
+    max-width: unset;
+    max-height: unset;
+  }
 }
 
 :global(.internalLinkExpand) .comment {
@@ -53,137 +53,146 @@
 }
 
 .controls {
+  display: flex;
+  margin-top: 4px;
+  margin-left: -3px;
+  align-items: center;
+  overflow-x: visible;
+
+  .control {
+    margin-right: 25px;
+    color: var(--fgSoftest);
     display: flex;
-    margin-top: 4px;
-    margin-left: -3px;
     align-items: center;
-    overflow-x: visible;
+  }
 
-    .control {
-        margin-right: 25px;
-        color: var(--fgSoftest);
-        display: flex;
-        align-items: center;
-    }
+  button:before {
+    font-size: 24px;
+  }
 
-    button:before {
-        font-size: 24px;
-    }
+  button.action:before {
+    font-size: 20px;
+  }
 
-    button.action:before {
-      font-size: 20px;
-    }
-
-    button.action:disabled:before {
-      animation: pulse 1s infinite;
-      @keyframes pulse {
-        0% {
-          opacity: 0.5;
-        }
-        50% {
-          opacity: 1;
-        }
-        100% {
-          opacity: 0.5;
-        }
+  button.action:disabled:before {
+    animation: pulse 1s infinite;
+    @keyframes pulse {
+      0% {
+        opacity: 0.5;
+      }
+      50% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0.5;
       }
     }
+  }
 
-    button, a {
-        background: none;
-        margin: 0;
-        padding: 0;
-        border: none;
-        display: flex;
-        align-items: center;
-        font-size: 13px;
-        fill: var(--fgSoftest);
-        color: var(--fgSoftest);
-        text-decoration: none;
+  button,
+  a {
+    background: none;
+    margin: 0;
+    padding: 0;
+    border: none;
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    fill: var(--fgSoftest);
+    color: var(--fgSoftest);
+    text-decoration: none;
 
-        font-weight: normal;
+    font-weight: normal;
 
-        &.active {
-            color: var(--primary);
-            fill: var(--primary);
-            font-weight: normal;
-        }
-        &:hover {
-            color: var(--primary);
-        }
+    &.active {
+      color: var(--primary);
+      fill: var(--primary);
+      font-weight: normal;
     }
-    a {
-         margin: 0 2px;
-        &.active {
-            color: var(--primary);
-        }
+    &:hover {
+      color: var(--primary);
     }
-    button:disabled {
-          fill: var(--fgGhost);
-          cursor: default;
+  }
+  a {
+    margin: 0 2px;
+    &.active {
+      color: var(--primary);
     }
-    .label {
-         margin-left: 5px;
-    }
+  }
+  button:disabled {
+    fill: var(--fgGhost);
+    cursor: default;
+  }
+  .label {
+    margin-left: 5px;
+  }
 }
 
 $bigShift: 12px;
 $smallShift: 8px;
 
 .answers {
-    margin-top: 8px;
-    padding-top: 24px;
-    //margin-bottom: 32px;
-    border-left: 1px solid var(--fgAlmostInvisible);
+  margin-top: 8px;
+  padding-top: 24px;
+  //margin-bottom: 32px;
+  border-left: 1px solid var(--fgAlmostInvisible);
 
-    padding-left: $smallShift;
-    @media only screen and (min-width: 990px) {
-        padding-left: $bigShift;
-        margin-left: 8px; // half of [-] icon width
-    }
+  padding-left: $smallShift;
+  @media only screen and (min-width: 990px) {
+    padding-left: $bigShift;
+    margin-left: 8px; // half of [-] icon width
+  }
 }
 
 :global {
-    .isFlat{
-        padding-left: 0;
-        margin-left: 0;
-        border-left: none;
-    }
+  .isFlat {
+    padding-left: 0;
+    margin-left: 0;
+    border-left: none;
+  }
 
-    .unreadOnly :local(.comment):not(.isNew) > .commentBody > :not(:last-child),
-    .unreadOnly :local(.comment):not(.isNew) > .commentBody > :last-child > :not(:first-child),
-    .unreadOnly :local(.comment):not(.isNew) > .commentBody > :last-child > :first-child > * > :first-child {
-        opacity: 0.4;
-        transition: opacity 500ms;
-    }
+  .unreadOnly :local(.comment):not(.isNew) > .commentBody > :not(:last-child),
+  .unreadOnly :local(.comment):not(.isNew) > .commentBody > :last-child > :not(:first-child),
+  .unreadOnly :local(.comment):not(.isNew) > .commentBody > :last-child > :first-child > * > :first-child {
+    opacity: 0.4;
+    transition: opacity 500ms;
+  }
 
-    .unreadOnly :local(.comment):not(.isNew) > .commentBody:hover > :not(:last-child),
-    .unreadOnly :local(.comment):not(.isNew) > .commentBody:hover > :last-child > :not(:first-child),
-    .unreadOnly :local(.comment):not(.isNew) > .commentBody:hover > :last-child > :first-child > * > :first-child {
-        opacity: inherit;
-        transition: opacity 500ms;
-    }
+  .unreadOnly :local(.comment):not(.isNew) > .commentBody:hover > :not(:last-child),
+  .unreadOnly :local(.comment):not(.isNew) > .commentBody:hover > :last-child > :not(:first-child),
+  .unreadOnly :local(.comment):not(.isNew) > .commentBody:hover > :last-child > :first-child > * > :first-child {
+    opacity: inherit;
+    transition: opacity 500ms;
+  }
 
-    .isNew {
-        border-left: 2px solid var(--primary);
-        margin-left: -$smallShift - 2;
-        padding-left: $smallShift ;
+  .isNew {
+    border-left: 2px solid var(--primary);
+    margin-left: -$smallShift - 2;
+    padding-left: $smallShift;
 
-        @media only screen and (min-width: 990px) {
-            margin-left: -$bigShift - 2;
-            padding-left: $bigShift ;
-        }
+    @media only screen and (min-width: 990px) {
+      margin-left: -$bigShift - 2;
+      padding-left: $bigShift;
     }
+  }
 
-    /* highlight only top level of unread comments */
-    .isNew .isNew {
-        border-left: none;
-        margin-left: 0;
-        padding-left: 0;
-    }
+  /* highlight only top level of unread comments */
+  .isNew .isNew {
+    border-left: none;
+    margin-left: 0;
+    padding-left: 0;
+  }
 }
 
 .newComment {
-    color: var(--primary);
-    font-style: italic;
+  color: var(--primary);
+  font-style: italic;
+}
+
+pre {
+  font-family: monospace;
+  font-size: 90%;
+  max-height: 400px;
+  overflow: auto;
+  background: var(--dim1);
 }

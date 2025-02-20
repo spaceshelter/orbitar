@@ -1,11 +1,13 @@
 .paginator {
-
 }
 
-.ellipsis, .page {
+.ellipsis,
+.page {
   border-radius: 4px;
   padding: 6px;
-  @media only screen and (max-width: 600px) { padding: 2px; }
+  @media only screen and (max-width: 600px) {
+    padding: 2px;
+  }
 
   min-width: 20px;
   display: inline-block;
@@ -15,20 +17,21 @@
 }
 
 .page {
-    color: var(--fgSofter);
+  color: var(--fgSofter);
 }
 
-.page.current, .page:hover {
-    color: var(--primary);
-    font-weight: bold;
+.page.current,
+.page:hover {
+  color: var(--primary);
+  font-weight: bold;
 }
 
 .page.disabled {
-    pointer-events: none;
+  pointer-events: none;
 }
 
 .page.control.disabled {
-    opacity: 0.5;
+  opacity: 0.5;
 }
 
 .ellipsis {

@@ -1,4 +1,4 @@
-import {createContext, ReactNode, useContext, useEffect, useMemo} from 'react';
+import {createContext, ReactElement, ReactNode, useContext, useEffect, useMemo} from 'react';
 import APIBase from '../API/APIBase';
 import APIHelper from '../API/APIHelper';
 import {UserInfo} from '../Types/UserInfo';
@@ -8,6 +8,7 @@ import APICache from '../API/APICache';
 import {createBrowserHistory} from 'history';
 import {RouterStore} from '@superwf/mobx-react-router';
 import {UserRestrictionsResponse} from '../API/UserAPI';
+import MediaUploader, {MediaUploaderProps} from '../Components/MediaUploader';
 
 export enum AppLoadingState {
     loading,
@@ -67,6 +68,12 @@ export class AppState {
 
     @observable
     reloadCounter = 0;
+
+    @observable
+    modal: ReactNode | undefined = undefined;
+
+    @observable
+    mediaUploaderModal: ReactElement<MediaUploaderProps> | undefined = undefined;
 
     browserHistory = createBrowserHistory();
     router = new RouterStore(this.browserHistory);
@@ -152,6 +159,37 @@ export class AppState {
     @computed
     get isUpdateAvailable() {
         return this.fingerprintHash.base !== this.fingerprintHash.current && !!this.fingerprintHash.base;
+    }
+
+    @action
+    setModal(value: ReactNode | undefined) {
+        this.modal = value;
+    }
+
+    @action
+    mediaUploader(
+        props: MediaUploaderProps
+    ) {
+        this.mediaUploaderModal = <MediaUploader
+            {...props}
+            onCancel={
+                () => {
+                    this.closeMediaUploader();
+                    props.onCancel();
+                }
+            }
+            onSuccess={
+                (uri, type) => {
+                    this.closeMediaUploader();
+                    props.onSuccess && props.onSuccess(uri, type);
+                }
+            }
+        />;
+    }
+
+    @action
+    closeMediaUploader() {
+        this.mediaUploaderModal = undefined;
     }
 }
 

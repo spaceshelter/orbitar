@@ -1,7 +1,7 @@
 export type InviteRegenerateRequest = {
-    code: string;
-};
+  code: string
+}
 
 export type InviteRegenerateResponse = {
-    code: string;
-};
+  code: string
+}

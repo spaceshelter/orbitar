@@ -13,6 +13,7 @@ ARG VAPID_PUBLIC_KEY
 ENV REACT_APP_VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
+ENV DISABLE_ESLINT_PLUGIN=true
 RUN npm run build && cp -r build/ /build
 WORKDIR /build
 RUN rm -rf /frontend-build

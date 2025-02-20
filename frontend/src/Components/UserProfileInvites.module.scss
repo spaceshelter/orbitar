@@ -6,7 +6,6 @@
     h4 {
       font-weight: bold;
       margin: 5px 0;
-
     }
 
     button {
@@ -24,8 +23,6 @@
     .list {
       .item {
         margin: 5px 0;
-
-
 
         &.invite {
           border-radius: 4px;
@@ -72,7 +69,6 @@
             animation: highlight-regenerated 2s ease-in-out 1;
           }
         }
-
       }
 
       .invited {
@@ -83,7 +79,6 @@
           margin-right: 5px;
         }
       }
-
     }
   }
 
@@ -96,7 +91,9 @@
     padding: 10px 16px 0 24px;
     color: var(--fg);
     background-color: var(--dim3);
-    >span{font-size: 24px;}
+    > span {
+      font-size: 24px;
+    }
   }
 
   .highlighted {
@@ -117,5 +114,4 @@
       }
     }
   }
-
 }

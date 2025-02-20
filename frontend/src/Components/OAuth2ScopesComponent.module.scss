@@ -1,0 +1,15 @@
+.container {
+  label {
+    display: flex;
+    align-items: center;
+
+    input {
+      align-self: start;
+    }
+
+    .warningNote {
+      color: var(--negative-fg);
+      font-size: 0.8rem;
+    }
+  }
+}

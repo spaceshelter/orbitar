@@ -1,43 +1,43 @@
-import {UserBaseInfo} from './UserInfo';
-import {PostBaseInfo} from './PostInfo';
-import {CommentBaseInfo} from './CommentInfo';
+import { CommentBaseInfo } from './CommentInfo'
+import { PostBaseInfo } from './PostInfo'
+import { UserBaseInfo } from './UserInfo'
 
-export type UserNotification = UserNotificationMention | UserNotificationAnswer;
+export type UserNotification = UserNotificationMention | UserNotificationAnswer
 
 type UserNotificationSource = {
-    date: Date;
-    source: {
-        byUserId: number;
-        postId: number;
-        commentId?: number;
-    };
-};
+  date: Date
+  source: {
+    byUserId: number
+    postId: number
+    commentId?: number
+  }
+}
 
 export type UserNotificationMention = UserNotificationSource & {
-    type: 'mention';
-};
+  type: 'mention'
+}
 
 export type UserNotificationAnswer = UserNotificationSource & {
-    type: 'answer';
-};
+  type: 'answer'
+}
 
-export type UserNotificationExpanded = UserNotificationMentionExpanded | UserNotificationAnswerExpanded;
+export type UserNotificationExpanded = UserNotificationMentionExpanded | UserNotificationAnswerExpanded
 
 export type UserNotificationSourceExpanded = {
-    id: number;
-    date: Date;
-    read: boolean;
-    source: {
-        byUser: UserBaseInfo;
-        post: PostBaseInfo;
-        comment?: CommentBaseInfo;
-    };
-};
+  id: number
+  date: Date
+  read: boolean
+  source: {
+    byUser: UserBaseInfo
+    post: PostBaseInfo
+    comment?: CommentBaseInfo
+  }
+}
 
 export type UserNotificationMentionExpanded = UserNotificationSourceExpanded & {
-    type: 'mention';
-};
+  type: 'mention'
+}
 
 export type UserNotificationAnswerExpanded = UserNotificationSourceExpanded & {
-    type: 'answer';
-};
+  type: 'answer'
+}

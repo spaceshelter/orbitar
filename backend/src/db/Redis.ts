@@ -1,27 +1,27 @@
-import {RedisClientType, createClient} from 'redis';
-import {Logger} from 'winston';
+import { createClient, RedisClientType } from 'redis'
+import { Logger } from 'winston'
 
 type RedisConfig = {
-    host: string;
-    port: number;
-    password: string;
-};
+  host: string
+  port: number
+  password: string
+}
 
 export default class Redis {
-    client: RedisClientType;
-    private logger: Logger;
+  client: RedisClientType
+  private logger: Logger
 
-    constructor(config: RedisConfig, logger: Logger) {
-        this.logger = logger;
-        this.client = createClient({
-            url: `redis://${config.host}:${config.port}/`,
-            password: config.password
-        });
-    }
+  constructor(config: RedisConfig, logger: Logger) {
+    this.logger = logger
+    this.client = createClient({
+      url: `redis://${config.host}:${config.port}/`,
+      password: config.password,
+    })
+  }
 
-    async connect() {
-        this.logger.verbose('Redis connecting...');
-        await this.client.connect();
-        this.logger.verbose('Redis connected');
-    }
+  async connect() {
+    this.logger.verbose('Redis connecting...')
+    await this.client.connect()
+    this.logger.verbose('Redis connected')
+  }
 }

@@ -1,0 +1,35 @@
+.expandSection {
+  width: 100%;
+}
+
+.expandHeader {
+  width: 100%;
+  text-align: left;
+  padding: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  color: var(--text-fg);
+
+  &::before {
+    content: '►';
+    margin-right: 8px;
+    transition: transform 0.2s;
+  }
+
+  &.expanded::before {
+    transform: rotate(90deg);
+  }
+
+  &:hover {
+    background-color: var(--hover-bg);
+  }
+}
+
+.expandContent {
+  padding: 8px;
+}

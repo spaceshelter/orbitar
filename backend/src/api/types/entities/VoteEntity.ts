@@ -1,6 +1,6 @@
-export type VoteType = 'post' | 'comment' | 'user';
+export type VoteType = 'post' | 'comment' | 'user'
 
 export type VoteListItemEntity = {
-    vote: number;
-    username: string;
-};
+  vote: number
+  username: string
+}

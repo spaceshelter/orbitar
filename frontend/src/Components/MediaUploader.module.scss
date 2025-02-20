@@ -1,106 +1,106 @@
 .container {
-    position: fixed;
-    z-index: 1000;
-    background: var(--bg);
-    width: 400px;
-    /*height: 200px;*/
-    border: 1px solid var(--inactive-fg);
-    border-radius: 5px;
-    padding: 15px;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
+  position: fixed;
+  z-index: 1000;
+  background: var(--bg);
+  width: 400px;
+  /*height: 200px;*/
+  border: 1px solid var(--inactive-fg);
+  border-radius: 5px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
 
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
 }
 
 @media screen and (max-width: 600px) {
-    .container {
-        width: 90%;
-    }
+  .container {
+    width: 90%;
+  }
 }
 
 .controls {
-    display: flex;
-    flex-direction: row;
-    gap: 10px;
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
 }
 
 .upload {
-    display: flex;
-    flex: 1;
-    /*height: 40px;*/
-    background: var(--input-bg);
-    justify-content: center;
-    align-items: stretch;
-    border-radius: 4px;
-    overflow: hidden;
-    font-size: 14px;
+  display: flex;
+  flex: 1;
+  /*height: 40px;*/
+  background: var(--input-bg);
+  justify-content: center;
+  align-items: stretch;
+  border-radius: 4px;
+  overflow: hidden;
+  font-size: 14px;
 }
 
 .url {
-    flex: 1;
-    background: transparent !important;
-    border: none;
-    padding: 4px 10px;
+  flex: 1;
+  background: transparent !important;
+  border: none;
+  padding: 4px 10px;
 }
 
 .selector {
-    display: flex;
+  display: flex;
 }
 
 .selector input {
-    display: none;
+  display: none;
 }
 
 .choose {
-    border: none;
-    background: var(--inactive-fg);
-    color: var(--button-fg);
-    padding: 8px;
-    cursor: pointer;
-    align-items: center;
-    display: flex;
-    font-weight: 700;
+  border: none;
+  background: var(--inactive-fg);
+  color: var(--button-fg);
+  padding: 8px;
+  cursor: pointer;
+  align-items: center;
+  display: flex;
+  font-weight: 700;
 }
 .choose:hover {
-    background: var(--button-hover-bg);
+  background: var(--button-hover-bg);
 }
 
 .done {
-
 }
 
 .dropbox {
-    /*flex: 1;*/
-    border: 1px dashed var(--inactive-fg);
-    border-radius: 3px;
-    display: flex;
-    flex-flow: row wrap;
-    justify-content: center;
-    width: 380px;
-    height: 280px;
-    padding: 10px;
+  /*flex: 1;*/
+  border: 1px dashed var(--inactive-fg);
+  border-radius: 3px;
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: center;
+  width: 380px;
+  height: 280px;
+  padding: 10px;
 }
 
 .dropbox.active {
-    border: 1px dashed var(--active-fg);
+  border: 1px dashed var(--active-fg);
 }
 
 .preview {
-    display: flex;
+  display: flex;
 }
 
-.preview img, .preview video {
-    max-width: 380px;
-    max-height: 280px;
-    object-fit: contain;
+.preview img,
+.preview video {
+  max-width: 380px;
+  max-height: 280px;
+  object-fit: contain;
 }
 
 .disclaimer {
-    font-size: 11px;
-    color: var(--inactive-fg);
+  font-size: 11px;
+  color: var(--inactive-fg);
 }

@@ -1,8 +1,8 @@
 export type PostWatchRequest = {
-    post_id: number;
-    watch: boolean;
-};
+  post_id: number
+  watch: boolean
+}
 
 export type PostWatchResponse = {
-    watch: boolean;
-};
+  watch: boolean
+}

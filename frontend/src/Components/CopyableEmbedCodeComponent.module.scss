@@ -1,0 +1,25 @@
+.embedCodeContainer {
+  position: relative;
+  background-color: var(--popup-bg);
+  border: 1px solid var(--rating-list-border);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  overflow: hidden;
+  color: var(--text-fg);
+  white-space: pre-wrap;
+  word-break: break-all;
+
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 2rem 12px 12px;
+
+  &::after {
+    content: '📋';
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--inactive-fg);
+  }
+}

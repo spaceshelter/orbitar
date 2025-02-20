@@ -1,61 +1,60 @@
 .container {
-    width: 100%;
-    max-width: 880px;
-    margin: 56px auto 0;
+  width: 100%;
+  max-width: 880px;
+  margin: 56px auto 0;
 }
 
+.header {
+  padding: 10px 0;
 
-.header{
-    padding: 10px 0;
-
-    .row{
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-    }
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+  }
 }
 
 .userinfo {
-    padding-top: 40px;
-    color: var(--fg);
-    >div{
-        width: 100%;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 2px 8px;
-        padding-bottom: 16px;
-    }
+  padding-top: 40px;
+  color: var(--fg);
+  > div {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 8px;
+    padding-bottom: 16px;
+  }
 }
 .active {
   position: relative;
   padding-right: 20px;
 }
 
-.active > span{
-    font-size: 20px;
+.active > span {
+  font-size: 20px;
 }
 
 .karma {
-    padding: 16px 0;
-    //display: inline-block;
-    display: flex;
-    //float: right;
+  padding: 16px 0;
+  //display: inline-block;
+  display: flex;
+  //float: right;
 }
 
 .controls {
-   // padding: 10px 0;
-    margin: 20px -10px 0;
+  // padding: 10px 0;
+  margin: 20px -10px 0;
 }
 
 .control {
-    display: inline-block;
-    //margin-right: 20px;
-    padding: 4px 10px;
-    &.active {
-        color: var(--fg);
-        font-weight: bold;
-    }
+  display: inline-block;
+  //margin-right: 20px;
+  padding: 4px 10px;
+  &.active {
+    color: var(--fg);
+    font-weight: bold;
+  }
 }
 
 .registered {
@@ -64,67 +63,67 @@
 }
 
 .username {
-    font-size: 40px;
+  font-size: 40px;
 }
 
 .name {
-    font-size: 25px;
+  font-size: 25px;
 }
 
 .userinfo .bio {
-    margin-top: 80px;
-    display: block;
+  margin-top: 80px;
+  display: block;
 
-    .controls {
-        margin-top: 20px;
-    }
+  .controls {
+    margin-top: 20px;
+  }
 
-    svg {
-        margin-left: 12px;
-        margin-right: 4px;
-    }
+  svg {
+    margin-left: 12px;
+    margin-right: 4px;
+  }
 }
 
 .active .tooltipText {
-    visibility: hidden;
-    position: absolute;
-    z-index: 2;
-    width: 180px;
-    height: fit-content;
-    color: var(--fgSoftest);
-    text-align: center;
-    font-size: 14px;
-    background-color: var(--bg);
-    border-radius: 4px;
-    border-color: var(--disabled-fg);
-    border-width: 1px;
-    border-style: solid;
-    padding: 10px 15px 10px 15px;
+  visibility: hidden;
+  position: absolute;
+  z-index: 2;
+  width: 180px;
+  height: fit-content;
+  color: var(--fgSoftest);
+  text-align: center;
+  font-size: 14px;
+  background-color: var(--bg);
+  border-radius: 4px;
+  border-color: var(--disabled-fg);
+  border-width: 1px;
+  border-style: solid;
+  padding: 10px 15px 10px 15px;
 
-    bottom: 35px;
-    left: -50%;
+  bottom: 35px;
+  left: -50%;
 
-    opacity: 0;
-    transition: opacity 0.5s;
+  opacity: 0;
+  transition: opacity 0.5s;
 
-    font-weight: bold;
+  font-weight: bold;
 }
 
 .active .tooltipText::after {
-    content: "";
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    margin-left: -5px;
-    margin-top: 1px;
-    border-width: 8px;
-    border-style: solid;
-    border-color: var(--disabled-fg) transparent transparent transparent;
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  margin-top: 1px;
+  border-width: 8px;
+  border-style: solid;
+  border-color: var(--disabled-fg) transparent transparent transparent;
 }
 
 .active:hover .tooltipText {
-    visibility: visible;
-    opacity: 1;
+  visibility: visible;
+  opacity: 1;
 }
 
 @media only screen and (max-width: 1180px) {

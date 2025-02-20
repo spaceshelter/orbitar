@@ -3,6 +3,7 @@ WORKDIR /backend
 COPY package*.json ./
 RUN npm install
 COPY . .
+ENV DISABLE_ESLINT_PLUGIN=true
 RUN npm install && npm run build && rm -rf src
 
 FROM node:18

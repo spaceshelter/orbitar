@@ -1,14 +1,15 @@
-import React, {useEffect} from 'react';
-import {Karma} from '../Components/Karma';
+import React, { useEffect } from 'react'
+
+import { Karma } from '../Components/Karma'
 
 export default function KarmaCalculatorPage() {
-    useEffect(() => {
-        document.title = 'Карма';
-    }, []);
+  useEffect(() => {
+    document.title = 'Карма'
+  }, [])
 
-    return (
-        <div >
-            <Karma />
-        </div>
-    );
+  return (
+    <div>
+      <Karma />
+    </div>
+  )
 }

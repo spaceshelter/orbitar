@@ -1,0 +1,22 @@
+printWidth: 120
+semi: false
+singleQuote: true
+jsxSingleQuote: true
+trailingComma: "all"
+useTabs: false
+tabWidth: 2
+bracketSpacing: true
+bracketSameLine: false
+arrowParens: "always"
+endOfLine: "lf"
+quoteProps: "as-needed"
+plugins:
+  - "@ianvs/prettier-plugin-sort-imports"
+importOrder:
+  - ^(react|react-router-dom)$
+  - ""
+  - <THIRD_PARTY_MODULES>
+  - ""
+  - ^(?!.*[.](css|scss|svg)$)[./].*$
+  - ""
+  - .(css|scss|svg)$
