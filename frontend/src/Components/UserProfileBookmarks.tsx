@@ -48,25 +48,15 @@ export default function UserProfileBookmarks(props: UserProfileBookmarksProps) {
     }
   }, [search])
 
-  const { posts, loading, pages, error, updatePost } = useFeed(
+  const { posts, loading, pages, error } = useFeed(
     props.username,
-    'user-profile',
+    'user-bookmarks',
     page,
     perpage,
     undefined,    // setSorting callback parameter
     undefined,    // sorting parameter
     filter || undefined
   )
-
-  /*const handlePostEdit = async (post: PostInfo, text: string, title?: string) => {
-    const editPost = async (title: string, text: string) => {
-      const result = await api.postAPI.edit(post.id, title, text)
-      updatePost(post.id, result)
-      return result.content
-    }
-
-    return await editPost(title || '', text)
-  }*/
 
   const params: Record<string, string> = {}
   if (filter) {
@@ -98,8 +88,6 @@ export default function UserProfileBookmarks(props: UserProfileBookmarksProps) {
                     key={post.id}
                     post={post}
                     showSite={true}
-                    //onChange={updatePost}
-                    //onEdit={handlePostEdit}
                     autoCut={LARGE_AUTO_CUT}
                   />
                 ))}
