@@ -44,10 +44,12 @@
   flex-direction: column;
   align-items: center;
 
-  h2, h3, h4, p {
+  h2,
+  h3,
+  h4,
+  p {
     margin: 0;
   }
-
 
   .logoContainer {
     width: 120px;
@@ -178,4 +180,3 @@
 .author {
   display: inline-block;
 }
-

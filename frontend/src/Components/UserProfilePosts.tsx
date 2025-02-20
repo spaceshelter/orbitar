@@ -1,99 +1,130 @@
-import React, {useEffect, useRef, useState} from 'react';
-import styles from '../Pages/FeedPage.module.scss';
-import feedStyles from '../Pages/FeedPage.module.scss';
-import PostComponent from '../Components/PostComponent';
-import Paginator from '../Components/Paginator';
-import {useLocation, useSearchParams} from 'react-router-dom';
-import {useFeed} from '../API/use/useFeed';
-import {useDebouncedCallback} from 'use-debounce';
-import {LARGE_AUTO_CUT} from './ContentComponent';
-import {useAPI} from '../AppState/AppState';
-import {PostInfo} from '../Types/PostInfo';
+import React, { useEffect, useRef, useState } from 'react'
+import { useLocation, useSearchParams } from 'react-router-dom'
+
+import { useDebouncedCallback } from 'use-debounce'
+
+import { useFeed } from '../API/use/useFeed'
+import { useAPI } from '../AppState/AppState'
+import Paginator from '../Components/Paginator'
+import PostComponent from '../Components/PostComponent'
+import { PostInfo } from '../Types/PostInfo'
+import { LARGE_AUTO_CUT } from './ContentComponent'
+
+import styles from '../Pages/FeedPage.module.scss'
+import feedStyles from '../Pages/FeedPage.module.scss'
 
 type UserProfilePostsProps = {
-  username: string;
-};
+  username: string
+}
 
 export default function UserProfilePosts(props: UserProfilePostsProps) {
-    const api = useAPI();
-    const [searchParams, setSearchParams] = useSearchParams();
-    const perpage = 20;
-    const page = parseInt(searchParams.get('page') || '1');
-    const defaultFilter = searchParams.get('filter') as string;
-    const [filter, setFilter] = useState(defaultFilter || null);
-    const {search} = useLocation();
-    const filterInputRef = useRef<HTMLInputElement>(null);
+  const api = useAPI()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const perpage = 20
+  const page = parseInt(searchParams.get('page') || '1')
+  const defaultFilter = searchParams.get('filter') as string
+  const [filter, setFilter] = useState(defaultFilter || null)
+  const { search } = useLocation()
+  const filterInputRef = useRef<HTMLInputElement>(null)
 
-    const setDebouncedFilter = useDebouncedCallback((value: string) => {
-        setFilter(value);
-        setSearchParams({filter: value});
-    }, 1000);
+  const setDebouncedFilter = useDebouncedCallback((value: string) => {
+    setFilter(value)
+    setSearchParams({ filter: value })
+  }, 1000)
 
-    const handleFilterChange = (e: React.FormEvent<HTMLInputElement>) => {
-        if (e.nativeEvent instanceof KeyboardEvent && e.nativeEvent.key === 'Enter') {
-            const value = e.currentTarget.value;
-            setFilter(value);
-            setSearchParams({filter: value});
-        } else {
-            setDebouncedFilter(e.currentTarget.value);
-        }
-    };
+  const handleFilterChange = (e: React.FormEvent<HTMLInputElement>) => {
+    if (e.nativeEvent instanceof KeyboardEvent && e.nativeEvent.key === 'Enter') {
+      const value = e.currentTarget.value
+      setFilter(value)
+      setSearchParams({ filter: value })
+    } else {
+      setDebouncedFilter(e.currentTarget.value)
+    }
+  }
 
-    useEffect(() => {
-      const newSearchParams = new URLSearchParams(search);
-      const newFilterValue = newSearchParams.get('filter') as string;
-      setFilter(newFilterValue);
-      if (filterInputRef.current) {
-        filterInputRef.current.value = newFilterValue;
+  useEffect(() => {
+    const newSearchParams = new URLSearchParams(search)
+    const newFilterValue = newSearchParams.get('filter') as string
+    setFilter(newFilterValue)
+    if (filterInputRef.current) {
+      filterInputRef.current.value = newFilterValue
+    }
+  }, [search])
+
+  const { posts, loading, pages, error, updatePost } = useFeed(
+    props.username,
+    'user-profile',
+    page,
+    perpage,
+    undefined,
+    undefined,
+    filter || '',
+  )
+  useEffect(() => {
+    window.scrollTo({ top: 0 })
+  }, [page])
+
+  const params = filter ? { filter } : undefined
+
+  const handlePostEdit = async (post: PostInfo, text: string, title?: string): Promise<PostInfo | undefined> => {
+    try {
+      const res = await api.postAPI.editPost(post.id, title || '', text)
+      if (!res) return undefined
+
+      const updatedPost: PostInfo = {
+        ...post,
+        content: res.post.content,
+        title: res.post.title,
       }
-    }, [search]);
 
-  const { posts, loading, pages, error, updatePost } = useFeed(props.username, 'user-profile', page, perpage, undefined, undefined, filter || '');
-    useEffect(() => {
-        window.scrollTo({ top: 0 });
-    }, [page]);
+      // Update the post in local state
+      updatePost(post.id, updatedPost)
 
-    const params = filter ? {filter} : undefined;
+      return updatedPost
+    } catch (err) {
+      console.log('Could not edit post', err)
+      throw err
+    }
+  }
 
-    const handlePostEdit = async (post: PostInfo, text: string, title?: string): Promise<PostInfo | undefined> => {
-      try {
-          const res = await api.postAPI.editPost(post.id, title || '', text);
-          if (!res) return undefined;
-
-          const updatedPost: PostInfo = {
-              ...post,
-              content: res.post.content,
-              title: res.post.title
-          };
-
-          // Update the post in local state
-          updatePost(post.id, updatedPost);
-
-          return updatedPost;
-      } catch (err) {
-          console.log('Could not edit post', err);
-          throw err;
-      }
-  };
-
-    return (
-        <div className={styles.container}>
-          <div className={feedStyles.filter}>
-            <input ref={filterInputRef} onKeyUp={handleFilterChange} onChange={handleFilterChange} placeholder={'фильтровать'} type="search" defaultValue={defaultFilter} />
-          </div>
-            <div className={styles.feed}>
-                {loading ? <div className={styles.loading}></div> :
-                 <>
-                    {error && <div className={styles.error}>{styles.error}</div> }
-                    {posts && <div className={styles.posts}>
-                        {posts.map(post => <PostComponent key={post.id} post={post} showSite={true} onChange={updatePost} onEdit={handlePostEdit}
-                                                          autoCut={LARGE_AUTO_CUT} />)}
-                    </div>}
-                    <div className={styles.paginatorContainer}>
-                      <Paginator page={page} pages={pages} base={`/u/${props.username}/posts`} queryStringParams={params} />
-                    </div>
-                </>}
+  return (
+    <div className={styles.container}>
+      <div className={feedStyles.filter}>
+        <input
+          ref={filterInputRef}
+          onKeyUp={handleFilterChange}
+          onChange={handleFilterChange}
+          placeholder={'фильтровать'}
+          type='search'
+          defaultValue={defaultFilter}
+        />
+      </div>
+      <div className={styles.feed}>
+        {loading ? (
+          <div className={styles.loading}></div>
+        ) : (
+          <>
+            {error && <div className={styles.error}>{styles.error}</div>}
+            {posts && (
+              <div className={styles.posts}>
+                {posts.map((post) => (
+                  <PostComponent
+                    key={post.id}
+                    post={post}
+                    showSite={true}
+                    onChange={updatePost}
+                    onEdit={handlePostEdit}
+                    autoCut={LARGE_AUTO_CUT}
+                  />
+                ))}
+              </div>
+            )}
+            <div className={styles.paginatorContainer}>
+              <Paginator page={page} pages={pages} base={`/u/${props.username}/posts`} queryStringParams={params} />
             </div>
-        </div>
-    );
+          </>
+        )}
+      </div>
+    </div>
+  )
 }

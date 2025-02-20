@@ -1,96 +1,105 @@
 .rating {
-    display: flex;
-    align-items: center;
-    font-size: 13px;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
 
-    .value {
-        min-width: 32px;
-        flex: 1;
-        text-align: center;
-        font-weight: bold;
-        cursor: pointer;
-        color: var(--fgSoftest);
-        &.minus { color: var(--danger); }
-        &.plus  { color: var(--primary); }
+  .value {
+    min-width: 32px;
+    flex: 1;
+    text-align: center;
+    font-weight: bold;
+    cursor: pointer;
+    color: var(--fgSoftest);
+    &.minus {
+      color: var(--danger);
     }
-    button {
-        height: 24px;
-        width: 24px;
-        background: none;
-        margin: 0;
-        padding: 0;
-        border: none;
-        font-size: 24px;
-        color: var(--fgSoftest);
-        &.minus { color: var(--danger); }
-        &.plus { color: var(--primary); }
-        &.dis {  color: var(--fgGhost); }
+    &.plus {
+      color: var(--primary);
     }
-    button:disabled {
-        color: var(--fgAlmostInvisible);
+  }
+  button {
+    height: 24px;
+    width: 24px;
+    background: none;
+    margin: 0;
+    padding: 0;
+    border: none;
+    font-size: 24px;
+    color: var(--fgSoftest);
+    &.minus {
+      color: var(--danger);
     }
+    &.plus {
+      color: var(--primary);
+    }
+    &.dis {
+      color: var(--fgGhost);
+    }
+  }
+  button:disabled {
+    color: var(--fgAlmostInvisible);
+  }
 }
 
-
 a.username {
-    color: var(--fg);
-    font-weight: normal;
+  color: var(--fg);
+  font-weight: normal;
 
-    display: block;
-    max-width: 100px;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    line-height: 1.5em;
+  display: block;
+  max-width: 100px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: 1.5em;
 
-    &:before {
-        display: none;
-    }
+  &:before {
+    display: none;
+  }
 
-    &:hover {
-        color: var(--primary);
-    }
+  &:hover {
+    color: var(--primary);
+  }
 }
 
 .list {
-    position: absolute;
-    display: flex;
-    width: 312px;
-    min-height: 240px;
-    max-height: 320px;
-    background: var(--elevated);
-    box-shadow: 0 0 4px var(--shadow);
-    border-radius: 8px;
-    flex-direction: column;
-    z-index: 100;
+  position: absolute;
+  display: flex;
+  width: 312px;
+  min-height: 240px;
+  max-height: 320px;
+  background: var(--elevated);
+  box-shadow: 0 0 4px var(--shadow);
+  border-radius: 8px;
+  flex-direction: column;
+  z-index: 100;
 }
 
 .listUp {
-    display: flex;
-    align-items: center;
-    flex: 0 0 92px;
+  display: flex;
+  align-items: center;
+  flex: 0 0 92px;
 }
 .listValue {
-    text-align: center;
-    min-width: 40px;
-    font-size: 25px;
-    font-weight: bold;
-    color: var(--primary);
-    margin-left: 20px;
-    margin-right: 20px;
+  text-align: center;
+  min-width: 40px;
+  font-size: 25px;
+  font-weight: bold;
+  color: var(--primary);
+  margin-left: 20px;
+  margin-right: 20px;
 }
 .listValuePlus {
-    color: var(--primary);
+  color: var(--primary);
 }
 .listValueMinus {
-    color: var(--fg);
+  color: var(--fg);
 }
 
 .listDetails {
-    border-left: 1px solid var(--fgGhost);
-    color: var(--fg);
-    padding: 5px 0 5px 18px;
-    font-size: 13px;
+  border-left: 1px solid var(--fgGhost);
+  color: var(--fg);
+  padding: 5px 0 5px 18px;
+  font-size: 13px;
 }
 
 .listEmpty {
@@ -98,39 +107,41 @@ a.username {
 }
 
 .listDown {
-    display: flex;
-    overflow: auto;
-    background: var(--dim1);
-    min-height: 100%;
-    flex-grow: 1;
+  display: flex;
+  overflow: auto;
+  background: var(--dim1);
+  min-height: 100%;
+  flex-grow: 1;
 }
 .listScrollContainer {
-    display: flex;
-    align-items: flex-start;
-    gap: 4px;
-    flex: 1  auto;
-    min-height: 100%;
-    overflow-x: hidden;
-    overflow-y: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  flex: 1 auto;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
-.listMinus, .listPlus {
-    flex: 0 1 50%;
-    font-size: 13px;
-    padding: 12px;
-    line-height: 1.5em;height: auto;
-    min-height: 100%;
-    box-sizing: border-box;
-    >div{
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
+.listMinus,
+.listPlus {
+  flex: 0 1 50%;
+  font-size: 13px;
+  padding: 12px;
+  line-height: 1.5em;
+  height: auto;
+  min-height: 100%;
+  box-sizing: border-box;
+  > div {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
 }
 .listMinus {
-    border-right: 1px solid var(--bg);
+  border-right: 1px solid var(--bg);
 }
 
 .ratingWrapper {
-    position: relative;
+  position: relative;
 }

@@ -1,36 +1,38 @@
-import React from 'react';
-import useNoScroll from '../API/use/useNoScroll'; // Assuming you have an Overlay.css file for styling
-import styles from './Overlay.module.scss';
-import {useHotkeys} from 'react-hotkeys-hook';
+import React from 'react'
 
-let overlayCount = 0;
+import { useHotkeys } from 'react-hotkeys-hook'
 
-const Overlay = (props: {
-    onClick: () => void,
-    zIndex?: number
-}) => {
-    let currentOverlayIdx: number | undefined = undefined;
+import useNoScroll from '../API/use/useNoScroll' // Assuming you have an Overlay.css file for styling
 
-    useNoScroll();
-    useHotkeys('esc', () => {
-        if (currentOverlayIdx === overlayCount) {
-            props.onClick();
-        }
-    });
+import styles from './Overlay.module.scss'
 
-    React.useEffect(() => {
-        overlayCount++;
-        currentOverlayIdx = overlayCount;
-        return () => {
-            overlayCount--;
-        };
-    }, []);
+let overlayCount = 0
 
-    return (
-        <div className={styles.overlay}
-             { ...(props.zIndex ? {style: {zIndex: props.zIndex}} : {}) }
-             onClick={props.onClick}></div>
-    );
-};
+const Overlay = (props: { onClick: () => void; zIndex?: number }) => {
+  let currentOverlayIdx: number | undefined = undefined
 
-export default Overlay;
+  useNoScroll()
+  useHotkeys('esc', () => {
+    if (currentOverlayIdx === overlayCount) {
+      props.onClick()
+    }
+  })
+
+  React.useEffect(() => {
+    overlayCount++
+    currentOverlayIdx = overlayCount
+    return () => {
+      overlayCount--
+    }
+  }, [])
+
+  return (
+    <div
+      className={styles.overlay}
+      {...(props.zIndex ? { style: { zIndex: props.zIndex } } : {})}
+      onClick={props.onClick}
+    ></div>
+  )
+}
+
+export default Overlay

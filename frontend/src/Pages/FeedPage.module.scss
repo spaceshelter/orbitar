@@ -1,97 +1,106 @@
 .container {
-
 }
 
 .paginatorContainer {
-    text-align: center;
+  text-align: center;
 }
 
 .filter {
-    width: 100%;
+  width: 100%;
 
-    input[type='search'] {
-        width: 100%;
-        display: block;
-        box-sizing: border-box;
-        padding: 5px;
-        font-size: 16px;
-        margin-right: 8px;
-        flex-grow: 1;
-    }
+  input[type='search'] {
+    width: 100%;
+    display: block;
+    box-sizing: border-box;
+    padding: 5px;
+    font-size: 16px;
+    margin-right: 8px;
+    flex-grow: 1;
+  }
 }
 
 .feed {
-    width: 100%;
-    max-width: 880px;
-    margin: 16px auto 0;
-    /*margin-left: auto;*/
-    /*margin-left: clamp(-200px, auto,200px);*/
-    /*margin-right: clamp(-200px, auto,200px);*/
+  width: 100%;
+  max-width: 880px;
+  margin: 16px auto 0;
+  /*margin-left: auto;*/
+  /*margin-left: clamp(-200px, auto,200px);*/
+  /*margin-right: clamp(-200px, auto,200px);*/
 }
 
-.feedControlsWrapper{
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 40px;
+.feedControlsWrapper {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 40px;
 }
 .feedControls {
-    margin: 20px 0;
-    text-transform: uppercase;
-    font-size: 14px;
-    color: var(--fgSoft);
+  margin: 20px 0;
+  text-transform: uppercase;
+  font-size: 14px;
+  color: var(--fgSoft);
 }
 
-.feedControls a{
-    cursor: pointer;
-    i{
-        font-size: 16px;
-        margin-right: 4px;
-        color: var(--fgSoft);
-    }
-    margin: 0 8px;
+.feedControls a {
+  cursor: pointer;
+  i {
+    font-size: 16px;
+    margin-right: 4px;
     color: var(--fgSoft);
-    &:first-child{margin-left: 0;}
-    &:last-child{margin-right: 0;}
+  }
+  margin: 0 8px;
+  color: var(--fgSoft);
+  &:first-child {
+    margin-left: 0;
+  }
+  &:last-child {
+    margin-right: 0;
+  }
 
-    &.active{
-        font-weight: 600;
-        //pointer-events: none;
+  &.active {
+    font-weight: 600;
+    //pointer-events: none;
+  }
+  &.active,
+  &:hover {
+    color: var(--primary);
+    i {
+      color: var(--primary);
     }
-    &.active, &:hover{
-        color: var(--primary);
-        i{color: var(--primary); }
-    }
+  }
 }
-
 
 .loading {
-    position: fixed;
-    top: 60px;
+  position: fixed;
+  top: 60px;
+  height: 4px;
+  width: 100vw;
+  left: 0;
+  &::after {
+    content: '';
+    display: block;
+    background-color: var(--primary);
+    width: 50%;
     height: 4px;
-    width: 100vw;
-    left: 0;
-    &::after{
-        content: '';
-        display: block;
-        background-color: var(--primary);
-        width: 50%;
-        height: 4px;
-        position: absolute;
-        top: 0;
-        left:-50%;
-        animation-duration: 1s;
-        animation-fill-mode: forwards;
-        animation-iteration-count: infinite;
-        animation-name: preload;
-        animation-timing-function: linear;
-    }
+    position: absolute;
+    top: 0;
+    left: -50%;
+    animation-duration: 1s;
+    animation-fill-mode: forwards;
+    animation-iteration-count: infinite;
+    animation-name: preload;
+    animation-timing-function: linear;
+  }
 }
 
 @keyframes preload {
-    0% { left: -60%; }
-    100% { left: 100%; }
+  0% {
+    left: -60%;
+  }
+  100% {
+    left: 100%;
+  }
 }
 
-.posts>div{
-    color: var(--fg);
+.posts > div {
+  color: var(--fg);
 }

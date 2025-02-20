@@ -1,5 +1,5 @@
-export type ContentFormat = 'html' | 'source';
+export type ContentFormat = 'html' | 'source'
 export enum EditFlag {
-    original,
-    edited
+  original,
+  edited,
 }

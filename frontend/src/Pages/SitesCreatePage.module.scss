@@ -1,5 +1,4 @@
 .container {
-
   height: 100%;
   margin: auto;
   max-width: 720px;
@@ -9,7 +8,8 @@
       color: var(--danger);
     }
 
-    .site, .name {
+    .site,
+    .name {
       display: flex;
       margin: 10px 0;
       align-items: center;

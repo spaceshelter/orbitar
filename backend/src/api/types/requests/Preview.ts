@@ -1,7 +1,7 @@
 export type PostPreviewRequest = {
-    content: string;
-};
+  content: string
+}
 
 export type PostPreviewResponse = {
-    content: string;
-};
+  content: string
+}

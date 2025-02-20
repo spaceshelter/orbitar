@@ -1,9 +1,10 @@
-import DB from '../DB';
-import { OAuth2ClientRaw } from '../types/OAuth2';
-import { ResultSetHeader } from 'mysql2';
+import { ResultSetHeader } from 'mysql2'
+
+import DB from '../DB'
+import { OAuth2ClientRaw } from '../types/OAuth2'
 
 export default class OAuth2Repository {
-  private db: DB;
+  private db: DB
 
   // Define a base SQL query that both methods share.
   private clientBaseQuery = `
@@ -16,44 +17,52 @@ export default class OAuth2Repository {
     left outer join oauth_consents
       on oauth_consents.client_id = oauth_clients.client_id
          and oauth_consents.user_id = :user_id
-  `;
+  `
 
   constructor(db: DB) {
-    this.db = db;
+    this.db = db
   }
 
   async getClientByClientId(clientId: string): Promise<OAuth2ClientRaw | undefined> {
-    return await this.db.fetchOne<OAuth2ClientRaw>(
-      'select * from oauth_clients where client_id = :client_id',
-      { client_id: clientId }
-    );
+    return await this.db.fetchOne<OAuth2ClientRaw>('select * from oauth_clients where client_id = :client_id', {
+      client_id: clientId,
+    })
   }
 
   async getClients(authorId: number, consentUserId: number): Promise<OAuth2ClientRaw[]> {
-    return await this.db.fetchAll<OAuth2ClientRaw>(`
+    return await this.db.fetchAll<OAuth2ClientRaw>(
+      `
       ${this.clientBaseQuery}
       where oauth_clients.user_id = :author_id or oauth_consents.user_id = :user_id
-    `, {
-      author_id: authorId,
-      user_id: consentUserId,
-    });
+    `,
+      {
+        author_id: authorId,
+        user_id: consentUserId,
+      },
+    )
   }
 
   async getClientByClientIdWithConsent(clientId: string, consentUserId: number): Promise<OAuth2ClientRaw | undefined> {
-    return await this.db.fetchOne<OAuth2ClientRaw>(`
+    return await this.db.fetchOne<OAuth2ClientRaw>(
+      `
       ${this.clientBaseQuery}
       where oauth_clients.client_id = :client_id
-    `, {
-      client_id: clientId,
-      user_id: consentUserId
-    });
+    `,
+      {
+        client_id: clientId,
+        user_id: consentUserId,
+      },
+    )
   }
 
   async getNumberOfClientsCreatedByUser(userId: number): Promise<number> {
-    const numberOfClientByUser = await this.db.fetchOne<{ cnt: string }>(`select count(*) as cnt from oauth_clients where user_id = :user_id`, {
-      user_id: userId
-    });
-    return parseInt(numberOfClientByUser?.cnt || '0');
+    const numberOfClientByUser = await this.db.fetchOne<{ cnt: string }>(
+      `select count(*) as cnt from oauth_clients where user_id = :user_id`,
+      {
+        user_id: userId,
+      },
+    )
+    return parseInt(numberOfClientByUser?.cnt || '0')
   }
 
   async createClient(
@@ -64,7 +73,7 @@ export default class OAuth2Repository {
     clientId: string,
     clientSecretHash: string,
     redirectUris: string,
-    userId: number
+    userId: number,
   ): Promise<OAuth2ClientRaw> {
     await this.db.query(
       `
@@ -82,9 +91,9 @@ export default class OAuth2Repository {
         initial_authorization_url: initialAuthorizationUrl,
         redirect_uris: redirectUris,
         user_id: userId,
-        grants: 'authorization_code,refresh_token'
-      }
-    );
+        grants: 'authorization_code,refresh_token',
+      },
+    )
 
     return {
       name,
@@ -95,29 +104,30 @@ export default class OAuth2Repository {
       initial_authorization_url: initialAuthorizationUrl,
       redirect_uris: redirectUris,
       user_id: userId,
-      grants: 'authorization_code,refresh_token'
-    } as OAuth2ClientRaw;
+      grants: 'authorization_code,refresh_token',
+    } as OAuth2ClientRaw
   }
 
   async updateClientSecret(newSecretHash: string, clientId: string, userId: number): Promise<boolean> {
-    return await this.db.query<ResultSetHeader>(
-      'update oauth_clients set client_secret_hash = :new_secret_hash where client_id = :client_id and user_id = :user_id',
-      {
-        new_secret_hash: newSecretHash,
-        client_id: clientId,
-        user_id: userId,
-      }
-    ).then(result => result.affectedRows > 0);
+    return await this.db
+      .query<ResultSetHeader>(
+        'update oauth_clients set client_secret_hash = :new_secret_hash where client_id = :client_id and user_id = :user_id',
+        {
+          new_secret_hash: newSecretHash,
+          client_id: clientId,
+          user_id: userId,
+        },
+      )
+      .then((result) => result.affectedRows > 0)
   }
 
   async deleteClient(clientId: string, authorId: number): Promise<boolean> {
-    return this.db.query<ResultSetHeader>(
-      'delete from oauth_clients where client_id = :client_id and user_id = :user_id',
-      {
+    return this.db
+      .query<ResultSetHeader>('delete from oauth_clients where client_id = :client_id and user_id = :user_id', {
         client_id: clientId,
         user_id: authorId,
-      }
-    ).then(result => result.affectedRows > 0);
+      })
+      .then((result) => result.affectedRows > 0)
   }
 
   async updateConsentLastRevokeDate(clientId: string, userId: number): Promise<boolean> {
@@ -126,20 +136,22 @@ export default class OAuth2Repository {
       {
         client_id: clientId,
         user_id: userId,
-      }
-    );
-    return result.affectedRows > 0;
+      },
+    )
+    return result.affectedRows > 0
   }
 
   async updateClientLogoUrl(clientId: string, userId: number, url: string): Promise<boolean> {
-    return await this.db.query<ResultSetHeader>(
-      'update oauth_clients set logo_url=:url where client_id=:client_id and user_id=:user_id',
-      {
-        url,
-        client_id: clientId,
-        user_id: userId,
-      }
-    ).then(result => result.affectedRows > 0);
+    return await this.db
+      .query<ResultSetHeader>(
+        'update oauth_clients set logo_url=:url where client_id=:client_id and user_id=:user_id',
+        {
+          url,
+          client_id: clientId,
+          user_id: userId,
+        },
+      )
+      .then((result) => result.affectedRows > 0)
   }
 
   async saveOrUpdateConsent(clientId: string, userId: number, scope: string): Promise<boolean> {
@@ -147,39 +159,41 @@ export default class OAuth2Repository {
       // Try to fetch an existing consent record.
       const existingConsent = await this.db.fetchOne<{ scope: string }>(
         'select scope from oauth_consents where user_id = :user_id and client_id = :client_id',
-        { user_id: userId, client_id: clientId }
-      );
+        { user_id: userId, client_id: clientId },
+      )
 
       if (existingConsent) {
         // Merge the scopes while avoiding duplicates.
-        const currentScopes = (existingConsent.scope || '').split(' ').filter(s => s.trim());
-        const newScopes = scope.split(' ').filter(s => s.trim());
-        const mergedScopes = Array.from(new Set([...currentScopes, ...newScopes]));
-        const mergedScopeStr = mergedScopes.join(' ');
+        const currentScopes = (existingConsent.scope || '').split(' ').filter((s) => s.trim())
+        const newScopes = scope.split(' ').filter((s) => s.trim())
+        const mergedScopes = Array.from(new Set([...currentScopes, ...newScopes]))
+        const mergedScopeStr = mergedScopes.join(' ')
 
         await this.db.query(
           'update oauth_consents set scope = :scope where user_id = :user_id and client_id = :client_id',
-          { scope: mergedScopeStr, user_id: userId, client_id: clientId }
-        );
+          { scope: mergedScopeStr, user_id: userId, client_id: clientId },
+        )
       } else {
         // No record existing: insert a new record.
         await this.db.query(
           'insert into oauth_consents (user_id, client_id, scope) values (:user_id, :client_id, :scope)',
-          { user_id: userId, client_id: clientId, scope }
-        );
+          { user_id: userId, client_id: clientId, scope },
+        )
       }
-      return true;
+      return true
     } catch (error) {
-      console.error('Failed to save oauth consent', error);
-      return false;
+      console.error('Failed to save oauth consent', error)
+      return false
     }
   }
 
   async resetConsentScope(clientId: string, userId: number): Promise<boolean> {
-    return await this.db.query<ResultSetHeader>(
-      `update oauth_consents set scope = '' where user_id = :user_id and client_id = :client_id`,
-      { user_id: userId, client_id: clientId }
-    ).then(result => result.affectedRows > 0);
+    return await this.db
+      .query<ResultSetHeader>(
+        `update oauth_consents set scope = '' where user_id = :user_id and client_id = :client_id`,
+        { user_id: userId, client_id: clientId },
+      )
+      .then((result) => result.affectedRows > 0)
   }
 
   async hasOwnApps(userId: number): Promise<boolean> {
@@ -194,36 +208,39 @@ export default class OAuth2Repository {
               WHERE user_id = :userId
                 AND scope != ''
               LIMIT 1) as t`,
-      { userId }
-    );
-    return res?.cnt > 0;
+      { userId },
+    )
+    return res?.cnt > 0
   }
 
   async editClient(
     clientId: string,
     description: string,
     redirectUris: string,
-    initialAuthorizationUrl: string
+    initialAuthorizationUrl: string,
   ): Promise<boolean> {
-    return await this.db.query<ResultSetHeader>(`
+    return await this.db
+      .query<ResultSetHeader>(
+        `
       update oauth_clients set
         description = :description,
         redirect_uris = :redirect_uris,
         initial_authorization_url = :initial_authorization_url
       where client_id = :client_id`,
-      {
-        description: description,
-        redirect_uris: redirectUris,
-        initial_authorization_url: initialAuthorizationUrl,
-        client_id: clientId,
-      }
-    ).then(result => result.affectedRows > 0);
+        {
+          description: description,
+          redirect_uris: redirectUris,
+          initial_authorization_url: initialAuthorizationUrl,
+          client_id: clientId,
+        },
+      )
+      .then((result) => result.affectedRows > 0)
   }
 
   async getClientsByClientIds(clientIds: string[], userId: number) {
     return await this.db.fetchAll<OAuth2ClientRaw>(
       `${this.clientBaseQuery} where oauth_clients.client_id in (:client_ids)`,
-      { client_ids: clientIds, user_id: userId }
-    );
+      { client_ids: clientIds, user_id: userId },
+    )
   }
 }

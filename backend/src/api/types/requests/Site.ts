@@ -1,9 +1,9 @@
-import {SiteWithUserInfoEntity} from '../entities/SiteEntity';
+import { SiteWithUserInfoEntity } from '../entities/SiteEntity'
 
 export type SiteRequest = {
-    site: string;
-};
+  site: string
+}
 
 export type SiteResponse = {
-    site: SiteWithUserInfoEntity;
-};
+  site: SiteWithUserInfoEntity
+}
