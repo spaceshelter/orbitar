@@ -42,7 +42,7 @@ export const UserPage = observer(() => {
   const isSettings = page === 'settings'
   const isApps = page === 'apps'
 
-  const isProfile = !isPosts && !isComments && !isInvites && !isKarma && !isSettings && !isApps
+  const isProfile = !isPosts && !isComments && !isInvites && !isKarma && !isSettings && !isApps && !isBookmarks
 
   useEffect(() => {
     if (state.status === 'ready') {
