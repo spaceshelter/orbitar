@@ -24,6 +24,7 @@ type UserProfileResponse = {
   trialApprovers?: VoteListItemEntity[]
   numberOfPosts: number
   numberOfComments: number
+  numberOfBookmarks: string
   numberOfInvitesAvailable?: number
   isBarmalini?: boolean
   publicKey: string

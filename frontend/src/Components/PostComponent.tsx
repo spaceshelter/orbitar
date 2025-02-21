@@ -104,12 +104,29 @@ export default function PostComponent(props: PostComponentProps) {
       .then(({ bookmark }) => {
         if (props.onChange) {
           props.onChange(props.post.id, { bookmark })
+        }      
+      if (window.location.pathname.includes('/profile/bookmarks') && !newState) {        
+        if (!newState) {
+          const postElement = document.querySelector(`[data-post-id="${id}"]`)
+          if (postElement) {
+            postElement.classList.add('fade-out')
+            setTimeout(() => {
+              postElement?.remove()
+            }, 300)
+          }
         }
-      })
+        const username = useAppState().userInfo?.username
+        if (username) {
+          api.user.userProfile(username)
+        }
+      }
+    })
       .catch(() => {
         props.post.bookmark = oldState
         toast.error('Кладмен мудак - закладка не найдена')
       })
+
+      setShowOptions(false)
   }
 
   const handleEditComplete = async (text: string) => {
@@ -150,7 +167,7 @@ export default function PostComponent(props: PostComponentProps) {
   }, [props.post])
 
   return (
-    <div className={'postComponent ' + styles.post} ref={contentRef}>
+    <div className={'postComponent ' + styles.post} ref={contentRef} data-post-id={id}>
       <div className={styles.header}>
         <SignatureComponent
           showSite={props.showSite}

@@ -58,5 +58,5 @@ export function BookmarkButton(props: ExtendedButtonProps) {
 }
 
 export function UnbookmarkButton(props: ExtendedButtonProps) {
-  return <BaseButton {...props} icon='unbookmark' label='Убрать из закладок' />
+  return <BaseButton {...props} icon='broken-heart' label='Убрать из закладок' />
 }

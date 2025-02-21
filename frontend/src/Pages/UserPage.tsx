@@ -148,7 +148,7 @@ export const UserPage = observer(() => {
             Комментарии ({profile.numberOfComments.toLocaleString()})
           </Link>
           <Link className={`${styles.control} ${isBookmarks ? styles.active : ''}`} to={base + '/bookmarks'}>
-          Закладки
+          Закладки ({profile.numberOfBookmarks.toLocaleString()})
           </Link>
           <Link className={`${styles.control} ${isKarma ? styles.active : ''}`} to={base + '/karma'}>
             Саморегуляция

@@ -96,11 +96,11 @@ export default class BookmarkRepository {
 
   async getBookmarkedPostsTotal(userId: number): Promise<string | undefined> {
     const result = await this.db.fetchOne<{ cnt: string }>(
-      `select count(*) from user_bookmarks where user_id=:user_id AND bookmark = 1`,
+      `select count(*) cnt from user_bookmarks where user_id=:user_id AND bookmark = 1`,
       {        
         user_id: userId,
       },
-    )
+    )    
     return result?.cnt
   }
 

@@ -212,6 +212,7 @@ export default class UserController {
       const trialProgress = await this.userManager.tryEndTrial(profileInfo.id, false)
       const numberOfPosts = (await this.postManager.getPostsByUserTotal(profileInfo.id, '')) || 0
       const numberOfComments = (await this.postManager.getUserCommentsTotal(profileInfo.id, '')) || 0
+      const numberOfBookmarks = (await this.postManager.getUserBookmarksTotal(profileInfo.id)) || 0
       const visitedDaysAgo = await this.userManager.getUserVisitedDaysAgo(profileInfo.id)
       const hasOwnApps = await this.oauthManager.hasOwnApps(profileInfo.id)
 
@@ -247,6 +248,7 @@ export default class UserController {
         trialProgress,
         numberOfPosts,
         numberOfComments,
+        numberOfBookmarks:numberOfBookmarks.toString(),
         numberOfInvitesAvailable,
         isBarmalini: this.userManager.isBarmaliniUser(profileInfo.id),
         publicKey,

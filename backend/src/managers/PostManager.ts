@@ -97,6 +97,12 @@ export default class PostManager {
     return { rawPosts: posts, total }
   }
 
+  async getUserBookmarksTotal(userId: number, filter = ''): Promise<string> {    
+    return await this.bookmarkRepository.getBookmarkedPostsTotal(
+      userId
+    )  
+  }
+
   getUserIdByPostId(postId: number): Promise<number | undefined> {
     return this.postRepository.getUserIdByPostId(postId)
   }
