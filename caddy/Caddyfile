@@ -3,7 +3,7 @@
 }
 
 (tls_on) {
-	tls {env.TLS_CERT_PATH} {env.TLS_KEY_PATH}
+	tls {$TLS_CERT_PATH} {$TLS_KEY_PATH}
 }
 
 (tls_) {
