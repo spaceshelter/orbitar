@@ -87,7 +87,7 @@ export default class PostManager {
     const posts = await this.feedManager.convertRawPosts(
       userId,
       rawPosts,
-      'source' 
+      'html' 
     )
     
     const total = await this.bookmarkRepository.getBookmarkedPostsTotal(
