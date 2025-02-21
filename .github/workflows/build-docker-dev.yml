@@ -17,24 +17,24 @@ jobs:
     strategy:
         matrix:
             dc-file: [compose.yml, compose-dev.yml]
-            tls: ["", "True"]
+            extra-env: ["", "TLS_ENABLED=''"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Build docker
-        env:
-          TLS_ENABLED: "${{ matrix.tls }}"
-        run: docker compose -f ${{ matrix.dc-file }} build --no-cache
+        run: ${{ matrix.extra-env }} docker compose -f ${{ matrix.dc-file }} build --no-cache
+
 
   validate-docker-compose:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dc-file: [ compose.yml, compose-dev.yml ]
+        extra-env: ["", "TLS_ENABLED=''"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate docker-compose.dev.yml
-        run: docker compose -f docker-compose.dev.yml config
-
-      - name: Validate docker-compose.ssl.dev.yml
-        run: docker compose -f docker-compose.ssl.dev.yml config
+      - name: Validate
+        run: ${{ matrix.extra-env }} docker compose -f ${{ matrix.dc-file }} config --quiet
