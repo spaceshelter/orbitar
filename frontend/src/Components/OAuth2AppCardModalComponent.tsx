@@ -1,4 +1,4 @@
-import React, { MouseEventHandler, useState } from 'react'
+import React, { MouseEventHandler, useEffect, useState } from 'react'
 
 import classNames from 'classnames'
 import { confirmAlert } from 'react-confirm-alert'
@@ -34,16 +34,26 @@ export function OAuthEmbeddedAppComponent(props: OAuthEmbeddedAppComponentProps)
   const appState = useAppState()
   const [client, setClient] = React.useState<OAuth2ClientEntity | null>(null)
   const [error, setError] = React.useState<string | null>(null)
+  const [openFullView, setOpenFullView] = React.useState(false)
 
-  const handleFullView = () => {
-    client &&
+  useEffect(() => {
+    if (client && openFullView) {
       appState.setModal(
         <OAuth2AppCardModalComponent
           client={client}
           disallowEditing={true}
-          onClose={() => appState.setModal(undefined)}
+          onClose={() => {
+            appState.setModal(undefined)
+            setOpenFullView(false)
+          }}
+          onClientUpdate={setClient}
         />,
       )
+    }
+  }, [client, openFullView])
+
+  const handleFullView = () => {
+    setOpenFullView(true)
   }
 
   React.useEffect(() => {
@@ -147,7 +157,17 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
 
   const handleInstallClick = () => {
     if (client.initialAuthorizationUrl) {
-      window.open(client.initialAuthorizationUrl, '_blank')
+      const authWindow = window.open(client.initialAuthorizationUrl, '_blank')
+      if (authWindow) {
+        const handleFocus = () => {
+          window.removeEventListener('focus', handleFocus)
+          api.oauth2Api.clearClientCache()
+          api.oauth2Api.getClientCached(client.clientId).then((updatedClient) => {
+            props.onClientUpdate?.(updatedClient)
+          })
+        }
+        window.addEventListener('focus', handleFocus)
+      }
     }
   }
 
