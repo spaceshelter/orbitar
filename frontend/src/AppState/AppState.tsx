@@ -114,6 +114,10 @@ export class AppState {
         this.userInfo = value;
     }
 
+    clearCachesOnLogout() {
+        this.api.oauth2Api.clearClientCache()
+    }
+
     @action
     setUserRestrictions(value: UserRestrictionsResponse) {
         this.userRestrictions = value;

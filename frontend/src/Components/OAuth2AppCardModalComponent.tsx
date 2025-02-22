@@ -137,6 +137,7 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
     api.oauth2Api
       .updateClientLogo(client.clientId, url)
       .then(() => {
+        api.oauth2Api.clearClientCache()
         props.onClientUpdate?.({ ...client, logoUrl: url })
       })
       .catch(() => {
@@ -174,6 +175,7 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
       api.oauth2Api
         .unauthorizeClient(client.clientId)
         .then((updatedClient) => {
+          api.oauth2Api.clearClientCache()
           props.onClientUpdate?.(updatedClient)
         })
         .catch(() => {
@@ -192,6 +194,7 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
               <UserProfileClientAppsCreateForm
                 editingClient={client}
                 onClientEditSuccess={(newClient) => {
+                  api.oauth2Api.clearClientCache()
                   props.onClientUpdate?.(newClient)
                   setEditing(false)
                 }}
