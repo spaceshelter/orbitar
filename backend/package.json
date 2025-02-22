@@ -77,5 +77,8 @@
     "validator": "^13.11.0",
     "web-push": "^3.5.0",
     "winston": "^3.7.2"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,scss,css}": "npx eslint --fix"
   }
 }
