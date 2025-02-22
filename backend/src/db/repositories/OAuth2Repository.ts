@@ -190,7 +190,7 @@ export default class OAuth2Repository {
   async resetConsentScope(clientId: string, userId: number): Promise<boolean> {
     return await this.db
       .query<ResultSetHeader>(
-        `update oauth_consents set scope = '' where user_id = :user_id and client_id = :client_id`,
+        `update oauth_consents set scope = NULL where user_id = :user_id and client_id = :client_id`,
         { user_id: userId, client_id: clientId },
       )
       .then((result) => result.affectedRows > 0)

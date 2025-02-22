@@ -164,7 +164,7 @@ export default class OAuth2Manager {
       userId: client.user_id,
       logoUrl: client.logo_url,
       author,
-      scopes: client.scopes,
+      scopes: client.scopes === null ? undefined : client.scopes,
       installationsCount: client.installations_count,
     } as OAuth2ClientEntity
   }
