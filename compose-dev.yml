@@ -2,141 +2,74 @@ version: '3.9'
 
 services:
   caddy:
-    image: caddy
-    restart: unless-stopped
+    extends:
+      file: 'compose.yml'
+      service: caddy
+    environment:
+      DEV: "true"
     cap_add:
       - NET_ADMIN
     # noinspection ComposeUnknownValues
     ports:
       # expose port 80 if TLS is disabled, 443 if enabled
       - "${TLS_ENABLED+443:443}${TLS_ENABLED-80:80}"
-
-    # Common environment variables
-    environment:
-      DEV: "true"
-      # If TLS_ENABLED is set, use https in SERVER_HOST; otherwise http
-      SERVER_HOST: "http${TLS_ENABLED+s}://${SERVER_DOMAIN}"
-      API_HOST: "http${TLS_ENABLED+s}://${API_DOMAIN}"
-
-      # Cert/Key paths: only set if TLS_ENABLED is non-empty *and* file is non-empty
-      TLS_CERT_PATH: "${TLS_ENABLED+${TLS_CERT_FILE:+/certs/${TLS_CERT_FILE}}}"
-      TLS_KEY_PATH: "${TLS_ENABLED+${TLS_KEY_FILE:+/certs/${TLS_KEY_FILE}}}"
-
-
-      # tls_on if TLS_ENABLED is set and cert/key files are non-empty
-      # tls_off if TLS_ENABLED is not set
-      # tls_ if TLS_ENABLED is set but cert/key files are empty
-      TLS_MODE: "tls_${TLS_ENABLED+${TLS_CERT_FILE:+on}}${TLS_ENABLED-off}"
-
-      SERVER_DOMAIN: "${SERVER_DOMAIN}"
-      API_DOMAIN: "${API_DOMAIN}"
-      BACKEND_DOMAIN: "host.docker.internal"
-      MEDIA_HOSTING_URL: "${MEDIA_HOSTING_URL}"
-      MEDIA_HOSTING_CLIENT_ID: "${MEDIA_HOSTING_CLIENT_ID}"
-      FINGERPRINT: "${FINGERPRINT}"
-
-    volumes:
-      - $PWD/caddy/Caddyfile:/etc/caddy/Caddyfile
-      - $PWD/caddy/certs:/certs
-      - caddy_data:/data
-      - caddy_config:/config
-    # Default caddy command borrowed from https://github.com/caddyserver/caddy-docker/blob/master/Dockerfile.tmpl
-    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile", "--watch"]
     extra_hosts:
-        - "host.docker.internal:host-gateway"
+      - "host.docker.internal:host-gateway"
 
   mysql:
-    platform: linux/amd64
-    image: mysql:5.7
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-    volumes:
-      - mysql_db:/var/lib/mysql
-      - $PWD/mysql/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    extends:
+      file: 'compose.yml'
+      service: mysql
     ports:
       - "3306:3306"
       - "33060:33060"
-    healthcheck:
-      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
-      interval: 5s
-      timeout: 20s
-      retries: 10
 
   redis:
-    image: redis:7
-    restart: always
+    extends:
+      file: 'compose.yml'
+      service: redis
     ports:
       - "6379:6379"
-    command: redis-server --save 20 1 --requirepass ${REDIS_PASSWORD}
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: redis-cli -a ${REDIS_PASSWORD} ping | grep PONG
-      interval: 5s
-      timeout: 20s
-      retries: 10
 
   feed:
-    build:
-      context: feed
-    restart: always
+    extends:
+      file: 'compose.yml'
+      service: feed
     ports:
       - "6767:6767"
 
   elasticsearch:
-    image: elasticsearch:7.17.8
-    restart: always
+    extends:
+      file: 'compose.yml'
+      service: elasticsearch
     ports:
       - "9200:9200"
       - "9300:9300"
-    environment:
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    ulimits:
-      nofile:
-        soft: 65536
-        hard: 65536
-      memlock:
-        soft: -1
-        hard: -1
-    healthcheck:
-      test: curl -s -f http://localhost:9200/_cluster/health?wait_for_status=green >/dev/null || exit 1
-      interval: 10s
-      timeout: 30s
-      retries: 10
-    volumes:
-      - elasticsearch_data:/usr/share/elastic-setup/data
-      - $PWD/search/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
 
-  # performs initial setup of elasticsearch and exits
-  # backend should depend on this service for prod configs
   elasticsearch-setup:
-    image: curlimages/curl
-    restart: "no"
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
-    volumes:
-      - $PWD/search/setup.sh:/setup.sh:ro
-    entrypoint: /bin/sh
-    command: /setup.sh
+    extends:
+      file: 'compose.yml'
+      service: elasticsearch-setup
 
-  # performs periodic indexing of elasticsearch
   elasticsearch-indexer:
-    build:
-      context: search
-    restart: always
-    depends_on:
-      mysql:
-        condition: service_healthy
-      elasticsearch:
-        condition: service_healthy
-      elasticsearch-setup:
-        condition: service_completed_successfully
+    extends:
+      file: 'compose.yml'
+      service: elasticsearch-indexer
+
+  # dummy placeholder to satisfy the depends_on
+  # make sure to run the backend service separately
+  backend:
+    image: busybox
+
+  # dummy placeholder to satisfy the depends_on
+  # make sure to run the frontend service separately
+  frontend:
+    image: busybox
 
 volumes:
   caddy_data:
   caddy_config:
+  frontend_build: # unused, for compatibility with prod
   mysql_db:
   redis_data:
   elasticsearch_data:
