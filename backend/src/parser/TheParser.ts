@@ -33,7 +33,7 @@ class ParserExtended extends Parser {
 
 export default class TheParser {
   private readonly allowedTags: Record<string, ((node: Element) => ParseResult) | boolean>
-  private disallowedTagNesting: Record<string, string | string[]>
+  private readonly disallowedTagNesting: Record<string, string | string[]>
 
   // Bump this version when introducing breaking changes to the parser.
   // Content will be re-parsed and saved on access when this version changes.
@@ -43,7 +43,7 @@ export default class TheParser {
   private readonly parserConfig: ParserConfig
   private readonly mediaHostingUrlOrigin: string
   private readonly mediaHostingUrlBunny: string
-  private blockTags: string[]
+  private readonly blockTags: string[]
 
   // Stack of tags that are currently being parsed, for internal use only
   private parseChildNodesStack: string[]
