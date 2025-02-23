@@ -86,6 +86,10 @@
     ]
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,scss,css}": "npx eslint --fix"
+    "*.{js,jsx,ts,tsx}": [
+      "npx eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,scss,css}": "prettier --write"
   }
 }
