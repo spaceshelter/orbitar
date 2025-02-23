@@ -111,7 +111,7 @@ const updateLogoUrlSchema = Joi.object<OAuth2ClientUpdateLogoUrlRequest>({
 })
 
 const verifyScopesSchema = Joi.object({
-  scopes: Joi.string().required(),
+  scopes: Joi.string().required().allow(''),
 })
 
 export default class OAuth2Controller {

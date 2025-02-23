@@ -1,4 +1,4 @@
-import React, { MouseEventHandler, useState } from 'react'
+import React, { MouseEventHandler, useEffect, useState } from 'react'
 
 import classNames from 'classnames'
 import { confirmAlert } from 'react-confirm-alert'
@@ -34,16 +34,26 @@ export function OAuthEmbeddedAppComponent(props: OAuthEmbeddedAppComponentProps)
   const appState = useAppState()
   const [client, setClient] = React.useState<OAuth2ClientEntity | null>(null)
   const [error, setError] = React.useState<string | null>(null)
+  const [openFullView, setOpenFullView] = React.useState(false)
 
-  const handleFullView = () => {
-    client &&
+  useEffect(() => {
+    if (client && openFullView) {
       appState.setModal(
         <OAuth2AppCardModalComponent
           client={client}
           disallowEditing={true}
-          onClose={() => appState.setModal(undefined)}
+          onClose={() => {
+            appState.setModal(undefined)
+            setOpenFullView(false)
+          }}
+          onClientUpdate={setClient}
         />,
       )
+    }
+  }, [client, openFullView])
+
+  const handleFullView = () => {
+    setOpenFullView(true)
   }
 
   React.useEffect(() => {
@@ -95,6 +105,7 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
   const [editing, setEditing] = useState(false)
   const embedCode = `<app>${client.clientId}</app>`
   const shouldShowManagementControls = client.author.id === userId && !props.disallowEditing
+  const authorized = client.scopes !== null && client.scopes !== undefined
 
   const confirmAction = (title: string, message: string, action: () => void) => {
     confirmAlert({
@@ -137,6 +148,7 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
     api.oauth2Api
       .updateClientLogo(client.clientId, url)
       .then(() => {
+        api.oauth2Api.clearClientCache()
         props.onClientUpdate?.({ ...client, logoUrl: url })
       })
       .catch(() => {
@@ -144,9 +156,19 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
       })
   }
 
-  const handleInstallClick = () => {
+  const handleInstallClick: MouseEventHandler = (e) => {
+    e.preventDefault()
     if (client.initialAuthorizationUrl) {
-      window.open(client.initialAuthorizationUrl, '_blank')
+      const authWindow = window.open(client.initialAuthorizationUrl, '_blank')
+      if (authWindow) {
+        const handleFocus = () => {
+          api.oauth2Api.clearClientCache()
+          api.oauth2Api.getClientCached(client.clientId).then((updatedClient) => {
+            props.onClientUpdate?.(updatedClient)
+          })
+        }
+        window.addEventListener('focus', handleFocus, { once: true })
+      }
     }
   }
 
@@ -166,7 +188,8 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
     )
   }
 
-  const handleUnInstallClick = () => {
+  const handleUnInstallClick: MouseEventHandler = (e) => {
+    e.preventDefault()
     const message = `Вы уверены, что хотите отключить приложение (отозвать его авторизацию)?
              Это действие отзовет весь доступ, ранее данный вами приложению.
             В принципе, это не страшно, можно подключить его потом снова.`
@@ -174,6 +197,7 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
       api.oauth2Api
         .unauthorizeClient(client.clientId)
         .then((updatedClient) => {
+          api.oauth2Api.clearClientCache()
           props.onClientUpdate?.(updatedClient)
         })
         .catch(() => {
@@ -192,6 +216,7 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
               <UserProfileClientAppsCreateForm
                 editingClient={client}
                 onClientEditSuccess={(newClient) => {
+                  api.oauth2Api.clearClientCache()
                   props.onClientUpdate?.(newClient)
                   setEditing(false)
                 }}
@@ -261,7 +286,7 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
           </ExpandSection>
         )}
 
-        {client.scopes && (
+        {authorized && (
           <ExpandSection title='Текушие разрешения'>
             <OAuth2ScopesComponent appRequests={client.scopes} />
           </ExpandSection>
@@ -274,10 +299,10 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
                 onClick={handleInstallClick}
                 className={classNames(buttonStyles.settingsButton, buttonStyles.positiveButton, buttonStyles.bigger)}
               >
-                Подключить {client.scopes ? 'еще раз' : ''}
+                Подключить {authorized ? 'еще раз' : ''}
               </button>
             )}
-            {client.scopes && (
+            {authorized && (
               <button
                 onClick={handleUnInstallClick}
                 className={classNames(buttonStyles.settingsButton, buttonStyles.danger, buttonStyles.bigger)}

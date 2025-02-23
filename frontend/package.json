@@ -84,5 +84,12 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "npx eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,scss,css}": "prettier --write"
   }
 }

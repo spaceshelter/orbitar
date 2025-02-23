@@ -244,7 +244,12 @@ export class ExpressOauth2ScopesFilter {
   static minimizeScopes(arr: string[]) {
     return arr.filter(
       (scope) =>
-        scope.indexOf(':') === -1 || !arr.some((superscope) => ExpressOauth2ScopesFilter.isSubscope(superscope, scope)),
+        scope.indexOf(':') === -1 ||
+        !arr.some(
+          (superscope) =>
+            // don't include the scope if there is a more general scope that includes it
+            superscope !== scope && ExpressOauth2ScopesFilter.isSubscope(scope, superscope),
+        ),
     )
   }
 

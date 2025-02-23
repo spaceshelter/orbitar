@@ -37,6 +37,23 @@ docker compose -p orbitar -f compose-deploy-nonssl.yml build --no-cache frontend
 docker compose -p orbitar -f compose-deploy-nonssl.yml up
 ```
 
+### Линт и форматирование
+
+Для линта и форматирования используется eslint и prettier.
+
+в корне проекта:
+```sh
+npm run install # установит зависимости и pre-commit хук
+```
+
+линт и форматирование:
+```sh
+npm run lint
+# или
+npm run lint:fix
+```
+
+
 ## Утилиты
 
 ### Генератор рандомного контента для тестов
