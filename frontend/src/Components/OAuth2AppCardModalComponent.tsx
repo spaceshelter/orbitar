@@ -95,6 +95,7 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
   const [editing, setEditing] = useState(false)
   const embedCode = `<app>${client.clientId}</app>`
   const shouldShowManagementControls = client.author.id === userId && !props.disallowEditing
+  const authorized = client.scopes !== null && client.scopes !== undefined
 
   const confirmAction = (title: string, message: string, action: () => void) => {
     confirmAlert({
@@ -144,7 +145,8 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
       })
   }
 
-  const handleInstallClick = () => {
+  const handleInstallClick: MouseEventHandler = (e) => {
+    e.preventDefault()
     if (client.initialAuthorizationUrl) {
       window.open(client.initialAuthorizationUrl, '_blank')
     }
@@ -166,7 +168,8 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
     )
   }
 
-  const handleUnInstallClick = () => {
+  const handleUnInstallClick: MouseEventHandler = (e) => {
+    e.preventDefault()
     const message = `Вы уверены, что хотите отключить приложение (отозвать его авторизацию)?
              Это действие отзовет весь доступ, ранее данный вами приложению.
             В принципе, это не страшно, можно подключить его потом снова.`
@@ -261,7 +264,7 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
           </ExpandSection>
         )}
 
-        {client.scopes && (
+        {authorized && (
           <ExpandSection title='Текушие разрешения'>
             <OAuth2ScopesComponent appRequests={client.scopes} />
           </ExpandSection>
@@ -274,10 +277,10 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
                 onClick={handleInstallClick}
                 className={classNames(buttonStyles.settingsButton, buttonStyles.positiveButton, buttonStyles.bigger)}
               >
-                Подключить {client.scopes ? 'еще раз' : ''}
+                Подключить {authorized ? 'еще раз' : ''}
               </button>
             )}
-            {client.scopes && (
+            {authorized && (
               <button
                 onClick={handleUnInstallClick}
                 className={classNames(buttonStyles.settingsButton, buttonStyles.danger, buttonStyles.bigger)}

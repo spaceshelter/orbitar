@@ -15,7 +15,7 @@ function ScopeControl(props: { name: string; description: string; checked: boole
   )
 }
 
-export default function OAuth2ScopesComponent(props: { appRequests: string | null }) {
+export default function OAuth2ScopesComponent(props: { appRequests: string | undefined }) {
   const [scopes, setScopes] = useState<Record<string, string> | undefined>(undefined)
   const { oauth2Api } = useAPI()
 
@@ -31,6 +31,7 @@ export default function OAuth2ScopesComponent(props: { appRequests: string | nul
 
   return (
     <div className={styles.container}>
+      {Object.keys(scopes).length === 0 && <div>Только ваш номер и юзернейм.</div>}
       {Object.keys(scopes).map((scope) => (
         <ScopeControl key={scope} name={scope} checked={true} description={scopes[scope]} />
       ))}

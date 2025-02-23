@@ -12,7 +12,7 @@ export default class OAuth2Repository {
       oauth_clients.*,
       oauth_consents.scope as scopes,
       oauth_consents.last_revoked_ts as last_revoked_ts,
-      (select count(oauth_consents.user_id) from oauth_consents where client_id = oauth_clients.client_id and scope != '') as installations_count 
+      (select count(oauth_consents.user_id) from oauth_consents where client_id = oauth_clients.client_id and scope is not NULL) as installations_count 
     from oauth_clients
     left outer join oauth_consents
       on oauth_consents.client_id = oauth_clients.client_id
@@ -190,7 +190,7 @@ export default class OAuth2Repository {
   async resetConsentScope(clientId: string, userId: number): Promise<boolean> {
     return await this.db
       .query<ResultSetHeader>(
-        `update oauth_consents set scope = '' where user_id = :user_id and client_id = :client_id`,
+        `update oauth_consents set scope = NULL where user_id = :user_id and client_id = :client_id`,
         { user_id: userId, client_id: clientId },
       )
       .then((result) => result.affectedRows > 0)
@@ -206,7 +206,7 @@ export default class OAuth2Repository {
               SELECT 1 as cnt
               FROM oauth_consents
               WHERE user_id = :userId
-                AND scope != ''
+                AND scope IS NOT NULL
               LIMIT 1) as t`,
       { userId },
     )
