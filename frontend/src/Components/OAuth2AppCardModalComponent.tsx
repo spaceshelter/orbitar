@@ -160,13 +160,12 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
       const authWindow = window.open(client.initialAuthorizationUrl, '_blank')
       if (authWindow) {
         const handleFocus = () => {
-          window.removeEventListener('focus', handleFocus)
           api.oauth2Api.clearClientCache()
           api.oauth2Api.getClientCached(client.clientId).then((updatedClient) => {
             props.onClientUpdate?.(updatedClient)
           })
         }
-        window.addEventListener('focus', handleFocus)
+        window.addEventListener('focus', handleFocus, { once: true })
       }
     }
   }
