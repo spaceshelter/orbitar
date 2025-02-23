@@ -29,6 +29,7 @@ export default class AuthAPIHelper {
       await this.api.signOut()
       this.appState.setUserInfo(undefined)
       this.appState.setAppLoadingState(AppLoadingState.unauthorized)
+      this.appState.clearCachesOnLogout()
     } catch (error) {
       console.log('ERROR SIGN IN', error)
       throw new Error('Could not sign out')
@@ -49,6 +50,7 @@ export default class AuthAPIHelper {
       await this.api.dropPasswordAndSessions()
       this.appState.setUserInfo(undefined)
       this.appState.setAppLoadingState(AppLoadingState.unauthorized)
+      this.appState.clearCachesOnLogout()
     } catch (error) {
       console.log('ERROR DROPPING PASSWORD AND SESSIONS', error)
       throw error
