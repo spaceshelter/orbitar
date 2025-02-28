@@ -134,12 +134,15 @@ app.oauth = new OAuthServer({
 })
 
 const userCache = new UserCache(userRepository)
+// eslint-disable-next-line prefer-const
+let siteManager: SiteManager
+
 const notificationManager = new NotificationManager(
   commentRepository,
   notificationsRepository,
   postRepository,
-  siteRepository,
   userCache,
+  () => siteManager /*FIXME: HAX! circular dependency, will refactor later */,
   webPushRepository,
   config.vapid,
   config.site,
@@ -160,7 +163,7 @@ const userManager = new UserManager(
   logger.child({ service: 'USER' }),
 )
 const inviteManager = new InviteManager(inviteRepository, theParser, userManager)
-const siteManager = new SiteManager(siteRepository, userManager)
+siteManager = new SiteManager(siteRepository, userManager)
 const feedManager = new FeedManager(
   bookmarkRepository,
   postRepository,
