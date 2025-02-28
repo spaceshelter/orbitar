@@ -60,6 +60,22 @@ export default class PostRepository {
     )
   }
 
+  async getPostsByIds(postId: number[]): Promise<PostRaw[]> {
+    if (!postId.length) {
+      return []
+    }
+    return this.db.fetchAll<PostRawWithUserData>(
+      `
+            select p.*
+            from posts p
+            where p.post_id in (:post_ids)
+        `,
+      {
+        post_ids: postId,
+      },
+    )
+  }
+
   async getPost(postId: number): Promise<PostRaw | undefined> {
     return await this.db.fetchOne<PostRaw>('select * from posts where post_id=:post_id', { post_id: postId })
   }
