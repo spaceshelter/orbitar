@@ -205,15 +205,14 @@ export default class UserRepository {
   async getUserUnreadComments(forUserId: number, ownOnly = false): Promise<number> {
     const res = await this.db.fetchOne<{ cnt: string }>(
       `
-          select sum(case when p.comments > ub.read_comments then 1 else 0 end) cnt
-            from
-              user_bookmarks ub
-              join posts p on (p.post_id = ub.post_id)
-            where
-              ub.user_id = :user_id
-              and watch = 1
+          select count(*) cnt
+          from user_bookmarks ub
+                   join posts p on (p.post_id = ub.post_id)
+          where ub.user_id = :user_id
+            and watch = 1
+            and p.comments > ub.read_comments
               ${ownOnly ? 'and p.author_id = :user_id' : ''}
-        `,
+      `,
       {
         user_id: forUserId,
       },
