@@ -108,8 +108,9 @@ export default function NotificationsPopup(props: NotificationsPopupProps) {
     if (!ntInfo.read) {
       app.setUnreadNotificationsCount(app.unreadNotificationsCount - 1)
     }
-    app.setVisibleNotificationsCount(app.visibleNotificationsCount - 1)
-    setNotifications(notifications?.filter((n) => n.id !== ntInfo.id))
+    const remainingNotifications = notifications?.filter((n) => n.id !== ntInfo.id)
+    app.setVisibleNotifications(!!remainingNotifications?.length)
+    setNotifications(remainingNotifications)
   }
 
   const handleClearAll = () => {
@@ -119,7 +120,7 @@ export default function NotificationsPopup(props: NotificationsPopupProps) {
     setNotifications(filteredNotifications)
 
     const remainingCount = filteredNotifications?.length || 0
-    app.setVisibleNotificationsCount(remainingCount)
+    app.setVisibleNotifications(!!remainingCount)
     app.setUnreadNotificationsCount(remainingCount)
 
     api.notifications

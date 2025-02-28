@@ -55,7 +55,7 @@ export class AppState {
     unreadNotificationsCount = 0;
 
     @observable
-    visibleNotificationsCount = 0;
+    visibleNotifications = false;
 
     @observable
     watchCommentsCount = 0;
@@ -138,8 +138,8 @@ export class AppState {
         this.unreadNotificationsCount = value;
     }
     @action
-    setVisibleNotificationsCount(value: number) {
-        this.visibleNotificationsCount = value;
+    setVisibleNotifications(value: boolean) {
+        this.visibleNotifications = value;
     }
 
     @action

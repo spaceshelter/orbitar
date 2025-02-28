@@ -7,7 +7,7 @@ export type PostReadRequest = {
 export type PostReadResponse = {
   notifications?: {
     unread: number
-    visible: number
+    visible: boolean
   }
   watch?: {
     posts: number

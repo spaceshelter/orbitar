@@ -62,9 +62,9 @@ export default class NotificationManager {
     return this.siteManagerLazy()
   }
 
-  async getNotificationsCounts(forUserId: number): Promise<{ unread: number; visible: number }> {
+  async getNotificationsCounts(forUserId: number): Promise<{ unread: number; visible: boolean }> {
     const unread = this.notificationsRepository.getUnreadNotificationsCount(forUserId)
-    const visible = this.notificationsRepository.getVisibleNotificationsCount(forUserId)
+    const visible = this.notificationsRepository.hasVisibleNotifications(forUserId)
     return { unread: await unread, visible: await visible }
   }
 
