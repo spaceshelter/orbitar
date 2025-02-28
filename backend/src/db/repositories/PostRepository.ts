@@ -60,8 +60,8 @@ export default class PostRepository {
     )
   }
 
-  async getPostsByIds(postId: number[]): Promise<PostRaw[]> {
-    if (!postId.length) {
+  async getPostsByIds(postIds: number[]): Promise<PostRaw[]> {
+    if (!postIds.length) {
       return []
     }
     return this.db.fetchAll<PostRawWithUserData>(
@@ -71,7 +71,7 @@ export default class PostRepository {
             where p.post_id in (:post_ids)
         `,
       {
-        post_ids: postId,
+        post_ids: postIds,
       },
     )
   }
