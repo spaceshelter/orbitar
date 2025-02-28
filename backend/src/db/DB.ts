@@ -28,7 +28,7 @@ export class DBConnection {
     try {
       const start = Date.now()
       const result = (await this.connection.query(query, params))[0] as undefined as T
-      const executionTime = new Date().getTime() - start
+      const executionTime = Date.now() - start
       this.logger.verbose('Query', { query: formattedQuery, params, time: executionTime })
       return result
     } catch (error) {
