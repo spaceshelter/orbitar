@@ -2,54 +2,68 @@
 
 ## Introduction
 
-OAuth2 allows Orbitar users to create client applications and let other users connect to them in a secure way. This guide will help you understand how to create and use OAuth2 client applications.
+OAuth2 allows Orbitar users to create client applications and let other users connect to them in a secure way.
+
+A client application is a software program that accesses resources or services on behalf of a user through the OAuth2
+protocol. In the Orbitar ecosystem, client applications can interact with Orbitar's API after receiving authorization
+from users. These applications can be web apps, mobile apps, desktop applications, or server-side applications that
+integrate with Orbitar's platform.
+
+This guide will help you understand how to create and use OAuth2 client applications.
 
 ## Creating a Client Application
 
 To create a client application, follow these steps:
 
 1. Log in to your Orbitar account
-2. Go to your profile, then enter Settings
+2. Go to your profile, then enter Settings / Applications
 3. Click "Зарегистрировать своё приложение" button at the bottom of the page
 4. Fill in the required information:
-   - **Name**: Your application name (2-32 characters)
-   - **Description**: What your app does (up to 255 characters)
-   - **Redirect URIs**: Where users will be sent after authorization (comma-separated list)
-   - **Initial Authorization URL** (optional): Where users start the authorization process. If provided, a "Start" button will appear on your app card, allowing users to be redirected directly to this URL.
+    - **Name**: Your application name (2-32 characters)
+    - **Description**: What your app does (up to 255 characters)
+    - **Redirect URIs**: Where users will be sent after authorization (comma-separated list)
+    - **App connection URL** (optional): The URL where users will be directed when clicking the "Connect"
+      button on your application card. This URL typically corresponds to the external landing page of your application.
 
-After creating your application, you will receive:
-- **Client ID**: Public identifier for your application
-- **Client Secret**: Private key that must be kept secure
+5. After creating your application, you will receive:
+    - **Client ID**: Public identifier for your application
+    - **Client Secret**: Private key that must be kept secure
 
-**Important**: 
-1. Store your Client Secret safely. If you lose it or need to change it for security reasons, you can regenerate it in your application settings.
-2. After creating your application, you can upload a logo for it. You cannot upload a logo during the initial creation process.
+**Important**:
+
+1. Store your Client Secret safely. If you lose it or need to change it for security reasons, you can regenerate it in
+   your application settings.
+2. After creating your application, you can upload a logo for it. You cannot upload a logo during the initial creation
+   process.
 
 ## Promoting Your Application
 
 You can promote your application to other Orbitar users by embedding app cards in posts or comments.
 
 To embed your app card, use this format:
+
 ```
 <app>{client_id}</app>
 ```
 
 Replace `{client_id}` with your actual client ID. For example:
+
 ```
 <app>550e8400-e29b-41d4-a716-446655440000</app>
 ```
 
 The embedded card will show:
+
 - Your app name
 - Description
 - Logo (if you uploaded one)
-- "Start" button (if you provided an Initial Authorization URL)
-
-Users can click the "Start" button to be redirected to your Initial Authorization URL, beginning the OAuth2 flow.
+- "Connect" button (if you provided an App connection URL)
 
 ## Understanding OAuth2 Flow
 
-OAuth2 in Orbitar uses the ["Authorization Code" flow](https://auth0.com/docs/get-started/authentication-and-authorization-flow/authorization-code-flow), which is [defined in RFC 6749, section 4.1](https://datatracker.ietf.org/doc/html/rfc6749#section-4.1):
+OAuth2 in Orbitar uses
+the ["Authorization Code" flow](https://auth0.com/docs/get-started/authentication-and-authorization-flow/authorization-code-flow),
+which is [defined in RFC 6749, section 4.1](https://datatracker.ietf.org/doc/html/rfc6749#section-4.1):
 
 1. **Authorization Request**: Your app asks the user for permission
 2. **Authorization Grant**: User approves the request
@@ -62,23 +76,37 @@ OAuth2 in Orbitar uses the ["Authorization Code" flow](https://auth0.com/docs/ge
 Redirect the user to Orbitar's authorization endpoint:
 
 ```
-https://orbitar.space/oauth2/authorize?client_id=YOUR_CLIENT_ID&scope=REQUESTED_SCOPES&redirect_uri=YOUR_REDIRECT_URI
+https://orbitar.space/oauth2/authorize?client_id=YOUR_CLIENT_ID&scope=REQUESTED_SCOPES&redirect_uri=YOUR_REDIRECT_URI&state=RANDOM_STATE_STRING
 ```
 
 Parameters:
+
 - `client_id`: Your application's Client ID
 - `scope`: Space-separated list of permissions your app needs
 - `redirect_uri`: Must match one of the URIs you registered
+- `state`: Random string to prevent CSRF attacks
 
-**Note**: If you provided an Initial Authorization URL when creating your app, you have two options:
+**Note**: If you provided an App connection URL, you have two options for the `redirect_uri`:
+
 1. Set it directly to Orbitar's authorization endpoint with the parameters above
+   (`state` would have to be hardcoded)
 2. Set it to a URL on your app that will then redirect users to Orbitar's authorization endpoint
+   (recommended)
 
-The second option gives you more control, allowing you to track analytics or add custom parameters before redirecting to Orbitar. When users click the "Start" button on your embedded app card, they will first go to your Initial Authorization URL.
+The second option gives you more control and is more secure.
+
+**Security Note about State Parameter**: The `state` parameter is crucial for preventing Cross-Site Request Forgery (
+CSRF) attacks. Your application must:
+
+1. Generate a unique, unpredictable state value for each authorization request
+2. Store this value in the user's session or other secure storage
+3. Verify that the state returned in the callback exactly matches the stored state
+4. Reject the authorization if the state validation fails
 
 ### Step 2: User Authorization
 
 The user will see a consent screen showing:
+
 - Your application name and description
 - Your username (the developer/creator of the application)
 - The permissions your app is requesting
@@ -89,14 +117,18 @@ The user will see a consent screen showing:
 If the user approves, Orbitar will redirect to your `redirect_uri` with an authorization code:
 
 ```
-https://your-app.example/callback?authorizationCode=CODE
+https://your-app.example/callback?code=CODE&state=RANDOM_STATE_STRING
 ```
 
 This code is temporary and expires quickly.
+The state parameter should match the one you sent in the authorization request.
 
 ### Step 4: Token Exchange
 
-Your application must exchange this code for access and refresh tokens by making a POST request with Basic authentication:
+Your application must exchange this code for access and refresh tokens. You can authenticate using either Basic
+Authentication in the header or by including client credentials in the request body.
+
+**Method 1: Using Basic Authentication (recommended)**
 
 ```
 POST https://api.orbitar.space/api/v1/oauth2/token
@@ -106,12 +138,33 @@ Authorization: Basic BASE64(CLIENT_ID:CLIENT_SECRET)
 grant_type=authorization_code&code=AUTHORIZATION_CODE&nonce=RANDOM_STRING&redirect_uri=YOUR_REDIRECT_URI
 ```
 
+**Method 2: Including client credentials in request body**
+
+```
+POST https://api.orbitar.space/api/v1/oauth2/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code&code=AUTHORIZATION_CODE&nonce=RANDOM_STRING&redirect_uri=YOUR_REDIRECT_URI&client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET
+```
+
+Parameters:
+
+- `grant_type`: Must be "authorization_code"
+- `code`: The authorization code received from the previous step
+- `nonce`: Optional random string for additional security
+- `redirect_uri`: Must match the URI used in the authorization request
+- `client_id`: Your application's Client ID (if using Method 2)
+- `client_secret`: Your application's Client Secret (if using Method 2)
+
 The response contains:
+
 ```json
 {
   "access_token": "ACCESS_TOKEN",
   "refresh_token": "REFRESH_TOKEN",
-  "scope": "GRANTED_SCOPES"
+  "token_type": "Bearer",
+  "scope": "GRANTED_SCOPES",
+  "expires_in": 1800
 }
 ```
 
@@ -124,32 +177,94 @@ POST https://api.orbitar.space/api/v1/status
 Authorization: Bearer ACCESS_TOKEN
 ```
 
-**Note**: Make sure the scopes you requested during authorization include access to the endpoints you plan to use. For example, to access the `/api/v1/status` endpoint, your authorized scopes must include permission for this resource.
+**Note**: Make sure the scopes you requested during authorization include access to the endpoints you plan to use. For
+example, to access the `/api/v1/status` endpoint, your authorized scopes must include permission for this resource.
 
 ### Step 6: Refreshing Tokens
 
-Access tokens expire after a period of time (usually 1 hour). Use the refresh token to get a new access token:
+Access tokens expire after a period of time (usually 30 minutes). Use the refresh token to get a new access token. You
+can authenticate using either Basic Authentication in the header or by including client credentials in the request body.
+
+**Method 1: Using Basic Authentication (recommended)**
 
 ```
 POST https://api.orbitar.space/api/v1/oauth2/token
 Content-Type: application/x-www-form-urlencoded
-Authorization: Bearer REFRESH_TOKEN
+Authorization: Basic BASE64(CLIENT_ID:CLIENT_SECRET)
 
-grant_type=refresh_token
+grant_type=refresh_token&refresh_token=REFRESH_TOKEN
+```
+
+**Method 2: Including client credentials in request body**
+
+```
+POST https://api.orbitar.space/api/v1/oauth2/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=refresh_token&refresh_token=REFRESH_TOKEN&client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET
 ```
 
 If the refresh token has expired, you'll need to initiate a new authorization flow for the user starting from Step 1.
 
 ## Scopes
 
-Scopes define what your application can access. Some common scopes include:
+Scopes define what your application can access. Orbitar automatically generates scopes based on API routes. Scopes
+follow a hierarchical pattern where more specific permissions are nested under more general ones.
 
-- `feed`: Access to user's feed
-- `profile`: Access to user profile information
-- `post`: Create and edit posts
-- `vote`: Vote on posts and comments
+### Scope Hierarchy
 
-Request only the minimum scopes your application needs.
+Scopes are built from API routes using the following rules:
+
+1. URL paths are converted to scopes by replacing slashes with colons
+2. More general scopes include more specific ones
+3. When a general scope is granted, all its sub-scopes are implicitly granted
+
+For example, an API endpoint `/api/v1/user/profile` generates these hierarchical scopes:
+
+- `user` (most general)
+- `user:profile` (more specific)
+
+If your application has the `user` scope, it automatically has access to all `user:*` sub-scopes, including
+`user:profile`, `user:settings`, etc.
+
+### Examples of Scope Hierarchy
+
+1. **Post management scopes**:
+    - `post` (access to all post-related endpoints)
+    - `post:create` (create new posts)
+    - `post:edit` (edit existing posts)
+    - `post:comment` (comment on posts)
+    - `post:get` (retrieve posts)
+
+   Requesting just the `post` scope grants access to all post operations.
+
+2. **User-related scopes**:
+    - `user` (access to all user endpoints)
+    - `user:profile` (view user profiles)
+    - `user:save` (save user profile settings)
+    - `user:settings` (access user settings)
+
+3. **Other important scopes**:
+    - `feed` (access to feed endpoints)
+    - `site` (access to site endpoints)
+    - `site:subscribe` (subscribe to sites)
+    - `vote` (voting capabilities)
+    - `notifications` (access user notifications)
+
+### How API Routes Map to Scopes
+
+Here are examples of how API routes map to scope names:
+
+| API Route                | Generated Scopes         |
+|--------------------------|--------------------------|
+| `/api/v1/status`         | `status`                 |
+| `/api/v1/user/profile`   | `user`, `user:profile`   |
+| `/api/v1/post/create`    | `post`, `post:create`    |
+| `/api/v1/site/subscribe` | `site`, `site:subscribe` |
+
+When requesting scopes, you should request the most specific scope needed for your application. The system will
+automatically minimize redundant scopes (e.g., if you request both `user` and `user:profile`, only the more general
+`user` scope will be used since it already includes `user:profile` access).
 
 ## Security Best Practices
 
@@ -158,7 +273,7 @@ Request only the minimum scopes your application needs.
 3. **Validate redirect URIs**: Prevent open redirector attacks
 4. **Request minimum scopes**: Only ask for permissions you need
 5. **Handle token expiration**: Properly refresh tokens when needed
-6. **Revoke tokens**: When a user uninstalls or logs out of your app
+6. Make sure to pass and validate the `state` parameter during the authorization process
 
 ## Troubleshooting
 
@@ -172,7 +287,8 @@ Common issues and solutions:
 
 ## Sample Applications
 
-We provide complete sample applications that demonstrate the full OAuth2 flow in different programming languages. These samples include:
+We provide complete sample applications that demonstrate the full OAuth2 flow in different programming languages. These
+samples include:
 
 - Authorization code flow
 - Token exchange
@@ -187,9 +303,9 @@ We provide complete sample applications that demonstrate the full OAuth2 flow in
 
 All samples implement the same functionality and follow best practices for OAuth2 implementation.
 
-For detailed instructions and to view the sample code, see the [Samples](samples/) directory.
+For detailed instructions and to view the sample code, see
+the [oauth2-sample-client](https://github.com/spaceshelter/oauth2-sample-client) repository.
 
 ## Further Resources
-
 
 - [OAuth2 Specification](https://oauth.net/2/)
