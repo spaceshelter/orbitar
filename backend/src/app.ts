@@ -22,6 +22,7 @@ import SiteController from './api/SiteController'
 import StatusController from './api/StatusController'
 import UserController from './api/UserController'
 import { Enricher } from './api/utils/Enricher'
+import { createOpenApiDocRoutes } from './api/utils/OpenApiGenerator'
 import VoteController from './api/VoteController'
 import { config } from './config'
 import DB from './db/DB'
@@ -301,6 +302,9 @@ app.use(express.urlencoded({ extended: true }))
 for (const request of requests) {
   app.use('/api/v1/', request.router)
 }
+
+// Setup API documentation routes
+createOpenApiDocRoutes(app, requests)
 
 app.all('*', (req, res) => {
   res.status(404).json({ result: 'error', code: '404', message: 'Unknown endpoint' })
