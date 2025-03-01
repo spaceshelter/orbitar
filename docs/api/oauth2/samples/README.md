@@ -25,27 +25,6 @@ npm install express express-session axios
 node nodejs-oauth2-client.js
 ```
 
-### Python
-
-**File:** `python-oauth2-client.py`
-
-A Flask application that demonstrates:
-- Authorization code flow
-- Token exchange
-- API requests with access tokens
-- Token refresh
-- Embedded app card landing page simulation
-
-**Requirements:**
-- Python 3.6+
-- pip packages: flask, requests
-
-**Running the sample:**
-```
-pip install flask requests
-python python-oauth2-client.py
-```
-
 ### PHP
 
 **File:** `php-oauth2-client.php`

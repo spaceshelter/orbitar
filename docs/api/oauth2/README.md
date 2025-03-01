@@ -183,7 +183,6 @@ We provide complete sample applications that demonstrate the full OAuth2 flow in
 ### Available Samples
 
 - **Node.js**: A complete Express.js application
-- **Python**: A Flask-based web application
 - **PHP**: A single-file PHP application
 
 All samples implement the same functionality and follow best practices for OAuth2 implementation.
