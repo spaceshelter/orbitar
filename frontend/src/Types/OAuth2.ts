@@ -1,4 +1,4 @@
-import { UserInfo } from './UserInfo'
+import { UserBaseInfo } from './UserInfo'
 
 export type OAuth2ClientEntity = {
   id: number
@@ -11,7 +11,7 @@ export type OAuth2ClientEntity = {
   initialAuthorizationUrl: string
   redirectUris: string
   grants: string[]
-  author: UserInfo
+  author: UserBaseInfo
   scopes?: string
   installationsCount?: number
 }

@@ -1,0 +1,8 @@
+# Set the default behavior, in case people don't have core.autocrlf set.
+* text=auto
+
+# images
+*.gif binary
+*.ico binary
+*.png binary
+*.jpg binary

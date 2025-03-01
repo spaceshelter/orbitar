@@ -1,4 +1,4 @@
-import { UserInfo } from '../../../managers/types/UserInfo'
+import { UserBaseEntity } from './UserEntity'
 
 export type OAuth2ClientEntity = {
   name: string
@@ -11,7 +11,7 @@ export type OAuth2ClientEntity = {
   redirectUris: string
   grants: string
   userId: number
-  author: UserInfo
+  author: UserBaseEntity
   scopes?: string
   installationsCount?: number
 }

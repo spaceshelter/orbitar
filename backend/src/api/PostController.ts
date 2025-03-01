@@ -392,16 +392,27 @@ export default class PostController {
         )
       }
 
+      const postAuthorId = await this.postManager.getUserIdByPostId(postId)
+      const postAuthorRestrictions = await this.userManager.getUserRestrictions(postAuthorId)
+
       const overrideUserId = (await this.postManager.getUserIdOverride(postId)) || userId
 
-      const doFanOutAndNotifications = userRestrictions.restrictedToPostId === false
+      // feed bump when post author is not fully karmadead
+      const bumpFeed = postAuthorRestrictions.restrictedToPostId === false
+
+      // send notifications when commenter is not fully karmadead
+      const sendNotifications = userRestrictions.restrictedToPostId === false
+
       const commentInfo = await this.postManager.createComment(
         overrideUserId,
         postId,
         parentCommentId,
         content,
         format,
-        doFanOutAndNotifications,
+        {
+          bumpFeed,
+          sendNotifications,
+        },
       )
       const {
         allComments: [comment],

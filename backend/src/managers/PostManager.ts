@@ -289,10 +289,14 @@ export default class PostManager {
     parentCommentId: number | undefined,
     content: string,
     format: ContentFormat,
-    fanOutAndNotifications = true,
+    notificationOptions: {
+      bumpFeed: boolean
+      sendNotifications: boolean
+    },
   ): Promise<CommentInfoWithPostData> {
     const parseResult = this.parser.parse(content)
     const language = await this.translationManager.detectLanguage('', parseResult.text)
+    const { bumpFeed, sendNotifications } = notificationOptions
 
     const commentRaw = await this.commentRepository.createComment(
       userId,
@@ -301,11 +305,11 @@ export default class PostManager {
       content,
       language,
       parseResult.text,
-      fanOutAndNotifications,
+      bumpFeed,
     )
     this.userManager.clearUserRestrictionsCache(userId)
 
-    if (fanOutAndNotifications) {
+    if (sendNotifications) {
       let parentAuthor: UserInfo | undefined
       if (parentCommentId) {
         const parentComment = await this.commentRepository.getComment(parentCommentId)
@@ -335,7 +339,7 @@ export default class PostManager {
         commentRaw.post_id,
         undefined,
         commentRaw.created_at,
-        /*onlyDbUpdate=*/ !fanOutAndNotifications,
+        /*onlyDbUpdate=*/ !bumpFeed, // note, currently this will update Watch feed (bookmarks) in any case!
       )
       .then()
       .catch()

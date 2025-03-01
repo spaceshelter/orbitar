@@ -131,6 +131,10 @@ export default class OAuth2Api {
     return this.batchedCache.getClient(clientId)
   }
 
+  clearClientCache() {
+    this.batchedCache.clearCache()
+  }
+
   async getClientsBatch(clientIds: string[]): Promise<OAuth2GetClientsBatchResponse> {
     return await this.api.request<OAuth2GetClientsBatchRequest, OAuth2GetClientsBatchResponse>(
       `/oauth2/clients-batch`,
@@ -262,6 +266,13 @@ class OAuthClientBatchedCache {
     }, this.debounceTime)
 
     return prom
+  }
+
+  /**
+   * Clear the cache
+   */
+  public clearCache() {
+    this.cache.clear()
   }
 
   /**
