@@ -4,26 +4,6 @@ import { ExpressOauth2ScopesFilter } from '../OAuth2Middleware'
 import { extractRouteInfo, RouteInfo } from './express-reflection'
 
 /**
- * Helper function to safely get typed properties from unknown types
- * @param obj The object to get the property from
- * @param key The key of the property to get
- * @param defaultValue Optional default value to return if the property is not found
- * @returns The property value or the default value
- */
-export function safeGet<T = unknown>(obj: unknown, key: string | number, defaultValue?: T): T | undefined {
-  if (!obj || typeof obj !== 'object') {
-    return defaultValue
-  }
-
-  // Check if the key exists in the object
-  if (key in (obj as Record<string | number, unknown>)) {
-    return (obj as Record<string | number, unknown>)[key] as T
-  }
-
-  return defaultValue
-}
-
-/**
  * OpenAPI specification object with complete type definitions
  */
 interface OpenAPISpec {
