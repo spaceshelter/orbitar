@@ -2,12 +2,12 @@
 
 ## Introduction
 
-OAuth2 allows Orbitar users to create client applications and let other users connect to them in a secure way.
+OAuth2 allows Orbitar users to create client applications and let other users connect to them securely.
 
 A client application is a software program that accesses resources or services on behalf of a user through the OAuth2
-protocol. In the Orbitar ecosystem, client applications can interact with Orbitar's API after receiving authorization
+protocol. In the Orbitar ecosystem, client applications can use Orbitar's API after getting authorization
 from users. These applications can be web apps, mobile apps, desktop applications, or server-side applications that
-integrate with Orbitar's platform.
+connect with Orbitar's platform.
 
 This guide will help you understand how to create and use OAuth2 client applications.
 
@@ -22,8 +22,8 @@ To create a client application, follow these steps:
     - **Name**: Your application name (2-32 characters)
     - **Description**: What your app does (up to 255 characters)
     - **Redirect URIs**: Where users will be sent after authorization (comma-separated list)
-    - **App connection URL** (optional): The URL where users will be directed when clicking the "Connect"
-      button on your application card. This URL typically corresponds to the external landing page of your application.
+    - **App connection URL** (optional): The URL where users will go when clicking the "Connect"
+      button on your application card. This URL is usually the landing page of your application.
 
 5. After creating your application, you will receive:
     - **Client ID**: Public identifier for your application
@@ -84,19 +84,24 @@ Parameters:
 - `client_id`: Your application's Client ID
 - `scope`: Space-separated list of permissions your app needs
 - `redirect_uri`: Must match one of the URIs you registered
-- `state`: Random string to prevent CSRF attacks
+- `state`: Random string for security validation (see security note below)
 
-**Note**: If you provided an App connection URL, you have two options for the `redirect_uri`:
+**Note**: If you provided an App connection URL, you have two options for this URL:
 
 1. Set it directly to Orbitar's authorization endpoint with the parameters above
-   (`state` would have to be hardcoded)
-2. Set it to a URL on your app that will then redirect users to Orbitar's authorization endpoint
+   (you would need to hardcode the `state` parameter)
+2. Set it to a URL in your app that will then redirect users to Orbitar's authorization endpoint
    (recommended)
 
-The second option gives you more control and is more secure.
+The second option is more secure and gives you more control.
 
-**Security Note about State Parameter**: The `state` parameter is crucial for preventing Cross-Site Request Forgery (
-CSRF) attacks. Your application must:
+**Security Note about State Parameter**: The `state` parameter serves multiple security purposes:
+
+1. **Preventing CSRF attacks**: It ensures the authorization request came from your application
+2. **Session binding**: It binds the authorization request to the user's session
+3. **Protection against replay attacks**: It prevents authorization codes from being reused
+
+To implement this correctly, your application must:
 
 1. Generate a unique, unpredictable state value for each authorization request
 2. Store this value in the user's session or other secure storage
@@ -208,8 +213,8 @@ If the refresh token has expired, you'll need to initiate a new authorization fl
 
 ## Scopes
 
-Scopes define what your application can access. Orbitar automatically generates scopes based on API routes. Scopes
-follow a hierarchical pattern where more specific permissions are nested under more general ones.
+Scopes define what your application can access. Orbitar automatically creates scopes based on API routes. Scopes
+follow a hierarchy where more specific permissions are grouped under more general ones.
 
 ### Scope Hierarchy
 
@@ -262,9 +267,9 @@ Here are examples of how API routes map to scope names:
 | `/api/v1/post/create`    | `post`, `post:create`    |
 | `/api/v1/site/subscribe` | `site`, `site:subscribe` |
 
-When requesting scopes, you should request the most specific scope needed for your application. The system will
-automatically minimize redundant scopes (e.g., if you request both `user` and `user:profile`, only the more general
-`user` scope will be used since it already includes `user:profile` access).
+When requesting scopes, ask for the most specific scope your application needs. The system will
+automatically remove redundant scopes. For example, if you request both `user` and `user:profile`, only the more general
+`user` scope will be used because it already includes `user:profile` access.
 
 ## Security Best Practices
 
