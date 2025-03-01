@@ -63,6 +63,7 @@
     "htmlparser2": "^8.0.0",
     "install": "^0.13.0",
     "joi": "^17.6.0",
+    "joi-to-swagger": "^6.2.0",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^2.3.3",
     "node-fetch": "^2.6.7",

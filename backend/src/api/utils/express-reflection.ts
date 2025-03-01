@@ -207,11 +207,13 @@ export function extractRouteInfo(app: Application): RouteInfo[] {
 
           // Extract validation schema if present
           // This is specific to our Joi validation middleware
-          if (handler.name === 'validate' && handler.handle && typeof handler.handle === 'function') {
-            // This is an approximation; actual logic depends on how validate middleware works
+          if (handler.handle && typeof handler.handle === 'function') {
+            // Extract the schema from the handler function
             const handle = handler.handle as unknown as Record<string, unknown>
-            if (handle.schema) {
-              validationSchema = handle.schema
+
+            // Check for validatedObjectSchema property (we set this in the validate middleware)
+            if (handle.validatedObjectSchema) {
+              validationSchema = handle.validatedObjectSchema
             }
           }
         })

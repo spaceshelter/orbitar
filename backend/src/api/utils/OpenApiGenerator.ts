@@ -1,4 +1,5 @@
 import { Application } from 'express'
+import j2s from 'joi-to-swagger'
 
 import { ExpressOauth2ScopesFilter } from '../OAuth2Middleware'
 import { extractRouteInfo, RouteInfo } from './express-reflection'
@@ -39,55 +40,7 @@ interface OpenAPISpec {
   }[]
 }
 
-/**
- * Interface for Joi rule
- */
-interface JoiRule {
-  name: string
-  args?: {
-    limit?: number
-    regex?: RegExp
-    [key: string]: unknown
-  }
-  [key: string]: unknown
-}
-
-/**
- * Interface for Joi description
- */
-interface JoiDescription {
-  type: string
-  keys?: Record<string, JoiDescription>
-  items?: JoiDescription[]
-  rules?: JoiRule[]
-  patterns?: Array<{
-    key: string
-    rule: {
-      name: string
-      [key: string]: unknown
-    }
-    [key: string]: unknown
-  }>
-  matches?: Array<{
-    schema: JoiDescription
-    [key: string]: unknown
-  }>
-  flags?: {
-    description?: string
-    default?: unknown
-    [key: string]: unknown
-  }
-  allow?: unknown[]
-  [key: string]: unknown
-}
-
-/**
- * Interface for schema with describe method
- */
-interface SchemaWithDescribe {
-  describe: () => JoiDescription
-  [key: string]: unknown
-}
+// Remove JoiRule, JoiDescription, and SchemaWithDescribe interfaces since we're using joi-to-swagger
 
 /**
  * Generates OpenAPI documentation from an Express application
@@ -277,148 +230,21 @@ export class OpenApiGenerator {
   }
 
   /**
-   * Convert Joi schema to OpenAPI schema
-   * Note: This is a simplified implementation that handles common Joi types
+   * Convert Joi schema to OpenAPI schema using joi-to-swagger
    */
   private joiSchemaToOpenApi(schema: unknown): Record<string, unknown> {
     if (!schema || typeof schema !== 'object') {
       return { type: 'object' }
     }
 
-    // Check if schema has describe method
-    const schemaWithDescribe = schema as Partial<SchemaWithDescribe>
-    if (typeof schemaWithDescribe.describe !== 'function') {
-      return { type: 'object' }
-    }
-
     try {
-      const description = schemaWithDescribe.describe()
-      return this.convertJoiDescription(description)
+      // Use joi-to-swagger to convert the schema
+      const { swagger } = j2s(schema as any)
+      return swagger
     } catch (error) {
       console.error('Failed to convert Joi schema', error)
       return { type: 'object' }
     }
-  }
-
-  private convertJoiDescription(descriptionObj: unknown): Record<string, unknown> {
-    // Type guard to ensure the description is an object with the expected properties
-    if (!descriptionObj || typeof descriptionObj !== 'object') {
-      return { type: 'object' }
-    }
-
-    const description = descriptionObj as JoiDescription
-    const result: Record<string, unknown> = {}
-
-    // Handle type
-    switch (description.type) {
-      case 'object':
-        result.type = 'object'
-        result.properties = {}
-
-        if (description.keys) {
-          Object.entries(description.keys).forEach(([key, value]) => {
-            ;(result.properties as Record<string, unknown>)[key] = this.convertJoiDescription(value)
-          })
-        }
-
-        // Required properties
-        if (description.patterns && Array.isArray(description.patterns)) {
-          description.patterns.forEach((pattern) => {
-            if (pattern.rule && pattern.rule.name === 'required') {
-              if (!result.required) {
-                result.required = []
-              }
-              ;(result.required as string[]).push(pattern.key)
-            }
-          })
-        }
-        break
-
-      case 'array':
-        result.type = 'array'
-        if (description.items && Array.isArray(description.items) && description.items.length > 0) {
-          result.items = this.convertJoiDescription(description.items[0])
-        }
-        break
-
-      case 'string':
-        result.type = 'string'
-        // Handle string formats
-        if (description.rules && Array.isArray(description.rules)) {
-          description.rules.forEach((rule) => {
-            if (rule.name === 'email') {
-              result.format = 'email'
-            } else if (rule.name === 'uri') {
-              result.format = 'uri'
-            } else if (rule.name === 'min' && rule.args?.limit !== undefined) {
-              result.minLength = rule.args.limit
-            } else if (rule.name === 'max' && rule.args?.limit !== undefined) {
-              result.maxLength = rule.args.limit
-            } else if (rule.name === 'pattern' && rule.args?.regex) {
-              result.pattern = rule.args.regex.toString().slice(1, -1)
-            }
-          })
-        }
-        break
-
-      case 'number':
-      case 'integer':
-        result.type = description.type
-        // Handle number constraints
-        if (description.rules && Array.isArray(description.rules)) {
-          description.rules.forEach((rule) => {
-            if (rule.name === 'min' && rule.args?.limit !== undefined) {
-              result.minimum = rule.args.limit
-            } else if (rule.name === 'max' && rule.args?.limit !== undefined) {
-              result.maximum = rule.args.limit
-            } else if (rule.name === 'greater' && rule.args?.limit !== undefined) {
-              result.exclusiveMinimum = rule.args.limit
-            } else if (rule.name === 'less' && rule.args?.limit !== undefined) {
-              result.exclusiveMaximum = rule.args.limit
-            }
-          })
-        }
-        break
-
-      case 'boolean':
-        result.type = 'boolean'
-        break
-
-      case 'date':
-        result.type = 'string'
-        result.format = 'date-time'
-        break
-
-      case 'alternatives':
-        // For alternatives (anyOf in OpenAPI), we need to handle each type
-        if (description.matches && Array.isArray(description.matches) && description.matches.length > 0) {
-          result.anyOf = description.matches.map((match) => this.convertJoiDescription(match.schema))
-        }
-        break
-
-      default:
-        result.type = 'string'
-    }
-
-    // Add description if present
-    if (description.flags?.description) {
-      result.description = description.flags.description
-    }
-
-    // Add default value if present
-    if (description.flags?.default !== undefined) {
-      result.default = description.flags.default
-    }
-
-    // Handle enum values
-    if (description.allow && Array.isArray(description.allow)) {
-      const validValues = description.allow.filter((value) => value !== null)
-      if (validValues.length > 0) {
-        result.enum = validValues
-      }
-    }
-
-    return result
   }
 }
 

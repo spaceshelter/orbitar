@@ -57,9 +57,12 @@ export interface APIRequest<ReqBody, ResBody = object, P = core.ParamsDictionary
   extends express.Request<P, ResBody, ReqBody> {
   session: Session
 }
+
 export interface APIResponse<Payload> extends express.Response<ResponseBody<Payload>> {
   success(payload: Payload): void
+
   error(code: string, message: string, status?: number, meta?: object): void
+
   authRequired(): void
 }
 
@@ -103,7 +106,8 @@ export function apiMiddleware(): APIRequestHandler<unknown, unknown> {
 }
 
 export function validate<ReqBody, ResPayload>(schema: ObjectSchema<ReqBody>): APIRequestHandler<ReqBody, ResPayload> {
-  return (req, res, next) => {
+  // Create the request handler function
+  const validationHandler: APIRequestHandler<ReqBody, ResPayload> = (req, res, next) => {
     schema
       .validateAsync(req.body)
       .then((result) => {
@@ -118,6 +122,15 @@ export function validate<ReqBody, ResPayload>(schema: ObjectSchema<ReqBody>): AP
         })
       })
   }
+
+  // Attach the schema to the handler function for reflection access
+  Object.defineProperty(validationHandler, 'validatedObjectSchema', {
+    value: schema,
+    writable: false,
+    enumerable: true,
+  })
+
+  return validationHandler
 }
 
 // TODO: have a single source of truth with frontend/src/Conf.ts
