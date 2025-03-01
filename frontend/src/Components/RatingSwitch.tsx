@@ -31,6 +31,8 @@ export default function RatingSwitch(props: RatingSwitchProps) {
   const popupRef = useRef<HTMLDivElement>(null)
   const [votes, setVotes] = useState<VoteType[]>()
 
+  const isAprilFools = new Date().getDate() === 1 && new Date().getMonth() === 3
+
   useEffect(() => {
     setCurrentVote(props.rating.vote)
     setCurrentRating(props.rating.value)
@@ -166,20 +168,34 @@ export default function RatingSwitch(props: RatingSwitchProps) {
     disabled: props.votingDisabled,
   }
 
+  const buttons = [
+    { className: minusStyles, onClick: handleVote(-1), vote: -1 },
+    { className: plusStyles, onClick: handleVote(1), vote: 1 },
+  ]
+  if (props.double) {
+    buttons.unshift({ className: minus2Styles, onClick: handleVote(-2), vote: -2 })
+    buttons.push({ className: plus2Styles, onClick: handleVote(2), vote: 2 })
+  }
+  if (isAprilFools) {
+    buttons.reverse()
+  }
+  const renderedButtons = buttons.map((button) => (
+    <button
+      key={`vote-${button.vote}`}
+      {...buttonExtraProps}
+      className={button.className.join(' ')}
+      onClick={button.onClick}
+    ></button>
+  ))
+
   return (
     <div className={styles.ratingWrapper}>
       <div ref={ratingRef} className={styles.rating}>
-        {props.double && (
-          <button {...buttonExtraProps} className={minus2Styles.join(' ')} onClick={handleVote(-2)}></button>
-        )}
-        <button {...buttonExtraProps} className={minusStyles.join(' ')} onClick={handleVote(-1)}></button>
+        {renderedButtons.slice(0, buttons.length / 2)}
         <div onClick={handleVoteList} className={valueStyles.join(' ')}>
           {currentRating}
         </div>
-        <button {...buttonExtraProps} className={plusStyles.join(' ')} onClick={handleVote(1)}></button>
-        {props.double && (
-          <button {...buttonExtraProps} className={plus2Styles.join(' ')} onClick={handleVote(2)}></button>
-        )}
+        {renderedButtons.slice(buttons.length / 2)}
       </div>
       {showPopup && (
         <RatingList

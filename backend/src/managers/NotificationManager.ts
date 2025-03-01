@@ -8,6 +8,8 @@ import PostRepository from '../db/repositories/PostRepository'
 import SiteRepository from '../db/repositories/SiteRepository'
 import WebPushRepository from '../db/repositories/WebPushRepository'
 import { NotificationRaw } from '../db/types/NotificationRaw'
+import { CommentRaw, PostRaw } from '../db/types/PostRaw'
+import SiteManager from './SiteManager'
 import { CommentBaseInfo } from './types/CommentInfo'
 import {
   UserNotification,
@@ -27,23 +29,25 @@ export default class NotificationManager {
   private couldSendWebPush = false
   private siteConfig: SiteConfig
   private logger: Logger
+  private siteManagerLazy: () => SiteManager
 
   constructor(
     commentRepository: CommentRepository,
     notificationsRepository: NotificationsRepository,
     postRepository: PostRepository,
-    siteRepository: SiteRepository,
     userCache: UserCache,
+    siteManagerLazy: () => SiteManager /*FIXME: HAX*/,
     webPushRepository: WebPushRepository,
     vapidConfig: VapidConfig,
     siteConfig: SiteConfig,
     logger: Logger,
   ) {
+    this.siteManagerLazy = siteManagerLazy
     this.commentRepository = commentRepository
     this.notificationsRepository = notificationsRepository
     this.postRepository = postRepository
-    this.siteRepository = siteRepository
     this.userCache = userCache
+
     this.webPushRepository = webPushRepository
     this.siteConfig = siteConfig
     this.logger = logger
@@ -54,6 +58,10 @@ export default class NotificationManager {
     }
   }
 
+  get siteManager() {
+    return this.siteManagerLazy()
+  }
+
   async getNotificationsCounts(forUserId: number): Promise<{ unread: number; visible: number }> {
     const unread = this.notificationsRepository.getUnreadNotificationsCount(forUserId)
     const visible = this.notificationsRepository.getVisibleNotificationsCount(forUserId)
@@ -62,21 +70,17 @@ export default class NotificationManager {
 
   async getNotifications(forUserId: number): Promise<UserNotificationExpanded[]> {
     const rawNotifications = await this.notificationsRepository.getNotifications(forUserId)
-
-    const notifications: UserNotificationExpanded[] = []
-    for (const rawNotification of rawNotifications) {
-      const notification = await this.expandNotification(rawNotification)
-      if (notification) {
-        notifications.push(notification)
-      }
-    }
-
-    return notifications
+    return this.expandNotifications(rawNotifications)
   }
 
-  async expandNotification(notification: NotificationRaw): Promise<UserNotificationExpanded | undefined> {
+  async expandNotification(
+    notification: NotificationRaw,
+    cachedData: UserNotification | undefined = undefined,
+    cachedPost: PostRaw | undefined = undefined,
+    cachedComment: CommentRaw | undefined = undefined,
+  ): Promise<UserNotificationExpanded | undefined> {
     try {
-      const data = JSON.parse(notification.data) as UserNotification
+      const data = cachedData ? cachedData : (JSON.parse(notification.data) as UserNotification)
       data.type = notification.type
 
       switch (data.type) {
@@ -92,21 +96,27 @@ export default class NotificationManager {
             gender: byUserRaw.gender,
           }
 
-          const postRaw = await this.postRepository.getPost(data.source.postId)
+          const postRaw =
+            cachedPost && cachedPost.post_id === data.source.postId
+              ? cachedPost
+              : await this.postRepository.getPost(data.source.postId)
           if (!postRaw) {
             return
           }
-          const siteRaw = await this.siteRepository.getSiteById(postRaw.site_id)
+          const site = await this.siteManager.getSiteById(postRaw.site_id)
 
           const post = {
             id: postRaw.post_id,
-            site: siteRaw.subdomain,
+            site: site.site,
             title: postRaw.title,
           }
 
           let comment: CommentBaseInfo
           if (data.source.commentId) {
-            const commentRaw = await this.commentRepository.getComment(data.source.commentId)
+            const commentRaw =
+              cachedComment && cachedComment.comment_id === data.source.commentId
+                ? cachedComment
+                : await this.commentRepository.getComment(data.source.commentId)
             comment = {
               id: commentRaw.comment_id,
               content: commentRaw.source,
@@ -132,6 +142,42 @@ export default class NotificationManager {
     } catch {
       return
     }
+  }
+
+  async expandNotifications(notification: NotificationRaw[]): Promise<UserNotificationExpanded[] | undefined> {
+    const postIds = new Set<number>()
+    const commentIds = new Set<number>()
+    const parsedData = new Map<number, UserNotification>()
+    for (const n of notification) {
+      const data = JSON.parse(n.data) as UserNotification
+      if (data.source.postId) {
+        postIds.add(data.source.postId)
+      }
+      if (data.source.commentId) {
+        commentIds.add(data.source.commentId)
+      }
+      parsedData.set(n.notification_id, data)
+    }
+
+    const postsRaw = new Map(
+      (await this.postRepository.getPostsByIds(Array.from(postIds))).map((p) => [p.post_id, p] as const),
+    )
+    const commentsRaw = new Map(
+      (await this.commentRepository.getComments(Array.from(commentIds))).map((c) => [c.comment_id, c] as const),
+    )
+
+    const notifications: UserNotificationExpanded[] = []
+    for (const n of notification) {
+      const data = parsedData.get(n.notification_id)
+      const postRaw = postsRaw.get(data.source.postId)
+      const commentRaw = data.source.commentId ? commentsRaw.get(data.source.commentId) : undefined
+      const notification = await this.expandNotification(n, data, postRaw, commentRaw)
+      if (notification) {
+        notifications.push(notification)
+      }
+    }
+
+    return notifications
   }
 
   async sendNotification(forUserId: number, notification: UserNotification) {
