@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   caddy:
     image: caddy
@@ -30,7 +28,7 @@ services:
       BACKEND_DOMAIN: "backend"
       MEDIA_HOSTING_URL: "${MEDIA_HOSTING_URL}"
       MEDIA_HOSTING_CLIENT_ID: "${MEDIA_HOSTING_CLIENT_ID}"
-      FINGERPRINT: "${FINGERPRINT}"
+      FINGERPRINT: "${FINGERPRINT-}"
 
     volumes:
       - $PWD/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
@@ -41,6 +39,7 @@ services:
 
     depends_on:
       - backend
+      - frontend
     # Default caddy command borrowed from https://github.com/caddyserver/caddy-docker/blob/master/Dockerfile.tmpl
     command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
 

@@ -59,7 +59,7 @@ www.{$SERVER_DOMAIN:orbitar.local} {
 	import {$TLS_MODE:tls_off}
 
 	header X-Fingerprint "{$FINGERPRINT}"
-	header Access-Control-Allow-Origin {$SERVER_HOST}
+	header Access-Control-Allow-Origin *
 	header Access-Control-Expose-Headers "X-Fingerprint, X-Session-Id"
 
 	@cors_preflight method OPTIONS
