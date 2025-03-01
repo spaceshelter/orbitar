@@ -27,16 +27,16 @@
 
 ### Запуск production-сборки полностью в контейнере
 
-Пересборка фронта и бэка (если необходимо):
-
-```sh
-docker compose -p orbitar -f compose-deploy-nonssl.yml build --no-cache frontend backend
-```
-
 Запуск:
 
 ```sh
-docker compose -p orbitar -f compose-deploy-nonssl.yml up
+docker compose up
+```
+
+Пересборка фронта и бэка (если необходимо):
+
+```sh
+docker compose build --no-cache frontend backend
 ```
 
 ### Линт и форматирование

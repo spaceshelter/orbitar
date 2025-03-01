@@ -3,7 +3,7 @@
 1. Запустить контейнер с базой и веб-роутером (в корне проекта):
 
     ```sh
-    docker compose -f compose-dev.yml  up
+    docker compose -f compose-dev.yml up
     ```
 
    mysql повиснет на стандартном 3306 порту, redis на 6379.
