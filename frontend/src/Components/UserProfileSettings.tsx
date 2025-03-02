@@ -82,19 +82,10 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
   const confirmWrapper = (message: string, callback: () => void) => async (e: React.MouseEvent) => {
     e.preventDefault()
 
-    // Use our new AppState confirmAlert API
-    const confirmed = await confirmAlert({
-      title: 'Астанавитесь! Подумайте!',
+    await confirmAlert({
       message,
-      confirmLabel: 'Да!',
-      cancelLabel: 'Отмена',
       onConfirm: callback,
     })
-
-    // Alternative: if you want to use the callback directly when confirmed
-    if (confirmed) {
-      // callback(); // Uncomment if you remove the onConfirm above
-    }
   }
 
   const handleLogout = confirmWrapper(
@@ -322,11 +313,9 @@ export const MailboxSettings = observer(() => {
   const handleDelete = async (e: React.MouseEvent) => {
     e.preventDefault()
     await confirmAlert({
-      title: 'Астанавитесь! Подумайте!',
       message:
         'Вы действительно хотите удалить почтовый ящик? Вы больше не сможете получать новые шифровки, ' +
         'но вы сможете читать старые шифровки, адресованные вам.',
-      confirmLabel: 'Да!',
       onConfirm: () => {
         api.userAPI
           .savePublicKey('')

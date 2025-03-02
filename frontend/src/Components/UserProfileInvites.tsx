@@ -352,10 +352,7 @@ const ConfirmButton = (props: ConfirmButtonProps) => {
   const appState = useAppState()
   const handleConfirm = async () => {
     await appState.confirmAlert({
-      title: 'Астанавитесь!',
       message: props.message || '',
-      confirmLabel: 'Да!',
-      cancelLabel: 'Отмена',
       onConfirm: () => props.onAction(),
     })
   }

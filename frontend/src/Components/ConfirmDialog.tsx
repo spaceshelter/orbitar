@@ -4,6 +4,15 @@ import Overlay from './Overlay'
 
 import styles from './ConfirmDialog.module.scss'
 
+export const BUTTON_TYPES = {
+  primary: styles.primaryButton,
+  secondary: styles.secondaryButton,
+  danger: styles.dangerButton,
+  ghost: styles.ghostButton,
+} as const
+
+export type ButtonType = keyof typeof BUTTON_TYPES
+
 export interface ConfirmDialogProps {
   title?: string
   message: string
@@ -11,8 +20,8 @@ export interface ConfirmDialogProps {
   cancelLabel?: string
   onConfirm?: () => void
   onCancel: () => void
-  confirmButtonClassName?: string
-  cancelButtonClassName?: string
+  confirmButtonType?: ButtonType
+  cancelButtonType?: ButtonType
 }
 
 export default function ConfirmDialog(props: ConfirmDialogProps) {
@@ -23,8 +32,8 @@ export default function ConfirmDialog(props: ConfirmDialogProps) {
     cancelLabel = 'Отмена',
     onConfirm,
     onCancel,
-    confirmButtonClassName = '',
-    cancelButtonClassName = 'cancel',
+    confirmButtonType = 'danger',
+    cancelButtonType = 'secondary',
   } = props
 
   return (
@@ -34,10 +43,10 @@ export default function ConfirmDialog(props: ConfirmDialogProps) {
         {title && <h2 className={styles.title}>{title}</h2>}
         <div className={styles.message}>{message}</div>
         <div className={styles.buttons}>
-          <button className={confirmButtonClassName} onClick={onConfirm}>
+          <button className={BUTTON_TYPES[confirmButtonType]} onClick={onConfirm}>
             {confirmLabel}
           </button>
-          <button className={cancelButtonClassName} onClick={onCancel}>
+          <button className={BUTTON_TYPES[cancelButtonType]} onClick={onCancel}>
             {cancelLabel}
           </button>
         </div>

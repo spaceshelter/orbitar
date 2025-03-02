@@ -39,30 +39,47 @@
     border-radius: 4px;
     font-weight: bold;
     cursor: pointer;
-    border: none;
-    background: var(--primary);
-    color: var(--onAccent, #fff);
     transition: background-color 0.2s ease;
+  }
+}
 
-    &:hover {
-      background: var(--primaryHover);
-    }
+/* Button types */
+.primaryButton {
+  border: none;
+  background: var(--primary);
+  color: var(--onAccent, #fff);
 
-    &.cancel {
-      background: var(--fgSoftest, rgba(255, 255, 255, 0.1));
-      color: var(--fg);
+  &:hover {
+    background: var(--primaryHover);
+  }
+}
 
-      &:hover {
-        background: var(--fgSofter, rgba(255, 255, 255, 0.2));
-      }
-    }
+.secondaryButton {
+  border: none;
+  background: var(--fgSoftest, rgba(255, 255, 255, 0.1));
+  color: var(--fg);
 
-    &.danger {
-      background: var(--danger);
+  &:hover {
+    background: var(--fgSofter, rgba(255, 255, 255, 0.2));
+  }
+}
 
-      &:hover {
-        background: var(--dangerHover);
-      }
-    }
+.dangerButton {
+  border: none;
+  background: var(--danger);
+  color: var(--onAccent, #fff);
+
+  &:hover {
+    background: var(--dangerHover);
+  }
+}
+
+.ghostButton {
+  border: 1px solid var(--inactive-fg);
+  background: transparent;
+  color: var(--fg);
+
+  &:hover {
+    background: var(--dim1, rgba(255, 255, 255, 0.05));
   }
 }
