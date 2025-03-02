@@ -77,7 +77,7 @@
 .primaryButton {
   border: none;
   background: var(--primary);
-  color: var(--onAccent, #fff);
+  color: var(--onAccent);
 
   &:hover {
     background: var(--primaryHover);
@@ -86,18 +86,18 @@
 
 .secondaryButton {
   border: none;
-  background: var(--fgSoftest, rgba(255, 255, 255, 0.1));
+  background: var(--fgSoftest);
   color: var(--fg);
 
   &:hover {
-    background: var(--fgSofter, rgba(255, 255, 255, 0.2));
+    background: var(--fgSofter);
   }
 }
 
 .dangerButton {
   border: none;
   background: var(--danger);
-  color: var(--onAccent, #fff);
+  color: var(--onAccent);
 
   &:hover {
     background: var(--dangerHover);
@@ -110,6 +110,6 @@
   color: var(--fg);
 
   &:hover {
-    background: var(--dim1, rgba(255, 255, 255, 0.05));
+    background: var(--dim1);
   }
 }
