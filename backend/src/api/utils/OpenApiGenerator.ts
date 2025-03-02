@@ -234,7 +234,10 @@ export class OpenApiGenerator {
    * Get the OAuth2 scopes required for a route
    */
   private getRequiredScopes(path: string): string[] {
-    return ExpressOauth2ScopesFilter.pathToScopesList(path)
+    // Remove '/api/v1' prefix from path before converting to scopes
+    // This ensures scope names don't include the API version prefix
+    const cleanPath = path.replace(/^\/api\/v1/, '')
+    return ExpressOauth2ScopesFilter.pathToScopesList(cleanPath)
   }
 
   /**
