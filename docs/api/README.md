@@ -30,9 +30,13 @@ This documentation covers the Orbitar API endpoints, their parameters, authentic
 
 Most API endpoints require authentication. There are two ways to provide authentication:
 
-1. **Session Authentication**: Send a valid session ID in the `X-Session-Id` header. Session IDs are obtained by signing in through the `/auth/signin` endpoint.
+1. [**Session Authentication**](#session-authentication): Send a valid session ID in the `X-Session-Id` header. Session IDs are obtained by signing in through the `/auth/signin` endpoint:
 
-2. **OAuth2 Authentication**: Send an OAuth2 access token in the `Authorization` header using the Bearer scheme:
+   ```
+   X-Session-Id: your_session_id
+   ```
+
+2. [**OAuth2 Authentication**](https://github.com/spaceshelter/orbitar/tree/dev/docs/api/oauth2): Send an OAuth2 access token in the `Authorization` header using the Bearer scheme:
 
    ```
    Authorization: Bearer your_access_token
@@ -72,7 +76,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
 
 ## API Endpoints
 
-### Auth
+### Session authentication
 
 #### Sign In
 - **POST** `https://api.orbitar.space/api/v1/auth/signin`
@@ -126,7 +130,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/auth/signout \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id"
+    -H "Authorization: Bearer your_access_token"
   ```
 
 #### Reset Password
@@ -237,7 +241,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/auth/drop-password-and-sessions \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id"
+    -H "Authorization: Bearer your_access_token"
   ```
 
 ### Feeds
@@ -279,7 +283,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/feed/subscriptions \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"page": 1, "perpage": 20, "format": "html"}'
   ```
 
@@ -306,7 +310,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/feed/all \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"page": 1, "perpage": 20, "format": "html"}'
   ```
 
@@ -348,7 +352,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/feed/posts \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"site": "news", "page": 1, "perpage": 20, "format": "html"}'
   ```
 
@@ -389,7 +393,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/feed/watch \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"filter": "all", "page": 1, "perpage": 20, "format": "html"}'
   ```
 
@@ -415,7 +419,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/feed/sorting \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"site": "news", "feedSorting": 1}'
   ```
 
@@ -458,7 +462,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/post/get \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"id": 12345, "format": "html", "noComments": false}'
   ```
 
@@ -496,7 +500,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/post/create \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"site": "news", "title": "New Post", "content": "Post content", "format": "source"}'
   ```
 
@@ -535,7 +539,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/post/edit \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"id": 12345, "title": "Updated Title", "content": "Updated content", "format": "source"}'
   ```
 
@@ -574,7 +578,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/post/comment \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"post_id": 12345, "content": "Comment content", "format": "source"}'
   ```
 
@@ -609,7 +613,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/post/preview \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"content": "Content to preview"}'
   ```
 
@@ -647,7 +651,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/post/read \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"post_id": 12345, "comments": 10, "last_comment_id": 5678}'
   ```
 
@@ -683,7 +687,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/post/bookmark \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"post_id": 12345, "bookmark": true}'
   ```
 
@@ -719,7 +723,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/post/watch \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"post_id": 12345, "watch": true}'
   ```
 
@@ -746,7 +750,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/post/translate \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"id": 12345, "type": "post", "mode": "altTranslate"}'
   ```
 
@@ -772,7 +776,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/post/get-comment \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"id": 5678, "format": "html"}'
   ```
 
@@ -799,7 +803,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/post/edit-comment \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"id": 5678, "content": "Updated comment", "format": "source"}'
   ```
 
@@ -826,7 +830,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/post/history \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"id": 12345, "type": "post", "format": "html"}'
   ```
 
@@ -851,7 +855,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/post/get-public-key \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"username": "example_user"}'
   ```
 
@@ -952,7 +956,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/invite/list \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"username": "example_user"}'
   ```
 
@@ -977,7 +981,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/invite/regenerate \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"code": "ABC123"}'
   ```
 
@@ -1002,7 +1006,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/invite/create \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"reason": "Invited for project collaboration"}'
   ```
 
@@ -1027,7 +1031,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/invite/delete \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"code": "ABC123"}'
   ```
 
@@ -1053,7 +1057,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/invite/edit \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"code": "ABC123", "reason": "Updated reason"}'
   ```
 
@@ -1093,7 +1097,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/notifications/list \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id"
+    -H "Authorization: Bearer your_access_token"
   ```
 
 #### Mark Notification as Read
@@ -1117,7 +1121,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/notifications/read \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"id": 12345}'
   ```
 
@@ -1142,7 +1146,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/notifications/hide \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"id": 12345}'
   ```
 
@@ -1160,7 +1164,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/notifications/read/all \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id"
+    -H "Authorization: Bearer your_access_token"
   ```
 
 #### Hide All Notifications
@@ -1184,7 +1188,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/notifications/hide/all \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"readOnly": true}'
   ```
 
@@ -1209,7 +1213,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/notifications/subscribe \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"subscription": {"endpoint": "https://example.com", "keys": {"p256dh": "key", "auth": "auth"}}}'
   ```
 
@@ -1239,7 +1243,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/oauth2/clients \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id"
+    -H "Authorization: Bearer your_access_token"
   ```
 
 #### Get Client App
@@ -1263,7 +1267,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/oauth2/client \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"client_id": "client123"}'
   ```
 
@@ -1288,7 +1292,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/oauth2/clients-batch \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"client_ids": ["client123", "client456"]}'
   ```
 
@@ -1328,7 +1332,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/oauth2/client/register \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"name": "My App", "description": "Description", "redirectUris": "https://myapp.com/callback"}'
   ```
 
@@ -1356,7 +1360,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/oauth2/client/edit \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"clientId": "client123", "description": "Updated description", "redirectUris": "https://myapp.com/callback"}'
   ```
 
@@ -1381,7 +1385,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/oauth2/client/regenerate-secret \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"client_id": "client123"}'
   ```
 
@@ -1408,7 +1412,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/oauth2/client/update-logo \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"client_id": "client123", "url": "https://orbitar.media/images/logo.png"}'
   ```
 
@@ -1433,7 +1437,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/oauth2/client/delete \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"client_id": "client123"}'
   ```
 
@@ -1458,7 +1462,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/oauth2/verify-scopes \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"scopes": "status feed:subscriptions"}'
   ```
 
@@ -1476,7 +1480,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/oauth2/authorize \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"client_id": "client123", "response_type": "code", "redirect_uri": "https://example.com/callback", "scope": "status feed:subscriptions"}'
   ```
 
@@ -1501,7 +1505,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/oauth2/unauthorize \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"client_id": "client123"}'
   ```
 
@@ -1571,7 +1575,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/search \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"term": "search term", "scope": "post", "page": 1, "perpage": 20}'
   ```
 
@@ -1608,7 +1612,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/site/get \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"site": "news"}'
   ```
 
@@ -1635,7 +1639,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/site/subscribe \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"site": "news", "main": true, "bookmarks": false}'
   ```
 
@@ -1653,7 +1657,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/site/subscriptions \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id"
+    -H "Authorization: Bearer your_access_token"
   ```
 
 #### List Sites
@@ -1678,7 +1682,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/site/list \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"page": 1, "perpage": 50}'
   ```
 
@@ -1704,7 +1708,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/site/create \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"site": "tech", "name": "Technology"}'
   ```
 
@@ -1723,7 +1727,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/status \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id"
+    -H "Authorization: Bearer your_access_token"
   ```
 
 ### User
@@ -1761,7 +1765,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/user/profile \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"username": "example_user"}'
   ```
 
@@ -1802,7 +1806,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/user/posts \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"username": "example_user", "page": 1, "perpage": 20, "format": "html"}'
   ```
 
@@ -1830,7 +1834,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/user/comments \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"username": "example_user", "page": 1, "perpage": 20, "format": "html"}'
   ```
 
@@ -1855,7 +1859,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/user/karma \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"username": "example_user"}'
   ```
 
@@ -1880,7 +1884,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/user/savebio \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"bio": "My new bio"}'
   ```
 
@@ -1905,7 +1909,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/user/savename \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"name": "New Display Name"}'
   ```
 
@@ -1930,7 +1934,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/user/save-public-key \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"publicKey": "public_key_data"}'
   ```
 
@@ -1955,7 +1959,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/user/suggest-username \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"prefix": "john"}'
   ```
 
@@ -1994,7 +1998,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/vote/set \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"type": "post", "id": 12345, "vote": 1}'
   ```
 
@@ -2020,7 +2024,7 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   ```bash
   curl -X POST https://api.orbitar.space/api/v1/vote/list \
     -H "Content-Type: application/json" \
-    -H "X-Session-Id: your_session_id" \
+    -H "Authorization: Bearer your_access_token" \
     -d '{"type": "post", "id": 12345}'
   ```
 
