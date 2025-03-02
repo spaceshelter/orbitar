@@ -1,6 +1,7 @@
 import { Application } from 'express'
 import j2s from 'joi-to-swagger'
 
+import { config } from '../../config'
 import { ExpressOauth2ScopesFilter } from '../OAuth2Middleware'
 import { extractRouteInfo, RouteInfo } from './express-reflection'
 
@@ -87,6 +88,13 @@ export class OpenApiGenerator {
 
     const scopeDescriptions = this.scopesFilter.getScopesToDescriptions()
 
+    // Construct the base URLs using config values
+    const protocol = config.site.http ? 'http' : 'https'
+    const domain = config.site.domain
+    const baseUrl = `${protocol}://${domain}`
+    const apiDomain = `api.${domain}`
+    const apiBaseUrl = `${protocol}://${apiDomain}/api/v1`
+
     // Base OpenAPI specification
     const spec: OpenAPISpec = {
       openapi: '3.0.0',
@@ -97,8 +105,8 @@ export class OpenApiGenerator {
       },
       servers: [
         {
-          url: 'https://api.orbitar.space/api/v1',
-          description: 'Production API Server',
+          url: apiBaseUrl,
+          description: 'API Server',
         },
       ],
       paths: {},
@@ -109,8 +117,8 @@ export class OpenApiGenerator {
             type: 'oauth2',
             flows: {
               authorizationCode: {
-                authorizationUrl: 'https://orbitar.space/oauth2/authorize',
-                tokenUrl: 'https://api.orbitar.space/api/v1/oauth2/token',
+                authorizationUrl: `${baseUrl}/oauth2/authorize`,
+                tokenUrl: `${protocol}://${apiDomain}/api/v1/oauth2/token`,
                 scopes: {},
               },
             },
@@ -262,6 +270,12 @@ export function createOpenApiDocRoutes(app: Application, controllers?: Controlle
 
   // This endpoint would serve Swagger UI
   app.get('/api/v1/docs', (req, res) => {
+    // Construct the redirect URL for OAuth2
+    const protocol = config.site.http ? 'http' : 'https'
+    const domain = config.site.domain
+    // FIXME: This should be a config value
+    const redirectUrl = `${protocol}://api.${domain}/api/v1/docs/oauth2-redirect.html`
+
     res.send(`
       <!DOCTYPE html>
       <html lang="en">
@@ -269,13 +283,33 @@ export function createOpenApiDocRoutes(app: Application, controllers?: Controlle
           <meta charset="UTF-8">
           <title>Orbitar API Documentation</title>
           <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@4/swagger-ui.css">
+          <style>
+            .oauth-info {
+              background-color: #f8f9fa;
+              border: 1px solid #dee2e6;
+              border-radius: 4px;
+              padding: 15px;
+              margin: 20px 0;
+            }
+            .oauth-info code {
+              background-color: #e9ecef;
+              padding: 2px 4px;
+              border-radius: 3px;
+            }
+          </style>
         </head>
         <body>
+          <div class="oauth-info">
+            <h3>OAuth2 Configuration</h3>
+            <p>When configuring your OAuth2 client, make sure to set the following redirect URL:</p>
+            <code>${redirectUrl}</code>
+          </div>
           <div id="swagger-ui"></div>
           <script src="https://unpkg.com/swagger-ui-dist@4/swagger-ui-bundle.js"></script>
           <script>
             window.onload = function() {
-              window.ui = SwaggerUIBundle({
+              // Initialize Swagger UI
+              const ui = SwaggerUIBundle({
                 url: "/api/v1/docs/openapi.json",
                 dom_id: '#swagger-ui',
                 deepLinking: true,
@@ -284,8 +318,50 @@ export function createOpenApiDocRoutes(app: Application, controllers?: Controlle
                   SwaggerUIBundle.SwaggerUIStandalonePreset
                 ],
                 layout: "BaseLayout",
-                oauth2RedirectUrl: window.location.origin + "/api/v1/docs/oauth2-redirect.html"
+                oauth2RedirectUrl: "${redirectUrl}",
+                // Fix for OAuth2 flow
+                withCredentials: true,
+                responseInterceptor: (response) => {
+                  // Log OAuth responses for debugging
+                  if (response.url && response.url.includes('/oauth2/')) {
+                    console.log('OAuth2 Response:', response);
+                  }
+                  return response;
+                },
+                requestInterceptor: (req) => {
+                  // For OAuth2 requests, ensure scope parameter is included
+                  if (req.url.includes('/oauth2/authorize') && !req.url.includes('scope=')) {
+                    try {
+                      // We'll add the scopes parameter on the client side
+                      const spec = ui.getSystem().specSelectors.specJson().toJS();
+                      if (spec && spec.components && spec.components.securitySchemes && 
+                          spec.components.securitySchemes.oauth2 && 
+                          spec.components.securitySchemes.oauth2.flows.authorizationCode.scopes) {
+                        
+                        const availableScopes = Object.keys(spec.components.securitySchemes.oauth2.flows.authorizationCode.scopes).join(' ');
+                        req.url += (req.url.includes('?') ? '&' : '?') + 'scope=' + encodeURIComponent(availableScopes);
+                        console.log('Added scopes to authorization URL:', availableScopes);
+                      }
+                    } catch (e) {
+                      console.error('Error adding scopes:', e);
+                    }
+                  }
+                  
+                  // Log all OAuth2 requests
+                  if (req.url && req.url.includes('/oauth2/')) {
+                    console.log('OAuth2 Request:', req);
+                  }
+                  
+                  return req;
+                },
+                // Add OAuth client configuration to preserve state
+                persistAuthorization: true,
+                onComplete: function() {
+                  console.log('Swagger UI initialized');
+                }
               });
+              
+              window.ui = ui;
             };
           </script>
         </body>
@@ -300,65 +376,123 @@ export function createOpenApiDocRoutes(app: Application, controllers?: Controlle
       <html lang="en-US">
       <head>
         <title>Swagger UI: OAuth2 Redirect</title>
+        <style>
+          body {
+            font-family: sans-serif;
+            padding: 20px;
+          }
+          .debug-info {
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+            word-break: break-all;
+          }
+        </style>
       </head>
       <body>
+      <div id="debug-info" class="debug-info"></div>
       <script>
         'use strict';
         function run () {
-          var oauth2 = window.opener.swaggerUIRedirectOauth2;
-          var sentState = oauth2.state;
-          var redirectUrl = oauth2.redirectUrl;
-          var isValid, qp, arr;
+          const debugInfo = document.getElementById('debug-info');
+          try {
+            const logInfo = function(msg) {
+              console.log(msg);
+              debugInfo.innerHTML += msg + '\\n';
+            };
 
-          if (/code|token|error/.test(window.location.hash)) {
-            qp = window.location.hash.substring(1);
-          } else {
-            qp = location.search.substring(1);
-          }
+            // Log the URL data for debugging
+            logInfo('URL: ' + window.location.href);
+            logInfo('Search: ' + window.location.search);
+            logInfo('Hash: ' + window.location.hash);
 
-          arr = qp.split("&");
-          arr.forEach(function (v,i,_arr) { _arr[i] = '"' + v.replace('=', '":"') + '"';});
-          qp = qp ? JSON.parse('{' + arr.join() + '}',
-                  function (key, value) {
-                      return key === "" ? value : decodeURIComponent(value);
-                  }
-          ) : {};
+            var oauth2 = window.opener.swaggerUIRedirectOauth2;
+            if (!oauth2) {
+              logInfo('ERROR: swaggerUIRedirectOauth2 not found in window.opener');
+              return;
+            }
 
-          isValid = qp.state === sentState;
+            var sentState = oauth2.state;
+            var redirectUrl = oauth2.redirectUrl;
+            logInfo('Redirect URL: ' + redirectUrl);
+            logInfo('State: ' + sentState);
 
-          if (oauth2.auth.schema.get("flow") === "accessCode" && !oauth2.auth.code) {
+            var isValid, qp = {}, params;
+
+            // First check the search parameters
+            if (window.location.search && window.location.search.length > 1) {
+              params = new URLSearchParams(window.location.search.substring(1));
+              for (let [key, value] of params.entries()) {
+                qp[key] = value;
+              }
+              logInfo('Parsed from search: ' + JSON.stringify(qp));
+            }
+            
+            // Then check the hash parameters if no code was found
+            if (!qp.code && window.location.hash && window.location.hash.length > 1) {
+              params = new URLSearchParams(window.location.hash.substring(1));
+              for (let [key, value] of params.entries()) {
+                qp[key] = value;
+              }
+              logInfo('Parsed from hash: ' + JSON.stringify(qp));
+            }
+            
+            isValid = qp.state === sentState;
+            logInfo('isValid: ' + isValid);
+            logInfo('Found code: ' + (qp.code ? 'YES' : 'NO'));
+
+            if (oauth2.auth.schema.get("flow") === "accessCode" || 
+                oauth2.auth.schema.get("flow") === "authorizationCode" || 
+                oauth2.auth.schema.get("flow") === "authorization_code") {
+              logInfo('Flow type: ' + oauth2.auth.schema.get("flow"));
+              
               if (!isValid) {
-                  oauth2.errCb({
-                      authId: oauth2.auth.name,
-                      source: "auth",
-                      level: "warning",
-                      message: "Authorization may be unsafe, passed state was changed in server. The passed state wasn't returned from auth server."
-                  });
+                logInfo('WARNING: State mismatch');
+                oauth2.errCb({
+                  authId: oauth2.auth.name,
+                  source: "auth",
+                  level: "warning",
+                  message: "Authorization may be unsafe, passed state was changed in server. The passed state wasn't returned from auth server."
+                });
               }
 
               if (qp.code) {
-                  delete oauth2.state;
-                  oauth2.auth.code = qp.code;
-                  oauth2.callback({auth: oauth2.auth, redirectUrl: redirectUrl});
+                logInfo('Processing code: ' + qp.code);
+                delete oauth2.state;
+                oauth2.auth.code = qp.code;
+                oauth2.callback({auth: oauth2.auth, redirectUrl: redirectUrl});
               } else {
-                  let oauthErrorMsg;
-                  if (qp.error) {
-                      oauthErrorMsg = "["+qp.error+"]: " +
-                          (qp.error_description ? qp.error_description+ ". " : "no accessCode received from the server. ") +
-                          (qp.error_uri ? "More info: "+qp.error_uri : "");
-                  }
-
-                  oauth2.errCb({
-                      authId: oauth2.auth.name,
-                      source: "auth",
-                      level: "error",
-                      message: oauthErrorMsg || "[Authorization failed]: no accessCode received from the server."
-                  });
+                let oauthErrorMsg;
+                if (qp.error) {
+                  oauthErrorMsg = "["+qp.error+"]: " +
+                    (qp.error_description ? qp.error_description+ ". " : "no accessCode received from the server. ") +
+                    (qp.error_uri ? "More info: "+qp.error_uri : "");
+                }
+                
+                logInfo('Error: ' + (oauthErrorMsg || "[Authorization failed]: no accessCode received from the server."));
+                oauth2.errCb({
+                  authId: oauth2.auth.name,
+                  source: "auth",
+                  level: "error",
+                  message: oauthErrorMsg || "[Authorization failed]: no accessCode received from the server."
+                });
               }
-          } else {
+            } else {
+              logInfo('Flow type: ' + oauth2.auth.schema.get("flow") + ' (implicit)');
               oauth2.callback({auth: oauth2.auth, token: qp, isValid: isValid, redirectUrl: redirectUrl});
+            }
+            
+            logInfo('Processing complete, closing window in 10 seconds...');
+            setTimeout(function() {
+              window.close();
+            }, 10000);
+            
+          } catch (e) {
+            debugInfo.innerHTML += 'Error: ' + e.message + '\\n' + e.stack + '\\n';
           }
-          window.close();
         }
 
         if (document.readyState !== 'loading') {
