@@ -1,6 +1,6 @@
 # Orbitar API Documentation
 
-> Note: This documentation is automatically generated and based on the OpenAPI 3.0.0 schema and may not be exhaustive. For the most up-to-date API information, consult the [source code](https://github.com/spaceshelter/orbitar) or use your browser's web developer tools (Network tab) to inspect requests, payloads, and responses when using the https://orbitar.space website.
+> Note: This documentation is automatically generated and based on the [OpenAPI 3.0.0 schema](https://gist.github.com/Aivean/8f292bc84f6deff98db3967f8cebe97c) and may not be exhaustive. For the most up-to-date API information, consult the [source code](https://github.com/spaceshelter/orbitar) or use your browser's web developer tools (Network tab) to inspect requests, payloads, and responses when using the https://orbitar.space website.
 
 ## Table of Contents
 
@@ -9,7 +9,7 @@
 - [Request Format](#request-format)
 - [Rate Limiting](#rate-limiting)
 - [API Endpoints](#api-endpoints)
-  - [Auth](#auth)
+  - [Auth](#session-authentication)
   - [Feeds](#feeds)
   - [Posts and comments](#posts-and-comments)
   - [Invites](#invites)
