@@ -1,7 +1,6 @@
 import React, { MouseEventHandler, useEffect, useState } from 'react'
 
 import classNames from 'classnames'
-import { confirmAlert } from 'react-confirm-alert'
 import { FaEdit, FaKey, FaLink, FaTrash } from 'react-icons/fa'
 import { toast } from 'react-toastify'
 
@@ -99,7 +98,7 @@ interface OAuth2AppCardModalProps {
 
 export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
   const api = useAPI()
-  const { userInfo } = useAppState()
+  const { userInfo, confirmAlert } = useAppState()
   const userId = userInfo?.id
   const { client, onClientSecretUpdate } = props
   const [editing, setEditing] = useState(false)
@@ -107,15 +106,11 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
   const shouldShowManagementControls = client.author.id === userId && !props.disallowEditing
   const authorized = client.scopes !== null && client.scopes !== undefined
 
-  const confirmAction = (title: string, message: string, action: () => void) => {
-    confirmAlert({
+  const confirmAction = async (title: string, message: string, action: () => void) => {
+    await confirmAlert({
       title,
       message,
-      buttons: [
-        { label: 'Yes', onClick: action },
-        { label: 'Cancel', className: 'cancel' },
-      ],
-      overlayClassName: 'orbitar-confirm-overlay',
+      onConfirm: action,
     })
   }
 
@@ -188,12 +183,13 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
     )
   }
 
-  const handleUnInstallClick: MouseEventHandler = (e) => {
+  const handleUnInstallClick: MouseEventHandler = async (e) => {
     e.preventDefault()
+    console.log('Uninstalling app')
     const message = `Вы уверены, что хотите отключить приложение (отозвать его авторизацию)?
              Это действие отзовет весь доступ, ранее данный вами приложению.
             В принципе, это не страшно, можно подключить его потом снова.`
-    confirmAction('Астанавитесь!', message, () =>
+    await confirmAction('Астанавитесь!', message, () =>
       api.oauth2Api
         .unauthorizeClient(client.clientId)
         .then((updatedClient) => {

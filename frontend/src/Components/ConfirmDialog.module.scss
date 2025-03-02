@@ -1,0 +1,68 @@
+.container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg);
+  box-shadow: 0 4px 8px var(--shadow);
+  border: 1px solid var(--inactive-fg);
+  border-radius: 4px;
+  padding: 20px;
+  max-width: 500px;
+  width: 90%;
+  z-index: 10000;
+  text-align: center;
+}
+
+.title {
+  margin-top: 0;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 15px;
+  color: var(--primary);
+}
+
+.message {
+  margin-bottom: 20px;
+  line-height: 1.5;
+  color: var(--fg);
+}
+
+.buttons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+
+  button {
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    background: var(--primary);
+    color: var(--onAccent, #fff);
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background: var(--primaryHover);
+    }
+
+    &.cancel {
+      background: var(--fgSoftest, rgba(255, 255, 255, 0.1));
+      color: var(--fg);
+
+      &:hover {
+        background: var(--fgSofter, rgba(255, 255, 255, 0.2));
+      }
+    }
+
+    &.danger {
+      background: var(--danger);
+
+      &:hover {
+        background: var(--dangerHover);
+      }
+    }
+  }
+}

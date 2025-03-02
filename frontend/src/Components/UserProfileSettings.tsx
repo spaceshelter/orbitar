@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import classNames from 'classnames'
 import { observer } from 'mobx-react-lite'
-import { confirmAlert } from 'react-confirm-alert'
 import { toast } from 'react-toastify'
 
 import { useUserProfile } from '../API/use/useUserProfile'
@@ -58,6 +57,7 @@ export function getLegacyZoom(): boolean {
 export function getPreferredLang(): string {
   return localStorage.getItem('preferredLang') || 'ru'
 }
+
 export function getShowInlineTranslateButton(): boolean {
   return localStorage.getItem('showInlineTranslateButton') === 'true'
 }
@@ -70,6 +70,7 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
   const api = useAPI()
   const navigate = useNavigate()
   const location = useLocation()
+  const { confirmAlert } = useAppState()
 
   let gender = props.gender
 
@@ -78,23 +79,22 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
   const [preferredLang, setPreferredLang] = useState<string>(getPreferredLang())
   const [showInlineTranslateButton, setShowInlineTranslateButton] = useState<boolean>(getShowInlineTranslateButton())
 
-  const confirmWrapper = (message: string, callback: () => void) => (e: React.MouseEvent) => {
+  const confirmWrapper = (message: string, callback: () => void) => async (e: React.MouseEvent) => {
     e.preventDefault()
-    confirmAlert({
+
+    // Use our new AppState confirmAlert API
+    const confirmed = await confirmAlert({
       title: 'Астанавитесь! Подумайте!',
       message,
-      buttons: [
-        {
-          label: 'Да!',
-          onClick: callback,
-        },
-        {
-          label: 'Отмена',
-          className: 'cancel',
-        },
-      ],
-      overlayClassName: 'orbitar-confirm-overlay',
+      confirmLabel: 'Да!',
+      cancelLabel: 'Отмена',
+      onConfirm: callback,
     })
+
+    // Alternative: if you want to use the callback directly when confirmed
+    if (confirmed) {
+      // callback(); // Uncomment if you remove the onConfirm above
+    }
   }
 
   const handleLogout = confirmWrapper(
@@ -313,39 +313,30 @@ const BarmaliniAccess = observer(() => {
  */
 export const MailboxSettings = observer(() => {
   const api = useAPI()
-  const { userInfo } = useAppState()
+  const { userInfo, confirmAlert } = useAppState()
   const [state, refreshProfile] = useUserProfile(userInfo?.username || '')
   const publicKey = state.status === 'ready' && state.profile.publicKey
   const [creatingMailbox, setCreatingMailbox] = React.useState(false)
   const [revealPublicKey, setRevealPublicKey] = React.useState(false)
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = async (e: React.MouseEvent) => {
     e.preventDefault()
-    confirmAlert({
+    await confirmAlert({
       title: 'Астанавитесь! Подумайте!',
       message:
         'Вы действительно хотите удалить почтовый ящик? Вы больше не сможете получать новые шифровки, ' +
         'но вы сможете читать старые шифровки, адресованные вам.',
-      buttons: [
-        {
-          label: 'Да!',
-          onClick: () => {
-            api.userAPI
-              .savePublicKey('')
-              .then(() => {
-                refreshProfile()
-              })
-              .catch((error) => {
-                toast.error(error?.message || 'Не удалось удалить почтовый ящик.')
-              })
-          },
-        },
-        {
-          label: 'Отмена',
-          className: 'cancel',
-        },
-      ],
-      overlayClassName: 'orbitar-confirm-overlay',
+      confirmLabel: 'Да!',
+      onConfirm: () => {
+        api.userAPI
+          .savePublicKey('')
+          .then(() => {
+            refreshProfile()
+          })
+          .catch((error) => {
+            toast.error(error?.message || 'Не удалось удалить почтовый ящик.')
+          })
+      },
     })
   }
 
