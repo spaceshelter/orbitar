@@ -1,6 +1,6 @@
 # Orbitar API Documentation
 
-> Note: This documentation is based on the OpenAPI 3.0.0 schema and may not be exhaustive. For the most up-to-date API information, consult the [source code](https://github.com/spaceshelter/orbitar) or use your browser's web developer tools (Network tab) to inspect requests, payloads, and responses when using the https://orbitar.space website.
+> Note: This documentation is automatically generated and based on the OpenAPI 3.0.0 schema and may not be exhaustive. For the most up-to-date API information, consult the [source code](https://github.com/spaceshelter/orbitar) or use your browser's web developer tools (Network tab) to inspect requests, payloads, and responses when using the https://orbitar.space website.
 
 ## Table of Contents
 
