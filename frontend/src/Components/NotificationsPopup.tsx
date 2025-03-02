@@ -4,6 +4,7 @@ import classNames from 'classnames'
 import { toast } from 'react-toastify'
 
 import { NotificationInfo } from '../API/NotificationsAPIHelper'
+import useOnBack from '../API/use/useOnBack'
 import { useAPI, useAppState, useSiteName } from '../AppState/AppState'
 import { usePushService } from '../Services/PushService'
 import { UserGender } from '../Types/UserInfo'
@@ -28,6 +29,8 @@ export default function NotificationsPopup(props: NotificationsPopupProps) {
   const [error, setError] = useState('')
   const pushService = usePushService()
   const app = useAppState()
+
+  useOnBack(props.onClose || (() => null))
 
   const fetchNotifications = useMemo(() => {
     return async () => {
