@@ -2,6 +2,10 @@
 
 // TODO add css reset
 
+:root {
+  --scrollbar-width: 16px;
+}
+
 html {
   overflow-y: scroll;
 }
@@ -237,6 +241,7 @@ iframe.low-rating {
 html.no-scroll {
   overflow: hidden;
   margin-right: 16px;
+  --scrollbar-compensation: 16px;
 }
 
 ::-webkit-scrollbar {
