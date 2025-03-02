@@ -1,12 +1,24 @@
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .overlay {
   width: 100vw;
   height: 100vh;
   background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
   display: block;
   position: fixed;
   z-index: 999;
   content: '';
   left: 0;
   top: 0;
-  backdrop-filter: blur(3px);
+
+  /* Animation */
+  animation: overlayFadeIn 0.2s ease-out;
 }

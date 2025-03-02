@@ -1,7 +1,6 @@
 import React, { MouseEventHandler, useEffect, useState } from 'react'
 
 import classNames from 'classnames'
-import { confirmAlert } from 'react-confirm-alert'
 import { FaEdit, FaKey, FaLink, FaTrash } from 'react-icons/fa'
 import { toast } from 'react-toastify'
 
@@ -99,26 +98,13 @@ interface OAuth2AppCardModalProps {
 
 export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
   const api = useAPI()
-  const { userInfo } = useAppState()
+  const { userInfo, confirmAlert } = useAppState()
   const userId = userInfo?.id
   const { client, onClientSecretUpdate } = props
   const [editing, setEditing] = useState(false)
   const embedCode = `<app>${client.clientId}</app>`
   const shouldShowManagementControls = client.author.id === userId && !props.disallowEditing
   const authorized = client.scopes !== null && client.scopes !== undefined
-
-  const confirmAction = (title: string, message: string, action: () => void) => {
-    confirmAlert({
-      title,
-      message,
-      buttons: [
-        { label: 'Yes', onClick: action },
-        { label: 'Cancel', className: 'cancel' },
-      ],
-      overlayClassName: 'orbitar-confirm-overlay',
-    })
-  }
-
   const handleClientEdit: MouseEventHandler = (e) => {
     e.preventDefault()
     setEditing(true)
@@ -126,12 +112,11 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
 
   const handleClientSecretUpdate: MouseEventHandler = (e) => {
     e.preventDefault()
-    confirmAction(
-      'Астанавитесь!',
-      `Вы точно хотите сгенерировать новый секрет (client_secret) приложения? Это действие необратимо. 
+    confirmAlert({
+      message: `Вы точно хотите сгенерировать новый секрет (client_secret) приложения? Это действие необратимо. 
                 Новые авторизации, исользующие старый секрет, не будут работать.
                 Но токены, выданные ранее, работать продолжат.`,
-      () => {
+      onConfirm: () => {
         api.oauth2Api
           .regenerateClientSecret(client.clientId)
           .then((data) => {
@@ -141,7 +126,7 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
             toast.error('Failed to regenerate client secret')
           })
       },
-    )
+    })
   }
 
   const handleNewLogo = (url: string) => {
@@ -174,36 +159,40 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
 
   const handleClientDelete: MouseEventHandler = (e) => {
     e.preventDefault()
-    const message = 'Вы уверены, что хотите удалить приложение? Это необратимое действие.'
-    confirmAction('Астанавитесь!', message, () =>
-      api.oauth2Api
-        .deleteClient(client.clientId)
-        .then(() => {
-          props.onClientDelete?.(client.clientId)
-          props.onClose()
-        })
-        .catch(() => {
-          toast.error('Не удалось удалить приложение')
-        }),
-    )
+    confirmAlert({
+      message: 'Вы уверены, что хотите удалить приложение? Это необратимое действие.',
+      onConfirm: () => {
+        api.oauth2Api
+          .deleteClient(client.clientId)
+          .then(() => {
+            props.onClientDelete?.(client.clientId)
+            props.onClose()
+          })
+          .catch(() => {
+            toast.error('Не удалось удалить приложение')
+          })
+      },
+    })
   }
 
-  const handleUnInstallClick: MouseEventHandler = (e) => {
+  const handleUnInstallClick: MouseEventHandler = async (e) => {
     e.preventDefault()
-    const message = `Вы уверены, что хотите отключить приложение (отозвать его авторизацию)?
+    confirmAlert({
+      message: `Вы уверены, что хотите отключить приложение (отозвать его авторизацию)?
              Это действие отзовет весь доступ, ранее данный вами приложению.
-            В принципе, это не страшно, можно подключить его потом снова.`
-    confirmAction('Астанавитесь!', message, () =>
-      api.oauth2Api
-        .unauthorizeClient(client.clientId)
-        .then((updatedClient) => {
-          api.oauth2Api.clearClientCache()
-          props.onClientUpdate?.(updatedClient)
-        })
-        .catch(() => {
-          toast.error('Не удалось отключить приложение')
-        }),
-    )
+            В принципе, это не страшно, можно подключить его потом снова.`,
+      onConfirm: () => {
+        api.oauth2Api
+          .unauthorizeClient(client.clientId)
+          .then((updatedClient) => {
+            api.oauth2Api.clearClientCache()
+            props.onClientUpdate?.(updatedClient)
+          })
+          .catch(() => {
+            toast.error('Не удалось отключить приложение')
+          })
+      },
+    })
   }
 
   if (editing) {
