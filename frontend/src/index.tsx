@@ -47,10 +47,13 @@ export const MobXAwareRouter: FunctionComponent = (props) => {
 export const FakeRoot: React.FunctionComponent<{
   children: React.ReactNode
   appState?: AppState
-}> = ({ appState, children }) => {
+  initialTheme?: string
+}> = ({ appState, children, initialTheme }) => {
   const inner = (
     <MobXAwareRouter>
-      <ThemeProvider themeCollection={getThemes()}>{children}</ThemeProvider>
+      <ThemeProvider themeCollection={getThemes()} initialTheme={initialTheme}>
+        {children}
+      </ThemeProvider>
     </MobXAwareRouter>
   )
 

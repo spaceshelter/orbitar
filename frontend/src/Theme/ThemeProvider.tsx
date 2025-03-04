@@ -35,6 +35,14 @@ type ThemeProviderProps = {
   children: ReactNode
 }
 
+const globalStylesheet = (() => {
+  const head = document.head || document.getElementsByTagName('head')[0]
+  const style = document.createElement('style')
+  head.appendChild(style)
+  style.appendChild(document.createTextNode(''))
+  return style
+})()
+
 export function ThemeProvider(props: ThemeProviderProps) {
   const [theme, setThemeActual] = useState<string>()
   const [currentStyles, setCurrentStylesActual] = useState<{ styles: ThemeStyles; withTransition: boolean }>()
@@ -58,14 +66,6 @@ export function ThemeProvider(props: ThemeProviderProps) {
 
     setCurrentStylesActual({ styles, withTransition: false })
   }, [props.themeCollection, props.initialTheme])
-
-  const stylesheet = useMemo(() => {
-    const head = document.head || document.getElementsByTagName('head')[0]
-    const style = document.createElement('style')
-    head.appendChild(style)
-    style.appendChild(document.createTextNode(''))
-    return style
-  }, [])
 
   const { setTheme, setCurrentStyles } = useMemo(() => {
     const setTheme = (newTheme: string) => {
@@ -94,12 +94,14 @@ export function ThemeProvider(props: ThemeProviderProps) {
 
   useEffect(() => {
     if (!currentStyles) return
-    applyTheme(stylesheet, currentStyles.styles, currentStyles.withTransition)
-  }, [currentStyles, stylesheet])
+    applyTheme(globalStylesheet, currentStyles.styles, currentStyles.withTransition)
+  }, [currentStyles])
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, currentStyles: currentStyles?.styles, setCurrentStyles }}>
-      {props.children}
+      <div data-theme-provider data-theme={theme}>
+        {props.children}
+      </div>
     </ThemeContext.Provider>
   )
 }

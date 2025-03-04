@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 
 import type * as Vimeo from '@vimeo/player'
 import classNames from 'classnames'
-import ReactDOM from 'react-dom'
+import { createRoot } from 'react-dom/client'
 import { useHotkeys } from 'react-hotkeys-hook'
 import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch'
 
@@ -38,6 +38,7 @@ export const LARGE_AUTO_CUT = 650
 export const SMALL_AUTO_CUT = 100
 
 const iframeToOriginalEl = new WeakMap<HTMLIFrameElement, HTMLElement>()
+const elementToRoot = new WeakMap<HTMLElement, ReturnType<typeof createRoot>>()
 
 type ZoomedImg = {
   src: string
@@ -94,7 +95,7 @@ function updateContent(
   })
 
   div.querySelectorAll('span.secret-mail').forEach((mail) => {
-    updateMail(mail as HTMLSpanElement, setMailboxKey, currentUsername)
+    updateMail(mail as HTMLSpanElement, setMailboxKey, currentUsername, appState)
   })
 
   div.querySelectorAll('span.expand-button').forEach((expandButton) => {
@@ -127,8 +128,52 @@ function updateMailbox(mailbox: HTMLSpanElement, setMailboxKey: (key: MailboxKey
   })
 }
 
-function updateMail(mail: HTMLSpanElement, setMailboxKey: (key: MailKey | null) => void, currentUsername?: string) {
-  // check processed
+function renderWithTheme(container: HTMLElement, content: React.ReactNode, appState: AppState) {
+  const root = createRoot(container)
+  elementToRoot.set(container, root)
+
+  const renderContent = () => {
+    if (!elementToRoot.has(container)) return
+
+    root.render(<FakeRoot appState={appState}>{content}</FakeRoot>)
+  }
+
+  renderContent()
+
+  const handleStorageChange = (e: StorageEvent) => {
+    if (e.key === 'theme') {
+      renderContent()
+    }
+  }
+
+  window.addEventListener('storage', handleStorageChange)
+
+  const observer = new MutationObserver(() => {
+    renderContent()
+  })
+
+  const mainThemeProvider = document.querySelector('[data-theme-provider]')
+  if (mainThemeProvider) {
+    observer.observe(mainThemeProvider, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    })
+  }
+
+  return () => {
+    observer.disconnect()
+    window.removeEventListener('storage', handleStorageChange)
+    elementToRoot.delete(container)
+    root.unmount()
+  }
+}
+
+function updateMail(
+  mail: HTMLSpanElement,
+  setMailboxKey: (key: MailKey | null) => void,
+  currentUsername?: string,
+  appState?: AppState,
+) {
   if (mail.dataset.processed) {
     return
   }
@@ -142,10 +187,8 @@ function updateMail(mail: HTMLSpanElement, setMailboxKey: (key: MailKey | null) 
   let cipher: string | undefined
   let encodedKey: string
 
-  // try decode secret as json
   try {
     const j = JSON.parse(b64DecodeUnicode(secret))
-    // add mention "для @username"
     if (j.to && !mail.querySelector('span.mention')) {
       const mention = document.createElement('span')
       mention.classList.add('mention')
@@ -154,7 +197,6 @@ function updateMail(mail: HTMLSpanElement, setMailboxKey: (key: MailKey | null) 
       mail.appendChild(mention)
     }
 
-    // check v, to, c
     if (!j.v || !j.c || !Number.isInteger(j.v) || !j.toKey) {
       throw new Error('Invalid secret')
     } else if (j.to && j.to === currentUsername && j.toKey) {
@@ -173,25 +215,23 @@ function updateMail(mail: HTMLSpanElement, setMailboxKey: (key: MailKey | null) 
       return
     }
   } catch (e) {
-    // add error class
     mail.classList.add('secret-mail-error')
     return
   }
 
-  // just the text
   const title = mail.innerText.trim()
 
   const mailInnerHtml = mail.innerHTML
   let decoded = false
 
   mail.addEventListener('click', () => {
-    if (decoded || !cipher) {
+    if (decoded || !cipher || !appState) {
       return
     }
     mail.classList.remove('i', 'i-mail-secure')
     mail.classList.add('secret-mail-decoding')
 
-    ReactDOM.render(
+    const mailContent = (
       <SecretMailDecoderForm
         cipher={cipher}
         title={title}
@@ -204,58 +244,62 @@ function updateMail(mail: HTMLSpanElement, setMailboxKey: (key: MailKey | null) 
           } else {
             mail.classList.add('i', 'i-mail-secure')
             mail.classList.remove('secret-mail-decoding')
-            ReactDOM.unmountComponentAtNode(mail)
+            const existingRoot = elementToRoot.get(mail)
+            if (existingRoot) {
+              existingRoot.unmount()
+              elementToRoot.delete(mail)
+            }
             mail.innerHTML = mailInnerHtml
           }
         }}
-      />,
-      mail,
+      />
     )
+
+    renderWithTheme(mail, mailContent, appState)
   })
 }
 
 function updateInternalExpandButton(expandButton: HTMLElement, appState: AppState) {
-  // Extract post and comment numbers from data-attributes
   const postId = expandButton.getAttribute('data-post-id')
   const commentId = expandButton.getAttribute('data-comment-id')
   const nextLink = expandButton.nextElementSibling
 
-  // Add click event listener to the expand button
   const listener = (e: Event) => {
     const link = nextLink as HTMLAnchorElement
 
     e.preventDefault()
-    // after the expand button there is a link
     const rect = link.nextElementSibling as HTMLDivElement
 
     if (rect && rect.className === 'internal-link-rect') {
-      // If rect exists, unmount the component and remove the rect
-      ReactDOM.unmountComponentAtNode(rect)
+      const existingRoot = elementToRoot.get(rect)
+      if (existingRoot) {
+        existingRoot.unmount()
+        elementToRoot.delete(rect)
+      }
       rect.remove()
       expandButton.classList.remove('expanded')
     } else {
       expandButton.classList.add('expanded')
-      // If rect doesn't exist, create a new rect and mount the component
       const newRect = document.createElement('div')
       newRect.className = 'internal-link-rect'
-
-      // Add the rect after the link
       link.parentNode?.insertBefore(newRect, link.nextSibling)
 
-      // render the component
-      ReactDOM.render(
-        <FakeRoot appState={appState}>
-          <InternalLinkExpandComponent
-            postId={Number(postId)}
-            commentId={commentId ? Number(commentId) : undefined}
-            onClose={() => {
-              ReactDOM.unmountComponentAtNode(newRect)
-              newRect.remove()
-            }}
-          />
-        </FakeRoot>,
-        newRect,
+      const content = (
+        <InternalLinkExpandComponent
+          postId={Number(postId)}
+          commentId={commentId ? Number(commentId) : undefined}
+          onClose={() => {
+            const existingRoot = elementToRoot.get(newRect)
+            if (existingRoot) {
+              existingRoot.unmount()
+              elementToRoot.delete(newRect)
+            }
+            newRect.remove()
+          }}
+        />
       )
+
+      renderWithTheme(newRect, content, appState)
     }
     return false
   }
@@ -270,12 +314,7 @@ function updateOauthAppEmbed(appEl: HTMLDivElement, appState: AppState) {
   if (!clientId) {
     return
   }
-  ReactDOM.render(
-    <FakeRoot appState={appState}>
-      <OAuthEmbeddedAppComponent clientId={clientId} />
-    </FakeRoot>,
-    appEl,
-  )
+  renderWithTheme(appEl, <OAuthEmbeddedAppComponent clientId={clientId} />, appState)
 }
 
 function updateVideo(video: HTMLVideoElement) {
@@ -297,7 +336,6 @@ function updateVideo(video: HTMLVideoElement) {
 }
 
 function processYtEmbed(img: HTMLImageElement) {
-  // if has class youtube-embed convert to iframe on click
   const ytUrl = img.dataset.youtube
 
   if (ytUrl && !img.classList.contains('youtube-embed-processed')) {
@@ -349,9 +387,6 @@ function loadYTPlayer(onload: () => void) {
   }
 }
 
-/**
- * Convert mp4 video embeds into video elements
- */
 function processVideoEmbed(img: HTMLImageElement) {
   const videoUrl = img.dataset.video
 
@@ -394,7 +429,6 @@ function processCoubEmbed(img: HTMLImageElement) {
       iframe.classList.add('coub-embed')
       iframe.allowFullscreen = true
       iframe.frameBorder = '0'
-      // use current rendered image size as iframe size
       iframe.width = img.getBoundingClientRect().width.toString()
       iframe.height = img.getBoundingClientRect().height.toString()
       iframe.allow = 'autoplay'
@@ -403,7 +437,6 @@ function processCoubEmbed(img: HTMLImageElement) {
       iframeToOriginalEl.set(iframe, orignalEl)
       stopInnerVideos(document.body, iframe)
 
-      // coubs are always stopped when hidden
       observeOnHidden(iframe, () => {
         stopVideo(iframe)
       })
@@ -465,7 +498,6 @@ function updateImg(img: HTMLImageElement, setZoomedImg: (img: ZoomedImg | null) 
   }
 
   if (img.naturalWidth > 500 || img.naturalHeight > 500) {
-    // will be displayed as block if not immediately surrounded by <br>
     const nextBr = !img.nextSibling || img.nextSibling.nodeName === 'BR'
     const prevBr = !img.previousSibling || img.previousSibling.nodeName === 'BR'
     if (!nextBr || !prevBr) {
@@ -667,8 +699,6 @@ export default function ContentComponent(props: ContentComponentProps) {
   )
 }
 
-// extract zoom component
-
 interface ZoomComponentProps {
   src: string
   width: number
@@ -677,7 +707,6 @@ interface ZoomComponentProps {
 }
 
 function ZoomComponent(props: ZoomComponentProps) {
-  // need to account for retina displays
   const minScale = Math.min(1, window.innerWidth / props.width, window.innerHeight / props.height)
   const defaultScale = Math.min(window.innerWidth / props.width, window.innerHeight / props.height)
   const defaultTranslateX = (window.innerWidth - props.width * defaultScale) / 2
@@ -689,7 +718,6 @@ function ZoomComponent(props: ZoomComponentProps) {
     <div
       className={overlayStyles.overlay}
       onClick={(e) => {
-        // check if click originated from this element
         if ((e.target as HTMLElement).classList.contains('react-transform-wrapper')) {
           props.onExit()
         }
