@@ -1,8 +1,17 @@
 .tokenCounters {
   display: flex;
   align-items: center;
-  gap: 14px;
+  flex-wrap: wrap; // Allow tokens to wrap if needed
+  gap: 10px; // Slightly reduced gap for better fit
   margin-left: auto; /* Push to the right side */
+
+  // On very narrow screens, don't push to right
+  @media only screen and (max-width: 400px) {
+    margin-left: 0;
+    width: 100%; // Take full width
+    justify-content: flex-end; // But keep alignment to the right
+    margin-top: 5px; // Add spacing from other controls when wrapped
+  }
 }
 
 // Apply this class to parent comment/post when it has stars

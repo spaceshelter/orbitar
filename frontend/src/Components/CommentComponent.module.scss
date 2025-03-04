@@ -54,6 +54,7 @@
 
 .controls {
   display: flex;
+  flex-wrap: wrap; // Allow controls to wrap on narrow screens
   margin-top: 4px;
   margin-left: -3px;
   align-items: center;
@@ -61,9 +62,35 @@
 
   .control {
     margin-right: 25px;
+    margin-bottom: 5px; // Add margin for wrapped controls
     color: var(--fgSoftest);
     display: flex;
     align-items: center;
+  }
+
+  .answerButton {
+    display: flex;
+    align-items: center;
+
+    .answerText {
+      display: inline; // Default display
+    }
+
+    .answerIcon {
+      display: none; // Hidden by default
+    }
+
+    // On narrow screens, hide text and show icon
+    @media only screen and (max-width: 500px) {
+      .answerText {
+        display: none;
+      }
+
+      .answerIcon {
+        display: inline;
+        font-size: 20px;
+      }
+    }
   }
 
   button:before {
