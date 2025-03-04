@@ -54,42 +54,48 @@
 
 .controls {
   display: flex;
-  flex-wrap: wrap; // Allow controls to wrap on narrow screens
   margin-top: 4px;
   margin-left: -3px;
   align-items: center;
   overflow-x: visible;
+  flex-wrap: nowrap; // Keep everything on one row
 
   .control {
-    margin-right: 25px;
-    margin-bottom: 5px; // Add margin for wrapped controls
+    margin-right: 25px; // Normal margin for wide screens
     color: var(--fgSoftest);
     display: flex;
     align-items: center;
+    min-width: fit-content; // Ensure controls don't shrink too much
+  }
+
+  // Apply compact spacing and right alignment for TokenCounters only on narrow screens
+  @media only screen and (max-width: 768px) {
+    justify-content: space-between; // Distribute space on narrow screens
+
+    .control {
+      margin-right: 10px; // Reduced margin for more compact layout on narrow screens
+    }
+
+    // Make the last control (TokenCounters) push to the right side on narrow screens
+    .control:last-child {
+      margin-left: auto;
+      margin-right: 0;
+    }
   }
 
   .answerButton {
     display: flex;
     align-items: center;
+    white-space: nowrap;
 
     .answerText {
-      display: inline; // Default display
+      display: inline;
+      text-overflow: ellipsis;
+      overflow: hidden;
     }
 
     .answerIcon {
       display: none; // Hidden by default
-    }
-
-    // On narrow screens, hide text and show icon
-    @media only screen and (max-width: 500px) {
-      .answerText {
-        display: none;
-      }
-
-      .answerIcon {
-        display: inline;
-        font-size: 20px;
-      }
     }
   }
 
@@ -128,7 +134,6 @@
     fill: var(--fgSoftest);
     color: var(--fgSoftest);
     text-decoration: none;
-
     font-weight: normal;
 
     &.active {
@@ -140,16 +145,19 @@
       color: var(--primary);
     }
   }
+
   a {
     margin: 0 2px;
     &.active {
       color: var(--primary);
     }
   }
+
   button:disabled {
     fill: var(--fgGhost);
     cursor: default;
   }
+
   .label {
     margin-left: 5px;
   }

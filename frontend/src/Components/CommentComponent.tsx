@@ -251,7 +251,6 @@ export default function CommentComponent(props: CommentProps) {
             <div className={styles.control}>
               <button onClick={handleAnswerSwitch} className={styles.answerButton}>
                 <span className={styles.answerText}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</span>
-                <span className={styles.answerIcon + (!answerOpen ? ' i i-send' : ' i i-close')}></span>
               </button>
             </div>
           )}

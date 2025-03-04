@@ -58,13 +58,29 @@ input.title {
   margin-left: -4px;
   align-items: center;
   overflow-x: visible;
+  flex-wrap: nowrap; // Keep everything on one row
+
+  // Apply space-between layout only on narrow screens
+  @media only screen and (max-width: 768px) {
+    justify-content: space-between;
+  }
 }
 
 .control {
-  margin-right: 30px;
+  margin-right: 30px; // Normal margin for wide screens
   display: flex;
   align-items: center;
   color: var(--fgSoftest);
+  min-width: fit-content; // Ensure controls don't shrink too much
+
+  // Apply compact spacing and right alignment only on narrow screens
+  @media only screen and (max-width: 768px) {
+    // Make the last control (TokenCounters) push to the right side
+    &:last-child {
+      margin-left: auto;
+      margin-right: 0;
+    }
+  }
 
   button,
   > a {
