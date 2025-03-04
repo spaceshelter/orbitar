@@ -13,6 +13,7 @@ import { CreateCommentComponentRestricted } from './CreateCommentComponent'
 import { HistoryComponent } from './HistoryComponent'
 import RatingSwitch from './RatingSwitch'
 import { SignatureComponent } from './SignatureComponent'
+import TokenCounters, { hasStars } from './TokenCounters'
 import { getPreferredLang, getShowInlineTranslateButton } from './UserProfileSettings'
 
 import { ReactComponent as OptionsIcon } from '../Assets/options.svg'
@@ -114,9 +115,12 @@ export default function CommentComponent(props: CommentProps) {
     return getShowInlineTranslateButton() && props.comment.language !== getPreferredLang()
   }, [props.comment])
 
+  // Check if this comment should be starred
+  const isStarred = hasStars(props.comment.id)
+
   return (
     <div
-      className={`comment ${styles.comment} ${props.comment.isNew ? ' isNew' : ''} ${isFlat ? ' isFlat' : ''}`}
+      className={`comment ${styles.comment} ${props.comment.isNew ? ' isNew' : ''} ${isFlat ? ' isFlat' : ''} ${isStarred ? 'isStarred' : ''}`}
       data-comment-id={props.comment.id}
     >
       <div className='commentBody' ref={contentRef}>
@@ -248,6 +252,11 @@ export default function CommentComponent(props: CommentProps) {
               <button onClick={handleAnswerSwitch}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</button>
             </div>
           )}
+
+          {/* Token counters */}
+          <div className={styles.control}>
+            <TokenCounters entityId={props.comment.id} entityType='comment' />
+          </div>
         </div>
       </div>
       {props.comment.answers || answerOpen ? (

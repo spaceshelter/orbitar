@@ -1,0 +1,63 @@
+.tokenCounters {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto; /* Push to the right side */
+}
+
+// Apply this class to parent comment/post when it has stars
+:global(.comment.isStarred > .commentBody) {
+  background-color: rgba(40, 193, 220, 0.05); // Light blue background (--primary with high transparency)
+  border-radius: 4px;
+  padding: 4px 8px;
+  margin: -4px -8px 0 -8px;
+
+  @media only screen and (min-width: 990px) {
+    padding: 4px 12px;
+    margin: -4px -12px 0 -12px;
+  }
+}
+
+:global(.postComponent.isStarred) {
+  background-color: rgba(40, 193, 220, 0.05); // Light blue background (--primary with high transparency)
+  border-radius: 4px;
+  padding: 6px 8px;
+  margin: -6px -8px 64px -8px; // Preserve bottom margin
+}
+
+.tokenCounter {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: var(--fgSoftest);
+
+  .count {
+    margin-left: 2px;
+    font-weight: 600;
+  }
+
+  // Common styles for all icons
+  svg {
+    width: 22px;
+    height: 22px;
+    margin-right: 2px;
+    fill: currentColor;
+  }
+
+  // Star is displayed with full brightness (primary color)
+  .star {
+    color: var(--primary);
+    svg {
+      fill: var(--primary);
+    }
+  }
+
+  // Notes and bookmarks are displayed with reduced brightness
+  .note,
+  .bookmark {
+    opacity: 0.7;
+    svg {
+      fill: var(--fgSoft);
+    }
+  }
+}
