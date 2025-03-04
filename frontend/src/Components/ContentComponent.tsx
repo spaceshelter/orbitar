@@ -134,24 +134,12 @@ function renderWithTheme(container: HTMLElement, content: React.ReactNode, appSt
 
   const renderContent = () => {
     if (!elementToRoot.has(container)) return
-
     root.render(<FakeRoot appState={appState}>{content}</FakeRoot>)
   }
 
   renderContent()
 
-  const handleStorageChange = (e: StorageEvent) => {
-    if (e.key === 'theme') {
-      renderContent()
-    }
-  }
-
-  window.addEventListener('storage', handleStorageChange)
-
-  const observer = new MutationObserver(() => {
-    renderContent()
-  })
-
+  const observer = new MutationObserver(renderContent)
   const mainThemeProvider = document.querySelector('[data-theme-provider]')
   if (mainThemeProvider) {
     observer.observe(mainThemeProvider, {
@@ -162,7 +150,6 @@ function renderWithTheme(container: HTMLElement, content: React.ReactNode, appSt
 
   return () => {
     observer.disconnect()
-    window.removeEventListener('storage', handleStorageChange)
     elementToRoot.delete(container)
     root.unmount()
   }
