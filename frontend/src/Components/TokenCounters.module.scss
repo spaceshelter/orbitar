@@ -7,7 +7,7 @@
 
 // Apply this class to parent comment/post when it has stars
 :global(.comment.isStarred > .commentBody) {
-  background-color: rgba(40, 193, 220, 0.05); // Light blue background (--primary with high transparency)
+  background: linear-gradient(to right, rgba(40, 193, 220, 0.05), rgba(100, 120, 255, 0.03)); // Cosmic gradient
   border-radius: 4px;
   padding: 4px 8px;
   margin: -4px -8px 0 -8px;
@@ -19,7 +19,7 @@
 }
 
 :global(.postComponent.isStarred) {
-  background-color: rgba(40, 193, 220, 0.05); // Light blue background (--primary with high transparency)
+  background: linear-gradient(to right, rgba(40, 193, 220, 0.05), rgba(100, 120, 255, 0.03)); // Cosmic gradient
   border-radius: 4px;
   padding: 6px 8px;
   margin: -6px -8px 64px -8px; // Preserve bottom margin
@@ -44,11 +44,27 @@
     fill: currentColor;
   }
 
-  // Star is displayed with full brightness (primary color)
+  // Star is displayed with full brightness (primary color) and animated cosmic glow
   .star {
     color: var(--primary);
     svg {
       fill: var(--primary);
+      width: 24px; // Slightly larger than other icons
+      height: 24px;
+      filter: drop-shadow(0 0 2px var(--primary)); // Enhanced glow effect
+      animation: starPulse 2s infinite ease-in-out;
+    }
+  }
+
+  @keyframes starPulse {
+    0% {
+      filter: drop-shadow(0 0 2px var(--primary));
+    }
+    50% {
+      filter: drop-shadow(0 0 4px var(--primary));
+    }
+    100% {
+      filter: drop-shadow(0 0 2px var(--primary));
     }
   }
 
