@@ -66,7 +66,10 @@ function updateContent(
   setMailboxKey: (key: MailboxKey | MailKey | null) => void,
   setCut: (cut: boolean) => void,
   currentUsername?: string,
-) {
+): Array<() => void> {
+  // This array will collect all cleanup functions
+  const cleanupFunctions: Array<() => void> = []
+
   div.querySelectorAll('img').forEach((img) => {
     if (img.complete) {
       updateImg(img, setZoomedImg)
@@ -95,16 +98,21 @@ function updateContent(
   })
 
   div.querySelectorAll('span.secret-mail').forEach((mail) => {
-    updateMail(mail as HTMLSpanElement, setMailboxKey, currentUsername, appState)
+    const cleanup = updateMail(mail as HTMLSpanElement, setMailboxKey, currentUsername, appState)
+    if (cleanup) cleanupFunctions.push(cleanup)
   })
 
   div.querySelectorAll('span.expand-button').forEach((expandButton) => {
-    updateInternalExpandButton(expandButton as HTMLElement, appState)
+    const cleanup = updateInternalExpandButton(expandButton as HTMLElement, appState)
+    if (cleanup) cleanupFunctions.push(cleanup)
   })
 
   div.querySelectorAll('div.oauth-app').forEach((appEl) => {
-    updateOauthAppEmbed(appEl as HTMLDivElement, appState)
+    const cleanup = updateOauthAppEmbed(appEl as HTMLDivElement, appState)
+    if (cleanup) cleanupFunctions.push(cleanup)
   })
+
+  return cleanupFunctions
 }
 
 function updateMailbox(mailbox: HTMLSpanElement, setMailboxKey: (key: MailboxKey | null) => void) {
@@ -132,24 +140,10 @@ function renderWithTheme(container: HTMLElement, content: React.ReactNode, appSt
   const root = createRoot(container)
   elementToRoot.set(container, root)
 
-  const renderContent = () => {
-    if (!elementToRoot.has(container)) return
-    root.render(<FakeRoot appState={appState}>{content}</FakeRoot>)
-  }
-
-  renderContent()
-
-  const observer = new MutationObserver(renderContent)
-  const mainThemeProvider = document.querySelector('[data-theme-provider]')
-  if (mainThemeProvider) {
-    observer.observe(mainThemeProvider, {
-      attributes: true,
-      attributeFilter: ['data-theme'],
-    })
-  }
+  // Simply render with the appState, which contains observable theme
+  root.render(<FakeRoot appState={appState}>{content}</FakeRoot>)
 
   return () => {
-    observer.disconnect()
     elementToRoot.delete(container)
     root.unmount()
   }
@@ -160,7 +154,7 @@ function updateMail(
   setMailboxKey: (key: MailKey | null) => void,
   currentUsername?: string,
   appState?: AppState,
-) {
+): (() => void) | undefined {
   if (mail.dataset.processed) {
     return
   }
@@ -210,8 +204,9 @@ function updateMail(
 
   const mailInnerHtml = mail.innerHTML
   let decoded = false
+  let cleanup: (() => void) | undefined
 
-  mail.addEventListener('click', () => {
+  const clickHandler = () => {
     if (decoded || !cipher || !appState) {
       return
     }
@@ -231,10 +226,9 @@ function updateMail(
           } else {
             mail.classList.add('i', 'i-mail-secure')
             mail.classList.remove('secret-mail-decoding')
-            const existingRoot = elementToRoot.get(mail)
-            if (existingRoot) {
-              existingRoot.unmount()
-              elementToRoot.delete(mail)
+            if (cleanup) {
+              cleanup()
+              cleanup = undefined
             }
             mail.innerHTML = mailInnerHtml
           }
@@ -242,14 +236,24 @@ function updateMail(
       />
     )
 
-    renderWithTheme(mail, mailContent, appState)
-  })
+    cleanup = renderWithTheme(mail, mailContent, appState)
+  }
+
+  mail.addEventListener('click', clickHandler)
+
+  return () => {
+    mail.removeEventListener('click', clickHandler)
+    if (cleanup) {
+      cleanup()
+    }
+  }
 }
 
-function updateInternalExpandButton(expandButton: HTMLElement, appState: AppState) {
+function updateInternalExpandButton(expandButton: HTMLElement, appState: AppState): (() => void) | undefined {
   const postId = expandButton.getAttribute('data-post-id')
   const commentId = expandButton.getAttribute('data-comment-id')
   const nextLink = expandButton.nextElementSibling
+  let contentCleanup: (() => void) | undefined
 
   const listener = (e: Event) => {
     const link = nextLink as HTMLAnchorElement
@@ -258,10 +262,9 @@ function updateInternalExpandButton(expandButton: HTMLElement, appState: AppStat
     const rect = link.nextElementSibling as HTMLDivElement
 
     if (rect && rect.className === 'internal-link-rect') {
-      const existingRoot = elementToRoot.get(rect)
-      if (existingRoot) {
-        existingRoot.unmount()
-        elementToRoot.delete(rect)
+      if (contentCleanup) {
+        contentCleanup()
+        contentCleanup = undefined
       }
       rect.remove()
       expandButton.classList.remove('expanded')
@@ -276,32 +279,42 @@ function updateInternalExpandButton(expandButton: HTMLElement, appState: AppStat
           postId={Number(postId)}
           commentId={commentId ? Number(commentId) : undefined}
           onClose={() => {
-            const existingRoot = elementToRoot.get(newRect)
-            if (existingRoot) {
-              existingRoot.unmount()
-              elementToRoot.delete(newRect)
+            if (contentCleanup) {
+              contentCleanup()
+              contentCleanup = undefined
             }
             newRect.remove()
           }}
         />
       )
 
-      renderWithTheme(newRect, content, appState)
+      contentCleanup = renderWithTheme(newRect, content, appState)
     }
     return false
   }
+
   if (nextLink && nextLink.tagName === 'A') {
     expandButton.addEventListener('click', listener)
     nextLink.addEventListener('click', listener)
+
+    return () => {
+      expandButton.removeEventListener('click', listener)
+      nextLink.removeEventListener('click', listener)
+      if (contentCleanup) {
+        contentCleanup()
+      }
+    }
   }
+
+  return undefined
 }
 
-function updateOauthAppEmbed(appEl: HTMLDivElement, appState: AppState) {
+function updateOauthAppEmbed(appEl: HTMLDivElement, appState: AppState): (() => void) | undefined {
   const clientId = appEl.dataset.clientId
   if (!clientId) {
-    return
+    return undefined
   }
-  renderWithTheme(appEl, <OAuthEmbeddedAppComponent clientId={clientId} />, appState)
+  return renderWithTheme(appEl, <OAuthEmbeddedAppComponent clientId={clientId} />, appState)
 }
 
 function updateVideo(video: HTMLVideoElement) {
@@ -608,7 +621,22 @@ export default function ContentComponent(props: ContentComponentProps) {
       return
     }
 
-    updateContent(appState, content, setZoomedImg, setMailboxKey, setCut, props.currentUsername)
+    // Track all cleanup functions that need to be called when unmounting
+    const cleanupFunctions: Array<() => void> = []
+
+    // Update content and collect any cleanup functions
+    const updateCleanupFns = updateContent(
+      appState,
+      content,
+      setZoomedImg,
+      setMailboxKey,
+      setCut,
+      props.currentUsername,
+    )
+    if (updateCleanupFns) {
+      cleanupFunctions.push(...updateCleanupFns)
+    }
+
     let resizeObserver: ResizeObserver | null = null
 
     if (props.lowRating) {
@@ -644,14 +672,17 @@ export default function ContentComponent(props: ContentComponentProps) {
         resizeObserver = new ResizeObserver(handleResize)
         resizeObserver.observe(content)
       }
+    }
 
-      return () => {
-        if (resizeObserver) {
-          resizeObserver.disconnect()
-        }
+    // Return a combined cleanup function that runs all collected cleanups
+    return () => {
+      cleanupFunctions.forEach((cleanup) => cleanup())
+
+      if (resizeObserver) {
+        resizeObserver.disconnect()
       }
     }
-  }, [props.content, contentDiv, props.autoCut, props.lowRating])
+  }, [props.content, contentDiv, props.autoCut, props.lowRating, appState])
 
   useEffect(() => {
     if (!props.autoCut && cut) {

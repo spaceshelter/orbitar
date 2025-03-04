@@ -1,8 +1,10 @@
-import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, ReactNode, useContext, useEffect, useMemo, useRef } from 'react'
 
 import rgba from 'color-normalize'
 import colorspace from 'color-space'
+import { observer } from 'mobx-react-lite'
 
+import { useAppState } from '../AppState/AppState'
 import { themes } from '../theme'
 
 type ColorTree = string | { [key: string]: ColorTree }
@@ -20,10 +22,8 @@ export type ThemeCollection = {
 }
 
 type ThemeContextState = {
-  theme?: string
-  setTheme: (theme: string, transitionTime?: number) => void
   currentStyles?: ThemeStyles
-  setCurrentStyles: (theme: ThemeStyles, transitionTime?: number) => void
+  setCurrentStyles: (theme: ThemeStyles, withTransition?: boolean) => void
 }
 
 const ThemeContext = createContext<ThemeContextState>({} as ThemeContextState)
@@ -43,71 +43,79 @@ const globalStylesheet = (() => {
   return style
 })()
 
-export function ThemeProvider(props: ThemeProviderProps) {
-  const [theme, setThemeActual] = useState<string>()
-  const [currentStyles, setCurrentStylesActual] = useState<{ styles: ThemeStyles; withTransition: boolean }>()
+export const ThemeProvider = observer((props: ThemeProviderProps) => {
+  const appState = useAppState()
+  const [currentStyles, setCurrentStylesActual] = useMemo(() => {
+    // Use a ref to track if we're in a transition
+    const state = { styles: undefined as ThemeStyles | undefined, withTransition: false }
 
+    const setCurrentStyles = (styles: ThemeStyles, withTransition = true) => {
+      state.styles = styles
+      state.withTransition = withTransition
+      applyTheme(globalStylesheet, styles, withTransition)
+    }
+
+    return [state, setCurrentStyles] as const
+  }, [])
+
+  // Initialize theme from AppState
   useEffect(() => {
-    // Restore theme and styles from localStorage
-    let { theme, styles } = restoreTheme()
+    let theme = props.initialTheme || appState.theme
+    let styles = props.themeCollection[theme]
 
-    if (!theme) {
-      theme = props.initialTheme || 'light'
+    if (!styles) {
+      // Try to use preferred color scheme as fallback
+      const preferredTheme = getPreferredColorScheme()
+      if (preferredTheme && props.themeCollection[preferredTheme]) {
+        theme = preferredTheme
+        styles = props.themeCollection[preferredTheme]
+      } else {
+        theme = 'light'
+        styles = props.themeCollection.light
+      }
     }
 
-    if (theme) {
-      setThemeActual(theme)
+    // Set theme in AppState if it changed
+    if (theme !== appState.theme) {
+      appState.setTheme(theme)
     }
 
-    // Don't override predefined themes
+    // Apply initial theme without transition
+    setCurrentStylesActual(styles, false)
+  }, [props.themeCollection, props.initialTheme, appState])
+
+  // React to theme changes from AppState, with a flag to prevent transition on initial render
+  const initialRenderRef = useRef(true)
+  useEffect(() => {
+    const theme = appState.theme
     if (props.themeCollection[theme]) {
-      styles = props.themeCollection[theme]
+      // Skip transition on initial render to prevent flash
+      const withTransition = !initialRenderRef.current
+      initialRenderRef.current = false
+      setCurrentStylesActual(props.themeCollection[theme], withTransition)
     }
-
-    setCurrentStylesActual({ styles, withTransition: false })
-  }, [props.themeCollection, props.initialTheme])
-
-  const { setTheme, setCurrentStyles } = useMemo(() => {
-    const setTheme = (newTheme: string) => {
-      setThemeActual(newTheme)
-      if (props.themeCollection[newTheme]) {
-        setCurrentStyles(props.themeCollection[newTheme])
-      }
-    }
-
-    const setCurrentStyles = (styles: ThemeStyles) => {
-      setCurrentStylesActual({ styles, withTransition: true })
-    }
-
-    return { setTheme, setCurrentStyles }
-  }, [props.themeCollection])
-
-  useEffect(() => {
-    if (theme) {
-      if (props.themeCollection[theme]) {
-        storeTheme(theme)
-      } else if (currentStyles) {
-        storeTheme(theme, currentStyles.styles)
-      }
-    }
-  }, [props.themeCollection, theme, currentStyles])
-
-  useEffect(() => {
-    if (!currentStyles) return
-    applyTheme(globalStylesheet, currentStyles.styles, currentStyles.withTransition)
-  }, [currentStyles])
+  }, [appState.theme, props.themeCollection, setCurrentStylesActual])
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, currentStyles: currentStyles?.styles, setCurrentStyles }}>
-      <div data-theme-provider data-theme={theme}>
-        {props.children}
-      </div>
+    <ThemeContext.Provider value={{ currentStyles: currentStyles.styles, setCurrentStyles: setCurrentStylesActual }}>
+      <div data-theme={appState.theme}>{props.children}</div>
     </ThemeContext.Provider>
   )
-}
+})
 
 export function useTheme() {
-  return useContext(ThemeContext)
+  const appState = useAppState()
+  const themeContext = useContext(ThemeContext)
+
+  return {
+    theme: appState.theme,
+    setTheme: appState.setTheme.bind(appState),
+    currentStyles: themeContext.currentStyles,
+    setCurrentStyles: (theme: ThemeStyles, transitionTime?: number) => {
+      // Convert transitionTime (number) to withTransition (boolean)
+      themeContext.setCurrentStyles(theme, transitionTime !== undefined)
+    },
+  }
 }
 
 function getPreferredColorScheme() {
@@ -118,34 +126,6 @@ function getPreferredColorScheme() {
   } else {
     return undefined
   }
-}
-
-function restoreTheme() {
-  const storedStyles = localStorage.getItem('theme')
-  if (!storedStyles) {
-    const preferredColorScheme = getPreferredColorScheme()
-    if (preferredColorScheme) {
-      const themes = getThemes()
-      return { theme: preferredColorScheme, styles: themes[preferredColorScheme] }
-    }
-    return { theme: undefined, styles: undefined }
-  }
-  try {
-    const result = JSON.parse(storedStyles)
-    return { theme: result.theme, styles: result.styles }
-  } catch {
-    return { theme: undefined, styles: undefined }
-  }
-}
-
-function storeTheme(theme: string, styles?: ThemeStyles) {
-  localStorage.setItem(
-    'theme',
-    JSON.stringify({
-      theme,
-      styles,
-    }),
-  )
 }
 
 function applyTheme(stylesheet: HTMLStyleElement, toStyle: ThemeStyles, withTransition = false) {

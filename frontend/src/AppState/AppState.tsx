@@ -78,6 +78,10 @@ export class AppState {
 
     @observable
     confirmDialogModal: ReactElement<ConfirmDialogProps> | undefined = undefined;
+    
+    @observable
+    theme: string = localStorage.getItem('themeName') || 
+      (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 
     browserHistory = createBrowserHistory();
     router = new RouterStore(this.browserHistory);
@@ -154,6 +158,12 @@ export class AppState {
     @action
     forceReload() {
         this.reloadCounter++;
+    }
+    
+    @action
+    setTheme(value: string) {
+        this.theme = value;
+        localStorage.setItem('themeName', value);
     }
 
     @action
