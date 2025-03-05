@@ -86,22 +86,6 @@
     min-width: fit-content; /* Ensure controls don't shrink too much */
   }
 
-  .answerButton {
-    display: flex;
-    align-items: center;
-    white-space: nowrap;
-
-    .answerText {
-      display: inline;
-      text-overflow: ellipsis;
-      overflow: hidden;
-    }
-
-    .answerIcon {
-      display: none; // Hidden by default
-    }
-  }
-
   button:before {
     font-size: 24px;
   }

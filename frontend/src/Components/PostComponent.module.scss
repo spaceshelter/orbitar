@@ -64,7 +64,7 @@ input.title {
   justify-content: flex-start;
 
   .control {
-    margin-right: min(3vw, 30px);
+    margin-right: max(min(3vw, 30px), 16px);
   }
 
   /* On narrow screens, use proportional spacing with justified distribution */
