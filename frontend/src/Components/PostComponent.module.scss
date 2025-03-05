@@ -57,30 +57,34 @@ input.title {
   margin-top: 8px;
   margin-left: -4px;
   align-items: center;
-  overflow-x: visible;
-  flex-wrap: nowrap; // Keep everything on one row
+  flex-wrap: nowrap; /* Keep everything on one row */
+  width: 100%; /* Ensure it takes full width */
+  position: relative; /* For positioning context */
+  scrollbar-width: none; /* Hide scrollbar in Firefox */
+  justify-content: flex-start;
 
-  // Apply space-between layout only on narrow screens
-  @media only screen and (max-width: 768px) {
-    justify-content: space-between;
+  .control {
+    margin-right: min(3vw, 30px);
+  }
+
+  /* On narrow screens, use proportional spacing with justified distribution */
+  @media only screen and (max-width: 600px) {
+    /* Push TokenCounters to right on narrow screens only */
+    .control:last-child {
+      margin-left: auto !important; /* Force right alignment */
+    }
+  }
+
+  &::-webkit-scrollbar {
+    display: none; /* Hide scrollbar in WebKit browsers */
   }
 }
 
 .control {
-  margin-right: 30px; // Normal margin for wide screens
   display: flex;
   align-items: center;
   color: var(--fgSoftest);
-  min-width: fit-content; // Ensure controls don't shrink too much
-
-  // Apply compact spacing and right alignment only on narrow screens
-  @media only screen and (max-width: 768px) {
-    // Make the last control (TokenCounters) push to the right side
-    &:last-child {
-      margin-left: auto;
-      margin-right: 0;
-    }
-  }
+  min-width: fit-content; /* Ensure controls don't shrink too much */
 
   button,
   > a {

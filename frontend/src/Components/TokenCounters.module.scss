@@ -1,16 +1,18 @@
 .tokenCounters {
   display: flex;
   align-items: center;
-  flex-wrap: wrap; // Allow tokens to wrap if needed
-  gap: 10px; // Slightly reduced gap for better fit
-  margin-left: auto; /* Push to the right side */
+  flex-wrap: nowrap; /* Keep tokens in a single row */
+  gap: 8px; /* Compact gap between tokens */
+  white-space: nowrap; /* Prevent wrapping */
 
-  // On very narrow screens, don't push to right
-  @media only screen and (max-width: 400px) {
-    margin-left: 0;
-    width: 100%; // Take full width
-    justify-content: flex-end; // But keep alignment to the right
-    margin-top: 5px; // Add spacing from other controls when wrapped
+  /* Ensure tokens stay grouped together regardless of screen size */
+  min-width: fit-content;
+
+  /* Add subtle visual separator on narrow screens */
+  @media only screen and (max-width: 600px) {
+    border-left: 1px solid var(--fgAlmostInvisible);
+    padding-left: 8px;
+    margin-left: 4px;
   }
 }
 
