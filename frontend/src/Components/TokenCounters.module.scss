@@ -53,6 +53,8 @@
     height: 22px;
     margin-right: 2px;
     fill: currentColor;
+    position: relative;
+    top: 2px; /* Shift only the icons down by 2px */
   }
 
   // Star is displayed with full brightness (primary color) and animated cosmic glow
