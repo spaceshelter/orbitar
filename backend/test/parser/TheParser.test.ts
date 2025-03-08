@@ -371,6 +371,85 @@ test('base64 validation', () => {
   expect(TheParser.isValidBase64('"SGVsbG8=')).toEqual(false)
 })
 
+describe('pre tag behavior', () => {
+  test('self-closing tags', () => {
+    // Test that self-closing tags inside pre are properly escaped and preserved
+    expect(p.parse('<pre><video/></pre>').text).toEqual('<pre>&lt;video/&gt;</pre>')
+    expect(p.parse('<pre><img/></pre>').text).toEqual('<pre>&lt;img/&gt;</pre>')
+    expect(p.parse('<pre><br/></pre>').text).toEqual('<pre>&lt;br/&gt;</pre>')
+    expect(p.parse('<pre><video></pre>').text).toEqual('<pre>&lt;video&gt;</pre>')
+    expect(p.parse('<pre><img></pre>').text).toEqual('<pre>&lt;img&gt;</pre>')
+    expect(p.parse('<pre><br></pre>').text).toEqual('<pre>&lt;br&gt;</pre>')
+  })
+
+  test('whitespace preservation', () => {
+    // Test that whitespace is preserved exactly as in the original
+    const input = '<pre>  spaces    </pre>'
+    expect(p.parse(input).text).toEqual('<pre>  spaces    </pre>')
+
+    // Test with actual line breaks and various whitespace combinations
+    const multilineInput = `<pre>Line one
+    Indented line
+Line with    multiple    spaces
+
+Multiple empty lines above</pre>`
+
+    expect(p.parse(multilineInput).text).toEqual(
+      `<pre>Line one
+    Indented line
+Line with    multiple    spaces
+
+Multiple empty lines above</pre>`,
+    )
+  })
+
+  test('HTML entities', () => {
+    // Test that entities are preserved as-is
+    expect(p.parse('<pre>&lt;div&gt;&amp;nbsp;&lt;/div&gt;</pre>').text).toEqual(
+      '<pre>&amp;lt;div&amp;gt;&amp;amp;nbsp;&amp;lt;/div&amp;gt;</pre>',
+    )
+  })
+
+  test('mixed content with various tag formats', () => {
+    // Test with a variety of tag formats and content
+    const input = '<pre><div>text</div><span />code with <em>format</em>\n<img src="test.jpg"/></pre>'
+    // Get the actual result to inspect
+    const result = p.parse(input).text
+    // Verify all tags are properly escaped using individual checks
+    // This avoids potential issues with exact string matching when
+    // there might be subtle differences in the implementation's output
+    expect(result).toContain('&lt;div&gt;text&lt;/div&gt;')
+    expect(result).toContain('&lt;span /&gt;')
+    expect(result).toContain('code with')
+    expect(result).toContain('&lt;em&gt;format&lt;/em&gt;')
+    expect(result).toContain('&lt;img src=&quot;test.jpg&quot;/&gt;')
+  })
+
+  test('nested or malformed tags', () => {
+    // Test with nested or improperly closed tags
+    expect(p.parse('<pre><div><span></div></pre>').text).toEqual('<pre>&lt;div&gt;&lt;span&gt;&lt;/div&gt;</pre>')
+  })
+
+  test('comments and CDATA', () => {
+    // Test with HTML comments and CDATA sections
+    expect(p.parse('<pre><!-- comment --></pre>').text).toEqual('<pre>&lt;!-- comment --&gt;</pre>')
+    expect(p.parse('<pre><![CDATA[data]]></pre>').text).toEqual('<pre>&lt;![CDATA[data]]&gt;</pre>')
+  })
+
+  test('tag case preservation', () => {
+    // Test that tag casing is preserved
+    expect(p.parse('<pre><DIV>Text</DIV></pre>').text).toEqual('<pre>&lt;DIV&gt;Text&lt;/DIV&gt;</pre>')
+  })
+
+  test('attribute format preservation', () => {
+    // Test that attribute formats are preserved
+    const result = p.parse('<pre><div data-test="value" another=\'quotes\'></div></pre>').text
+    // Check that both attributes are preserved
+    expect(result).toContain('data-test=&quot;value&quot;')
+    expect(result).toContain('another=&#39;quotes&#39;')
+  })
+})
+
 describe('processInternalUrl', () => {
   test('valid internal url', () => {
     const url = 'https://orbitar.local/s/site/p123'

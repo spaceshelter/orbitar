@@ -1,4 +1,3 @@
-import render from 'dom-serializer'
 import { ChildNode, Document, Element } from 'domhandler'
 import escapeHTML from 'escape-html'
 import { escape as htmlEscape } from 'html-escaper'
@@ -47,6 +46,8 @@ export default class TheParser {
 
   // Stack of tags that are currently being parsed, for internal use only
   private parseChildNodesStack: string[]
+  // Original version of the text that is being parsed, used to get the original HTML for <pre> tags
+  private originalDocumentString: string
 
   constructor(parserConfig: ParserConfig) {
     this.parserConfig = parserConfig
@@ -104,8 +105,11 @@ export default class TheParser {
 
     const doc = this.parseDocument(text, {
       decodeEntities: false,
+      withStartIndices: true,
+      withEndIndices: true,
     })
 
+    this.originalDocumentString = text
     this.parseChildNodesStack.length = 0 // clear stack, should not be necessary, but just in case
     const parseResult = this.parseChildNodes(doc.childNodes)
     parseResult.mentions = [...new Set(parseResult.mentions)]
@@ -124,6 +128,10 @@ export default class TheParser {
       return false
     }
     return this.parseChildNodesStack.includes(disallowed)
+  }
+
+  private renderOriginalHtml(node: ChildNode): string {
+    return this.originalDocumentString.substring(node.startIndex, node.endIndex + 1)
   }
 
   private parseChildNodes(doc: ChildNode[]): ParseResult {
@@ -494,11 +502,14 @@ export default class TheParser {
   }
 
   parsePre(node: Element): ParseResult {
-    const result = this.parseChildNodes(node.children)
-    const escapedContent = htmlEscape(render(node.children, { encodeEntities: false }))
+    // Use the original HTML text rather than the parsed DOM to preserve self-closing tags
+    const originalHtml = htmlEscape(node.children.map((child) => this.renderOriginalHtml(child)).join(''))
+
     return {
-      ...result,
-      text: `<pre>${escapedContent}</pre>`,
+      mentions: [],
+      urls: [],
+      images: [],
+      text: `<pre>${originalHtml}</pre>`,
     }
   }
 
