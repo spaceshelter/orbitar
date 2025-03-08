@@ -46,6 +46,9 @@ export class AppState {
     @observable
     appLoadingState = AppLoadingState.loading;
 
+    @observable
+    theme = 'light';
+
     @observable.struct
     userInfo: UserInfo | undefined = undefined; // undefined means not authorized
 
@@ -96,6 +99,11 @@ export class AppState {
         this.cache = makeAutoObservable(new APICache());
         this.api = new APIHelper(apiBase, this);
         this.api.init().then().catch();
+
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            this.theme = savedTheme;
+        }
     }
 
     @computed
@@ -227,6 +235,12 @@ export class AppState {
                 />
             );
         });
+    }
+
+    @action
+    setTheme(value: string) {
+        this.theme = value;
+        localStorage.setItem('theme', value);
     }
 }
 

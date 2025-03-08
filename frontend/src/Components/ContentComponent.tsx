@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 
 import type * as Vimeo from '@vimeo/player'
 import classNames from 'classnames'
+import { autorun } from 'mobx'
 import { createRoot } from 'react-dom/client'
 import { useHotkeys } from 'react-hotkeys-hook'
 import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch'
@@ -140,24 +141,14 @@ function renderWithTheme(container: HTMLElement, content: React.ReactNode, appSt
   const root = createRoot(container)
   elementToRoot.set(container, root)
 
-  const renderContent = () => {
-    if (!elementToRoot.has(container)) return
+  const disposer = autorun(() => {
+    // create reactive dependency on theme
+    void appState.theme // void for suppressing no-unused-expressions
     root.render(<FakeRoot appState={appState}>{content}</FakeRoot>)
-  }
-
-  renderContent()
-
-  const observer = new MutationObserver(renderContent)
-  const mainThemeProvider = document.querySelector('[data-theme-provider]')
-  if (mainThemeProvider) {
-    observer.observe(mainThemeProvider, {
-      attributes: true,
-      attributeFilter: ['data-theme'],
-    })
-  }
+  })
 
   return () => {
-    observer.disconnect()
+    disposer()
     elementToRoot.delete(container)
     root.unmount()
   }
