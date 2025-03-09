@@ -503,7 +503,13 @@ export default class TheParser {
 
   parsePre(node: Element): ParseResult {
     // Use the original HTML text rather than the parsed DOM to preserve self-closing tags
-    const originalHtml = htmlEscape(node.children.map((child) => this.renderOriginalHtml(child)).join(''))
+    let originalHtml = this.renderOriginalHtml(node)
+
+    // strip <pre> </pre> from the original HTML
+    originalHtml = originalHtml.replace(/^<pre[^>]*>/gi, '').replace(/<\/\s*pre>$/gi, '')
+
+    // escape
+    originalHtml = escapeHTML(originalHtml)
 
     return {
       mentions: [],

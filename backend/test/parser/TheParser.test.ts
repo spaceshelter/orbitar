@@ -415,14 +415,10 @@ Multiple empty lines above</pre>`,
     const input = '<pre><div>text</div><span />code with <em>format</em>\n<img src="test.jpg"/></pre>'
     // Get the actual result to inspect
     const result = p.parse(input).text
-    // Verify all tags are properly escaped using individual checks
-    // This avoids potential issues with exact string matching when
-    // there might be subtle differences in the implementation's output
-    expect(result).toContain('&lt;div&gt;text&lt;/div&gt;')
-    expect(result).toContain('&lt;span /&gt;')
-    expect(result).toContain('code with')
-    expect(result).toContain('&lt;em&gt;format&lt;/em&gt;')
-    expect(result).toContain('&lt;img src=&quot;test.jpg&quot;/&gt;')
+    // Verify all tags are properly escaped as a single string
+    expect(result).toEqual(
+      '<pre>&lt;div&gt;text&lt;/div&gt;&lt;span /&gt;code with &lt;em&gt;format&lt;/em&gt;\n&lt;img src=&quot;test.jpg&quot;/&gt;</pre>',
+    )
   })
 
   test('nested or malformed tags', () => {
@@ -443,10 +439,44 @@ Multiple empty lines above</pre>`,
 
   test('attribute format preservation', () => {
     // Test that attribute formats are preserved
-    const result = p.parse('<pre><div data-test="value" another=\'quotes\'></div></pre>').text
-    // Check that both attributes are preserved
-    expect(result).toContain('data-test=&quot;value&quot;')
-    expect(result).toContain('another=&#39;quotes&#39;')
+    const result = p.parse('<pre><div data-test="value" another=\'quotes\'></div></pre>end').text
+    // Check that attributes are properly escaped and preserved
+    expect(result).toEqual('<pre>&lt;div data-test=&quot;value&quot; another=&#39;quotes&#39;&gt;&lt;/div&gt;</pre>end')
+  })
+
+  // test spaces inside the tag
+  test('spaces inside the tag', () => {
+    const result = p.parse('<pre> <div > </div > </pre>end').text
+    expect(result).toEqual('<pre> &lt;div &gt; &lt;/div &gt; </pre>end')
+  })
+
+  test('spaces inside the tag2', () => {
+    const result = p.parse('start<pre> <div test="1"   test="2"> </div> </pre>end').text
+    expect(result).toEqual('start<pre> &lt;div test=&quot;1&quot;   test=&quot;2&quot;&gt; &lt;/div&gt; </pre>end')
+  })
+
+  test('test unmatched tag inside pre', () => {
+    const result = p.parse('start<pre><div>test</pre>end').text
+    expect(result).toEqual('start<pre>&lt;div&gt;test</pre>end')
+  })
+
+  test('pre tag with unclosed tag', () => {
+    const result = p.parse('<pre><blockquote>content</pre>end')
+    expect(result.text).toEqual('<pre>&lt;blockquote&gt;content</pre>end')
+  })
+
+  test('pre tag with > in attribute', () => {
+    const result = p.parse('<pre attr=">">content</pre>end')
+    // FIXME: the correct expected value should be '<pre>content</pre>end'
+    // but the hacky stripping logic in the parser doesn't strip attributes of pre tag
+    // the fix for this would be too complicated,
+    // need to wait for the htmlparser2 to fix this bug: https://github.com/fb55/htmlparser2/issues/2060
+    expect(result.text).toEqual('<pre>&quot;&gt;content</pre>end')
+  })
+
+  test('pre tag with line breaks', () => {
+    const result = p.parse('<pre\nattr="value">content</pre>')
+    expect(result.text).toEqual('<pre>content</pre>')
   })
 })
 
