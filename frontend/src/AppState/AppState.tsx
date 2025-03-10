@@ -47,7 +47,7 @@ export class AppState {
     appLoadingState = AppLoadingState.loading;
 
     @observable
-    theme: string = '';
+    theme = '';
 
     @observable.struct
     userInfo: UserInfo | undefined = undefined; // undefined means not authorized
