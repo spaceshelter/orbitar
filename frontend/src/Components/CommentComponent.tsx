@@ -3,10 +3,12 @@ import React, { useMemo, useState } from 'react'
 import OutsideClickHandler from 'react-outside-click-handler'
 import { toast } from 'react-toastify'
 
+import { MarkerTargetType } from '../API/MarkerAPI'
 import { useInterpreter } from '../API/use/useInterpreter'
-import { useAPI } from '../AppState/AppState'
+import { useAPI, useAppState } from '../AppState/AppState'
 import Conf from '../Conf'
 import { CommentInfo, PostLinkInfo } from '../Types/PostInfo'
+import AddMarkerComponent from './AddMarkerComponent'
 import { AltTranslateButton, AnnotateButton, TranslateButton } from './ContentButtons'
 import ContentComponent, { LARGE_AUTO_CUT } from './ContentComponent'
 import { CreateCommentComponentRestricted } from './CreateCommentComponent'
@@ -39,8 +41,10 @@ export default function CommentComponent(props: CommentProps) {
   const [editingText, setEditingText] = useState<false | string>(false)
   const [showHistory, setShowHistory] = useState(false)
   const [showOptions, setShowOptions] = useState(false)
+  const [showAddMarker, setShowAddMarker] = useState(false)
 
   const api = useAPI()
+  const appState = useAppState()
   const {
     currentMode,
     inProgress,
@@ -102,6 +106,24 @@ export default function CommentComponent(props: CommentProps) {
 
   const toggleHistory = () => {
     setShowHistory(!showHistory)
+  }
+
+  const handleOpenAddMarker = () => {
+    setShowOptions(false)
+    setShowAddMarker(true)
+  }
+
+  const handleCloseAddMarker = () => {
+    setShowAddMarker(false)
+  }
+
+  const handleMarkerAdded = () => {
+    //FIXME
+    // Just log that the marker was added since we can't update the comment
+    // We'd need a page reload to see updates
+    console.log('Marker added to comment')
+    // In a real implementation, we'd update the token counts
+    // but Comment doesn't have an onChange handler
   }
 
   const { author, created, site, postLink, editFlag } = props.comment
@@ -243,6 +265,12 @@ export default function CommentComponent(props: CommentProps) {
                       isActive={currentMode === 'annotate'}
                     />
                   )}
+
+                  {appState.userInfo && (
+                    <button className={postStyles.optionButton} onClick={handleOpenAddMarker}>
+                      🌟 Add Marker
+                    </button>
+                  )}
                 </div>
               </OutsideClickHandler>
             )}
@@ -293,6 +321,16 @@ export default function CommentComponent(props: CommentProps) {
         </div>
       ) : (
         <></>
+      )}
+
+      {/* Add Marker Modal */}
+      {showAddMarker && (
+        <AddMarkerComponent
+          targetType={MarkerTargetType.COMMENT}
+          targetId={props.comment.id}
+          onClose={handleCloseAddMarker}
+          onSuccess={handleMarkerAdded}
+        />
       )}
     </div>
   )

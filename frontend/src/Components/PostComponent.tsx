@@ -3,10 +3,12 @@ import React, { useMemo, useState } from 'react'
 import OutsideClickHandler from 'react-outside-click-handler'
 import { toast } from 'react-toastify'
 
+import MarkerAPI, { MarkerTargetType } from '../API/MarkerAPI'
 import { useInterpreter } from '../API/use/useInterpreter'
 import { useAPI, useAppState } from '../AppState/AppState'
 import Conf from '../Conf'
 import { PostInfo } from '../Types/PostInfo'
+import AddMarkerComponent from './AddMarkerComponent'
 import { AltTranslateButton, AnnotateButton, TranslateButton, UnwatchButton, WatchButton } from './ContentButtons'
 import ContentComponent from './ContentComponent'
 import CreateCommentComponent from './CreateCommentComponent'
@@ -35,11 +37,13 @@ interface PostComponentProps {
 
 export default function PostComponent(props: PostComponentProps) {
   const api = useAPI()
-  const currentUsername = useAppState().userInfo?.username
+  const appState = useAppState()
+  const currentUsername = appState.userInfo?.username
   const [showOptions, setShowOptions] = useState(false)
   const [editingText, setEditingText] = useState<false | string>(false)
   const [editingTitle, setEditingTitle] = useState<string>(props.post.title || '')
   const [showHistory, setShowHistory] = useState(false)
+  const [showAddMarker, setShowAddMarker] = useState(false)
   const {
     currentMode,
     altTitle,
@@ -142,6 +146,29 @@ export default function PostComponent(props: PostComponentProps) {
 
   const toggleHistory = () => {
     setShowHistory(!showHistory)
+  }
+
+  const handleOpenAddMarker = () => {
+    setShowOptions(false)
+    setShowAddMarker(true)
+  }
+
+  const handleCloseAddMarker = () => {
+    setShowAddMarker(false)
+  }
+
+  const handleMarkerAdded = () => {
+    // Instead of refreshing the whole post, just refresh the token counts
+    MarkerAPI.getTokenCounts(MarkerTargetType.POST, props.post.id)
+      .then((tokenCounts) => {
+        if (props.onChange) {
+          // Just update the token counts
+          props.onChange(props.post.id, { tokenCounts })
+        }
+      })
+      .catch((error) => {
+        console.error('Error refreshing token counts after adding marker:', error)
+      })
   }
 
   const altMode = currentMode !== undefined || inProgress
@@ -285,6 +312,12 @@ export default function PostComponent(props: PostComponentProps) {
                   />
                 )}
                 {watch ? <UnwatchButton onClick={toggleWatch} /> : <WatchButton onClick={toggleWatch} />}
+
+                {appState.userInfo && (
+                  <button className={styles.optionButton} onClick={handleOpenAddMarker}>
+                    🌟 Add Marker
+                  </button>
+                )}
               </div>
             </OutsideClickHandler>
           )}
@@ -296,6 +329,16 @@ export default function PostComponent(props: PostComponentProps) {
         </div>
       </div>
       {props.buttons}
+
+      {/* Add Marker Modal */}
+      {showAddMarker && (
+        <AddMarkerComponent
+          targetType={MarkerTargetType.POST}
+          targetId={props.post.id}
+          onClose={handleCloseAddMarker}
+          onSuccess={handleMarkerAdded}
+        />
+      )}
     </div>
   )
 }

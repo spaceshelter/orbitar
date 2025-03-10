@@ -157,3 +157,21 @@ input.title {
 .optionsList .label {
   margin-right: 4px;
 }
+
+.optionButton {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 8px 12px;
+  margin: 4px 0;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 14px;
+  color: var(--text-color);
+
+  &:hover {
+    background-color: var(--hover-color, rgba(0, 0, 0, 0.05));
+  }
+}

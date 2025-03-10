@@ -170,11 +170,13 @@ export class MarkerAPI extends APIBase {
     placedCount: number,
     annotation: string | null,
   ): Promise<MarkerInfo> {
+    // Convert the simple marker type to the full marker type expected by the backend
+    const fullMarkerType = getFullMarkerType(targetType, markerType)
     const response = await this.request<
       {
         targetType: MarkerTargetType
         targetId: number
-        markerType: MarkerType
+        markerType: string
         placedCount: number
         annotation: string | null
       },
@@ -182,7 +184,7 @@ export class MarkerAPI extends APIBase {
     >('/marker/create', {
       targetType,
       targetId,
-      markerType,
+      markerType: fullMarkerType,
       placedCount,
       annotation,
     })
@@ -225,6 +227,20 @@ export enum MarkerType {
   STAR = 'star',
   NOTE = 'note',
   BOOKMARK = 'bookmark',
+}
+
+// Map frontend marker types to backend marker types
+export function getFullMarkerType(targetType: MarkerTargetType, markerType: MarkerType): string {
+  switch (targetType) {
+    case MarkerTargetType.POST:
+      return `post_${markerType}`
+    case MarkerTargetType.COMMENT:
+      return `comment_${markerType}`
+    case MarkerTargetType.USER:
+      return `user_${markerType}`
+    default:
+      throw new Error(`Invalid target type: ${targetType}`)
+  }
 }
 
 export default new MarkerAPI()

@@ -5,7 +5,6 @@ import { observer } from 'mobx-react-lite'
 import { MarkerTargetType } from '../API/MarkerAPI'
 import { TokenCounts } from '../Types/TokenCounts'
 import { MarkerListComponent } from './MarkerListComponent'
-import Overlay from './Overlay'
 
 import { ReactComponent as BookmarkIcon } from '../Assets/bookmark.svg'
 import { ReactComponent as NoteIcon } from '../Assets/note.svg'
@@ -94,7 +93,7 @@ const TokenCounters: React.FC<TokenCountersProps> = observer((props) => {
 
       {isPopupOpen && (
         <div className={styles.overlayWrapper}>
-          <Overlay onClick={handleClosePopup} />
+          {/*<Overlay onClick={handleClosePopup} />*/}
           <div className={styles.markerListWrapper}>
             <MarkerListComponent
               targetType={mapEntityTypeToTargetType(entityType)}

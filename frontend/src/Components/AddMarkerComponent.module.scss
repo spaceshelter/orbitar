@@ -1,0 +1,205 @@
+.addMarkerContainer {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--background-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  padding: 20px;
+  width: 400px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  z-index: 1100; /* Above overlay */
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
+
+  h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+  }
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: var(--text-color);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  line-height: 1;
+  opacity: 0.7;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+.error {
+  background-color: rgba(255, 0, 0, 0.1);
+  color: #e74c3c;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.tokenInfo {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 10px 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  display: flex;
+  justify-content: center;
+}
+
+.markerTypeSelector {
+  margin-bottom: 16px;
+
+  h4 {
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    font-weight: 500;
+  }
+}
+
+.markerButtons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.markerButton {
+  flex: 1;
+  min-width: 80px;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--background-color);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+
+  &:hover:not(.disabled) {
+    background: var(--hover-color);
+  }
+
+  &.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+  }
+
+  &.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.starButton {
+  border-color: #f1c40f;
+  color: #f1c40f;
+
+  &.active {
+    background-color: #f1c40f;
+    color: #fff;
+  }
+}
+
+.noteButton {
+  border-color: #3498db;
+  color: #3498db;
+
+  &.active {
+    background-color: #3498db;
+    color: #fff;
+  }
+}
+
+.bookmarkButton {
+  border-color: #e74c3c;
+  color: #e74c3c;
+
+  &.active {
+    background-color: #e74c3c;
+    color: #fff;
+  }
+}
+
+.addMarkerForm {
+  margin-bottom: 16px;
+}
+
+.annotationInput {
+  width: 100%;
+  min-height: 100px;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--input-bg-color, var(--background-color));
+  color: var(--text-color);
+  resize: vertical;
+  font-family: inherit;
+  font-size: 14px;
+
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+  }
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.cancelButton {
+  padding: 8px 16px;
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-color);
+
+  &:hover:not(:disabled) {
+    background: var(--hover-color);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.addButton {
+  padding: 8px 16px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+
+  &:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+
+  &:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
+}
