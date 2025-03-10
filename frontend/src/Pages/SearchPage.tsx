@@ -52,6 +52,11 @@ function SearchResult(props: { result: SearchResponse }) {
               rating: 0,
               comments: 0,
               newComments: 0,
+              tokenCounts: {
+                stars: 0,
+                notes: 0,
+                bookmarks: 0,
+              },
             }}
             showSite={true}
             autoCut={LARGE_AUTO_CUT}
@@ -71,6 +76,11 @@ function SearchResult(props: { result: SearchResponse }) {
               postLink: {
                 id: resultItem.comment_post_id,
                 site: resultItem.site,
+              },
+              tokenCounts: {
+                stars: 0,
+                notes: 0,
+                bookmarks: 0,
               },
             }}
             showSite={true}

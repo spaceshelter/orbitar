@@ -213,7 +213,7 @@ export class MarkerManager {
   }
 
   async getCounters(targetType: MarkerTargetType, targetId: number, markerType?: string): Promise<TokenCounter> {
-    let counts: { count: number }
+    let counts: TokenCounter
 
     switch (targetType) {
       case MarkerTargetType.POST:
@@ -237,6 +237,8 @@ export class MarkerManager {
       default:
         throw new CodeError('Invalid target type', 'invalid_target_type')
     }
+
+    // Fields should be guaranteed by repository
 
     return counts
   }

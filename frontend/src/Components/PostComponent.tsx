@@ -14,7 +14,7 @@ import { HistoryComponent } from './HistoryComponent'
 import PostLink from './PostLink'
 import RatingSwitch from './RatingSwitch'
 import { SignatureComponent } from './SignatureComponent'
-import TokenCounters, { hasStars } from './TokenCounters'
+import TokenCounters from './TokenCounters'
 import { getPreferredLang, getShowInlineTranslateButton } from './UserProfileSettings'
 
 import { ReactComponent as CommentsIcon } from '../Assets/comments.svg'
@@ -150,8 +150,8 @@ export default function PostComponent(props: PostComponentProps) {
     return getShowInlineTranslateButton() && props.post.language !== getPreferredLang()
   }, [props.post])
 
-  // Calculate if this post should be starred for the prototype
-  const isStarred = hasStars(props.post.id)
+  // Check if this post is starred
+  const isStarred = props.post.tokenCounts && props.post.tokenCounts.stars > 0
 
   return (
     <div className={`postComponent ${styles.post} ${isStarred ? 'isStarred' : ''}`} ref={contentRef}>
@@ -292,7 +292,7 @@ export default function PostComponent(props: PostComponentProps) {
 
         {/* Token counters */}
         <div className={styles.control}>
-          <TokenCounters entityId={props.post.id} entityType='post' />
+          <TokenCounters entityId={props.post.id} entityType='post' counts={props.post.tokenCounts} />
         </div>
       </div>
       {props.buttons}

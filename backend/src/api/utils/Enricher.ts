@@ -67,6 +67,13 @@ export class Enricher {
         postResult.editFlag = post.editFlag
       }
 
+      // Add token counts
+      postResult.tokenCounts = {
+        starCount: post.tokenCounts.starCount,
+        noteCount: post.tokenCounts.noteCount,
+        bookmarkCount: post.tokenCounts.bookmarkCount,
+      }
+
       posts.push(postResult)
     }
 
@@ -105,6 +112,13 @@ export class Enricher {
       }
       if (rawComment.editFlag) {
         comment.editFlag = rawComment.editFlag
+      }
+
+      // Add token counts
+      comment.tokenCounts = {
+        starCount: rawComment.tokenCounts.starCount,
+        noteCount: rawComment.tokenCounts.noteCount,
+        bookmarkCount: rawComment.tokenCounts.bookmarkCount,
       }
 
       users[rawComment.author] = users[rawComment.author] || (await this.userManager.getById(rawComment.author))

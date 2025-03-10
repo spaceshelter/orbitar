@@ -1,3 +1,4 @@
+import { TokenCounts } from '../Types/TokenCounts'
 import APIBase from './APIBase'
 
 export enum MarkerTargetType {
@@ -21,9 +22,21 @@ export interface MarkerInfo {
 
 export interface TokenCounter {
   count: number
-  starCount: number
-  noteCount: number
-  bookmarkCount: number
+  starCount?: number // camelCase version
+  noteCount?: number
+  bookmarkCount?: number
+  star_count?: number // snake_case version from API
+  note_count?: number
+  bookmark_count?: number
+}
+
+// Convert API TokenCounter to UI TokenCounts
+export function toTokenCounts(counter: TokenCounter): TokenCounts {
+  return {
+    stars: counter.starCount || counter.star_count || 0,
+    notes: counter.noteCount || counter.note_count || 0,
+    bookmarks: counter.bookmarkCount || counter.bookmark_count || 0,
+  }
 }
 
 export interface UserTokenInfo {
@@ -197,6 +210,14 @@ export class MarkerAPI extends APIBase {
       default:
         throw new Error(`Invalid target type: ${targetType}`)
     }
+  }
+
+  /**
+   * Get token counts for UI display
+   */
+  async getTokenCounts(targetType: MarkerTargetType, targetId: number): Promise<TokenCounts> {
+    const counters = await this.getCounters(targetType, targetId)
+    return toTokenCounts(counters)
   }
 }
 

@@ -13,7 +13,7 @@ import { CreateCommentComponentRestricted } from './CreateCommentComponent'
 import { HistoryComponent } from './HistoryComponent'
 import RatingSwitch from './RatingSwitch'
 import { SignatureComponent } from './SignatureComponent'
-import TokenCounters, { hasStars } from './TokenCounters'
+import TokenCounters from './TokenCounters'
 import { getPreferredLang, getShowInlineTranslateButton } from './UserProfileSettings'
 
 import { ReactComponent as OptionsIcon } from '../Assets/options.svg'
@@ -115,8 +115,8 @@ export default function CommentComponent(props: CommentProps) {
     return getShowInlineTranslateButton() && props.comment.language !== getPreferredLang()
   }, [props.comment])
 
-  // Check if this comment should be starred
-  const isStarred = hasStars(props.comment.id)
+  // Check if this comment is starred
+  const isStarred = props.comment.tokenCounts && props.comment.tokenCounts.stars > 0
 
   return (
     <div
@@ -257,7 +257,7 @@ export default function CommentComponent(props: CommentProps) {
 
           {/* Token counters */}
           <div className={styles.control}>
-            <TokenCounters entityId={props.comment.id} entityType='comment' />
+            <TokenCounters entityId={props.comment.id} entityType='comment' counts={props.comment.tokenCounts} />
           </div>
         </div>
       </div>

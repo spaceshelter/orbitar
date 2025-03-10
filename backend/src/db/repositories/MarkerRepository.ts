@@ -312,7 +312,7 @@ export class MarkerRepository {
     commentId?: number | null
     userId?: number | null
     markerType?: string
-  }): Promise<{ count: number; star_count?: number; note_count?: number; bookmark_count?: number }> {
+  }): Promise<{ count: number; star_count: number; note_count: number; bookmark_count: number }> {
     let query = ''
     const params: any = {}
     let typeFilter = ''
@@ -352,7 +352,7 @@ export class MarkerRepository {
         params.userId = userId
       }
     } else {
-      return { count: 0 }
+      return { count: 0, star_count: 0, note_count: 0, bookmark_count: 0 }
     }
 
     const rows = await this.db.fetchAll<{
@@ -362,7 +362,15 @@ export class MarkerRepository {
       bookmark_count?: number
     }>(query, params)
 
-    return rows.length ? rows[0] : { count: 0 }
+    // Make sure all fields are defined
+    const result = rows.length ? rows[0] : { count: 0 }
+
+    return {
+      count: result.count || 0,
+      star_count: result.star_count || 0,
+      note_count: result.note_count || 0,
+      bookmark_count: result.bookmark_count || 0,
+    }
   }
 
   async getRecentTokenHistory({

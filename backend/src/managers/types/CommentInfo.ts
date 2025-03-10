@@ -1,4 +1,5 @@
 import { EditFlag } from './common'
+import { TokenCounts } from './TokenCounts'
 
 export type CommentBaseInfo = {
   id: number
@@ -19,6 +20,9 @@ export type CommentInfo = CommentBaseInfo & {
   editFlag?: EditFlag
 
   language?: string
+
+  // Token counts
+  tokenCounts: TokenCounts
 }
 
 export type CommentInfoWithPostData = CommentInfo & {

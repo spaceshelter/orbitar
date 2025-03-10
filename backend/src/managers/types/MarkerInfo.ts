@@ -34,9 +34,9 @@ export interface MarkerInfo {
 
 export interface TokenCounter {
   count: number
-  star_count?: number
-  note_count?: number
-  bookmark_count?: number
+  star_count: number
+  note_count: number
+  bookmark_count: number
 }
 
 export interface UserTokenInfo {

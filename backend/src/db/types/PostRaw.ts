@@ -17,6 +17,11 @@ export type PostRaw = {
   language: string
   content_source_id: number
   parser_version: number
+
+  // Token marker counts
+  star_count?: number
+  note_count?: number
+  bookmark_count?: number
 } & PostBareBonesRaw
 
 export type PostRawWithUserData = PostRaw & {
@@ -42,6 +47,11 @@ export type CommentRaw = {
   language: string
   content_source_id: number
   parser_version: number
+
+  // Token marker counts
+  star_count?: number
+  note_count?: number
+  bookmark_count?: number
 }
 
 export type CommentRawWithUserData = CommentRaw & {

@@ -36,7 +36,7 @@ exports.up = function (db, callback) {
       
       INDEX idx_markers_creator (creator_id, created_at),
       INDEX idx_markers_created_at (created_at),
-      UNIQUE INDEX idx_markers_post_creator_type (marker_type, creator_id, post_id, comment_id, user_id),
+      UNIQUE INDEX idx_markers_post_creator_type (marker_type, creator_id, post_id, comment_id, user_id)
     );
     
     -- Add marker counters to posts table
@@ -71,13 +71,11 @@ exports.down = function (db, callback) {
       DROP COLUMN bookmark_count;
       
     ALTER TABLE comments
-      DROP COLUMN marker_count,
       DROP COLUMN star_count,
       DROP COLUMN note_count,
       DROP COLUMN bookmark_count;
       
     ALTER TABLE posts
-      DROP COLUMN marker_count,
       DROP COLUMN star_count,
       DROP COLUMN note_count,
       DROP COLUMN bookmark_count;

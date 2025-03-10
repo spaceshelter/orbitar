@@ -1,4 +1,5 @@
 import { EditFlag } from './common'
+import { TokenCounts } from './PostEntity'
 
 export type CommentBaseEntity = {
   id: number
@@ -22,4 +23,7 @@ export type CommentEntity = CommentBaseEntity & {
   answers?: CommentEntity[]
 
   language?: string
+
+  // Token counts for markers
+  tokenCounts: TokenCounts
 }

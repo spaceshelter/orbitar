@@ -132,6 +132,11 @@ export default class PostManager {
       vote: 0,
       bookmark: false,
       watch: true,
+      tokenCounts: {
+        starCount: 0,
+        noteCount: 0,
+        bookmarkCount: 0,
+      },
     }
   }
 
@@ -252,6 +257,13 @@ export default class PostManager {
         language: raw.language,
 
         vote: raw.vote,
+
+        // Include marker counts
+        tokenCounts: {
+          starCount: raw.star_count ?? 0,
+          noteCount: raw.note_count ?? 0,
+          bookmarkCount: raw.bookmark_count ?? 0,
+        },
       }
       if (raw.deleted) {
         comment.deleted = true
