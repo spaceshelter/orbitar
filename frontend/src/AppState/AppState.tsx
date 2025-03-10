@@ -47,8 +47,7 @@ export class AppState {
     appLoadingState = AppLoadingState.loading;
 
     @observable
-    theme: string = localStorage.getItem('theme') || 
-      (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    theme: string = '';
 
     @observable.struct
     userInfo: UserInfo | undefined = undefined; // undefined means not authorized
@@ -100,6 +99,19 @@ export class AppState {
         this.cache = makeAutoObservable(new APICache());
         this.api = new APIHelper(apiBase, this);
         this.api.init().then().catch();
+
+        // Theme initialization
+        const getPreferredColorScheme = () => {
+            console.log('getPreferredColorScheme');
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                return 'dark';
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+                return 'light';
+            }
+            return 'light';
+        };
+
+        this.theme = localStorage.getItem('theme') || getPreferredColorScheme();
     }
 
     @computed

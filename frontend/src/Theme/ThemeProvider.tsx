@@ -64,15 +64,8 @@ export const ThemeProvider = observer((props: ThemeProviderProps) => {
     let styles = props.themeCollection[theme]
 
     if (!styles) {
-      // Try to use preferred color scheme as fallback
-      const preferredTheme = getPreferredColorScheme()
-      if (preferredTheme && props.themeCollection[preferredTheme]) {
-        theme = preferredTheme
-        styles = props.themeCollection[preferredTheme]
-      } else {
-        theme = 'light'
-        styles = props.themeCollection.light
-      }
+      theme = 'light'
+      styles = props.themeCollection.light
     }
 
     // Set theme in AppState if it changed
