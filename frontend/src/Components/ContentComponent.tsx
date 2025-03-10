@@ -39,7 +39,6 @@ export const LARGE_AUTO_CUT = 650
 export const SMALL_AUTO_CUT = 100
 
 const iframeToOriginalEl = new WeakMap<HTMLIFrameElement, HTMLElement>()
-const elementToRoot = new WeakMap<HTMLElement, ReturnType<typeof createRoot>>()
 
 type ZoomedImg = {
   src: string
@@ -139,7 +138,6 @@ function updateMailbox(mailbox: HTMLSpanElement, setMailboxKey: (key: MailboxKey
 
 function renderWithTheme(container: HTMLElement, content: React.ReactNode, appState: AppState) {
   const root = createRoot(container)
-  elementToRoot.set(container, root)
 
   const disposer = autorun(() => {
     // create reactive dependency on theme
@@ -149,7 +147,6 @@ function renderWithTheme(container: HTMLElement, content: React.ReactNode, appSt
 
   return () => {
     disposer()
-    elementToRoot.delete(container)
     root.unmount()
   }
 }
