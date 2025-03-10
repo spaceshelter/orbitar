@@ -111,16 +111,6 @@ export function useTheme() {
   }
 }
 
-function getPreferredColorScheme() {
-  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    return 'dark'
-  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-    return 'light'
-  } else {
-    return undefined
-  }
-}
-
 function applyTheme(stylesheet: HTMLStyleElement, toStyle: ThemeStyles, withTransition = false) {
   const colors: Record<string, string> = {}
   const colorFlattener = (key: string, color: ColorTree) => {
