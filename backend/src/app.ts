@@ -13,6 +13,7 @@ import { apiMiddleware } from './api/ApiMiddleware'
 import AuthController from './api/AuthController'
 import FeedController from './api/FeedController'
 import InviteController from './api/InviteController'
+import { MarkerController } from './api/MarkerController'
 import NotificationsController from './api/NotificationsController'
 import OAuth2Controller from './api/OAuth2Controller'
 import createOauth2MiddlewareGenerator, { ExpressOauth2ScopesFilter } from './api/OAuth2Middleware'
@@ -29,6 +30,7 @@ import Redis from './db/Redis'
 import BookmarkRepository from './db/repositories/BookmarkRepository'
 import CommentRepository from './db/repositories/CommentRepository'
 import InviteRepository from './db/repositories/InviteRepository'
+import { MarkerRepository } from './db/repositories/MarkerRepository'
 import NotificationsRepository from './db/repositories/NotificationsRepository'
 import OAuth2Repository from './db/repositories/OAuth2Repository'
 import PostRepository from './db/repositories/PostRepository'
@@ -40,6 +42,7 @@ import VoteRepository from './db/repositories/VoteRepository'
 import WebPushRepository from './db/repositories/WebPushRepository'
 import FeedManager from './managers/FeedManager'
 import InviteManager from './managers/InviteManager'
+import { MarkerManager } from './managers/MarkerManager'
 import NotificationManager from './managers/NotificationManager'
 import OAuth2Manager from './managers/OAuth2Manager'
 import PostManager from './managers/PostManager'
@@ -108,6 +111,7 @@ const bookmarkRepository = new BookmarkRepository(db)
 const commentRepository = new CommentRepository(db)
 const credentialsRepository = new UserCredentials(db)
 const inviteRepository = new InviteRepository(db)
+const markerRepository = new MarkerRepository(db)
 const notificationsRepository = new NotificationsRepository(db)
 const postRepository = new PostRepository(db)
 const siteRepository = new SiteRepository(db)
@@ -192,6 +196,7 @@ const postManager = new PostManager(
 const voteManager = new VoteManager(voteRepository, postManager, userManager, redis.client)
 const searchManager = new SearchManager(userManager, siteManager, logger.child({ service: 'SEARCH' }))
 const oauth2Manager = new OAuth2Manager(oauthRepository, userManager, logger.child({ service: 'OAUTH2' }))
+const markerManager = new MarkerManager(markerRepository, userManager)
 
 const apiEnricher = new Enricher(siteManager, userManager)
 
@@ -259,6 +264,7 @@ const requests = [
   ),
   new SearchController(userManager, searchManager, oauthMiddlewareGenerator, logger.child({ service: 'SEARCH' })),
   new OAuth2Controller(oauth2Manager, userManager, oauthScopesFilter, app.oauth, logger.child({ service: 'OAUTH2' })),
+  new MarkerController(markerManager, oauthMiddlewareGenerator, logger.child({ service: 'MARKER' })),
 ]
 
 const filterLog = winston.format((info) => {

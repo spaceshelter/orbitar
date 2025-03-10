@@ -1,4 +1,10 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
+
+import { observer } from 'mobx-react-lite'
+
+import MarkerAPI, { MarkerTargetType, TokenCounter } from '../API/MarkerAPI'
+import { MarkerListComponent } from './MarkerListComponent'
+import Overlay from './Overlay'
 
 import { ReactComponent as BookmarkIcon } from '../Assets/bookmark.svg'
 import { ReactComponent as NoteIcon } from '../Assets/note.svg'
@@ -13,12 +19,12 @@ export interface TokenCounts {
 
 type TokenCountersProps = {
   entityId: number
-  entityType: 'post' | 'comment'
-  // If counts are provided, use them; otherwise calculate based on entityId
+  entityType: 'post' | 'comment' | 'user'
+  // For backwards compatibility and server-side rendering
   counts?: TokenCounts
 }
 
-// Helper function to calculate token counts based on entity ID
+// Temporary fallback function until all markers are stored properly
 export function calculateTokenCounts(entityId: number): TokenCounts {
   // Make it consistent so we always show the same counts for the same ID
   const id = Math.abs(entityId)
@@ -58,42 +64,151 @@ export function hasStars(entityId: number): boolean {
   return calculateTokenCounts(entityId).stars > 0
 }
 
-export default function TokenCounters(props: TokenCountersProps) {
-  // Use provided counts or calculate them based on entity ID
-  const counts = props.counts || calculateTokenCounts(props.entityId)
-  const { stars, notes, bookmarks } = counts
+// Map the component entity type to API entity type
+function mapEntityTypeToTargetType(entityType: string): MarkerTargetType {
+  switch (entityType) {
+    case 'post':
+      return MarkerTargetType.POST
+    case 'comment':
+      return MarkerTargetType.COMMENT
+    case 'user':
+      return MarkerTargetType.USER
+    default:
+      throw new Error(`Unknown entity type: ${entityType}`)
+  }
+}
+
+const TokenCounters: React.FC<TokenCountersProps> = observer((props) => {
+  const { entityId, entityType } = props
+  const [counters, setCounters] = useState<TokenCounter | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isPopupOpen, setIsPopupOpen] = useState(false)
+  const [useFallback, setUseFallback] = useState(false)
+
+  useEffect(() => {
+    const fetchCounters = async () => {
+      try {
+        setIsLoading(true)
+        const targetType = mapEntityTypeToTargetType(entityType)
+        const data = await MarkerAPI.getCounters(targetType, entityId)
+        setCounters(data)
+
+        // If we don't have any counts, fall back to the mock data for now
+        if (data.count === 0) {
+          setUseFallback(true)
+        } else {
+          setUseFallback(false)
+        }
+      } catch (error) {
+        console.error('Error fetching counters:', error)
+        setUseFallback(true)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchCounters()
+  }, [entityId, entityType])
+
+  // Use fallback data if needed or requested
+  const fallbackCounts = props.counts || calculateTokenCounts(entityId)
+
+  // If we're still loading and don't have counts props, show nothing yet
+  if (isLoading && !props.counts) {
+    return null
+  }
+
+  // Get the counts from either the API or fallback
+  let displayCounts: TokenCounts
+  if (useFallback) {
+    displayCounts = fallbackCounts
+  } else if (counters) {
+    // Use counts from the API
+    displayCounts = {
+      stars: counters.starCount,
+      notes: counters.noteCount,
+      bookmarks: counters.bookmarkCount,
+    }
+  } else {
+    // Default to empty counts if nothing is available
+    displayCounts = { stars: 0, notes: 0, bookmarks: 0 }
+  }
+
+  const { stars, notes, bookmarks } = displayCounts
 
   // Nothing to display if all counts are zero
   if (stars === 0 && notes === 0 && bookmarks === 0) {
     return null
   }
 
+  const handleOpenPopup = () => {
+    setIsPopupOpen(true)
+  }
+
+  const handleClosePopup = () => {
+    setIsPopupOpen(false)
+
+    // Refresh counters when the popup is closed
+    if (!useFallback) {
+      const fetchCounters = async () => {
+        try {
+          const targetType = mapEntityTypeToTargetType(entityType)
+          const data = await MarkerAPI.getCounters(targetType, entityId)
+          setCounters(data)
+        } catch (error) {
+          console.error('Error refreshing counters:', error)
+        }
+      }
+
+      fetchCounters()
+    }
+  }
+
   return (
-    <div className={styles.tokenCounters}>
-      {stars > 0 && (
-        <div className={styles.tokenCounter}>
-          <span className={styles.star}>
-            <StarIcon />
-          </span>
-          <span className={styles.count}>{stars}</span>
+    <>
+      <div className={styles.tokenCounters} onClick={handleOpenPopup}>
+        {stars > 0 && (
+          <div className={styles.tokenCounter}>
+            <span className={styles.star}>
+              <StarIcon />
+            </span>
+            <span className={styles.count}>{stars}</span>
+          </div>
+        )}
+
+        {notes > 0 && (
+          <div className={styles.tokenCounter}>
+            <span className={styles.note}>
+              <NoteIcon />
+            </span>
+            <span className={styles.count}>{notes}</span>
+          </div>
+        )}
+
+        {bookmarks > 0 && (
+          <div className={styles.tokenCounter}>
+            <span className={styles.bookmark}>
+              <BookmarkIcon />
+            </span>
+            <span className={styles.count}>{bookmarks}</span>
+          </div>
+        )}
+      </div>
+
+      {isPopupOpen && !useFallback && (
+        <div className={styles.overlayWrapper}>
+          <Overlay onClick={handleClosePopup} />
+          <div className={styles.markerListWrapper}>
+            <MarkerListComponent
+              targetType={mapEntityTypeToTargetType(entityType)}
+              targetId={entityId}
+              onClose={handleClosePopup}
+            />
+          </div>
         </div>
       )}
-      {notes > 0 && (
-        <div className={styles.tokenCounter}>
-          <span className={styles.note}>
-            <NoteIcon />
-          </span>
-          <span className={styles.count}>{notes}</span>
-        </div>
-      )}
-      {bookmarks > 0 && (
-        <div className={styles.tokenCounter}>
-          <span className={styles.bookmark}>
-            <BookmarkIcon />
-          </span>
-          <span className={styles.count}>{bookmarks}</span>
-        </div>
-      )}
-    </div>
+    </>
   )
-}
+})
+
+export default TokenCounters

@@ -1,0 +1,209 @@
+import APIBase from './APIBase'
+
+export enum MarkerTargetType {
+  POST = 'post',
+  COMMENT = 'comment',
+  USER = 'user',
+}
+
+export interface MarkerInfo {
+  markerId: number
+  creatorId: number
+  postId: number | null
+  commentId: number | null
+  userId: number | null
+  markerType: MarkerType
+  placedCount: number
+  createdAt: string
+  removedAt: string | null
+  annotation: string | null
+}
+
+export interface TokenCounter {
+  count: number
+  starCount: number
+  noteCount: number
+  bookmarkCount: number
+}
+
+export interface UserTokenInfo {
+  availableTokens: number
+  maxTokens: number
+  history: MarkerInfo[]
+}
+
+export class MarkerAPI extends APIBase {
+  constructor() {
+    super()
+  }
+
+  /**
+   * Get token counters for a post
+   */
+  async getPostCounters(postId: number): Promise<TokenCounter> {
+    const response = await this.request<{ postId: number }, TokenCounter>('/marker/get-post-counters', { postId })
+    return response
+  }
+
+  /**
+   * Get token counters for a comment
+   */
+  async getCommentCounters(commentId: number): Promise<TokenCounter> {
+    const response = await this.request<{ commentId: number }, TokenCounter>('/marker/get-comment-counters', {
+      commentId,
+    })
+    return response
+  }
+
+  /**
+   * Get token counters for a user
+   */
+  async getUserCounters(userId: number): Promise<TokenCounter> {
+    const response = await this.request<{ userId: number }, TokenCounter>('/marker/get-user-counters', { userId })
+    return response
+  }
+
+  /**
+   * Get markers placed on a post
+   */
+  async getPostMarkers(postId: number, includeRemoved: boolean): Promise<MarkerInfo[]> {
+    const response = await this.request<{ postId: number; includeRemoved: boolean }, { markers: MarkerInfo[] }>(
+      '/marker/get-post-markers',
+      {
+        postId,
+        includeRemoved,
+      },
+    )
+    return response.markers
+  }
+
+  /**
+   * Get markers placed on a comment
+   */
+  async getCommentMarkers(commentId: number, includeRemoved: boolean): Promise<MarkerInfo[]> {
+    const response = await this.request<{ commentId: number; includeRemoved: boolean }, { markers: MarkerInfo[] }>(
+      '/marker/get-comment-markers',
+      {
+        commentId,
+        includeRemoved,
+      },
+    )
+    return response.markers
+  }
+
+  /**
+   * Get markers placed on a user
+   */
+  async getUserMarkers(userId: number, includeRemoved: boolean): Promise<MarkerInfo[]> {
+    const response = await this.request<{ userId: number; includeRemoved: boolean }, { markers: MarkerInfo[] }>(
+      '/marker/get-user-markers',
+      {
+        userId,
+        includeRemoved,
+      },
+    )
+    return response.markers
+  }
+
+  /**
+   * Get markers by target type and ID
+   */
+  async getMarkersByTarget(
+    targetType: MarkerTargetType,
+    targetId: number,
+    includeRemoved: boolean,
+  ): Promise<MarkerInfo[]> {
+    switch (targetType) {
+      case MarkerTargetType.POST:
+        return this.getPostMarkers(targetId, includeRemoved)
+      case MarkerTargetType.COMMENT:
+        return this.getCommentMarkers(targetId, includeRemoved)
+      case MarkerTargetType.USER:
+        return this.getUserMarkers(targetId, includeRemoved)
+      default:
+        throw new Error(`Invalid target type: ${targetType}`)
+    }
+  }
+
+  /**
+   * Get markers created by a specific user
+   */
+  async getMarkersByCreator(creatorId: number, includeRemoved: boolean): Promise<MarkerInfo[]> {
+    const response = await this.request<{ creatorId: number; includeRemoved: boolean }, { markers: MarkerInfo[] }>(
+      '/marker/get-by-creator',
+      {
+        creatorId,
+        includeRemoved,
+      },
+    )
+    return response.markers
+  }
+
+  /**
+   * Get token information for the current user
+   */
+  async getUserTokenInfo(): Promise<UserTokenInfo> {
+    const response = await this.request<Record<string, never>, UserTokenInfo>('/marker/get-tokens', {})
+    return response
+  }
+
+  /**
+   * Create a new marker
+   */
+  async createMarker(
+    targetType: MarkerTargetType,
+    targetId: number,
+    markerType: MarkerType,
+    placedCount: number,
+    annotation: string | null,
+  ): Promise<MarkerInfo> {
+    const response = await this.request<
+      {
+        targetType: MarkerTargetType
+        targetId: number
+        markerType: MarkerType
+        placedCount: number
+        annotation: string | null
+      },
+      MarkerInfo
+    >('/marker/create', {
+      targetType,
+      targetId,
+      markerType,
+      placedCount,
+      annotation,
+    })
+    return response
+  }
+
+  /**
+   * Remove a marker
+   */
+  async removeMarker(markerId: number): Promise<void> {
+    await this.request<{ markerId: number }, void>('/marker/remove', { markerId })
+  }
+
+  /**
+   * Get counters based on target type
+   */
+  async getCounters(targetType: MarkerTargetType, targetId: number): Promise<TokenCounter> {
+    switch (targetType) {
+      case MarkerTargetType.POST:
+        return this.getPostCounters(targetId)
+      case MarkerTargetType.COMMENT:
+        return this.getCommentCounters(targetId)
+      case MarkerTargetType.USER:
+        return this.getUserCounters(targetId)
+      default:
+        throw new Error(`Invalid target type: ${targetType}`)
+    }
+  }
+}
+
+export enum MarkerType {
+  STAR = 'star',
+  NOTE = 'note',
+  BOOKMARK = 'bookmark',
+}
+
+export default new MarkerAPI()
