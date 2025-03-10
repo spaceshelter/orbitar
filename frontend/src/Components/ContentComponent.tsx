@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 
 import type * as Vimeo from '@vimeo/player'
 import classNames from 'classnames'
-import { autorun } from 'mobx'
+import { reaction } from 'mobx'
 import { createRoot } from 'react-dom/client'
 import { useHotkeys } from 'react-hotkeys-hook'
 import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch'
@@ -139,15 +139,19 @@ function updateMailbox(mailbox: HTMLSpanElement, setMailboxKey: (key: MailboxKey
 function renderWithTheme(container: HTMLElement, content: React.ReactNode, appState: AppState) {
   const root = createRoot(container)
 
-  const disposer = autorun(() => {
-    // create reactive dependency on theme
-    void appState.theme // void for suppressing no-unused-expressions
-    root.render(<FakeRoot appState={appState}>{content}</FakeRoot>)
-  })
+  const disposer = reaction(
+    () => appState.theme,
+    () => {
+      root.render(<FakeRoot appState={appState}>{content}</FakeRoot>)
+    },
+    { fireImmediately: true },
+  )
 
   return () => {
     disposer()
-    root.unmount()
+    Promise.resolve().then(() => {
+      root.unmount()
+    })
   }
 }
 
