@@ -136,8 +136,18 @@ function updateMailbox(mailbox: HTMLSpanElement, setMailboxKey: (key: MailboxKey
   })
 }
 
+// Map to track containers and their associated root instances
+const containerToRootMap = new WeakMap<HTMLElement, ReturnType<typeof createRoot>>()
+
 function renderWithTheme(container: HTMLElement, content: React.ReactNode, appState: AppState) {
-  const root = createRoot(container)
+  // Check if a root already exists for this container
+  const root =
+    containerToRootMap.get(container) ||
+    (() => {
+      const root = createRoot(container)
+      containerToRootMap.set(container, root)
+      return root
+    })()
 
   const disposer = reaction(
     () => appState.theme,
@@ -151,6 +161,8 @@ function renderWithTheme(container: HTMLElement, content: React.ReactNode, appSt
     disposer()
     Promise.resolve().then(() => {
       root.unmount()
+      // Remove the root from the map when unmounted
+      containerToRootMap.delete(container)
     })
   }
 }
