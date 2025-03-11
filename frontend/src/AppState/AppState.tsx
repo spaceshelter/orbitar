@@ -102,7 +102,6 @@ export class AppState {
 
         // Theme initialization
         const getPreferredColorScheme = () => {
-            console.log('getPreferredColorScheme');
             if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
                 return 'dark';
             } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
