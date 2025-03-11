@@ -30,7 +30,6 @@ const ThemeContext = createContext<ThemeContextState>({} as ThemeContextState)
 
 type ThemeProviderProps = {
   themeCollection: ThemeCollection
-  initialTheme?: string
   defaultTransitionTime?: number
   children: ReactNode
 }
@@ -43,6 +42,7 @@ const globalStylesheet = (() => {
   return style
 })()
 
+//FIXME ThemeProvider looks unnecessary, can be replaced by autorun in AppState
 export const ThemeProvider = observer((props: ThemeProviderProps) => {
   const appState = useAppState()
   const [currentStyles, setCurrentStylesActual] = useMemo(() => {
@@ -57,25 +57,6 @@ export const ThemeProvider = observer((props: ThemeProviderProps) => {
 
     return [state, setCurrentStyles] as const
   }, [])
-
-  // Initialize theme from AppState
-  useEffect(() => {
-    let theme = props.initialTheme || appState.theme
-    let styles = props.themeCollection[theme]
-
-    if (!styles) {
-      theme = 'light'
-      styles = props.themeCollection.light
-    }
-
-    // Set theme in AppState if it changed
-    if (theme !== appState.theme) {
-      appState.setTheme(theme)
-    }
-
-    // Apply initial theme without transition
-    setCurrentStylesActual(styles, false)
-  }, [props.themeCollection, props.initialTheme, appState, setCurrentStylesActual])
 
   // React to theme changes from AppState, with a flag to prevent transition on initial render
   const initialRenderRef = useRef(true)

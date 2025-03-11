@@ -10,6 +10,7 @@ import {RouterStore} from '@superwf/mobx-react-router';
 import {UserRestrictionsResponse} from '../API/UserAPI';
 import MediaUploader, {MediaUploaderProps} from '../Components/MediaUploader';
 import ConfirmDialog, {ConfirmDialogProps} from '../Components/ConfirmDialog';
+import { themes } from '../theme'
 
 export enum AppLoadingState {
     loading,
@@ -100,7 +101,7 @@ export class AppState {
         this.api = new APIHelper(apiBase, this);
         this.api.init().then().catch();
 
-        // Theme initialization
+        // detect from the browser
         const getPreferredColorScheme = () => {
             if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
                 return 'dark';
@@ -110,7 +111,13 @@ export class AppState {
             return 'light';
         };
 
+        // load from localStorage
         this.theme = localStorage.getItem('theme') || getPreferredColorScheme();
+
+        // fallback if the value in localStorage is not in the themes
+        if (themes[this.theme] === undefined) {
+            this.theme = Object.keys(themes)[0];
+        }
     }
 
     @computed
@@ -246,6 +253,11 @@ export class AppState {
 
     @action
     setTheme(value: string) {
+        // just in case, ensures the value is in the themes
+        if (!themes[value]) {
+            console.error(`Theme ${value} not found`);
+            return;
+        }
         this.theme = value;
         localStorage.setItem('theme', value);
     }
