@@ -14,3 +14,6 @@ serde_json = "1.0.87"
 serde_derive = "1.0.147"
 lazy_static="1.4.0"
 proc-macro2="1.0.66"
+
+# required to fix traits conflict in the latest nightly
+traitobject = "=0.1.1"
