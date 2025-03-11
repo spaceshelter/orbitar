@@ -20,6 +20,34 @@ import { getLegacyZoom, getVideoAutopause } from './UserProfileSettings'
 import styles from './ContentComponent.module.scss'
 import overlayStyles from './Overlay.module.scss'
 
+type CleanupHandler = {
+  cleanup: () => void
+  unregister: () => void
+}
+
+export class CleanupRegistry {
+  private callbacks = new Set<() => void>()
+
+  register(callback: () => void): CleanupHandler {
+    this.callbacks.add(callback)
+
+    return {
+      cleanup: () => {
+        callback()
+        this.callbacks.delete(callback)
+      },
+      unregister: () => {
+        this.callbacks.delete(callback)
+      },
+    }
+  }
+
+  cleanup() {
+    this.callbacks.forEach((callback) => callback())
+    this.callbacks.clear()
+  }
+}
+
 interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
   content: string
   autoCut?: number
@@ -65,11 +93,9 @@ function updateContent(
   setZoomedImg: (img: ZoomedImg | null) => void,
   setMailboxKey: (key: MailboxKey | MailKey | null) => void,
   setCut: (cut: boolean) => void,
+  cleanupRegistry: CleanupRegistry,
   currentUsername?: string,
-): Array<() => void> {
-  // This array will collect all cleanup functions
-  const cleanupFunctions: Array<() => void> = []
-
+): void {
   div.querySelectorAll('img').forEach((img) => {
     if (img.complete) {
       updateImg(img, setZoomedImg)
@@ -98,21 +124,16 @@ function updateContent(
   })
 
   div.querySelectorAll('span.secret-mail').forEach((mail) => {
-    const cleanup = updateMail(mail as HTMLSpanElement, setMailboxKey, currentUsername, appState)
-    if (cleanup) cleanupFunctions.push(cleanup)
+    updateMail(mail as HTMLSpanElement, setMailboxKey, currentUsername, appState, cleanupRegistry)
   })
 
   div.querySelectorAll('span.expand-button').forEach((expandButton) => {
-    const cleanup = updateInternalExpandButton(expandButton as HTMLElement, appState)
-    if (cleanup) cleanupFunctions.push(cleanup)
+    updateInternalExpandButton(expandButton as HTMLElement, appState, cleanupRegistry)
   })
 
   div.querySelectorAll('div.oauth-app').forEach((appEl) => {
-    const cleanup = updateOauthAppEmbed(appEl as HTMLDivElement, appState)
-    if (cleanup) cleanupFunctions.push(cleanup)
+    updateOauthAppEmbed(appEl as HTMLDivElement, appState, cleanupRegistry)
   })
-
-  return cleanupFunctions
 }
 
 function updateMailbox(mailbox: HTMLSpanElement, setMailboxKey: (key: MailboxKey | null) => void) {
@@ -170,9 +191,10 @@ function renderWithTheme(container: HTMLElement, content: React.ReactNode, appSt
 function updateMail(
   mail: HTMLSpanElement,
   setMailboxKey: (key: MailKey | null) => void,
-  currentUsername?: string,
-  appState?: AppState,
-): (() => void) | undefined {
+  currentUsername: string | undefined,
+  appState: AppState,
+  cleanupRegistry: CleanupRegistry,
+) {
   if (mail.dataset.processed) {
     return
   }
@@ -222,9 +244,9 @@ function updateMail(
 
   const mailInnerHtml = mail.innerHTML
   let decoded = false
-  let cleanup: (() => void) | undefined
+  let cleanup: CleanupHandler | undefined
 
-  const clickHandler = () => {
+  mail.addEventListener('click', () => {
     if (decoded || !cipher || !appState) {
       return
     }
@@ -244,33 +266,23 @@ function updateMail(
           } else {
             mail.classList.add('i', 'i-mail-secure')
             mail.classList.remove('secret-mail-decoding')
-            if (cleanup) {
-              cleanup()
-              cleanup = undefined
-            }
+            cleanup?.cleanup()
+            cleanup = undefined
             mail.innerHTML = mailInnerHtml
           }
         }}
       />
     )
 
-    cleanup = renderWithTheme(mail, mailContent, appState)
-  }
-  mail.addEventListener('click', clickHandler)
-
-  return () => {
-    mail.removeEventListener('click', clickHandler)
-    if (cleanup) {
-      cleanup()
-    }
-  }
+    cleanup = cleanupRegistry.register(renderWithTheme(mail, mailContent, appState))
+  })
 }
 
-function updateInternalExpandButton(expandButton: HTMLElement, appState: AppState): (() => void) | undefined {
+function updateInternalExpandButton(expandButton: HTMLElement, appState: AppState, cleanupRegistry: CleanupRegistry) {
   const postId = expandButton.getAttribute('data-post-id')
   const commentId = expandButton.getAttribute('data-comment-id')
   const nextLink = expandButton.nextElementSibling
-  let contentCleanup: (() => void) | undefined
+  let contentCleanupHandler: CleanupHandler | undefined
 
   const listener = (e: Event) => {
     const link = nextLink as HTMLAnchorElement
@@ -279,10 +291,8 @@ function updateInternalExpandButton(expandButton: HTMLElement, appState: AppStat
     const rect = link.nextElementSibling as HTMLDivElement
 
     if (rect && rect.className === 'internal-link-rect') {
-      if (contentCleanup) {
-        contentCleanup()
-        contentCleanup = undefined
-      }
+      contentCleanupHandler?.cleanup()
+      contentCleanupHandler = undefined
       rect.remove()
       expandButton.classList.remove('expanded')
     } else {
@@ -296,16 +306,14 @@ function updateInternalExpandButton(expandButton: HTMLElement, appState: AppStat
           postId={Number(postId)}
           commentId={commentId ? Number(commentId) : undefined}
           onClose={() => {
-            if (contentCleanup) {
-              contentCleanup()
-              contentCleanup = undefined
-            }
+            contentCleanupHandler?.cleanup()
+            contentCleanupHandler = undefined
             newRect.remove()
           }}
         />
       )
 
-      contentCleanup = renderWithTheme(newRect, content, appState)
+      contentCleanupHandler = cleanupRegistry.register(renderWithTheme(newRect, content, appState))
     }
     return false
   }
@@ -313,24 +321,15 @@ function updateInternalExpandButton(expandButton: HTMLElement, appState: AppStat
   if (nextLink && nextLink.tagName === 'A') {
     expandButton.addEventListener('click', listener)
     nextLink.addEventListener('click', listener)
-    return () => {
-      expandButton.removeEventListener('click', listener)
-      nextLink.removeEventListener('click', listener)
-      if (contentCleanup) {
-        contentCleanup()
-      }
-    }
   }
-
-  return undefined
 }
 
-function updateOauthAppEmbed(appEl: HTMLDivElement, appState: AppState): (() => void) | undefined {
+function updateOauthAppEmbed(appEl: HTMLDivElement, appState: AppState, cleanupRegistry: CleanupRegistry) {
   const clientId = appEl.dataset.clientId
   if (!clientId) {
     return undefined
   }
-  return renderWithTheme(appEl, <OAuthEmbeddedAppComponent clientId={clientId} />, appState)
+  cleanupRegistry.register(renderWithTheme(appEl, <OAuthEmbeddedAppComponent clientId={clientId} />, appState))
 }
 
 function updateVideo(video: HTMLVideoElement) {
@@ -618,6 +617,7 @@ export default function ContentComponent(props: ContentComponentProps) {
   const [cut, setCut] = useState(false)
   const [zoomedImg, setZoomedImg] = useState<ZoomedImg | null>(null)
   const [mailboxKey, setMailboxKey] = useState<MailboxKey | MailKey | null>(null)
+  const cleanupRegistryRef = useRef<CleanupRegistry>(new CleanupRegistry())
   const appState = useAppState()
 
   const checkAutoCut = (content: HTMLElement) => {
@@ -637,21 +637,14 @@ export default function ContentComponent(props: ContentComponentProps) {
       return
     }
 
-    // Track all cleanup functions that need to be called when unmounting
-    const cleanupFunctions: Array<() => void> = []
+    // Create a fresh registry for this content update
+    const cleanupRegistry = cleanupRegistryRef.current
 
-    // Update content and collect any cleanup functions
-    const updateCleanupFns = updateContent(
-      appState,
-      content,
-      setZoomedImg,
-      setMailboxKey,
-      setCut,
-      props.currentUsername,
-    )
-    if (updateCleanupFns) {
-      cleanupFunctions.push(...updateCleanupFns)
-    }
+    // Clear any previous cleanups
+    cleanupRegistry.cleanup()
+
+    // Update content using the registry
+    updateContent(appState, content, setZoomedImg, setMailboxKey, setCut, cleanupRegistry, props.currentUsername)
 
     let resizeObserver: ResizeObserver | null = null
 
@@ -692,7 +685,8 @@ export default function ContentComponent(props: ContentComponentProps) {
 
     // Return a combined cleanup function that runs all collected cleanups
     return () => {
-      cleanupFunctions.forEach((cleanup) => cleanup())
+      // Run all registered cleanups
+      cleanupRegistry.cleanup()
 
       if (resizeObserver) {
         resizeObserver.disconnect()
