@@ -10,6 +10,7 @@ import {RouterStore} from '@superwf/mobx-react-router';
 import {UserRestrictionsResponse} from '../API/UserAPI';
 import MediaUploader, {MediaUploaderProps} from '../Components/MediaUploader';
 import ConfirmDialog, {ConfirmDialogProps} from '../Components/ConfirmDialog';
+import { themes } from '../theme'
 
 export enum AppLoadingState {
     loading,
@@ -45,6 +46,9 @@ class FingerprintHash {
 export class AppState {
     @observable
     appLoadingState = AppLoadingState.loading;
+
+    @observable
+    theme = '';
 
     @observable.struct
     userInfo: UserInfo | undefined = undefined; // undefined means not authorized
@@ -96,6 +100,24 @@ export class AppState {
         this.cache = makeAutoObservable(new APICache());
         this.api = new APIHelper(apiBase, this);
         this.api.init().then().catch();
+
+        // detect from the browser
+        const getPreferredColorScheme = () => {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                return 'dark';
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+                return 'light';
+            }
+            return 'light';
+        };
+
+        // load from localStorage
+        this.theme = localStorage.getItem('theme') || getPreferredColorScheme();
+
+        // fallback if the value in localStorage is not in the themes
+        if (themes[this.theme] === undefined) {
+            this.theme = Object.keys(themes)[0];
+        }
     }
 
     @computed
@@ -227,6 +249,17 @@ export class AppState {
                 />
             );
         });
+    }
+
+    @action
+    setTheme(value: string) {
+        // just in case, ensures the value is in the themes
+        if (!themes[value]) {
+            console.error(`Theme ${value} not found`);
+            return;
+        }
+        this.theme = value;
+        localStorage.setItem('theme', value);
     }
 }
 

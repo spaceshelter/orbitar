@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react'
 
 import type * as Vimeo from '@vimeo/player'
 import classNames from 'classnames'
-import ReactDOM from 'react-dom'
+import { reaction } from 'mobx'
+import { createRoot } from 'react-dom/client'
 import { useHotkeys } from 'react-hotkeys-hook'
 import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch'
 
@@ -18,6 +19,34 @@ import { getLegacyZoom, getVideoAutopause } from './UserProfileSettings'
 
 import styles from './ContentComponent.module.scss'
 import overlayStyles from './Overlay.module.scss'
+
+type CleanupHandler = {
+  cleanup: () => void
+  unregister: () => void
+}
+
+export class CleanupRegistry {
+  private callbacks = new Set<() => void>()
+
+  register(callback: () => void): CleanupHandler {
+    this.callbacks.add(callback)
+
+    return {
+      cleanup: () => {
+        callback()
+        this.callbacks.delete(callback)
+      },
+      unregister: () => {
+        this.callbacks.delete(callback)
+      },
+    }
+  }
+
+  cleanup() {
+    this.callbacks.forEach((callback) => callback())
+    this.callbacks.clear()
+  }
+}
 
 interface ContentComponentProps extends React.ComponentPropsWithRef<'div'> {
   content: string
@@ -64,8 +93,9 @@ function updateContent(
   setZoomedImg: (img: ZoomedImg | null) => void,
   setMailboxKey: (key: MailboxKey | MailKey | null) => void,
   setCut: (cut: boolean) => void,
+  cleanupRegistry: CleanupRegistry,
   currentUsername?: string,
-) {
+): void {
   div.querySelectorAll('img').forEach((img) => {
     if (img.complete) {
       updateImg(img, setZoomedImg)
@@ -94,15 +124,15 @@ function updateContent(
   })
 
   div.querySelectorAll('span.secret-mail').forEach((mail) => {
-    updateMail(mail as HTMLSpanElement, setMailboxKey, currentUsername)
+    updateMail(mail as HTMLSpanElement, setMailboxKey, currentUsername, appState, cleanupRegistry)
   })
 
   div.querySelectorAll('span.expand-button').forEach((expandButton) => {
-    updateInternalExpandButton(expandButton as HTMLElement, appState)
+    updateInternalExpandButton(expandButton as HTMLElement, appState, cleanupRegistry)
   })
 
   div.querySelectorAll('div.oauth-app').forEach((appEl) => {
-    updateOauthAppEmbed(appEl as HTMLDivElement, appState)
+    updateOauthAppEmbed(appEl as HTMLDivElement, appState, cleanupRegistry)
   })
 }
 
@@ -127,7 +157,44 @@ function updateMailbox(mailbox: HTMLSpanElement, setMailboxKey: (key: MailboxKey
   })
 }
 
-function updateMail(mail: HTMLSpanElement, setMailboxKey: (key: MailKey | null) => void, currentUsername?: string) {
+// Map to track containers and their associated root instances
+const containerToRootMap = new WeakMap<HTMLElement, ReturnType<typeof createRoot>>()
+
+function renderWithTheme(container: HTMLElement, content: React.ReactNode, appState: AppState) {
+  // Check if a root already exists for this container
+  const root =
+    containerToRootMap.get(container) ||
+    (() => {
+      const root = createRoot(container)
+      containerToRootMap.set(container, root)
+      return root
+    })()
+
+  const disposer = reaction(
+    () => appState.theme,
+    () => {
+      root.render(<FakeRoot appState={appState}>{content}</FakeRoot>)
+    },
+    { fireImmediately: true },
+  )
+
+  return () => {
+    disposer()
+    Promise.resolve().then(() => {
+      root.unmount()
+      // Remove the root from the map when unmounted
+      containerToRootMap.delete(container)
+    })
+  }
+}
+
+function updateMail(
+  mail: HTMLSpanElement,
+  setMailboxKey: (key: MailKey | null) => void,
+  currentUsername: string | undefined,
+  appState: AppState,
+  cleanupRegistry: CleanupRegistry,
+) {
   // check processed
   if (mail.dataset.processed) {
     return
@@ -183,15 +250,16 @@ function updateMail(mail: HTMLSpanElement, setMailboxKey: (key: MailKey | null) 
 
   const mailInnerHtml = mail.innerHTML
   let decoded = false
+  let cleanup: CleanupHandler | undefined
 
   mail.addEventListener('click', () => {
-    if (decoded || !cipher) {
+    if (decoded || !cipher || !appState) {
       return
     }
     mail.classList.remove('i', 'i-mail-secure')
     mail.classList.add('secret-mail-decoding')
 
-    ReactDOM.render(
+    const mailContent = (
       <SecretMailDecoderForm
         cipher={cipher}
         title={title}
@@ -204,21 +272,24 @@ function updateMail(mail: HTMLSpanElement, setMailboxKey: (key: MailKey | null) 
           } else {
             mail.classList.add('i', 'i-mail-secure')
             mail.classList.remove('secret-mail-decoding')
-            ReactDOM.unmountComponentAtNode(mail)
+            cleanup?.cleanup()
+            cleanup = undefined
             mail.innerHTML = mailInnerHtml
           }
         }}
-      />,
-      mail,
+      />
     )
+
+    cleanup = cleanupRegistry.register(renderWithTheme(mail, mailContent, appState))
   })
 }
 
-function updateInternalExpandButton(expandButton: HTMLElement, appState: AppState) {
+function updateInternalExpandButton(expandButton: HTMLElement, appState: AppState, cleanupRegistry: CleanupRegistry) {
   // Extract post and comment numbers from data-attributes
   const postId = expandButton.getAttribute('data-post-id')
   const commentId = expandButton.getAttribute('data-comment-id')
   const nextLink = expandButton.nextElementSibling
+  let contentCleanupHandler: CleanupHandler | undefined
 
   // Add click event listener to the expand button
   const listener = (e: Event) => {
@@ -230,7 +301,8 @@ function updateInternalExpandButton(expandButton: HTMLElement, appState: AppStat
 
     if (rect && rect.className === 'internal-link-rect') {
       // If rect exists, unmount the component and remove the rect
-      ReactDOM.unmountComponentAtNode(rect)
+      contentCleanupHandler?.cleanup()
+      contentCleanupHandler = undefined
       rect.remove()
       expandButton.classList.remove('expanded')
     } else {
@@ -242,40 +314,35 @@ function updateInternalExpandButton(expandButton: HTMLElement, appState: AppStat
       // Add the rect after the link
       link.parentNode?.insertBefore(newRect, link.nextSibling)
 
-      // render the component
-      ReactDOM.render(
-        <FakeRoot appState={appState}>
-          <InternalLinkExpandComponent
-            postId={Number(postId)}
-            commentId={commentId ? Number(commentId) : undefined}
-            onClose={() => {
-              ReactDOM.unmountComponentAtNode(newRect)
-              newRect.remove()
-            }}
-          />
-        </FakeRoot>,
-        newRect,
+      const content = (
+        <InternalLinkExpandComponent
+          postId={Number(postId)}
+          commentId={commentId ? Number(commentId) : undefined}
+          onClose={() => {
+            contentCleanupHandler?.cleanup()
+            contentCleanupHandler = undefined
+            newRect.remove()
+          }}
+        />
       )
+
+      contentCleanupHandler = cleanupRegistry.register(renderWithTheme(newRect, content, appState))
     }
     return false
   }
+
   if (nextLink && nextLink.tagName === 'A') {
     expandButton.addEventListener('click', listener)
     nextLink.addEventListener('click', listener)
   }
 }
 
-function updateOauthAppEmbed(appEl: HTMLDivElement, appState: AppState) {
+function updateOauthAppEmbed(appEl: HTMLDivElement, appState: AppState, cleanupRegistry: CleanupRegistry) {
   const clientId = appEl.dataset.clientId
   if (!clientId) {
-    return
+    return undefined
   }
-  ReactDOM.render(
-    <FakeRoot appState={appState}>
-      <OAuthEmbeddedAppComponent clientId={clientId} />
-    </FakeRoot>,
-    appEl,
-  )
+  cleanupRegistry.register(renderWithTheme(appEl, <OAuthEmbeddedAppComponent clientId={clientId} />, appState))
 }
 
 function updateVideo(video: HTMLVideoElement) {
@@ -570,6 +637,7 @@ export default function ContentComponent(props: ContentComponentProps) {
   const [cut, setCut] = useState(false)
   const [zoomedImg, setZoomedImg] = useState<ZoomedImg | null>(null)
   const [mailboxKey, setMailboxKey] = useState<MailboxKey | MailKey | null>(null)
+  const cleanupRegistryRef = useRef<CleanupRegistry>(new CleanupRegistry())
   const appState = useAppState()
 
   const checkAutoCut = (content: HTMLElement) => {
@@ -589,7 +657,15 @@ export default function ContentComponent(props: ContentComponentProps) {
       return
     }
 
-    updateContent(appState, content, setZoomedImg, setMailboxKey, setCut, props.currentUsername)
+    // Create a fresh registry for this content update
+    const cleanupRegistry = cleanupRegistryRef.current
+
+    // Clear any previous cleanups
+    cleanupRegistry.cleanup()
+
+    // Update content using the registry
+    updateContent(appState, content, setZoomedImg, setMailboxKey, setCut, cleanupRegistry, props.currentUsername)
+
     let resizeObserver: ResizeObserver | null = null
 
     if (props.lowRating) {
@@ -625,14 +701,18 @@ export default function ContentComponent(props: ContentComponentProps) {
         resizeObserver = new ResizeObserver(handleResize)
         resizeObserver.observe(content)
       }
+    }
 
-      return () => {
-        if (resizeObserver) {
-          resizeObserver.disconnect()
-        }
+    // Return a combined cleanup function that runs all collected cleanups
+    return () => {
+      // Run all registered cleanups
+      cleanupRegistry.cleanup()
+
+      if (resizeObserver) {
+        resizeObserver.disconnect()
       }
     }
-  }, [props.content, contentDiv, props.autoCut, props.lowRating])
+  }, [props.content, contentDiv, props.autoCut, props.lowRating, appState])
 
   useEffect(() => {
     if (!props.autoCut && cut) {
