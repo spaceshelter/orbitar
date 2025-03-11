@@ -195,6 +195,7 @@ function updateMail(
   appState: AppState,
   cleanupRegistry: CleanupRegistry,
 ) {
+  // check processed
   if (mail.dataset.processed) {
     return
   }
@@ -208,8 +209,10 @@ function updateMail(
   let cipher: string | undefined
   let encodedKey: string
 
+  // try decode secret as json
   try {
     const j = JSON.parse(b64DecodeUnicode(secret))
+    // add mention "для @username"
     if (j.to && !mail.querySelector('span.mention')) {
       const mention = document.createElement('span')
       mention.classList.add('mention')
@@ -218,6 +221,7 @@ function updateMail(
       mail.appendChild(mention)
     }
 
+    // check v, to, c
     if (!j.v || !j.c || !Number.isInteger(j.v) || !j.toKey) {
       throw new Error('Invalid secret')
     } else if (j.to && j.to === currentUsername && j.toKey) {
@@ -236,10 +240,12 @@ function updateMail(
       return
     }
   } catch (e) {
+    // add error class
     mail.classList.add('secret-mail-error')
     return
   }
 
+  // just the text
   const title = mail.innerText.trim()
 
   const mailInnerHtml = mail.innerHTML
@@ -279,26 +285,33 @@ function updateMail(
 }
 
 function updateInternalExpandButton(expandButton: HTMLElement, appState: AppState, cleanupRegistry: CleanupRegistry) {
+  // Extract post and comment numbers from data-attributes
   const postId = expandButton.getAttribute('data-post-id')
   const commentId = expandButton.getAttribute('data-comment-id')
   const nextLink = expandButton.nextElementSibling
   let contentCleanupHandler: CleanupHandler | undefined
 
+  // Add click event listener to the expand button
   const listener = (e: Event) => {
     const link = nextLink as HTMLAnchorElement
 
     e.preventDefault()
+    // after the expand button there is a link
     const rect = link.nextElementSibling as HTMLDivElement
 
     if (rect && rect.className === 'internal-link-rect') {
+      // If rect exists, unmount the component and remove the rect
       contentCleanupHandler?.cleanup()
       contentCleanupHandler = undefined
       rect.remove()
       expandButton.classList.remove('expanded')
     } else {
       expandButton.classList.add('expanded')
+      // If rect doesn't exist, create a new rect and mount the component
       const newRect = document.createElement('div')
       newRect.className = 'internal-link-rect'
+
+      // Add the rect after the link
       link.parentNode?.insertBefore(newRect, link.nextSibling)
 
       const content = (
@@ -351,6 +364,7 @@ function updateVideo(video: HTMLVideoElement) {
 }
 
 function processYtEmbed(img: HTMLImageElement) {
+  // if has class youtube-embed convert to iframe on click
   const ytUrl = img.dataset.youtube
 
   if (ytUrl && !img.classList.contains('youtube-embed-processed')) {
@@ -402,6 +416,9 @@ function loadYTPlayer(onload: () => void) {
   }
 }
 
+/**
+ * Convert mp4 video embeds into video elements
+ */
 function processVideoEmbed(img: HTMLImageElement) {
   const videoUrl = img.dataset.video
 
@@ -444,6 +461,7 @@ function processCoubEmbed(img: HTMLImageElement) {
       iframe.classList.add('coub-embed')
       iframe.allowFullscreen = true
       iframe.frameBorder = '0'
+      // use current rendered image size as iframe size
       iframe.width = img.getBoundingClientRect().width.toString()
       iframe.height = img.getBoundingClientRect().height.toString()
       iframe.allow = 'autoplay'
@@ -452,6 +470,7 @@ function processCoubEmbed(img: HTMLImageElement) {
       iframeToOriginalEl.set(iframe, orignalEl)
       stopInnerVideos(document.body, iframe)
 
+      // coubs are always stopped when hidden
       observeOnHidden(iframe, () => {
         stopVideo(iframe)
       })
@@ -513,6 +532,7 @@ function updateImg(img: HTMLImageElement, setZoomedImg: (img: ZoomedImg | null) 
   }
 
   if (img.naturalWidth > 500 || img.naturalHeight > 500) {
+    // will be displayed as block if not immediately surrounded by <br>
     const nextBr = !img.nextSibling || img.nextSibling.nodeName === 'BR'
     const prevBr = !img.previousSibling || img.previousSibling.nodeName === 'BR'
     if (!nextBr || !prevBr) {
@@ -727,6 +747,8 @@ export default function ContentComponent(props: ContentComponentProps) {
   )
 }
 
+// extract zoom component
+
 interface ZoomComponentProps {
   src: string
   width: number
@@ -735,6 +757,7 @@ interface ZoomComponentProps {
 }
 
 function ZoomComponent(props: ZoomComponentProps) {
+  // need to account for retina displays
   const minScale = Math.min(1, window.innerWidth / props.width, window.innerHeight / props.height)
   const defaultScale = Math.min(window.innerWidth / props.width, window.innerHeight / props.height)
   const defaultTranslateX = (window.innerWidth - props.width * defaultScale) / 2
@@ -746,6 +769,7 @@ function ZoomComponent(props: ZoomComponentProps) {
     <div
       className={overlayStyles.overlay}
       onClick={(e) => {
+        // check if click originated from this element
         if ((e.target as HTMLElement).classList.contains('react-transform-wrapper')) {
           props.onExit()
         }
