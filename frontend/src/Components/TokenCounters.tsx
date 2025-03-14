@@ -16,6 +16,8 @@ type TokenCountersProps = {
   entityType: 'post' | 'comment' | 'user'
   // Counts from the entity
   counts: TokenCounts | undefined
+  // Optional callback when the marker list is opened/closed
+  onListToggle?: (isOpen: boolean) => void
 }
 
 // Temporary fallback function until all markers are stored properly
@@ -86,6 +88,9 @@ const TokenCounters: React.FC<TokenCountersProps> = observer((props) => {
         !counterRef.current?.contains(e.target as Node)
       ) {
         setIsPopupOpen(false)
+
+        // Notify parent that popup is closed
+        props.onListToggle?.(false)
       }
       return false
     }
@@ -98,11 +103,19 @@ const TokenCounters: React.FC<TokenCountersProps> = observer((props) => {
 
   const handleTogglePopup = (e: React.MouseEvent) => {
     e.stopPropagation()
-    setIsPopupOpen(!isPopupOpen)
+
+    const newPopupState = !isPopupOpen
+    setIsPopupOpen(newPopupState)
+
+    // Notify parent about popup state change
+    props.onListToggle?.(newPopupState)
   }
 
   const handleClosePopup = () => {
     setIsPopupOpen(false)
+
+    // Notify parent that popup is closed
+    props.onListToggle?.(false)
   }
 
   return (

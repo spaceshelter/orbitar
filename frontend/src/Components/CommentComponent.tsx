@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react'
 
+import classNames from 'classnames'
 import OutsideClickHandler from 'react-outside-click-handler'
 import { toast } from 'react-toastify'
 
@@ -41,6 +42,7 @@ export default function CommentComponent(props: CommentProps) {
   const [editingText, setEditingText] = useState<false | string>(false)
   const [showHistory, setShowHistory] = useState(false)
   const [showOptions, setShowOptions] = useState(false)
+  const [hasOpenList, setHasOpenList] = useState(false)
 
   const api = useAPI()
   const appState = useAppState()
@@ -143,9 +145,18 @@ export default function CommentComponent(props: CommentProps) {
   // Check if this comment is starred
   const isStarred = props.comment.tokenCounts && props.comment.tokenCounts.stars > 0
 
+  // Calculate whether we have any active elements
+  const hasActiveElement =
+    showOptions || showHistory || editingText !== false || answerOpen || currentMode !== undefined || hasOpenList
+
   return (
     <div
-      className={`comment ${styles.comment} ${props.comment.isNew ? ' isNew' : ''} ${isFlat ? ' isFlat' : ''} ${isStarred ? 'isStarred' : ''}`}
+      className={classNames('comment', styles.comment, {
+        isNew: props.comment.isNew,
+        isOld: !props.comment.isNew && !hasActiveElement,
+        isFlat: isFlat,
+        isStarred: isStarred,
+      })}
       data-comment-id={props.comment.id}
     >
       <div className='commentBody' ref={contentRef}>
@@ -203,6 +214,7 @@ export default function CommentComponent(props: CommentProps) {
                 id={props.comment.id}
                 rating={{ vote: props.comment.vote, value: props.comment.rating }}
                 onVote={handleVote}
+                onListToggle={setHasOpenList}
               />
             </div>
           )}
@@ -288,7 +300,12 @@ export default function CommentComponent(props: CommentProps) {
 
           {/* Token counters */}
           <div className={styles.control}>
-            <TokenCounters entityId={props.comment.id} entityType='comment' counts={props.comment.tokenCounts} />
+            <TokenCounters
+              entityId={props.comment.id}
+              entityType='comment'
+              counts={props.comment.tokenCounts}
+              onListToggle={setHasOpenList}
+            />
           </div>
         </div>
       </div>
