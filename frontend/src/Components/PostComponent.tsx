@@ -43,7 +43,6 @@ export default function PostComponent(props: PostComponentProps) {
   const [editingText, setEditingText] = useState<false | string>(false)
   const [editingTitle, setEditingTitle] = useState<string>(props.post.title || '')
   const [showHistory, setShowHistory] = useState(false)
-  const [showAddMarker, setShowAddMarker] = useState(false)
   const {
     currentMode,
     altTitle,
@@ -150,25 +149,29 @@ export default function PostComponent(props: PostComponentProps) {
 
   const handleOpenAddMarker = () => {
     setShowOptions(false)
-    setShowAddMarker(true)
-  }
 
-  const handleCloseAddMarker = () => {
-    setShowAddMarker(false)
-  }
+    const handleMarkerAdded = () => {
+      // Instead of refreshing the whole post, just refresh the token counts
+      MarkerAPI.getTokenCounts(MarkerTargetType.POST, props.post.id)
+        .then((tokenCounts) => {
+          if (props.onChange) {
+            // Just update the token counts
+            props.onChange(props.post.id, { tokenCounts })
+          }
+        })
+        .catch((error) => {
+          console.error('Error refreshing token counts after adding marker:', error)
+        })
+    }
 
-  const handleMarkerAdded = () => {
-    // Instead of refreshing the whole post, just refresh the token counts
-    MarkerAPI.getTokenCounts(MarkerTargetType.POST, props.post.id)
-      .then((tokenCounts) => {
-        if (props.onChange) {
-          // Just update the token counts
-          props.onChange(props.post.id, { tokenCounts })
-        }
-      })
-      .catch((error) => {
-        console.error('Error refreshing token counts after adding marker:', error)
-      })
+    appState.setModal(
+      <AddMarkerComponent
+        targetType={MarkerTargetType.POST}
+        targetId={props.post.id}
+        onClose={() => appState.setModal(undefined)}
+        onSuccess={handleMarkerAdded}
+      />,
+    )
   }
 
   const altMode = currentMode !== undefined || inProgress
@@ -329,16 +332,6 @@ export default function PostComponent(props: PostComponentProps) {
         </div>
       </div>
       {props.buttons}
-
-      {/* Add Marker Modal */}
-      {showAddMarker && (
-        <AddMarkerComponent
-          targetType={MarkerTargetType.POST}
-          targetId={props.post.id}
-          onClose={handleCloseAddMarker}
-          onSuccess={handleMarkerAdded}
-        />
-      )}
     </div>
   )
 }

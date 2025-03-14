@@ -8,7 +8,7 @@ import UserManager from './UserManager'
 export class MarkerManager {
   private markerRepository: MarkerRepository
   private userManager: UserManager
-  private tokensPerDay = 4 // Users get 4 tokens per day
+  private tokensPerDay = 200 // Users get 4 tokens per day
 
   constructor(markerRepository: MarkerRepository, userManager: UserManager) {
     this.markerRepository = markerRepository

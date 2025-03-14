@@ -109,16 +109,7 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
               const tokenInfo = await MarkerAPI.getUserTokenInfo()
               componentState.setTokenInfo(tokenInfo)
             } catch (error: any) {
-              console.error('Error fetching token info:', error)
-              if (error?.data?.code === 'auth-required') {
-                componentState.setError('Authentication required')
-                // Redirect to sign-in page after a short delay
-                setTimeout(() => {
-                  window.location.href = '/signin'
-                }, 1000)
-              } else {
-                componentState.setError('Failed to load token information')
-              }
+              componentState.setError('Failed to load token information')
             }
           }
         } finally {
@@ -151,16 +142,7 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
         onSuccess?.()
         onClose()
       } catch (error: any) {
-        console.error('Error adding marker:', error)
-        if (error?.data?.code === 'auth-required') {
-          componentState.setError('Authentication required')
-          // Redirect to sign-in page after a short delay
-          setTimeout(() => {
-            window.location.href = '/signin'
-          }, 1000)
-        } else {
-          componentState.setError('Error adding marker: ' + (error?.data?.message || error?.message || 'Unknown error'))
-        }
+        componentState.setError('Error adding marker: ' + (error?.data?.message || error?.message || 'Unknown error'))
       } finally {
         componentState.setIsSubmitting(false)
       }

@@ -41,7 +41,6 @@ export default function CommentComponent(props: CommentProps) {
   const [editingText, setEditingText] = useState<false | string>(false)
   const [showHistory, setShowHistory] = useState(false)
   const [showOptions, setShowOptions] = useState(false)
-  const [showAddMarker, setShowAddMarker] = useState(false)
 
   const api = useAPI()
   const appState = useAppState()
@@ -110,20 +109,24 @@ export default function CommentComponent(props: CommentProps) {
 
   const handleOpenAddMarker = () => {
     setShowOptions(false)
-    setShowAddMarker(true)
-  }
 
-  const handleCloseAddMarker = () => {
-    setShowAddMarker(false)
-  }
+    const handleMarkerAdded = () => {
+      //FIXME
+      // Just log that the marker was added since we can't update the comment
+      // We'd need a page reload to see updates
+      console.log('Marker added to comment')
+      // In a real implementation, we'd update the token counts
+      // but Comment doesn't have an onChange handler
+    }
 
-  const handleMarkerAdded = () => {
-    //FIXME
-    // Just log that the marker was added since we can't update the comment
-    // We'd need a page reload to see updates
-    console.log('Marker added to comment')
-    // In a real implementation, we'd update the token counts
-    // but Comment doesn't have an onChange handler
+    appState.setModal(
+      <AddMarkerComponent
+        targetType={MarkerTargetType.COMMENT}
+        targetId={props.comment.id}
+        onClose={() => appState.setModal(undefined)}
+        onSuccess={handleMarkerAdded}
+      />,
+    )
   }
 
   const { author, created, site, postLink, editFlag } = props.comment
@@ -321,16 +324,6 @@ export default function CommentComponent(props: CommentProps) {
         </div>
       ) : (
         <></>
-      )}
-
-      {/* Add Marker Modal */}
-      {showAddMarker && (
-        <AddMarkerComponent
-          targetType={MarkerTargetType.COMMENT}
-          targetId={props.comment.id}
-          onClose={handleCloseAddMarker}
-          onSuccess={handleMarkerAdded}
-        />
       )}
     </div>
   )
