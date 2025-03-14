@@ -7,6 +7,7 @@ import { observer } from 'mobx-react-lite'
 import MarkerAPI, { MarkerInfo, MarkerTargetType, MarkerType, UserTokenInfo } from '../API/MarkerAPI'
 import { useAppState } from '../AppState/AppState'
 import AddMarkerComponent from './AddMarkerComponent'
+import DateComponent from './DateComponent'
 import Username from './Username'
 
 import { ReactComponent as BookmarkIcon } from '../Assets/bookmark.svg'
@@ -275,84 +276,86 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
         <div className={styles.loading}>Loading markers...</div>
       ) : (
         <div className={styles.markersList}>
-          {starMarkers.length > 0 && (
-            <div className={styles.markerSection}>
-              <div className={styles.markerSectionHeader}>
-                <StarIcon /> Stars
+          {starMarkers.map((marker) => (
+            <div key={marker.markerId} className={styles.markerItem}>
+              <div className={styles.markerType}>
+                <StarIcon />
               </div>
-              {starMarkers.map((marker) => (
-                <div key={marker.markerId} className={styles.markerItem}>
-                  <div className={styles.markerSignature}>
-                    <StarIcon className={styles.markerIcon} />
-                    <Username user={{ username: `user_${marker.creatorId}` }} /> •{' '}
-                    <span className={styles.markerDate}>{new Date(marker.createdAt).toLocaleString()}</span>
-                    {appState.userInfo && marker.creatorId === appState.userInfo?.id && (
-                      <button
-                        className={styles.removeButton}
-                        onClick={() => handleRemoveMarker(marker.markerId)}
-                        disabled={componentState.isSubmitting}
-                        title='Remove marker'
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                  {marker.annotation && <div className={styles.markerAnnotation}>{marker.annotation}</div>}
+              <div className={styles.markerContent}>
+                <div className={styles.markerSignature}>
+                  <Username user={{ username: `user_${marker.creatorId}` }} /> •{' '}
+                  <DateComponent date={new Date(marker.createdAt)} />
                 </div>
-              ))}
+                {marker.annotation && <div className={styles.markerAnnotation}>{marker.annotation}</div>}
+              </div>
+              {appState.userInfo && marker.creatorId === appState.userInfo?.id && (
+                <button
+                  className={styles.removeButton}
+                  onClick={() => handleRemoveMarker(marker.markerId)}
+                  disabled={componentState.isSubmitting}
+                  title='Remove marker'
+                >
+                  ×
+                </button>
+              )}
             </div>
-          )}
+          ))}
 
-          {noteMarkers.length > 0 && (
-            <div className={styles.markerSection}>
-              <div className={styles.markerSectionHeader}>
-                <NoteIcon /> Notes
+          {noteMarkers.map((marker) => (
+            <div key={marker.markerId} className={styles.markerItem}>
+              <div className={styles.markerType}>
+                <NoteIcon />
               </div>
-              {noteMarkers.map((marker) => (
-                <div key={marker.markerId} className={styles.markerItem}>
-                  <div className={styles.markerSignature}>
-                    <NoteIcon className={styles.markerIcon} />
-                    <Username user={{ username: `user_${marker.creatorId}` }} /> •{' '}
-                    <span className={styles.markerDate}>{new Date(marker.createdAt).toLocaleString()}</span>
-                    {appState.userInfo && marker.creatorId === appState.userInfo?.id && (
-                      <button
-                        className={styles.removeButton}
-                        onClick={() => handleRemoveMarker(marker.markerId)}
-                        disabled={componentState.isSubmitting}
-                        title='Remove marker'
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                  {marker.annotation && <div className={styles.markerAnnotation}>{marker.annotation}</div>}
+              <div className={styles.markerContent}>
+                <div className={styles.markerSignature}>
+                  <Username user={{ username: `user_${marker.creatorId}` }} /> •{' '}
+                  <DateComponent date={new Date(marker.createdAt)} />
                 </div>
-              ))}
+                {marker.annotation && <div className={styles.markerAnnotation}>{marker.annotation}</div>}
+              </div>
+              {appState.userInfo && marker.creatorId === appState.userInfo?.id && (
+                <button
+                  className={styles.removeButton}
+                  onClick={() => handleRemoveMarker(marker.markerId)}
+                  disabled={componentState.isSubmitting}
+                  title='Remove marker'
+                >
+                  ×
+                </button>
+              )}
             </div>
-          )}
+          ))}
 
           {bookmarkMarkers.length > 0 && (
-            <div className={styles.markerSection}>
-              <div className={styles.markerSectionHeader}>
-                <BookmarkIcon /> Bookmarks
+            <div className={styles.markerItem}>
+              <div className={styles.markerType}>
+                <BookmarkIcon />
               </div>
-              <div className={styles.bookmarksList}>
-                {bookmarkMarkers.map((marker) => (
-                  <div key={marker.markerId} className={styles.bookmarkItem}>
-                    <Username user={{ username: `user_${marker.creatorId}` }} />
-                    {appState.userInfo && marker.creatorId === appState.userInfo?.id && (
-                      <button
-                        className={styles.removeButton}
-                        onClick={() => handleRemoveMarker(marker.markerId)}
-                        disabled={componentState.isSubmitting}
-                        title='Remove bookmark'
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                ))}
+              <div className={styles.markerContent}>
+                <div className={styles.bookmarkHeader}>Bookmarks:</div>
+                <div className={styles.bookmarksList}>
+                  {bookmarkMarkers.map((marker, index) => (
+                    <span key={marker.markerId} className={styles.bookmarkItem}>
+                      <Username user={{ username: `user_${marker.creatorId}` }} />
+                      {index < bookmarkMarkers.length - 1 && ', '}
+                    </span>
+                  ))}
+                </div>
               </div>
+              {appState.userInfo && bookmarkMarkers.some((marker) => marker.creatorId === appState.userInfo?.id) && (
+                <button
+                  className={styles.removeButton}
+                  onClick={() =>
+                    handleRemoveMarker(
+                      bookmarkMarkers.find((marker) => marker.creatorId === appState.userInfo?.id)?.markerId || 0,
+                    )
+                  }
+                  disabled={componentState.isSubmitting}
+                  title='Remove your bookmark'
+                >
+                  ×
+                </button>
+              )}
             </div>
           )}
 
