@@ -3,7 +3,7 @@
  * in the manager layer
  */
 export type TokenCounts = {
-  starCount: number
-  noteCount: number
-  bookmarkCount: number
+  stars: number
+  notes: number
+  bookmarks: number
 }

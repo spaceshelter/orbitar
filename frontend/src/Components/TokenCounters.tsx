@@ -59,62 +59,35 @@ const TokenCounters: React.FC<TokenCountersProps> = observer((props) => {
       return
     }
 
-    // Position the popup
-    const counterRect = counterRef.current.getBoundingClientRect()
-    const popupEl = popupRef.current
+    const [popupEl, ratingEl] = [popupRef.current, counterRef.current]
 
-    // Get popup dimensions
-    const popupWidth = 312 // Match the width from CSS
-    const popupHeight = Math.min(400, window.innerHeight * 0.8) // Limit height on small screens
+    const rect = ratingEl.getBoundingClientRect()
+    const y = rect.y + window.scrollY || 0
+    const rh = ratingEl.clientHeight
+    const ph = popupEl.clientHeight
 
-    // Check available space in all directions
-    const belowSpace = window.innerHeight - (counterRect.bottom + window.scrollY)
-    const aboveSpace = counterRect.top - window.scrollY
-    const rightSpace = window.innerWidth - counterRect.left
-    const leftSpace = counterRect.right
-
-    // Decide vertical position
-    if (belowSpace >= popupHeight || aboveSpace < popupHeight) {
-      // Position below if there's enough space or if there's not enough space above
-      popupEl.style.top = `${counterRect.bottom + window.scrollY + 5}px` // Add a small gap
-      popupEl.style.bottom = 'auto'
-    } else {
-      // Position above
-      popupEl.style.bottom = `${window.innerHeight - counterRect.top + 5}px` // Add a small gap
+    // Following RatingSwitch positioning logic
+    const isTotalHeightMoreThanPageHeight = y + rh + ph > document.documentElement.scrollHeight
+    if (isTotalHeightMoreThanPageHeight) {
+      popupEl.style.bottom = '30px'
       popupEl.style.top = 'auto'
-    }
-
-    // Decide horizontal position
-    // On mobile, center under the counter if possible
-    const isMobile = window.innerWidth < 768
-
-    if (isMobile) {
-      // Center the popup under the counter on mobile, but keep it within viewport
-      const idealLeft = Math.max(
-        10,
-        Math.min(window.innerWidth - popupWidth - 10, counterRect.left - (popupWidth / 2 - counterRect.width / 2)),
-      )
-      popupEl.style.left = `${idealLeft}px`
-      popupEl.style.right = 'auto'
-    } else if (rightSpace >= popupWidth || leftSpace < popupWidth) {
-      // Align to the left if there's enough space on the right or not enough on the left
-      popupEl.style.left = `${counterRect.left}px`
-      popupEl.style.right = 'auto'
     } else {
-      // Align to the right
-      popupEl.style.right = `${window.innerWidth - counterRect.right}px`
-      popupEl.style.left = 'auto'
+      popupEl.style.top = '30px'
+      popupEl.style.bottom = 'auto'
     }
 
     // Close popup when clicking outside
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (e: MouseEvent) => {
+      e.stopPropagation()
+      e.preventDefault()
       if (
         popupRef.current &&
-        !popupRef.current.contains(event.target as Node) &&
-        !counterRef.current?.contains(event.target as Node)
+        !popupRef.current.contains(e.target as Node) &&
+        !counterRef.current?.contains(e.target as Node)
       ) {
         setIsPopupOpen(false)
       }
+      return false
     }
 
     document.addEventListener('mousedown', handleClickOutside)

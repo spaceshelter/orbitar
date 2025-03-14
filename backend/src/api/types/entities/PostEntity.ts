@@ -6,11 +6,11 @@ export type PostBaseEntity = {
   title?: string
 }
 
-// API entity TokenCounts
+// API entity TokenCounts - matches frontend format
 export type TokenCounts = {
-  starCount: number
-  noteCount: number
-  bookmarkCount: number
+  stars: number
+  notes: number
+  bookmarks: number
 }
 
 export type PostEntity = PostBaseEntity & {

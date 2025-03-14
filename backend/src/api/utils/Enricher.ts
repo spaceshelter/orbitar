@@ -67,13 +67,6 @@ export class Enricher {
         postResult.editFlag = post.editFlag
       }
 
-      // Add token counts
-      postResult.tokenCounts = {
-        starCount: post.tokenCounts.starCount,
-        noteCount: post.tokenCounts.noteCount,
-        bookmarkCount: post.tokenCounts.bookmarkCount,
-      }
-
       posts.push(postResult)
     }
 
@@ -95,11 +88,20 @@ export class Enricher {
     const allComments: CommentEntity[] = []
 
     for (const rawComment of rawComments) {
+      // Create a new object with everything except tokenCounts
+      const { ...commentWithoutTokenCounts } = rawComment
+
       const comment: CommentEntity = {
-        ...rawComment,
+        ...commentWithoutTokenCounts,
         created: rawComment.created.toISOString(),
         isNew: false,
         answers: undefined,
+        // Add token counts in the correct format
+        tokenCounts: {
+          stars: rawComment.tokenCounts.stars,
+          notes: rawComment.tokenCounts.notes,
+          bookmarks: rawComment.tokenCounts.bookmarks,
+        },
       }
       if (isNew(comment)) {
         comment.isNew = true
@@ -112,13 +114,6 @@ export class Enricher {
       }
       if (rawComment.editFlag) {
         comment.editFlag = rawComment.editFlag
-      }
-
-      // Add token counts
-      comment.tokenCounts = {
-        starCount: rawComment.tokenCounts.starCount,
-        noteCount: rawComment.tokenCounts.noteCount,
-        bookmarkCount: rawComment.tokenCounts.bookmarkCount,
       }
 
       users[rawComment.author] = users[rawComment.author] || (await this.userManager.getById(rawComment.author))

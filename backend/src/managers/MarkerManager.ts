@@ -35,7 +35,7 @@ export class MarkerManager {
    */
   async calculateMaxTokens(user: UserInfo): Promise<number> {
     // Base tokens (everyone gets at least 10)
-    const maxTokens = 10
+    const maxTokens = 200
 
     // Could scale with karma in the future if needed
     return maxTokens

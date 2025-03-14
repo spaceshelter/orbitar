@@ -340,9 +340,9 @@ export default class FeedManager {
         language: rawPost.language,
         // Include marker counts
         tokenCounts: {
-          starCount: rawPost.star_count || 0,
-          noteCount: rawPost.note_count || 0,
-          bookmarkCount: rawPost.bookmark_count || 0,
+          stars: rawPost.star_count || 0,
+          notes: rawPost.note_count || 0,
+          bookmarks: rawPost.bookmark_count || 0,
         },
       }
       if (rawPost.author_id === forUserId) {
