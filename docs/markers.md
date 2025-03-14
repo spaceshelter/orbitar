@@ -69,12 +69,14 @@ Three distinct marker types with different purposes:
 
 ### 4.1 Data Storage
 - Token records must store:
-    - Token type (Star/Note/Bookmark) (int, enum in the code)
+    - Token type (Star/Note/Bookmark) (varchar, enum in the code)
+      - IMPORTANT: The marker_type field should ONLY contain the simple type: "star", "note", or "bookmark"
+      - The target type is already determined by which of the target ID fields is populated
     - Placed count (int)
     - Placement timestamp
     - Removal timestamp (nullable)
     - Creator ID (voter_id)
-    - Target ID (post/comment/user) (user_id, post_id, comment_id)nullable
+    - Target ID (post/comment/user) (user_id, post_id, comment_id) nullable
       - nullable, with foreign key to the target table
     - Optional text annotation (varchar 256)
 - indexes:

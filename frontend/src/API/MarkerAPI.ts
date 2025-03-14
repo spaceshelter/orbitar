@@ -54,26 +54,23 @@ export class MarkerAPI extends APIBase {
    * Get token counters for a post
    */
   async getPostCounters(postId: number): Promise<TokenCounter> {
-    const response = await this.request<{ postId: number }, TokenCounter>('/marker/get-post-counters', { postId })
-    return response
+    return await this.request<{ postId: number }, TokenCounter>('/marker/get-post-counters', { postId })
   }
 
   /**
    * Get token counters for a comment
    */
   async getCommentCounters(commentId: number): Promise<TokenCounter> {
-    const response = await this.request<{ commentId: number }, TokenCounter>('/marker/get-comment-counters', {
+    return await this.request<{ commentId: number }, TokenCounter>('/marker/get-comment-counters', {
       commentId,
     })
-    return response
   }
 
   /**
    * Get token counters for a user
    */
   async getUserCounters(userId: number): Promise<TokenCounter> {
-    const response = await this.request<{ userId: number }, TokenCounter>('/marker/get-user-counters', { userId })
-    return response
+    return await this.request<{ userId: number }, TokenCounter>('/marker/get-user-counters', { userId })
   }
 
   /**
@@ -156,8 +153,7 @@ export class MarkerAPI extends APIBase {
    * Get token information for the current user
    */
   async getUserTokenInfo(): Promise<UserTokenInfo> {
-    const response = await this.request<Record<string, never>, UserTokenInfo>('/marker/get-tokens', {})
-    return response
+    return await this.request<Record<string, never>, UserTokenInfo>('/marker/get-tokens', {})
   }
 
   /**
@@ -170,9 +166,7 @@ export class MarkerAPI extends APIBase {
     placedCount: number,
     annotation: string | null,
   ): Promise<MarkerInfo> {
-    // Convert the simple marker type to the full marker type expected by the backend
-    const fullMarkerType = getFullMarkerType(targetType, markerType)
-    const response = await this.request<
+    return await this.request<
       {
         targetType: MarkerTargetType
         targetId: number
@@ -184,11 +178,10 @@ export class MarkerAPI extends APIBase {
     >('/marker/create', {
       targetType,
       targetId,
-      markerType: fullMarkerType,
+      markerType,
       placedCount,
       annotation,
     })
-    return response
   }
 
   /**
@@ -229,18 +222,6 @@ export enum MarkerType {
   BOOKMARK = 'bookmark',
 }
 
-// Map frontend marker types to backend marker types
-export function getFullMarkerType(targetType: MarkerTargetType, markerType: MarkerType): string {
-  switch (targetType) {
-    case MarkerTargetType.POST:
-      return `post_${markerType}`
-    case MarkerTargetType.COMMENT:
-      return `comment_${markerType}`
-    case MarkerTargetType.USER:
-      return `user_${markerType}`
-    default:
-      throw new Error(`Invalid target type: ${targetType}`)
-  }
-}
-
+// Backend API has been updated to use simple marker types (star/note/bookmark)
+// as recommended in /docs/markers.md
 export default new MarkerAPI()

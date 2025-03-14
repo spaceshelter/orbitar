@@ -5,18 +5,9 @@ export enum MarkerTargetType {
 }
 
 export enum MarkerType {
-  POST_DEFAULT = 'post_default',
-  POST_STAR = 'post_star',
-  POST_NOTE = 'post_note',
-  POST_BOOKMARK = 'post_bookmark',
-  COMMENT_DEFAULT = 'comment_default',
-  COMMENT_STAR = 'comment_star',
-  COMMENT_NOTE = 'comment_note',
-  COMMENT_BOOKMARK = 'comment_bookmark',
-  USER_DEFAULT = 'user_default',
-  USER_STAR = 'user_star',
-  USER_NOTE = 'user_note',
-  USER_BOOKMARK = 'user_bookmark',
+  STAR = 'star',
+  NOTE = 'note',
+  BOOKMARK = 'bookmark',
 }
 
 export interface MarkerInfo {

@@ -161,17 +161,6 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
     }
   }
 
-  const filteredMarkers =
-    componentState.selectedType === 'all'
-      ? componentState.markers
-      : componentState.markers.filter((marker) => {
-          if (componentState.selectedType === MarkerType.STAR && marker.markerType === MarkerType.STAR) return true
-          if (componentState.selectedType === MarkerType.NOTE && marker.markerType === MarkerType.NOTE) return true
-          if (componentState.selectedType === MarkerType.BOOKMARK && marker.markerType === MarkerType.BOOKMARK)
-            return true
-          return false
-        })
-
   const isMarkerTypeDisabled = (type: MarkerType): boolean => {
     if (!appState.userInfo) return false
     if (type === MarkerType.BOOKMARK) return false
@@ -185,32 +174,6 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
     return componentState.markers.some(
       (marker) => marker.markerType === type && marker.creatorId === appState.userInfo?.id && !marker.removedAt,
     )
-  }
-
-  const getMarkerTypeLabel = (marker: MarkerInfo): string => {
-    switch (marker.markerType) {
-      case MarkerType.STAR:
-        return 'Star'
-      case MarkerType.NOTE:
-        return 'Note'
-      case MarkerType.BOOKMARK:
-        return 'Bookmark'
-      default:
-        return 'Unknown Marker'
-    }
-  }
-
-  const getMarkerIcon = (type: MarkerType) => {
-    switch (type) {
-      case MarkerType.STAR:
-        return <StarIcon />
-      case MarkerType.NOTE:
-        return <NoteIcon />
-      case MarkerType.BOOKMARK:
-        return <BookmarkIcon />
-      default:
-        return null
-    }
   }
 
   const handleOpenAddMarker = (type: MarkerType) => {
@@ -242,6 +205,19 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
     e.stopPropagation()
   }
 
+  // Sort markers by type and date (newest first) and filter out removed markers
+  const starMarkers = componentState.markers
+    .filter((marker) => marker.markerType === MarkerType.STAR && !marker.removedAt)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+  const noteMarkers = componentState.markers
+    .filter((marker) => marker.markerType === MarkerType.NOTE && !marker.removedAt)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+  const bookmarkMarkers = componentState.markers.filter(
+    (marker) => marker.markerType === MarkerType.BOOKMARK && !marker.removedAt,
+  )
+
   return (
     <div ref={listRef} className={styles.markerList} onClick={handleListClick}>
       <div className={styles.header}>
@@ -253,113 +229,135 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
 
       {componentState.error && <div className={styles.error}>{componentState.error}</div>}
 
-      {appState.userInfo && componentState.userTokens !== null && (
-        <div className={styles.tokenInfo}>
-          Available tokens: {componentState.userTokens} / {componentState.maxTokens}
-        </div>
-      )}
-
-      <div className={styles.filterButtons}>
-        <button
-          className={cn(styles.filterButton, { [styles.active]: componentState.selectedType === 'all' })}
-          onClick={() => componentState.setSelectedType('all')}
-        >
-          All
-        </button>
-        <button
-          className={cn(styles.filterButton, { [styles.active]: componentState.selectedType === MarkerType.STAR })}
-          onClick={() => componentState.setSelectedType(MarkerType.STAR)}
-        >
-          Stars
-        </button>
-        <button
-          className={cn(styles.filterButton, { [styles.active]: componentState.selectedType === MarkerType.NOTE })}
-          onClick={() => componentState.setSelectedType(MarkerType.NOTE)}
-        >
-          Notes
-        </button>
-        <button
-          className={cn(styles.filterButton, {
-            [styles.active]: componentState.selectedType === MarkerType.BOOKMARK,
-          })}
-          onClick={() => componentState.setSelectedType(MarkerType.BOOKMARK)}
-        >
-          Bookmarks
-        </button>
-      </div>
-
       {appState.userInfo && (
-        <div className={styles.markerButtons}>
-          <button
-            className={cn(styles.markerButton, styles.starButton, {
-              [styles.disabled]: isMarkerTypeDisabled(MarkerType.STAR),
-              [styles.active]: userHasMarkerOfType(MarkerType.STAR),
-            })}
-            onClick={() => handleOpenAddMarker(MarkerType.STAR)}
-            disabled={isMarkerTypeDisabled(MarkerType.STAR) || componentState.isSubmitting}
-            title={isMarkerTypeDisabled(MarkerType.STAR) ? 'Not enough tokens' : 'Add Star'}
-          >
-            <StarIcon />
-          </button>
+        <div className={styles.addMarkerRow}>
+          <span className={styles.addMarkerLabel}>Add marker:</span>
+          <div className={styles.addMarkerButtons}>
+            <button
+              className={cn(styles.markerButton, styles.starButton, {
+                [styles.disabled]: isMarkerTypeDisabled(MarkerType.STAR),
+                [styles.active]: userHasMarkerOfType(MarkerType.STAR),
+              })}
+              onClick={() => handleOpenAddMarker(MarkerType.STAR)}
+              disabled={isMarkerTypeDisabled(MarkerType.STAR) || componentState.isSubmitting}
+              title={isMarkerTypeDisabled(MarkerType.STAR) ? 'Not enough tokens' : 'Add Star'}
+            >
+              <StarIcon />
+            </button>
 
-          <button
-            className={cn(styles.markerButton, styles.noteButton, {
-              [styles.disabled]: isMarkerTypeDisabled(MarkerType.NOTE),
-              [styles.active]: userHasMarkerOfType(MarkerType.NOTE),
-            })}
-            onClick={() => handleOpenAddMarker(MarkerType.NOTE)}
-            disabled={isMarkerTypeDisabled(MarkerType.NOTE) || componentState.isSubmitting}
-            title={isMarkerTypeDisabled(MarkerType.NOTE) ? 'Not enough tokens' : 'Add Note'}
-          >
-            <NoteIcon />
-          </button>
+            <button
+              className={cn(styles.markerButton, styles.noteButton, {
+                [styles.disabled]: isMarkerTypeDisabled(MarkerType.NOTE),
+                [styles.active]: userHasMarkerOfType(MarkerType.NOTE),
+              })}
+              onClick={() => handleOpenAddMarker(MarkerType.NOTE)}
+              disabled={isMarkerTypeDisabled(MarkerType.NOTE) || componentState.isSubmitting}
+              title={isMarkerTypeDisabled(MarkerType.NOTE) ? 'Not enough tokens' : 'Add Note'}
+            >
+              <NoteIcon />
+            </button>
 
-          <button
-            className={cn(styles.markerButton, styles.bookmarkButton, {
-              [styles.active]: userHasMarkerOfType(MarkerType.BOOKMARK),
-            })}
-            onClick={() => handleOpenAddMarker(MarkerType.BOOKMARK)}
-            disabled={componentState.isSubmitting}
-            title='Add Bookmark'
-          >
-            <BookmarkIcon />
-          </button>
+            <button
+              className={cn(styles.markerButton, styles.bookmarkButton, {
+                [styles.active]: userHasMarkerOfType(MarkerType.BOOKMARK),
+              })}
+              onClick={() => handleOpenAddMarker(MarkerType.BOOKMARK)}
+              disabled={componentState.isSubmitting}
+              title='Add Bookmark'
+            >
+              <BookmarkIcon />
+            </button>
+          </div>
         </div>
       )}
 
       {componentState.isLoading ? (
         <div className={styles.loading}>Loading markers...</div>
-      ) : filteredMarkers.length > 0 ? (
+      ) : (
         <div className={styles.markersList}>
-          {filteredMarkers.map((marker) => (
-            <div key={marker.markerId} className={styles.markerItem}>
-              <div className={styles.markerHeader}>
-                <span className={styles.markerType}>
-                  {getMarkerIcon(marker.markerType)} {getMarkerTypeLabel(marker)}
-                </span>
-                <span className={styles.markerDate}>{new Date(marker.createdAt).toLocaleString()}</span>
-                {appState.userInfo && marker.creatorId === appState.userInfo?.id && (
-                  <button
-                    className={styles.removeButton}
-                    onClick={() => handleRemoveMarker(marker.markerId)}
-                    disabled={componentState.isSubmitting}
-                    title='Remove marker'
-                  >
-                    Remove
-                  </button>
-                )}
+          {starMarkers.length > 0 && (
+            <div className={styles.markerSection}>
+              <div className={styles.markerSectionHeader}>
+                <StarIcon /> Stars
               </div>
+              {starMarkers.map((marker) => (
+                <div key={marker.markerId} className={styles.markerItem}>
+                  <div className={styles.markerSignature}>
+                    <StarIcon className={styles.markerIcon} />
+                    <Username user={{ username: `user_${marker.creatorId}` }} /> •{' '}
+                    <span className={styles.markerDate}>{new Date(marker.createdAt).toLocaleString()}</span>
+                    {appState.userInfo && marker.creatorId === appState.userInfo?.id && (
+                      <button
+                        className={styles.removeButton}
+                        onClick={() => handleRemoveMarker(marker.markerId)}
+                        disabled={componentState.isSubmitting}
+                        title='Remove marker'
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                  {marker.annotation && <div className={styles.markerAnnotation}>{marker.annotation}</div>}
+                </div>
+              ))}
+            </div>
+          )}
 
-              {marker.annotation && <div className={styles.markerAnnotation}>{marker.annotation}</div>}
+          {noteMarkers.length > 0 && (
+            <div className={styles.markerSection}>
+              <div className={styles.markerSectionHeader}>
+                <NoteIcon /> Notes
+              </div>
+              {noteMarkers.map((marker) => (
+                <div key={marker.markerId} className={styles.markerItem}>
+                  <div className={styles.markerSignature}>
+                    <NoteIcon className={styles.markerIcon} />
+                    <Username user={{ username: `user_${marker.creatorId}` }} /> •{' '}
+                    <span className={styles.markerDate}>{new Date(marker.createdAt).toLocaleString()}</span>
+                    {appState.userInfo && marker.creatorId === appState.userInfo?.id && (
+                      <button
+                        className={styles.removeButton}
+                        onClick={() => handleRemoveMarker(marker.markerId)}
+                        disabled={componentState.isSubmitting}
+                        title='Remove marker'
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                  {marker.annotation && <div className={styles.markerAnnotation}>{marker.annotation}</div>}
+                </div>
+              ))}
+            </div>
+          )}
 
-              <div className={styles.markerCreator}>
-                by <Username user={{ username: `user_${marker.creatorId}` }} />
+          {bookmarkMarkers.length > 0 && (
+            <div className={styles.markerSection}>
+              <div className={styles.markerSectionHeader}>
+                <BookmarkIcon /> Bookmarks
+              </div>
+              <div className={styles.bookmarksList}>
+                {bookmarkMarkers.map((marker) => (
+                  <div key={marker.markerId} className={styles.bookmarkItem}>
+                    <Username user={{ username: `user_${marker.creatorId}` }} />
+                    {appState.userInfo && marker.creatorId === appState.userInfo?.id && (
+                      <button
+                        className={styles.removeButton}
+                        onClick={() => handleRemoveMarker(marker.markerId)}
+                        disabled={componentState.isSubmitting}
+                        title='Remove bookmark'
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
+          )}
+
+          {componentState.markers.length === 0 && <div className={styles.noMarkers}>No markers found</div>}
         </div>
-      ) : (
-        <div className={styles.noMarkers}>No markers found</div>
       )}
     </div>
   )

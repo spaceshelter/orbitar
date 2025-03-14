@@ -5,7 +5,7 @@ import { Logger } from 'winston'
 
 import CodeError from '../CodeError'
 import { MarkerManager } from '../managers/MarkerManager'
-import { MarkerTargetType } from '../managers/types/MarkerInfo'
+import { MarkerTargetType, MarkerType } from '../managers/types/MarkerInfo'
 import { APIRequest, APIResponse, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
 
@@ -69,7 +69,9 @@ export class MarkerController {
         .valid(...Object.values(MarkerTargetType))
         .required(),
       targetId: Joi.number().integer().positive().required(),
-      markerType: Joi.string().required(),
+      markerType: Joi.string()
+        .valid(...Object.values(MarkerType))
+        .required(),
       placedCount: Joi.number().integer().positive().default(1),
       annotation: Joi.string().max(256).allow(null, '').optional(),
     })
@@ -305,20 +307,9 @@ export class MarkerController {
       const userId = req.session.data.userId
       const { targetType, targetId, markerType, placedCount, annotation } = req.body
 
-      // Most validation is now handled by Joi schema, just keeping specific business rules
-
-      // Additional validation to ensure marker type matches target type
-      if (targetType === MarkerTargetType.POST && !markerType.startsWith('post_')) {
-        throw new CodeError('Invalid marker type for post target', 'invalid_marker_type_for_target')
-      }
-
-      if (targetType === MarkerTargetType.COMMENT && !markerType.startsWith('comment_')) {
-        throw new CodeError('Invalid marker type for comment target', 'invalid_marker_type_for_target')
-      }
-
-      if (targetType === MarkerTargetType.USER && !markerType.startsWith('user_')) {
-        throw new CodeError('Invalid marker type for user target', 'invalid_marker_type_for_target')
-      }
+      // Most validation is now handled by Joi schema
+      // Validation for prefixed marker types has been removed - we now use simple marker types (star, note, bookmark)
+      // The target type is already specified by the targetType parameter and doesn't need to be encoded in the marker type
 
       const marker = await this.markerManager.createMarker(
         userId,

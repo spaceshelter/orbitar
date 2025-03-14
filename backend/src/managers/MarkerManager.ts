@@ -97,7 +97,7 @@ export class MarkerManager {
     creatorId: number,
     targetType: MarkerTargetType,
     targetId: number,
-    markerType: string,
+    markerType: MarkerType,
     placedCount = 1,
     annotation: string | null = null,
   ): Promise<MarkerInfo> {
@@ -117,6 +117,7 @@ export class MarkerManager {
     const marker = await this.markerRepository.createMarker({
       creatorId,
       targetId,
+      targetType,
       markerType,
       placedCount,
       annotation,
@@ -125,48 +126,8 @@ export class MarkerManager {
     return this.convertToMarkerInfo(marker)
   }
 
-  /**
-   * @deprecated Use createMarker with explicit marker type
-   */
-  async createPostMarker(
-    creatorId: number,
-    postId: number,
-    placedCount = 1,
-    annotation: string | null = null,
-  ): Promise<MarkerInfo> {
-    return this.createMarker(creatorId, MarkerTargetType.POST, postId, MarkerType.POST_DEFAULT, placedCount, annotation)
-  }
-
-  /**
-   * @deprecated Use createMarker with explicit marker type
-   */
-  async createCommentMarker(
-    creatorId: number,
-    commentId: number,
-    placedCount = 1,
-    annotation: string | null = null,
-  ): Promise<MarkerInfo> {
-    return this.createMarker(
-      creatorId,
-      MarkerTargetType.COMMENT,
-      commentId,
-      MarkerType.COMMENT_DEFAULT,
-      placedCount,
-      annotation,
-    )
-  }
-
-  /**
-   * @deprecated Use createMarker with explicit marker type
-   */
-  async createUserMarker(
-    creatorId: number,
-    userId: number,
-    placedCount = 1,
-    annotation: string | null = null,
-  ): Promise<MarkerInfo> {
-    return this.createMarker(creatorId, MarkerTargetType.USER, userId, MarkerType.USER_DEFAULT, placedCount, annotation)
-  }
+  // Deprecated methods createPostMarker, createCommentMarker, and createUserMarker
+  // have been removed in favor of using createMarker with explicit marker types
 
   async removeMarker(markerId: number, userId: number): Promise<void> {
     const marker = await this.markerRepository.getMarkerById({ markerId })

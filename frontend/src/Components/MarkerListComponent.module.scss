@@ -52,49 +52,26 @@
   margin-bottom: 1rem;
 }
 
-.tokenInfo {
-  background-color: rgba(var(--info-rgb), 0.1);
-  color: var(--fgSoft);
-  padding: 0.5rem;
-  border-radius: 0.25rem;
+.addMarkerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 1rem;
-  text-align: center;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--divider);
 }
 
-.filterButtons {
+.addMarkerLabel {
+  font-weight: 500;
+  color: var(--fg);
+}
+
+.addMarkerButtons {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.filterButton {
-  flex: 1;
-  background-color: var(--dim1);
-  border: 1px solid var(--divider);
-  border-radius: 0.25rem;
-  padding: 0.25rem 0.5rem;
-  cursor: pointer;
-  color: var(--fgSoft);
-
-  &:hover {
-    background-color: var(--dim2);
-  }
-
-  &.active {
-    background-color: var(--dim3);
-    border-color: var(--primary);
-    color: var(--fg);
-  }
-}
-
-.markerButtons {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
 }
 
 .markerButton {
-  flex: 1;
   padding: 0.5rem;
   border-radius: 0.25rem;
   cursor: pointer;
@@ -105,8 +82,8 @@
   align-items: center;
 
   svg {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     fill: currentColor;
   }
 
@@ -180,36 +157,49 @@
   flex-direction: column;
   gap: 1rem;
   overflow-y: auto;
-  max-height: 300px;
+  max-height: 60vh;
 }
 
-.markerItem {
-  border: 1px solid var(--divider);
-  border-radius: 0.25rem;
-  padding: 0.75rem;
-  background-color: var(--dim1);
+.markerSection {
+  margin-bottom: 1.5rem;
 }
 
-.markerHeader {
+.markerSectionHeader {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5rem;
-  flex-wrap: wrap;
   gap: 0.5rem;
-}
-
-.markerType {
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--fg);
 
   svg {
     width: 18px;
     height: 18px;
     fill: currentColor;
   }
+}
+
+.markerItem {
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--divider);
+  padding-bottom: 0.5rem;
+}
+
+.markerSignature {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  line-height: 13px;
+  margin-bottom: 8px;
+  color: var(--fgSoftest);
+}
+
+.markerIcon {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+  flex-shrink: 0;
 }
 
 .markerDate {
@@ -226,23 +216,38 @@
   font-size: 0.875rem;
 }
 
-.markerCreator {
-  margin-top: 0.5rem;
-  font-size: 0.875rem;
-  color: var(--fgSoft);
+.bookmarksList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0.5rem;
+}
+
+.bookmarkItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background-color: var(--dim1);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 13px;
 }
 
 .removeButton {
-  background-color: var(--dim3);
-  color: var(--danger);
+  background: none;
   border: none;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
+  color: var(--danger);
   cursor: pointer;
-  font-size: 0.75rem;
+  margin-left: 4px;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   &:hover:not(:disabled) {
-    background-color: rgba(var(--danger-rgb), 0.1);
+    color: var(--dangerHover);
   }
 
   &:disabled {

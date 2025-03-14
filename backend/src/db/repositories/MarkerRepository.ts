@@ -1,3 +1,4 @@
+import { MarkerTargetType, MarkerType } from '../../managers/types/MarkerInfo'
 import DB from '../DB'
 import { MarkerRaw } from '../types/MarkerRaw'
 
@@ -14,13 +15,15 @@ export class MarkerRepository {
   async createMarker({
     creatorId,
     targetId,
+    targetType,
     markerType,
     placedCount = 1,
     annotation = null,
   }: {
     creatorId: number
     targetId: number
-    markerType: string
+    targetType: MarkerTargetType
+    markerType: MarkerType
     placedCount?: number
     annotation?: string | null
   }): Promise<MarkerRaw> {
@@ -28,13 +31,19 @@ export class MarkerRepository {
     let commentId = null
     let userId = null
 
-    // Set the appropriate ID field based on marker type
-    if (markerType.startsWith('post')) {
-      postId = targetId
-    } else if (markerType.startsWith('comment')) {
-      commentId = targetId
-    } else if (markerType.startsWith('user')) {
-      userId = targetId
+    // Set the appropriate ID field based on target type
+    switch (targetType) {
+      case MarkerTargetType.POST:
+        postId = targetId
+        break
+      case MarkerTargetType.COMMENT:
+        commentId = targetId
+        break
+      case MarkerTargetType.USER:
+        userId = targetId
+        break
+      default:
+        throw new Error(`Invalid target type: ${targetType}`)
     }
 
     const result = await this.db.query<{ insertId: number }>(
@@ -83,11 +92,15 @@ export class MarkerRepository {
 
     // Update the relevant counter
     if (marker.post_id) {
-      await this.updatePostCounter({ postId: marker.post_id, markerType: marker.marker_type, change: -1 })
+      await this.updatePostCounter({ postId: marker.post_id, markerType: marker.marker_type as MarkerType, change: -1 })
     } else if (marker.comment_id) {
-      await this.updateCommentCounter({ commentId: marker.comment_id, markerType: marker.marker_type, change: -1 })
+      await this.updateCommentCounter({
+        commentId: marker.comment_id,
+        markerType: marker.marker_type as MarkerType,
+        change: -1,
+      })
     } else if (marker.user_id) {
-      await this.updateUserCounter({ userId: marker.user_id, markerType: marker.marker_type, change: -1 })
+      await this.updateUserCounter({ userId: marker.user_id, markerType: marker.marker_type as MarkerType, change: -1 })
     }
   }
 
@@ -97,25 +110,29 @@ export class MarkerRepository {
     change,
   }: {
     postId: number
-    markerType: string
+    markerType: MarkerType
     change: number
   }): Promise<void> {
     // Update specific counter based on marker type
-    if (markerType.includes('star')) {
-      await this.db.query(`UPDATE posts SET star_count = GREATEST(0, star_count + :change) WHERE post_id = :postId`, {
-        change,
-        postId,
-      })
-    } else if (markerType.includes('note')) {
-      await this.db.query(`UPDATE posts SET note_count = GREATEST(0, note_count + :change) WHERE post_id = :postId`, {
-        change,
-        postId,
-      })
-    } else if (markerType.includes('bookmark')) {
-      await this.db.query(
-        `UPDATE posts SET bookmark_count = GREATEST(0, bookmark_count + :change) WHERE post_id = :postId`,
-        { change, postId },
-      )
+    switch (markerType) {
+      case MarkerType.STAR:
+        await this.db.query(`UPDATE posts SET star_count = GREATEST(0, star_count + :change) WHERE post_id = :postId`, {
+          change,
+          postId,
+        })
+        break
+      case MarkerType.NOTE:
+        await this.db.query(`UPDATE posts SET note_count = GREATEST(0, note_count + :change) WHERE post_id = :postId`, {
+          change,
+          postId,
+        })
+        break
+      case MarkerType.BOOKMARK:
+        await this.db.query(
+          `UPDATE posts SET bookmark_count = GREATEST(0, bookmark_count + :change) WHERE post_id = :postId`,
+          { change, postId },
+        )
+        break
     }
   }
 
@@ -125,25 +142,29 @@ export class MarkerRepository {
     change,
   }: {
     commentId: number
-    markerType: string
+    markerType: MarkerType
     change: number
   }): Promise<void> {
     // Update specific counter based on marker type
-    if (markerType.includes('star')) {
-      await this.db.query(
-        `UPDATE comments SET star_count = GREATEST(0, star_count + :change) WHERE comment_id = :commentId`,
-        { change, commentId },
-      )
-    } else if (markerType.includes('note')) {
-      await this.db.query(
-        `UPDATE comments SET note_count = GREATEST(0, note_count + :change) WHERE comment_id = :commentId`,
-        { change, commentId },
-      )
-    } else if (markerType.includes('bookmark')) {
-      await this.db.query(
-        `UPDATE comments SET bookmark_count = GREATEST(0, bookmark_count + :change) WHERE comment_id = :commentId`,
-        { change, commentId },
-      )
+    switch (markerType) {
+      case MarkerType.STAR:
+        await this.db.query(
+          `UPDATE comments SET star_count = GREATEST(0, star_count + :change) WHERE comment_id = :commentId`,
+          { change, commentId },
+        )
+        break
+      case MarkerType.NOTE:
+        await this.db.query(
+          `UPDATE comments SET note_count = GREATEST(0, note_count + :change) WHERE comment_id = :commentId`,
+          { change, commentId },
+        )
+        break
+      case MarkerType.BOOKMARK:
+        await this.db.query(
+          `UPDATE comments SET bookmark_count = GREATEST(0, bookmark_count + :change) WHERE comment_id = :commentId`,
+          { change, commentId },
+        )
+        break
     }
   }
 
@@ -153,25 +174,29 @@ export class MarkerRepository {
     change,
   }: {
     userId: number
-    markerType: string
+    markerType: MarkerType
     change: number
   }): Promise<void> {
     // Update specific counter based on marker type
-    if (markerType.includes('star')) {
-      await this.db.query(`UPDATE users SET star_count = GREATEST(0, star_count + :change) WHERE user_id = :userId`, {
-        change,
-        userId,
-      })
-    } else if (markerType.includes('note')) {
-      await this.db.query(`UPDATE users SET note_count = GREATEST(0, note_count + :change) WHERE user_id = :userId`, {
-        change,
-        userId,
-      })
-    } else if (markerType.includes('bookmark')) {
-      await this.db.query(
-        `UPDATE users SET bookmark_count = GREATEST(0, bookmark_count + :change) WHERE user_id = :userId`,
-        { change, userId },
-      )
+    switch (markerType) {
+      case MarkerType.STAR:
+        await this.db.query(`UPDATE users SET star_count = GREATEST(0, star_count + :change) WHERE user_id = :userId`, {
+          change,
+          userId,
+        })
+        break
+      case MarkerType.NOTE:
+        await this.db.query(`UPDATE users SET note_count = GREATEST(0, note_count + :change) WHERE user_id = :userId`, {
+          change,
+          userId,
+        })
+        break
+      case MarkerType.BOOKMARK:
+        await this.db.query(
+          `UPDATE users SET bookmark_count = GREATEST(0, bookmark_count + :change) WHERE user_id = :userId`,
+          { change, userId },
+        )
+        break
     }
   }
 
@@ -190,6 +215,8 @@ export class MarkerRepository {
     creatorId: number
     markerType: string
   }): Promise<MarkerRaw | null> {
+    // This method needs a proper update to accept targetType as a parameter
+    // For now, we'll attempt to infer from markerType but fall back to trying all fields
     let field = ''
 
     if (markerType.startsWith('post')) {
@@ -199,6 +226,25 @@ export class MarkerRepository {
     } else if (markerType.startsWith('user')) {
       field = 'user_id'
     } else {
+      // With simple marker types, we need to try all possible ID fields
+      // This is inefficient but works as a stopgap solution
+      const fields = ['post_id', 'comment_id', 'user_id']
+
+      for (const tryField of fields) {
+        const query = `
+          SELECT * FROM markers 
+          WHERE ${tryField} = :targetId 
+          AND creator_id = :creatorId 
+          AND marker_type = :markerType
+          AND removed_at IS NULL
+        `
+        const rows = await this.db.fetchAll<MarkerRaw>(query, { targetId, creatorId, markerType })
+
+        if (rows.length) {
+          return rows[0]
+        }
+      }
+
       return null
     }
 
