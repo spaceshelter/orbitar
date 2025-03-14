@@ -8,15 +8,15 @@
     appearance: none;
     width: 1.25rem;
     height: 1.25rem;
-    border: 2px solid var(--text-color);
+    border: 1px solid var(--fg);
     border-radius: 4px;
-    background-color: transparent;
+    background-color: var(--lowered);
     cursor: pointer;
     position: relative;
 
     &:checked {
-        background-color: var(--accent-color);
-        border-color: var(--accent-color);
+        border: none;
+            background-color: var(--primary);
 
         &::after {
             content: '';
