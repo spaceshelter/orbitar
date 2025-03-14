@@ -36,6 +36,7 @@
         padding-right: 1.5rem;
 
         //remove arrows for firefox
+        appearance: textfield;
         -moz-appearance: textfield;
 
         //remove arrows for chrome, safari, edge, opera
