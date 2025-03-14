@@ -9,6 +9,9 @@ import useNoScroll from '../API/use/useNoScroll'
 import { useAppState } from '../AppState/AppState'
 import Overlay from './Overlay'
 
+import { ReactComponent as BookmarkIcon } from '../Assets/bookmark.svg'
+import { ReactComponent as NoteIcon } from '../Assets/note.svg'
+import { ReactComponent as StarIcon } from '../Assets/star.svg'
 import styles from './AddMarkerComponent.module.scss'
 
 interface AddMarkerComponentProps {
@@ -195,7 +198,7 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
                 disabled={isMarkerTypeDisabled(MarkerType.STAR) || componentState.isSubmitting}
                 title={isMarkerTypeDisabled(MarkerType.STAR) ? 'Not enough tokens' : 'Add Star'}
               >
-                🌟 Star
+                <StarIcon /> Star
               </button>
 
               <button
@@ -207,7 +210,7 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
                 disabled={isMarkerTypeDisabled(MarkerType.NOTE) || componentState.isSubmitting}
                 title={isMarkerTypeDisabled(MarkerType.NOTE) ? 'Not enough tokens' : 'Add Note'}
               >
-                📰 Note
+                <NoteIcon /> Note
               </button>
 
               <button
@@ -218,13 +221,35 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
                 disabled={componentState.isSubmitting}
                 title='Add Bookmark'
               >
-                🔖 Bookmark
+                <BookmarkIcon /> Bookmark
               </button>
+            </div>
+
+            <div className={styles.markerDescription}>
+              {componentState.selectedType === MarkerType.STAR && (
+                <>
+                  A Star marker is positive and costs one token. It nominates content for awards, appears in
+                  leaderboards, and highlights the content.
+                </>
+              )}
+              {componentState.selectedType === MarkerType.NOTE && (
+                <>
+                  A Note marker is for sharing public annotations with others. It costs one token but doesn't nominate
+                  for awards or appear in leaderboards.
+                </>
+              )}
+              {componentState.selectedType === MarkerType.BOOKMARK && (
+                <>
+                  A Bookmark marker is free and personal. Bookmarks are only visible to you on the content, but others
+                  can see your bookmarks in your profile.
+                </>
+              )}
             </div>
           </div>
 
           <div className={styles.addMarkerForm}>
-            <textarea
+            <input
+              type='text'
               className={styles.annotationInput}
               value={componentState.annotation}
               onChange={(e) => componentState.setAnnotation(e.target.value)}
