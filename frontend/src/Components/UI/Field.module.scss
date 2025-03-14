@@ -31,6 +31,66 @@
     &::placeholder {
         color: var(--text-tertiary);
     }
+
+    &[type="number"] {
+        padding-right: 1.5rem;
+
+        //remove arrows for firefox
+        -moz-appearance: textfield;
+
+        //remove arrows for chrome, safari, edge, opera
+        &::-webkit-outer-spin-button,
+        &::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        // TODO: make custom arrows work 
+        //add custom arrows
+        &::-webkit-outer-spin-button {
+            opacity: 1;
+            position: absolute;
+            top: 0;
+            right: 0;
+            height: 100%;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 20px;
+            background: transparent;
+
+            &::before,
+            &::after {
+                content: "";
+                display: block;
+                width: 0;
+                height: 0;
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+            }
+
+            &::before {
+                border-bottom: 4px solid var(--text);
+                margin-bottom: 3px;
+            }
+
+            &::after {
+                border-top: 4px solid var(--text);
+            }
+
+            &:hover {
+                &::before {
+                    border-bottom-color: var(--primary);
+                }
+
+                &::after {
+                    border-top-color: var(--primary);
+                }
+            }
+        }
+    }
 }
 
 .textarea {
