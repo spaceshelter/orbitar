@@ -1,9 +1,14 @@
+.tokenCountersWrapper {
+  position: relative;
+}
+
 .tokenCounters {
   display: flex;
   align-items: center;
   flex-wrap: nowrap; /* Keep tokens in a single row */
   gap: 8px; /* Compact gap between tokens */
   white-space: nowrap; /* Prevent wrapping */
+  cursor: pointer;
 
   /* Ensure tokens stay grouped together regardless of screen size */
   min-width: fit-content;
@@ -89,4 +94,10 @@
       fill: var(--fgSoft);
     }
   }
+}
+
+.markerListWrapper {
+  position: fixed;
+  z-index: 1000;
+  max-width: 90vw;
 }

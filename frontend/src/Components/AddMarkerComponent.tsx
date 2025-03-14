@@ -19,6 +19,7 @@ interface AddMarkerComponentProps {
   targetId: number
   onClose: () => void
   onSuccess?: () => void
+  initialMarkerType?: MarkerType
 }
 
 class AddMarkerComponentState {
@@ -85,9 +86,15 @@ class AddMarkerComponentState {
 }
 
 export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
-  ({ targetType, targetId, onClose, onSuccess }) => {
+  ({ targetType, targetId, onClose, onSuccess, initialMarkerType }) => {
     const appState = useAppState()
-    const componentState = React.useMemo(() => new AddMarkerComponentState(), [])
+    const componentState = React.useMemo(() => {
+      const state = new AddMarkerComponentState()
+      if (initialMarkerType) {
+        state.setSelectedType(initialMarkerType)
+      }
+      return state
+    }, [initialMarkerType])
 
     // Prevent scrolling when modal is open
     useNoScroll()
