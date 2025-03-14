@@ -1,0 +1,85 @@
+// Layout styles
+.drawerContent {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.header {
+  display: flex;
+  margin-bottom: 2rem;
+
+  h2 {
+    margin: 0;
+  }
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  flex: 1;
+}
+
+// Section styles
+.questionSection,
+.optionsSection,
+.settingsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+// Option styles
+.optionRow {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+// Settings styles
+.settingRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+
+  label {
+    color: var(--fgSoft);
+  }
+
+  input[type="number"],
+  select {
+    width: 160px;
+  }
+
+  input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+// Custom button styles
+.addOption {
+  margin-top: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 8px;
+  border-radius: 4px;
+
+  &:hover {
+    background: var(--dim3);
+  }
+}
+
+// Action buttons container
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: auto;
+  margin-bottom: 2rem;
+  padding-top: 24px;
+}
