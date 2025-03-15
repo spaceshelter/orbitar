@@ -97,13 +97,17 @@
   gap: 6px;
 
   &:hover:not(.disabled) {
-    background: var(--hover-color);
+    background: var(--primary);
   }
 
   &.active {
-    background: var(--primary-color);
+    background: var(--primary);
     color: white;
-    border-color: var(--primary-color);
+    border-color: var(--primary);
+  }
+
+  &.active:hover:not(.disabled) {
+    opacity: 0.9;
   }
 
   &.disabled {

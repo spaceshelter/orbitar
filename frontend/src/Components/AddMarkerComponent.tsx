@@ -99,6 +99,16 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
     // Prevent scrolling when modal is open
     useNoScroll()
 
+    // Create a ref for the annotation input
+    const inputRef = React.useRef<HTMLInputElement>(null)
+
+    // Focus the input when the component mounts
+    useEffect(() => {
+      if (inputRef.current) {
+        inputRef.current.focus()
+      }
+    }, [componentState.selectedType])
+
     useEffect(() => {
       const fetchTokenInfo = async () => {
         try {
@@ -240,11 +250,19 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
             <input
               type='text'
               className={styles.annotationInput}
+              ref={inputRef}
               value={componentState.annotation}
               onChange={(e) => componentState.setAnnotation(e.target.value)}
               placeholder='Add optional note (max 256 characters)...'
               maxLength={256}
               disabled={componentState.isSubmitting}
+              onKeyDown={(e) => {
+                // Submit on Enter
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  handleAddMarker()
+                }
+              }}
             />
           </div>
 
