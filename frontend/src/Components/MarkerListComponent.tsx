@@ -130,6 +130,11 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
 
     // Handle click outside to close the marker list
     const handleOutsideClick = (event: MouseEvent) => {
+      // prevent closing if the modal (AddMarker) is open
+      if (appState.modal) {
+        return
+      }
+
       if (listRef.current && !listRef.current.contains(event.target as Node)) {
         onClose()
       }
@@ -223,9 +228,6 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
     <div ref={listRef} className={styles.markerList} onClick={handleListClick}>
       <div className={styles.header}>
         <h3>Markers</h3>
-        <button className={styles.closeButton} onClick={onClose}>
-          ×
-        </button>
       </div>
 
       {componentState.error && <div className={styles.error}>{componentState.error}</div>}

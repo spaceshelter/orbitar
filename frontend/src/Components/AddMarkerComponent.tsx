@@ -159,7 +159,7 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
     return (
       <>
         <Overlay onClick={onClose} />
-        <div className={styles.addMarkerContainer}>
+        <div className={styles.addMarkerContainer} onClick={(e) => e.stopPropagation()}>
           <div className={styles.header}>
             <h3>Add Marker</h3>
             <button className={styles.closeButton} onClick={onClose}>

@@ -77,34 +77,6 @@ const TokenCounters: React.FC<TokenCountersProps> = observer((props) => {
       popupEl.style.top = '30px'
       popupEl.style.bottom = 'auto'
     }
-
-    // Close popup when clicking outside
-    const handleClickOutside = (e: MouseEvent) => {
-      // Only stop propagation - don't prevent default behavior for all events
-      e.stopPropagation()
-
-      // Only if the click is outside our components, close the popup and prevent default
-      if (
-        popupRef.current &&
-        !popupRef.current.contains(e.target as Node) &&
-        !counterRef.current?.contains(e.target as Node)
-      ) {
-        setIsPopupOpen(false)
-
-        // Notify parent that popup is closed
-        props.onListToggle?.(false)
-
-        // Only prevent default for clicks outside the popup
-        // This allows text selection inside the popup to work
-        e.preventDefault()
-      }
-      return false
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
   }, [isPopupOpen, counterRef, popupRef])
 
   const handleTogglePopup = (e: React.MouseEvent) => {
