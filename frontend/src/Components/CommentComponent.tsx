@@ -10,7 +10,7 @@ import { useAPI, useAppState } from '../AppState/AppState'
 import Conf from '../Conf'
 import { CommentInfo, PostLinkInfo } from '../Types/PostInfo'
 import AddMarkerComponent from './AddMarkerComponent'
-import { AltTranslateButton, AnnotateButton, TranslateButton } from './ContentButtons'
+import { AltTranslateButton, AnnotateButton, StarButton, TranslateButton } from './ContentButtons'
 import ContentComponent, { LARGE_AUTO_CUT } from './ContentComponent'
 import { CreateCommentComponentRestricted } from './CreateCommentComponent'
 import { HistoryComponent } from './HistoryComponent'
@@ -281,11 +281,13 @@ export default function CommentComponent(props: CommentProps) {
                     />
                   )}
 
-                  {appState.userInfo && (
-                    <button className={postStyles.optionButton} onClick={handleOpenAddMarker}>
-                      🌟 Add Marker
-                    </button>
-                  )}
+                  <StarButton
+                    inProgress={inProgress}
+                    onClick={() => {
+                      setShowOptions(false)
+                      handleOpenAddMarker()
+                    }}
+                  />
                 </div>
               </OutsideClickHandler>
             )}

@@ -9,7 +9,14 @@ import { useAPI, useAppState } from '../AppState/AppState'
 import Conf from '../Conf'
 import { PostInfo } from '../Types/PostInfo'
 import AddMarkerComponent from './AddMarkerComponent'
-import { AltTranslateButton, AnnotateButton, TranslateButton, UnwatchButton, WatchButton } from './ContentButtons'
+import {
+  AltTranslateButton,
+  AnnotateButton,
+  StarButton,
+  TranslateButton,
+  UnwatchButton,
+  WatchButton,
+} from './ContentButtons'
 import ContentComponent from './ContentComponent'
 import CreateCommentComponent from './CreateCommentComponent'
 import { HistoryComponent } from './HistoryComponent'
@@ -316,11 +323,13 @@ export default function PostComponent(props: PostComponentProps) {
                 )}
                 {watch ? <UnwatchButton onClick={toggleWatch} /> : <WatchButton onClick={toggleWatch} />}
 
-                {appState.userInfo && (
-                  <button className={styles.optionButton} onClick={handleOpenAddMarker}>
-                    🌟 Add Marker
-                  </button>
-                )}
+                <StarButton
+                  inProgress={inProgress}
+                  onClick={() => {
+                    setShowOptions(false)
+                    handleOpenAddMarker()
+                  }}
+                />
               </div>
             </OutsideClickHandler>
           )}

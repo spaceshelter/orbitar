@@ -11,7 +11,11 @@
   padding: 1rem;
   max-height: 80vh;
   overflow-y: auto;
-  transform: translateX(0); /* Helps with positioning */
+
+  // Positioning the marker list to the right of the screen
+  @media only screen and (max-width: 800px) {
+    right: 0;
+  }
 }
 
 .header {

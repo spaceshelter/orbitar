@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useRef, useState } from 'react'
 
 import { observer } from 'mobx-react-lite'
 
@@ -55,29 +55,6 @@ const TokenCounters: React.FC<TokenCountersProps> = observer((props) => {
   if (stars === 0 && notes === 0 && bookmarks === 0) {
     return null
   }
-
-  useEffect(() => {
-    if (!isPopupOpen || !counterRef.current || !popupRef.current) {
-      return
-    }
-
-    const [popupEl, ratingEl] = [popupRef.current, counterRef.current]
-
-    const rect = ratingEl.getBoundingClientRect()
-    const y = rect.y + window.scrollY || 0
-    const rh = ratingEl.clientHeight
-    const ph = popupEl.clientHeight
-
-    // Following RatingSwitch positioning logic
-    const isTotalHeightMoreThanPageHeight = y + rh + ph > document.documentElement.scrollHeight
-    if (isTotalHeightMoreThanPageHeight) {
-      popupEl.style.bottom = '30px'
-      popupEl.style.top = 'auto'
-    } else {
-      popupEl.style.top = '30px'
-      popupEl.style.bottom = 'auto'
-    }
-  }, [isPopupOpen, counterRef, popupRef])
 
   const handleTogglePopup = (e: React.MouseEvent) => {
     e.stopPropagation()

@@ -1,7 +1,3 @@
-.tokenCountersWrapper {
-  position: relative;
-}
-
 .tokenCounters {
   display: flex;
   align-items: center;
@@ -97,7 +93,9 @@
 }
 
 .markerListWrapper {
-  position: absolute;
-  z-index: 998;
   max-width: 90vw;
+  /* Ensure it doesn't overflow on small screens */
+  @media only screen and (max-width: 600px) {
+    max-width: calc(100vw - 16px); /* 16px padding on each side */
+  }
 }
