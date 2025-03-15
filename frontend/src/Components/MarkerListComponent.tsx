@@ -178,7 +178,7 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
   const userHasMarkerOfType = (type: MarkerType): boolean => {
     if (!appState.userInfo) return false
     return componentState.markers.some(
-      (marker) => marker.markerType === type && marker.creatorId === appState.userInfo?.id && !marker.removedAt,
+      (marker) => marker.markerType === type && marker.creator.id === appState.userInfo?.id && !marker.removedAt,
     )
   }
 
@@ -285,12 +285,12 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
               </div>
               <div className={styles.markerContent}>
                 <div className={styles.markerSignature}>
-                  <Username user={{ username: `user_${marker.creatorId}` }} /> •{' '}
+                  <Username user={{ username: marker.creator.username }} /> •{' '}
                   <DateComponent date={new Date(marker.createdAt)} />
                 </div>
                 {marker.annotation && <div className={styles.markerAnnotation}>{marker.annotation}</div>}
               </div>
-              {appState.userInfo && marker.creatorId === appState.userInfo?.id && (
+              {appState.userInfo && marker.creator.id === appState.userInfo?.id && (
                 <button
                   className={styles.removeButton}
                   onClick={() => handleRemoveMarker(marker.markerId)}
@@ -310,12 +310,12 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
               </div>
               <div className={styles.markerContent}>
                 <div className={styles.markerSignature}>
-                  <Username user={{ username: `user_${marker.creatorId}` }} /> •{' '}
+                  <Username user={{ username: marker.creator.username }} /> •{' '}
                   <DateComponent date={new Date(marker.createdAt)} />
                 </div>
                 {marker.annotation && <div className={styles.markerAnnotation}>{marker.annotation}</div>}
               </div>
-              {appState.userInfo && marker.creatorId === appState.userInfo?.id && (
+              {appState.userInfo && marker.creator.id === appState.userInfo?.id && (
                 <button
                   className={styles.removeButton}
                   onClick={() => handleRemoveMarker(marker.markerId)}
@@ -338,18 +338,18 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
                 <div className={styles.bookmarksList}>
                   {bookmarkMarkers.map((marker, index) => (
                     <span key={marker.markerId} className={styles.bookmarkItem}>
-                      <Username user={{ username: `user_${marker.creatorId}` }} />
+                      <Username user={{ username: marker.creator.username }} />
                       {index < bookmarkMarkers.length - 1 && ', '}
                     </span>
                   ))}
                 </div>
               </div>
-              {appState.userInfo && bookmarkMarkers.some((marker) => marker.creatorId === appState.userInfo?.id) && (
+              {appState.userInfo && bookmarkMarkers.some((marker) => marker.creator.id === appState.userInfo?.id) && (
                 <button
                   className={styles.removeButton}
                   onClick={() =>
                     handleRemoveMarker(
-                      bookmarkMarkers.find((marker) => marker.creatorId === appState.userInfo?.id)?.markerId || 0,
+                      bookmarkMarkers.find((marker) => marker.creator.id === appState.userInfo?.id)?.markerId || 0,
                     )
                   }
                   disabled={componentState.isSubmitting}

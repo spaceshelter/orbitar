@@ -1,3 +1,5 @@
+import { UserBaseInfo } from './UserInfo'
+
 export enum MarkerTargetType {
   POST = 'post',
   COMMENT = 'comment',
@@ -12,7 +14,7 @@ export enum MarkerType {
 
 export interface MarkerInfo {
   markerId: number
-  creatorId: number
+  creator: UserBaseInfo
   postId: number | null
   commentId: number | null
   userId: number | null

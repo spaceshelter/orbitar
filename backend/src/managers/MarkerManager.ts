@@ -15,10 +15,15 @@ export class MarkerManager {
     this.userManager = userManager
   }
 
-  private convertToMarkerInfo(raw: MarkerRaw): MarkerInfo {
+  private async convertToMarkerInfo(raw: MarkerRaw): Promise<MarkerInfo> {
+    const creator = await this.userManager.getById(raw.creator_id)
     return {
       markerId: raw.marker_id,
-      creatorId: raw.creator_id,
+      creator: {
+        id: creator.id,
+        username: creator.username,
+        gender: creator.gender,
+      },
       postId: raw.post_id,
       commentId: raw.comment_id,
       userId: raw.user_id,
@@ -84,7 +89,13 @@ export class MarkerManager {
     const historyRaw = await this.markerRepository.getRecentTokenHistory({
       userId,
     })
-    const history = historyRaw.map((raw) => this.convertToMarkerInfo(raw))
+
+    // Process marker history and add creator usernames
+    const history: MarkerInfo[] = []
+    for (const raw of historyRaw) {
+      const markerInfo = await this.convertToMarkerInfo(raw)
+      history.push(markerInfo)
+    }
 
     return {
       availableTokens,
@@ -123,7 +134,7 @@ export class MarkerManager {
       annotation,
     })
 
-    return this.convertToMarkerInfo(marker)
+    return await this.convertToMarkerInfo(marker)
   }
 
   // Deprecated methods createPostMarker, createCommentMarker, and createUserMarker
@@ -160,7 +171,8 @@ export class MarkerManager {
       includeRemoved,
     })
 
-    return markers.map((marker) => this.convertToMarkerInfo(marker))
+    // Process markers and add creator usernames
+    return await Promise.all(markers.map((marker) => this.convertToMarkerInfo(marker)))
   }
 
   async getMarkersByCreator(creatorId: number, markerType?: string, includeRemoved = false): Promise<MarkerInfo[]> {
@@ -170,7 +182,8 @@ export class MarkerManager {
       includeRemoved,
     })
 
-    return markers.map((marker) => this.convertToMarkerInfo(marker))
+    // Process markers and add creator usernames
+    return await Promise.all(markers.map((marker) => this.convertToMarkerInfo(marker)))
   }
 
   async getCounters(targetType: MarkerTargetType, targetId: number, markerType?: string): Promise<TokenCounter> {

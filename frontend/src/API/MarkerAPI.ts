@@ -1,4 +1,5 @@
 import { TokenCounts } from '../Types/TokenCounts'
+import { UserBaseInfo } from '../Types/UserInfo'
 import APIBase from './APIBase'
 
 export enum MarkerTargetType {
@@ -9,7 +10,7 @@ export enum MarkerTargetType {
 
 export interface MarkerInfo {
   markerId: number
-  creatorId: number
+  creator: UserBaseInfo
   postId: number | null
   commentId: number | null
   userId: number | null
