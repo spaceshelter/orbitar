@@ -14,7 +14,7 @@ type UsePost = {
   anonymousUser?: UserInfo
 
   postComment(comment: string, answerToCommentId?: number): Promise<CommentInfo>
-  editComment(comment: string, commentId: number): Promise<CommentInfo>
+  editComment(partial: Partial<CommentInfo> & { id: number }): Promise<CommentInfo | undefined>
   editPost(title: string, content: string): Promise<PostInfo>
   setVote(value: number): void
   setCommentVote(commentId: number, vote: number): void
@@ -107,31 +107,31 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
       return comment
     }
 
-    const editComment = async (text: string, commentId: number) => {
-      const { comment } = await api.post.editComment(text, commentId)
-
+    // editComment now takes a partial with mandatory id field
+    const editComment = async (partial: Partial<CommentInfo> & { id: number }) => {
       if (!comments) {
         // no comments loaded!
-        return comment
+        return undefined
       }
 
+      let originalComment: CommentInfo | undefined
       if (comments) {
-        const originalComment = findComment(comments, commentId)
+        originalComment = findComment(comments, partial.id)
         if (originalComment) {
-          Object.assign(originalComment, comment)
+          Object.assign(originalComment, partial)
           setComments([...comments])
         }
       }
 
       if (rawComments) {
-        const originalComment = findComment(rawComments, commentId)
+        const originalComment = findComment(rawComments, partial.id)
         if (originalComment) {
-          Object.assign(originalComment, comment)
+          Object.assign(originalComment, partial)
           setRawComments([...rawComments])
         }
       }
 
-      return comment
+      return originalComment
     }
 
     const editPost = async (title: string, text: string) => {

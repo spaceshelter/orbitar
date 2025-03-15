@@ -8,6 +8,7 @@ import { useHotkeys } from 'react-hotkeys-hook'
 import MarkerAPI, { MarkerTargetType, MarkerType, UserTokenInfo } from '../API/MarkerAPI'
 import useNoScroll from '../API/use/useNoScroll'
 import { useAppState } from '../AppState/AppState'
+import { TokenCounts } from '../Types/TokenCounts'
 import Overlay from './Overlay'
 
 import { ReactComponent as BookmarkIcon } from '../Assets/bookmark.svg'
@@ -19,7 +20,7 @@ interface AddMarkerComponentProps {
   targetType: MarkerTargetType
   targetId: number
   onClose: () => void
-  onSuccess?: () => void
+  onSuccess?: (tokenCounts: TokenCounts) => void
   initialMarkerType?: MarkerType
 }
 
@@ -160,8 +161,11 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
           componentState.annotation.trim() || null,
         )
 
-        // Success - close the modal and notify parent
-        onSuccess?.()
+        // Get updated token counts for the target
+        const tokenCounts = await MarkerAPI.getTokenCounts(targetType, targetId)
+
+        // Success - close the modal and notify parent with updated token counts
+        onSuccess?.(tokenCounts)
         onClose()
       } catch (error: any) {
         componentState.setError('Error adding marker: ' + (error?.data?.message || error?.message || 'Unknown error'))

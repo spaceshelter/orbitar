@@ -40,10 +40,6 @@ export default function PostPage() {
     document.title = docTitle
   }, [post, postId])
 
-  const handleCommentEdit = async (text: string, comment: CommentInfo) => {
-    return await editComment(text, comment.id)
-  }
-
   const handleAnswer = async (text: string, post?: PostLinkInfo, comment?: CommentInfo) => {
     if (!post) {
       return
@@ -165,7 +161,7 @@ export default function PostPage() {
                     comment={comment}
                     onAnswer={handleAnswer}
                     unreadOnly={unreadOnly}
-                    onEdit={handleCommentEdit}
+                    onEdit={editComment}
                     currentUsername={userInfo?.username}
                   />
                 ))

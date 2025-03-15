@@ -9,6 +9,7 @@ import { useInterpreter } from '../API/use/useInterpreter'
 import { useAPI, useAppState } from '../AppState/AppState'
 import Conf from '../Conf'
 import { CommentInfo, PostLinkInfo } from '../Types/PostInfo'
+import { TokenCounts } from '../Types/TokenCounts'
 import AddMarkerComponent from './AddMarkerComponent'
 import { AltTranslateButton, AnnotateButton, StarButton, TranslateButton } from './ContentButtons'
 import ContentComponent, { LARGE_AUTO_CUT } from './ContentComponent'
@@ -28,7 +29,7 @@ interface CommentProps {
   showSite?: boolean
   parent?: CommentInfo
   onAnswer?: (text: string, post?: PostLinkInfo, comment?: CommentInfo) => Promise<CommentInfo | undefined>
-  onEdit?: (text: string, comment: CommentInfo) => Promise<CommentInfo | undefined>
+  onEdit?: (partial: Partial<CommentInfo> & { id: number }) => Promise<CommentInfo | undefined>
   depth?: number
   maxTreeDepth?: number
   idx?: number
@@ -78,9 +79,22 @@ export default function CommentComponent(props: CommentProps) {
 
   const handleEditComplete = async (text: string) => {
     try {
-      const res = await props.onEdit?.(text, props.comment)
+      // First, make the API call to update the content
+      const res = await api.postAPI.editComment(text, props.comment.id)
+
+      if (!res) {
+        throw new Error('Failed to edit comment')
+      }
+
+      // Then update the state through the parent's onEdit handler
+      const updatedComment = await props.onEdit?.({
+        id: props.comment.id,
+        content: res.comment.content,
+        editFlag: res.comment.editFlag,
+      })
+
       setEditingText(false)
-      return res
+      return updatedComment
     } catch (err) {
       console.log('Could not edit comment', err)
       toast.error('Не удалось отредактировать комментарий')
@@ -112,13 +126,18 @@ export default function CommentComponent(props: CommentProps) {
   const handleOpenAddMarker = () => {
     setShowOptions(false)
 
-    const handleMarkerAdded = () => {
-      //FIXME
-      // Just log that the marker was added since we can't update the comment
-      // We'd need a page reload to see updates
-      console.log('Marker added to comment')
-      // In a real implementation, we'd update the token counts
-      // but Comment doesn't have an onChange handler
+    const handleMarkerAdded = (tokenCounts: TokenCounts) => {
+      if (props.onEdit) {
+        // Update the comment with new token counts
+        props
+          .onEdit({
+            id: props.comment.id,
+            tokenCounts: tokenCounts,
+          })
+          .catch((err) => {
+            console.log('Could not update comment with new token counts', err)
+          })
+      }
     }
 
     appState.setModal(

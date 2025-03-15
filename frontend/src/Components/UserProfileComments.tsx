@@ -101,23 +101,24 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
   }, [page])
 
   const params = filter ? { filter } : undefined
-  const handleEdit = async (text: string, comment: CommentInfo) => {
+  const handleEdit = async (partial: Partial<CommentInfo> & { id: number }) => {
     try {
-      const res = await api.postAPI.editComment(text, comment.id) // text comes first, then id
-      if (!res) return undefined
+      // Find the comment we need to update
+      const commentToUpdate = comments?.find((c) => c.id === partial.id)
+      if (!commentToUpdate) return undefined
 
       // Create an updated comment that preserves all CommentInfo properties
-      const updatedComment: CommentInfo = {
-        ...comment,
-        content: res.comment.content, // access content through res.comment
+      const updatedComment = {
+        ...commentToUpdate,
+        ...partial,
       }
 
       // Update the comment in the local state
-      setComments(comments?.map((c) => (c.id === comment.id ? updatedComment : c)))
+      setComments(comments?.map((c) => (c.id === partial.id ? updatedComment : c)))
 
       return updatedComment
     } catch (err) {
-      console.log('Could not edit comment', err)
+      console.log('Could not update comment', err)
       throw err
     }
   }
