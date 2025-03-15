@@ -326,6 +326,18 @@ export default function CommentComponent(props: CommentProps) {
               entityType='comment'
               counts={props.comment.tokenCounts}
               onListToggle={setHasOpenList}
+              onUpdate={(counts) => {
+                if (props.onEdit) {
+                  props
+                    .onEdit({
+                      id: props.comment.id,
+                      tokenCounts: counts,
+                    })
+                    .catch((err) => {
+                      console.log('Could not update comment with new token counts', err)
+                    })
+                }
+              }}
             />
           </div>
         </div>

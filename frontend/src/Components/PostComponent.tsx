@@ -3,11 +3,12 @@ import React, { useMemo, useState } from 'react'
 import OutsideClickHandler from 'react-outside-click-handler'
 import { toast } from 'react-toastify'
 
-import MarkerAPI, { MarkerTargetType } from '../API/MarkerAPI'
+import { MarkerTargetType } from '../API/MarkerAPI'
 import { useInterpreter } from '../API/use/useInterpreter'
 import { useAPI, useAppState } from '../AppState/AppState'
 import Conf from '../Conf'
 import { PostInfo } from '../Types/PostInfo'
+import { TokenCounts } from '../Types/TokenCounts'
 import AddMarkerComponent from './AddMarkerComponent'
 import {
   AltTranslateButton,
@@ -157,18 +158,11 @@ export default function PostComponent(props: PostComponentProps) {
   const handleOpenAddMarker = () => {
     setShowOptions(false)
 
-    const handleMarkerAdded = () => {
-      // Instead of refreshing the whole post, just refresh the token counts
-      MarkerAPI.getTokenCounts(MarkerTargetType.POST, props.post.id)
-        .then((tokenCounts) => {
-          if (props.onChange) {
-            // Just update the token counts
-            props.onChange(props.post.id, { tokenCounts })
-          }
-        })
-        .catch((error) => {
-          console.error('Error refreshing token counts after adding marker:', error)
-        })
+    const handleMarkerAdded = (tokenCounts: TokenCounts) => {
+      if (props.onChange) {
+        // Just update the token counts
+        props.onChange(props.post.id, { tokenCounts })
+      }
     }
 
     appState.setModal(
@@ -337,7 +331,16 @@ export default function PostComponent(props: PostComponentProps) {
 
         {/* Token counters */}
         <div className={styles.control}>
-          <TokenCounters entityId={props.post.id} entityType='post' counts={props.post.tokenCounts} />
+          <TokenCounters
+            entityId={props.post.id}
+            entityType='post'
+            counts={props.post.tokenCounts}
+            onUpdate={(counts) => {
+              if (props.onChange) {
+                props.onChange(props.post.id, { tokenCounts: counts })
+              }
+            }}
+          />
         </div>
       </div>
       {props.buttons}

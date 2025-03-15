@@ -18,6 +18,8 @@ type TokenCountersProps = {
   counts: TokenCounts | undefined
   // Optional callback when the marker list is opened/closed
   onListToggle?: (isOpen: boolean) => void
+  // Optional callback when token counts are updated
+  onUpdate?: (counts: TokenCounts) => void
 }
 
 // Temporary fallback function until all markers are stored properly
@@ -110,6 +112,7 @@ const TokenCounters: React.FC<TokenCountersProps> = observer((props) => {
             targetType={mapEntityTypeToTargetType(entityType)}
             targetId={entityId}
             onClose={handleClosePopup}
+            onUpdate={props.onUpdate}
           />
         </div>
       )}
