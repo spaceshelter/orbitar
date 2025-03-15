@@ -86,7 +86,7 @@
   min-width: 80px;
   padding: 10px;
   border: 1px solid var(--border-color);
-  background: var(--background-color);
+  background: var(--bg);
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -97,17 +97,17 @@
   gap: 6px;
 
   &:hover:not(.disabled) {
-    background: var(--primary);
+    opacity: 0.9;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px var(--shadow);
   }
 
   &.active {
-    background: var(--primary);
     color: white;
-    border-color: var(--primary);
   }
 
   &.active:hover:not(.disabled) {
-    opacity: 0.9;
+    opacity: 0.85;
   }
 
   &.disabled {
@@ -122,33 +122,26 @@
   }
 }
 
-.starButton {
-  border-color: var(--primary);
-  color: var(--primary);
+.markerButton {
+  border-color: var(--fg);
+  color: var(--fg);
+
+  &.disabled {
+    background-color: var(--dim1);
+    color: var(--fgSoft);
+    border-color: var(--dim3);
+  }
+
+  &:hover:not(.disabled) {
+    background-color: var(--primary);
+    color: var(--onAccent);
+    border-color: var(--primary);
+  }
 
   &.active {
     background-color: var(--primary);
-    color: #fff;
-  }
-}
-
-.noteButton {
-  border-color: var(--fgSoft);
-  color: var(--fgSoft);
-
-  &.active {
-    background-color: var(--fgSoft);
-    color: #fff;
-  }
-}
-
-.bookmarkButton {
-  border-color: var(--link);
-  color: var(--link);
-
-  &.active {
-    background-color: var(--link);
-    color: #fff;
+    border-color: var(--primary);
+    color: var(--onAccent);
   }
 }
 
@@ -198,16 +191,18 @@
   padding: 8px 16px;
   background: var(--dim1);
   color: var(--fgSoft);
-  border: none;
+  border: 1px solid var(--dim3);
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
   font-weight: bold;
+  transition: all 0.2s ease;
 
   &:hover:not(:disabled) {
-    fill: var(--fg);
     color: var(--fg);
-    background: var(--dim3);
+    background: var(--dim2);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px var(--shadow);
   }
 
   &:disabled {
@@ -219,16 +214,18 @@
 .addButton {
   padding: 8px 16px;
   background: var(--positive);
-  color: var(--button-fg);
+  color: var(--onAccent);
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
   font-weight: bold;
-  opacity: 0.8;
+  transition: all 0.2s ease;
 
   &:hover:not(:disabled) {
-    opacity: 1;
+    background: var(--positiveHover);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px var(--shadow);
   }
 
   &:disabled {
