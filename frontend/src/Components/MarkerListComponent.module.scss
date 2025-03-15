@@ -213,6 +213,10 @@
   white-space: pre-line;
   margin-top: 4px;
   line-height: 1.4;
+  word-wrap: break-word;
+  word-break: break-word;
+  padding-right: 20px; /* make room for the remove button */
+  pointer-events: auto;
 }
 
 .bookmarksList {
@@ -260,6 +264,13 @@
   }
 }
 
+/* Make remove button visible on marker item hover */
+.markerItem:hover {
+  .removeButton {
+    opacity: 0.8;
+  }
+}
+
 .removeButtonInline {
   background: none;
   border: none;
@@ -282,21 +293,6 @@
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-  }
-}
-
-.markerItem:hover {
-  .markerType {
-    fill: var(--fg);
-  }
-
-  .markerSignature,
-  .bookmarkHeader {
-    color: var(--notification-text-fg);
-  }
-
-  .markerAnnotation {
-    color: var(--fg);
   }
 }
 
