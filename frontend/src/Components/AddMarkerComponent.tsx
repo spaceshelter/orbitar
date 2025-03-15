@@ -3,6 +3,7 @@ import React, { useEffect } from 'react'
 import cn from 'classnames'
 import { action, makeObservable, observable } from 'mobx'
 import { observer } from 'mobx-react-lite'
+import { useHotkeys } from 'react-hotkeys-hook'
 
 import MarkerAPI, { MarkerTargetType, MarkerType, UserTokenInfo } from '../API/MarkerAPI'
 import useNoScroll from '../API/use/useNoScroll'
@@ -98,6 +99,17 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
 
     // Prevent scrolling when modal is open
     useNoScroll()
+
+    // Add ESC key handler
+    useHotkeys(
+      'esc',
+      onClose,
+      {
+        enableOnFormTags: true,
+        enableOnContentEditable: true,
+      },
+      [onClose],
+    )
 
     // Create a ref for the annotation input
     const inputRef = React.useRef<HTMLInputElement>(null)
