@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react'
 
+import classNames from 'classnames'
 import OutsideClickHandler from 'react-outside-click-handler'
 import { toast } from 'react-toastify'
 
@@ -185,7 +186,7 @@ export default function PostComponent(props: PostComponentProps) {
   const isStarred = props.post.tokenCounts && props.post.tokenCounts.stars > 0
 
   return (
-    <div className={`postComponent ${styles.post} ${isStarred ? 'isStarred' : ''}`} ref={contentRef}>
+    <div className={classNames('postComponent', styles.post, { isStarred })} ref={contentRef}>
       <div className={styles.header}>
         <SignatureComponent
           showSite={props.showSite}

@@ -178,7 +178,7 @@ export default function CommentComponent(props: CommentProps) {
     <div
       className={classNames('comment', styles.comment, {
         isNew: props.comment.isNew,
-        isOld: !props.comment.isNew && !hasActiveElement,
+        isOld: !props.comment.isNew && !hasActiveElement && !isStarred,
         isFlat: isFlat,
         isStarred: isStarred,
       })}
