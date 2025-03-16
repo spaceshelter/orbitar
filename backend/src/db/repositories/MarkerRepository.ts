@@ -46,37 +46,98 @@ export class MarkerRepository {
         throw new Error(`Invalid target type: ${targetType}`)
     }
 
-    const result = await this.db.query<{ insertId: number }>(
-      `INSERT INTO markers 
-      (creator_id, post_id, comment_id, user_id, marker_type, placed_count, annotation)
-      VALUES (:creatorId, :postId, :commentId, :userId, :markerType, :placedCount, :annotation)
-      ON DUPLICATE KEY UPDATE 
-        placed_count = :placedCount,
-        annotation = :annotation,
-        marker_type = :markerType,
-        removed_at = NULL,
-        created_at = CURRENT_TIMESTAMP`,
-      {
-        creatorId,
-        postId,
-        commentId,
-        userId,
-        markerType,
-        placedCount,
-        annotation,
-      },
-    )
-
-    // Update the relevant counter
-    if (postId) {
-      await this.updatePostCounter({ postId, markerType, change: 1 })
-    } else if (commentId) {
-      await this.updateCommentCounter({ commentId, markerType, change: 1 })
-    } else if (userId) {
-      await this.updateUserCounter({ userId, markerType, change: 1 })
+    // First, check if there's already a marker for this (creator, type, target) combination
+    let existingMarker: MarkerRaw | null = null
+    let whereClause = 'creator_id = :creatorId AND marker_type = :markerType AND removed_at IS NULL'
+    const queryParams: any = {
+      creatorId,
+      markerType,
     }
 
-    return this.getMarkerById({ markerId: result.insertId })
+    if (postId) {
+      whereClause += ' AND post_id = :targetId AND comment_id IS NULL AND user_id IS NULL'
+      queryParams.targetId = postId
+    } else if (commentId) {
+      whereClause += ' AND post_id IS NULL AND comment_id = :targetId AND user_id IS NULL'
+      queryParams.targetId = commentId
+    } else if (userId) {
+      whereClause += ' AND post_id IS NULL AND comment_id IS NULL AND user_id = :targetId'
+      queryParams.targetId = userId
+    }
+
+    const existingRows = await this.db.fetchAll<MarkerRaw>(`SELECT * FROM markers WHERE ${whereClause}`, queryParams)
+
+    if (existingRows.length > 0) {
+      existingMarker = existingRows[0]
+    }
+
+    let result: any
+    let updatedPlacedCount = placedCount
+    let markerId: number
+
+    if (existingMarker) {
+      // If there's an existing marker, handle based on marker type
+      if (markerType === MarkerType.BOOKMARK) {
+        // For bookmarks, just update the annotation and ensure placed_count is 1
+        updatedPlacedCount = 1
+      } else {
+        // For other types (STAR, NOTE), increment the placed_count
+        updatedPlacedCount = existingMarker.placed_count + placedCount
+      }
+
+      // Update the existing marker
+      await this.db.query(
+        `UPDATE markers
+         SET placed_count = :updatedPlacedCount,
+             annotation = :annotation,
+             removed_at = NULL,
+             created_at = CURRENT_TIMESTAMP
+         WHERE marker_id = :markerId`,
+        {
+          markerId: existingMarker.marker_id,
+          updatedPlacedCount,
+          annotation,
+        },
+      )
+      markerId = existingMarker.marker_id
+    } else {
+      // No existing marker, create a new one
+      result = await this.db.query<{ insertId: number }>(
+        `INSERT INTO markers 
+        (creator_id, post_id, comment_id, user_id, marker_type, placed_count, annotation)
+        VALUES (:creatorId, :postId, :commentId, :userId, :markerType, :placedCount, :annotation)`,
+        {
+          creatorId,
+          postId,
+          commentId,
+          userId,
+          markerType,
+          placedCount: markerType === MarkerType.BOOKMARK ? 1 : placedCount, // Ensure bookmarks always have placed_count=1
+          annotation,
+        },
+      )
+      markerId = result.insertId
+    }
+
+    // Update the relevant counter
+    // If updating an existing marker, only update counters by the difference
+    const counterChange = existingMarker
+      ? updatedPlacedCount - existingMarker.placed_count
+      : markerType === MarkerType.BOOKMARK
+        ? 1
+        : placedCount
+
+    if (counterChange !== 0) {
+      if (postId) {
+        await this.updatePostCounter({ postId, markerType, change: counterChange })
+      } else if (commentId) {
+        await this.updateCommentCounter({ commentId, markerType, change: counterChange })
+      } else if (userId) {
+        await this.updateUserCounter({ userId, markerType, change: counterChange })
+      }
+    }
+
+    return this.getMarkerById({ markerId })
   }
 
   async removeMarker({ markerId }: { markerId: number }): Promise<void> {
