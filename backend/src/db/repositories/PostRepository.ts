@@ -135,7 +135,17 @@ export default class PostRepository {
                      left join post_votes v on (v.post_id = p.post_id and v.voter_id = :for_user_id)
                      left join user_bookmarks b on (b.post_id = p.post_id and b.user_id = :for_user_id)
             where p.author_id = :user_id
-                ${filter ? ' and (p.source like :filter or p.title like :filter) ' : ''}
+                ${
+                  filter
+                    ? ` and (p.source like :filter or p.title like :filter or EXISTS (
+                  select 1 from markers m
+                  where m.post_id = p.post_id
+                  and m.creator_id = :for_user_id
+                  and m.removed_at is null
+                  and m.annotation like :filter
+                )) `
+                    : ''
+                }
             order by ${sorting === FeedSorting.postCommentedAt ? 'commented_at' : 'created_at'} desc
             limit :limit_from, :limit_count
         `,
@@ -152,10 +162,21 @@ export default class PostRepository {
   async getPostsByUserTotal(userId: number, filter = ''): Promise<number> {
     const result = await this.db.fetchOne<{ cnt: string }>(
       `select count(*) as cnt
-             from posts
-             where author_id = :user_id ${filter ? ' and (source like :filter or title like :filter) ' : ''}`,
+             from posts p
+             where author_id = :user_id ${
+               filter
+                 ? ` and (source like :filter or title like :filter or EXISTS (
+               select 1 from markers m
+               where m.post_id = p.post_id
+               and m.creator_id = :for_user_id
+               and m.removed_at is null
+               and m.annotation like :filter
+             )) `
+                 : ''
+             }`,
       {
         user_id: userId,
+        for_user_id: userId /* Same as userId since we're filtering by markers the user created */,
         filter: filter && '%' + escapePercent(filter) + '%',
       },
     )
@@ -215,7 +236,7 @@ export default class PostRepository {
                 select p.comments,b.read_comments
                 from
                     user_bookmarks b
-                    join posts p on (p.post_id = b.post_id) 
+                    join posts p on (p.post_id = b.post_id)
                 where
                     b.user_id = :user_id
                     and watch = 1
@@ -240,7 +261,7 @@ export default class PostRepository {
             select p.*, v.vote, b.read_comments, b.bookmark, b.last_read_comment_id, b.watch, (p.comments - b.read_comments) cnt
             from
                 user_bookmarks b
-                join posts p on (p.post_id = b.post_id) 
+                join posts p on (p.post_id = b.post_id)
                 left join post_votes v on (v.post_id = p.post_id and v.voter_id=:user_id)
             where
                 b.user_id = :user_id
@@ -312,10 +333,10 @@ export default class PostRepository {
     return await this.db.fetchAll(
       `
                     select p.post_id, p.commented_at, p.created_at
-                    from posts p 
+                    from posts p
                     where
                         p.site_id=:site_id and
-                        p.post_id>:last_post_id 
+                        p.post_id>:last_post_id
                     order by
                         post_id
                     limit

@@ -68,7 +68,17 @@ export default class CommentRepository {
                      left join comment_votes v on (v.comment_id = c.comment_id and v.voter_id = :for_user_id)
             where
                 c.author_id = :user_id
-              and c.deleted = 0 ${filter ? ' and c.source like :filter ' : ''}
+              and c.deleted = 0 ${
+                filter
+                  ? ` and (c.source like :filter or EXISTS (
+                select 1 from markers m
+                where m.comment_id = c.comment_id
+                and m.creator_id = :for_user_id
+                and m.removed_at is null
+                and m.annotation like :filter
+              )) `
+                  : ''
+              }
             order by c.created_at desc
             limit :limit_from, :limit_count
         `,
@@ -96,11 +106,22 @@ export default class CommentRepository {
       .fetchOne<{ cnt: string }>(
         `
             select count(*) cnt 
-            from comments 
-            where author_id = :user_id and deleted = 0 
-            ${filter ? '  and source like :filter ' : ''}`,
+            from comments c
+            where c.author_id = :user_id and c.deleted = 0 
+            ${
+              filter
+                ? ` and (c.source like :filter or EXISTS (
+              select 1 from markers m
+              where m.comment_id = c.comment_id
+              and m.creator_id = :for_user_id
+              and m.removed_at is null
+              and m.annotation like :filter
+            )) `
+                : ''
+            }`,
         {
           user_id: userId,
+          for_user_id: userId /* Same as userId since we're filtering by markers the user created */,
           filter: filter && '%' + escapePercent(filter) + '%',
         },
       )
@@ -148,9 +169,9 @@ export default class CommentRepository {
       })
 
       await conn.query(
-        `update posts p set comments=(select count(*) from comments c where c.post_id = p.post_id), 
+        `update posts p set comments=(select count(*) from comments c where c.post_id = p.post_id),
                    last_comment_id=:last_comment_id
-                       ${updateCommentedAt ? ', commented_at=now()' : ''} 
+                       ${updateCommentedAt ? ', commented_at=now()' : ''}
                where p.post_id=:post_id`,
         {
           post_id: postId,
