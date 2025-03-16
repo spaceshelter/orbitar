@@ -185,14 +185,6 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
       // Check if the user has enough tokens
       return componentState.userTokens !== null && componentState.userTokens < 1
     }
-
-    const userHasMarkerOfType = (type: MarkerType): boolean => {
-      if (!appState.userInfo) return false
-      return componentState.markers.some(
-        (marker) => marker.markerType === type && marker.creator.id === appState.userInfo?.id && !marker.removedAt,
-      )
-    }
-
     const handleOpenAddMarker = (type: MarkerType) => {
       componentState.setSelectedMarkerType(type)
 
@@ -242,49 +234,45 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
 
     return (
       <div ref={listRef} className={styles.markerList} onClick={handleListClick}>
-        <div className={styles.header}>
-          <h3>Markers</h3>
-        </div>
+        {/*<div className={styles.header}>*/}
+        {/*  <h3>Markers</h3>*/}
+        {/*</div>*/}
 
         {componentState.error && <div className={styles.error}>{componentState.error}</div>}
 
         {appState.userInfo && (
           <div className={styles.addMarkerRow}>
-            <span className={styles.addMarkerLabel}>Add marker:</span>
+            {/*<span className={styles.addMarkerLabel}>Add marker:</span>*/}
             <div className={styles.addMarkerButtons}>
               <button
                 className={cn(styles.markerButton, styles.starButton, {
                   [styles.disabled]: isMarkerTypeDisabled(MarkerType.STAR),
-                  [styles.active]: userHasMarkerOfType(MarkerType.STAR),
                 })}
                 onClick={() => handleOpenAddMarker(MarkerType.STAR)}
                 disabled={isMarkerTypeDisabled(MarkerType.STAR) || componentState.isSubmitting}
-                title={isMarkerTypeDisabled(MarkerType.STAR) ? 'Not enough tokens' : 'Add Star'}
+                title={isMarkerTypeDisabled(MarkerType.STAR) ? 'Not enough tokens' : 'Наградить звездой'}
               >
-                <StarIcon />
+                <StarIcon /> наградить
               </button>
 
               <button
                 className={cn(styles.markerButton, styles.noteButton, {
                   [styles.disabled]: isMarkerTypeDisabled(MarkerType.NOTE),
-                  [styles.active]: userHasMarkerOfType(MarkerType.NOTE),
                 })}
                 onClick={() => handleOpenAddMarker(MarkerType.NOTE)}
                 disabled={isMarkerTypeDisabled(MarkerType.NOTE) || componentState.isSubmitting}
-                title={isMarkerTypeDisabled(MarkerType.NOTE) ? 'Not enough tokens' : 'Add Note'}
+                title={isMarkerTypeDisabled(MarkerType.NOTE) ? 'Not enough tokens' : 'Заметка для всех'}
               >
-                <NoteIcon />
+                <NoteIcon /> заметка
               </button>
 
               <button
-                className={cn(styles.markerButton, styles.bookmarkButton, {
-                  [styles.active]: userHasMarkerOfType(MarkerType.BOOKMARK),
-                })}
+                className={cn(styles.markerButton, styles.bookmarkButton)}
                 onClick={() => handleOpenAddMarker(MarkerType.BOOKMARK)}
                 disabled={componentState.isSubmitting}
-                title='Add Bookmark'
+                title='Добавить в закладки себе'
               >
-                <BookmarkIcon />
+                <BookmarkIcon /> в закладки
               </button>
             </div>
           </div>

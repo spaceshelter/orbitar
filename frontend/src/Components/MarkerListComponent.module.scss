@@ -72,7 +72,7 @@
 
 .addMarkerButtons {
   display: flex;
-  gap: 0.5rem;
+  gap: 1rem;
 }
 
 .markerButton {
@@ -89,6 +89,7 @@
     width: 20px;
     height: 20px;
     fill: currentColor;
+    margin-right: 0.2rem;
   }
 
   &:hover:not(:disabled) {
