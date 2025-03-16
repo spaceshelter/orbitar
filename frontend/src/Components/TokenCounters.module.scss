@@ -107,6 +107,25 @@
         opacity 0.2s ease;
     }
   }
+
+  // Vote indicator icons are displayed as very subtle ghost-like outlines
+  .votedIcon {
+    color: var(--fgSoftest);
+    height: 24px;
+
+    svg {
+      fill: none;
+      stroke-width: 1px;
+      width: 22px;
+      height: 22px;
+      stroke: var(--fgSoftest);
+    }
+
+    &.downvoted svg {
+      fill: var(--fgGhost);
+      stroke: none;
+    }
+  }
 }
 
 .markerListWrapper {

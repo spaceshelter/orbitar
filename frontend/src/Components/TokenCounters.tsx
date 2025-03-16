@@ -20,6 +20,8 @@ type TokenCountersProps = {
   onListToggle?: (isOpen: boolean) => void
   // Optional callback when token counts are updated
   onUpdate?: (counts: TokenCounts) => void
+  // Current user's vote value: undefined (no vote), -1 (downvote), 1 (upvote)
+  userVote?: number
 }
 
 // Temporary fallback function until all markers are stored properly
@@ -53,8 +55,13 @@ const TokenCounters: React.FC<TokenCountersProps> = observer((props) => {
 
   const { stars, notes, bookmarks } = displayCounts
 
-  // Nothing to display if all counts are zero
-  if (stars === 0 && notes === 0 && bookmarks === 0) {
+  // If there are no tokens but the entity has been voted on by the current user,
+  // we'll still show a faint icon based on vote direction
+  const hasNoTokens = stars === 0 && notes === 0 && bookmarks === 0
+  const showVoteIndicator = props.userVote !== undefined && props.userVote !== 0 && hasNoTokens
+
+  // Nothing to display if all counts are zero and no user vote
+  if (hasNoTokens && !showVoteIndicator) {
     return null
   }
 
@@ -102,6 +109,22 @@ const TokenCounters: React.FC<TokenCountersProps> = observer((props) => {
               <BookmarkIcon />
             </span>
             <span className={styles.count}>{bookmarks}</span>
+          </div>
+        )}
+
+        {showVoteIndicator && (
+          <div className={styles.tokenCounter}>
+            {props.userVote &&
+              ((props.userVote > 0 && (
+                <span className={`${styles.votedIcon} ${styles.upvoted}`}>
+                  {/*<BookmarkIcon />*/}
+                  <StarIcon />
+                </span>
+              )) || (
+                <span className={`${styles.votedIcon} ${styles.downvoted}`}>
+                  <NoteIcon />
+                </span>
+              ))}
           </div>
         )}
       </div>

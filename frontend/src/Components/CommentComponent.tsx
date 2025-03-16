@@ -106,6 +106,12 @@ export default function CommentComponent(props: CommentProps) {
     return (value: number, vote?: number) => {
       props.comment.rating = value
       props.comment.vote = vote
+
+      // a hack to trigger re-render
+      // FIXME: this whole property modification approach is ugly, need to rework with mobx
+      const prevOpenList = hasOpenList
+      setHasOpenList(!prevOpenList)
+      Promise.resolve().then(() => setHasOpenList(prevOpenList))
     }
   }, [props.comment])
 
@@ -325,6 +331,7 @@ export default function CommentComponent(props: CommentProps) {
               entityId={props.comment.id}
               entityType='comment'
               counts={props.comment.tokenCounts}
+              userVote={props.comment.vote}
               onListToggle={setHasOpenList}
               onUpdate={(counts) => {
                 if (props.onEdit) {

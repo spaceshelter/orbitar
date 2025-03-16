@@ -279,7 +279,7 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
               ref={inputRef}
               value={componentState.annotation}
               onChange={(e) => componentState.setAnnotation(e.target.value)}
-              placeholder='Добавить заметку (макс. 256 символов)...'
+              placeholder='Добавить аннотацию (макс. 256 символов)...'
               maxLength={256}
               disabled={componentState.isSubmitting}
               onKeyDown={(e) => {
@@ -306,7 +306,7 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
                   componentState.userTokens < 1)
               }
             >
-              {componentState.isSubmitting ? 'Добавление...' : 'Добавить отметку'}
+              {componentState.isSubmitting ? 'Добавление...' : 'Добавить'}
             </button>
           </div>
         </div>

@@ -335,6 +335,7 @@ export default function PostComponent(props: PostComponentProps) {
             entityId={props.post.id}
             entityType='post'
             counts={props.post.tokenCounts}
+            userVote={props.post.vote}
             onUpdate={(counts) => {
               if (props.onChange) {
                 props.onChange(props.post.id, { tokenCounts: counts })
