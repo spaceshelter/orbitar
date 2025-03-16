@@ -4,10 +4,12 @@ import { Link, useParams } from 'react-router-dom'
 import { observer } from 'mobx-react-lite'
 import moment from 'moment'
 
+import MarkerAPI from '../API/MarkerAPI'
 import { useUserProfile } from '../API/use/useUserProfile'
 import { useAPI, useAppState } from '../AppState/AppState'
 import DateComponent from '../Components/DateComponent'
 import RatingSwitch from '../Components/RatingSwitch'
+import TokenCounters from '../Components/TokenCounters'
 import Username from '../Components/Username'
 import UserProfileBio from '../Components/UserProfileBio'
 import UserProfileClientsApps from '../Components/UserProfileClientsApps'
@@ -17,6 +19,7 @@ import { UserProfileKarma } from '../Components/UserProfileKarma'
 import UserProfileName from '../Components/UserProfileName'
 import UserProfilePosts from '../Components/UserProfilePosts'
 import UserProfileSettings from '../Components/UserProfileSettings'
+import { TokenCounts } from '../Types/TokenCounts'
 import { UserGender, UserProfileInfo } from '../Types/UserInfo'
 
 import styles from './UserPage.module.scss'
@@ -30,6 +33,7 @@ export const UserPage = observer(() => {
   const cutInvitesListInvitesNumber = 10
   const cutInvitesListToNumber = 5
   const [state, refreshProfile] = useUserProfile(username || '')
+  const [userTokenCounts, setUserTokenCounts] = useState<TokenCounts | undefined>(undefined)
 
   const [inviteListTruncated, setInviteListTruncated] = useState(true)
 
@@ -45,6 +49,24 @@ export const UserPage = observer(() => {
   useEffect(() => {
     if (state.status === 'ready') {
       document.title = state.profile.profile.username
+
+      // Fetch token counts for the user
+      const fetchTokenCounts = async () => {
+        try {
+          const counts = await MarkerAPI.getUserCounters(state.profile.profile.id)
+          if (counts) {
+            setUserTokenCounts({
+              stars: counts.starCount || counts.star_count || 0,
+              notes: counts.noteCount || counts.note_count || 0,
+              bookmarks: counts.bookmarkCount || counts.bookmark_count || 0,
+            })
+          }
+        } catch (error) {
+          console.error('Error fetching user token counts:', error)
+        }
+      }
+
+      fetchTokenCounts()
     }
   }, [state])
 
@@ -108,8 +130,21 @@ export const UserPage = observer(() => {
       <div className={styles.container}>
         <div className={styles.header}>
           <div className={styles.row}>
-            <div>
+            <div className={styles.usernameContainer}>
               <div className={styles.username}>{user.username}</div>
+              <div className={styles.userMarkers}>
+                <TokenCounters
+                  entityId={user.id}
+                  entityType='user'
+                  counts={userTokenCounts}
+                  userVote={1}
+                  onUpdate={(counts) => {
+                    // Update local state and refresh the profile when tokens are updated
+                    setUserTokenCounts(counts)
+                    refreshProfile()
+                  }}
+                />
+              </div>
             </div>
 
             <div className={styles.karma}>
