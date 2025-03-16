@@ -62,7 +62,21 @@
   margin-bottom: 16px;
   font-size: 14px;
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+
+  .tokenPrice {
+    padding-left: 8px;
+
+    strong {
+      color: var(--negative-fg);
+    }
+
+    .freePrice {
+      color: var(--positive);
+    }
+  }
 }
 
 .markerTypeSelector {
@@ -153,7 +167,7 @@
   font-size: 14px;
   line-height: 1.4;
   color: var(--fgSoft);
-  min-height: 70px;
+  min-height: 80px;
   transition: all 0.2s ease;
 }
 

@@ -187,7 +187,7 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
         <Overlay onClick={onClose} />
         <div className={styles.addMarkerContainer} onClick={(e) => e.stopPropagation()}>
           <div className={styles.header}>
-            <h3>Add Marker</h3>
+            <h3>Отметить</h3>
             <button className={styles.closeButton} onClick={onClose}>
               ×
             </button>
@@ -197,12 +197,22 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
 
           {appState.userInfo && componentState.userTokens !== null && (
             <div className={styles.tokenInfo}>
-              Available tokens: {componentState.userTokens} / {componentState.maxTokens}
+              Доступно токенов: {componentState.userTokens} / {componentState.maxTokens}
+              {componentState.selectedType !== MarkerType.BOOKMARK && (
+                <span className={styles.tokenPrice}>
+                  Цена: <strong>1</strong> токен
+                </span>
+              )}
+              {componentState.selectedType === MarkerType.BOOKMARK && (
+                <span className={styles.tokenPrice}>
+                  Цена: <strong className={styles.freePrice}>бесплатно</strong>
+                </span>
+              )}
             </div>
           )}
 
           <div className={styles.markerTypeSelector}>
-            <h4>Select Marker Type</h4>
+            <h4>Выберите тип:</h4>
             <div className={styles.markerButtons}>
               <button
                 className={cn(styles.markerButton, styles.starButton, {
@@ -211,9 +221,9 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
                 })}
                 onClick={() => componentState.setSelectedType(MarkerType.STAR)}
                 disabled={isMarkerTypeDisabled(MarkerType.STAR) || componentState.isSubmitting}
-                title={isMarkerTypeDisabled(MarkerType.STAR) ? 'Not enough tokens' : 'Add Star'}
+                title={isMarkerTypeDisabled(MarkerType.STAR) ? 'Недостаточно токенов' : 'Добавить звезду'}
               >
-                <StarIcon /> Star
+                <StarIcon /> Звезда!
               </button>
 
               <button
@@ -223,9 +233,9 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
                 })}
                 onClick={() => componentState.setSelectedType(MarkerType.NOTE)}
                 disabled={isMarkerTypeDisabled(MarkerType.NOTE) || componentState.isSubmitting}
-                title={isMarkerTypeDisabled(MarkerType.NOTE) ? 'Not enough tokens' : 'Add Note'}
+                title={isMarkerTypeDisabled(MarkerType.NOTE) ? 'Недостаточно токенов' : 'Добавить заметку'}
               >
-                <NoteIcon /> Note
+                <NoteIcon /> Заметка
               </button>
 
               <button
@@ -234,29 +244,29 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
                 })}
                 onClick={() => componentState.setSelectedType(MarkerType.BOOKMARK)}
                 disabled={componentState.isSubmitting}
-                title='Add Bookmark'
+                title='Добавить закладку'
               >
-                <BookmarkIcon /> Bookmark
+                <BookmarkIcon /> Закладка
               </button>
             </div>
 
             <div className={styles.markerDescription}>
               {componentState.selectedType === MarkerType.STAR && (
                 <>
-                  A Star marker is positive and costs one token. It nominates content for awards, appears in
-                  leaderboards, and highlights the content.
+                  Позитивная награда. Она выделяет контент, позволяет получателю участвовать в лидербордах и номинирует
+                  его на премию. К звезде можно добавить аннотацию, которая будет видна всем. Стоит 1 токен.
                 </>
               )}
               {componentState.selectedType === MarkerType.NOTE && (
                 <>
-                  A Note marker is for sharing public annotations with others. It costs one token but doesn't nominate
-                  for awards or appear in leaderboards.
+                  Нейтральная публичная аннотация, видимая всем. Не является наградой, не номинирует на премию и не
+                  участвует в лидербордах. Стоит 1 токен.
                 </>
               )}
               {componentState.selectedType === MarkerType.BOOKMARK && (
                 <>
-                  A Bookmark marker is free and personal. Bookmarks are only visible to you on the content, but others
-                  can see your bookmarks in your profile.
+                  Бесплатная, позволяет вам сохранить контент в свое избранное. Не является наградой или номинацией.
+                  Другие люди могут видеть ваши закладки только в вашем профиле.
                 </>
               )}
             </div>
@@ -269,7 +279,7 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
               ref={inputRef}
               value={componentState.annotation}
               onChange={(e) => componentState.setAnnotation(e.target.value)}
-              placeholder='Add optional note (max 256 characters)...'
+              placeholder='Добавить заметку (макс. 256 символов)...'
               maxLength={256}
               disabled={componentState.isSubmitting}
               onKeyDown={(e) => {
@@ -284,7 +294,7 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
 
           <div className={styles.actions}>
             <button className={styles.cancelButton} onClick={onClose} disabled={componentState.isSubmitting}>
-              Cancel
+              Отмена
             </button>
             <button
               className={styles.addButton}
@@ -296,7 +306,7 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
                   componentState.userTokens < 1)
               }
             >
-              {componentState.isSubmitting ? 'Adding...' : 'Add Marker'}
+              {componentState.isSubmitting ? 'Добавление...' : 'Добавить отметку'}
             </button>
           </div>
         </div>
