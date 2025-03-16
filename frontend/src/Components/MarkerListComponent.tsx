@@ -228,8 +228,21 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
       .filter((marker) => marker.markerType === MarkerType.NOTE && !marker.removedAt)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
-    const bookmarkMarkers = componentState.markers.filter(
-      (marker) => marker.markerType === MarkerType.BOOKMARK && !marker.removedAt,
+    // Separate own bookmarks from other bookmarks
+    const ownBookmarkMarker = appState.userInfo
+      ? componentState.markers.find(
+          (marker) =>
+            marker.markerType === MarkerType.BOOKMARK &&
+            !marker.removedAt &&
+            marker.creator.id === appState.userInfo?.id,
+        )
+      : undefined
+
+    const otherBookmarkMarkers = componentState.markers.filter(
+      (marker) =>
+        marker.markerType === MarkerType.BOOKMARK &&
+        !marker.removedAt &&
+        (!appState.userInfo || marker.creator.id !== appState.userInfo?.id),
     )
 
     return (
@@ -332,36 +345,49 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
               </div>
             ))}
 
-            {bookmarkMarkers.length > 0 && (
+            {/* User's own bookmark */}
+            {ownBookmarkMarker && (
               <div className={styles.markerItem}>
                 <div className={styles.markerType}>
                   <BookmarkIcon />
                 </div>
                 <div className={styles.markerContent}>
-                  <div className={styles.bookmarkHeader}>Закладки:</div>
+                  <div className={styles.markerSignature}>
+                    <Username user={{ username: ownBookmarkMarker.creator.username }} /> •{' '}
+                    <DateComponent date={new Date(ownBookmarkMarker.createdAt)} />
+                  </div>
+                  {ownBookmarkMarker.annotation && (
+                    <div className={styles.markerAnnotation}>{ownBookmarkMarker.annotation}</div>
+                  )}
+                </div>
+                <button
+                  className={styles.removeButton}
+                  onClick={() => handleRemoveMarker(ownBookmarkMarker.markerId)}
+                  disabled={componentState.isSubmitting}
+                  title='Удалить вашу закладку'
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
+            {/* Other users' bookmarks */}
+            {otherBookmarkMarkers.length > 0 && (
+              <div className={styles.markerItem}>
+                <div className={styles.markerType}>
+                  <BookmarkIcon />
+                </div>
+                <div className={styles.markerContent}>
+                  <div className={styles.bookmarkHeader}>Закладки других пользователей:</div>
                   <div className={styles.bookmarksList}>
-                    {bookmarkMarkers.map((marker, index) => (
+                    {otherBookmarkMarkers.map((marker, index) => (
                       <span key={marker.markerId} className={styles.bookmarkItem}>
                         <Username user={{ username: marker.creator.username }} />
-                        {index < bookmarkMarkers.length - 1 && ', '}
+                        {index < otherBookmarkMarkers.length - 1 && ', '}
                       </span>
                     ))}
                   </div>
                 </div>
-                {appState.userInfo && bookmarkMarkers.some((marker) => marker.creator.id === appState.userInfo?.id) && (
-                  <button
-                    className={styles.removeButton}
-                    onClick={() =>
-                      handleRemoveMarker(
-                        bookmarkMarkers.find((marker) => marker.creator.id === appState.userInfo?.id)?.markerId || 0,
-                      )
-                    }
-                    disabled={componentState.isSubmitting}
-                    title='Удалить вашу закладку'
-                  >
-                    ×
-                  </button>
-                )}
               </div>
             )}
 
