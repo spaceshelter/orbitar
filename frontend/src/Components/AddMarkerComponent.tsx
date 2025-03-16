@@ -5,7 +5,7 @@ import { action, makeObservable, observable } from 'mobx'
 import { observer } from 'mobx-react-lite'
 import { useHotkeys } from 'react-hotkeys-hook'
 
-import MarkerAPI, { MarkerTargetType, MarkerType, UserTokenInfo } from '../API/MarkerAPI'
+import { MarkerTargetType, MarkerType, UserTokenInfo } from '../API/MarkerAPI'
 import useNoScroll from '../API/use/useNoScroll'
 import { useAppState } from '../AppState/AppState'
 import { TokenCounts } from '../Types/TokenCounts'
@@ -122,6 +122,7 @@ class AddMarkerComponentState {
 export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
   ({ targetType, targetId, onClose, onSuccess, initialMarkerType }) => {
     const appState = useAppState()
+    const markerAPI = appState.api.markerAPI
     const componentState = React.useMemo(() => {
       const state = new AddMarkerComponentState()
       if (initialMarkerType) {
@@ -161,7 +162,7 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
 
           if (appState.userInfo) {
             try {
-              const tokenInfo = await MarkerAPI.getUserTokenInfo()
+              const tokenInfo = await markerAPI.getUserTokenInfo()
               componentState.setTokenInfo(tokenInfo)
             } catch (error: any) {
               componentState.setError('Failed to load token information')
@@ -173,7 +174,7 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
       }
 
       fetchTokenInfo()
-    }, [appState.userInfo, componentState])
+    }, [appState.userInfo, markerAPI, componentState])
 
     const handleAddMarker = async () => {
       if (!appState.userInfo) {
@@ -189,7 +190,7 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
         // For other marker types, use the selected token count
         const placedCount = componentState.selectedType === MarkerType.BOOKMARK ? 1 : componentState.tokenCount
 
-        await MarkerAPI.createMarker(
+        await markerAPI.createMarker(
           targetType,
           targetId,
           componentState.selectedType,
@@ -198,7 +199,7 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
         )
 
         // Get updated token counts for the target
-        const tokenCounts = await MarkerAPI.getTokenCounts(targetType, targetId)
+        const tokenCounts = await markerAPI.getTokenCounts(targetType, targetId)
 
         // Success - close the modal and notify parent with updated token counts
         onSuccess?.(tokenCounts)

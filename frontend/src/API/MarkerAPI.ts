@@ -46,23 +46,25 @@ export interface UserTokenInfo {
   history: MarkerInfo[]
 }
 
-export class MarkerAPI extends APIBase {
-  constructor() {
-    super()
+export default class MarkerAPI {
+  private api: APIBase
+
+  constructor(api: APIBase) {
+    this.api = api
   }
 
   /**
    * Get token counters for a post
    */
   async getPostCounters(postId: number): Promise<TokenCounter> {
-    return await this.request<{ postId: number }, TokenCounter>('/marker/get-post-counters', { postId })
+    return await this.api.request<{ postId: number }, TokenCounter>('/marker/get-post-counters', { postId })
   }
 
   /**
    * Get token counters for a comment
    */
   async getCommentCounters(commentId: number): Promise<TokenCounter> {
-    return await this.request<{ commentId: number }, TokenCounter>('/marker/get-comment-counters', {
+    return await this.api.request<{ commentId: number }, TokenCounter>('/marker/get-comment-counters', {
       commentId,
     })
   }
@@ -71,14 +73,14 @@ export class MarkerAPI extends APIBase {
    * Get token counters for a user
    */
   async getUserCounters(userId: number): Promise<TokenCounter> {
-    return await this.request<{ userId: number }, TokenCounter>('/marker/get-user-counters', { userId })
+    return await this.api.request<{ userId: number }, TokenCounter>('/marker/get-user-counters', { userId })
   }
 
   /**
    * Get markers placed on a post
    */
   async getPostMarkers(postId: number, includeRemoved: boolean): Promise<MarkerInfo[]> {
-    const response = await this.request<{ postId: number; includeRemoved: boolean }, { markers: MarkerInfo[] }>(
+    const response = await this.api.request<{ postId: number; includeRemoved: boolean }, { markers: MarkerInfo[] }>(
       '/marker/get-post-markers',
       {
         postId,
@@ -92,7 +94,7 @@ export class MarkerAPI extends APIBase {
    * Get markers placed on a comment
    */
   async getCommentMarkers(commentId: number, includeRemoved: boolean): Promise<MarkerInfo[]> {
-    const response = await this.request<{ commentId: number; includeRemoved: boolean }, { markers: MarkerInfo[] }>(
+    const response = await this.api.request<{ commentId: number; includeRemoved: boolean }, { markers: MarkerInfo[] }>(
       '/marker/get-comment-markers',
       {
         commentId,
@@ -106,7 +108,7 @@ export class MarkerAPI extends APIBase {
    * Get markers placed on a user
    */
   async getUserMarkers(userId: number, includeRemoved: boolean): Promise<MarkerInfo[]> {
-    const response = await this.request<{ userId: number; includeRemoved: boolean }, { markers: MarkerInfo[] }>(
+    const response = await this.api.request<{ userId: number; includeRemoved: boolean }, { markers: MarkerInfo[] }>(
       '/marker/get-user-markers',
       {
         userId,
@@ -140,7 +142,7 @@ export class MarkerAPI extends APIBase {
    * Get markers created by a specific user
    */
   async getMarkersByCreator(creatorId: number, includeRemoved: boolean): Promise<MarkerInfo[]> {
-    const response = await this.request<{ creatorId: number; includeRemoved: boolean }, { markers: MarkerInfo[] }>(
+    const response = await this.api.request<{ creatorId: number; includeRemoved: boolean }, { markers: MarkerInfo[] }>(
       '/marker/get-by-creator',
       {
         creatorId,
@@ -154,7 +156,7 @@ export class MarkerAPI extends APIBase {
    * Get token information for the current user
    */
   async getUserTokenInfo(): Promise<UserTokenInfo> {
-    return await this.request<Record<string, never>, UserTokenInfo>('/marker/get-tokens', {})
+    return await this.api.request<Record<string, never>, UserTokenInfo>('/marker/get-tokens', {})
   }
 
   /**
@@ -167,7 +169,7 @@ export class MarkerAPI extends APIBase {
     placedCount: number,
     annotation: string | null,
   ): Promise<MarkerInfo> {
-    return await this.request<
+    return await this.api.request<
       {
         targetType: MarkerTargetType
         targetId: number
@@ -189,7 +191,7 @@ export class MarkerAPI extends APIBase {
    * Remove a marker
    */
   async removeMarker(markerId: number): Promise<void> {
-    await this.request<{ markerId: number }, void>('/marker/remove', { markerId })
+    await this.api.request<{ markerId: number }, void>('/marker/remove', { markerId })
   }
 
   /**
@@ -222,7 +224,3 @@ export enum MarkerType {
   NOTE = 'note',
   BOOKMARK = 'bookmark',
 }
-
-// Backend API has been updated to use simple marker types (star/note/bookmark)
-// as recommended in /docs/markers.md
-export default new MarkerAPI()

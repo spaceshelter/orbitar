@@ -4,7 +4,7 @@ import cn from 'classnames'
 import { action, makeObservable, observable } from 'mobx'
 import { observer } from 'mobx-react-lite'
 
-import MarkerAPI, { MarkerInfo, MarkerTargetType, MarkerType, UserTokenInfo } from '../API/MarkerAPI'
+import { MarkerInfo, MarkerTargetType, MarkerType, UserTokenInfo } from '../API/MarkerAPI'
 import { useAppState } from '../AppState/AppState'
 import { TokenCounts } from '../Types/TokenCounts'
 import AddMarkerComponent from './AddMarkerComponent'
@@ -97,6 +97,7 @@ class MarkerListComponentState {
 export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
   ({ targetType, targetId, onClose, onUpdate }) => {
     const appState = useAppState()
+    const markerAPI = appState.api.markerAPI
     const componentState = React.useMemo(() => new MarkerListComponentState(), [])
     const listRef = useRef<HTMLDivElement>(null)
 
@@ -104,12 +105,12 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
       const fetchMarkers = async () => {
         try {
           componentState.setIsLoading(true)
-          const markers = await MarkerAPI.getMarkersByTarget(targetType, targetId, true)
+          const markers = await markerAPI.getMarkersByTarget(targetType, targetId, true)
           componentState.setMarkers(markers)
 
           if (appState.userInfo) {
             try {
-              const tokenInfo = await MarkerAPI.getUserTokenInfo()
+              const tokenInfo = await markerAPI.getUserTokenInfo()
               componentState.setTokenInfo(tokenInfo)
             } catch (error) {
               console.error('Error fetching token info:', error)
@@ -124,7 +125,7 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
       }
 
       fetchMarkers()
-    }, [targetType, targetId, componentState, appState.userInfo])
+    }, [targetType, targetId, componentState, appState.userInfo, markerAPI])
 
     useEffect(() => {
       if (!listRef.current) {
@@ -153,14 +154,14 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
       try {
         componentState.setIsSubmitting(true)
 
-        await MarkerAPI.removeMarker(markerId)
+        await markerAPI.removeMarker(markerId)
 
         // Refresh the markers
-        const markers = await MarkerAPI.getMarkersByTarget(targetType, targetId, true)
+        const markers = await markerAPI.getMarkersByTarget(targetType, targetId, true)
         componentState.setMarkers(markers)
 
         // Get updated token counts
-        const tokenCounts = await MarkerAPI.getTokenCounts(targetType, targetId)
+        const tokenCounts = await markerAPI.getTokenCounts(targetType, targetId)
 
         // Notify parent component about the updated token counts
         if (onUpdate) {
@@ -168,7 +169,7 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
         }
 
         // Refresh token info
-        const tokenInfo = await MarkerAPI.getUserTokenInfo()
+        const tokenInfo = await markerAPI.getUserTokenInfo()
         componentState.setTokenInfo(tokenInfo)
       } catch (error) {
         componentState.setError('Ошибка удаления отметки')
@@ -190,7 +191,7 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
 
       const handleAddMarkerSuccess = async (tokenCounts: TokenCounts) => {
         // Refresh the markers
-        const markers = await MarkerAPI.getMarkersByTarget(targetType, targetId, true)
+        const markers = await markerAPI.getMarkersByTarget(targetType, targetId, true)
         componentState.setMarkers(markers)
 
         // Notify parent component about the updated token counts
@@ -199,7 +200,7 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
         }
 
         // Refresh token info
-        const tokenInfo = await MarkerAPI.getUserTokenInfo()
+        const tokenInfo = await markerAPI.getUserTokenInfo()
         componentState.setTokenInfo(tokenInfo)
       }
 

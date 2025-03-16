@@ -4,7 +4,6 @@ import { Link, useParams } from 'react-router-dom'
 import { observer } from 'mobx-react-lite'
 import moment from 'moment'
 
-import MarkerAPI from '../API/MarkerAPI'
 import { useUserProfile } from '../API/use/useUserProfile'
 import { useAPI, useAppState } from '../AppState/AppState'
 import DateComponent from '../Components/DateComponent'
@@ -53,7 +52,7 @@ export const UserPage = observer(() => {
       // Fetch token counts for the user
       const fetchTokenCounts = async () => {
         try {
-          const counts = await MarkerAPI.getUserCounters(state.profile.profile.id)
+          const counts = await api.markerAPI.getUserCounters(state.profile.profile.id)
           if (counts) {
             setUserTokenCounts({
               stars: counts.starCount || counts.star_count || 0,
@@ -68,7 +67,7 @@ export const UserPage = observer(() => {
 
       fetchTokenCounts()
     }
-  }, [state])
+  }, [state, api])
 
   useEffect(() => {
     api.user.refreshUserRestrictions()
