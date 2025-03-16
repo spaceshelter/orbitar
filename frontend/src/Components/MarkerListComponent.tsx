@@ -116,7 +116,7 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
             }
           }
         } catch (error) {
-          componentState.setError('Error fetching markers')
+          componentState.setError('Ошибка загрузки отметок')
           console.error('Error fetching markers:', error)
         } finally {
           componentState.setIsLoading(false)
@@ -171,7 +171,7 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
         const tokenInfo = await MarkerAPI.getUserTokenInfo()
         componentState.setTokenInfo(tokenInfo)
       } catch (error) {
-        componentState.setError('Error removing marker')
+        componentState.setError('Ошибка удаления отметки')
         console.error('Error removing marker:', error)
       } finally {
         componentState.setIsSubmitting(false)
@@ -235,14 +235,14 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
     return (
       <div ref={listRef} className={styles.markerList} onClick={handleListClick}>
         {/*<div className={styles.header}>*/}
-        {/*  <h3>Markers</h3>*/}
+        {/*  <h3>Отметки</h3>*/}
         {/*</div>*/}
 
         {componentState.error && <div className={styles.error}>{componentState.error}</div>}
 
         {appState.userInfo && (
           <div className={styles.addMarkerRow}>
-            {/*<span className={styles.addMarkerLabel}>Add marker:</span>*/}
+            {/*<span className={styles.addMarkerLabel}>Добавить отметку:</span>*/}
             <div className={styles.addMarkerButtons}>
               <button
                 className={cn(styles.markerButton, styles.starButton, {
@@ -250,7 +250,7 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
                 })}
                 onClick={() => handleOpenAddMarker(MarkerType.STAR)}
                 disabled={isMarkerTypeDisabled(MarkerType.STAR) || componentState.isSubmitting}
-                title={isMarkerTypeDisabled(MarkerType.STAR) ? 'Not enough tokens' : 'Наградить звездой'}
+                title={isMarkerTypeDisabled(MarkerType.STAR) ? 'Недостаточно токенов' : 'Наградить звездой'}
               >
                 <StarIcon /> наградить
               </button>
@@ -261,7 +261,7 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
                 })}
                 onClick={() => handleOpenAddMarker(MarkerType.NOTE)}
                 disabled={isMarkerTypeDisabled(MarkerType.NOTE) || componentState.isSubmitting}
-                title={isMarkerTypeDisabled(MarkerType.NOTE) ? 'Not enough tokens' : 'Заметка для всех'}
+                title={isMarkerTypeDisabled(MarkerType.NOTE) ? 'Недостаточно токенов' : 'Заметка для всех'}
               >
                 <NoteIcon /> заметка
               </button>
@@ -279,7 +279,7 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
         )}
 
         {componentState.isLoading ? (
-          <div className={styles.loading}>Loading markers...</div>
+          <div className={styles.loading}>Загрузка отметок...</div>
         ) : (
           <div className={styles.markersList}>
             {starMarkers.map((marker) => (
@@ -299,7 +299,7 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
                     className={styles.removeButton}
                     onClick={() => handleRemoveMarker(marker.markerId)}
                     disabled={componentState.isSubmitting}
-                    title='Remove marker'
+                    title='Удалить отметку'
                   >
                     ×
                   </button>
@@ -324,7 +324,7 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
                     className={styles.removeButton}
                     onClick={() => handleRemoveMarker(marker.markerId)}
                     disabled={componentState.isSubmitting}
-                    title='Remove marker'
+                    title='Удалить отметку'
                   >
                     ×
                   </button>
@@ -338,7 +338,7 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
                   <BookmarkIcon />
                 </div>
                 <div className={styles.markerContent}>
-                  <div className={styles.bookmarkHeader}>Bookmarks:</div>
+                  <div className={styles.bookmarkHeader}>Закладки:</div>
                   <div className={styles.bookmarksList}>
                     {bookmarkMarkers.map((marker, index) => (
                       <span key={marker.markerId} className={styles.bookmarkItem}>
@@ -357,7 +357,7 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
                       )
                     }
                     disabled={componentState.isSubmitting}
-                    title='Remove your bookmark'
+                    title='Удалить вашу закладку'
                   >
                     ×
                   </button>
@@ -365,7 +365,7 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
               </div>
             )}
 
-            {componentState.markers.length === 0 && <div className={styles.noMarkers}>No markers found</div>}
+            {componentState.markers.length === 0 && <div className={styles.noMarkers}>Отметок не найдено</div>}
           </div>
         )}
       </div>
