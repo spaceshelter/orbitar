@@ -68,6 +68,9 @@
 
   .tokenPrice {
     padding-left: 8px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
 
     strong {
       color: var(--negative-fg);
@@ -75,6 +78,33 @@
 
     .freePrice {
       color: var(--positive);
+    }
+
+    .tokenCountButton {
+      width: 16px;
+      height: 16px;
+      min-width: auto;
+      background: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      padding: 0;
+      margin: 0 4px;
+      border: none;
+      cursor: pointer;
+      position: relative;
+      color: var(--fg);
+
+      &:hover:not(:disabled) {
+        opacity: 0.8;
+        color: var(--primary);
+      }
+
+      &:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
     }
   }
 }

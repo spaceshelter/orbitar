@@ -9,6 +9,7 @@ import MarkerAPI, { MarkerTargetType, MarkerType, UserTokenInfo } from '../API/M
 import useNoScroll from '../API/use/useNoScroll'
 import { useAppState } from '../AppState/AppState'
 import { TokenCounts } from '../Types/TokenCounts'
+import { pluralize } from '../Utils/utils'
 import Overlay from './Overlay'
 
 import { ReactComponent as BookmarkIcon } from '../Assets/bookmark.svg'
@@ -46,6 +47,9 @@ class AddMarkerComponentState {
   @observable
   error: string | null = null
 
+  @observable
+  tokenCount = 1
+
   constructor() {
     makeObservable(this)
   }
@@ -58,6 +62,10 @@ class AddMarkerComponentState {
   @action
   setSelectedType(type: MarkerType) {
     this.selectedType = type
+    // Reset token count when changing marker type
+    if (type === MarkerType.BOOKMARK) {
+      this.tokenCount = 1
+    }
   }
 
   @action
@@ -84,6 +92,30 @@ class AddMarkerComponentState {
   @action
   setError(error: string | null) {
     this.error = error
+  }
+
+  @action
+  setTokenCount(count: number) {
+    // Ensure token count is at least 1 and no more than available tokens
+    count = Math.max(1, count)
+    if (this.userTokens !== null) {
+      count = Math.min(count, this.userTokens)
+    }
+    this.tokenCount = count
+  }
+
+  @action
+  incrementTokenCount() {
+    if (this.userTokens !== null && this.tokenCount < this.userTokens) {
+      this.tokenCount += 1
+    }
+  }
+
+  @action
+  decrementTokenCount() {
+    if (this.tokenCount > 1) {
+      this.tokenCount -= 1
+    }
   }
 }
 
@@ -153,11 +185,15 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
         componentState.setIsSubmitting(true)
         componentState.setError(null)
 
+        // For bookmarks, always use placedCount = 1
+        // For other marker types, use the selected token count
+        const placedCount = componentState.selectedType === MarkerType.BOOKMARK ? 1 : componentState.tokenCount
+
         await MarkerAPI.createMarker(
           targetType,
           targetId,
           componentState.selectedType,
-          1,
+          placedCount,
           componentState.annotation.trim() || null,
         )
 
@@ -200,7 +236,21 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
               Доступно токенов: {componentState.userTokens} / {componentState.maxTokens}
               {componentState.selectedType !== MarkerType.BOOKMARK && (
                 <span className={styles.tokenPrice}>
-                  Цена: <strong>1</strong> токен
+                  Цена:
+                  <button
+                    className={`${styles.tokenCountButton} i i-rating_minus`}
+                    onClick={() => componentState.decrementTokenCount()}
+                    disabled={componentState.tokenCount <= 1 || componentState.isSubmitting}
+                  ></button>
+                  <strong>{componentState.tokenCount}</strong>{' '}
+                  <button
+                    className={`${styles.tokenCountButton} i i-rating_plus`}
+                    onClick={() => componentState.incrementTokenCount()}
+                    disabled={
+                      componentState.tokenCount >= (componentState.userTokens || 0) || componentState.isSubmitting
+                    }
+                  ></button>
+                  {pluralize(componentState.tokenCount, ['токен', 'токена', 'токенов'], true)}
                 </span>
               )}
               {componentState.selectedType === MarkerType.BOOKMARK && (
@@ -254,13 +304,13 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
               {componentState.selectedType === MarkerType.STAR && (
                 <>
                   Позитивная награда. Она выделяет контент, позволяет получателю участвовать в лидербордах и номинирует
-                  его на премию. К звезде можно добавить аннотацию, которая будет видна всем. Стоит 1 токен.
+                  его на премию. К звезде можно добавить аннотацию, которая будет видна всем. Стоит токен.
                 </>
               )}
               {componentState.selectedType === MarkerType.NOTE && (
                 <>
                   Нейтральная публичная аннотация, видимая всем. Не является наградой, не номинирует на премию и не
-                  участвует в лидербордах. Стоит 1 токен.
+                  участвует в лидербордах. Стоит токен.
                 </>
               )}
               {componentState.selectedType === MarkerType.BOOKMARK && (
@@ -302,8 +352,7 @@ export const AddMarkerComponent: React.FC<AddMarkerComponentProps> = observer(
               disabled={
                 componentState.isSubmitting ||
                 (componentState.selectedType !== MarkerType.BOOKMARK &&
-                  componentState.userTokens !== null &&
-                  componentState.userTokens < 1)
+                  (componentState.userTokens === null || componentState.userTokens < componentState.tokenCount))
               }
             >
               {componentState.isSubmitting ? 'Добавление...' : 'Добавить'}

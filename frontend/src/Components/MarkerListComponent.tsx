@@ -299,6 +299,7 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
               <div key={marker.markerId} className={styles.markerItem}>
                 <div className={styles.markerType}>
                   <StarIcon />
+                  {marker.placedCount > 1 && <span className={styles.placedCount}>{marker.placedCount}</span>}
                 </div>
                 <div className={styles.markerContent}>
                   <div className={styles.markerSignature}>
@@ -324,6 +325,7 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
               <div key={marker.markerId} className={styles.markerItem}>
                 <div className={styles.markerType}>
                   <NoteIcon />
+                  {marker.placedCount > 1 && <span className={styles.placedCount}>{marker.placedCount}</span>}
                 </div>
                 <div className={styles.markerContent}>
                   <div className={styles.markerSignature}>

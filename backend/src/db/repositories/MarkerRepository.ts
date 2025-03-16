@@ -84,13 +84,24 @@ export class MarkerRepository {
     const marker = await this.getMarkerById({ markerId })
     if (!marker) return
 
-    // Mark as removed, but keep the record
-    await this.db.query(
-      `UPDATE markers SET removed_at = CURRENT_TIMESTAMP, placed_count = 0 WHERE marker_id = :markerId`,
-      { markerId },
-    )
+    // For bookmarks, we always remove them immediately
+    // For other types, we decrement the placed_count and only mark as removed when it reaches 0
+    const isBookmark = marker.marker_type === MarkerType.BOOKMARK
 
-    // Update the relevant counter
+    if (isBookmark || marker.placed_count <= 1) {
+      // Mark as removed and set placed_count to 0
+      await this.db.query(
+        `UPDATE markers SET removed_at = CURRENT_TIMESTAMP, placed_count = 0 WHERE marker_id = :markerId`,
+        { markerId },
+      )
+    } else {
+      // Decrement placed_count but don't mark as removed
+      await this.db.query(`UPDATE markers SET placed_count = placed_count - 1 WHERE marker_id = :markerId`, {
+        markerId,
+      })
+    }
+
+    // Update the relevant counter (always decrement by 1)
     if (marker.post_id) {
       await this.updatePostCounter({ postId: marker.post_id, markerType: marker.marker_type as MarkerType, change: -1 })
     } else if (marker.comment_id) {

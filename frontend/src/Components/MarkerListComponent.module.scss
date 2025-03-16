@@ -187,10 +187,29 @@
   fill: var(--notification-date-fg);
   width: 22px;
   flex-shrink: 0;
+  position: relative;
 
   svg {
     width: 22px;
     height: 22px;
+  }
+
+  .placedCount {
+    position: absolute;
+    bottom: -6px;
+    right: -8px;
+    background-color: var(--primary);
+    color: var(--onAccent);
+    border-radius: 10px;
+    min-width: 18px;
+    height: 18px;
+    font-size: 11px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   }
 }
 
