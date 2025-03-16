@@ -8,12 +8,21 @@
   border-radius: 8px;
   flex-direction: column;
   z-index: 500;
-  padding: 1rem;
+  padding: 16px;
   max-height: 80vh;
   overflow-y: auto;
+  font-size: 14px;
+
+  // In user profile context, ensure it's positioned properly
+  :global(.userMarkers) & {
+    top: 100%;
+    left: 0;
+    margin-top: 5px;
+  }
 
   // Positioning the marker list to the right of the screen
-  @media only screen and (max-width: 800px) {
+  // must be no lower than the value in TokenCounters.module.scss
+  @media only screen and (max-width: 640px) {
     right: 0;
   }
 }
@@ -22,9 +31,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 16px;
   border-bottom: 1px solid var(--divider);
-  padding-bottom: 0.5rem;
+  padding-bottom: 8px;
 
   h3 {
     margin: 0;
@@ -51,17 +60,17 @@
 .error {
   background-color: rgba(var(--danger-rgb), 0.1);
   color: var(--danger);
-  padding: 0.5rem;
-  border-radius: 0.25rem;
-  margin-bottom: 1rem;
+  padding: 8px;
+  border-radius: 4px;
+  margin-bottom: 16px;
 }
 
 .addMarkerRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
   border-bottom: 1px solid var(--divider);
 }
 
@@ -72,18 +81,20 @@
 
 .addMarkerButtons {
   display: flex;
-  gap: 1rem;
+  gap: 16px;
+  width: 100%;
+  justify-content: space-between;
 }
 
 .markerButton {
-  padding: 0.5rem;
-  border-radius: 0.25rem;
+  border-radius: 4px;
   cursor: pointer;
   background: none;
   border: none;
   display: flex;
   justify-content: center;
   align-items: center;
+  white-space: nowrap;
 
   svg {
     width: 20px;
@@ -137,23 +148,21 @@
   }
 }
 
-.noteButton {
+.noteButton,
+.bookmarkButton,
+.starButton {
   color: var(--fgSoft);
-}
-
-.bookmarkButton {
-  color: var(--link);
 }
 
 .loading {
   text-align: center;
-  padding: 2rem 0;
+  padding: 32px 0;
   color: var(--fgSoft);
 }
 
 .noMarkers {
   text-align: center;
-  padding: 2rem 0;
+  padding: 32px 0;
   color: var(--fgSoft);
 }
 
@@ -202,6 +211,18 @@
   line-height: 16px;
   margin-bottom: 4px;
   color: var(--notification-date-fg);
+
+  /* Ensure username is consistently styled with gray color from comment view */
+  :global(a),
+  :global(a.username) {
+    color: var(--notification-date-fg) !important;
+    opacity: 0.9;
+    font-weight: normal;
+
+    &:hover {
+      color: var(--primary) !important;
+    }
+  }
 }
 
 .bookmarkHeader {
@@ -237,6 +258,18 @@
   align-items: center;
   gap: 2px;
   font-size: 13px;
+
+  /* Ensure username is consistently styled with gray color from comment view */
+  :global(a),
+  :global(a.username) {
+    color: var(--notification-date-fg) !important;
+    opacity: 0.9;
+    font-weight: normal;
+
+    &:hover {
+      color: var(--primary) !important;
+    }
+  }
 }
 
 .removeButton {
