@@ -35,8 +35,7 @@ exports.up = async function (db, callback) {
       CONSTRAINT markers_user_fk FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
       
       INDEX idx_markers_creator (creator_id, created_at),
-      INDEX idx_markers_created_at (created_at),
-      UNIQUE INDEX idx_markers_post_creator_type (marker_type, creator_id, post_id, comment_id, user_id)
+      INDEX idx_markers_created_at (created_at)
     );
   `)
 
