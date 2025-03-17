@@ -254,7 +254,6 @@ export default class PostController {
         const { rootComments } = await this.enricher.enrichRawComments(
           rawComments,
           users,
-          format,
           (comment) => comment.author !== userId && comment.id > rawPost.lastReadCommentId,
         )
         comments = rootComments
@@ -416,7 +415,7 @@ export default class PostController {
       )
       const {
         allComments: [comment],
-      } = await this.enricher.enrichRawComments([commentInfo], {}, format, () => true)
+      } = await this.enricher.enrichRawComments([commentInfo], {}, () => true)
       comment.canEdit = overrideUserId === userId
 
       const users: Record<number, UserEntity> = { [overrideUserId]: await this.userManager.getById(overrideUserId) }
@@ -520,7 +519,7 @@ export default class PostController {
       const {
         allComments: [comment],
         users,
-      } = await this.enricher.enrichRawComments([commentInfo], {}, format, () => false)
+      } = await this.enricher.enrichRawComments([commentInfo])
 
       response.success({
         comment: comment,
@@ -555,7 +554,7 @@ export default class PostController {
       const {
         allComments: [comment],
         users,
-      } = await this.enricher.enrichRawComments([commentInfo], {}, format, () => false)
+      } = await this.enricher.enrichRawComments([commentInfo])
 
       response.success({
         comment: comment,

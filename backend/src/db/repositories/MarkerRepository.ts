@@ -176,6 +176,38 @@ export class MarkerRepository {
     }
   }
 
+  /**
+   * Generic counter update method that handles all entity types
+   */
+  private async updateEntityCounter({
+    entityType,
+    entityId,
+    markerType,
+    change,
+  }: {
+    entityType: 'post' | 'comment' | 'user'
+    entityId: number
+    markerType: MarkerType
+    change: number
+  }): Promise<void> {
+    // Determine the table name and ID column based on entity type
+    const tableName = entityType === 'post' ? 'posts' : entityType === 'comment' ? 'comments' : 'users'
+    const idColumn = `${entityType}_id`
+
+    // Determine the counter field based on marker type
+    const counterField = `${markerType.toLowerCase()}_count`
+
+    // Build and execute the query
+    await this.db.query(
+      `UPDATE ${tableName} SET ${counterField} = GREATEST(0, ${counterField} + :change) WHERE ${idColumn} = :entityId`,
+      {
+        change,
+        entityId,
+      },
+    )
+  }
+
+  // These methods are kept for backward compatibility and clarity, but just delegate to the generic method
   private async updatePostCounter({
     postId,
     markerType,
@@ -185,27 +217,12 @@ export class MarkerRepository {
     markerType: MarkerType
     change: number
   }): Promise<void> {
-    // Update specific counter based on marker type
-    switch (markerType) {
-      case MarkerType.STAR:
-        await this.db.query(`UPDATE posts SET star_count = GREATEST(0, star_count + :change) WHERE post_id = :postId`, {
-          change,
-          postId,
-        })
-        break
-      case MarkerType.NOTE:
-        await this.db.query(`UPDATE posts SET note_count = GREATEST(0, note_count + :change) WHERE post_id = :postId`, {
-          change,
-          postId,
-        })
-        break
-      case MarkerType.BOOKMARK:
-        await this.db.query(
-          `UPDATE posts SET bookmark_count = GREATEST(0, bookmark_count + :change) WHERE post_id = :postId`,
-          { change, postId },
-        )
-        break
-    }
+    await this.updateEntityCounter({
+      entityType: 'post',
+      entityId: postId,
+      markerType,
+      change,
+    })
   }
 
   private async updateCommentCounter({
@@ -217,27 +234,12 @@ export class MarkerRepository {
     markerType: MarkerType
     change: number
   }): Promise<void> {
-    // Update specific counter based on marker type
-    switch (markerType) {
-      case MarkerType.STAR:
-        await this.db.query(
-          `UPDATE comments SET star_count = GREATEST(0, star_count + :change) WHERE comment_id = :commentId`,
-          { change, commentId },
-        )
-        break
-      case MarkerType.NOTE:
-        await this.db.query(
-          `UPDATE comments SET note_count = GREATEST(0, note_count + :change) WHERE comment_id = :commentId`,
-          { change, commentId },
-        )
-        break
-      case MarkerType.BOOKMARK:
-        await this.db.query(
-          `UPDATE comments SET bookmark_count = GREATEST(0, bookmark_count + :change) WHERE comment_id = :commentId`,
-          { change, commentId },
-        )
-        break
-    }
+    await this.updateEntityCounter({
+      entityType: 'comment',
+      entityId: commentId,
+      markerType,
+      change,
+    })
   }
 
   private async updateUserCounter({
@@ -249,27 +251,12 @@ export class MarkerRepository {
     markerType: MarkerType
     change: number
   }): Promise<void> {
-    // Update specific counter based on marker type
-    switch (markerType) {
-      case MarkerType.STAR:
-        await this.db.query(`UPDATE users SET star_count = GREATEST(0, star_count + :change) WHERE user_id = :userId`, {
-          change,
-          userId,
-        })
-        break
-      case MarkerType.NOTE:
-        await this.db.query(`UPDATE users SET note_count = GREATEST(0, note_count + :change) WHERE user_id = :userId`, {
-          change,
-          userId,
-        })
-        break
-      case MarkerType.BOOKMARK:
-        await this.db.query(
-          `UPDATE users SET bookmark_count = GREATEST(0, bookmark_count + :change) WHERE user_id = :userId`,
-          { change, userId },
-        )
-        break
-    }
+    await this.updateEntityCounter({
+      entityType: 'user',
+      entityId: userId,
+      markerType,
+      change,
+    })
   }
 
   async getMarkerById({ markerId }: { markerId: number }): Promise<MarkerRaw | null> {
@@ -517,5 +504,226 @@ export class MarkerRepository {
        LIMIT :limit`,
       params,
     )
+  }
+
+  /**
+   * Helper method to construct marker type filter for SQL queries
+   */
+  private buildMarkerTypesFilter(
+    markerTypes?: string[],
+    params: any = {},
+  ): { filterClause: string; updatedParams: any } {
+    if (!markerTypes || markerTypes.length === 0) {
+      return { filterClause: '', updatedParams: params }
+    }
+
+    // Create parameter placeholders for the IN clause
+    const placeholders = markerTypes.map((_, i) => `:markerType${i}`).join(', ')
+
+    // Add marker types to params
+    const updatedParams = { ...params }
+    markerTypes.forEach((type, i) => {
+      updatedParams[`markerType${i}`] = type
+    })
+
+    return {
+      filterClause: `AND marker_type IN (${placeholders})`,
+      updatedParams,
+    }
+  }
+
+  /**
+   * Note: buildTextFilter method has been removed and its functionality
+   * is now integrated directly into getMarkedEntityIds for better SQL construction
+   */
+
+  /**
+   * Generic method to get marked entity IDs with pagination and filtering
+   * Uses a more efficient query structure with DISTINCT and JOIN
+   */
+  private async getMarkedEntityIds<T extends { [key: string]: number }>(options: {
+    entityType: 'post' | 'comment' | 'user'
+    creatorId: number
+    markerTypes?: string[]
+    filter?: string
+    limit?: number
+    offset?: number
+  }): Promise<{ ids: number[]; total: number }> {
+    const { entityType, creatorId, markerTypes, filter, limit = 20, offset = 0 } = options
+
+    // Determine the target field and entity alias
+    const entityField = `${entityType}_id`
+    const entityAlias = entityType.charAt(0)
+    const entityTable = entityType === 'post' ? 'posts' : entityType === 'comment' ? 'comments' : 'users'
+
+    // Initialize params
+    let params: any = {
+      creatorId,
+      limit,
+      offset,
+    }
+
+    // Build the base query using the optimized approach with DISTINCT and JOIN
+    let query = `
+      SELECT ${entityAlias}.${entityField}
+      FROM (
+        SELECT DISTINCT ${entityField}
+        FROM markers
+        WHERE creator_id = :creatorId
+        AND removed_at IS NULL
+    `
+
+    let countQuery = `
+      SELECT COUNT(DISTINCT ${entityField}) as total
+      FROM markers
+      WHERE creator_id = :creatorId
+      AND removed_at IS NULL
+    `
+
+    // Add marker types filter to both queries
+    const markerTypesResult = this.buildMarkerTypesFilter(markerTypes, params)
+    if (markerTypesResult.filterClause) {
+      query += ` ${markerTypesResult.filterClause}`
+      countQuery += ` ${markerTypesResult.filterClause}`
+      params = markerTypesResult.updatedParams
+    }
+
+    // Close the subquery and add the JOIN with entity table
+    query += `
+      ) AS m
+      JOIN ${entityTable} ${entityAlias} ON ${entityAlias}.${entityField} = m.${entityField}
+    `
+
+    // Add WHERE clause when filtering by text
+    if (filter && filter.trim() !== '') {
+      // Add filter parameter
+      const updatedParams = { ...params, filter: `%${filter}%` }
+      params = updatedParams
+
+      // Define search fields based on entity type
+      let entitySearchFields: string[]
+      switch (entityType) {
+        case 'post':
+          entitySearchFields = [`${entityAlias}.title LIKE :filter`, `${entityAlias}.source LIKE :filter`]
+          break
+        case 'comment':
+          entitySearchFields = [`${entityAlias}.source LIKE :filter`]
+          break
+        case 'user':
+          entitySearchFields = [`${entityAlias}.username LIKE :filter`, `${entityAlias}.name LIKE :filter`]
+          break
+      }
+
+      // Set the WHERE clause checking either entity fields or marker annotation
+      query += `
+        WHERE (${entitySearchFields.join(' OR ')})
+        OR EXISTS (
+          SELECT 1 FROM markers m2 
+          WHERE m2.${entityField} = ${entityAlias}.${entityField}
+            AND m2.creator_id = :creatorId 
+            AND m2.removed_at IS NULL
+            AND m2.annotation LIKE :filter
+        )
+      `
+    }
+
+    // Order by the appropriate column based on entity type
+    // Posts and comments have created_at, but users have registered
+    const orderByField = entityType === 'user' ? 'registered_at' : 'created_at'
+
+    query += `
+      ORDER BY ${entityAlias}.${orderByField} DESC
+      LIMIT :limit OFFSET :offset
+    `
+
+    // Execute the queries
+    const results = await this.db.fetchAll<T>(query, params)
+
+    // For count query, we need a copy of params without the pagination parameters
+    const countParams = { ...params }
+    delete countParams.limit
+    delete countParams.offset
+
+    const [countResult] = await this.db.fetchAll<{ total: number }>(countQuery, countParams)
+
+    // Get the ID field name from the entity type
+    const idField = `${entityType}_id` as keyof T
+
+    // Return the IDs and total count
+    return {
+      ids: results.map((r) => r[idField] as number),
+      total: countResult ? countResult.total : 0,
+    }
+  }
+
+  // Public methods using the generic implementation
+
+  async getMarkedPostIds({
+    creatorId,
+    markerTypes,
+    filter,
+    limit = 20,
+    offset = 0,
+  }: {
+    creatorId: number
+    markerTypes?: string[]
+    filter?: string
+    limit?: number
+    offset?: number
+  }): Promise<{ ids: number[]; total: number }> {
+    return this.getMarkedEntityIds<{ post_id: number }>({
+      entityType: 'post',
+      creatorId,
+      markerTypes,
+      filter,
+      limit,
+      offset,
+    })
+  }
+
+  async getMarkedCommentIds({
+    creatorId,
+    markerTypes,
+    filter,
+    limit = 20,
+    offset = 0,
+  }: {
+    creatorId: number
+    markerTypes?: string[]
+    filter?: string
+    limit?: number
+    offset?: number
+  }): Promise<{ ids: number[]; total: number }> {
+    return this.getMarkedEntityIds<{ comment_id: number }>({
+      entityType: 'comment',
+      creatorId,
+      markerTypes,
+      filter,
+      limit,
+      offset,
+    })
+  }
+
+  async getMarkedUserIds({
+    creatorId,
+    markerTypes,
+    filter,
+    limit = 20,
+    offset = 0,
+  }: {
+    creatorId: number
+    markerTypes?: string[]
+    filter?: string
+    limit?: number
+    offset?: number
+  }): Promise<{ ids: number[]; total: number }> {
+    return this.getMarkedEntityIds<{ user_id: number }>({
+      entityType: 'user',
+      creatorId,
+      markerTypes,
+      filter,
+      limit,
+      offset,
+    })
   }
 }

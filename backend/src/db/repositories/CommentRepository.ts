@@ -35,6 +35,30 @@ export default class CommentRepository {
     )
   }
 
+  /**
+   * Efficiently fetch multiple comments with user vote data in a single query
+   * @param forUserId - The ID of the viewing user for vote data
+   * @param commentIds - Array of comment IDs to fetch
+   * @returns Array of comments with user vote data
+   */
+  async getCommentsWithUserData(forUserId: number, commentIds: number[]): Promise<CommentRawWithUserData[]> {
+    if (!commentIds.length) {
+      return []
+    }
+
+    return await this.db.fetchAll(
+      `SELECT c.*, v.vote
+       FROM comments c
+       LEFT JOIN comment_votes v ON (v.comment_id = c.comment_id AND v.voter_id = :forUserId)
+       WHERE c.comment_id IN (:commentIds)
+       ORDER BY c.created_at DESC`,
+      {
+        forUserId,
+        commentIds,
+      },
+    )
+  }
+
   async getPostComments(postId: number, forUserId: number): Promise<CommentRawWithUserData[]> {
     return await this.db.query(
       `

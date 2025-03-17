@@ -82,6 +82,24 @@ export default class PostManager {
     return this.postRepository.getPost(postId)
   }
 
+  async getPostsByIds(
+    postIds: number[],
+    forUserId: number,
+    format: ContentFormat,
+  ): Promise<{ posts: PostInfo[]; total: number }> {
+    if (!postIds.length) {
+      return { posts: [], total: 0 }
+    }
+
+    // Get the post data with user-specific data
+    const rawPosts = await this.postRepository.getPostsWithUserData(postIds, forUserId)
+
+    // Convert to PostInfo
+    const posts = await this.feedManager.convertRawPosts(forUserId, rawPosts, format)
+
+    return { posts, total: postIds.length }
+  }
+
   async getPostsByUserTotal(userId: number, filter = ''): Promise<number> {
     if (!this.numberOfPostsCache[userId]) {
       this.numberOfPostsCache[userId] = new ContentNumberCache()
@@ -189,6 +207,8 @@ export default class PostManager {
     const rawComments = await this.commentRepository.getComments(commentIds)
     return await this.convertRawCommentsWithPostData(forUserId, rawComments, format)
   }
+
+  // This method is duplicated below
 
   async getUserComments(
     userId: number,
@@ -369,6 +389,65 @@ export default class PostManager {
     const rawComment = await this.commentRepository.getCommentWithUserData(forUserId, commentId)
     const [comment] = await this.convertRawCommentsWithPostData(forUserId, [rawComment], format)
     return comment
+  }
+
+  async getCommentsByIds(
+    commentIds: number[],
+    forUserId: number,
+    format: ContentFormat = 'html',
+  ): Promise<{
+    comments: CommentInfoWithPostData[]
+    parentComments: Record<number, CommentInfoWithPostData>
+    users: Record<number, UserInfo>
+    total: number
+  }> {
+    if (!commentIds.length) {
+      return { comments: [], parentComments: {}, users: {}, total: 0 }
+    }
+
+    // Get raw comments efficiently with a single query
+    // No filter needed here as filtering is done at the marker level
+    const rawComments = await this.commentRepository.getCommentsWithUserData(forUserId, commentIds)
+
+    // Convert to CommentInfo
+    const comments = await this.convertRawCommentsWithPostData(forUserId, rawComments, format)
+
+    // Get parent comments efficiently
+    const parentCommentIds = comments
+      .map((c) => c.parentComment)
+      .filter((id): id is number => id !== undefined && id !== null)
+
+    // Get parent comments in a batch
+    const parentCommentsRaw =
+      parentCommentIds.length > 0
+        ? await this.commentRepository.getCommentsWithUserData(forUserId, parentCommentIds)
+        : []
+
+    const parentCommentsInfo = await this.convertRawCommentsWithPostData(forUserId, parentCommentsRaw, format)
+
+    // Build parent comments map
+    const parentComments: Record<number, CommentInfoWithPostData> = {}
+    parentCommentsInfo.forEach((comment) => {
+      parentComments[comment.id] = comment
+    })
+
+    // Get user info sequentially
+    const userIds = new Set<number>()
+    comments.forEach((comment) => userIds.add(comment.author))
+    parentCommentsInfo.forEach((comment) => userIds.add(comment.author))
+
+    const users: Record<number, UserInfo> = {}
+    for (const id of userIds) {
+      const user = await this.userManager.getById(id)
+      if (user) users[user.id] = user
+    }
+
+    return {
+      comments,
+      parentComments,
+      users,
+      total: commentIds.length,
+    }
   }
 
   async editComment(

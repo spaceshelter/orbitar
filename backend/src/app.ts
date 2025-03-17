@@ -42,7 +42,7 @@ import VoteRepository from './db/repositories/VoteRepository'
 import WebPushRepository from './db/repositories/WebPushRepository'
 import FeedManager from './managers/FeedManager'
 import InviteManager from './managers/InviteManager'
-import { MarkerManager } from './managers/MarkerManager'
+import MarkerManager from './managers/MarkerManager'
 import NotificationManager from './managers/NotificationManager'
 import OAuth2Manager from './managers/OAuth2Manager'
 import PostManager from './managers/PostManager'
@@ -196,7 +196,7 @@ const postManager = new PostManager(
 const voteManager = new VoteManager(voteRepository, postManager, userManager, redis.client)
 const searchManager = new SearchManager(userManager, siteManager, logger.child({ service: 'SEARCH' }))
 const oauth2Manager = new OAuth2Manager(oauthRepository, userManager, logger.child({ service: 'OAUTH2' }))
-const markerManager = new MarkerManager(markerRepository, userManager)
+const markerManager = new MarkerManager(markerRepository, userManager, postManager, commentRepository)
 
 const apiEnricher = new Enricher(siteManager, userManager)
 
@@ -235,6 +235,7 @@ const requests = [
     postManager,
     voteManager,
     inviteManager,
+    markerManager,
     oauthMiddlewareGenerator,
     oauth2Manager,
     logger.child({ service: 'USER' }),

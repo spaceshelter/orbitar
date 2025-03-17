@@ -79,9 +79,8 @@ export class Enricher {
 
   async enrichRawComments(
     rawComments: CommentInfoWithPostData[],
-    users: Record<number, UserEntity>,
-    format: string,
-    isNew: (c: CommentEntity) => boolean,
+    users: Record<number, UserEntity> = {},
+    isNew?: (c: CommentEntity) => boolean,
   ): Promise<EnrichedComments> {
     const commentsIndex: Record<number, CommentEntity> = {}
     const rootComments: CommentEntity[] = []
@@ -103,7 +102,7 @@ export class Enricher {
           bookmarks: rawComment.tokenCounts.bookmarks,
         },
       }
-      if (isNew(comment)) {
+      if (isNew?.(comment)) {
         comment.isNew = true
       }
       if (rawComment.deleted) {

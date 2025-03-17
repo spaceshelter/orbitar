@@ -4,7 +4,7 @@ import Joi from 'joi'
 import { Logger } from 'winston'
 
 import CodeError from '../CodeError'
-import { MarkerManager } from '../managers/MarkerManager'
+import MarkerManager from '../managers/MarkerManager'
 import { MarkerTargetType, MarkerType } from '../managers/types/MarkerInfo'
 import { APIRequest, APIResponse, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
@@ -419,9 +419,5 @@ export class MarkerController {
         return res.error('internal-error', 'Internal server error', 500)
       }
     }
-  }
-
-  getRouter() {
-    return this.router
   }
 }

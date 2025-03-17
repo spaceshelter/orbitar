@@ -1,18 +1,32 @@
 import CodeError from '../CodeError'
+import CommentRepository from '../db/repositories/CommentRepository'
 import { MarkerRepository } from '../db/repositories/MarkerRepository'
 import { MarkerRaw } from '../db/types/MarkerRaw'
+import PostManager from './PostManager'
+import { CommentInfoWithPostData } from './types/CommentInfo'
+import { ContentFormat } from './types/common'
 import { MarkerInfo, MarkerTargetType, MarkerType, TokenCounter, UserTokenInfo } from './types/MarkerInfo'
+import { PostInfo } from './types/PostInfo'
 import { UserInfo } from './types/UserInfo'
 import UserManager from './UserManager'
 
-export class MarkerManager {
+export default class MarkerManager {
   private markerRepository: MarkerRepository
   private userManager: UserManager
+  private postManager: PostManager
+  private commentRepository: CommentRepository
   private tokensPerDay = 200 // Users get 4 tokens per day
 
-  constructor(markerRepository: MarkerRepository, userManager: UserManager) {
+  constructor(
+    markerRepository: MarkerRepository,
+    userManager: UserManager,
+    postManager: PostManager,
+    commentRepository: CommentRepository,
+  ) {
     this.markerRepository = markerRepository
     this.userManager = userManager
+    this.postManager = postManager
+    this.commentRepository = commentRepository
   }
 
   private async convertToMarkerInfo(raw: MarkerRaw): Promise<MarkerInfo> {
@@ -186,34 +200,176 @@ export class MarkerManager {
     return await Promise.all(markers.map((marker) => this.convertToMarkerInfo(marker)))
   }
 
-  async getCounters(targetType: MarkerTargetType, targetId: number, markerType?: string): Promise<TokenCounter> {
-    let counts: TokenCounter
+  async getMarkedPostIds(
+    creatorId: number,
+    markerTypes?: string[],
+    filter?: string,
+    page = 1,
+    perpage = 20,
+  ): Promise<{ postIds: number[]; total: number }> {
+    // Calculate offset from page and perpage
+    const offset = (page - 1) * perpage
 
+    // Get post IDs from repository with pagination
+    const { ids, total } = await this.markerRepository.getMarkedPostIds({
+      creatorId,
+      markerTypes,
+      filter,
+      limit: perpage,
+      offset,
+    })
+
+    return { postIds: ids, total }
+  }
+
+  async getMarkedCommentIds(
+    creatorId: number,
+    markerTypes?: string[],
+    filter?: string,
+    page = 1,
+    perpage = 20,
+  ): Promise<{ commentIds: number[]; total: number }> {
+    // Calculate offset from page and perpage
+    const offset = (page - 1) * perpage
+
+    // Get comment IDs from repository with pagination
+    const { ids, total } = await this.markerRepository.getMarkedCommentIds({
+      creatorId,
+      markerTypes,
+      filter,
+      limit: perpage,
+      offset,
+    })
+
+    return { commentIds: ids, total }
+  }
+
+  async getMarkedUserIds(
+    creatorId: number,
+    markerTypes?: string[],
+    filter?: string,
+    page = 1,
+    perpage = 20,
+  ): Promise<{ userIds: number[]; total: number }> {
+    // Calculate offset from page and perpage
+    const offset = (page - 1) * perpage
+
+    // Get user IDs from repository with pagination
+    const { ids, total } = await this.markerRepository.getMarkedUserIds({
+      creatorId,
+      markerTypes,
+      filter,
+      limit: perpage,
+      offset,
+    })
+
+    return { userIds: ids, total }
+  }
+
+  /**
+   * Get marked posts with all necessary data
+   */
+  async getMarkedPosts(
+    creatorId: number,
+    viewerId: number,
+    markerTypes?: string[],
+    filter?: string,
+    format: ContentFormat = 'html',
+    page = 1,
+    perpage = 20,
+  ): Promise<{
+    posts: PostInfo[]
+    total: number
+  }> {
+    if (!this.postManager) {
+      throw new CodeError('PostManager not set', 'configuration_error')
+    }
+
+    const { postIds, total } = await this.getMarkedPostIds(creatorId, markerTypes, filter, page, perpage)
+    const { posts } = await this.postManager.getPostsByIds(postIds, viewerId, format)
+
+    return { posts, total }
+  }
+
+  /**
+   * Get marked comments with all necessary data
+   * Includes parent comments for thread context
+   */
+  async getMarkedComments(
+    creatorId: number,
+    viewerId: number,
+    markerTypes?: string[],
+    filter?: string,
+    format: ContentFormat = 'html',
+    page = 1,
+    perpage = 20,
+  ): Promise<{
+    comments: CommentInfoWithPostData[]
+    parentComments: Record<number, CommentInfoWithPostData>
+    users: Record<number, UserInfo>
+    total: number
+  }> {
+    if (!this.postManager) {
+      throw new CodeError('PostManager not set', 'configuration_error')
+    }
+
+    const { commentIds, total } = await this.getMarkedCommentIds(creatorId, markerTypes, filter, page, perpage)
+
+    return {
+      ...(await this.postManager.getCommentsByIds(commentIds, viewerId, format)),
+      total,
+    }
+  }
+
+  /**
+   * Get marked users with all necessary data
+   */
+  async getMarkedUsers(
+    creatorId: number,
+    markerTypes?: string[],
+    filter?: string,
+    page = 1,
+    perpage = 20,
+  ): Promise<{
+    users: Record<number, UserInfo>
+    total: number
+  }> {
+    const { userIds, total } = await this.getMarkedUserIds(creatorId, markerTypes, filter, page, perpage)
+
+    // Fetch user data for all marked users sequentially
+    const users: Record<number, UserInfo> = {}
+
+    for (const id of userIds) {
+      const user = await this.userManager.getById(id)
+      if (user) {
+        users[user.id] = user
+      }
+    }
+
+    return { users, total }
+  }
+
+  async getCounters(targetType: MarkerTargetType, targetId: number, markerType?: string): Promise<TokenCounter> {
+    // Create a params object with only the relevant property based on targetType
+    const params: { [key: string]: any } = {
+      markerType,
+    }
+
+    // Set the appropriate ID property based on targetType
     switch (targetType) {
       case MarkerTargetType.POST:
-        counts = await this.markerRepository.getMarkerCounts({
-          postId: targetId,
-          markerType,
-        })
+        params.postId = targetId
         break
       case MarkerTargetType.COMMENT:
-        counts = await this.markerRepository.getMarkerCounts({
-          commentId: targetId,
-          markerType,
-        })
+        params.commentId = targetId
         break
       case MarkerTargetType.USER:
-        counts = await this.markerRepository.getMarkerCounts({
-          userId: targetId,
-          markerType,
-        })
+        params.userId = targetId
         break
       default:
         throw new CodeError('Invalid target type', 'invalid_target_type')
     }
 
-    // Fields should be guaranteed by repository
-
-    return counts
+    return await this.markerRepository.getMarkerCounts(params)
   }
 }
