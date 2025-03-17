@@ -80,8 +80,8 @@ export default class UserController {
     })
 
     const userCommentsAndPostsLimiter = rateLimit({
-      windowMs: 2000,
-      max: 2,
+      windowMs: 8000,
+      max: 10,
     })
 
     const bioSchema = Joi.object<UserSaveBioRequest>({
