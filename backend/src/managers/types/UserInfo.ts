@@ -54,4 +54,5 @@ export type UserRestrictions = {
   canInvite: boolean /* whether invites by this user should work */
   canCreateSubsites: boolean /* whether this user can create subsites */
   canEditOwnContent: boolean /* whether this user can edit own content */
+  canCreatePolls: boolean /* whether this user can create polls */
 }
