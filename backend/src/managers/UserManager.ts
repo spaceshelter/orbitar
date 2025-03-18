@@ -427,31 +427,35 @@ export default class UserManager {
       })
     }
 
-    return {
+    const canVote = effectiveKarma >= NEG_KARMA_THRESH
+    const canVoteKarma = !userIsNew && effectiveKarma >= POS_KARMA_THRESH
+    const canInvite = !userIsNew && effectiveKarma >= POS_KARMA_THRESH
+    const canCreateSubsites = !userIsNew && effectiveKarma >= POS_KARMA_THRESH
+    const canEditOwnContent = effectiveKarma >= NEG_KARMA_THRESH
+    const canCreatePolls = effectiveKarma > MIN_KARMA
+
+    const restrictions: UserRestrictions = {
       effectiveKarma,
       senatePenalty: penalty,
-
       postSlowModeWaitSec: canCreatePosts ? postSlowModeDelay : 0,
       postSlowModeWaitSecRemain:
         canCreatePosts && lastOwnPost
           ? Math.max(lastOwnPost.created_at.getTime() / 1000 - Date.now() / 1000 + postSlowModeDelay, 0)
           : 0,
-
       commentSlowModeWaitSec: commentSlowModeDelay,
       commentSlowModeWaitSecRemain: lastCommentTime
         ? Math.max(lastCommentTime.getTime() / 1000 - Date.now() / 1000 + commentSlowModeDelay, 0)
         : 0,
-
       restrictedToPostId,
-
-      canVote: effectiveKarma >= NEG_KARMA_THRESH,
-      canVoteKarma: effectiveKarma >= POS_KARMA_THRESH && !userIsNew && !onTrial,
-
-      canInvite: (effectiveKarma >= POS_KARMA_THRESH && !userIsNew && !onTrial) || userId <= 1 /* Orbitar, Plotva */,
-
-      canCreateSubsites: effectiveKarma > 0,
-      canEditOwnContent: effectiveKarma > MIN_KARMA,
+      canVote,
+      canVoteKarma,
+      canInvite,
+      canCreateSubsites,
+      canEditOwnContent,
+      canCreatePolls,
     }
+
+    return restrictions
   }
 
   private mapUserRaw(rawUser: UserRaw): UserInfo {
