@@ -35,6 +35,7 @@ interface PollCreationWizardProps {
 export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, onClose, onSubmit }) => {
   useNoScroll()
   const [question, setQuestion] = useState('')
+  const [nextId, setNextId] = useState(2)
   const [options, setOptions] = useState<PollOption[]>([
     { id: '0', text: '' },
     { id: '1', text: '' },
@@ -49,7 +50,8 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleAddOption = () => {
-    setOptions([...options, { id: String(options.length), text: '' }])
+    setOptions([...options, { id: String(nextId), text: '' }])
+    setNextId(nextId + 1)
   }
 
   const handleRemoveOption = (id: string) => {
@@ -95,7 +97,7 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
           variant='textarea'
           value={option.text}
           onChange={(e) => handleOptionChange(option.id, e.target.value)}
-          placeholder={`Вариант ${option.id}`}
+          placeholder='Вариант ответа'
           required
         />
         {options.length > 2 && (
