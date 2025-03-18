@@ -60,7 +60,7 @@
     "sass": "^1.55.0"
   },
   "scripts": {
-    "start": "react-app-rewired start",
+    "start": "BABEL_DISABLE_CACHE=1 react-app-rewired start",
     "build": "react-app-rewired build",
     "test": "react-app-rewired test",
     "eject": "react-app-rewired eject",
