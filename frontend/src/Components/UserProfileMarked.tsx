@@ -265,7 +265,7 @@ export default function UserProfileMarked(props: UserProfileMarkedProps) {
 
                 {contentType === 'users' && (
                   <div className={markedStyles.userList}>
-                    {markedUsers.length > 0 ? (
+                    {markedUsers.length > 0 && (
                       <>
                         <h3>Отмеченные пользователи</h3>
                         <div className={markedStyles.users}>
@@ -276,8 +276,6 @@ export default function UserProfileMarked(props: UserProfileMarkedProps) {
                           ))}
                         </div>
                       </>
-                    ) : (
-                      <div className={styles.noContent}>Нет отмеченных пользователей с выбранными фильтрами</div>
                     )}
                   </div>
                 )}
