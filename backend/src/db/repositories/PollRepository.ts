@@ -64,7 +64,6 @@ export default class PollRepository {
   }
 
   async vote(pollId: number, voterId: number, optionId: number) {
-    console.log('vote', pollId, voterId, optionId)
     await this.db.query('INSERT INTO poll_votes (poll_id, voter_id, option_id) VALUES (?, ?, ?)', [
       pollId,
       voterId,
