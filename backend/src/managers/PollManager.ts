@@ -1,0 +1,151 @@
+import { RowDataPacket } from 'mysql2'
+
+import { PollEntity } from '../api/types/entities/PollEntity'
+import PollRepository from '../db/repositories/PollRepository'
+
+interface PollRecord extends RowDataPacket {
+  poll_id: number
+  author_id: number
+  site_id: number
+  question: string
+  options: string
+  settings: string
+  expires_at: string | null
+  created_at: string
+  [key: `opt${number}`]: number
+}
+
+interface PollRecordParsed extends Omit<PollRecord, 'options' | 'settings'> {
+  options: string[]
+  settings: { multiple_choice?: boolean; hide_results?: boolean }
+}
+
+export default class PollManager {
+  private pollRepository: PollRepository
+
+  constructor(pollRepository: PollRepository) {
+    this.pollRepository = pollRepository
+  }
+
+  private async getPollWithVotes(pollId: number, userId?: number): Promise<PollEntity | null> {
+    const poll = await this.pollRepository.getPoll(pollId)
+    if (!poll) {
+      return null
+    }
+
+    const parsedPoll = poll as unknown as PollRecordParsed
+    const options = parsedPoll.options
+    const settings = parsedPoll.settings
+    const userVotes = userId ? await this.pollRepository.getUserVotes(pollId, userId) : undefined
+
+    const totalVotes = Array.from({ length: 32 }, (_, i) => poll[`opt${i}`] || 0).reduce((sum, count) => sum + count, 0)
+
+    return {
+      poll_id: poll.poll_id,
+      author_id: poll.author_id,
+      site_id: poll.site_id,
+      question: poll.question,
+      options: options.map((text: string, index: number) => ({
+        text,
+        votes: poll[`opt${index}`] || 0,
+      })),
+      settings,
+      expires_at: poll.expires_at,
+      created_at: poll.created_at,
+      total_votes: totalVotes,
+      user_vote: userVotes,
+    }
+  }
+
+  async createPoll(
+    authorId: number,
+    siteId: number,
+    question: string,
+    options: string[],
+    settings: { multiple_choice?: boolean; hide_results?: boolean } = {},
+    expiresAt?: string,
+  ): Promise<PollEntity> {
+    if (options.length < 2 || options.length > 32) {
+      throw new Error('Invalid number of options')
+    }
+    const result = await this.pollRepository.createPoll(authorId, siteId, question, options, settings, expiresAt)
+
+    const pollId = (result as any).insertId
+    return (await this.getPollWithVotes(pollId))!
+  }
+
+  async vote(pollId: number, voterId: number, optionIds: number[]): Promise<PollEntity> {
+    const poll = await this.getPollWithVotes(pollId)
+    if (!poll) {
+      throw new Error('Poll not found')
+    }
+
+    if (poll.expires_at && new Date(poll.expires_at) < new Date()) {
+      throw new Error('Poll has expired')
+    }
+
+    const settings = poll.settings
+    if (!settings.multiple_choice && optionIds.length > 1) {
+      throw new Error('Multiple choice not allowed')
+    }
+
+    if (optionIds.some((id) => id >= poll.options.length)) {
+      throw new Error('Invalid option ID')
+    }
+
+    const previousVotes = await this.pollRepository.getUserVotes(pollId, voterId)
+    if (previousVotes.length > 0) {
+      await this.pollRepository.removeVotes(pollId, voterId)
+      for (const optionId of previousVotes) {
+        await this.pollRepository.decrementVoteCount(pollId, optionId)
+      }
+    }
+
+    for (const optionId of optionIds) {
+      await this.pollRepository.vote(pollId, voterId, optionId)
+      await this.pollRepository.incrementVoteCount(pollId, optionId)
+    }
+
+    return await this.getPollWithVotes(pollId, voterId)
+  }
+
+  async getPoll(pollId: number, userId?: number): Promise<PollEntity | null> {
+    return await this.getPollWithVotes(pollId, userId)
+  }
+
+  async getPolls(
+    siteId: number,
+    limit: number = 20,
+    offset: number = 0,
+    activeOnly: boolean = false,
+  ): Promise<{ polls: PollEntity[]; total: number }> {
+    const result = await this.pollRepository.getPolls(siteId, limit, offset, activeOnly)
+    const polls = Array.isArray(result.polls) ? result.polls : []
+
+    return {
+      polls: polls.map((poll: PollRecord) => {
+        const parsedPoll = poll as unknown as PollRecordParsed
+        const options = parsedPoll.options
+        const settings = parsedPoll.settings
+        return {
+          poll_id: poll.poll_id,
+          author_id: poll.author_id,
+          site_id: poll.site_id,
+          question: poll.question,
+          options: options.map((text: string, index: number) => ({
+            text,
+            votes: poll[`opt${index}`] || 0,
+          })),
+          settings,
+          expires_at: poll.expires_at,
+          created_at: poll.created_at,
+          total_votes: Array.from({ length: 32 }, (_, i) => poll[`opt${i}`] || 0).reduce(
+            (sum, count) => sum + count,
+            0,
+          ),
+        }
+      }),
+      total: result.total,
+    }
+  }
+}
