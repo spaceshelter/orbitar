@@ -237,9 +237,7 @@ export default class UserAPI {
     return {
       posts: this.postAPIHelper.fixPosts(result.posts || [], result.users),
       comments: this.postAPIHelper.fixComments(result.comments || [], result.users),
-      markedUsers: Object.values(result.users || {}).filter(
-        (user) => result.posts?.some((p) => p.author === user.id) || result.comments?.some((c) => c.author === user.id),
-      ),
+      markedUsers: Object.values(result.users || {}),
       parentComments: this.postAPIHelper.fixCommentsRecords(result.parentComments || {}, result.users),
       total: result.total,
     }

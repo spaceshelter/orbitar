@@ -1,21 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useLocation, useSearchParams } from 'react-router-dom'
 
-import { useDebouncedCallback } from 'use-debounce'
-
 import { MarkerType } from '../API/MarkerAPI'
 import { useAPI } from '../AppState/AppState'
 import { CommentInfo, PostInfo } from '../Types/PostInfo'
 import { UserInfo } from '../Types/UserInfo'
 import CommentComponent from './CommentComponent'
 import { LARGE_AUTO_CUT } from './ContentComponent'
+import FeedFilterComponent from './FeedFilterComponent'
 import Paginator from './Paginator'
 import PostComponent from './PostComponent'
 import Username from './Username'
 
-import { ReactComponent as BookmarkIcon } from '../Assets/bookmark.svg'
-import { ReactComponent as NoteIcon } from '../Assets/note.svg'
-import { ReactComponent as StarIcon } from '../Assets/star.svg'
 import styles from '../Pages/FeedPage.module.scss'
 import markedStyles from './UserProfileMarked.module.scss'
 
@@ -23,7 +19,7 @@ type UserProfileMarkedProps = {
   username: string
 }
 
-type ContentType = 'posts' | 'comments' | 'users' | 'all'
+type ContentType = 'posts' | 'comments' | 'users'
 
 export default function UserProfileMarked(props: UserProfileMarkedProps) {
   const api = useAPI()
@@ -31,7 +27,7 @@ export default function UserProfileMarked(props: UserProfileMarkedProps) {
   const perpage = 20
   const page = parseInt(searchParams.get('page') || '1')
   const defaultFilter = searchParams.get('filter') as string
-  const contentType = (searchParams.get('type') as ContentType) || 'all'
+  const contentType = (searchParams.get('type') as ContentType) || 'posts'
   const defaultMarkerTypes = (searchParams.get('markers')?.split(',') as MarkerType[]) || []
 
   const [filter, setFilter] = useState(defaultFilter || '')
@@ -46,22 +42,7 @@ export default function UserProfileMarked(props: UserProfileMarkedProps) {
   const [reloadIdx, setReloadIdx] = useState(0)
 
   const { search } = useLocation()
-  const filterInputRef = useRef<HTMLInputElement>(null)
-
-  const setDebouncedFilter = useDebouncedCallback((value: string) => {
-    setFilter(value)
-    updateSearchParams({ filter: value })
-  }, 1000)
-
-  const handleFilterChange = (e: React.FormEvent<HTMLInputElement>) => {
-    if (e.nativeEvent instanceof KeyboardEvent && e.nativeEvent.key === 'Enter') {
-      const value = e.currentTarget.value
-      setFilter(value)
-      updateSearchParams({ filter: value })
-    } else {
-      setDebouncedFilter(e.currentTarget.value)
-    }
-  }
+  const filterInputRef = useRef<HTMLInputElement>(null) // Keep this for setting value on search params change
 
   const reload = () => {
     setReloadIdx(reloadIdx + 1)
@@ -83,7 +64,7 @@ export default function UserProfileMarked(props: UserProfileMarkedProps) {
   }
 
   const handleContentTypeChange = (type: ContentType) => {
-    updateSearchParams({ type: type === 'all' ? undefined : type })
+    updateSearchParams({ type: type })
   }
 
   const toggleMarkerType = (type: MarkerType) => {
@@ -158,7 +139,7 @@ export default function UserProfileMarked(props: UserProfileMarkedProps) {
   // Generate query params for pagination
   const queryStringParams: Record<string, string> = {}
   if (filter) queryStringParams.filter = filter
-  if (contentType !== 'all') queryStringParams.type = contentType
+  queryStringParams.type = contentType // Always include content type
   if (markerTypes.length > 0) queryStringParams.markers = markerTypes.join(',')
 
   const handlePostEdit = async (post: PostInfo, text: string, title?: string): Promise<PostInfo | undefined> => {
@@ -208,12 +189,6 @@ export default function UserProfileMarked(props: UserProfileMarkedProps) {
     <div className={styles.container}>
       <div className={markedStyles.contentTypeFilter}>
         <button
-          className={contentType === 'all' ? markedStyles.active : ''}
-          onClick={() => handleContentTypeChange('all')}
-        >
-          Все
-        </button>
-        <button
           className={contentType === 'posts' ? markedStyles.active : ''}
           onClick={() => handleContentTypeChange('posts')}
         >
@@ -233,40 +208,16 @@ export default function UserProfileMarked(props: UserProfileMarkedProps) {
         </button>
       </div>
 
-      <div className={`${styles.filter} ${markedStyles.filterRow}`}>
-        <input
-          ref={filterInputRef}
-          onKeyUp={handleFilterChange}
-          onChange={handleFilterChange}
-          placeholder={'фильтровать'}
-          type='search'
-          defaultValue={defaultFilter || ''}
-          className={markedStyles.filterInput}
-        />
-        <div className={markedStyles.markerTypeFilters}>
-          <button
-            className={`${markedStyles.markerButton} ${markerTypes.includes(MarkerType.STAR) ? markedStyles.active : ''}`}
-            onClick={() => toggleMarkerType(MarkerType.STAR)}
-            title='Фильтр по звездам'
-          >
-            <StarIcon />
-          </button>
-          <button
-            className={`${markedStyles.markerButton} ${markerTypes.includes(MarkerType.NOTE) ? markedStyles.active : ''}`}
-            onClick={() => toggleMarkerType(MarkerType.NOTE)}
-            title='Фильтр по заметкам'
-          >
-            <NoteIcon />
-          </button>
-          <button
-            className={`${markedStyles.markerButton} ${markerTypes.includes(MarkerType.BOOKMARK) ? markedStyles.active : ''}`}
-            onClick={() => toggleMarkerType(MarkerType.BOOKMARK)}
-            title='Фильтр по закладкам'
-          >
-            <BookmarkIcon />
-          </button>
-        </div>
-      </div>
+      <FeedFilterComponent
+        filter={filter}
+        markerTypes={markerTypes}
+        onFilterChange={(value) => {
+          setFilter(value)
+          updateSearchParams({ filter: value })
+        }}
+        onMarkerToggle={toggleMarkerType}
+        defaultFilter={defaultFilter || ''}
+      />
 
       <div className={styles.feed}>
         {loading ? (
@@ -284,48 +235,52 @@ export default function UserProfileMarked(props: UserProfileMarkedProps) {
 
             {!error && (
               <div className={styles.posts}>
-                {contentType === 'all' || contentType === 'posts'
-                  ? posts.map((post) => (
-                      <PostComponent
-                        key={post.id}
-                        post={post}
-                        showSite={true}
-                        onChange={(updatedPostId, updatedPost) =>
-                          setPosts((prevPosts) =>
-                            prevPosts.map((p) => (p.id === updatedPostId ? Object.assign(p, updatedPost) : p)),
-                          )
-                        }
-                        onEdit={handlePostEdit}
-                        autoCut={LARGE_AUTO_CUT}
-                      />
-                    ))
-                  : null}
+                {contentType === 'posts' &&
+                  posts.map((post) => (
+                    <PostComponent
+                      key={post.id}
+                      post={post}
+                      showSite={true}
+                      onChange={(updatedPostId, updatedPost) =>
+                        setPosts((prevPosts) =>
+                          prevPosts.map((p) => (p.id === updatedPostId ? Object.assign(p, updatedPost) : p)),
+                        )
+                      }
+                      onEdit={handlePostEdit}
+                      autoCut={LARGE_AUTO_CUT}
+                    />
+                  ))}
 
-                {contentType === 'all' || contentType === 'comments'
-                  ? comments.map((comment) => (
-                      <CommentComponent
-                        idx={getParentComment(comment.parentComment) ? 1 : 0}
-                        parent={getParentComment(comment.parentComment)}
-                        key={comment.id}
-                        comment={comment}
-                        showSite={comment.site !== 'main'}
-                        onEdit={handleCommentEdit}
-                      />
-                    ))
-                  : null}
+                {contentType === 'comments' &&
+                  comments.map((comment) => (
+                    <CommentComponent
+                      idx={getParentComment(comment.parentComment) ? 1 : 0}
+                      parent={getParentComment(comment.parentComment)}
+                      key={comment.id}
+                      comment={comment}
+                      showSite={comment.site !== 'main'}
+                      onEdit={handleCommentEdit}
+                    />
+                  ))}
 
-                {(contentType === 'all' || contentType === 'users') && markedUsers.length > 0 ? (
+                {contentType === 'users' && (
                   <div className={markedStyles.userList}>
-                    <h3>Отмеченные пользователи</h3>
-                    <div className={markedStyles.users}>
-                      {markedUsers.map((user) => (
-                        <div key={user.id} className={markedStyles.userItem}>
-                          <Username user={user} />
+                    {markedUsers.length > 0 ? (
+                      <>
+                        <h3>Отмеченные пользователи</h3>
+                        <div className={markedStyles.users}>
+                          {markedUsers.map((user) => (
+                            <div key={user.id} className={markedStyles.userItem}>
+                              <Username user={user} />
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      </>
+                    ) : (
+                      <div className={styles.noContent}>Нет отмеченных пользователей с выбранными фильтрами</div>
+                    )}
                   </div>
-                ) : null}
+                )}
 
                 {!loading && posts.length === 0 && comments.length === 0 && markedUsers.length === 0 && (
                   <div className={styles.noContent}>Нет контента с выбранными фильтрами</div>
