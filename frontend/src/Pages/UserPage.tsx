@@ -19,7 +19,6 @@ import UserProfileMarked from '../Components/UserProfileMarked'
 import UserProfileName from '../Components/UserProfileName'
 import UserProfilePosts from '../Components/UserProfilePosts'
 import UserProfileSettings from '../Components/UserProfileSettings'
-import { TokenCounts } from '../Types/TokenCounts'
 import { UserGender, UserProfileInfo } from '../Types/UserInfo'
 
 import styles from './UserPage.module.scss'
@@ -33,7 +32,6 @@ export const UserPage = observer(() => {
   const cutInvitesListInvitesNumber = 10
   const cutInvitesListToNumber = 5
   const [state, refreshProfile] = useUserProfile(username || '')
-  const [userTokenCounts, setUserTokenCounts] = useState<TokenCounts | undefined>(undefined)
 
   const [inviteListTruncated, setInviteListTruncated] = useState(true)
 
@@ -50,26 +48,8 @@ export const UserPage = observer(() => {
   useEffect(() => {
     if (state.status === 'ready') {
       document.title = state.profile.profile.username
-
-      // Fetch token counts for the user
-      const fetchTokenCounts = async () => {
-        try {
-          const counts = await api.markerAPI.getUserCounters(state.profile.profile.id)
-          if (counts) {
-            setUserTokenCounts({
-              stars: counts.starCount || counts.star_count || 0,
-              notes: counts.noteCount || counts.note_count || 0,
-              bookmarks: counts.bookmarkCount || counts.bookmark_count || 0,
-            })
-          }
-        } catch (error) {
-          console.error('Error fetching user token counts:', error)
-        }
-      }
-
-      fetchTokenCounts()
     }
-  }, [state, api])
+  }, [state])
 
   useEffect(() => {
     api.user.refreshUserRestrictions()
@@ -137,11 +117,10 @@ export const UserPage = observer(() => {
                 <TokenCounters
                   entityId={user.id}
                   entityType='user'
-                  counts={userTokenCounts}
+                  counts={state.profile.tokenCounts}
                   userVote={1}
-                  onUpdate={(counts) => {
-                    // Update local state and refresh the profile when tokens are updated
-                    setUserTokenCounts(counts)
+                  onUpdate={() => {
+                    // Refresh the profile when tokens are updated
                     refreshProfile()
                   }}
                 />
@@ -182,7 +161,7 @@ export const UserPage = observer(() => {
             Комментарии ({profile.numberOfComments.toLocaleString()})
           </Link>
           <Link className={`${styles.control} ${isMarked ? styles.active : ''}`} to={base + '/marked'}>
-            Избранное ({userTokenCounts?.bookmarks || 0})
+            Избранное ({state.status === 'ready' ? state.profile.markedItemsCount : 0})
           </Link>
           <Link className={`${styles.control} ${isKarma ? styles.active : ''}`} to={base + '/karma'}>
             Саморегуляция

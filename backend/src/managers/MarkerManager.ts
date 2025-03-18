@@ -1,3 +1,5 @@
+import { RedisClientType } from 'redis'
+
 import CodeError from '../CodeError'
 import CommentRepository from '../db/repositories/CommentRepository'
 import { MarkerRepository } from '../db/repositories/MarkerRepository'
@@ -15,18 +17,22 @@ export default class MarkerManager {
   private userManager: UserManager
   private postManager: PostManager
   private commentRepository: CommentRepository
+  private readonly redis: RedisClientType
   private tokensPerDay = 200 // Users get 4 tokens per day
+  private redisExpirationSeconds = 60 * 60 * 24 // 24 hours
 
   constructor(
     markerRepository: MarkerRepository,
     userManager: UserManager,
     postManager: PostManager,
     commentRepository: CommentRepository,
+    redis: RedisClientType,
   ) {
     this.markerRepository = markerRepository
     this.userManager = userManager
     this.postManager = postManager
     this.commentRepository = commentRepository
+    this.redis = redis
   }
 
   private async convertToMarkerInfo(raw: MarkerRaw): Promise<MarkerInfo> {
@@ -148,6 +154,9 @@ export default class MarkerManager {
       annotation,
     })
 
+    // Invalidate marker cache since we've added a new marker
+    await this.invalidateMarkerCache(creatorId)
+
     return await this.convertToMarkerInfo(marker)
   }
 
@@ -166,6 +175,9 @@ export default class MarkerManager {
     }
 
     await this.markerRepository.removeMarker({ markerId })
+
+    // Invalidate marker cache since we've removed a marker
+    await this.invalidateMarkerCache(marker.creator_id)
   }
 
   async getMarkersByTarget(
@@ -371,5 +383,95 @@ export default class MarkerManager {
     }
 
     return await this.markerRepository.getMarkerCounts(params)
+  }
+
+  /**
+   * Build a Redis cache key for distinct target counts
+   */
+  private buildDistinctTargetsCacheKey(
+    creatorId: number,
+    targetType: MarkerTargetType | 'all',
+    markerTypes?: MarkerType[],
+  ): string {
+    const markerTypesString = markerTypes?.length ? ':' + markerTypes.sort().join('-') : ''
+
+    return `marker:distinct-targets:${creatorId}:${targetType}${markerTypesString}`
+  }
+
+  /**
+   * Invalidate cache for a user's marker counts
+   * Called whenever markers are added or removed
+   */
+  private async invalidateMarkerCache(creatorId: number): Promise<void> {
+    // Get all keys matching the pattern for this creator
+    const keys = await this.redis.keys(`marker:distinct-targets:${creatorId}:*`)
+
+    if (keys.length > 0) {
+      // Delete all matching keys in a single operation
+      await this.redis.del(keys)
+    }
+  }
+
+  /**
+   * Count distinct targets marked by a user with Redis caching
+   * Can count a specific target type or all target types combined
+   *
+   * @param creatorId The ID of the user who created the markers
+   * @param targetType The type of target to count, or 'all' to count all types
+   * @param markerTypes Optional array of marker types to filter by
+   * @returns Number of distinct targets marked by the user
+   */
+  async countDistinctTargetsByCreator(
+    creatorId: number,
+    targetType: MarkerTargetType | 'all',
+    markerTypes?: MarkerType[],
+  ): Promise<number> {
+    // Verify user exists
+    const user = await this.userManager.getById(creatorId)
+    if (!user) {
+      throw new CodeError('User not found', 'user_not_found')
+    }
+
+    // Build cache key
+    const cacheKey = this.buildDistinctTargetsCacheKey(creatorId, targetType, markerTypes)
+
+    // Try to get from cache first
+    const cachedCount = await this.redis.get(cacheKey)
+    if (cachedCount !== null) {
+      return parseInt(cachedCount, 10)
+    }
+
+    let count = 0
+
+    if (targetType === 'all') {
+      // Count all target types and sum them up
+      const targetTypes: Array<'post' | 'comment' | 'user'> = ['post', 'comment', 'user']
+      const counts = await Promise.all(
+        targetTypes.map((type) =>
+          this.markerRepository.countDistinctTargetIds({
+            creatorId,
+            targetType: type,
+            markerTypes: markerTypes as string[],
+          }),
+        ),
+      )
+
+      // Sum all counts
+      count = counts.reduce((total, current) => total + current, 0)
+    } else {
+      // Count a specific target type
+      const repoTargetType = targetType.toString() as 'post' | 'comment' | 'user'
+      count = await this.markerRepository.countDistinctTargetIds({
+        creatorId,
+        targetType: repoTargetType,
+        markerTypes: markerTypes as string[],
+      })
+    }
+
+    // Cache the result
+    await this.redis.set(cacheKey, count.toString())
+    await this.redis.expire(cacheKey, this.redisExpirationSeconds)
+
+    return count
   }
 }

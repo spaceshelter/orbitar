@@ -30,6 +30,12 @@ type UserProfileResponse = {
   publicKey: string
   hasOwnApps: boolean
   visitedDaysAgo: number
+  markedItemsCount: number
+  tokenCounts: {
+    stars: number
+    notes: number
+    bookmarks: number
+  }
 }
 type UserProfilePostsRequest = {
   username: string

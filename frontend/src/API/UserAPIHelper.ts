@@ -17,6 +17,12 @@ export type UserProfileResult = {
   publicKey: string
   visitedDaysAgo: number
   hasOwnApps: boolean
+  markedItemsCount: number
+  tokenCounts: {
+    stars: number
+    notes: number
+    bookmarks: number
+  }
 }
 
 export default class UserAPIHelper {

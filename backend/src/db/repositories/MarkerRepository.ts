@@ -726,4 +726,45 @@ export class MarkerRepository {
       offset,
     })
   }
+
+  /**
+   * Count distinct target IDs marked by a user
+   * Efficiently uses COUNT(DISTINCT) to avoid fetching large result sets
+   */
+  async countDistinctTargetIds({
+    creatorId,
+    targetType,
+    markerTypes,
+  }: {
+    creatorId: number
+    targetType: 'post' | 'comment' | 'user'
+    markerTypes?: string[]
+  }): Promise<number> {
+    // Determine the target field based on target type
+    const targetField = `${targetType}_id`
+
+    // Start building the query
+    let query = `
+      SELECT COUNT(DISTINCT ${targetField}) as count
+      FROM markers
+      WHERE creator_id = :creatorId
+      AND ${targetField} IS NOT NULL
+      AND removed_at IS NULL
+    `
+
+    // Initialize params
+    let params: any = { creatorId }
+
+    // Add marker types filter if provided
+    if (markerTypes && markerTypes.length > 0) {
+      const typesFilter = this.buildMarkerTypesFilter(markerTypes, params)
+      query += ` ${typesFilter.filterClause}`
+      params = typesFilter.updatedParams
+    }
+
+    // Execute the query
+    const [result] = await this.db.fetchAll<{ count: number }>(query, params)
+
+    return result ? result.count : 0
+  }
 }

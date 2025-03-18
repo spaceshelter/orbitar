@@ -1,3 +1,4 @@
+import { TokenCounts } from '../entities/PostEntity'
 import { UserBaseEntity, UserGender, UserProfileEntity } from '../entities/UserEntity'
 import { VoteListItemEntity } from '../entities/VoteEntity'
 
@@ -22,6 +23,12 @@ export type UserProfileResponse = {
   hasOwnApps: boolean
 
   visitedDaysAgo: number
+
+  // Count of distinct items marked by the user (for favorites page)
+  markedItemsCount: number
+
+  // Token counts for this user
+  tokenCounts: TokenCounts
 }
 
 export type TrialProgressDebugInfo = {

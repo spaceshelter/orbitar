@@ -196,7 +196,7 @@ const postManager = new PostManager(
 const voteManager = new VoteManager(voteRepository, postManager, userManager, redis.client)
 const searchManager = new SearchManager(userManager, siteManager, logger.child({ service: 'SEARCH' }))
 const oauth2Manager = new OAuth2Manager(oauthRepository, userManager, logger.child({ service: 'OAUTH2' }))
-const markerManager = new MarkerManager(markerRepository, userManager, postManager, commentRepository)
+const markerManager = new MarkerManager(markerRepository, userManager, postManager, commentRepository, redis.client)
 
 const apiEnricher = new Enricher(siteManager, userManager)
 

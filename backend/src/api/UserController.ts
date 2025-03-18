@@ -7,6 +7,7 @@ import InviteManager from '../managers/InviteManager'
 import MarkerManager from '../managers/MarkerManager'
 import OAuth2Manager from '../managers/OAuth2Manager'
 import PostManager from '../managers/PostManager'
+import { MarkerTargetType } from '../managers/types/MarkerInfo'
 import { UserGender, UserRatingBySubsite } from '../managers/types/UserInfo'
 import UserManager from '../managers/UserManager'
 import VoteManager from '../managers/VoteManager'
@@ -252,6 +253,12 @@ export default class UserController {
         })
       }
 
+      // Get marker counts for the user
+      const markerCounts = await this.markerManager.getCounters(MarkerTargetType.USER, profileInfo.id)
+
+      // Get distinct target counts for all bookmarks (posts, comments, users combined)
+      const markedItemsCount = await this.markerManager.countDistinctTargetsByCreator(profileInfo.id, 'all')
+
       return response.success({
         profile: profile,
         invitedBy: invitedBy,
@@ -266,6 +273,12 @@ export default class UserController {
         publicKey,
         visitedDaysAgo,
         hasOwnApps,
+        markedItemsCount,
+        tokenCounts: {
+          stars: markerCounts.star_count,
+          notes: markerCounts.note_count,
+          bookmarks: markerCounts.bookmark_count,
+        },
       })
     } catch (error) {
       this.logger.error('Could not get user profile', { username })
