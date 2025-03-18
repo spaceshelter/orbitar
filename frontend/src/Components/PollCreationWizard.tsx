@@ -64,6 +64,10 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
     setOptions(options.map((opt) => (opt.id === id ? { ...opt, text } : opt)))
   }
 
+  const handleSettingChange = (key: keyof PollSettings, value: any) => {
+    setSettings({ ...settings, [key]: value })
+  }
+
   const handleSubmit = async () => {
     if (!question.trim()) {
       toast.error('Пожалуйста, введите вопрос')
@@ -157,10 +161,7 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
                 min='1'
                 value={settings.expirationDays || ''}
                 onChange={(e) =>
-                  setSettings({
-                    ...settings,
-                    expirationDays: e.target.value ? parseInt(e.target.value) : null,
-                  })
+                  handleSettingChange('expirationDays', e.target.value ? parseInt(e.target.value) : null)
                 }
                 placeholder='Без ограничений'
               />
@@ -172,12 +173,7 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
                 type='checkbox'
                 id='multipleChoice'
                 checked={settings.isMultipleChoice}
-                onChange={(e) =>
-                  setSettings({
-                    ...settings,
-                    isMultipleChoice: e.target.checked,
-                  })
-                }
+                onChange={(e) => handleSettingChange('isMultipleChoice', e.target.checked)}
               />
             </div>
 
@@ -187,12 +183,7 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
                 type='checkbox'
                 id='allowRescind'
                 checked={settings.allowVoteRescinding}
-                onChange={(e) =>
-                  setSettings({
-                    ...settings,
-                    allowVoteRescinding: e.target.checked,
-                  })
-                }
+                onChange={(e) => handleSettingChange('allowVoteRescinding', e.target.checked)}
               />
             </div>
 
@@ -201,12 +192,7 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
               <Select
                 id='votingAccess'
                 value={settings.votingAccess}
-                onChange={(value) =>
-                  setSettings({
-                    ...settings,
-                    votingAccess: value as 'all' | 'full_rights',
-                  })
-                }
+                onChange={(value) => handleSettingChange('votingAccess', value)}
                 options={[
                   { value: 'all', label: 'Все пользователи' },
                   { value: 'full_rights', label: 'Только с полными правами' },
@@ -219,12 +205,7 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
               <Select
                 id='resultVisibility'
                 value={settings.resultVisibility}
-                onChange={(value) =>
-                  setSettings({
-                    ...settings,
-                    resultVisibility: value as 'always' | 'after_vote' | 'after_end',
-                  })
-                }
+                onChange={(value) => handleSettingChange('resultVisibility', value)}
                 options={[
                   { value: 'always', label: 'Всегда' },
                   { value: 'after_vote', label: 'После голосования' },
