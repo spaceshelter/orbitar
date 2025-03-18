@@ -67,6 +67,7 @@ export default class TheParser {
       app: (node) => this.parseOauthApp(node),
       mail: (node) => this.parseSecretMail(node),
       pre: (node) => this.parsePre(node),
+      poll: (node) => this.parsePoll(node),
       blockquote: true,
       b: true,
       i: true,
@@ -628,6 +629,23 @@ export default class TheParser {
     const text = `<details class="expand"><summary>${htmlEscape(title)}</summary>${result.text}<div role="button"></div></details>`
 
     return { ...result, text }
+  }
+
+  parsePoll(node: Element): ParseResult {
+    // poll tag with poll_id as text inside
+    let pollId = ''
+    if (node.children.length === 1 && node.children[0].type === 'text') {
+      pollId = (node.children[0] as unknown as Text).data.trim()
+    }
+    if (!pollId || isNaN(Number(pollId))) {
+      return this.parseDisallowedTag(node)
+    }
+    return {
+      text: `<poll data-poll-id="${pollId}"></poll>`,
+      mentions: [],
+      urls: [],
+      images: [],
+    }
   }
 
   validUrl(url: string): boolean {

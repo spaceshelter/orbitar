@@ -13,6 +13,7 @@ import { observeOnHidden } from '../Services/ObserverService'
 import { b64DecodeUnicode } from '../Utils/utils'
 import InternalLinkExpandComponent from './InternalLinkExpandComponent'
 import { OAuthEmbeddedAppComponent } from './OAuth2AppCardModalComponent'
+import { Poll } from './Poll/Poll'
 import { SecretMailDecoderForm, SecretMailEncoderForm } from './SecretMailbox'
 import { getLegacyZoom, getVideoAutopause } from './UserProfileSettings'
 
@@ -103,6 +104,18 @@ function updateContent(
 
   div.querySelectorAll('div.oauth-app').forEach((appEl) => {
     updateOauthAppEmbed(appEl as HTMLDivElement, appState)
+  })
+
+  div.querySelectorAll('poll').forEach((pollEl) => {
+    const pollId = pollEl.getAttribute('data-poll-id')
+    if (pollId) {
+      ReactDOM.render(
+        <FakeRoot appState={appState}>
+          <Poll pollId={pollId} />
+        </FakeRoot>,
+        pollEl,
+      )
+    }
   })
 }
 
