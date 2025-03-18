@@ -8,12 +8,12 @@ type InputProps = InputHTMLAttributes<HTMLInputElement>
 type TextAreaProps = TextareaHTMLAttributes<HTMLTextAreaElement>
 
 /**
- * Интерфейс пропсов компонента Field
+ * interface for props of Field component
  * @interface
- * @property {string} [label] - Текст метки поля
- * @property {string} [error] - Текст сообщения об ошибке
- * @property {'input' | 'textarea'} [variant='input'] - Вариант отображения поля (обычное поле ввода или текстовая область)
- * @property {string} [className] - Дополнительные CSS классы
+ * @property {string} [label] - text of label
+ * @property {string} [error] - text of error message
+ * @property {'input' | 'textarea'} [variant='input'] - variant of field (input or textarea)
+ * @property {string} [className] - additional css classes
  */
 export interface FieldProps extends Omit<InputProps & TextAreaProps, 'className'> {
   label?: string
@@ -23,35 +23,35 @@ export interface FieldProps extends Omit<InputProps & TextAreaProps, 'className'
 }
 
 /**
- * Универсальный компонент поля ввода, поддерживающий как обычные поля ввода, так и текстовые области.
+ * Universal component of input field, supporting both input and textarea.
  *
  * @component
  * @example
- * // Обычное поле ввода
+ * // Regular input field
  * <Field
- *   label="Имя"
- *   placeholder="Введите ваше имя"
+ *   label="Name"
+ *   placeholder="Enter your name"
  *   value={name}
  *   onChange={(e) => setName(e.target.value)}
  * />
  *
  * @example
- * // Текстовая область
+ * // Textarea
  * <Field
  *   variant="textarea"
- *   label="Описание"
- *   placeholder="Введите описание"
+ *   label="Description"
+ *   placeholder="Describe yourself"
  *   value={description}
  *   onChange={(e) => setDescription(e.target.value)}
  * />
  *
  * @example
- * // Поле с ошибкой
+ * // Field with error
  * <Field
  *   label="Email"
  *   value={email}
  *   onChange={(e) => setEmail(e.target.value)}
- *   error="Неверный формат email"
+ *   error="Invalid email format"
  * />
  */
 export const Field: React.FC<FieldProps> = ({ label, error, variant = 'input', className, ...props }) => {
