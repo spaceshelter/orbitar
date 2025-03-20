@@ -1,12 +1,28 @@
 import APIBase from '../API/APIBase'
 import { PollAPI } from '../API/PollAPI'
-import { Poll, PollVoteRequest, PollVoteResponse } from '../Types/Poll'
+import { Poll, PollBackendResponse, PollVoteRequest, PollVoteResponse } from '../Types/Poll'
 import { BatchedCache } from '../Utils'
 
 class PollService {
   private static instance: PollService
   private pollCache: BatchedCache<string, Poll>
   private pollApi: PollAPI
+
+  private transformPollResponse(poll: PollBackendResponse): Poll {
+    return {
+      id: String(poll.poll_id),
+      poll_id: String(poll.poll_id),
+      question: poll.question,
+      options: poll.options,
+      totalVotes: poll.total_votes || 0,
+      settings: {
+        allowMultipleVotes: poll.settings.multiple_choice || false,
+        showResults: !poll.settings.hide_results,
+        expiresAt: poll.expires_at,
+      },
+      userVoted: poll.user_vote ? String(poll.user_vote[0]) : undefined,
+    }
+  }
 
   private constructor() {
     const api = new APIBase()
@@ -18,16 +34,7 @@ class PollService {
       fetchFunction: async (ids: string[]) => {
         try {
           const response = await this.pollApi.getPollsBatch({ ids: ids.map(Number) })
-          return new Map(
-            response.polls.map((poll) => [
-              String(poll.poll_id),
-              {
-                ...poll,
-                id: String(poll.poll_id),
-                poll_id: String(poll.poll_id),
-              },
-            ]),
-          )
+          return new Map(response.polls.map((poll) => [String(poll.poll_id), this.transformPollResponse(poll)]))
         } catch (error) {
           console.error('Error fetching polls batch:', error)
           throw error
@@ -62,14 +69,11 @@ class PollService {
 
       // update cache
       if (result.poll) {
-        const poll = {
-          ...result.poll,
-          id: String(result.poll.poll_id),
-          poll_id: String(result.poll.poll_id),
-        }
+        const poll = this.transformPollResponse(result.poll)
         this.pollCache.set(String(request.poll_id), poll)
       }
 
+      result.success = true
       return result
     } catch (error) {
       console.error('Error voting:', error)

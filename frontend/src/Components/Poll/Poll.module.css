@@ -1,0 +1,105 @@
+.pollContainer {
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin: 16px 0;
+}
+
+.question {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--fg);
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.option {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.option:hover {
+  background-color: red;
+}
+
+.selected {
+  border-color: var(--primary);
+  background-color: red;
+}
+
+.optionContent {
+  position: relative;
+  z-index: 1;
+}
+
+.optionText {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.results {
+  margin-top: 8px;
+  position: relative;
+}
+
+.progressBar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background-color: rgba(33, 150, 243, 0.1);
+  transition: width 0.3s ease;
+  z-index: 0;
+}
+
+.percentage {
+  font-weight: 600;
+  color: #2196f3;
+  margin-right: 8px;
+}
+
+.votes {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.expiration {
+  margin-top: 16px;
+  font-size: 0.9rem;
+  color: #666;
+  font-style: italic;
+}
+
+.totalVotes {
+  margin-top: 12px;
+  font-size: 0.9rem;
+  color: #666;
+  text-align: right;
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+.error {
+  color: #f44336;
+  padding: 16px;
+  text-align: center;
+  border: 1px solid #ffcdd2;
+  border-radius: 4px;
+  background-color: #ffebee;
+  margin: 16px 0;
+}

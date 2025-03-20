@@ -1,4 +1,4 @@
-import { Poll, PollVoteRequest, PollVoteResponse } from '../Types/Poll'
+import { PollBackendResponse, PollVoteRequest, PollVoteResponse } from '../Types/Poll'
 import APIBase from './APIBase'
 
 export interface CreatePollRequest {
@@ -13,7 +13,7 @@ export interface CreatePollRequest {
 }
 
 export interface CreatePollResponse {
-  poll: Poll
+  poll: PollBackendResponse
 }
 
 export interface GetPollRequest {
@@ -21,7 +21,7 @@ export interface GetPollRequest {
 }
 
 export interface GetPollResponse {
-  poll: Poll
+  poll: PollBackendResponse
 }
 
 export interface GetPollsBatchRequest {
@@ -29,7 +29,7 @@ export interface GetPollsBatchRequest {
 }
 
 export interface GetPollsBatchResponse {
-  polls: Poll[]
+  polls: PollBackendResponse[]
 }
 
 export interface BackendPollVoteRequest {
