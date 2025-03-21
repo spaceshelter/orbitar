@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react'
 
+import DateComponent from '@components/DateComponent'
+
 import PollService from '../../Services/PollService'
 import { Poll as PollType } from '../../Types/Poll'
 
@@ -37,7 +39,7 @@ export const Poll: React.FC<PollProps> = ({ pollId, onVote }) => {
 
   const handleVote = async (optionId: string) => {
     if (!poll) return
-    if (poll.userVoted !== undefined && !poll.settings.allowMultipleVotes) return
+    if (poll.userVoted !== 'undefined' && !poll.settings.allowMultipleVotes) return
 
     try {
       const response = await PollService.vote({ poll_id: Number(pollId), option_ids: [Number(optionId)] })
@@ -63,7 +65,7 @@ export const Poll: React.FC<PollProps> = ({ pollId, onVote }) => {
   if (error) return <div className={styles.error}>{error}</div>
   if (!poll) return null
 
-  const canVote = !poll.userVoted || poll.settings.allowMultipleVotes
+  const canVote = poll.userVoted === 'undefined' || poll.settings.allowMultipleVotes
   const showResults = poll.settings.resultVisibility || poll.userVoted
 
   return (
@@ -87,10 +89,10 @@ export const Poll: React.FC<PollProps> = ({ pollId, onVote }) => {
                 {showResults && (
                   <div className={styles.results}>
                     <div className={styles.progressBar} style={{ width: `${percentage}%` }} />
-                    <span className={styles.percentage}>{percentage}%</span>
                     <span className={styles.votes}>
-                      ({option.votes} {option.votes === 1 ? 'голос' : 'голосов'})
+                      {option.votes} {option.votes === 1 ? 'голос' : 'голосов'}
                     </span>
+                    <span className={styles.percentage}>{percentage}%</span>
                   </div>
                 )}
               </div>
@@ -101,7 +103,7 @@ export const Poll: React.FC<PollProps> = ({ pollId, onVote }) => {
 
       {poll.settings.expiresAt && (
         <div className={styles.expiration}>
-          Опрос закончится: {new Date(poll.settings.expiresAt).toLocaleDateString()}
+          <DateComponent date={new Date(poll.settings.expiresAt)} />
         </div>
       )}
 

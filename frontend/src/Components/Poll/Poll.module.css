@@ -2,7 +2,7 @@
   background: var(--bg);
   border-radius: 8px;
   padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px var(--shadow);
   margin: 16px 0;
 }
 
@@ -29,27 +29,26 @@
 }
 
 .option:hover {
-  background-color: red;
+  background-color: var(--glass);
 }
 
 .selected {
-  border-color: var(--primary);
-  background-color: red;
+  border: 1px solid var(--primary);
 }
 
 .optionContent {
+  display: flex;
   position: relative;
   z-index: 1;
 }
 
 .optionText {
+  flex-grow: 1;
   display: block;
-  margin-bottom: 4px;
   font-weight: 500;
 }
 
 .results {
-  margin-top: 8px;
   position: relative;
 }
 
@@ -65,12 +64,11 @@
 
 .percentage {
   font-weight: 600;
-  color: #2196f3;
-  margin-right: 8px;
+  color: var(--primary);
+  margin-left: 0.5rem;
 }
 
 .votes {
-  color: #666;
   font-size: 0.9rem;
 }
 
