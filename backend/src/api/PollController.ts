@@ -68,8 +68,10 @@ export default class PollController {
       question: Joi.string().required().max(1000),
       options: Joi.array().items(Joi.string().max(200)).min(2).max(32).required(),
       settings: Joi.object({
-        multiple_choice: Joi.boolean(),
-        hide_results: Joi.boolean(),
+        allow_multiple_choice: Joi.boolean(),
+        result_visibility: Joi.string().valid('always', 'after_vote', 'after_vote_end'),
+        allow_vote_rescind: Joi.boolean(),
+        vote_resctrictions: Joi.string().valid('everybody', 'users_with_full_rights'),
       }),
       expires_at: Joi.date().greater('now'),
     })

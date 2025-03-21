@@ -1,13 +1,10 @@
-import { PollEntity } from '../entities/PollEntity'
+import { PollEntity, PollSettingsEntity } from '../entities/PollEntity'
 
 export interface PollCreateRequest {
   post_id: number
   question: string
   options: string[]
-  settings?: {
-    multiple_choice?: boolean
-    hide_results?: boolean
-  }
+  settings?: PollSettingsEntity
   expires_at?: string
 }
 

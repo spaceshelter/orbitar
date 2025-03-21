@@ -1,6 +1,6 @@
 import { RowDataPacket } from 'mysql2'
 
-import { PollEntity } from '../api/types/entities/PollEntity'
+import { PollEntity, PollSettingsEntity } from '../api/types/entities/PollEntity'
 import PollRepository from '../db/repositories/PollRepository'
 
 interface PollRecord extends RowDataPacket {
@@ -17,7 +17,7 @@ interface PollRecord extends RowDataPacket {
 
 interface PollRecordParsed extends Omit<PollRecord, 'options' | 'settings'> {
   options: string[]
-  settings: { multiple_choice?: boolean; hide_results?: boolean }
+  settings: PollSettingsEntity 
 }
 
 export default class PollManager {
@@ -62,7 +62,7 @@ export default class PollManager {
     siteId: number,
     question: string,
     options: string[],
-    settings: { multiple_choice?: boolean; hide_results?: boolean } = {},
+    settings: PollSettingsEntity,
     expiresAt?: string,
   ): Promise<PollEntity> {
     if (options.length < 2 || options.length > 32) {
@@ -85,7 +85,7 @@ export default class PollManager {
     }
 
     const settings = poll.settings
-    if (!settings.multiple_choice && optionIds.length > 1) {
+    if (!settings.allow_multiple_choice && optionIds.length > 1) {
       throw new Error('Multiple choice not allowed')
     }
 

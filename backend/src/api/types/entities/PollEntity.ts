@@ -9,10 +9,7 @@ export interface PollEntity {
   site_id: number
   question: string
   options: PollOptionEntity[]
-  settings: {
-    multiple_choice?: boolean
-    hide_results?: boolean
-  }
+  settings: PollSettingsEntity
   expires_at: string | null
   created_at: string
   total_votes: number
@@ -25,4 +22,11 @@ export interface PollVoteEntity {
   voter_id: number
   option_id: number
   voted_at: string
+}
+
+export interface PollSettingsEntity {
+  allow_multiple_choice: boolean
+  result_visibility: 'always' | 'after_vote' | 'after_vote_end'
+  allow_vote_rescind: boolean
+  vote_resctrictions: 'everybody' | 'users_with_full_rights'
 }
