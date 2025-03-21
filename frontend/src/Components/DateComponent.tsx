@@ -34,7 +34,7 @@ export function formatDate(date: Date) {
   return mDate.calendar({
     sameDay: '[сегодня в] HH:mm',
     lastDay: '[вчера в] HH:mm',
-    nextDay: '[сегодня в] HH:mm',
+    nextDay: '[завтра в] HH:mm',
     nextWeek: 'DD.MM.YYYY HH:mm',
     lastWeek: 'D MMMM [в] HH:mm',
     sameElse: () => {
