@@ -42,6 +42,15 @@ export interface PollVoteResponse {
   poll: PollBackendResponse
 }
 
+export interface PollRescindVoteRequest {
+  poll_id: number
+}
+
+export interface PollRescindVoteResponse {
+  success: boolean
+  poll: PollBackendResponse
+}
+
 export interface PollBackendSettingsEntity {
   allow_multiple_choice: boolean
   result_visibility: 'always' | 'after_vote' | 'after_vote_end'

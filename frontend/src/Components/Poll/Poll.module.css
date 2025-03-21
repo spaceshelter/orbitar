@@ -80,10 +80,26 @@
 }
 
 .totalVotes {
-  margin-top: 12px;
-  font-size: 0.9rem;
-  color: #666;
-  text-align: right;
+  margin-top: 10px;
+  color: var(--fgSofter);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rescindButton {
+  background: none;
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.rescindButton:hover {
+  background: var(--dangerBg);
 }
 
 .loading {

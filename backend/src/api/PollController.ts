@@ -21,6 +21,10 @@ export interface PollBatchResponse {
   polls: PollEntity[]
 }
 
+export interface PollRescindVoteRequest {
+  poll_id: number
+}
+
 const MAX_VOTES_PER_MINUTE = 30
 const MAX_POLLS_PER_MINUTE = 10
 
@@ -96,6 +100,10 @@ export default class PollController {
       ids: Joi.array().items(Joi.number()).min(1).max(100).required(),
     })
 
+    const rescindSchema = Joi.object<PollRescindVoteRequest>({
+      poll_id: Joi.number().required(),
+    })
+
     this.router.post(
       '/poll/create',
       this.createRateLimiter,
@@ -113,6 +121,12 @@ export default class PollController {
     this.router.get('/polls', validate(listSchema), oauth('читать'), (req, res) => this.getPolls(req, res))
 
     this.router.post('/polls/batch', validate(batchSchema), oauth('читать'), (req, res) => this.getPollsBatch(req, res))
+
+    this.router.post('/poll/vote', validate(voteSchema), oauth('голосовать'), (req, res) => this.vote(req, res))
+
+    this.router.post('/poll/rescind', validate(rescindSchema), oauth('голосовать'), (req, res) =>
+      this.rescindVote(req, res),
+    )
   }
 
   async createPoll(request: APIRequest<PollCreateRequest>, response: APIResponse<PollCreateResponse>) {
@@ -157,11 +171,11 @@ export default class PollController {
   }
 
   async vote(request: APIRequest<PollVoteRequest>, response: APIResponse<PollVoteResponse>) {
-    if (!request.session.data.userId) {
+    const userId = request.session.data.userId
+    if (!userId) {
       return response.authRequired()
     }
 
-    const userId = request.session.data.userId
     const { poll_id, option_ids } = request.body
 
     try {
@@ -246,6 +260,49 @@ export default class PollController {
       response.success({ polls: validPolls })
     } catch (err) {
       this.logger.error('Get polls batch error', { error: err, poll_ids: ids })
+      return response.error('error', 'Unknown error', 500)
+    }
+  }
+
+  async rescindVote(request: APIRequest<{ poll_id: number }>, response: APIResponse<PollVoteResponse>) {
+    const userId = request.session.data.userId
+    if (!userId) {
+      return response.authRequired()
+    }
+
+    const { poll_id } = request.body
+
+    try {
+      const restrictions = await this.userManager.getUserRestrictions(userId)
+      if (!restrictions.canVote) {
+        return response.error('cant-vote', 'Voting is disabled', 403)
+      }
+
+      const poll = await this.pollManager.rescindVote(poll_id, userId)
+
+      this.logger.info(`User #${userId} rescinded vote in poll #${poll_id}`, {
+        user_id: userId,
+        poll_id,
+      })
+
+      response.success({ poll })
+    } catch (err) {
+      if (err instanceof Error) {
+        if (err.message === 'Poll not found') {
+          return response.error('not-found', 'Poll not found', 404)
+        }
+        if (err.message === 'Poll has expired') {
+          return response.error('expired', 'Poll has expired', 403)
+        }
+        if (err.message === 'Vote rescinding not allowed') {
+          return response.error('rescind-not-allowed', 'Vote rescinding not allowed', 400)
+        }
+        if (err.message === 'No vote to rescind') {
+          return response.error('no-vote', 'No vote to rescind', 400)
+        }
+      }
+
+      this.logger.error('Vote rescind error', { error: err, user_id: userId, poll_id })
       return response.error('error', 'Unknown error', 500)
     }
   }

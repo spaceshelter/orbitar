@@ -95,15 +95,47 @@ export default class PollManager {
 
     const previousVotes = await this.pollRepository.getUserVotes(pollId, voterId)
     if (previousVotes.length > 0) {
-      await this.pollRepository.removeVotes(pollId, voterId)
-      for (const optionId of previousVotes) {
-        await this.pollRepository.decrementVoteCount(pollId, optionId)
+      if (!settings.allow_multiple_choice) {
+        if (!settings.allow_vote_rescinding) {
+          throw new Error('Vote rescinding not allowed')
+        }
+        await this.pollRepository.removeVotes(pollId, voterId)
+        for (const optionId of previousVotes) {
+          await this.pollRepository.decrementVoteCount(pollId, optionId)
+        }
       }
     }
 
     for (const optionId of optionIds) {
       await this.pollRepository.vote(pollId, voterId, optionId)
       await this.pollRepository.incrementVoteCount(pollId, optionId)
+    }
+
+    return await this.getPollWithVotes(pollId, voterId)
+  }
+
+  async rescindVote(pollId: number, voterId: number): Promise<PollEntity> {
+    const poll = await this.getPollWithVotes(pollId)
+    if (!poll) {
+      throw new Error('Poll not found')
+    }
+
+    if (poll.expires_at && new Date(poll.expires_at) < new Date()) {
+      throw new Error('Poll has expired')
+    }
+
+    if (!poll.settings.allow_vote_rescinding) {
+      throw new Error('Vote rescinding not allowed')
+    }
+
+    const previousVotes = await this.pollRepository.getUserVotes(pollId, voterId)
+    if (previousVotes.length === 0) {
+      throw new Error('No vote to rescind')
+    }
+
+    await this.pollRepository.removeVotes(pollId, voterId)
+    for (const optionId of previousVotes) {
+      await this.pollRepository.decrementVoteCount(pollId, optionId)
     }
 
     return await this.getPollWithVotes(pollId, voterId)

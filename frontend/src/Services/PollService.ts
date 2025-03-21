@@ -82,6 +82,17 @@ class PollService {
       throw error
     }
   }
+
+  public async rescindVote(pollId: number): Promise<PollVoteResponse> {
+    const result = await this.pollApi.rescindVote({ poll_id: pollId })
+
+    if (result.poll) {
+      this.pollCache.delete(String(pollId))
+    }
+
+    result.success = true
+    return result
+  }
 }
 
 export default PollService.getInstance()

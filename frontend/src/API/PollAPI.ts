@@ -1,4 +1,10 @@
-import { PollBackendResponse, PollVoteRequest, PollVoteResponse } from '../Types/Poll'
+import {
+  PollBackendResponse,
+  PollRescindVoteRequest,
+  PollRescindVoteResponse,
+  PollVoteRequest,
+  PollVoteResponse,
+} from '../Types/Poll'
 import APIBase from './APIBase'
 
 export interface CreatePollRequest {
@@ -60,5 +66,9 @@ export class PollAPI {
 
   async vote(data: PollVoteRequest): Promise<PollVoteResponse> {
     return await this.api.request<PollVoteRequest, PollVoteResponse>('/poll/vote', data)
+  }
+
+  async rescindVote(data: PollRescindVoteRequest): Promise<PollRescindVoteResponse> {
+    return await this.api.request<PollRescindVoteRequest, PollRescindVoteResponse>('/poll/rescind', data)
   }
 }

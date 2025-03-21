@@ -26,19 +26,16 @@ export class BatchedCache<K, V> {
   }
 
   public async get(key: K): Promise<V> {
-    // Проверяем кэш
     const cached = this.cache.get(key)
     if (cached && Date.now() - cached.timestamp < this.options.cacheTime) {
       return cached.value
     }
 
-    // Проверяем, есть ли уже ожидающий запрос для этого ключа
     const pending = this.pendingBatch.get(key)
     if (pending) {
       return pending
     }
 
-    // Создаем новый промис для этого ключа
     const promise = new Promise<V>((resolve, reject) => {
       this.pendingRequests.set(key, { resolve, reject })
       this.addToBatch(key)
@@ -55,6 +52,12 @@ export class BatchedCache<K, V> {
     })
   }
 
+  public delete(key: K): void {
+    this.cache.delete(key)
+    this.pendingBatch.delete(key)
+    this.pendingRequests.delete(key)
+  }
+
   private addToBatch(key: K): void {
     if (this.batchTimeout) {
       clearTimeout(this.batchTimeout)
@@ -68,7 +71,6 @@ export class BatchedCache<K, V> {
       try {
         const results = await this.options.fetchFunction(batch)
 
-        // Обрабатываем результаты для каждого ключа
         batch.forEach((key) => {
           const request = this.pendingRequests.get(key)
           if (!request) return
@@ -84,7 +86,6 @@ export class BatchedCache<K, V> {
           this.pendingRequests.delete(key)
         })
       } catch (error) {
-        // В случае ошибки отклоняем все ожидающие запросы
         batch.forEach((key) => {
           const request = this.pendingRequests.get(key)
           if (request) {

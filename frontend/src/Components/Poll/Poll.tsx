@@ -56,6 +56,21 @@ export const Poll: React.FC<PollProps> = ({ pollId, onVote }) => {
     }
   }
 
+  const handleRescindVote = async () => {
+    if (!poll || !poll.userVoted || !poll.settings.allowVoteRescinding) return
+
+    try {
+      const response = await PollService.rescindVote(Number(pollId))
+      if (response) {
+        const updatedPoll = await PollService.getPoll(pollId)
+        setPoll(updatedPoll)
+        setSelectedOption(null)
+      }
+    } catch (err) {
+      setError('Не удалось отменить голос')
+    }
+  }
+
   const calculatePercentage = (votes: number) => {
     if (!poll || poll.totalVotes === 0) return 0
     return Math.round((votes / poll.totalVotes) * 100)
@@ -107,7 +122,14 @@ export const Poll: React.FC<PollProps> = ({ pollId, onVote }) => {
         </div>
       )}
 
-      <div className={styles.totalVotes}>Всего голосов: {poll.totalVotes || 0}</div>
+      <div className={styles.totalVotes}>
+        Всего голосов: {poll.totalVotes || 0}
+        {poll.userVoted && poll.settings.allowVoteRescinding && (
+          <button className={styles.rescindButton} onClick={handleRescindVote}>
+            Отменить голос
+          </button>
+        )}
+      </div>
     </div>
   )
 }
