@@ -3,7 +3,7 @@
 exports.up = async function (db) {
   await db.createTable('polls', {
     poll_id: {
-      type: 'bigint',
+      type: 'int',
       unsigned: true,
       notNull: true,
       primaryKey: true,
@@ -102,7 +102,7 @@ exports.up = async function (db) {
       },
     },
     option_id: {
-      type: 'tinyint',
+      type: 'int',
       unsigned: true,
       notNull: true,
     },
@@ -113,7 +113,7 @@ exports.up = async function (db) {
     },
   })
 
-  await db.addIndex('poll_votes', 'unique_vote', ['poll_id', 'voter_id'], true)
+  await db.addIndex('poll_votes', 'unique_vote', ['poll_id', 'voter_id', 'option_id'], true)
 
   await db.addIndex('poll_votes', 'idx_voted_at', ['voted_at'])
 }
