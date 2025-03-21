@@ -10,10 +10,7 @@ export interface PollBackendResponse {
   options: PollOption[]
   total_votes: number
   user_vote?: number[]
-  settings: {
-    multiple_choice?: boolean
-    hide_results?: boolean
-  }
+  settings: PollBackendSettingsEntity
   expires_at?: string
 }
 
@@ -24,11 +21,15 @@ export interface Poll {
   options: PollOption[]
   totalVotes: number
   userVoted?: string
-  settings: {
-    allowMultipleVotes: boolean
-    showResults: boolean
-    expiresAt?: string
-  }
+  settings: PollSettings
+}
+
+export interface PollSettings {
+  allowMultipleVotes: boolean
+  resultVisibility: 'always' | 'after_vote' | 'after_vote_end'
+  allowVoteRescinding: boolean
+  voteAccess: 'everybody' | 'users_with_full_rights'
+  expiresAt?: string
 }
 
 export interface PollVoteRequest {
@@ -39,4 +40,11 @@ export interface PollVoteRequest {
 export interface PollVoteResponse {
   success: boolean
   poll: PollBackendResponse
+}
+
+export interface PollBackendSettingsEntity {
+  allow_multiple_choice: boolean
+  result_visibility: 'always' | 'after_vote' | 'after_vote_end'
+  allow_vote_rescinding: boolean
+  vote_access: 'everybody' | 'users_with_full_rights'
 }

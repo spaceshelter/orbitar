@@ -6,8 +6,10 @@ export interface CreatePollRequest {
   question: string
   options: string[]
   settings: {
-    multiple_choice?: boolean
-    hide_results?: boolean
+    allow_multiple_choice?: boolean
+    result_visibility?: 'always' | 'after_vote' | 'after_vote_end'
+    allow_vote_rescinding?: boolean
+    vote_access?: 'everybody' | 'users_with_full_rights'
   }
   expires_at?: string
 }

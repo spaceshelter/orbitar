@@ -22,7 +22,7 @@ interface PollSettings {
   expirationDays: number | null
   isMultipleChoice: boolean
   allowVoteRescinding: boolean
-  votingAccess: 'all' | 'full_rights'
+  voteAccess: 'everybody' | 'users_with_full_rights'
   resultVisibility: 'always' | 'after_vote' | 'after_end'
 }
 
@@ -44,7 +44,7 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
     expirationDays: null,
     isMultipleChoice: false,
     allowVoteRescinding: true,
-    votingAccess: 'all',
+    voteAccess: 'everybody',
     resultVisibility: 'always',
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -188,14 +188,14 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
             </div>
 
             <div className={styles.settingRow}>
-              <label htmlFor='votingAccess'>Доступ к голосованию</label>
+              <label htmlFor='voteAccess'>Доступ к голосованию</label>
               <Select
-                id='votingAccess'
-                value={settings.votingAccess}
-                onChange={(value) => handleSettingChange('votingAccess', value)}
+                id='voteAccess'
+                value={settings.voteAccess}
+                onChange={(value) => handleSettingChange('voteAccess', value)}
                 options={[
-                  { value: 'all', label: 'Все пользователи' },
-                  { value: 'full_rights', label: 'Только с полными правами' },
+                  { value: 'everybody', label: 'Все пользователи' },
+                  { value: 'users_with_full_rights', label: 'Только с полными правами' },
                 ]}
               />
             </div>
@@ -209,7 +209,7 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
                 options={[
                   { value: 'always', label: 'Всегда' },
                   { value: 'after_vote', label: 'После голосования' },
-                  { value: 'after_end', label: 'После окончания' },
+                  { value: 'after_vote_end', label: 'После окончания голосования' },
                 ]}
               />
             </div>

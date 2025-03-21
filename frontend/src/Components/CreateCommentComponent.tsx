@@ -433,8 +433,10 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         question: pollData.question,
         options: pollData.options.map((opt: any) => opt.text),
         settings: {
-          multiple_choice: pollData.settings.isMultipleChoice,
-          hide_results: pollData.settings.resultVisibility === 'hidden',
+          allow_multiple_choice: pollData.settings.isMultipleChoice,
+          result_visibility: pollData.settings.resultVisibility,
+          allow_vote_rescinding: pollData.settings.allowVoteRescinding,
+          vote_access: pollData.settings.voteAccess,
         },
         expires_at: pollData.settings.expirationDays
           ? moment().add(pollData.settings.expirationDays, 'days').format('YYYY-MM-DD HH:mm:ss')

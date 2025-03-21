@@ -11,7 +11,6 @@ interface PollProps {
 }
 
 export const Poll: React.FC<PollProps> = ({ pollId, onVote }) => {
-  console.log('render Poll pollId', pollId)
   const [poll, setPoll] = useState<PollType | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -65,7 +64,7 @@ export const Poll: React.FC<PollProps> = ({ pollId, onVote }) => {
   if (!poll) return null
 
   const canVote = !poll.userVoted || poll.settings.allowMultipleVotes
-  const showResults = poll.settings.showResults || poll.userVoted
+  const showResults = poll.settings.resultVisibility || poll.userVoted
 
   return (
     <div className={styles.pollContainer}>

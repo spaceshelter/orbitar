@@ -16,8 +16,10 @@ class PollService {
       options: poll.options,
       totalVotes: poll.total_votes || 0,
       settings: {
-        allowMultipleVotes: poll.settings.multiple_choice || false,
-        showResults: !poll.settings.hide_results,
+        allowMultipleVotes: poll.settings.allow_multiple_choice,
+        resultVisibility: poll.settings.result_visibility,
+        allowVoteRescinding: poll.settings.allow_vote_rescinding,
+        voteAccess: poll.settings.vote_access,
         expiresAt: poll.expires_at,
       },
       userVoted: poll.user_vote ? String(poll.user_vote[0]) : undefined,
