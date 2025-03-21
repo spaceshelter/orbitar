@@ -70,8 +70,8 @@ export default class PollController {
       settings: Joi.object({
         allow_multiple_choice: Joi.boolean(),
         result_visibility: Joi.string().valid('always', 'after_vote', 'after_vote_end'),
-        allow_vote_rescind: Joi.boolean(),
-        vote_resctrictions: Joi.string().valid('everybody', 'users_with_full_rights'),
+        allow_vote_rescinding: Joi.boolean(),
+        vote_access: Joi.string().valid('everybody', 'users_with_full_rights'),
       }),
       expires_at: Joi.date().greater('now'),
     })

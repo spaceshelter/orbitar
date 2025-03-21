@@ -27,6 +27,6 @@ export interface PollVoteEntity {
 export interface PollSettingsEntity {
   allow_multiple_choice: boolean
   result_visibility: 'always' | 'after_vote' | 'after_vote_end'
-  allow_vote_rescind: boolean
-  vote_resctrictions: 'everybody' | 'users_with_full_rights'
+  allow_vote_rescinding: boolean
+  vote_access: 'everybody' | 'users_with_full_rights'
 }
