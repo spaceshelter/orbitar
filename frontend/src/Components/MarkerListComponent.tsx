@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 import { action, makeObservable, observable } from 'mobx'
 import { observer } from 'mobx-react-lite'
@@ -214,7 +214,52 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
         console.error('Error updating markers:', error)
       }
     }
-    // Don't prevent clicks inside the list from closing it
+
+    // Function to increase marker count for user's own markers
+    const handleIncreaseMarkerCount = async (markerType: MarkerType, existingMarker: MarkerInfo) => {
+      if (!appState.userInfo || componentState.isSubmitting) {
+        return
+      }
+
+      if (componentState.userTokens !== null && componentState.userTokens < 1) {
+        componentState.setError('Недостаточно токенов')
+        return
+      }
+
+      try {
+        componentState.setIsSubmitting(true)
+
+        // Send placedCount=1 to increment by 1 regardless of current count
+        // This avoids issues with the backend potentially interpreting placedCount differently
+        await markerAPI.createMarker(
+          targetType,
+          targetId,
+          markerType,
+          1, // Always increment by 1
+          existingMarker.annotation,
+        )
+
+        // Get updated token counts
+        const tokenCounts = await markerAPI.getTokenCounts(targetType, targetId)
+
+        // Notify about token consumption for animation in the InlineAddMarkerComponent
+        if (markerType !== MarkerType.BOOKMARK) {
+          handleExternalAction('add', 1)
+        }
+        await handleMarkerUpdated(tokenCounts)
+      } catch (error) {
+        componentState.setError('Ошибка добавления отметки')
+        console.error('Error in handleIncreaseMarkerCount:', error)
+      } finally {
+        componentState.setIsSubmitting(false)
+      }
+    }
+
+    // Handle external token actions (used to show animation in InlineAddMarkerComponent)
+    const handleExternalAction = useCallback((action: 'add' | 'remove', cost: number) => {
+      // The action is handled by the InlineAddMarkerComponent internally
+    }, [])
+    // Handle list container clicks
     const handleListClick = (e: React.MouseEvent) => {
       e.stopPropagation()
     }
@@ -227,6 +272,11 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
     const noteMarkers = componentState.markers
       .filter((marker) => marker.markerType === MarkerType.NOTE && !marker.removedAt)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+    // Helper function to check if a marker is owned by the current user
+    const isOwnMarker = (marker: MarkerInfo) => {
+      return appState.userInfo && marker.creator.id === appState.userInfo.id
+    }
 
     // Separate own bookmarks from other bookmarks
     const ownBookmarkMarker = appState.userInfo
@@ -255,6 +305,7 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
               onClose={() => onClose()}
               onSuccess={handleMarkerUpdated}
               ownMarkers={ownMarkers}
+              onExternalAction={handleExternalAction}
             />
           </div>
         )}
@@ -267,7 +318,18 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
           <div className={styles.markersList}>
             {starMarkers.map((marker) => (
               <div key={marker.markerId} className={styles.markerItem}>
-                <div className={styles.markerType}>
+                <div
+                  className={`${styles.markerType} ${isOwnMarker(marker) ? styles.own : ''}`}
+                  onClick={
+                    isOwnMarker(marker)
+                      ? (e) => {
+                          e.stopPropagation()
+                          handleIncreaseMarkerCount(MarkerType.STAR, marker)
+                        }
+                      : undefined
+                  }
+                  title={isOwnMarker(marker) ? 'Добавить еще одну звезду' : undefined}
+                >
                   <StarIcon />
                   {marker.placedCount > 1 && <span className={styles.placedCount}>{marker.placedCount}</span>}
                 </div>
@@ -293,7 +355,18 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
 
             {noteMarkers.map((marker) => (
               <div key={marker.markerId} className={styles.markerItem}>
-                <div className={styles.markerType}>
+                <div
+                  className={`${styles.markerType} ${isOwnMarker(marker) ? styles.own : ''}`}
+                  onClick={
+                    isOwnMarker(marker)
+                      ? (e) => {
+                          e.stopPropagation()
+                          handleIncreaseMarkerCount(MarkerType.NOTE, marker)
+                        }
+                      : undefined
+                  }
+                  title={isOwnMarker(marker) ? 'Добавить еще одну заметку' : undefined}
+                >
                   <NoteIcon />
                   {marker.placedCount > 1 && <span className={styles.placedCount}>{marker.placedCount}</span>}
                 </div>

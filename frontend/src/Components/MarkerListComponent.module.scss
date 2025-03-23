@@ -232,6 +232,18 @@
     height: 22px;
   }
 
+  &.own {
+    cursor: pointer;
+    transition:
+      transform 0.1s ease-in-out,
+      fill 0.2s ease-in-out;
+
+    &:hover {
+      transform: scale(1.1);
+      fill: var(--primaryHover);
+    }
+  }
+
   .placedCount {
     position: absolute;
     bottom: -6px;

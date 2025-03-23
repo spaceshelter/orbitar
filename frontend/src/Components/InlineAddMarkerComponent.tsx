@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 import cn from 'classnames'
 import { observer } from 'mobx-react-lite'
@@ -98,10 +98,11 @@ interface InlineAddMarkerComponentProps {
   onSuccess?: (tokenCounts: TokenCounts) => void
   initialMarkerType?: MarkerType
   ownMarkers?: MarkerInfo[]
+  onExternalAction?: (action: 'add' | 'remove', cost: number) => void
 }
 
 export const InlineAddMarkerComponent: React.FC<InlineAddMarkerComponentProps> = observer(
-  ({ targetType, targetId, onClose, onSuccess, initialMarkerType, ownMarkers = [] }) => {
+  ({ targetType, targetId, onClose, onSuccess, initialMarkerType, ownMarkers = [], onExternalAction }) => {
     const appState = useAppState()
     const markerAPI = appState.api.markerAPI
     const [isLoading, setIsLoading] = useState(false)
@@ -225,6 +226,28 @@ export const InlineAddMarkerComponent: React.FC<InlineAddMarkerComponentProps> =
     // Track previous annotation to detect user changes vs loaded values
     const prevAnnotation = usePrevious(annotation)
 
+    // Function to show token animation effect - can be called from parent
+    const showTokenAnimation = useCallback((action: 'add' | 'remove', amount = 1) => {
+      // Clear any existing animation timer
+      if (animationTimerRef.current) {
+        clearTimeout(animationTimerRef.current)
+        animationTimerRef.current = null
+      }
+
+      // Increment key to force re-render of the animation component
+      setAnimationKey((prev) => prev + 1)
+
+      // Adding costs tokens (-), removing gives tokens back (+)
+      const cost = action === 'add' ? -amount : +amount
+      setLastActionCost(cost)
+
+      // Clean up after animation completes
+      animationTimerRef.current = setTimeout(() => {
+        setLastActionCost(null)
+        animationTimerRef.current = null
+      }, 2500) // Match CSS animation duration
+    }, [])
+
     // Save annotation when it changes (with debounce)
     useEffect(() => {
       // Skip empty annotations
@@ -344,21 +367,9 @@ export const InlineAddMarkerComponent: React.FC<InlineAddMarkerComponentProps> =
 
           // Update action cost display
           if (type !== MarkerType.BOOKMARK) {
-            // Clear any existing animation timer
-            if (animationTimerRef.current) {
-              clearTimeout(animationTimerRef.current)
-              animationTimerRef.current = null
-            }
-
-            // Increment key to force re-render of the animation component
-            setAnimationKey((prev) => prev + 1)
-            setLastActionCost(+1) // Removing a star/note costs +1
-
-            // Clean up after animation completes
-            animationTimerRef.current = setTimeout(() => {
-              setLastActionCost(null)
-              animationTimerRef.current = null
-            }, 2500) // Match CSS animation duration
+            showTokenAnimation('remove', 1)
+            // Notify parent component if they want to know about token changes
+            onExternalAction?.('remove', 1)
           }
         } else {
           // Add the marker
@@ -372,21 +383,9 @@ export const InlineAddMarkerComponent: React.FC<InlineAddMarkerComponentProps> =
 
           // Update action cost display
           if (type !== MarkerType.BOOKMARK) {
-            // Clear any existing animation timer
-            if (animationTimerRef.current) {
-              clearTimeout(animationTimerRef.current)
-              animationTimerRef.current = null
-            }
-
-            // Increment key to force re-render of the animation component
-            setAnimationKey((prev) => prev + 1)
-            setLastActionCost(-1) // Adding a star/note costs -1
-
-            // Clean up after animation completes
-            animationTimerRef.current = setTimeout(() => {
-              setLastActionCost(null)
-              animationTimerRef.current = null
-            }, 2500) // Match CSS animation duration
+            showTokenAnimation('add', 1)
+            // Notify parent component if they want to know about token changes
+            onExternalAction?.('add', 1)
           }
         }
 
