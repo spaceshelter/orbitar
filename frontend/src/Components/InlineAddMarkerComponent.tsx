@@ -3,10 +3,10 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import cn from 'classnames'
 import { observer } from 'mobx-react-lite'
 import { useHotkeys } from 'react-hotkeys-hook'
+import { useDebouncedCallback } from 'use-debounce'
 
 import { MarkerInfo, MarkerTargetType, MarkerType } from '../API/MarkerAPI'
 import useNoScroll from '../API/use/useNoScroll'
-import { usePrevious } from '../API/use/usePrevious'
 import { useAppState } from '../AppState/AppState'
 import { TokenCounts } from '../Types/TokenCounts'
 import { pluralize } from '../Utils/utils'
@@ -174,7 +174,7 @@ export const InlineAddMarkerComponent = observer(
           }, 100)
         }
       }
-    }, [inputRef.current, isLoading])
+    }, [isLoading])
 
     // Cleanup all timers on unmount
     useEffect(() => {
@@ -182,10 +182,6 @@ export const InlineAddMarkerComponent = observer(
         if (animationTimerRef.current) {
           clearTimeout(animationTimerRef.current)
           animationTimerRef.current = null
-        }
-        if (debounceTimerRef.current) {
-          clearTimeout(debounceTimerRef.current)
-          debounceTimerRef.current = null
         }
       }
     }, [])
@@ -218,16 +214,17 @@ export const InlineAddMarkerComponent = observer(
     }
 
     // Create refs for controlling animation and saving logic
-    const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
     const animationTimerRef = useRef<NodeJS.Timeout | null>(null)
     const isSavingRef = useRef(false)
     const isUserEditedRef = useRef(false)
+    const userEditedValueRef = useRef<string | null>(null)
+    const annotationBeforeSaveRef = useRef<string | null>(null)
 
     // Use a counter to force re-render of the animation component
     const [animationKey, setAnimationKey] = useState(0)
 
-    // Track previous annotation to detect user changes vs loaded values
-    const prevAnnotation = usePrevious(annotation)
+    // We don't need to track previous annotation since we now rely on refs
+    // and the debounced save function
 
     // Function to show token animation effect - can be called from parent
     const showTokenAnimation = useCallback((action: 'add' | 'remove', amount = 1) => {
@@ -265,37 +262,32 @@ export const InlineAddMarkerComponent = observer(
       }
     }, [ref, showTokenAnimation])
 
-    // Save annotation when it changes (with debounce)
-    useEffect(() => {
-      // Skip empty annotations
-      if (!annotation.trim().length) return
+    // Create a debounced save annotation function
+    const saveAnnotation = useDebouncedCallback(
+      async () => {
+        // Skip if we're already in the middle of a save operation
+        if (isSavingRef.current) return
 
-      // Skip if this is the first load or if annotation hasn't actually changed
-      if (prevAnnotation === undefined) return
+        // Skip if no user edits
+        if (!isUserEditedRef.current) return
 
-      // Skip programmatic changes (like when loading from a marker)
-      // Only process changes that were made by the user
-      if (!isUserEditedRef.current) return
+        // Get the current annotation from the user-edited value
+        const currentAnnotation = userEditedValueRef.current ?? annotation
 
-      // Clear any existing timer to implement debounce
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current)
-        debounceTimerRef.current = null
-      }
+        // Even empty annotations should be saved (we'll only create markers if they have content)
 
-      // Skip if we're already in the middle of a save operation
-      if (isSavingRef.current) return
-
-      // Save current values to use in the async function
-      const currentAnnotation = annotation
-
-      const saveAnnotation = async () => {
         try {
           // Mark that we're starting a save operation
           isSavingRef.current = true
 
+          // Store the annotation value we're saving so we can compare later
+          annotationBeforeSaveRef.current = currentAnnotation
+
           // Get highest priority marker type
           const highestPriorityType = getHighestPriorityMarkerType(ownMarkersByType)
+
+          // Create a trimmed version for storage
+          const trimmedAnnotation = currentAnnotation.trim()
 
           if (highestPriorityType) {
             // If we have markers, update the highest priority one with the annotation
@@ -303,10 +295,17 @@ export const InlineAddMarkerComponent = observer(
 
             // API doesn't support directly updating annotations, so remove and recreate
             await markerAPI.removeMarker(existingMarker!.markerId)
-            await markerAPI.createMarker(targetType, targetId, highestPriorityType, 1, currentAnnotation.trim())
-          } else if (currentAnnotation.trim().length > 0) {
+            await markerAPI.createMarker(targetType, targetId, highestPriorityType, 1, trimmedAnnotation)
+          } else if (trimmedAnnotation.length > 0) {
             // If no markers exist and annotation isn't empty, create a bookmark
-            await markerAPI.createMarker(targetType, targetId, MarkerType.BOOKMARK, 1, currentAnnotation.trim())
+            await markerAPI.createMarker(targetType, targetId, MarkerType.BOOKMARK, 1, trimmedAnnotation)
+          } else if (Object.values(ownMarkersByType).some((marker) => marker !== undefined)) {
+            // If annotation is empty but user has markers, remove them (empty annotation = remove)
+            for (const [, marker] of Object.entries(ownMarkersByType)) {
+              if (marker) {
+                await markerAPI.removeMarker(marker.markerId)
+              }
+            }
           }
 
           // Get updated token counts for the target
@@ -333,35 +332,39 @@ export const InlineAddMarkerComponent = observer(
           if (newHighestPriorityType) {
             setSelectedType(newHighestPriorityType)
           }
+
+          // We should NEVER overwrite the user's current input
+          // Only update the UI if the user has NOT made changes during the API call
+          const currentUserValue = userEditedValueRef.current
+
+          if (
+            !isUserEditedRef.current ||
+            currentUserValue === null ||
+            currentUserValue === annotationBeforeSaveRef.current
+          ) {
+            // Only update UI if user hasn't made new changes during API call
+            isUserEditedRef.current = false
+            userEditedValueRef.current = null
+
+            // If user has markers, get annotation from highest priority one
+            if (newHighestPriorityType && updatedMarkersByType[newHighestPriorityType]) {
+              setAnnotation(updatedMarkersByType[newHighestPriorityType]?.annotation || '')
+            } else if (Object.values(updatedMarkersByType).every((marker) => marker === undefined)) {
+              // If user has NO markers, empty the annotation
+              setAnnotation('')
+            }
+          }
         } catch (error: any) {
           setError('Error saving annotation: ' + (error?.data?.message || error?.message || 'Unknown error'))
         } finally {
-          // Clear the saving flag when done
+          // Clear the refs and saving flag
           isSavingRef.current = false
+          annotationBeforeSaveRef.current = null
         }
-      }
-
-      // Use a debounce to avoid too many save attempts
-      debounceTimerRef.current = setTimeout(saveAnnotation, 800)
-
-      // Cleanup function to clear timer on unmount or dependency change
-      return () => {
-        if (debounceTimerRef.current) {
-          clearTimeout(debounceTimerRef.current)
-          debounceTimerRef.current = null
-        }
-      }
-    }, [
-      // Note: ownMarkersByType is intentionally omitted from dependencies
-      // to prevent infinite loops when markers are updated
-      annotation,
-      prevAnnotation,
-      targetType,
-      targetId,
-      markerAPI,
-      onSuccess,
-      appState.userInfo,
-    ])
+      },
+      800, // Debounce delay of 800ms
+      { maxWait: 2000 }, // Maximum wait time of 2 seconds
+    )
 
     const toggleMarker = async (type: MarkerType) => {
       if (!appState.userInfo) {
@@ -389,13 +392,14 @@ export const InlineAddMarkerComponent = observer(
             onExternalAction?.('remove', 1)
           }
         } else {
-          // Add the marker
+          // Add the marker with trimmed annotation (but don't modify the displayed value)
+          const trimmedAnnotation = annotation.trim()
           await markerAPI.createMarker(
             targetType,
             targetId,
             type,
             1,
-            annotation.trim().length > 0 ? annotation.trim() : null,
+            trimmedAnnotation.length > 0 ? trimmedAnnotation : null,
           )
 
           // Update action cost display
@@ -429,15 +433,27 @@ export const InlineAddMarkerComponent = observer(
         })
         setOwnMarkersByType(updatedMarkersByType)
 
-        // Get highest priority marker and update the annotation
+        // Get highest priority marker
         const highestPriorityType = getHighestPriorityMarkerType(updatedMarkersByType)
-        if (highestPriorityType) {
+
+        // We should NEVER overwrite the user's current input
+        // Only update the UI if the user has NOT made changes during the API call
+        const currentUserValue = userEditedValueRef.current
+        const didUserMakeChanges = isUserEditedRef.current && currentUserValue !== null
+
+        // Only update the annotation if the user hasn't been typing in the input field
+        if (!didUserMakeChanges) {
           isUserEditedRef.current = false // Mark this as programmatic change
-          setAnnotation(updatedMarkersByType[highestPriorityType]?.annotation || '')
-          setSelectedType(highestPriorityType)
-        } else {
-          isUserEditedRef.current = false // Mark this as programmatic change
-          setAnnotation('')
+          userEditedValueRef.current = null
+
+          // If user has markers, get annotation from highest priority one
+          if (highestPriorityType && updatedMarkersByType[highestPriorityType]) {
+            setAnnotation(updatedMarkersByType[highestPriorityType]?.annotation || '')
+            setSelectedType(highestPriorityType)
+          } else if (Object.values(updatedMarkersByType).every((marker) => marker === undefined)) {
+            // If user has NO markers, empty the annotation
+            setAnnotation('')
+          }
         }
       } catch (error: any) {
         setError('Error toggling marker: ' + (error?.data?.message || error?.message || 'Unknown error'))
@@ -492,7 +508,9 @@ export const InlineAddMarkerComponent = observer(
             value={annotation}
             onChange={(e) => {
               isUserEditedRef.current = true
+              userEditedValueRef.current = e.target.value
               setAnnotation(e.target.value)
+              saveAnnotation()
             }}
             placeholder='аннотация'
             maxLength={256}
