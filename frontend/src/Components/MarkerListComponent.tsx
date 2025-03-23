@@ -158,15 +158,25 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
       try {
         componentState.setIsSubmitting(true)
 
+        // Get the marker info to know type before removing
+        const markers = await markerAPI.getMarkersByTarget(targetType, targetId, false)
+        const markerToRemove = markers.find((m) => m.markerId === markerId)
+
+        // Remove the marker
         await markerAPI.removeMarker(markerId)
 
+        // Trigger token animation if applicable (star/note add tokens back when removed)
+        if (markerToRemove && markerToRemove.markerType !== MarkerType.BOOKMARK) {
+          triggerTokenAnimation('remove', 1)
+        }
+
         // Refresh the markers
-        const markers = await markerAPI.getMarkersByTarget(targetType, targetId, false)
-        componentState.setMarkers(markers)
+        const updatedMarkers = await markerAPI.getMarkersByTarget(targetType, targetId, false)
+        componentState.setMarkers(updatedMarkers)
 
         // Update own markers
         if (appState.userInfo) {
-          const userMarkers = markers.filter((m) => m.creator.id === appState.userInfo?.id && !m.removedAt)
+          const userMarkers = updatedMarkers.filter((m) => m.creator.id === appState.userInfo?.id && !m.removedAt)
           setOwnMarkers(userMarkers)
         }
 
@@ -244,7 +254,7 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
 
         // Notify about token consumption for animation in the InlineAddMarkerComponent
         if (markerType !== MarkerType.BOOKMARK) {
-          handleExternalAction('add', 1)
+          triggerTokenAnimation('add', 1)
         }
         await handleMarkerUpdated(tokenCounts)
       } catch (error) {
@@ -255,9 +265,21 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
       }
     }
 
+    // Reference to inline component for triggering animations
+    const inlineComponentRef = useRef<{
+      showTokenAnimation: (action: 'add' | 'remove', amount: number) => void
+    } | null>(null)
+
     // Handle external token actions (used to show animation in InlineAddMarkerComponent)
     const handleExternalAction = useCallback((action: 'add' | 'remove', cost: number) => {
       // The action is handled by the InlineAddMarkerComponent internally
+    }, [])
+
+    // Function to trigger token animation in the InlineAddMarkerComponent
+    const triggerTokenAnimation = useCallback((action: 'add' | 'remove', cost = 1) => {
+      if (inlineComponentRef.current && typeof inlineComponentRef.current.showTokenAnimation === 'function') {
+        inlineComponentRef.current.showTokenAnimation(action, cost)
+      }
     }, [])
     // Handle list container clicks
     const handleListClick = (e: React.MouseEvent) => {
@@ -300,6 +322,7 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
         {appState.userInfo && (
           <div className={styles.inlineMarkerWrapper}>
             <InlineAddMarkerComponent
+              ref={inlineComponentRef}
               targetType={targetType}
               targetId={targetId}
               onClose={() => onClose()}

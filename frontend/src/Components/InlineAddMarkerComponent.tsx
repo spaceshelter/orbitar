@@ -101,8 +101,11 @@ interface InlineAddMarkerComponentProps {
   onExternalAction?: (action: 'add' | 'remove', cost: number) => void
 }
 
-export const InlineAddMarkerComponent: React.FC<InlineAddMarkerComponentProps> = observer(
-  ({ targetType, targetId, onClose, onSuccess, initialMarkerType, ownMarkers = [], onExternalAction }) => {
+export const InlineAddMarkerComponent = observer(
+  React.forwardRef<
+    { showTokenAnimation: (action: 'add' | 'remove', amount: number) => void },
+    InlineAddMarkerComponentProps
+  >(({ targetType, targetId, onClose, onSuccess, initialMarkerType, ownMarkers = [], onExternalAction }, ref) => {
     const appState = useAppState()
     const markerAPI = appState.api.markerAPI
     const [isLoading, setIsLoading] = useState(false)
@@ -247,6 +250,20 @@ export const InlineAddMarkerComponent: React.FC<InlineAddMarkerComponentProps> =
         animationTimerRef.current = null
       }, 2500) // Match CSS animation duration
     }, [])
+
+    // FIXME: HAX!!!
+    // Expose showTokenAnimation method via ref
+    useEffect(() => {
+      if (ref) {
+        // Use a cast to handle the different ways of working with refs
+        const refObj = ref as React.MutableRefObject<{ showTokenAnimation: typeof showTokenAnimation } | null>
+        refObj.current = { showTokenAnimation }
+
+        return () => {
+          refObj.current = null
+        }
+      }
+    }, [ref, showTokenAnimation])
 
     // Save annotation when it changes (with debounce)
     useEffect(() => {
@@ -528,7 +545,7 @@ export const InlineAddMarkerComponent: React.FC<InlineAddMarkerComponentProps> =
         </div>
       </div>
     )
-  },
+  }),
 )
 
 export default InlineAddMarkerComponent
