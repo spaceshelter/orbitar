@@ -213,6 +213,10 @@
   padding: 10px 0;
   border-bottom: 1px solid var(--divider-soft, rgba(125, 125, 125, 0.15));
   position: relative;
+
+  &:last-child {
+    border-bottom: none;
+  }
 }
 
 .markerType {

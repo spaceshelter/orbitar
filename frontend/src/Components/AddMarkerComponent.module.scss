@@ -18,7 +18,7 @@
 .inlineAddMarker {
   position: absolute;
   z-index: 100;
-  background: var(--bg);
+  background: var(--elevated);
   border-radius: 6px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   padding: 12px;
@@ -39,7 +39,7 @@
     height: 0;
     border-left: 8px solid transparent;
     border-right: 8px solid transparent;
-    border-top: 8px solid var(--border-color);
+    border-top: 8px solid var(--elevated);
   }
 
   .helpText {
