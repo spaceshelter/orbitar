@@ -117,7 +117,7 @@ const TokenCounters: React.FC<TokenCountersProps> = observer((props) => {
         {hasNoTokens && (
           <div className={styles.tokenCounter}>
             <span className={styles.tokenSphere}>
-              <TokenIcon size={16} highlightOnHover={true} />
+              <TokenIcon size={16} />
             </span>
           </div>
         )}

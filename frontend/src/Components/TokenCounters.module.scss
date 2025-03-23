@@ -21,7 +21,8 @@
   &:hover .tokenCounter {
     .star svg,
     .note svg,
-    .bookmark svg {
+    .bookmark svg,
+    .tokenSphere svg {
       fill: var(--primaryHover);
       opacity: 1;
     }
@@ -133,6 +134,20 @@
   .tokenSphere {
     position: relative;
     top: -1px; /* Align with other icons */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    min-height: 24px;
+    padding: 3px;
+
+    svg {
+      fill: var(--fgSoftest);
+      opacity: 0.4;
+      transition:
+        fill 0.2s ease,
+        opacity 0.2s ease;
+    }
   }
 }
 

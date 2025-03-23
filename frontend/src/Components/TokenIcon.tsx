@@ -7,17 +7,16 @@ interface TokenIconProps {
   className?: string
   style?: React.CSSProperties
   size?: number
-  highlightOnHover?: boolean
 }
 
-export const TokenIcon: React.FC<TokenIconProps> = ({ className, style, size = 16, highlightOnHover = false }) => {
+export const TokenIcon: React.FC<TokenIconProps> = ({ className, style, size = 16 }) => {
   const iconStyle: React.CSSProperties = {
     width: `${size}px`,
     height: `${size}px`,
     ...style,
   }
 
-  const cssClasses = `${styles.tokenIcon} ${highlightOnHover ? styles.highlightable : ''} ${className || ''}`
+  const cssClasses = `${styles.tokenIcon} ${className || ''}`
 
   return <TokenIconSVG className={cssClasses} style={iconStyle} />
 }
