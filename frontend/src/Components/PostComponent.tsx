@@ -4,21 +4,11 @@ import classNames from 'classnames'
 import OutsideClickHandler from 'react-outside-click-handler'
 import { toast } from 'react-toastify'
 
-import { MarkerTargetType } from '../API/MarkerAPI'
 import { useInterpreter } from '../API/use/useInterpreter'
 import { useAPI, useAppState } from '../AppState/AppState'
 import Conf from '../Conf'
 import { PostInfo } from '../Types/PostInfo'
-import { TokenCounts } from '../Types/TokenCounts'
-import AddMarkerComponent from './AddMarkerComponent'
-import {
-  AltTranslateButton,
-  AnnotateButton,
-  StarButton,
-  TranslateButton,
-  UnwatchButton,
-  WatchButton,
-} from './ContentButtons'
+import { AltTranslateButton, AnnotateButton, TranslateButton, UnwatchButton, WatchButton } from './ContentButtons'
 import ContentComponent from './ContentComponent'
 import CreateCommentComponent from './CreateCommentComponent'
 import { HistoryComponent } from './HistoryComponent'
@@ -155,27 +145,6 @@ export default function PostComponent(props: PostComponentProps) {
   const toggleHistory = () => {
     setShowHistory(!showHistory)
   }
-
-  const handleOpenAddMarker = () => {
-    setShowOptions(false)
-
-    const handleMarkerAdded = (tokenCounts: TokenCounts) => {
-      if (props.onChange) {
-        // Just update the token counts
-        props.onChange(props.post.id, { tokenCounts })
-      }
-    }
-
-    appState.setModal(
-      <AddMarkerComponent
-        targetType={MarkerTargetType.POST}
-        targetId={props.post.id}
-        onClose={() => appState.setModal(undefined)}
-        onSuccess={handleMarkerAdded}
-      />,
-    )
-  }
-
   const altMode = currentMode !== undefined || inProgress
   const autoCut = altMode ? undefined : props.autoCut
   const showTranslateButtonInline = useMemo(() => {
@@ -317,14 +286,6 @@ export default function PostComponent(props: PostComponentProps) {
                   />
                 )}
                 {watch ? <UnwatchButton onClick={toggleWatch} /> : <WatchButton onClick={toggleWatch} />}
-
-                <StarButton
-                  inProgress={inProgress}
-                  onClick={() => {
-                    setShowOptions(false)
-                    handleOpenAddMarker()
-                  }}
-                />
               </div>
             </OutsideClickHandler>
           )}

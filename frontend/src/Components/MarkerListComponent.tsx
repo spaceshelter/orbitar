@@ -1,14 +1,13 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
-import cn from 'classnames'
 import { action, makeObservable, observable } from 'mobx'
 import { observer } from 'mobx-react-lite'
 
 import { MarkerInfo, MarkerTargetType, MarkerType, UserTokenInfo } from '../API/MarkerAPI'
 import { useAppState } from '../AppState/AppState'
 import { TokenCounts } from '../Types/TokenCounts'
-import AddMarkerComponent from './AddMarkerComponent'
 import DateComponent from './DateComponent'
+import InlineAddMarkerComponent from './InlineAddMarkerComponent'
 import Username from './Username'
 
 import { ReactComponent as BookmarkIcon } from '../Assets/bookmark.svg'
@@ -100,21 +99,26 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
     const markerAPI = appState.api.markerAPI
     const componentState = React.useMemo(() => new MarkerListComponentState(), [])
     const listRef = useRef<HTMLDivElement>(null)
+    const [ownMarkers, setOwnMarkers] = useState<MarkerInfo[]>([])
 
     useEffect(() => {
       const fetchMarkers = async () => {
         try {
           componentState.setIsLoading(true)
-          const markers = await markerAPI.getMarkersByTarget(targetType, targetId, true)
+          const markers = await markerAPI.getMarkersByTarget(targetType, targetId, false)
           componentState.setMarkers(markers)
 
+          // Filter to include only user's own markers
           if (appState.userInfo) {
-            try {
-              const tokenInfo = await markerAPI.getUserTokenInfo()
-              componentState.setTokenInfo(tokenInfo)
-            } catch (error) {
-              console.error('Error fetching token info:', error)
-            }
+            const userMarkers = markers.filter((m) => m.creator.id === appState.userInfo?.id && !m.removedAt)
+            setOwnMarkers(userMarkers)
+          }
+
+          try {
+            const tokenInfo = await markerAPI.getUserTokenInfo()
+            componentState.setTokenInfo(tokenInfo)
+          } catch (error) {
+            console.error('Error fetching token info:', error)
           }
         } catch (error) {
           componentState.setError('Ошибка загрузки отметок')
@@ -157,8 +161,14 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
         await markerAPI.removeMarker(markerId)
 
         // Refresh the markers
-        const markers = await markerAPI.getMarkersByTarget(targetType, targetId, true)
+        const markers = await markerAPI.getMarkersByTarget(targetType, targetId, false)
         componentState.setMarkers(markers)
+
+        // Update own markers
+        if (appState.userInfo) {
+          const userMarkers = markers.filter((m) => m.creator.id === appState.userInfo?.id && !m.removedAt)
+          setOwnMarkers(userMarkers)
+        }
 
         // Get updated token counts
         const tokenCounts = await markerAPI.getTokenCounts(targetType, targetId)
@@ -179,42 +189,31 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
       }
     }
 
-    const isMarkerTypeDisabled = (type: MarkerType): boolean => {
-      if (!appState.userInfo) return false
-      if (type === MarkerType.BOOKMARK) return false
-
-      // Check if the user has enough tokens
-      return componentState.userTokens !== null && componentState.userTokens < 1
-    }
-    const handleOpenAddMarker = (type: MarkerType) => {
-      componentState.setSelectedMarkerType(type)
-
-      const handleAddMarkerSuccess = async (tokenCounts: TokenCounts) => {
+    const handleMarkerUpdated = async (updatedCounts: TokenCounts) => {
+      try {
         // Refresh the markers
-        const markers = await markerAPI.getMarkersByTarget(targetType, targetId, true)
+        const markers = await markerAPI.getMarkersByTarget(targetType, targetId, false)
         componentState.setMarkers(markers)
+
+        // Update own markers
+        if (appState.userInfo) {
+          const userMarkers = markers.filter((m) => m.creator.id === appState.userInfo?.id && !m.removedAt)
+          setOwnMarkers(userMarkers)
+        }
 
         // Notify parent component about the updated token counts
         if (onUpdate) {
-          onUpdate(tokenCounts)
+          onUpdate(updatedCounts)
         }
 
         // Refresh token info
         const tokenInfo = await markerAPI.getUserTokenInfo()
         componentState.setTokenInfo(tokenInfo)
+      } catch (error) {
+        componentState.setError('Ошибка обновления отметок')
+        console.error('Error updating markers:', error)
       }
-
-      appState.setModal(
-        <AddMarkerComponent
-          targetType={targetType}
-          targetId={targetId}
-          onClose={() => appState.setModal(undefined)}
-          onSuccess={handleAddMarkerSuccess}
-          initialMarkerType={type}
-        />,
-      )
     }
-
     // Don't prevent clicks inside the list from closing it
     const handleListClick = (e: React.MouseEvent) => {
       e.stopPropagation()
@@ -248,49 +247,19 @@ export const MarkerListComponent: React.FC<MarkerListComponentProps> = observer(
 
     return (
       <div ref={listRef} className={styles.markerList} onClick={handleListClick}>
-        {/*<div className={styles.header}>*/}
-        {/*  <h3>Отметки</h3>*/}
-        {/*</div>*/}
-
-        {componentState.error && <div className={styles.error}>{componentState.error}</div>}
-
         {appState.userInfo && (
-          <div className={styles.addMarkerRow}>
-            {/*<span className={styles.addMarkerLabel}>Добавить отметку:</span>*/}
-            <div className={styles.addMarkerButtons}>
-              <button
-                className={cn(styles.markerButton, styles.starButton, {
-                  [styles.disabled]: isMarkerTypeDisabled(MarkerType.STAR),
-                })}
-                onClick={() => handleOpenAddMarker(MarkerType.STAR)}
-                disabled={isMarkerTypeDisabled(MarkerType.STAR) || componentState.isSubmitting}
-                title={isMarkerTypeDisabled(MarkerType.STAR) ? 'Недостаточно токенов' : 'Наградить звездой'}
-              >
-                <StarIcon /> наградить
-              </button>
-
-              <button
-                className={cn(styles.markerButton, styles.noteButton, {
-                  [styles.disabled]: isMarkerTypeDisabled(MarkerType.NOTE),
-                })}
-                onClick={() => handleOpenAddMarker(MarkerType.NOTE)}
-                disabled={isMarkerTypeDisabled(MarkerType.NOTE) || componentState.isSubmitting}
-                title={isMarkerTypeDisabled(MarkerType.NOTE) ? 'Недостаточно токенов' : 'Заметка для всех'}
-              >
-                <NoteIcon /> заметка
-              </button>
-
-              <button
-                className={cn(styles.markerButton, styles.bookmarkButton)}
-                onClick={() => handleOpenAddMarker(MarkerType.BOOKMARK)}
-                disabled={componentState.isSubmitting}
-                title='Добавить в закладки себе'
-              >
-                <BookmarkIcon /> в закладки
-              </button>
-            </div>
+          <div className={styles.inlineMarkerWrapper}>
+            <InlineAddMarkerComponent
+              targetType={targetType}
+              targetId={targetId}
+              onClose={() => onClose()}
+              onSuccess={handleMarkerUpdated}
+              ownMarkers={ownMarkers}
+            />
           </div>
         )}
+
+        {componentState.error && <div className={styles.error}>{componentState.error}</div>}
 
         {componentState.isLoading ? (
           <div className={styles.loading}>Загрузка отметок...</div>

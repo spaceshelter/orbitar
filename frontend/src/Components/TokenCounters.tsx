@@ -5,6 +5,7 @@ import { observer } from 'mobx-react-lite'
 import { MarkerTargetType } from '../API/MarkerAPI'
 import { TokenCounts } from '../Types/TokenCounts'
 import { MarkerListComponent } from './MarkerListComponent'
+import TokenIcon from './TokenIcon'
 
 import { ReactComponent as BookmarkIcon } from '../Assets/bookmark.svg'
 import { ReactComponent as NoteIcon } from '../Assets/note.svg'
@@ -58,21 +59,16 @@ const TokenCounters: React.FC<TokenCountersProps> = observer((props) => {
   // If there are no tokens but the entity has been voted on by the current user,
   // we'll still show a faint icon based on vote direction
   const hasNoTokens = stars === 0 && notes === 0 && bookmarks === 0
-  const showVoteIndicator = props.userVote !== undefined && props.userVote !== 0 && hasNoTokens
-
-  // Nothing to display if all counts are zero and no user vote
-  if (hasNoTokens && !showVoteIndicator) {
-    return null
-  }
 
   const handleTogglePopup = (e: React.MouseEvent) => {
     e.stopPropagation()
 
-    const newPopupState = !isPopupOpen
-    setIsPopupOpen(newPopupState)
+    // Toggle popup open/closed state
+    const newState = !isPopupOpen
+    setIsPopupOpen(newState)
 
     // Notify parent about popup state change
-    props.onListToggle?.(newPopupState)
+    props.onListToggle?.(newState)
   }
 
   const handleClosePopup = () => {
@@ -80,6 +76,11 @@ const TokenCounters: React.FC<TokenCountersProps> = observer((props) => {
 
     // Notify parent that popup is closed
     props.onListToggle?.(false)
+  }
+
+  const handleMarkerUpdated = (updatedCounts: TokenCounts) => {
+    // Update the counts via callback
+    props.onUpdate?.(updatedCounts)
   }
 
   return (
@@ -112,33 +113,26 @@ const TokenCounters: React.FC<TokenCountersProps> = observer((props) => {
           </div>
         )}
 
-        {showVoteIndicator && (
+        {/* Show token sphere when there are no counts and no vote indicator */}
+        {hasNoTokens && (
           <div className={styles.tokenCounter}>
-            {props.userVote &&
-              ((props.userVote > 0 && (
-                <span className={`${styles.votedIcon} ${styles.upvoted}`}>
-                  {/*<BookmarkIcon />*/}
-                  <StarIcon />
-                </span>
-              )) || (
-                <span className={`${styles.votedIcon} ${styles.downvoted}`}>
-                  <NoteIcon />
-                </span>
-              ))}
+            <span className={styles.tokenSphere}>
+              <TokenIcon size={16} highlightOnHover={true} />
+            </span>
           </div>
         )}
       </div>
 
-      {isPopupOpen && (
-        <div ref={popupRef} className={styles.markerListWrapper}>
+      <div ref={popupRef} className={styles.markerListWrapper}>
+        {isPopupOpen && (
           <MarkerListComponent
             targetType={mapEntityTypeToTargetType(entityType)}
             targetId={entityId}
             onClose={handleClosePopup}
-            onUpdate={props.onUpdate}
+            onUpdate={handleMarkerUpdated}
           />
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 })

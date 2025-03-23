@@ -1,0 +1,17 @@
+/* Token Icon styles */
+.tokenIcon {
+  fill: currentColor;
+  transition: fill 0.2s ease;
+}
+
+/* Highlightable state */
+svg.highlightable {
+  /* Base state */
+  fill: var(--fgSoftest);
+  opacity: 0.4;
+
+  &:hover {
+    fill: var(--primaryHover);
+    opacity: 1;
+  }
+}

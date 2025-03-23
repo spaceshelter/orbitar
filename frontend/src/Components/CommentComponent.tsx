@@ -4,14 +4,11 @@ import classNames from 'classnames'
 import OutsideClickHandler from 'react-outside-click-handler'
 import { toast } from 'react-toastify'
 
-import { MarkerTargetType } from '../API/MarkerAPI'
 import { useInterpreter } from '../API/use/useInterpreter'
-import { useAPI, useAppState } from '../AppState/AppState'
+import { useAPI } from '../AppState/AppState'
 import Conf from '../Conf'
 import { CommentInfo, PostLinkInfo } from '../Types/PostInfo'
-import { TokenCounts } from '../Types/TokenCounts'
-import AddMarkerComponent from './AddMarkerComponent'
-import { AltTranslateButton, AnnotateButton, StarButton, TranslateButton } from './ContentButtons'
+import { AltTranslateButton, AnnotateButton, TranslateButton } from './ContentButtons'
 import ContentComponent, { LARGE_AUTO_CUT } from './ContentComponent'
 import { CreateCommentComponentRestricted } from './CreateCommentComponent'
 import { HistoryComponent } from './HistoryComponent'
@@ -46,7 +43,6 @@ export default function CommentComponent(props: CommentProps) {
   const [hasOpenList, setHasOpenList] = useState(false)
 
   const api = useAPI()
-  const appState = useAppState()
   const {
     currentMode,
     inProgress,
@@ -128,34 +124,6 @@ export default function CommentComponent(props: CommentProps) {
   const toggleHistory = () => {
     setShowHistory(!showHistory)
   }
-
-  const handleOpenAddMarker = () => {
-    setShowOptions(false)
-
-    const handleMarkerAdded = (tokenCounts: TokenCounts) => {
-      if (props.onEdit) {
-        // Update the comment with new token counts
-        props
-          .onEdit({
-            id: props.comment.id,
-            tokenCounts: tokenCounts,
-          })
-          .catch((err) => {
-            console.log('Could not update comment with new token counts', err)
-          })
-      }
-    }
-
-    appState.setModal(
-      <AddMarkerComponent
-        targetType={MarkerTargetType.COMMENT}
-        targetId={props.comment.id}
-        onClose={() => appState.setModal(undefined)}
-        onSuccess={handleMarkerAdded}
-      />,
-    )
-  }
-
   const { author, created, site, postLink, editFlag } = props.comment
   const content = altContent || props.comment.content
 
@@ -305,14 +273,6 @@ export default function CommentComponent(props: CommentProps) {
                       isActive={currentMode === 'annotate'}
                     />
                   )}
-
-                  <StarButton
-                    inProgress={inProgress}
-                    onClick={() => {
-                      setShowOptions(false)
-                      handleOpenAddMarker()
-                    }}
-                  />
                 </div>
               </OutsideClickHandler>
             )}

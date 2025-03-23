@@ -52,7 +52,3 @@ export function WatchButton(props: ExtendedButtonProps) {
 export function UnwatchButton(props: ExtendedButtonProps) {
   return <BaseButton {...props} icon='unwatch' label='Не отслеживать' />
 }
-
-export function StarButton(props: ExtendedButtonProps) {
-  return <BaseButton {...props} icon='star' label='Отметить' />
-}

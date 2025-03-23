@@ -6,6 +6,8 @@
   white-space: nowrap; /* Prevent wrapping */
   cursor: pointer;
 
+  height: 27px;
+
   /* Ensure tokens stay grouped together regardless of screen size */
   min-width: fit-content;
 
@@ -31,11 +33,11 @@
   background: linear-gradient(to right, rgba(40, 193, 220, 0.05), rgba(100, 120, 255, 0.03)); // Cosmic gradient
   border-radius: 4px;
   padding: 4px 8px;
-  margin: -4px -8px 0 -8px;
+  margin: -4px -8px;
 
   @media only screen and (min-width: 990px) {
     padding: 4px 12px;
-    margin: -4px -12px 0 -12px;
+    margin: -4px -12px;
   }
 }
 
@@ -43,7 +45,7 @@
   background: linear-gradient(to right, rgba(40, 193, 220, 0.05), rgba(100, 120, 255, 0.03)); // Cosmic gradient
   border-radius: 4px;
   padding: 6px 8px;
-  margin: -6px -8px 64px -8px; // Preserve bottom margin
+  margin: -6px -8px 58px -8px; // Preserve bottom margin
 }
 
 .tokenCounter {
@@ -125,6 +127,12 @@
       fill: var(--fgGhost);
       stroke: none;
     }
+  }
+
+  // Token sphere displayed when there are no counts
+  .tokenSphere {
+    position: relative;
+    top: -1px; /* Align with other icons */
   }
 }
 

@@ -10,7 +10,7 @@
   z-index: 500;
   padding: 16px;
   max-height: 80vh;
-  overflow-y: auto;
+  overflow-y: visible;
   font-size: 14px;
 
   // In user profile context, ensure it's positioned properly
@@ -22,8 +22,42 @@
 
   // Positioning the marker list to the right of the screen
   // must be no lower than the value in TokenCounters.module.scss
-  @media only screen and (max-width: 640px) {
+  @media only screen and (max-width: 800px) {
     right: 0;
+  }
+}
+
+.inlineMarkerWrapper {
+  width: 100%;
+  margin-bottom: 12px;
+  position: absolute;
+  z-index: 600; // Higher than the MarkerList z-index
+  top: -24px;
+  left: 0;
+
+  // This ensures the inline marker component inherits the same width as the parent
+  & > div {
+    position: absolute;
+    left: 50%;
+    width: calc(100% - 16px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    border-radius: 6px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border-color);
+
+    // Add arrow pointing down
+    &:after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 0;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-top: 8px solid var(--border-color);
+    }
   }
 }
 
