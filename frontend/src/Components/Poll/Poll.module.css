@@ -115,15 +115,15 @@
 .loading {
   text-align: center;
   padding: 20px;
-  color: #666;
+  color: var(--text);
 }
 
 .error {
-  color: #f44336;
+  color: var(--danger);
   padding: 16px;
   text-align: center;
   border: 1px solid #ffcdd2;
   border-radius: 4px;
-  background-color: #ffebee;
+  background-color: var(--bg);
   margin: 16px 0;
 }
