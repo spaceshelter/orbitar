@@ -79,12 +79,25 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
   if (error) return <div className={styles.error}>{error}</div>
   if (!poll) return null
 
-  const showResults = poll.settings.resultVisibility || poll.userVoted
-  const isPollExpired = poll?.settings.expiresAt && new Date(poll.settings.expiresAt) < new Date()
+  const isPollExpired = poll?.settings.expiresAt ? new Date(poll.settings.expiresAt) < new Date() : false
 
   const renderOptions = () => {
     const isMultipleVotesAllowed = poll?.settings.allowMultipleVotes
     const hasAnyVotes = (poll?.userVoted ?? []).length > 0
+    const hasUserVoted = (poll?.userVoted ?? []).length > 0
+
+    const canShowResults = (() => {
+      switch (poll?.settings.resultVisibility) {
+        case 'always':
+          return true
+        case 'after_vote':
+          return hasUserVoted
+        case 'after_vote_end':
+          return hasUserVoted && isPollExpired
+        default:
+          return false
+      }
+    })()
 
     return poll.options.map((option, idx) => {
       const percentage = calculatePercentage(option.votes)
@@ -104,7 +117,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
           <div className={styles.progressBar} style={{ width: `${percentage}%` }} />
           <div className={styles.optionContent}>
             <span className={styles.optionText}>{option.text}</span>
-            {showResults && (
+            {canShowResults && (
               <div className={styles.results}>
                 <span className={styles.votes}>
                   {option.votes} {option.votes === 1 ? 'голос' : 'голосов'}
