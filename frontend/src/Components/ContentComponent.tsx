@@ -137,15 +137,7 @@ function updateContent(
   })
 
   div.querySelectorAll('poll').forEach((pollEl) => {
-    const pollId = pollEl.getAttribute('data-poll-id')
-    if (pollId) {
-      ReactDOM.render(
-        <FakeRoot appState={appState}>
-          <Poll pollId={pollId} />
-        </FakeRoot>,
-        pollEl,
-      )
-    }
+    updatePoll(pollEl as HTMLDivElement, appState, cleanupRegistry)
   })
 }
 
@@ -643,6 +635,14 @@ function stopInnerVideos(el: Element, except?: HTMLVideoElement | HTMLIFrameElem
       stopVideo(iframe as HTMLIFrameElement | HTMLVideoElement)
     }
   })
+}
+
+function updatePoll(pollEl: HTMLDivElement, appState: AppState, cleanupRegistry: CleanupRegistry) {
+  const pollId = pollEl.getAttribute('data-poll-id')
+  if (!pollId) {
+    return
+  }
+  cleanupRegistry.register(renderWithTheme(pollEl, <Poll pollId={pollId} />, appState))
 }
 
 export default function ContentComponent(props: ContentComponentProps) {
