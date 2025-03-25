@@ -20,7 +20,7 @@ export interface Poll {
   question: string
   options: PollOption[]
   totalVotes: number
-  userVoted?: string
+  userVoted?: number[]
   settings: PollSettings
 }
 

@@ -22,7 +22,7 @@ class PollService {
         voteAccess: poll.settings.vote_access,
         expiresAt: poll.expires_at,
       },
-      userVoted: poll.user_vote ? String(poll.user_vote[0]) : undefined,
+      userVoted: poll.user_vote ? poll.user_vote : [],
     }
   }
 

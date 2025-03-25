@@ -4,7 +4,7 @@ import { Poll } from './Poll'
 
 interface PollRendererProps {
   content: string
-  onVote?: (pollId: string, optionId: string) => void
+  onVote?: (pollId: string, optionId: number) => void
 }
 
 export const PollRenderer: React.FC<PollRendererProps> = ({ content, onVote }) => {

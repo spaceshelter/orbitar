@@ -9,14 +9,14 @@ import styles from './Poll.module.css'
 
 interface PollProps {
   pollId: string
-  onVote?: (pollId: string, optionId: string) => void
+  onVote?: (pollId: string, optionId: number) => void
 }
 
 export const Poll: React.FC<PollProps> = ({ pollId, onVote }) => {
   const [poll, setPoll] = useState<PollType | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedOption, setSelectedOption] = useState<string | null>(null)
+  const [selectedOptions, setSelectedOptions] = useState<number[]>([])
 
   const fetchPoll = async () => {
     try {
@@ -24,7 +24,7 @@ export const Poll: React.FC<PollProps> = ({ pollId, onVote }) => {
       console.log('pollData', pollData)
       setPoll(pollData)
       if (pollData.userVoted) {
-        setSelectedOption(pollData.userVoted)
+        setSelectedOptions(pollData.userVoted)
       }
     } catch (err) {
       setError('Не удалось загрузить опрос')
@@ -35,18 +35,20 @@ export const Poll: React.FC<PollProps> = ({ pollId, onVote }) => {
 
   useEffect(() => {
     fetchPoll()
-  }, [pollId, selectedOption])
+  }, [pollId])
 
-  const handleVote = async (optionId: string) => {
+  const handleVote = async (optionId: number) => {
+    console.log('handleVote', optionId)
     if (!poll) return
-    if (poll.userVoted !== 'undefined' && !poll.settings.allowMultipleVotes) return
+    if (poll.userVoted?.length !== 0 && !poll.settings.allowMultipleVotes) return
 
     try {
       const response = await PollService.vote({ poll_id: Number(pollId), option_ids: [Number(optionId)] })
       if (response) {
         const updatedPoll = await PollService.getPoll(pollId)
         setPoll(updatedPoll)
-        setSelectedOption(optionId)
+        setSelectedOptions([...selectedOptions, optionId])
+        console.log('selectedOptions', selectedOptions)
         if (onVote) {
           onVote(pollId, optionId)
         }
@@ -64,7 +66,7 @@ export const Poll: React.FC<PollProps> = ({ pollId, onVote }) => {
       if (response) {
         const updatedPoll = await PollService.getPoll(pollId)
         setPoll(updatedPoll)
-        setSelectedOption(null)
+        setSelectedOptions([])
       }
     } catch (err) {
       setError('Не удалось отменить голос')
@@ -80,9 +82,10 @@ export const Poll: React.FC<PollProps> = ({ pollId, onVote }) => {
   if (error) return <div className={styles.error}>{error}</div>
   if (!poll) return null
 
-  const canVote = poll.userVoted === 'undefined' || poll.settings.allowMultipleVotes
+  //  const canVote = poll.userVoted === 'undefined' || poll.settings.allowMultipleVotes
   const showResults = poll.settings.resultVisibility || poll.userVoted
 
+  console.log('options', poll.options)
   return (
     <div className={styles.pollContainer}>
       <h3 className={styles.question}>{poll.question}</h3>
@@ -90,20 +93,21 @@ export const Poll: React.FC<PollProps> = ({ pollId, onVote }) => {
       <div className={styles.options}>
         {poll.options.map((option, idx) => {
           const percentage = calculatePercentage(option.votes)
-          const isSelected = String(idx) === selectedOption
+          const isSelected = selectedOptions.includes(idx)
+          const canSelectMore = poll.settings.allowMultipleVotes || !poll.userVoted
 
           return (
             <div
               key={`${idx}-${poll.poll_id}`}
-              className={`${styles.option} ${isSelected ? styles.selected : ''}`}
-              onClick={() => canVote && handleVote(String(idx))}
-              style={{ cursor: canVote ? 'pointer' : 'default' }}
+              className={`${styles.option} ${isSelected ? styles.selected : ''} ${!canSelectMore && !isSelected ? styles.disabled : ''}`}
+              onClick={() => canSelectMore && handleVote(idx)}
+              style={{ cursor: canSelectMore ? 'pointer' : 'default' }}
             >
+              <div className={styles.progressBar} style={{ width: `${percentage}%` }} />
               <div className={styles.optionContent}>
                 <span className={styles.optionText}>{option.text}</span>
                 {showResults && (
                   <div className={styles.results}>
-                    <div className={styles.progressBar} style={{ width: `${percentage}%` }} />
                     <span className={styles.votes}>
                       {option.votes} {option.votes === 1 ? 'голос' : 'голосов'}
                     </span>
