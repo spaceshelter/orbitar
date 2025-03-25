@@ -49,7 +49,6 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
         const updatedPoll = await PollService.getPoll(pollId)
         setPoll(updatedPoll)
         setSelectedOptions((prevOptions) => [...prevOptions, optionId])
-        console.log('selectedOptions', [...selectedOptions, optionId])
       }
     } catch (err) {
       setError('Не удалось отправить голос')
@@ -82,8 +81,6 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
 
   const showResults = poll.settings.resultVisibility || poll.userVoted
   const isPollExpired = poll?.settings.expiresAt && new Date(poll.settings.expiresAt) < new Date()
-
-  console.log('options', poll.options)
 
   const renderOptions = () => {
     const isMultipleVotesAllowed = poll?.settings.allowMultipleVotes
