@@ -37,7 +37,11 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
   }, [fetchPoll])
 
   const handleVote = async (optionId: number) => {
-    if (!poll || (poll.userVoted?.length !== 0 && !poll.settings.allowMultipleVotes)) return
+    const hasVoted = poll?.userVoted?.includes(optionId)
+    const isMultipleVotesAllowed = poll?.settings.allowMultipleVotes
+    const hasAnyVotes = (poll?.userVoted ?? []).length > 0
+    const isPollExpired = poll?.settings.expiresAt && new Date(poll.settings.expiresAt) < new Date()
+    if (!poll || hasVoted || (!isMultipleVotesAllowed && hasAnyVotes) || isPollExpired) return
 
     try {
       const response = await PollService.vote({ poll_id: Number(pollId), option_ids: [Number(optionId)] })
@@ -76,17 +80,20 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
   if (error) return <div className={styles.error}>{error}</div>
   if (!poll) return null
 
-  //  const canVote = poll.userVoted === 'undefined' || poll.settings.allowMultipleVotes
   const showResults = poll.settings.resultVisibility || poll.userVoted
+  const isPollExpired = poll?.settings.expiresAt && new Date(poll.settings.expiresAt) < new Date()
 
   console.log('options', poll.options)
 
   const renderOptions = () => {
+    const isMultipleVotesAllowed = poll?.settings.allowMultipleVotes
+    const hasAnyVotes = (poll?.userVoted ?? []).length > 0
+
     return poll.options.map((option, idx) => {
       const percentage = calculatePercentage(option.votes)
       const isSelected = selectedOptions.includes(idx)
-      const hasVoted = poll.userVoted?.includes(idx)
-      const isDisabled = hasVoted || (!poll.settings.allowMultipleVotes && poll.userVoted?.length)
+      const hasVoted = (poll.userVoted ?? []).includes(idx)
+      const isDisabled = isPollExpired || hasVoted || (!isMultipleVotesAllowed && hasAnyVotes)
 
       return (
         <div
@@ -114,26 +121,47 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
     })
   }
 
+  const renderPollExpiration = () => {
+    if (isPollExpired) {
+      return (
+        <div className={styles.expiration}>
+          <span>Опрос завершен</span>
+        </div>
+      )
+    }
+
+    if (poll.settings.expiresAt) {
+      return (
+        <div className={styles.expiration}>
+          <span>Опрос завершится: </span>
+          <DateComponent date={new Date(poll.settings.expiresAt)} />
+        </div>
+      )
+    }
+  }
+
+  const renderTotalVotes = () => {
+    return (
+      <>
+        Всего голосов: {poll.totalVotes || 0}
+        {poll.userVoted && poll.settings.allowVoteRescinding && !isPollExpired && (
+          <button className={styles.rescindButton} onClick={handleRescindVote}>
+            Отменить голос
+          </button>
+        )}
+      </>
+    )
+  }
+
   return (
     <div className={styles.pollContainer}>
       <h3 className={styles.question}>{poll.question}</h3>
 
       <div className={styles.options}>{renderOptions()}</div>
 
-      {poll.settings.expiresAt && (
-        <div className={styles.expiration}>
-          <DateComponent date={new Date(poll.settings.expiresAt)} />
-        </div>
-      )}
+      {renderPollExpiration()}
 
-      <div className={styles.totalVotes}>
-        Всего голосов: {poll.totalVotes || 0}
-        {poll.userVoted && poll.settings.allowVoteRescinding && (
-          <button className={styles.rescindButton} onClick={handleRescindVote}>
-            Отменить голос
-          </button>
-        )}
-      </div>
+      <div className={styles.totalVotes}>{renderTotalVotes()}</div>
     </div>
   )
 }
