@@ -40,7 +40,7 @@ export default class PollRepository {
     return await this.db.fetchOne<PollRecord>('SELECT * FROM polls WHERE poll_id = ?', [pollId])
   }
 
-  async getPolls(siteId: number, limit: number = 20, offset: number = 0, activeOnly: boolean = false) {
+  async getPolls(siteId: number, limit = 20, offset = 0, activeOnly = false) {
     const whereClause = activeOnly
       ? 'WHERE site_id = ? AND (expires_at IS NULL OR expires_at > NOW())'
       : 'WHERE site_id = ?'
@@ -80,7 +80,7 @@ export default class PollRepository {
       pollId,
       voterId,
     ])
-    return (votes as any[]).map((v) => v.option_id)
+    return (votes as RowDataPacket[]).map((v) => v.option_id)
   }
 
   async incrementVoteCount(pollId: number, optionId: number) {

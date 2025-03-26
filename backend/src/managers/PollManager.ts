@@ -17,7 +17,7 @@ interface PollRecord extends RowDataPacket {
 
 interface PollRecordParsed extends Omit<PollRecord, 'options' | 'settings'> {
   options: string[]
-  settings: PollSettingsEntity 
+  settings: PollSettingsEntity
 }
 
 export default class PollManager {
@@ -70,8 +70,10 @@ export default class PollManager {
     }
     const result = await this.pollRepository.createPoll(authorId, siteId, question, options, settings, expiresAt)
 
-    const pollId = (result as any).insertId
-    return (await this.getPollWithVotes(pollId))!
+    const pollId = (result as RowDataPacket).insertId
+    const poll = await this.getPollWithVotes(pollId)
+    if (!poll) throw new Error('Failed to create poll')
+    return poll
   }
 
   async vote(pollId: number, voterId: number, optionIds: number[]): Promise<PollEntity> {
@@ -147,9 +149,9 @@ export default class PollManager {
 
   async getPolls(
     siteId: number,
-    limit: number = 20,
-    offset: number = 0,
-    activeOnly: boolean = false,
+    limit = 20,
+    offset = 0,
+    activeOnly = false,
   ): Promise<{ polls: PollEntity[]; total: number }> {
     const result = await this.pollRepository.getPolls(siteId, limit, offset, activeOnly)
     const polls = Array.isArray(result.polls) ? result.polls : []

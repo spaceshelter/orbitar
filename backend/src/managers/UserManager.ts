@@ -389,8 +389,6 @@ export default class UserManager {
     const daysOnSite = this.getDaysOnSite(user)
     const userIsNew = daysOnSite < NEW_USER_AGE_DAYS
 
-    const onTrial = user.ontrial
-
     const effectiveKarmaWOPenalty =
       localCachedValue?.effectiveKarmaWOPenalty ?? (await this.getUserEffectiveKarma(userId)).effectiveKarma
     const penalty = ~~(await this.redis.get(`karma_penalty_${userId}`)) // parses string to int or 0
