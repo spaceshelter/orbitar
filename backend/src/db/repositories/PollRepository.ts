@@ -64,31 +64,33 @@ export default class PollRepository {
   }
 
   async vote(pollId: number, voterId: number, optionId: number) {
-    await this.db.query('INSERT INTO poll_votes (poll_id, voter_id, option_id) VALUES (?, ?, ?)', [
-      pollId,
-      voterId,
-      optionId,
-    ])
+    return await this.db.inTransaction(async (connection) => {
+      await connection.query('INSERT INTO poll_votes (poll_id, voter_id, option_id) VALUES (?, ?, ?)', [
+        pollId,
+        voterId,
+        optionId,
+      ])
+
+      await connection.query(`UPDATE polls SET opt${optionId} = opt${optionId} + 1 WHERE poll_id = ?`, [pollId])
+    })
   }
 
-  async removeVotes(pollId: number, voterId: number) {
-    await this.db.query('DELETE FROM poll_votes WHERE poll_id = ? AND voter_id = ?', [pollId, voterId])
+  async removeVotes(pollId: number, voterId: number, previousVotes: number[]) {
+    return await this.db.inTransaction(async (connection) => {
+      await connection.query('DELETE FROM poll_votes WHERE poll_id = ? AND voter_id = ?', [pollId, voterId])
+
+      for (const optionId of previousVotes) {
+        await this.db.query(`UPDATE polls SET opt${optionId} = opt${optionId} - 1 WHERE poll_id = ?`, [pollId])
+      }
+    })
   }
 
-  async getUserVotes(pollId: number, voterId: number) {
+  async getUserVotes(pollId: number, voterId: number): Promise<number[]> {
     const votes = await this.db.query('SELECT option_id FROM poll_votes WHERE poll_id = ? AND voter_id = ?', [
       pollId,
       voterId,
     ])
     return (votes as RowDataPacket[]).map((v) => v.option_id)
-  }
-
-  async incrementVoteCount(pollId: number, optionId: number) {
-    await this.db.query(`UPDATE polls SET opt${optionId} = opt${optionId} + 1 WHERE poll_id = ?`, [pollId])
-  }
-
-  async decrementVoteCount(pollId: number, optionId: number) {
-    await this.db.query(`UPDATE polls SET opt${optionId} = opt${optionId} - 1 WHERE poll_id = ?`, [pollId])
   }
 
   async getSiteIdFromPost(postId: number): Promise<{ site_id: number } | undefined> {

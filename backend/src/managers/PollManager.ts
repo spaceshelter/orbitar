@@ -101,16 +101,12 @@ export default class PollManager {
         if (!settings.allow_vote_rescinding) {
           throw new Error('Vote rescinding not allowed')
         }
-        await this.pollRepository.removeVotes(pollId, voterId)
-        for (const optionId of previousVotes) {
-          await this.pollRepository.decrementVoteCount(pollId, optionId)
-        }
+        await this.pollRepository.removeVotes(pollId, voterId, previousVotes)
       }
     }
 
     for (const optionId of optionIds) {
       await this.pollRepository.vote(pollId, voterId, optionId)
-      await this.pollRepository.incrementVoteCount(pollId, optionId)
     }
 
     return await this.getPollWithVotes(pollId, voterId)
@@ -135,10 +131,7 @@ export default class PollManager {
       throw new Error('No vote to rescind')
     }
 
-    await this.pollRepository.removeVotes(pollId, voterId)
-    for (const optionId of previousVotes) {
-      await this.pollRepository.decrementVoteCount(pollId, optionId)
-    }
+    await this.pollRepository.removeVotes(pollId, voterId, previousVotes)
 
     return await this.getPollWithVotes(pollId, voterId)
   }
