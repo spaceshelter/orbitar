@@ -64,7 +64,7 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
     setOptions(options.map((opt) => (opt.id === id ? { ...opt, text } : opt)))
   }
 
-  const handleSettingChange = (key: keyof PollSettings, value: any) => {
+  const handleSettingChange = (key: keyof PollSettings, value: string | number | boolean | null) => {
     setSettings({ ...settings, [key]: value })
   }
 

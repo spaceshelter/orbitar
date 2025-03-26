@@ -11,7 +11,7 @@ interface CacheEntry<V> {
 
 interface PendingRequest<V> {
   resolve: (value: V) => void
-  reject: (error: any) => void
+  reject: (error: Error | unknown) => void
 }
 
 export class BatchedCache<K, V> {
