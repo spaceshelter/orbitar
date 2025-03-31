@@ -74,7 +74,7 @@ export default class PollController {
     const createSchema = Joi.object<PollCreateRequest>({
       site: Joi.string().required(),
       question: Joi.string().required().max(1000),
-      options: Joi.array().items(Joi.string().max(200)).min(2).max(32).required(),
+      options: Joi.array().items(Joi.string().max(64)).min(2).max(32).required(),
       settings: Joi.object({
         allow_multiple_choice: Joi.boolean(),
         result_visibility: Joi.string().valid('always', 'after_vote', 'after_vote_end'),

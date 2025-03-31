@@ -136,6 +136,7 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
           onChange={(e) => handleOptionChange(option.id, e.target.value)}
           placeholder='Вариант ответа'
           required
+          maxLength={64}
         />
         {options.length > 2 && (
           <Button variant='link' size='bigger' onClick={() => handleRemoveOption(option.id)}>
