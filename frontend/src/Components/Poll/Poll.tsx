@@ -18,6 +18,8 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
   const [error, setError] = useState<string | null>(null)
   const [selectedOptions, setSelectedOptions] = useState<number[]>([])
 
+  const hasUserVoted = (poll?.userVoted ?? []).length > 0
+
   const fetchPoll = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -87,7 +89,6 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
   const renderOptions = () => {
     const isMultipleVotesAllowed = poll?.settings.allowMultipleVotes
     const hasAnyVotes = (poll?.userVoted ?? []).length > 0
-    const hasUserVoted = (poll?.userVoted ?? []).length > 0
 
     const canShowResults = (() => {
       switch (poll?.settings.resultVisibility) {
@@ -157,7 +158,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
     return (
       <>
         Всего голосов: {poll.totalVotes || 0}
-        {poll.userVoted && poll.settings.allowVoteRescinding && !isPollExpired && (
+        {hasUserVoted && poll.settings.allowVoteRescinding && !isPollExpired && (
           <button className={styles.rescindButton} onClick={handleRescindVote}>
             Отменить голос
           </button>
