@@ -236,10 +236,9 @@ export default class TheParser {
 
     const [, channelName, postId] = match
     const telegramUrl = `https://t.me/${channelName}/${postId}`
+    const expandButton = `<span role="button" class="expand-button i i-expand" data-telegram-url="${encodeURI(telegramUrl)}"></span>`
 
-    return `<div data-telegram-url="${encodeURI(telegramUrl)}">
-        <a href="${encodeURI(telegramUrl)}" target="_blank">${htmlEscape(decodeURI(telegramUrl))}</a>
-    </div>`
+    return `${expandButton}<a href="${encodeURI(telegramUrl)}" target="_blank">${htmlEscape(decodeURI(telegramUrl))}</a>`
   }
 
   processImage(url: Url<string>) {
