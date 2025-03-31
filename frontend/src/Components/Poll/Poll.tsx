@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 
 import DateComponent from '@components/DateComponent'
+import { toast } from 'react-toastify'
 
 import PollService from '../../Services/PollService'
 import { Poll as PollType } from '../../Types/Poll'
@@ -76,7 +77,9 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
   }
 
   if (loading) return <div className={styles.loading}>Загрузка...</div>
-  if (error) return <div className={styles.error}>{error}</div>
+  if (error) {
+    toast.error(error)
+  }
   if (!poll) return null
 
   const isPollExpired = poll?.settings.expiresAt ? new Date(poll.settings.expiresAt) < new Date() : false
