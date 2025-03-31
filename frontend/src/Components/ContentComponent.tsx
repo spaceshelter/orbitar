@@ -286,12 +286,13 @@ function updateMail(
   })
 }
 
-function updateInternalExpandButton(expandButton: HTMLElement, appState: AppState, cleanupRegistry: CleanupRegistry) {
-  // Extract post and comment numbers from data-attributes
-  const postId = expandButton.getAttribute('data-post-id')
-  const commentId = expandButton.getAttribute('data-comment-id')
-  const src = expandButton.getAttribute('data-telegram-url')
-  const nextLink = expandButton.nextElementSibling
+function processExpandLink(
+  expandButton: HTMLElement,
+  nextLink: Element | null,
+  getContent: () => React.ReactNode,
+  appState: AppState,
+  cleanupRegistry: CleanupRegistry,
+): void {
   let contentCleanupHandler: CleanupHandler | undefined
 
   // Add click event listener to the expand button
@@ -319,27 +320,7 @@ function updateInternalExpandButton(expandButton: HTMLElement, appState: AppStat
       // Add the rect after the link
       link.parentNode?.insertBefore(newRect, link.nextSibling)
 
-      const content = src ? (
-        (() => {
-          const ThemeAwareTelegramEmbed = () => {
-            const { theme } = useTheme()
-            return <TelegramEmbed src={src} theme={theme === 'dark' ? 'dark' : undefined} />
-          }
-          return <ThemeAwareTelegramEmbed />
-        })()
-      ) : (
-        <InternalLinkExpandComponent
-          postId={Number(postId)}
-          commentId={commentId ? Number(commentId) : undefined}
-          onClose={() => {
-            contentCleanupHandler?.cleanup()
-            contentCleanupHandler = undefined
-            newRect.remove()
-          }}
-        />
-      )
-
-      contentCleanupHandler = cleanupRegistry.register(renderWithTheme(newRect, content, appState))
+      contentCleanupHandler = cleanupRegistry.register(renderWithTheme(newRect, getContent(), appState))
     }
     return false
   }
@@ -347,6 +328,66 @@ function updateInternalExpandButton(expandButton: HTMLElement, appState: AppStat
   if (nextLink && nextLink.tagName === 'A') {
     expandButton.addEventListener('click', listener)
     nextLink.addEventListener('click', listener)
+  }
+}
+
+function processTelegramEmbed(expandButton: HTMLElement, appState: AppState, cleanupRegistry: CleanupRegistry): void {
+  const src = expandButton.getAttribute('data-telegram-url')
+  if (!src) return
+
+  const nextLink = expandButton.nextElementSibling
+
+  processExpandLink(
+    expandButton,
+    nextLink,
+    () => {
+      const ThemeAwareTelegramEmbed = () => {
+        const { theme } = useTheme()
+        return <TelegramEmbed src={src} theme={theme === 'dark' ? 'dark' : undefined} />
+      }
+      return <ThemeAwareTelegramEmbed />
+    },
+    appState,
+    cleanupRegistry,
+  )
+}
+
+function processInternalLink(expandButton: HTMLElement, appState: AppState, cleanupRegistry: CleanupRegistry): void {
+  const postId = expandButton.getAttribute('data-post-id')
+  const commentId = expandButton.getAttribute('data-comment-id')
+  if (!postId) return
+
+  const nextLink = expandButton.nextElementSibling
+
+  processExpandLink(
+    expandButton,
+    nextLink,
+    () => (
+      <InternalLinkExpandComponent
+        postId={Number(postId)}
+        commentId={commentId ? Number(commentId) : undefined}
+        onClose={() => {
+          const link = nextLink as HTMLAnchorElement
+          const rect = link.nextElementSibling as HTMLDivElement
+          if (rect && rect.className === 'internal-link-rect') {
+            rect.remove()
+            expandButton.classList.remove('expanded')
+          }
+        }}
+      />
+    ),
+    appState,
+    cleanupRegistry,
+  )
+}
+
+function updateInternalExpandButton(expandButton: HTMLElement, appState: AppState, cleanupRegistry: CleanupRegistry) {
+  const src = expandButton.getAttribute('data-telegram-url')
+
+  if (src) {
+    processTelegramEmbed(expandButton, appState, cleanupRegistry)
+  } else if (expandButton.getAttribute('data-post-id')) {
+    processInternalLink(expandButton, appState, cleanupRegistry)
   }
 }
 
