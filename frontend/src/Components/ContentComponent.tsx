@@ -574,7 +574,7 @@ function stopVideo(el: HTMLVideoElement | HTMLIFrameElement) {
 }
 
 function stopInnerVideos(el: Element, except?: HTMLVideoElement | HTMLIFrameElement) {
-  el.querySelectorAll('video,iframe.youtube-embed,iframe.vimeo-embed,iframe.coub-embed,iframe.telegram-embed').forEach(
+  el.querySelectorAll('video,iframe.youtube-embed,iframe.vimeo-embed,iframe.coub-embed').forEach(
     (iframe) => {
       if (iframe === except) {
         return
