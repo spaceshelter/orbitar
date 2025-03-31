@@ -319,27 +319,26 @@ function updateInternalExpandButton(expandButton: HTMLElement, appState: AppStat
       // Add the rect after the link
       link.parentNode?.insertBefore(newRect, link.nextSibling)
 
-      if (src) {
-        const ThemeAwareTelegramEmbed = () => {
-          const { theme } = useTheme()
-          return <TelegramEmbed src={src} theme={theme === 'dark' ? 'dark' : undefined} />
-        }
+      const content = src ? (
+        (() => {
+          const ThemeAwareTelegramEmbed = () => {
+            const { theme } = useTheme()
+            return <TelegramEmbed src={src} theme={theme === 'dark' ? 'dark' : undefined} />
+          }
+          return <ThemeAwareTelegramEmbed />
+        })()
+      ) : (
+        <InternalLinkExpandComponent
+          postId={Number(postId)}
+          commentId={commentId ? Number(commentId) : undefined}
+          onClose={() => {
+            contentCleanupHandler?.cleanup()
+            contentCleanupHandler = undefined
+            newRect.remove()
+          }}
+        />
+      )
 
-       const content = (
-            <ThemeAwareTelegramEmbed />          
-        )
-      } else {
-         const content = (
-            <InternalLinkExpandComponent
-              postId={Number(postId)}
-              commentId={commentId ? Number(commentId) : undefined}
-              onClose={() => {
-                ReactDOM.unmountComponentAtNode(newRect)
-                newRect.remove()
-              }}
-            />          
-        )
-      }
       contentCleanupHandler = cleanupRegistry.register(renderWithTheme(newRect, content, appState))
     }
     return false
@@ -636,16 +635,14 @@ function stopVideo(el: HTMLVideoElement | HTMLIFrameElement) {
 }
 
 function stopInnerVideos(el: Element, except?: HTMLVideoElement | HTMLIFrameElement) {
-  el.querySelectorAll('video,iframe.youtube-embed,iframe.vimeo-embed,iframe.coub-embed').forEach(
-    (iframe) => {
-      if (iframe === except) {
-        return
-      }
-      if (iframe instanceof HTMLIFrameElement || iframe instanceof HTMLVideoElement) {
-        stopVideo(iframe as HTMLIFrameElement | HTMLVideoElement)
-      }
-    },
-  )
+  el.querySelectorAll('video,iframe.youtube-embed,iframe.vimeo-embed,iframe.coub-embed').forEach((iframe) => {
+    if (iframe === except) {
+      return
+    }
+    if (iframe instanceof HTMLIFrameElement || iframe instanceof HTMLVideoElement) {
+      stopVideo(iframe as HTMLIFrameElement | HTMLVideoElement)
+    }
+  })
 }
 
 export default function ContentComponent(props: ContentComponentProps) {
