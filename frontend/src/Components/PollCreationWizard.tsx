@@ -56,6 +56,16 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
     resultVisibility: 'always',
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768)
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   // Load draft from localStorage
   useEffect(() => {
@@ -152,7 +162,7 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
       open={isOpen}
       onClose={handleClose}
       direction='right'
-      size={480}
+      size={isMobile ? '100%' : 480}
       className={styles.drawer}
       enableOverlay
       overlayOpacity={0.5}
@@ -162,6 +172,11 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
       <div className={styles.drawerContent}>
         <div className={styles.header}>
           <h2>Создание опроса</h2>
+          {isMobile && (
+            <Button variant='link' onClick={handleClose} style={{ marginLeft: 'auto' }}>
+              ✕
+            </Button>
+          )}
         </div>
 
         <div className={styles.form}>
@@ -174,6 +189,7 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
               onChange={(e) => setQuestion(e.target.value)}
               placeholder='Введите ваш вопрос'
               required
+              rows={isMobile ? 3 : 4}
             />
           </div>
 
@@ -187,7 +203,6 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
 
           <div className={styles.settingsSection}>
             <label>Настройки</label>
-            {/* TODO: Check styles */}
             <div className={styles.settingRow}>
               <label htmlFor='expiration'>Срок действия (дни)</label>
               <Field
@@ -251,10 +266,10 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
           </div>
 
           <div className={styles.actions}>
-            <Button variant='link' onClick={onClose} disabled={isSubmitting}>
+            <Button variant='link' onClick={handleClose} disabled={isSubmitting}>
               Отмена
             </Button>
-            <Button variant='link' onClick={handleSubmit} disabled={isSubmitting}>
+            <Button variant='positive' onClick={handleSubmit} disabled={isSubmitting}>
               {isSubmitting ? 'Создание...' : 'Создать опрос'}
             </Button>
           </div>

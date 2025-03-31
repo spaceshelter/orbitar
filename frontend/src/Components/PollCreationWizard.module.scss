@@ -1,18 +1,28 @@
-// Layout styles
+// Drawer styles
 .drawerContent {
   height: 100%;
   display: flex;
   flex-direction: column;
   padding: 2rem;
   overflow-y: auto;
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
 }
 
 .header {
   display: flex;
   margin-bottom: 2rem;
+  align-items: center;
 
   h2 {
     margin: 0;
+    font-size: 1.5rem;
+
+    @media (max-width: 768px) {
+      font-size: 1.25rem;
+    }
   }
 }
 
@@ -21,6 +31,10 @@
   flex-direction: column;
   gap: 2rem;
   flex: 1;
+
+  @media (max-width: 768px) {
+    gap: 1.5rem;
+  }
 }
 
 // Section styles
@@ -30,6 +44,10 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
+
+  @media (max-width: 768px) {
+    gap: 0.75rem;
+  }
 }
 
 // Option styles
@@ -37,6 +55,10 @@
   display: flex;
   gap: 0.5rem;
   align-items: center;
+
+  @media (max-width: 768px) {
+    gap: 0.25rem;
+  }
 }
 
 // Settings styles
@@ -46,18 +68,37 @@
   align-items: center;
   gap: 1rem;
 
+  @media (max-width: 768px) {
+    gap: 0.5rem;
+  }
+
   label {
     color: var(--fgSoft);
+    font-size: 0.9rem;
+
+    @media (max-width: 768px) {
+      font-size: 0.85rem;
+      min-width: 50%;
+    }
   }
 
   input[type="number"],
   select {
     width: 160px;
+
+    @media (max-width: 768px) {
+      width: 100%;
+    }
   }
 
   input[type="checkbox"] {
     width: 20px;
     height: 20px;
+
+    @media (max-width: 768px) {
+      width: 18px;
+      height: 18px;
+    }
   }
 }
 
@@ -68,6 +109,12 @@
   text-align: left;
   padding: 8px;
   border-radius: 4px;
+  font-size: 0.9rem;
+
+  @media (max-width: 768px) {
+    padding: 6px;
+    font-size: 0.85rem;
+  }
 
   &:hover {
     background: var(--dim3);
@@ -82,4 +129,14 @@
   margin-top: auto;
   margin-bottom: 2rem;
   padding-top: 24px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 16px;
+
+    button {
+      width: 100%;
+    }
+  }
 }
