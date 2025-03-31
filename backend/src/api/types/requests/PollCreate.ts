@@ -1,7 +1,7 @@
 import { PollEntity, PollSettingsEntity } from '../entities/PollEntity'
 
 export interface PollCreateRequest {
-  post_id: number
+  site: string
   question: string
   options: string[]
   settings?: PollSettingsEntity

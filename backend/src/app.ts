@@ -267,6 +267,7 @@ const requests = [
   new PollController(
     pollManager,
     userManager,
+    siteManager,
     oauthMiddlewareGenerator,
     logger.child({ service: 'POLL' }),
     pollRepository,

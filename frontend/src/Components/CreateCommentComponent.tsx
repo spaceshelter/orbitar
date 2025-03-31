@@ -11,7 +11,7 @@ import { toast } from 'react-toastify'
 import getCaretCoordinates from 'textarea-caret'
 import { useDebouncedCallback } from 'use-debounce'
 
-import { useAPI, useAppState } from '../AppState/AppState'
+import { useAPI, useAppState, useSiteName } from '../AppState/AppState'
 import { CommentInfo, PostLinkInfo } from '../Types/PostInfo'
 import { UserGender } from '../Types/UserInfo'
 import ContentComponent from './ContentComponent'
@@ -138,6 +138,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
   const [mailForm, setFormOpen] = useState(false)
 
   const api = useAPI()
+  const { siteName } = useSiteName()
 
   const pronoun =
     props?.comment?.author?.gender === UserGender.he
@@ -422,14 +423,9 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
   }
 
   const handlePollCreate = async (pollData: any) => {
-    if (!props.post?.id) {
-      toast.error('Не удалось создать опрос: пост не найден')
-      return
-    }
-
     try {
       const result = await api.pollAPI.createPoll({
-        post_id: props.post.id,
+        site: siteName,
         question: pollData.question,
         options: pollData.options.map((opt: any) => opt.text),
         settings: {

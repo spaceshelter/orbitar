@@ -8,7 +8,7 @@ import {
 import APIBase from './APIBase'
 
 export interface CreatePollRequest {
-  post_id: number
+  site: string
   question: string
   options: string[]
   settings: {

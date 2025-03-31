@@ -92,10 +92,4 @@ export default class PollRepository {
     ])
     return (votes as RowDataPacket[]).map((v) => v.option_id)
   }
-
-  async getSiteIdFromPost(postId: number): Promise<{ site_id: number } | undefined> {
-    return await this.db.fetchOne<{ site_id: number }>('select site_id from posts where post_id=:post_id', {
-      post_id: postId,
-    })
-  }
 }
