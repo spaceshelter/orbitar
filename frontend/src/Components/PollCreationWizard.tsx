@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 import Drawer from 'react-modern-drawer'
 
@@ -26,11 +26,19 @@ interface PollSettings {
   resultVisibility: 'always' | 'after_vote' | 'after_end'
 }
 
+interface PollDraft {
+  question: string
+  options: PollOption[]
+  settings: PollSettings
+}
+
 interface PollCreationWizardProps {
   isOpen: boolean
   onClose: () => void
   onSubmit: (data: { question: string; options: PollOption[]; settings: PollSettings }) => Promise<void>
 }
+
+const STORAGE_KEY = 'poll_draft'
 
 export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, onClose, onSubmit }) => {
   useNoScroll()
@@ -48,6 +56,31 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
     resultVisibility: 'always',
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Load draft from localStorage
+  useEffect(() => {
+    if (isOpen) {
+      const savedDraft = localStorage.getItem(STORAGE_KEY)
+      if (savedDraft) {
+        try {
+          const draft: PollDraft = JSON.parse(savedDraft)
+          setQuestion(draft.question)
+          setOptions(draft.options)
+          setSettings(draft.settings)
+          const maxId = Math.max(...draft.options.map((opt) => parseInt(opt.id)))
+          setNextId(maxId + 1)
+        } catch (error) {
+          console.error('Failed to load poll draft:', error)
+        }
+      }
+    }
+  }, [isOpen])
+
+  // Save draft to localStorage
+  useEffect(() => {
+    const draft: PollDraft = { question, options, settings }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(draft))
+  }, [question, options, settings])
 
   const handleAddOption = () => {
     setOptions([...options, { id: String(nextId), text: '' }])
@@ -82,6 +115,7 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
     try {
       setIsSubmitting(true)
       await onSubmit({ question, options, settings })
+      localStorage.removeItem(STORAGE_KEY)
     } catch (error) {
       console.error('Failed to create poll:', error)
       toast.error('Не удалось создать опрос')
