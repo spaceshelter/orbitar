@@ -208,8 +208,8 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
                 onChange={(value) => handleSettingChange('resultVisibility', value)}
                 options={[
                   { value: 'always', label: 'Всегда' },
-                  { value: 'after_vote', label: 'После голосования' },
-                  { value: 'after_vote_end', label: 'После окончания голосования' },
+                  { value: 'after_vote', label: 'После ответа' },
+                  { value: 'after_vote_end', label: 'После окончания опроса' },
                 ]}
               />
             </div>
