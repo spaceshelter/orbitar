@@ -23,12 +23,20 @@ export class DBConnection {
     query: string,
     params: string[] | object = {},
   ): Promise<T> {
-    this.logger.verbose('Query', { query: query.replace(/[\s\n]+/g, ' '), params: params })
+    const formattedQuery = query.replace(/[\s\n]+/g, ' ')
 
     try {
-      return (await this.connection.query(query, params))[0] as undefined as T
+      const start = Date.now()
+      const result = (await this.connection.query(query, params))[0] as undefined as T
+      const executionTime = Date.now() - start
+      this.logger.verbose('Query', { query: formattedQuery, params, time: executionTime })
+      return result
     } catch (error) {
-      this.logger.error('Query failed', error)
+      this.logger.error('Query', {
+        error,
+        query: formattedQuery,
+        params: params,
+      })
       throw error
     }
   }

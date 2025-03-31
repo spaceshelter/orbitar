@@ -4,10 +4,12 @@ import classNames from 'classnames'
 import { toast } from 'react-toastify'
 
 import { NotificationInfo } from '../API/NotificationsAPIHelper'
+import useOnBack from '../API/use/useOnBack'
 import { useAPI, useAppState, useSiteName } from '../AppState/AppState'
 import { usePushService } from '../Services/PushService'
 import { UserGender } from '../Types/UserInfo'
 import DateComponent from './DateComponent'
+import Overlay from './Overlay'
 import PostLink from './PostLink'
 
 import { ReactComponent as CloseIcon } from '../Assets/close.svg'
@@ -27,6 +29,8 @@ export default function NotificationsPopup(props: NotificationsPopupProps) {
   const [error, setError] = useState('')
   const pushService = usePushService()
   const app = useAppState()
+
+  useOnBack(props.onClose || (() => null))
 
   const fetchNotifications = useMemo(() => {
     return async () => {
@@ -152,7 +156,7 @@ export default function NotificationsPopup(props: NotificationsPopupProps) {
   return (
     (!notifications && <div className={feedStyles.loading} />) || (
       <>
-        <div className={styles.overlay} onClick={props.onClose} />
+        <Overlay onClick={props.onClose || (() => null)} />
         <div className={styles.container}>
           <div className={styles.notifications}>
             {error}

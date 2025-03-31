@@ -82,6 +82,7 @@ const ModalContainer = observer(() => {
     <>
       {appState.modal}
       {appState.mediaUploaderModal}
+      {appState.confirmDialogModal}
     </>
   )
 })

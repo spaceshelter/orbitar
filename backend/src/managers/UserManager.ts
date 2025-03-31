@@ -367,6 +367,7 @@ export default class UserManager {
     const karmaVotes = await this.voteRepository.getVotesByUser(userId)
     for (const vote of karmaVotes) {
       await this.voteRepository.userSetVote(vote.userId, 0, vote.voterId)
+      this.userCache.clearCache(vote.userId)
     }
     await this.redis.set(`remove_votes_when_karma_is_low_${userId}`, 'true')
     await this.redis.expire(

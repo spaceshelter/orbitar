@@ -2,6 +2,10 @@
 
 // TODO add css reset
 
+:root {
+  --scrollbar-width: 16px;
+}
+
 html {
   overflow-y: scroll;
 }
@@ -237,6 +241,7 @@ iframe.low-rating {
 html.no-scroll {
   overflow: hidden;
   margin-right: 16px;
+  --scrollbar-compensation: 16px;
 }
 
 ::-webkit-scrollbar {
@@ -265,40 +270,5 @@ body::-webkit-scrollbar-thumb {
   box-shadow: inset 0 0 14px 14px var(--fgGhost);
   &:hover {
     box-shadow: inset 0 0 14px 14px var(--fgSoftest);
-  }
-}
-
-.react-confirm-alert-overlay.orbitar-confirm-overlay {
-  z-index: 2000;
-  background: linear-gradient(0deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5));
-  backdrop-filter: blur(5px);
-  background-size: cover;
-
-  .react-confirm-alert-body {
-    background-color: var(--elevated);
-    color: var(--fg);
-
-    button {
-      background: var(--danger);
-      border: none;
-      border-radius: 4px;
-      padding: 8px 16px;
-      font-weight: bold;
-      cursor: pointer;
-      &:hover {
-        background: var(--dangerHover);
-      }
-      &:disabled {
-        background: var(--primaryGhost);
-        color: var(--onAccentGhost);
-        cursor: default;
-      }
-      &.cancel {
-        background: var(--fgSoftest);
-        &:hover {
-          background: var(--fgSofter);
-        }
-      }
-    }
   }
 }

@@ -31,7 +31,6 @@
     "react": "^18.0.0",
     "react-app-rewired": "^2.2.1",
     "react-circular-progressbar": "^2.1.0",
-    "react-confirm-alert": "^3.0.6",
     "react-dom": "^18.0.0",
     "react-hook-form": "^7.29.0",
     "react-hotkeys-hook": "^4.3.8",
@@ -84,5 +83,12 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "npx eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,scss,css}": "prettier --write"
   }
 }

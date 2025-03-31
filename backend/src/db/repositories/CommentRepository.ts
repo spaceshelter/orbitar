@@ -19,6 +19,9 @@ export default class CommentRepository {
   }
 
   async getComments(commentIds: number[]): Promise<CommentRaw[] | undefined> {
+    if (!commentIds.length) {
+      return []
+    }
     return await this.db.fetchAll(`select * from comments where comment_id in (?)`, [commentIds])
   }
 

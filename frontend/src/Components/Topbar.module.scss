@@ -3,6 +3,7 @@
   position: fixed;
   right: 0;
   left: 0;
+  width: calc(100% - var(--scrollbar-compensation, 0px));
 
   display: flex;
   align-items: center;
@@ -19,6 +20,10 @@
     display: flex;
     gap: 16px;
     pointer-events: auto;
+  }
+
+  .right {
+    padding-right: 28px;
   }
 
   //:global{ }

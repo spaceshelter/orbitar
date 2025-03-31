@@ -33,6 +33,12 @@
   :global(a.vimeo-embed) img {
     max-width: 100%;
     max-height: 500px;
+
+    -webkit-user-drag: none;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
   }
 
   :global(a.youtube-embed),

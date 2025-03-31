@@ -9,6 +9,8 @@ import {createBrowserHistory} from 'history';
 import {RouterStore} from '@superwf/mobx-react-router';
 import {UserRestrictionsResponse} from '../API/UserAPI';
 import MediaUploader, {MediaUploaderProps} from '../Components/MediaUploader';
+import ConfirmDialog, {ConfirmDialogProps} from '../Components/ConfirmDialog';
+import { themes } from '../theme'
 
 export enum AppLoadingState {
     loading,
@@ -45,6 +47,9 @@ export class AppState {
     @observable
     appLoadingState = AppLoadingState.loading;
 
+    @observable
+    theme = '';
+
     @observable.struct
     userInfo: UserInfo | undefined = undefined; // undefined means not authorized
 
@@ -75,6 +80,9 @@ export class AppState {
     @observable
     mediaUploaderModal: ReactElement<MediaUploaderProps> | undefined = undefined;
 
+    @observable
+    confirmDialogModal: ReactElement<ConfirmDialogProps> | undefined = undefined;
+
     browserHistory = createBrowserHistory();
     router = new RouterStore(this.browserHistory);
 
@@ -92,6 +100,24 @@ export class AppState {
         this.cache = makeAutoObservable(new APICache());
         this.api = new APIHelper(apiBase, this);
         this.api.init().then().catch();
+
+        // detect from the browser
+        const getPreferredColorScheme = () => {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                return 'dark';
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+                return 'light';
+            }
+            return 'light';
+        };
+
+        // load from localStorage
+        this.theme = localStorage.getItem('theme') || getPreferredColorScheme();
+
+        // fallback if the value in localStorage is not in the themes
+        if (themes[this.theme] === undefined) {
+            this.theme = Object.keys(themes)[0];
+        }
     }
 
     @computed
@@ -112,6 +138,10 @@ export class AppState {
     @action
     setUserInfo(value: UserInfo | undefined) {
         this.userInfo = value;
+    }
+
+    clearCachesOnLogout() {
+        this.api.oauth2Api.clearClientCache()
     }
 
     @action
@@ -167,6 +197,11 @@ export class AppState {
     }
 
     @action
+    setConfirmDialog(value: ReactElement<ConfirmDialogProps> | undefined) {
+        this.confirmDialogModal = value;
+    }
+
+    @action
     mediaUploader(
         props: MediaUploaderProps
     ) {
@@ -190,6 +225,41 @@ export class AppState {
     @action
     closeMediaUploader() {
         this.mediaUploaderModal = undefined;
+    }
+
+    confirmAlert = (options: Omit<ConfirmDialogProps, 'onCancel'> & { onCancel?: () => void }): Promise<boolean> => {
+        return new Promise<boolean>((resolve) => {
+            this.setConfirmDialog(
+                <ConfirmDialog
+                    {...options}
+                    onConfirm={() => {
+                        this.setConfirmDialog(undefined);
+                        if (options.onConfirm) {
+                            options.onConfirm();
+                        }
+                        resolve(true);
+                    }}
+                    onCancel={() => {
+                        this.setConfirmDialog(undefined);
+                        if (options.onCancel) {
+                            options.onCancel();
+                        }
+                        resolve(false);
+                    }}
+                />
+            );
+        });
+    }
+
+    @action
+    setTheme(value: string) {
+        // just in case, ensures the value is in the themes
+        if (!themes[value]) {
+            console.error(`Theme ${value} not found`);
+            return;
+        }
+        this.theme = value;
+        localStorage.setItem('theme', value);
     }
 }
 

@@ -8,7 +8,7 @@ tabWidth: 2
 bracketSpacing: true
 bracketSameLine: false
 arrowParens: "always"
-endOfLine: "lf"
+endOfLine: "auto"
 quoteProps: "as-needed"
 plugins:
   - "@ianvs/prettier-plugin-sort-imports"

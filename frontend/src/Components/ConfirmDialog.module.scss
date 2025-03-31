@@ -1,0 +1,115 @@
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg);
+  box-shadow: 0 4px 8px var(--shadow);
+  border: 1px solid var(--inactive-fg);
+  border-radius: 4px;
+  padding: 20px;
+  max-width: 500px;
+  width: 90%;
+  z-index: 10000;
+  text-align: center;
+
+  /* Animation */
+  animation: fadeIn 0.25s ease-out;
+
+  /* Apply scale animation to content inside */
+  & > * {
+    animation: scaleIn 0.25s ease-out;
+  }
+}
+
+.title {
+  margin-top: 0;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 15px;
+  color: var(--primary);
+}
+
+.message {
+  margin-bottom: 20px;
+  line-height: 1.5;
+  color: var(--fg);
+}
+
+.buttons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+
+  button {
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+}
+
+/* Button types */
+.primaryButton {
+  border: none;
+  background: var(--primary);
+  color: var(--onAccent);
+
+  &:hover {
+    background: var(--primaryHover);
+  }
+}
+
+.secondaryButton {
+  border: none;
+  background: var(--fgSoftest);
+  color: var(--fg);
+
+  &:hover {
+    background: var(--fgSofter);
+  }
+}
+
+.dangerButton {
+  border: none;
+  background: var(--danger);
+  color: var(--onAccent);
+
+  &:hover {
+    background: var(--dangerHover);
+  }
+}
+
+.ghostButton {
+  border: 1px solid var(--inactive-fg);
+  background: transparent;
+  color: var(--fg);
+
+  &:hover {
+    background: var(--dim1);
+  }
+}

@@ -33,6 +33,7 @@ class ParserExtended extends Parser {
 
 export default class TheParser {
   private readonly allowedTags: Record<string, ((node: Element) => ParseResult) | boolean>
+  private readonly disallowedTagNesting: Record<string, string | string[]>
 
   // Bump this version when introducing breaking changes to the parser.
   // Content will be re-parsed and saved on access when this version changes.
@@ -42,6 +43,10 @@ export default class TheParser {
   private readonly parserConfig: ParserConfig
   private readonly mediaHostingUrlOrigin: string
   private readonly mediaHostingUrlBunny: string
+  private readonly blockTags: string[]
+
+  // Stack of tags that are currently being parsed, for internal use only
+  private parseChildNodesStack: string[]
 
   constructor(parserConfig: ParserConfig) {
     this.parserConfig = parserConfig
@@ -68,6 +73,21 @@ export default class TheParser {
       u: true,
       strike: true,
     }
+
+    /* Tags that render as blocks, have special behavior for removing extra line breaks below them */
+    this.blockTags = ['blockquote', 'expand', 'pre']
+
+    /* Child tag -> list of disallowed parent tags */
+    this.disallowedTagNesting = {
+      pre: 'a' /* e.g. `pre` cannot be inside `a`*/,
+      a: 'a',
+      mailbox: ['a', 'mailbox', 'mail'],
+      mail: ['a', 'mailbox', 'mail'],
+      app: ['a', 'mailbox', 'mail'],
+      expand: ['a', 'mailbox', 'mail'],
+    }
+
+    this.parseChildNodesStack = []
   }
 
   private parseDocument(data: string, options?: ParserOptions & DomHandlerOptions): Document {
@@ -86,15 +106,29 @@ export default class TheParser {
       decodeEntities: false,
     })
 
+    this.parseChildNodesStack.length = 0 // clear stack, should not be necessary, but just in case
     const parseResult = this.parseChildNodes(doc.childNodes)
     parseResult.mentions = [...new Set(parseResult.mentions)]
     return parseResult
   }
 
+  private isDisallowedTagNesting(child: string): boolean {
+    const disallowed = this.disallowedTagNesting[child]
+    if (!disallowed) {
+      return false
+    }
+    if (Array.isArray(disallowed)) {
+      for (const parent of disallowed) {
+        if (this.parseChildNodesStack.includes(parent)) return true
+      }
+      return false
+    }
+    return this.parseChildNodesStack.includes(disallowed)
+  }
+
   private parseChildNodes(doc: ChildNode[]): ParseResult {
     const p = { text: '', mentions: [], urls: [], images: [] }
     let prevIsBlock = false // if previous node was block tag
-    const blockTags = ['blockquote', 'expand', 'pre']
     for (let node of doc) {
       if (prevIsBlock && node.type === 'text') {
         // remove a single newline after block tags, allow only a single one if multiple were present
@@ -104,12 +138,22 @@ export default class TheParser {
         } as ChildNode
       }
 
-      const res = this.parseNode(node)
+      const disallowed = node.type === 'tag' && this.isDisallowedTagNesting(node.tagName.toLowerCase())
+
+      if (!disallowed) {
+        this.parseChildNodesStack.push(node.type === 'tag' ? node.tagName.toLowerCase() : 'text')
+      }
+
+      const res = !disallowed ? this.parseNode(node) : this.parseSkippedNode(node)
       p.text += res.text
       p.mentions.push(...res.mentions)
       p.urls.push(...res.urls)
       p.images.push(...res.images)
-      prevIsBlock = node.type === 'tag' && blockTags.includes(node.tagName.toLowerCase())
+      prevIsBlock = node.type === 'tag' && this.blockTags.includes(node.tagName.toLowerCase())
+
+      if (!disallowed) {
+        this.parseChildNodesStack.pop()
+      }
     }
     return p
   }
@@ -405,6 +449,23 @@ export default class TheParser {
     return { ...res, text }
   }
 
+  extractTextRecursive(node: ChildNode): string {
+    if (node.type === 'text') {
+      return node.data
+    }
+    if (node.type === 'tag') {
+      return node.children.map((child) => this.extractTextRecursive(child)).join('')
+    }
+    return ''
+  }
+
+  parseSkippedNode(node: ChildNode): ParseResult {
+    if (node.type === 'tag') {
+      return this.parseChildNodes(node.children)
+    }
+    return { text: '', mentions: [], urls: [], images: [] }
+  }
+
   parseDisallowedTag(node: Element): ParseResult {
     const haveChild = node.children.length > 0
     let text = `<${node.name}`
@@ -424,7 +485,6 @@ export default class TheParser {
     if (!this.validUrl(url)) {
       return this.parseDisallowedTag(node)
     }
-    this.removeInnerMailTagsRec(node)
     const result = this.parseChildNodes(node.children)
     if (result.urls.length > 0 || result.mentions.length > 0) {
       return result
@@ -460,24 +520,6 @@ export default class TheParser {
     }
   }
 
-  removeInnerMailTagsRec(node: Element): Element {
-    // Iterate over all child nodes
-    for (let i = node.children.length - 1; i >= 0; i--) {
-      const child = node.children[i]
-
-      // If the child node is a mailbox tag, remove it
-      if (child.type === 'tag') {
-        if (child.name === 'mailbox' || child.name === 'mail') {
-          node.children.splice(i, 1)
-        } else {
-          // If the child node is not a mailbox tag, recursively call this function
-          this.removeInnerMailTagsRec(child)
-        }
-      }
-    }
-    return node
-  }
-
   static isValidBase64(str: string) {
     const regex = /^[A-Za-z0-9+/]*={0,3}$/
     return regex.test(str)
@@ -507,19 +549,11 @@ export default class TheParser {
     if (!secret || !TheParser.isValidBase64(secret)) {
       return this.parseDisallowedTag(node)
     }
-    this.removeInnerMailTagsRec(node)
 
     const result = this.parseChildNodes(node.children)
-    // render node.children back to html
-    const rawNodes = node.children
-      .map((n) =>
-        render(n, {
-          encodeEntities: false,
-        }),
-      )
-      .join('')
+    const innerText = this.extractTextRecursive(node)
 
-    const rawNodesBase64 = Buffer.from(rawNodes).toString('base64')
+    const rawNodesBase64 = Buffer.from(innerText).toString('base64')
     const text =
       `<span class="i i-mailbox-secure secret-mailbox" data-secret="${secret}" ` +
       `data-raw-text="${rawNodesBase64}">${result.text}</span>`
@@ -532,8 +566,6 @@ export default class TheParser {
     if (!secret || !TheParser.isValidBase64(secret)) {
       return this.parseDisallowedTag(node)
     }
-    this.removeInnerMailTagsRec(node)
-
     const result = this.parseChildNodes(node.children)
 
     const text = `<span class="i i-mail-secure secret-mail" data-secret="${secret}">${result.text}</span>`

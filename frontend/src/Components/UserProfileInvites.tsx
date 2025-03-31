@@ -1,30 +1,25 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 
+import classNames from 'classnames'
 import { observer } from 'mobx-react-lite'
 import moment from 'moment'
 import plural from 'plural-ru'
-import { confirmAlert } from 'react-confirm-alert'
 import { toast } from 'react-toastify'
 
 import { InviteEntity, InvitesAvailability } from '../API/InviteAPI'
+import { useRestrictions } from '../API/use/useRestrictions'
 import { useAPI, useAppState } from '../AppState/AppState'
 import { CommentInfo } from '../Types/PostInfo'
 import ContentComponent from './ContentComponent'
 import CreateCommentComponent from './CreateCommentComponent'
+import DateComponent from './DateComponent' // Import css
 import Username from './Username'
 
 import createPostStyles from '../Pages/CreatePostPage.module.css'
 import commentStyles from './CommentComponent.module.scss'
 import styles from './UserProfileInvites.module.scss'
 import karmaStyles from './UserProfileKarma.module.scss'
-
-import 'react-confirm-alert/src/react-confirm-alert.css'
-
-import classNames from 'classnames'
-
-import { useRestrictions } from '../API/use/useRestrictions'
-import DateComponent from './DateComponent' // Import css
 
 type UserProfileInvitesProps = {
   username: string
@@ -354,21 +349,11 @@ type ConfirmButtonProps = {
 }
 
 const ConfirmButton = (props: ConfirmButtonProps) => {
-  const handleConfirm = () => {
-    confirmAlert({
-      title: 'Астанавитесь!',
-      message: props.message,
-      buttons: [
-        {
-          label: 'Да!',
-          onClick: () => props.onAction(),
-        },
-        {
-          label: 'Отмена',
-          className: 'cancel',
-        },
-      ],
-      overlayClassName: 'orbitar-confirm-overlay',
+  const appState = useAppState()
+  const handleConfirm = async () => {
+    await appState.confirmAlert({
+      message: props.message || '',
+      onConfirm: () => props.onAction(),
     })
   }
 
