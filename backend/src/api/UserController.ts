@@ -72,6 +72,7 @@ export default class UserController {
       filter: Joi.string().max(120).allow(null, ''),
       page: Joi.number().default(1),
       perpage: Joi.number().min(1).max(50).default(10),
+      sort: Joi.string().valid('date', 'rating').default('date'),
     })
 
     const userCommentsAndPostsLimiter = rateLimit({
@@ -304,7 +305,7 @@ export default class UserController {
     }
 
     const userId = request.session.data.userId
-    const { username, format, page, perpage, filter } = request.body
+    const { username, format, page, perpage, filter, sort } = request.body
 
     try {
       const profile = await this.userManager.getByUsername(username)
@@ -325,6 +326,7 @@ export default class UserController {
         page || 1,
         perpage || 20,
         format,
+        sort || 'date'
       )
       const rawParentComments = await this.postManager.getParentCommentsForASetOfComments(rawComments, userId, format)
       const { allComments, users } = await this.enricher.enrichRawComments(rawComments, {}, format, (_) => false)

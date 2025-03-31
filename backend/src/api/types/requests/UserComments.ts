@@ -8,6 +8,7 @@ export type UserCommentsRequest = {
   filter?: string
   page?: number
   perpage?: number
+  sort?: string
 }
 
 export type UserCommentsResponse = {

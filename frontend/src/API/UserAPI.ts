@@ -54,6 +54,7 @@ type UserProfileCommentsRequest = {
   filter?: string
   page?: number
   perpage?: number
+  sort?: string
 }
 type UserProfileCommentsResponse = {
   comments: CommentEntity[]
@@ -144,6 +145,7 @@ export default class UserAPI {
     filter: string,
     page: number,
     perpage: number,
+    sort = 'date',
   ): Promise<UserProfileCommentsResult> {
     const result = await this.api.request<UserProfileCommentsRequest, UserProfileCommentsResponse>('/user/comments', {
       username,
@@ -151,6 +153,7 @@ export default class UserAPI {
       page,
       perpage,
       filter,
+      sort,
     })
     return {
       comments: this.postAPIHelper.fixComments(result.comments, result.users),

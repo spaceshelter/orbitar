@@ -8,6 +8,7 @@ export type UserPostsRequest = {
   filter?: string
   page?: number
   perpage?: number
+  sort?: string
 }
 
 export type UserPostsResponse = {
