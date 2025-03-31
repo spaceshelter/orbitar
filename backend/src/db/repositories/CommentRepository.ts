@@ -59,11 +59,11 @@ export default class CommentRepository {
     filter: string,
     page: number,
     perPage: number,
-    sort: string = 'date',
+    sort = 'date',
   ): Promise<CommentRawWithUserData[]> {
     const limitFrom = (page - 1) * perPage
     const orderBy = sort === 'rating' ? 'c.rating desc, c.created_at desc' : 'c.created_at desc'
-    
+
     return await this.db.query(
       `
         select c.*, v.vote

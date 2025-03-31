@@ -192,7 +192,7 @@ export default class PostManager {
     page: number,
     perpage: number,
     format: ContentFormat,
-    sort: string = 'date',
+    sort = 'date',
   ): Promise<CommentInfoWithPostData[]> {
     const rawComments = await this.commentRepository.getUserComments(userId, forUserId, filter, page, perpage, sort)
     return await this.convertRawCommentsWithPostData(forUserId, rawComments, format)

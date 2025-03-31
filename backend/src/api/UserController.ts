@@ -326,7 +326,7 @@ export default class UserController {
         page || 1,
         perpage || 20,
         format,
-        sort || 'date'
+        sort || 'date',
       )
       const rawParentComments = await this.postManager.getParentCommentsForASetOfComments(rawComments, userId, format)
       const { allComments, users } = await this.enricher.enrichRawComments(rawComments, {}, format, (_) => false)
