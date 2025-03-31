@@ -5,6 +5,7 @@ import { toast } from 'react-toastify'
 
 import PollService from '../../Services/PollService'
 import { Poll as PollType } from '../../Types/Poll'
+import { VotersTooltip } from './VotersList'
 
 import styles from './Poll.module.css'
 
@@ -122,12 +123,16 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
           <div className={styles.optionContent}>
             <span className={styles.optionText}>{option.text}</span>
             {canShowResults && (
-              <div className={styles.results}>
-                <span className={styles.votes}>
-                  {option.votes} {option.votes === 1 ? 'голос' : 'голосов'}
-                </span>
-                <span className={styles.percentage}>{percentage}%</span>
-              </div>
+              <>
+                <div className={styles.votesContainer}>
+                  <span className={styles.votes}>
+                    {canShowResults && <VotersTooltip voters={option.voters ?? []} />}
+                  </span>
+                </div>
+                <div className={styles.results}>
+                  <span className={styles.percentage}>{percentage}%</span>
+                </div>
+              </>
             )}
           </div>
         </div>

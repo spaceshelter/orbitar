@@ -1,0 +1,38 @@
+.votesContainer {
+  position: relative;
+  display: inline-block;
+  z-index: 2;
+  min-width: max-content;
+}
+
+.votes {
+  cursor: pointer;
+  text-decoration: underline;
+  color: var(--fg);
+}
+
+.votersTooltip {
+  position: absolute;
+  display: flex;
+  width: 200px;
+  max-height: 300px;
+  background: var(--elevated);
+  box-shadow: 0 2px 8px var(--shadow);
+  border-radius: 8px;
+  flex-direction: column;
+  z-index: 9999;
+  padding: 12px;
+  overflow-y: auto;
+  background-color: var(--elevated);
+  backdrop-filter: blur(10px);
+  margin-top: 8px;
+}
+
+.voter {
+  padding: 4px 0;
+  color: var(--fg);
+  font-size: 0.9em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

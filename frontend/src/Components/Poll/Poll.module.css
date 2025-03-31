@@ -25,7 +25,6 @@
   padding: 12px;
   transition: all 0.2s ease;
   position: relative;
-  overflow: hidden;
 }
 
 .option:hover:not(.disabled) {
@@ -60,6 +59,8 @@
 
 .results {
   position: relative;
+  min-width: max-content;
+  text-align: right;
 }
 
 .progressBar {
@@ -70,6 +71,7 @@
   background-color: rgba(33, 150, 243, 0.1);
   transition: width 0.3s ease;
   z-index: 0;
+  overflow: hidden;
 }
 
 .percentage {

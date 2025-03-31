@@ -40,15 +40,23 @@ export default class PollManager {
 
     const totalVotes = Array.from({ length: 32 }, (_, i) => poll[`opt${i}`] || 0).reduce((sum, count) => sum + count, 0)
 
+    const optionsWithVoters = await Promise.all(
+      options.map(async (text: string, index: number) => {
+        const voters = await this.pollRepository.getOptionVoters(pollId, index)
+        return {
+          text,
+          votes: poll[`opt${index}`] || 0,
+          voters,
+        }
+      }),
+    )
+
     return {
       poll_id: poll.poll_id,
       author_id: poll.author_id,
       site_id: poll.site_id,
       question: poll.question,
-      options: options.map((text: string, index: number) => ({
-        text,
-        votes: poll[`opt${index}`] || 0,
-      })),
+      options: optionsWithVoters,
       settings,
       expires_at: poll.expires_at,
       created_at: poll.created_at,

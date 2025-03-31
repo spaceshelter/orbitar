@@ -1,6 +1,9 @@
+import { UserBaseEntity } from './UserEntity'
+
 export interface PollOptionEntity {
   text: string
   votes: number
+  voters?: UserBaseEntity[]
 }
 
 export interface PollEntity {

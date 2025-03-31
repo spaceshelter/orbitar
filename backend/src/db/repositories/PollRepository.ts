@@ -1,5 +1,6 @@
 import { RowDataPacket } from 'mysql2'
 
+import { UserBaseEntity } from '../../api/types/entities/UserEntity'
 import { DBConnection } from '../DB'
 
 interface PollRecord extends RowDataPacket {
@@ -91,5 +92,20 @@ export default class PollRepository {
       voterId,
     ])
     return (votes as RowDataPacket[]).map((v) => v.option_id)
+  }
+
+  async getOptionVoters(pollId: number, optionId: number): Promise<UserBaseEntity[]> {
+    const votes = await this.db.query(
+      `SELECT u.user_id as id, u.username, u.gender 
+       FROM poll_votes pv 
+       JOIN users u ON pv.voter_id = u.user_id 
+       WHERE pv.poll_id = ? AND pv.option_id = ?`,
+      [pollId, optionId],
+    )
+    return (votes as RowDataPacket[]).map((v) => ({
+      id: v.id,
+      username: v.username,
+      gender: v.gender,
+    }))
   }
 }

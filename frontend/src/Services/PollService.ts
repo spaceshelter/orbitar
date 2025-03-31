@@ -13,7 +13,10 @@ class PollService {
       id: String(poll.poll_id),
       poll_id: String(poll.poll_id),
       question: poll.question,
-      options: poll.options,
+      options: poll.options.map((option) => ({
+        ...option,
+        voters: option.voters || [],
+      })),
       totalVotes: poll.total_votes || 0,
       settings: {
         allowMultipleVotes: poll.settings.allow_multiple_choice,

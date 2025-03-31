@@ -1,7 +1,10 @@
+import { UserBaseInfo } from './UserInfo'
+
 export interface PollOption {
   id: string
   text: string
   votes: number
+  voters?: UserBaseInfo[]
 }
 
 export interface PollBackendResponse {
