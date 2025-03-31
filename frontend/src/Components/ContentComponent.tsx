@@ -108,58 +108,6 @@ function updateContent(
   })
 }
 
-/*function updateTelegramEmbed(telegramDiv: HTMLElement, appState: AppState) {
-  const src = telegramDiv.getAttribute('data-telegram-url')
-  if (!src) return
-
-  const link = telegramDiv.querySelector('a')
-  if (!link) return
-  const nextLink = telegramDiv.nextElementSibling
-
-  // Add click event listener to both expand button and link
-  const listener = (e: Event) => {
-    // Allow Ctrl+click to follow the link
-    if ((e as MouseEvent).ctrlKey) {
-      return true
-    }
-    const link = nextLink as HTMLAnchorElement
-    e.preventDefault()
-    const rect = link.nextElementSibling as HTMLDivElement
-
-    if (rect && rect.className === 'internal-link-rect') {
-      // If rect exists, unmount the component and remove the rect
-      ReactDOM.unmountComponentAtNode(rect)
-      rect.remove()
-      telegramDiv.classList.remove('expanded')
-    } else {
-      telegramDiv.classList.add('expanded')
-      // If rect doesn't exist, create a new rect and mount the component
-      const newRect = document.createElement('div')
-      newRect.className = 'internal-link-rect'
-
-      // Add the rect after the link
-      link.parentNode?.insertBefore(newRect, link.nextSibling)
-
-      // render the component
-      const ThemeAwareTelegramEmbed = () => {
-        const { theme } = useTheme()
-        return <TelegramEmbed src={src} theme={theme === 'dark' ? 'dark' : undefined} />
-      }
-
-      ReactDOM.render(
-        <FakeRoot appState={appState}>
-          <ThemeAwareTelegramEmbed />
-        </FakeRoot>,
-        newRect,
-      )
-    }
-    return false
-  }
-
-  telegramDiv.addEventListener('click', listener)
-  link.addEventListener('click', listener)
-}*/
-
 function updateMailbox(mailbox: HTMLSpanElement, setMailboxKey: (key: MailboxKey | null) => void) {
   const secret = mailbox.dataset.secret
   if (!secret) {
