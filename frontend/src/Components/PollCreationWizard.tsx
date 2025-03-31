@@ -132,7 +132,6 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
     return options.map((option) => (
       <div key={option.id} className={styles.optionRow}>
         <Field
-          variant='textarea'
           value={option.text}
           onChange={(e) => handleOptionChange(option.id, e.target.value)}
           placeholder='Вариант ответа'
@@ -167,6 +166,7 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
         <div className={styles.form}>
           <div className={styles.questionSection}>
             <Field
+              variant='textarea'
               label='Вопрос'
               id='question'
               value={question}

@@ -1,11 +1,12 @@
 import React, { InputHTMLAttributes, TextareaHTMLAttributes } from 'react'
 
 import classNames from 'classnames'
+import TextareaAutosize from 'react-textarea-autosize'
 
 import styles from './Field.module.scss'
 
 type InputProps = InputHTMLAttributes<HTMLInputElement>
-type TextAreaProps = TextareaHTMLAttributes<HTMLTextAreaElement>
+type TextAreaProps = Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'style'>
 
 /**
  * interface for props of Field component
@@ -20,6 +21,8 @@ export interface FieldProps extends Omit<InputProps & TextAreaProps, 'className'
   error?: string
   variant?: 'input' | 'textarea'
   className?: string
+  minRows?: number
+  maxRows?: number
 }
 
 /**
@@ -54,7 +57,15 @@ export interface FieldProps extends Omit<InputProps & TextAreaProps, 'className'
  *   error="Invalid email format"
  * />
  */
-export const Field: React.FC<FieldProps> = ({ label, error, variant = 'input', className, ...props }) => {
+export const Field: React.FC<FieldProps> = ({
+  label,
+  error,
+  variant = 'input',
+  className,
+  minRows = 3,
+  maxRows = 10,
+  ...props
+}) => {
   const fieldClassName = classNames(
     styles.field,
     {
@@ -65,7 +76,14 @@ export const Field: React.FC<FieldProps> = ({ label, error, variant = 'input', c
 
   const renderField = () => {
     if (variant === 'textarea') {
-      return <textarea className={styles.textarea} {...(props as TextAreaProps)} />
+      return (
+        <TextareaAutosize
+          className={styles.textarea}
+          minRows={minRows}
+          maxRows={maxRows}
+          {...(props as TextAreaProps)}
+        />
+      )
     }
 
     return <input className={styles.input} {...(props as InputProps)} />
