@@ -4,6 +4,7 @@
   padding: 20px;
   box-shadow: 0 2px 4px var(--shadow);
   margin: 16px 0;
+  position: relative;
 }
 
 .question {
@@ -47,8 +48,31 @@
 
 .optionContent {
   display: flex;
+  align-items: center;
   position: relative;
   z-index: 1;
+  gap: 12px;
+}
+
+.optionSelect {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+}
+
+.optionSelect input[type="checkbox"],
+.optionSelect input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.optionSelect input[type="checkbox"]:disabled,
+.optionSelect input[type="radio"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .optionText {
@@ -92,7 +116,6 @@
 }
 
 .totalVotes {
-  margin-top: 10px;
   color: var(--fgSofter);
   font-size: 14px;
   display: flex;
@@ -128,4 +151,16 @@
   border-radius: 4px;
   background-color: var(--bg);
   margin: 16px 0;
+}
+
+.voteButtonContainer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
 }

@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react'
 
 import DateComponent from '@components/DateComponent'
+import Button from '@ui/Button'
+import Checkbox from '@ui/Checkbox'
 import { toast } from 'react-toastify'
 
 import PollService from '../../Services/PollService'
@@ -18,8 +20,10 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedOptions, setSelectedOptions] = useState<number[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const hasUserVoted = (poll?.userVoted ?? []).length > 0
+  const isPollExpired = poll?.settings.expiresAt && new Date(poll.settings.expiresAt) < new Date()
 
   const fetchPoll = useCallback(async () => {
     setLoading(true)
@@ -40,35 +44,47 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
     fetchPoll()
   }, [fetchPoll])
 
-  const handleVote = async (optionId: number) => {
-    const hasVoted = poll?.userVoted?.includes(optionId)
-    const isMultipleVotesAllowed = poll?.settings.allowMultipleVotes
-    const hasAnyVotes = (poll?.userVoted ?? []).length > 0
-    const isPollExpired = poll?.settings.expiresAt && new Date(poll.settings.expiresAt) < new Date()
-    if (!poll || hasVoted || (!isMultipleVotesAllowed && hasAnyVotes) || isPollExpired) return
+  const handleOptionSelect = (optionId: number) => {
+    if (!poll || isPollExpired || hasUserVoted) return
 
+    const isMultipleVotesAllowed = poll.settings.allowMultipleVotes
+    setSelectedOptions((prev) => {
+      if (isMultipleVotesAllowed) {
+        return prev.includes(optionId) ? prev.filter((id) => id !== optionId) : [...prev, optionId]
+      } else {
+        return [optionId]
+      }
+    })
+  }
+
+  const handleSubmitVote = async () => {
+    if (!poll || selectedOptions.length === 0 || isPollExpired || hasUserVoted) return
+
+    setIsSubmitting(true)
     try {
-      const response = await PollService.vote({ poll_id: Number(pollId), option_ids: [Number(optionId)] })
+      const response = await PollService.vote({
+        poll_id: Number(pollId),
+        option_ids: selectedOptions.map(Number),
+      })
       if (response) {
         const updatedPoll = await PollService.getPoll(pollId)
         setPoll(updatedPoll)
-        setSelectedOptions((prevOptions) => [...prevOptions, optionId])
       }
     } catch (err) {
       setError('Не удалось отправить голос')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   const handleRescindVote = async () => {
-    if (!poll || !poll.userVoted || !poll.settings.allowVoteRescinding) return
+    if (!poll || !poll.settings.allowVoteRescinding || isPollExpired) return
 
     try {
-      const response = await PollService.rescindVote(Number(pollId))
-      if (response) {
-        const updatedPoll = await PollService.getPoll(pollId)
-        setPoll(updatedPoll)
-        setSelectedOptions([])
-      }
+      await PollService.rescindVote(Number(pollId))
+      const updatedPoll = await PollService.getPoll(pollId)
+      setPoll(updatedPoll)
+      setSelectedOptions([])
     } catch (err) {
       setError('Не удалось отменить голос')
     }
@@ -84,8 +100,6 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
     toast.error(error)
   }
   if (!poll) return null
-
-  const isPollExpired = poll?.settings.expiresAt ? new Date(poll.settings.expiresAt) < new Date() : false
 
   const renderOptions = () => {
     const isMultipleVotesAllowed = poll?.settings.allowMultipleVotes
@@ -116,11 +130,27 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
           className={[styles.option, isSelected && styles.selected, isDisabled && styles.disabled]
             .filter(Boolean)
             .join(' ')}
-          onClick={() => !isDisabled && handleVote(idx)}
           style={{ cursor: isDisabled ? 'default' : 'pointer' }}
         >
-          <div className={styles.progressBar} style={{ width: `${percentage}%` }} />
           <div className={styles.optionContent}>
+            <div className={styles.optionSelect}>
+              {isMultipleVotesAllowed ? (
+                <Checkbox
+                  id={`poll-option-${idx}`}
+                  checked={isSelected}
+                  onChange={() => handleOptionSelect(idx)}
+                  disabled={isDisabled}
+                />
+              ) : (
+                <input
+                  type='radio'
+                  checked={isSelected}
+                  onChange={() => handleOptionSelect(idx)}
+                  disabled={isDisabled}
+                  name='poll-option'
+                />
+              )}
+            </div>
             <span className={styles.optionText}>{option.text}</span>
             {canShowResults && (
               <>
@@ -135,6 +165,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
               </>
             )}
           </div>
+          <div className={styles.progressBar} style={{ width: `${percentage}%` }} />
         </div>
       )
     })
@@ -160,15 +191,28 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
   }
 
   const renderTotalVotes = () => {
-    return (
-      <>
-        Всего голосов: {poll.totalVotes || 0}
-        {hasUserVoted && poll.settings.allowVoteRescinding && !isPollExpired && (
-          <button className={styles.rescindButton} onClick={handleRescindVote}>
+    return <div className={styles.totalVotes}>Всего голосов: {poll.totalVotes || 0}</div>
+  }
+
+  const renderActions = () => {
+    if (isPollExpired) return null
+
+    if (hasUserVoted && poll.settings.allowVoteRescinding) {
+      return (
+        <div className={styles.voteButtonContainer}>
+          <Button variant='danger' onClick={handleRescindVote}>
             Отменить голос
-          </button>
-        )}
-      </>
+          </Button>
+        </div>
+      )
+    }
+
+    return (
+      <div className={styles.voteButtonContainer}>
+        <Button variant='primary' onClick={handleSubmitVote} disabled={selectedOptions.length === 0 || isSubmitting}>
+          Голосовать
+        </Button>
+      </div>
     )
   }
 
@@ -179,8 +223,10 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
       <div className={styles.options}>{renderOptions()}</div>
 
       {renderPollExpiration()}
-
-      <div className={styles.totalVotes}>{renderTotalVotes()}</div>
+      <div className={styles.footer}>
+        {renderTotalVotes()}
+        {renderActions()}
+      </div>
     </div>
   )
 }
