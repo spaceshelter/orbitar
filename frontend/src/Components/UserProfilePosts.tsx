@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useLocation, useSearchParams } from 'react-router-dom'
 
+import classNames from 'classnames'
 import { useDebouncedCallback } from 'use-debounce'
 
 import { useFeed } from '../API/use/useFeed'
@@ -23,7 +24,9 @@ export default function UserProfilePosts(props: UserProfilePostsProps) {
   const perpage = 20
   const page = parseInt(searchParams.get('page') || '1')
   const defaultFilter = searchParams.get('filter') as string
+  const defaultSort = searchParams.get('sort') || 'date'
   const [filter, setFilter] = useState(defaultFilter || null)
+  const [sort, setSort] = useState(defaultSort)
   const { search } = useLocation()
   const filterInputRef = useRef<HTMLInputElement>(null)
 
@@ -42,10 +45,19 @@ export default function UserProfilePosts(props: UserProfilePostsProps) {
     }
   }
 
+  const handleSortChange = (newSort: string) => (e: React.MouseEvent) => {
+    e.preventDefault()
+    setSort(newSort)
+    setSearchParams({ ...(filter ? { filter } : {}), sort: newSort })
+    // Force reload with new sort
+  }
+
   useEffect(() => {
     const newSearchParams = new URLSearchParams(search)
     const newFilterValue = newSearchParams.get('filter') as string
+    const newSortValue = newSearchParams.get('sort') || 'date'
     setFilter(newFilterValue)
+    setSort(newSortValue)
     if (filterInputRef.current) {
       filterInputRef.current.value = newFilterValue
     }
@@ -59,12 +71,16 @@ export default function UserProfilePosts(props: UserProfilePostsProps) {
     undefined,
     undefined,
     filter || '',
+    sort,
   )
   useEffect(() => {
     window.scrollTo({ top: 0 })
   }, [page])
 
-  const params = filter ? { filter } : undefined
+  const params = {
+    ...(filter ? { filter } : {}),
+    ...(sort !== 'date' ? { sort } : {}),
+  }
 
   const handlePostEdit = async (post: PostInfo, text: string, title?: string): Promise<PostInfo | undefined> => {
     try {
@@ -98,6 +114,20 @@ export default function UserProfilePosts(props: UserProfilePostsProps) {
           type='search'
           defaultValue={defaultFilter}
         />
+      </div>
+      <div className={styles.feedControlsWrapper}>
+        <div className={styles.feedControls}>
+          <a href='#' className={classNames({ [styles.active]: sort === 'date' })} onClick={handleSortChange('date')}>
+            <i className='i i-new'></i>ПО ДАТЕ
+          </a>
+          <a
+            href='#'
+            className={classNames({ [styles.active]: sort === 'rating' })}
+            onClick={handleSortChange('rating')}
+          >
+            <i className='i i-live'></i>ПО РЕЙТИНГУ
+          </a>
+        </div>
       </div>
       <div className={styles.feed}>
         {loading ? (

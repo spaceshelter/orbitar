@@ -17,6 +17,7 @@ export function useFeed(
   setSorting?: (sorting: FeedSorting) => void,
   sorting?: FeedSorting,
   filter?: string,
+  sort = 'date',
 ) {
   const api = useAPI()
   const [cachedPosts, setCachedPosts] = useCache<PostInfo[]>('feed', [id, feedType, page, perpage])
@@ -115,7 +116,7 @@ export function useFeed(
         })
     } else if (feedType === 'user-profile') {
       api.userAPI
-        .userPosts(id, filter, page, perpage)
+        .userPosts(id, filter, page, perpage, sort)
         .then((result) => {
           setCachedPosts(result.posts)
 
@@ -130,7 +131,7 @@ export function useFeed(
           setError(['Не удалось загрузить ленту постов', error])
         })
     }
-  }, [id, feedType, page, api.post, perpage, sortingChanged, filter])
+  }, [id, feedType, page, api.post, perpage, sortingChanged, filter, sort])
 
   return { posts, loading, pages, error, updatePost, setLoading }
 }

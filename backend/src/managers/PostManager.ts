@@ -65,8 +65,9 @@ export default class PostManager {
     page: number,
     perpage: number,
     format: ContentFormat,
+    sort:string = 'date',      
   ): Promise<PostInfo[]> {
-    const posts = await this.postRepository.getPostsByUser(userId, forUserId, filter, page, perpage)
+    const posts = await this.postRepository.getPostsByUser(userId, forUserId, filter, page, perpage, sort)
     return await this.feedManager.convertRawPosts(forUserId, posts, format)
   }
 

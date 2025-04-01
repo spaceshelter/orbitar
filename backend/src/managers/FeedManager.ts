@@ -292,7 +292,7 @@ export default class FeedManager {
       return undefined
     }
     // fetch all own posts
-    const rawPosts = await this.postRepository.getPostsByUser(forUserId, forUserId, '', page, perpage, sorting)
+    const rawPosts = await this.postRepository.getPostsByUser(forUserId, forUserId, '', page, perpage, 'date', sorting)
 
     return this.convertRawPosts(forUserId, rawPosts, format)
   }

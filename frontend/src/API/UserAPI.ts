@@ -36,6 +36,7 @@ type UserProfilePostsRequest = {
   format?: ContentFormat
   page?: number
   perpage?: number
+  sort?: string
 }
 type UserProfilePostsResponse = {
   posts: PostEntity[]
@@ -126,6 +127,7 @@ export default class UserAPI {
     filter: string | undefined,
     page: number,
     perpage: number,
+    sort = 'date',
   ): Promise<UserProfilePostsResult> {
     const result = await this.api.request<UserProfilePostsRequest, UserProfilePostsResponse>('/user/posts', {
       username,
@@ -133,6 +135,7 @@ export default class UserAPI {
       page,
       perpage,
       filter,
+      sort,
     })
     return {
       posts: this.postAPIHelper.fixPosts(result.posts, result.users),

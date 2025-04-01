@@ -264,7 +264,7 @@ export default class UserController {
     }
 
     const userId = request.session.data.userId
-    const { username, format, page, perpage, filter } = request.body
+    const { username, format, page, perpage, filter, sort } = request.body
 
     try {
       const profile = await this.userManager.getByUsername(username)
@@ -285,6 +285,7 @@ export default class UserController {
         page || 1,
         perpage || 20,
         format,
+        sort || 'date',
       )
       const { posts, users } = await this.enricher.enrichRawPosts(rawPosts)
 
