@@ -1,4 +1,7 @@
 .pollContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   background: var(--bg);
   border-radius: 8px;
   padding: 1rem;
@@ -9,7 +12,6 @@
 .question {
   font-size: 1.2rem;
   font-weight: 600;
-  margin-bottom: 1rem;
   color: var(--fg);
 }
 
@@ -91,7 +93,6 @@
 }
 
 .expiration {
-  margin-top: 1rem;
   font-size: 0.8rem;
   color: var(--fgSoft);
   font-style: italic;
@@ -107,18 +108,7 @@
 
 .loading {
   text-align: center;
-  padding: 20px;
   color: var(--text);
-}
-
-.error {
-  color: var(--danger);
-  padding: 16px;
-  text-align: center;
-  border: 1px solid #ffcdd2;
-  border-radius: 4px;
-  background-color: var(--bg);
-  margin: 1rem 0;
 }
 
 .voteButtonContainer {
@@ -130,5 +120,4 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 1rem;
 }
