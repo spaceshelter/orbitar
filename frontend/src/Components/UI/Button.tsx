@@ -2,7 +2,7 @@ import React, { ButtonHTMLAttributes } from 'react'
 
 import classNames from 'classnames'
 
-import styles from '../Buttons.module.scss'
+import styles from './Button.module.css'
 
 /**
  * Interface for Button component props
@@ -11,13 +11,13 @@ import styles from '../Buttons.module.scss'
  */
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Button variant/style type
-   * @default 'settings'
+   * @default 'default'
    */
-  variant?: 'settings' | 'logout' | 'link' | 'positive'
+  variant: 'default' | 'primary' | 'link' | 'danger'
   /** Button size
    * @default 'normal'
    */
-  size?: 'normal' | 'bigger'
+  size?: 'normal' | 'condensed'
   /** Disabled state of the button
    * @default false
    */
@@ -38,7 +38,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  * ```
  */
 export const Button: React.FC<ButtonProps> = ({
-  variant = 'settings',
+  variant = 'default',
   size = 'normal',
   disabled = false,
   children,
@@ -47,13 +47,14 @@ export const Button: React.FC<ButtonProps> = ({
 }) => {
   const buttonClass = classNames(
     {
-      [styles.settingsButton]: variant === 'settings',
-      [styles.logoutButton]: variant === 'logout',
-      [styles.linkButton]: variant === 'link',
-      [styles.positiveButton]: variant === 'positive',
-      [styles.bigger]: size === 'bigger',
+      [styles.default]: variant === 'default',
+      [styles.link]: variant === 'link',
+      [styles.danger]: variant === 'danger',
+      [styles.primary]: variant === 'primary',
+      [styles.condensed]: size === 'condensed',
       [styles.disabled]: disabled,
     },
+    styles.buttonComponent,
     className,
   )
 
