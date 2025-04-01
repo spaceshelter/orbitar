@@ -62,19 +62,6 @@
   height: 20px;
 }
 
-.optionSelect input[type="checkbox"],
-.optionSelect input[type="radio"] {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-}
-
-.optionSelect input[type="checkbox"]:disabled,
-.optionSelect input[type="radio"]:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
 .optionText {
   flex-grow: 1;
   display: block;

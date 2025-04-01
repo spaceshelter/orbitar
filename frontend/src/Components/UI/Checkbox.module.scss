@@ -8,32 +8,31 @@
     appearance: none;
     width: 1.25rem;
     height: 1.25rem;
-    border: 1px solid var(--fg);
+    border: 1px solid var(--fgSoft);
     border-radius: 4px;
     background-color: var(--lowered);
     cursor: pointer;
     position: relative;
+    transition: all 0.2s ease-in-out;
 
-    &:checked {
-        border: none;
-            background-color: var(--primary);
-
-        &::after {
-            content: '';
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%) rotate(45deg);
-            width: 0.25rem;
-            height: 0.5rem;
-            border: solid white;
-            border-width: 0 2px 2px 0;
-        }
+    &:hover {
+        border-color: var(--primary);
     }
 
-    &:focus {
-        outline: 2px solid var(--accent-color);
-        outline-offset: 2px;
+    &:checked {
+        border-color: var(--primary);
+    }
+
+    &:checked::after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        top: 30%;
+        transform: translate(-50%, -50%) rotate(45deg);
+        width: 0.35rem;
+        height: 0.6rem;
+        border: solid var(--fg);
+        border-width: 0 2px 2px 0;
     }
 
     &:disabled {
@@ -47,16 +46,12 @@
     }
 
     &.error {
-        border-color: var(--error-color);
+        border-color: var(--danger);
     }
 }
 
 .label {
-    color: var(--text-color);
+    color: var(--fg);
     cursor: pointer;
     user-select: none;
-
-    &:hover {
-        color: var(--accent-color);
-    }
 }
