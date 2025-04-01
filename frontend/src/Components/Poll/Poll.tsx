@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import DateComponent from '@components/DateComponent'
 import Button from '@ui/Button'
 import Checkbox from '@ui/Checkbox'
+import Radio from '@ui/Radio'
 import { toast } from 'react-toastify'
 
 import PollService from '../../Services/PollService'
@@ -142,8 +143,8 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
                   disabled={isDisabled}
                 />
               ) : (
-                <input
-                  type='radio'
+                <Radio
+                  id={`poll-option-${idx}`}
                   checked={isSelected}
                   onChange={() => handleOptionSelect(idx)}
                   disabled={isDisabled}
