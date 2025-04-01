@@ -288,13 +288,12 @@ function updateMail(
 
 function processExpandLink(
   expandButton: HTMLElement,
-  nextLink: Element | null,
   getContent: () => React.ReactNode,
   appState: AppState,
   cleanupRegistry: CleanupRegistry,
 ): void {
   let contentCleanupHandler: CleanupHandler | undefined
-
+  const nextLink = expandButton.nextElementSibling
   // Add click event listener to the expand button
   const listener = (e: Event) => {
     const link = nextLink as HTMLAnchorElement
@@ -335,11 +334,8 @@ function processTelegramEmbed(expandButton: HTMLElement, appState: AppState, cle
   const src = expandButton.getAttribute('data-telegram-url')
   if (!src) return
 
-  const nextLink = expandButton.nextElementSibling
-
   processExpandLink(
     expandButton,
-    nextLink,
     () => {
       const ThemeAwareTelegramEmbed = () => {
         const { theme } = useTheme()
@@ -357,22 +353,14 @@ function processInternalLink(expandButton: HTMLElement, appState: AppState, clea
   const commentId = expandButton.getAttribute('data-comment-id')
   if (!postId) return
 
-  const nextLink = expandButton.nextElementSibling
-
   processExpandLink(
     expandButton,
-    nextLink,
     () => (
       <InternalLinkExpandComponent
         postId={Number(postId)}
         commentId={commentId ? Number(commentId) : undefined}
         onClose={() => {
-          const link = nextLink as HTMLAnchorElement
-          const rect = link.nextElementSibling as HTMLDivElement
-          if (rect && rect.className === 'internal-link-rect') {
-            rect.remove()
-            expandButton.classList.remove('expanded')
-          }
+          expandButton.classList.remove('expanded')
         }}
       />
     ),
