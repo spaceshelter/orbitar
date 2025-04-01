@@ -21,6 +21,7 @@ interface TelegramEmbedState {
   src: string
   id: string
   height: string
+  loading: boolean
 }
 
 /**
@@ -37,6 +38,7 @@ export default class TelegramEmbed extends Component<TelegramEmbedProps, Telegra
       src: this.props.src,
       id: '',
       height: '80px',
+      loading: true,
     }
     this.messageHandler = this.messageHandler.bind(this)
     this.urlObj = document.createElement('a')
@@ -46,6 +48,8 @@ export default class TelegramEmbed extends Component<TelegramEmbedProps, Telegra
     window.addEventListener('message', this.messageHandler)
 
     this.iFrame.current?.addEventListener('load', () => {
+      // Set loading to false when iframe loads
+      this.setState({ loading: false })
       this.checkFrame(this.state.id)
     })
   }
@@ -64,6 +68,7 @@ export default class TelegramEmbed extends Component<TelegramEmbedProps, Telegra
     if (action.event === 'resize' && action.height) {
       this.setState({
         height: action.height + 'px',
+        loading: false,
       })
     }
   }
@@ -82,17 +87,18 @@ export default class TelegramEmbed extends Component<TelegramEmbedProps, Telegra
   }
 
   render() {
-    const { src, height } = this.state
+    const { src, height, loading } = this.state
     const { container } = this.props
 
     return (
       <div data-sharing-id={container}>
+        {loading && <div>Загружаем...</div>}
         <iframe
           ref={this.iFrame}
           src={src + '?embed=1' + (this.props.theme === 'dark' ? '&dark=1' : '')}
           height={height}
           id={'telegram-post' + this.urlObj.pathname.replace(/[^a-z0-9_]/gi, '-')}
-          style={styles}
+          style={{ ...styles, display: loading ? 'none' : 'block' }}
         />
       </div>
     )
