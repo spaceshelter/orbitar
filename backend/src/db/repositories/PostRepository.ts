@@ -126,10 +126,15 @@ export default class PostRepository {
     page: number,
     perPage: number,
     sort = 'date',
-    sorting: FeedSorting = FeedSorting.postCreatedAt,    
+    sorting: FeedSorting = FeedSorting.postCreatedAt,
   ): Promise<PostRawWithUserData[]> {
     const limitFrom = (page - 1) * perPage
-    const orderBy = sort === 'rating' ? 'p.rating desc' : sorting === FeedSorting.postCreatedAt ? 'p.created_at desc' : 'p.commented_at desc'
+    const orderBy =
+      sort === 'rating'
+        ? 'p.rating desc'
+        : sorting === FeedSorting.postCreatedAt
+          ? 'p.created_at desc'
+          : 'p.commented_at desc'
     return await this.db.query(
       `
             select p.*, v.vote, b.read_comments, b.bookmark, b.last_read_comment_id, b.watch
