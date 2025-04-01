@@ -149,7 +149,7 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
           maxLength={64}
         />
         {options.length > 2 && (
-          <Button variant='link' size='bigger' onClick={() => handleRemoveOption(option.id)}>
+          <Button variant='link' onClick={() => handleRemoveOption(option.id)}>
             ×
           </Button>
         )}
@@ -269,7 +269,7 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
             <Button variant='link' onClick={handleClose} disabled={isSubmitting}>
               Отмена
             </Button>
-            <Button variant='positive' onClick={handleSubmit} disabled={isSubmitting}>
+            <Button variant='primary' onClick={handleSubmit} disabled={isSubmitting}>
               {isSubmitting ? 'Создание...' : 'Создать опрос'}
             </Button>
           </div>
