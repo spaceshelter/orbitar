@@ -68,7 +68,7 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
   const handleSortChange = (newSort: string) => (e: React.MouseEvent) => {
     e.preventDefault()
     setSort(newSort)
-    setSearchParams({ filter: filter || '', sort: newSort })
+    setSearchParams({ sort: newSort })
     setLoading(true)
   }
 
