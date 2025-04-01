@@ -122,8 +122,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
     return poll.options.map((option, idx) => {
       const percentage = calculatePercentage(option.votes)
       const isSelected = selectedOptions.includes(idx)
-      const hasVoted = (poll.userVoted ?? []).includes(idx)
-      const isDisabled = isPollExpired || hasVoted || (!isMultipleVotesAllowed && hasAnyVotes)
+      const isDisabled = isPollExpired || hasUserVoted || (!isMultipleVotesAllowed && hasAnyVotes)
 
       return (
         <div
@@ -132,24 +131,14 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
             .filter(Boolean)
             .join(' ')}
           style={{ cursor: isDisabled ? 'default' : 'pointer' }}
+          onClick={() => handleOptionSelect(idx)}
         >
           <div className={styles.optionContent}>
             <div className={styles.optionSelect}>
               {isMultipleVotesAllowed ? (
-                <Checkbox
-                  id={`poll-option-${idx}`}
-                  checked={isSelected}
-                  onChange={() => handleOptionSelect(idx)}
-                  disabled={isDisabled}
-                />
+                <Checkbox id={`poll-option-${idx}`} checked={isSelected} disabled={isDisabled} />
               ) : (
-                <Radio
-                  id={`poll-option-${idx}`}
-                  checked={isSelected}
-                  onChange={() => handleOptionSelect(idx)}
-                  disabled={isDisabled}
-                  name='poll-option'
-                />
+                <Radio id={`poll-option-${idx}`} checked={isSelected} disabled={isDisabled} name='poll-option' />
               )}
             </div>
             <span className={styles.optionText}>{option.text}</span>
