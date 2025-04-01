@@ -197,13 +197,15 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
       )
     }
 
-    return (
-      <div className={styles.voteButtonContainer}>
-        <Button variant='primary' onClick={handleSubmitVote} disabled={selectedOptions.length === 0 || isSubmitting}>
-          Голосовать
-        </Button>
-      </div>
-    )
+    if (!hasUserVoted) {
+      return (
+        <div className={styles.voteButtonContainer}>
+          <Button variant='primary' onClick={handleSubmitVote} disabled={selectedOptions.length === 0 || isSubmitting}>
+            Голосовать
+          </Button>
+        </div>
+      )
+    }
   }
 
   return (
