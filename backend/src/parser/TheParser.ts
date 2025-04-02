@@ -274,7 +274,7 @@ export default class TheParser {
     }
 
     const match = url.pathname.match(/^\/([^/]+)\/(\d+)/)
-    if (!match) {
+    if (match === null) {
       return false
     }
 
