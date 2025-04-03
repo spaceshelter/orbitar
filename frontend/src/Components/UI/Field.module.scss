@@ -29,7 +29,7 @@
     }
 
     &::placeholder {
-        color: var(--text-tertiary);
+        opacity: 0.5;
     }
 
     &[type="number"] {
