@@ -126,8 +126,6 @@ export default class PollController {
 
     this.router.post('/polls/batch', validate(batchSchema), oauth('читать'), (req, res) => this.getPollsBatch(req, res))
 
-    this.router.post('/poll/vote', validate(voteSchema), oauth('голосовать'), (req, res) => this.vote(req, res))
-
     this.router.post('/poll/rescind', validate(rescindSchema), oauth('голосовать'), (req, res) =>
       this.rescindVote(req, res),
     )

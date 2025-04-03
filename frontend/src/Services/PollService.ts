@@ -1,6 +1,5 @@
 import AuthAPI from '@api/AuthAPI'
 
-import APIBase from '../API/APIBase'
 import { PollAPI } from '../API/PollAPI'
 import { Poll, PollBackendResponse, PollVoteRequest, PollVoteResponse } from '../Types/Poll'
 import { BatchedCache } from '../Utils'
@@ -31,10 +30,9 @@ class PollService {
     }
   }
 
-  private constructor() {
-    const api = new APIBase()
-    this.pollApi = new PollAPI(api)
-    this.authApi = new AuthAPI(api)
+  private constructor(pollApi: PollAPI, authApi: AuthAPI) {
+    this.pollApi = pollApi
+    this.authApi = authApi
 
     this.pollCache = new BatchedCache<string, Poll>({
       batchSize: 10,
@@ -51,9 +49,9 @@ class PollService {
     })
   }
 
-  public static getInstance(): PollService {
+  public static getInstance(pollApi: PollAPI, authApi: AuthAPI): PollService {
     if (!PollService.instance) {
-      PollService.instance = new PollService()
+      PollService.instance = new PollService(pollApi, authApi)
     }
     return PollService.instance
   }
@@ -73,7 +71,6 @@ class PollService {
 
   public async vote(request: PollVoteRequest): Promise<PollVoteResponse> {
     try {
-      await this.authApi.status()
       const result = await this.pollApi.vote(request)
 
       // update cache
@@ -91,16 +88,22 @@ class PollService {
   }
 
   public async rescindVote(pollId: number): Promise<PollVoteResponse> {
-    await this.authApi.status()
-    const result = await this.pollApi.rescindVote({ poll_id: pollId })
+    try {
+      const result = await this.pollApi.rescindVote({ poll_id: pollId })
 
-    if (result.poll) {
-      this.pollCache.delete(String(pollId))
+      if (result.poll) {
+        this.pollCache.delete(String(pollId))
+      }
+
+      result.success = true
+      return result
+    } catch (error) {
+      console.error('Error rescinding vote:', error)
+      throw error
     }
-
-    result.success = true
-    return result
   }
 }
 
-export default PollService.getInstance()
+const getPollService = (pollApi: PollAPI, authApi: AuthAPI) => PollService.getInstance(pollApi, authApi)
+
+export default getPollService

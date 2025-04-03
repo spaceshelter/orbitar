@@ -6,6 +6,7 @@ import Checkbox from '@ui/Checkbox'
 import Radio from '@ui/Radio'
 import { toast } from 'react-toastify'
 
+import { useAPI } from '../../AppState/AppState'
 import PollService from '../../Services/PollService'
 import { Poll as PollType } from '../../Types/Poll'
 import { VotersTooltip } from './VotersList'
@@ -17,6 +18,8 @@ interface PollProps {
 }
 
 export const Poll: React.FC<PollProps> = ({ pollId }) => {
+  const api = useAPI()
+  const pollService = PollService(api.pollAPI, api.authAPI)
   const [poll, setPoll] = useState<PollType | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -31,7 +34,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
     setError(null)
 
     try {
-      const pollData = await PollService.getPoll(pollId)
+      const pollData = await pollService.getPoll(pollId)
       setPoll(pollData)
       setSelectedOptions(pollData.userVoted || [])
     } catch (err) {
@@ -39,7 +42,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
     } finally {
       setLoading(false)
     }
-  }, [pollId])
+  }, [pollId, pollService])
 
   useEffect(() => {
     fetchPoll()
@@ -63,12 +66,12 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
 
     setIsSubmitting(true)
     try {
-      const response = await PollService.vote({
+      const response = await pollService.vote({
         poll_id: Number(pollId),
         option_ids: selectedOptions.map(Number),
       })
       if (response) {
-        const updatedPoll = await PollService.getPoll(pollId)
+        const updatedPoll = await pollService.getPoll(pollId)
         setPoll(updatedPoll)
       }
     } catch (err) {
@@ -82,8 +85,8 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
     if (!poll || !poll.settings.allowVoteRescinding || isPollExpired) return
 
     try {
-      await PollService.rescindVote(Number(pollId))
-      const updatedPoll = await PollService.getPoll(pollId)
+      await pollService.rescindVote(Number(pollId))
+      const updatedPoll = await pollService.getPoll(pollId)
       setPoll(updatedPoll)
       setSelectedOptions([])
     } catch (err) {
