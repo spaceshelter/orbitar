@@ -137,17 +137,17 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
             <div className={styles.optionSelect}>
               {isMultipleVotesAllowed ? (
                 <Checkbox
-                  id={`poll-option-${idx}`}
+                  id={`poll-option-${idx}-${poll.poll_id}`}
                   checked={isSelected}
                   disabled={isDisabled}
                   onChange={() => handleOptionSelect(idx)}
                 />
               ) : (
                 <Radio
-                  id={`poll-option-${idx}`}
+                  id={`poll-option-${idx}-${poll.poll_id}`}
                   checked={isSelected}
                   disabled={isDisabled}
-                  name='poll-option'
+                  name={`poll-option-${poll.poll_id}`}
                   onChange={() => handleOptionSelect(idx)}
                 />
               )}
