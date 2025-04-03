@@ -140,7 +140,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
                   id={`poll-option-${idx}-${poll.poll_id}`}
                   checked={isSelected}
                   disabled={isDisabled}
-                  onChange={() => handleOptionSelect(idx)}
+                  onChange={() => {}}
                 />
               ) : (
                 <Radio
@@ -148,7 +148,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
                   checked={isSelected}
                   disabled={isDisabled}
                   name={`poll-option-${poll.poll_id}`}
-                  onChange={() => handleOptionSelect(idx)}
+                  onChange={() => {}}
                 />
               )}
             </div>
