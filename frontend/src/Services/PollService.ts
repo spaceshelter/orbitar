@@ -1,3 +1,5 @@
+import AuthAPI from '@api/AuthAPI'
+
 import APIBase from '../API/APIBase'
 import { PollAPI } from '../API/PollAPI'
 import { Poll, PollBackendResponse, PollVoteRequest, PollVoteResponse } from '../Types/Poll'
@@ -7,7 +9,7 @@ class PollService {
   private static instance: PollService
   private pollCache: BatchedCache<string, Poll>
   private pollApi: PollAPI
-
+  private authApi: AuthAPI
   private transformPollResponse(poll: PollBackendResponse): Poll {
     return {
       id: String(poll.poll_id),
@@ -32,6 +34,7 @@ class PollService {
   private constructor() {
     const api = new APIBase()
     this.pollApi = new PollAPI(api)
+    this.authApi = new AuthAPI(api)
 
     this.pollCache = new BatchedCache<string, Poll>({
       batchSize: 10,
@@ -70,6 +73,7 @@ class PollService {
 
   public async vote(request: PollVoteRequest): Promise<PollVoteResponse> {
     try {
+      await this.authApi.status()
       const result = await this.pollApi.vote(request)
 
       // update cache
@@ -87,6 +91,7 @@ class PollService {
   }
 
   public async rescindVote(pollId: number): Promise<PollVoteResponse> {
+    await this.authApi.status()
     const result = await this.pollApi.rescindVote({ poll_id: pollId })
 
     if (result.poll) {
