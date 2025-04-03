@@ -31,6 +31,10 @@
 
 
   &:hover:not(.disabled) {
+    background-color: var(--dim2);
+  }
+
+  &:nth-child(even) {
     background-color: var(--glass);
   }
 }
