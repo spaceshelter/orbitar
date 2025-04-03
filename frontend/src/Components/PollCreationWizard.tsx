@@ -93,6 +93,11 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
   }, [question, options, settings])
 
   const handleAddOption = () => {
+    if (options.length >= 32) {
+      toast.error('Вы можете добавить максимум 32 варианта ответа')
+      return
+    }
+
     setOptions([...options, { id: String(nextId), text: '' }])
     setNextId(nextId + 1)
   }
