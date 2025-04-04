@@ -5,7 +5,7 @@ export class RateLimitManager {
 
   /**
    * Creates a rate limiter for routes.
-   * If `NODE_ENV=test`, simply skips the limiter.
+   * If `NODE_ENV=development`, simply skips the limiter.
    *
    * @param options Rate limit options
    * @returns Express middleware
