@@ -15,17 +15,12 @@ describe('Authentication', () => {
   })
 
   it('should show error on wrong credentials', () => {
-    cy.get('input[type="text"]').type('wrongUsername')
-    cy.get('input[type="password"]').type('wrongPassword')
-    cy.get('input[type="submit"]').click()
+    cy.login('wrongUsername', 'wrongPassword')
     cy.get('[data-testid="sign-in-error"]').should('be.visible')
   })
 
   it('should login with correct credentials', () => {
-    console.log(Cypress.env())
-    cy.get('input[type="text"]').type(Cypress.env('username'))
-    cy.get('input[type="password"]').type(Cypress.env('password'))
-    cy.get('input[type="submit"]').click()
+    cy.login()
     cy.get('title').should('contain', 'Главная')
   })
 })
