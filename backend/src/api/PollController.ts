@@ -3,7 +3,6 @@ import rateLimit from 'express-rate-limit'
 import Joi from 'joi'
 import { Logger } from 'winston'
 
-import PollRepository from '../db/repositories/PollRepository'
 import PollManager from '../managers/PollManager'
 import SiteManager from '../managers/SiteManager'
 import UserManager from '../managers/UserManager'
@@ -35,7 +34,6 @@ export default class PollController {
   private userManager: UserManager
   private siteManager: SiteManager
   private logger: Logger
-  private pollRepository: PollRepository
 
   // 30 requests per minute for voting
   private readonly voteRateLimiter = rateLimit({
@@ -63,12 +61,10 @@ export default class PollController {
     siteManager: SiteManager,
     oauth: OAuth2MiddlewareGenerator,
     logger: Logger,
-    pollRepository: PollRepository,
   ) {
     this.pollManager = pollManager
     this.userManager = userManager
     this.logger = logger
-    this.pollRepository = pollRepository
     this.siteManager = siteManager
 
     const createSchema = Joi.object<PollCreateRequest>({

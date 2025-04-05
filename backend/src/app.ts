@@ -270,7 +270,6 @@ const requests = [
     siteManager,
     oauthMiddlewareGenerator,
     logger.child({ service: 'POLL' }),
-    pollRepository,
   ),
 ]
 
