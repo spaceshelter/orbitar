@@ -81,12 +81,12 @@ export default class PollController {
     })
 
     const voteSchema = Joi.object<PollVoteRequest>({
-      poll_id: Joi.number().required(),
-      option_ids: Joi.array().items(Joi.number()).min(1).max(32).required(),
+      poll_id: Joi.number().integer().required(),
+      option_ids: Joi.array().items(Joi.number().integer().min(0).max(31)).min(1).max(32).required(),
     })
 
     const getSchema = Joi.object<PollGetRequest>({
-      poll_id: Joi.number().required(),
+      poll_id: Joi.number().integer().required(),
     })
 
     const listSchema = Joi.object<PollListRequest>({
@@ -97,11 +97,11 @@ export default class PollController {
     })
 
     const batchSchema = Joi.object<PollBatchRequest>({
-      ids: Joi.array().items(Joi.number()).min(1).max(100).required(),
+      ids: Joi.array().items(Joi.number().integer()).min(1).max(256).required(),
     })
 
     const rescindSchema = Joi.object<PollRescindVoteRequest>({
-      poll_id: Joi.number().required(),
+      poll_id: Joi.number().integer().required(),
     })
 
     this.router.post(
