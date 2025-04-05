@@ -99,7 +99,7 @@ export default class PollManager {
       throw new Error('Multiple choice not allowed')
     }
 
-    if (optionIds.some((id) => id >= poll.options.length)) {
+    if (optionIds.some((id) => id < 0 || id >= poll.options.length)) {
       throw new Error('Invalid option ID')
     }
 
