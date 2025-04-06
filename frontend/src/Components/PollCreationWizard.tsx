@@ -5,10 +5,12 @@ import Drawer from 'react-modern-drawer'
 import 'react-modern-drawer/dist/index.css'
 
 import useNoScroll from '@api/use/useNoScroll'
+import { useAPI, useAppState } from '@state/AppState'
 import Button from '@ui/Button'
 import Checkbox from '@ui/Checkbox'
 import { Field } from '@ui/Field'
 import Select from '@ui/Select'
+import { autorun } from 'mobx'
 import { toast } from 'react-toastify'
 
 import styles from './PollCreationWizard.module.scss'
@@ -57,6 +59,22 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
+  const appState = useAppState()
+  const api = useAPI()
+
+  // Check user restrictions on mount
+  useEffect(() => {
+    return autorun(() => {
+      if (appState.userRestrictions) {
+        if (appState.userRestrictions.restrictedToPostId !== false) {
+          toast.error('Вы не можете создавать опросы')
+          onClose()
+        }
+      } else {
+        api.user.refreshUserRestrictions()
+      }
+    })
+  }, [appState, appState, options])
 
   useEffect(() => {
     const handleResize = () => {
@@ -94,7 +112,6 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
 
   const handleAddOption = () => {
     if (options.length >= 32) {
-      toast.error('Вы можете добавить максимум 32 варианта ответа')
       return
     }
 
@@ -201,9 +218,12 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
           <div className={styles.optionsSection}>
             <label>Варианты ответа</label>
             {renderOptions()}
-            <Button variant='link' onClick={handleAddOption} className={styles.addOption}>
-              + Добавить вариант
-            </Button>
+
+            {options.length < 32 && (
+              <Button variant='link' onClick={handleAddOption} className={styles.addOption}>
+                + Добавить вариант
+              </Button>
+            )}
           </div>
 
           <div className={styles.settingsSection}>

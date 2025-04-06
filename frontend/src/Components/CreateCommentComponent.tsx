@@ -1,5 +1,6 @@
 import React, { ReactNode, useEffect, useRef, useState } from 'react'
 
+import { useAPI, useAppState, useSiteName } from '@state/AppState'
 import ReactTextareaAutocomplete from '@webscopeio/react-textarea-autocomplete'
 import classNames from 'classnames'
 import debouncePromise from 'debounce-promise'
@@ -11,7 +12,6 @@ import { toast } from 'react-toastify'
 import getCaretCoordinates from 'textarea-caret'
 import { useDebouncedCallback } from 'use-debounce'
 
-import { useAPI, useAppState, useSiteName } from '../AppState/AppState'
 import { CommentInfo, PostLinkInfo } from '../Types/PostInfo'
 import { UserGender } from '../Types/UserInfo'
 import ContentComponent from './ContentComponent'
@@ -441,15 +441,10 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
       const pollTag = `<poll>${result.poll.poll_id}</poll>`
       replaceText(pollTag, pollTag.length)
       setPollWizardOpen(false)
-      toast.success('Опрос успешно создан')
     } catch (error: any) {
       console.error('Failed to create poll:', error)
       if (error instanceof Error) {
-        if (error.message === 'You do not have permission to create polls') {
-          toast.error('У вас нет прав на создание опросов')
-        } else {
-          toast.error(`Не удалось создать опрос: ${error.message}`)
-        }
+        toast.error(`Не удалось создать опрос: ${error.message}`)
       } else {
         toast.error('Не удалось создать опрос')
       }
