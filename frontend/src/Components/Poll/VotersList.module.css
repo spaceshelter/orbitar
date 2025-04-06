@@ -23,9 +23,18 @@
   z-index: 9999;
   padding: 12px;
   overflow-y: auto;
+  overflow-x: hidden;
   background-color: var(--elevated);
   backdrop-filter: blur(10px);
   margin-top: 8px;
+  overscroll-behavior: contain;
+}
+
+.votersContent {
+  display: flex;
+  flex-direction: column;
+  min-height: min-content;
+  width: 100%;
 }
 
 .voter {
@@ -35,4 +44,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex-shrink: 0;
+  height: auto;
 }

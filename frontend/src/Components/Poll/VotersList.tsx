@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react'
 
+import Username from '@components/Username'
 import { createPortal } from 'react-dom'
 
 import { UserBaseInfo } from '../../Types/UserInfo'
+import { pluralize } from '../../Utils/utils'
 
 import styles from './VotersList.module.css'
 
@@ -21,9 +23,14 @@ export const VotersTooltip: React.FC<{ voters: UserBaseInfo[] }> = ({ voters }) 
     const rect = container.getBoundingClientRect()
 
     tooltip.style.top = `${rect.bottom + window.scrollY}px`
-    tooltip.style.left = `${rect.left}px`
+    tooltip.style.right = `${window.visualViewport.width - rect.right}px`
 
     const clickHandler = (e: MouseEvent) => {
+      // Check if the click is inside the tooltip
+      if (tooltipRef.current && tooltipRef.current.contains(e.target as Node)) {
+        return // Don't close if clicked inside tooltip
+      }
+
       e.stopPropagation()
       e.preventDefault()
       setShowTooltip(false)
@@ -44,17 +51,17 @@ export const VotersTooltip: React.FC<{ voters: UserBaseInfo[] }> = ({ voters }) 
           setShowTooltip(!showTooltip)
         }}
       >
-        {voters.length} {voters.length === 1 ? 'голос' : 'голосов'}
+        {pluralize(voters.length, ['голос', 'голоса', 'голосов'])}
       </span>
       {showTooltip &&
         voters.length > 0 &&
         createPortal(
           <div ref={tooltipRef} className={styles.votersTooltip}>
-            {voters.map((voter) => (
-              <div key={voter.id} className={styles.voter}>
-                {voter.username}
-              </div>
-            ))}
+            <div className={styles.votersContent}>
+              {voters.map((voter) => (
+                <Username user={voter} key={voter.id} className={styles.voter} />
+              ))}
+            </div>
           </div>,
           document.body,
         )}
