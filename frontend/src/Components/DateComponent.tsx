@@ -36,7 +36,7 @@ export function formatDate(date: Date) {
     sameDay: '[сегодня в] HH:mm',
     lastDay: '[вчера в] HH:mm',
     nextDay: '[завтра в] HH:mm',
-    nextWeek: 'DD.MM.YYYY HH:mm',
+    nextWeek: 'D MMMM [в] HH:mm',
     lastWeek: 'D MMMM [в] HH:mm',
     sameElse: () => {
       if (mDate.isBefore(startYear) || mDate.isAfter(endYear)) {
