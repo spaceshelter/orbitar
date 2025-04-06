@@ -263,15 +263,13 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
             </div>
 
             <div className={styles.settingRow}>
-              <label htmlFor='voteAccess'>Доступ к голосованию</label>
-              <Select
+              <label htmlFor='voteAccess'>Голосовать смогут только полноправные</label>
+              <Checkbox
                 id='voteAccess'
-                value={settings.voteAccess}
-                onChange={(value) => handleSettingChange('voteAccess', value)}
-                options={[
-                  { value: 'everybody', label: 'Все пользователи' },
-                  { value: 'users_with_full_rights', label: 'Только с полными правами' },
-                ]}
+                checked={settings.voteAccess === 'users_with_full_rights'}
+                onChange={(e) =>
+                  handleSettingChange('voteAccess', e.target.checked ? 'users_with_full_rights' : 'everybody')
+                }
               />
             </div>
 
