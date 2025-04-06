@@ -178,11 +178,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
 
   const renderPollExpiration = () => {
     if (isPollExpired) {
-      return (
-        <div className={styles.expiration}>
-          <span>Опрос завершен</span>
-        </div>
-      )
+      return null
     }
 
     if (poll.settings.expiresAt) {
@@ -197,12 +193,19 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
 
   const renderTotalVotes = () => {
     return (
-      <div className={styles.totalVotes}>{pluralize(poll.totalVotes || 0, ['голос', 'голоса', 'голосов'])} всего</div>
+      <div className={styles.totalVotes}>
+        {poll.totalVotes === 0 ? '' : pluralize(poll.totalVotes || 0, ['голос', 'голоса', 'голосов']) + ' всего'}
+      </div>
     )
   }
 
   const renderActions = () => {
-    if (isPollExpired) return null
+    if (isPollExpired)
+      return (
+        <div className={styles.expiration}>
+          <span>Опрос завершен</span>
+        </div>
+      )
 
     if (hasUserVoted && poll.settings.allowVoteRescinding) {
       return (
