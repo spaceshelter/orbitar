@@ -1,6 +1,6 @@
 import AuthAPI from '@api/AuthAPI'
+import { PollAPI } from '@api/PollAPI'
 
-import { PollAPI } from '../API/PollAPI'
 import { Poll, PollBackendResponse, PollVoteRequest, PollVoteResponse } from '../Types/Poll'
 import { BatchedCache } from '../Utils'
 
@@ -35,8 +35,9 @@ class PollService {
     this.authApi = authApi
 
     this.pollCache = new BatchedCache<string, Poll>({
-      batchSize: 10,
-      cacheTime: 5 * 60 * 1000,
+      debounceTime: 200,
+      batchSize: 128,
+      cacheTTL: 5 * 60 * 1000,
       fetchFunction: async (ids: string[]) => {
         try {
           const response = await this.pollApi.getPollsBatch({ ids: ids.map(Number) })

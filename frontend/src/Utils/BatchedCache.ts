@@ -1,99 +1,153 @@
+interface Controllable<T> {
+  promise: Promise<T>
+  resolve: (value: T | PromiseLike<T>) => void
+  reject: (reason?: unknown) => void
+}
+
 interface BatchedCacheOptions<K, V> {
+  /** Maximum number of keys to collect before sending a batch request */
   batchSize: number
-  cacheTime: number
-  fetchFunction: (keys: K[]) => Promise<Map<K, V>>
+  /** Time in milliseconds that cached values remain valid */
+  cacheTTL: number
+  /** Time in milliseconds to wait before sending a batch request */
+  debounceTime?: number
+  /** Function to fetch data for multiple keys in a single request */
+  fetchFunction: (keys: K[]) => Promise<Record<string, V | null> | Map<K, V>>
 }
 
-interface CacheEntry<V> {
-  value: V
-  timestamp: number
-}
-
-interface PendingRequest<V> {
-  resolve: (value: V) => void
-  reject: (error: Error | unknown) => void
-}
-
-export class BatchedCache<K, V> {
-  private cache: Map<K, CacheEntry<V>> = new Map()
-  private pendingBatch: Map<K, Promise<V>> = new Map()
-  private pendingRequests: Map<K, PendingRequest<V>> = new Map()
-  private batchTimeout: NodeJS.Timeout | null = null
+/**
+ * BatchedCache provides efficient data retrieval by batching multiple requests into a single API call.
+ */
+export class BatchedCache<K extends string, V> {
+  private cache = new Map<K, { data: V; expiresAt: number }>()
+  private queue = new Set<K>()
+  private pendingResolvers = new Map<K, Controllable<V>>()
+  private timer: NodeJS.Timeout | null = null
   private options: BatchedCacheOptions<K, V>
 
   constructor(options: BatchedCacheOptions<K, V>) {
     this.options = options
   }
 
+  /**
+   * Gets a value for the specified key
+   */
   public async get(key: K): Promise<V> {
+    // If the data is in cache and not expired, return it immediately
+    const now = Date.now()
     const cached = this.cache.get(key)
-    if (cached && Date.now() - cached.timestamp < this.options.cacheTime) {
-      return cached.value
+    if (cached && cached.expiresAt > now) {
+      return Promise.resolve(cached.data)
     }
 
-    const pending = this.pendingBatch.get(key)
+    const pending = this.pendingResolvers.get(key)
     if (pending) {
-      return pending
+      return pending.promise
     }
 
-    const promise = new Promise<V>((resolve, reject) => {
-      this.pendingRequests.set(key, { resolve, reject })
-      this.addToBatch(key)
+    // Put this request into pending resolvers
+    let resolve!: (value: V | PromiseLike<V>) => void
+    let reject!: (reason?: unknown) => void
+    const prom = new Promise<V>((res, rej) => {
+      resolve = res
+      reject = rej
     })
 
-    this.pendingBatch.set(key, promise)
-    return promise
+    this.pendingResolvers.set(key, { promise: prom, resolve, reject })
+
+    // Add key to batch queue
+    this.queue.add(key)
+
+    // Start or reset the debounce timer
+    if (this.timer) {
+      clearTimeout(this.timer)
+    }
+
+    if (this.queue.size >= this.options.batchSize) {
+      this.flushQueue()
+      return prom
+    }
+
+    this.timer = setTimeout(() => {
+      this.flushQueue()
+    }, this.options.debounceTime || 0)
+
+    return prom
   }
 
+  /**
+   * Manually sets a value in the cache
+   */
   public set(key: K, value: V): void {
     this.cache.set(key, {
-      value,
-      timestamp: Date.now(),
+      data: value,
+      expiresAt: Date.now() + this.options.cacheTTL,
     })
   }
 
+  /**
+   * Removes a value from the cache
+   */
   public delete(key: K): void {
     this.cache.delete(key)
-    this.pendingBatch.delete(key)
-    this.pendingRequests.delete(key)
   }
 
-  private addToBatch(key: K): void {
-    if (this.batchTimeout) {
-      clearTimeout(this.batchTimeout)
+  /**
+   * Clears the entire cache
+   */
+  public clearCache(): void {
+    this.cache.clear()
+  }
+
+  /**
+   * Processes all queued keys
+   */
+  private async flushQueue(): Promise<void> {
+    // Make a local copy of the queue so we can clear it
+    const keys = Array.from(this.queue)
+    this.queue.clear()
+    this.timer = null
+
+    if (keys.length === 0) {
+      return
     }
 
-    this.batchTimeout = setTimeout(async () => {
-      const batch = Array.from(this.pendingBatch.keys())
-      this.pendingBatch.clear()
-      this.batchTimeout = null
+    try {
+      // Send a single batch request
+      const results = await this.options.fetchFunction(keys)
+      const now = Date.now()
 
-      try {
-        const results = await this.options.fetchFunction(batch)
+      // Update cache & resolve each request
+      for (const key of keys) {
+        // Handle both Map and Record return types
+        const value = results instanceof Map ? results.get(key) : results[key] || null
+        if (value) {
+          this.cache.set(key, {
+            data: value,
+            expiresAt: now + this.options.cacheTTL,
+          })
+        }
 
-        batch.forEach((key) => {
-          const request = this.pendingRequests.get(key)
-          if (!request) return
-
-          const value = results.get(key)
+        const resolver = this.pendingResolvers.get(key)
+        if (resolver) {
           if (value) {
-            this.set(key, value)
-            request.resolve(value)
+            resolver.resolve(value)
           } else {
-            request.reject(new Error(`No result returned for key: ${String(key)}`))
+            resolver.reject(new Error(`No data found for key: ${key}`))
           }
-
-          this.pendingRequests.delete(key)
-        })
-      } catch (error) {
-        batch.forEach((key) => {
-          const request = this.pendingRequests.get(key)
-          if (request) {
-            request.reject(error)
-            this.pendingRequests.delete(key)
-          }
-        })
+          this.pendingResolvers.delete(key)
+        }
       }
-    }, 0)
+    } catch (err) {
+      // If something blows up, we should reject all pending resolvers
+      for (const key of keys) {
+        const resolver = this.pendingResolvers.get(key)
+        if (resolver) {
+          resolver.reject(err)
+          this.pendingResolvers.delete(key)
+        }
+      }
+      console.error('Error in batch request:', err)
+    }
   }
 }
