@@ -374,7 +374,7 @@ test('base64 validation', () => {
 describe('parsePoll', () => {
   test('valid poll ID', () => {
     const result = p.parse('<poll>123</poll>')
-    expect(result.text).toEqual('<poll data-poll-id="123"></poll>')
+    expect(result.text).toEqual('<div class="poll" data-poll-id="123"></div>')
   })
 
   test('invalid poll ID - non-numeric', () => {
