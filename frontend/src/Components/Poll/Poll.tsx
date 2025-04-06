@@ -160,7 +160,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
               <>
                 <div className={styles.votesContainer}>
                   <span className={styles.votes}>
-                    {canShowResults && <VotersTooltip voters={option.voters ?? []} />}
+                    <VotersTooltip voters={option.voters ?? []} />
                   </span>
                 </div>
                 <div className={styles.results}>
