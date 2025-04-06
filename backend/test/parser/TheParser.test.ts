@@ -371,6 +371,48 @@ test('base64 validation', () => {
   expect(TheParser.isValidBase64('"SGVsbG8=')).toEqual(false)
 })
 
+describe('parsePoll', () => {
+  test('valid poll ID', () => {
+    const result = p.parse('<poll>123</poll>')
+    expect(result.text).toEqual('<poll data-poll-id="123"></poll>')
+  })
+
+  test('invalid poll ID - non-numeric', () => {
+    const result = p.parse('<poll>abc</poll>')
+    expect(result.text).toEqual('&lt;poll&gt;abc&lt;/poll&gt;')
+  })
+
+  test('invalid poll ID - negative number', () => {
+    const result = p.parse('<poll>-123</poll>')
+    expect(result.text).toEqual('&lt;poll&gt;-123&lt;/poll&gt;')
+  })
+
+  test('invalid poll ID - zero', () => {
+    const result = p.parse('<poll>0</poll>')
+    expect(result.text).toEqual('&lt;poll&gt;0&lt;/poll&gt;')
+  })
+
+  test('invalid poll ID - decimal number', () => {
+    const result = p.parse('<poll>123.45</poll>')
+    expect(result.text).toEqual('&lt;poll&gt;123.45&lt;/poll&gt;')
+  })
+
+  test('invalid poll ID - empty', () => {
+    const result = p.parse('<poll></poll>')
+    expect(result.text).toEqual('&lt;poll/&gt;&lt;/poll&gt;')
+  })
+
+  test('poll tag with nested content is treated as text', () => {
+    const result = p.parse('<poll><b>123</b></poll>')
+    expect(result.text).toEqual('&lt;poll&gt;<b>123</b>&lt;/poll&gt;')
+  })
+
+  test('poll cannot be inside a tag', () => {
+    const result = p.parse('<a href="https://test.com"><poll>123</poll></a>')
+    expect(result.text).toEqual('<a href="https://test.com" target="_blank">123</a>')
+  })
+})
+
 describe('processInternalUrl', () => {
   test('valid internal url', () => {
     const url = 'https://orbitar.local/s/site/p123'

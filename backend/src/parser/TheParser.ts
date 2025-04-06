@@ -638,11 +638,11 @@ export default class TheParser {
     if (node.children.length === 1 && node.children[0].type === 'text') {
       pollId = (node.children[0] as unknown as Text).data.trim()
     }
-    if (!pollId || isNaN(Number(pollId))) {
+    if (!pollId || isNaN(Number(pollId)) || Number(pollId) <= 0 || !Number.isInteger(Number(pollId))) {
       return this.parseDisallowedTag(node)
     }
     return {
-      text: `<poll data-poll-id="${pollId}"></poll>`,
+      text: `<div class="poll" data-poll-id="${pollId}"></div>`,
       mentions: [],
       urls: [],
       images: [],

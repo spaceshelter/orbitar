@@ -136,7 +136,7 @@ function updateContent(
     updateOauthAppEmbed(appEl as HTMLDivElement, appState, cleanupRegistry)
   })
 
-  div.querySelectorAll('poll').forEach((pollEl) => {
+  div.querySelectorAll('div.poll').forEach((pollEl) => {
     updatePoll(pollEl as HTMLDivElement, appState, cleanupRegistry)
   })
 }
