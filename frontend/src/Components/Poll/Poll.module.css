@@ -79,7 +79,12 @@
   top: 0;
   left: 0;
   height: 100%;
+
   background-color: rgba(33, 150, 243, 0.1);
+  .disabled & {
+    background-color: rgba(33, 150, 243, 0.4);
+  }
+
   transition: width 0.3s ease;
   z-index: 0;
   overflow: hidden;
