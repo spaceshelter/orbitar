@@ -1,14 +1,9 @@
 {
   "compilerOptions": {
     "target": "es5",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext",
-      "webworker"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext", "webworker"],
     "experimentalDecorators": true, // needed for @observable
-    "useDefineForClassFields": true,  // needed for @observable
+    "useDefineForClassFields": true, // needed for @observable
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -28,7 +23,7 @@
       "@components/*": ["Components/*"],
       "@pages/*": ["Pages/*"],
       "@services/*": ["Services/*"],
-      "@types/*": ["Types/*"],
+      "@entities/*": ["Types/*"] /*@types is reserved*/,
       "@assets/*": ["Assets/*"],
       "@theme/*": ["Theme/*"],
       "@utils/*": ["Utils/*"],
@@ -36,7 +31,5 @@
       "@state/*": ["AppState/*"]
     }
   },
-  "include": [
-    "src"
-  ]
+  "include": ["src"]
 }

@@ -1,10 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react'
 
 import Username from '@components/Username'
+import { UserBaseInfo } from '@entities/UserInfo'
+import { pluralize } from '@utils/utils'
 import { createPortal } from 'react-dom'
-
-import { UserBaseInfo } from '../../Types/UserInfo'
-import { pluralize } from '../../Utils/utils'
 
 import styles from './VotersList.module.css'
 
