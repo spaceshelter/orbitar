@@ -84,6 +84,7 @@ button.buttonComponent {
 
     &.disabled {
       color: var(--fgSoft);
+      background: var(--dim1);
     }
   }
 

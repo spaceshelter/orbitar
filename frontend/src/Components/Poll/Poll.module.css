@@ -118,11 +118,31 @@
 
 .voteButtonContainer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.actionsContainer {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.infoContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+@media (max-width: 600px) {
+  .infoContainer {
+    max-width: 50%;
+    text-align: right;
+  }
 }

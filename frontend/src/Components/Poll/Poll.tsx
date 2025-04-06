@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react'
 
 import DateComponent from '@components/DateComponent'
+import { useAPI } from '@state/AppState'
 import Button from '@ui/Button'
 import Checkbox from '@ui/Checkbox'
 import Radio from '@ui/Radio'
+import { pluralize } from '@utils/utils'
 import { toast } from 'react-toastify'
 
-import { useAPI } from '../../AppState/AppState'
 import PollService from '../../Services/PollService'
 import { Poll as PollType } from '../../Types/Poll'
 import { VotersTooltip } from './VotersList'
@@ -187,7 +188,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
     if (poll.settings.expiresAt) {
       return (
         <div className={styles.expiration}>
-          <span>Опрос завершится: </span>
+          <span>Окончание: </span>
           <DateComponent date={new Date(poll.settings.expiresAt)} />
         </div>
       )
@@ -195,7 +196,9 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
   }
 
   const renderTotalVotes = () => {
-    return <div className={styles.totalVotes}>Всего голосов: {poll.totalVotes || 0}</div>
+    return (
+      <div className={styles.totalVotes}>{pluralize(poll.totalVotes || 0, ['голос', 'голоса', 'голосов'])} всего</div>
+    )
   }
 
   const renderActions = () => {
@@ -214,7 +217,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
     if (!hasUserVoted) {
       return (
         <div className={styles.voteButtonContainer}>
-          <Button variant='primary' onClick={handleSubmitVote} disabled={selectedOptions.length === 0 || isSubmitting}>
+          <Button variant='positive' onClick={handleSubmitVote} disabled={selectedOptions.length === 0 || isSubmitting}>
             Голосовать
           </Button>
         </div>
@@ -228,10 +231,12 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
 
       <div className={styles.options}>{renderOptions()}</div>
 
-      {renderPollExpiration()}
       <div className={styles.footer}>
-        {renderTotalVotes()}
-        {renderActions()}
+        <div className={styles.actionsContainer}>{renderActions()}</div>
+        <div className={styles.infoContainer}>
+          {renderTotalVotes()}
+          {renderPollExpiration()}
+        </div>
       </div>
     </div>
   )

@@ -22,7 +22,7 @@ export const VotersTooltip: React.FC<{ voters: UserBaseInfo[] }> = ({ voters }) 
     const rect = container.getBoundingClientRect()
 
     tooltip.style.top = `${rect.bottom + window.scrollY}px`
-    tooltip.style.right = `${window.visualViewport.width - rect.right}px`
+    tooltip.style.right = `${document.documentElement.clientWidth - rect.right}px`
 
     const clickHandler = (e: MouseEvent) => {
       // Check if the click is inside the tooltip
@@ -43,15 +43,18 @@ export const VotersTooltip: React.FC<{ voters: UserBaseInfo[] }> = ({ voters }) 
 
   return (
     <div ref={containerRef} className={styles.votesContainer}>
-      <span
-        className={voters.length > 0 ? styles.votes : ''}
-        onClick={(e) => {
-          e.stopPropagation()
-          setShowTooltip(!showTooltip)
-        }}
-      >
-        {pluralize(voters.length, ['голос', 'голоса', 'голосов'])}
-      </span>
+      {voters.length > 0 && (
+        <span
+          className={voters.length > 0 ? styles.votes : ''}
+          onClick={(e) => {
+            e.stopPropagation()
+            setShowTooltip(!showTooltip)
+          }}
+        >
+          {pluralize(voters.length, ['голос', 'голоса', 'голосов'])}
+        </span>
+      )}
+
       {showTooltip &&
         voters.length > 0 &&
         createPortal(
