@@ -82,7 +82,7 @@
     }
   }
 
-  input[type="number"],
+  input[type='number'],
   select {
     width: 160px;
 
@@ -91,7 +91,7 @@
     }
   }
 
-  input[type="checkbox"] {
+  input[type='checkbox'] {
     width: 20px;
     height: 20px;
 
@@ -127,7 +127,7 @@
   justify-content: flex-end;
   gap: 12px;
   margin-top: auto;
-  margin-bottom: 2rem;
+  margin-bottom: 3rem;
   padding-top: 24px;
 
   @media (max-width: 768px) {

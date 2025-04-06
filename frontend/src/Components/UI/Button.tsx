@@ -13,7 +13,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Button variant/style type
    * @default 'default'
    */
-  variant: 'default' | 'primary' | 'link' | 'danger'
+  variant: 'default' | 'primary' | 'link' | 'danger' | 'ghost' | 'positive'
   /** Button size
    * @default 'normal'
    */
@@ -50,6 +50,8 @@ export const Button: React.FC<ButtonProps> = ({
       [styles.default]: variant === 'default',
       [styles.link]: variant === 'link',
       [styles.danger]: variant === 'danger',
+      [styles.ghost]: variant === 'ghost',
+      [styles.positive]: variant === 'positive',
       [styles.primary]: variant === 'primary',
       [styles.condensed]: size === 'condensed',
       [styles.disabled]: disabled,

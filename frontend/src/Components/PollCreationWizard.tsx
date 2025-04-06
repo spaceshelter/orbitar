@@ -291,10 +291,10 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
           </div>
 
           <div className={styles.actions}>
-            <Button variant='link' onClick={handleClose} disabled={isSubmitting}>
+            <Button variant='ghost' onClick={handleClose} disabled={isSubmitting}>
               Отмена
             </Button>
-            <Button variant='primary' onClick={handleSubmit} disabled={isSubmitting}>
+            <Button variant='positive' onClick={handleSubmit} disabled={isSubmitting}>
               {isSubmitting ? 'Создание...' : 'Создать опрос'}
             </Button>
           </div>

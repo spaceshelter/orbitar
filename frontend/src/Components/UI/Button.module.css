@@ -8,6 +8,11 @@ button.buttonComponent {
   align-items: center;
   gap: 8px;
   fill: var(--fgSoft);
+  opacity: 0.8;
+
+  &:hover {
+    opacity: 1;
+  }
 
   &.disabled {
     pointer-events: none;
@@ -53,6 +58,28 @@ button.buttonComponent {
 
     &:hover {
       color: var(--dangerHover);
+    }
+
+    &.disabled {
+      color: var(--fgSoft);
+    }
+  }
+
+  &.ghost {
+    background: var(--dim1);
+    color: var(--fgSoft);
+
+    &:hover {
+      background: var(--dim3);
+    }
+  }
+
+  &.positive {
+    color: var(--button-fg);
+    background: var(--positive);
+
+    &:hover {
+      color: var(--button-fg);
     }
 
     &.disabled {
