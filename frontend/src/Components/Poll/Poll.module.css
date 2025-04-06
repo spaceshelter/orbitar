@@ -29,7 +29,6 @@
   transition: all 0.2s ease;
   position: relative;
 
-
   &:hover:not(.disabled) {
     background-color: var(--dim2);
   }
@@ -45,10 +44,6 @@
 
 .disabled {
   opacity: 0.7;
-
-  &:hover {
-    background-color: transparent;
-  }
 }
 
 .optionContent {
