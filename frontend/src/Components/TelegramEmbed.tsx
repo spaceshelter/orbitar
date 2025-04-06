@@ -4,11 +4,11 @@
 import React, { Component } from 'react'
 
 const styles = {
-  width: '100%',
   frameBorder: '0',
   scrolling: 'no',
   border: 'none',
   overflow: 'hidden',
+  colorScheme: 'light dark',
 }
 
 interface TelegramEmbedProps {
@@ -94,6 +94,7 @@ export default class TelegramEmbed extends Component<TelegramEmbedProps, Telegra
       <div data-sharing-id={container}>
         {loading && <div>Загружаем...</div>}
         <iframe
+          className='telegram-embed'
           ref={this.iFrame}
           src={src + '?embed=1' + (this.props.theme === 'dark' ? '&dark=1' : '')}
           height={height}
