@@ -110,8 +110,10 @@
 }
 
 .loading {
-  text-align: center;
-  color: var(--text);
+}
+
+.error {
+  color: var(--danger);
 }
 
 .voteButtonContainer {

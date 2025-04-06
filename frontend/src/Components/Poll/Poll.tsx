@@ -75,7 +75,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
         setPoll(updatedPoll)
       }
     } catch (err) {
-      setError('Не удалось отправить голос')
+      toast.error('Не удалось проголосовать')
     } finally {
       setIsSubmitting(false)
     }
@@ -90,7 +90,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
       setPoll(updatedPoll)
       setSelectedOptions([])
     } catch (err) {
-      setError('Не удалось отменить голос')
+      toast.error('Не удалось отменить голос')
     }
   }
 
@@ -101,7 +101,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
 
   if (loading) return <div className={styles.loading}>Загрузка...</div>
   if (error) {
-    toast.error(error)
+    return <div className={styles.error}>{error}</div>
   }
   if (!poll) return null
 
