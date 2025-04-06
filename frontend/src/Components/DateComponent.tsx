@@ -23,6 +23,7 @@ moment.updateLocale('ru', {
   },
 })
 const startYear = moment().startOf('year')
+const endYear = moment().endOf('year')
 
 interface DateComponentProps {
   date: Date
@@ -38,7 +39,7 @@ export function formatDate(date: Date) {
     nextWeek: 'DD.MM.YYYY HH:mm',
     lastWeek: 'D MMMM [в] HH:mm',
     sameElse: () => {
-      if (mDate.isBefore(startYear)) {
+      if (mDate.isBefore(startYear) || mDate.isAfter(endYear)) {
         return 'DD.MM.YYYY HH:mm'
       } else {
         return 'D MMMM [в] HH:mm'
