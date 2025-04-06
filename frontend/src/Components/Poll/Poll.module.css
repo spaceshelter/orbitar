@@ -34,7 +34,7 @@
   }
 
   &:nth-child(even) {
-    background-color: var(--glass);
+    background-color: rgba(0, 0, 0, 0.05);
   }
 }
 
