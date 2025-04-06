@@ -86,8 +86,7 @@ export default class TheParser {
       mail: ['a', 'mailbox', 'mail'],
       app: ['a', 'mailbox', 'mail'],
       expand: ['a', 'mailbox', 'mail'],
-      // star means that this tag cannot be inside any other tag
-      poll: '*',
+      poll: ['a', 'mailbox', 'mail'],
     }
 
     this.parseChildNodesStack = []
@@ -126,7 +125,7 @@ export default class TheParser {
       }
       return false
     }
-    return disallowed === '*' ? this.parseChildNodesStack.length > 0 : this.parseChildNodesStack.includes(disallowed)
+    return this.parseChildNodesStack.includes(disallowed)
   }
 
   private parseChildNodes(doc: ChildNode[]): ParseResult {
