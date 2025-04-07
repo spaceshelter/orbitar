@@ -1,0 +1,104 @@
+@import '../index.scss';
+
+.contentTypeFilter {
+  display: flex;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+
+  button {
+    padding: 0.25rem 0.5rem;
+    background-color: transparent;
+    border: none;
+    color: var(--link, #58a8ba);
+    cursor: pointer;
+    transition: color 0.2s ease;
+    font-weight: normal;
+
+    &:hover {
+      color: var(--linkHover, #53c6de);
+    }
+
+    &.active {
+      color: var(--fg, rgba(255, 255, 255, 0.8));
+      font-weight: bold;
+    }
+  }
+}
+
+.filterRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.filterInput {
+  flex: 1;
+  margin-right: 1rem;
+}
+
+.markerTypeFilters {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.markerButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  svg {
+    width: 1.2rem;
+    height: 1.2rem;
+    fill: var(--fgSoft, rgba(255, 255, 255, 0.4));
+  }
+
+  &:hover {
+    svg {
+      fill: var(--fg, rgba(255, 255, 255, 0.8));
+    }
+  }
+
+  &.active {
+    svg {
+      fill: var(--primary, #58a8ba);
+    }
+
+    &:hover {
+      svg {
+        fill: var(--primaryHover, #51b7cb);
+      }
+    }
+  }
+}
+
+.userList {
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+
+  h3 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+  }
+}
+
+.users {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.userItem {
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--background-color);
+}

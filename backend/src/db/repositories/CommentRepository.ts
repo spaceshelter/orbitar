@@ -35,6 +35,30 @@ export default class CommentRepository {
     )
   }
 
+  /**
+   * Efficiently fetch multiple comments with user vote data in a single query
+   * @param forUserId - The ID of the viewing user for vote data
+   * @param commentIds - Array of comment IDs to fetch
+   * @returns Array of comments with user vote data
+   */
+  async getCommentsWithUserData(forUserId: number, commentIds: number[]): Promise<CommentRawWithUserData[]> {
+    if (!commentIds.length) {
+      return []
+    }
+
+    return await this.db.fetchAll(
+      `SELECT c.*, v.vote
+       FROM comments c
+       LEFT JOIN comment_votes v ON (v.comment_id = c.comment_id AND v.voter_id = :forUserId)
+       WHERE c.comment_id IN (:commentIds)
+       ORDER BY c.created_at DESC`,
+      {
+        forUserId,
+        commentIds,
+      },
+    )
+  }
+
   async getPostComments(postId: number, forUserId: number): Promise<CommentRawWithUserData[]> {
     return await this.db.query(
       `
@@ -68,7 +92,17 @@ export default class CommentRepository {
                      left join comment_votes v on (v.comment_id = c.comment_id and v.voter_id = :for_user_id)
             where
                 c.author_id = :user_id
-              and c.deleted = 0 ${filter ? ' and c.source like :filter ' : ''}
+              and c.deleted = 0 ${
+                filter
+                  ? ` and (c.source like :filter or EXISTS (
+                select 1 from markers m
+                where m.comment_id = c.comment_id
+                and m.creator_id = :for_user_id
+                and m.removed_at is null
+                and m.annotation like :filter
+              )) `
+                  : ''
+              }
             order by c.created_at desc
             limit :limit_from, :limit_count
         `,
@@ -96,11 +130,22 @@ export default class CommentRepository {
       .fetchOne<{ cnt: string }>(
         `
             select count(*) cnt 
-            from comments 
-            where author_id = :user_id and deleted = 0 
-            ${filter ? '  and source like :filter ' : ''}`,
+            from comments c
+            where c.author_id = :user_id and c.deleted = 0 
+            ${
+              filter
+                ? ` and (c.source like :filter or EXISTS (
+              select 1 from markers m
+              where m.comment_id = c.comment_id
+              and m.creator_id = :for_user_id
+              and m.removed_at is null
+              and m.annotation like :filter
+            )) `
+                : ''
+            }`,
         {
           user_id: userId,
+          for_user_id: userId /* Same as userId since we're filtering by markers the user created */,
           filter: filter && '%' + escapePercent(filter) + '%',
         },
       )
@@ -148,9 +193,9 @@ export default class CommentRepository {
       })
 
       await conn.query(
-        `update posts p set comments=(select count(*) from comments c where c.post_id = p.post_id), 
+        `update posts p set comments=(select count(*) from comments c where c.post_id = p.post_id),
                    last_comment_id=:last_comment_id
-                       ${updateCommentedAt ? ', commented_at=now()' : ''} 
+                       ${updateCommentedAt ? ', commented_at=now()' : ''}
                where p.post_id=:post_id`,
         {
           post_id: postId,

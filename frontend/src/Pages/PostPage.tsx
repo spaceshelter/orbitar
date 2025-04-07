@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom'
 
+import debounce from 'debounce-promise'
+
 import { usePost } from '../API/use/usePost'
 import { useAppState } from '../AppState/AppState'
 import CommentComponent from '../Components/CommentComponent'
@@ -37,10 +39,6 @@ export default function PostPage() {
     }
     document.title = docTitle
   }, [post, postId])
-
-  const handleCommentEdit = async (text: string, comment: CommentInfo) => {
-    return await editComment(text, comment.id)
-  }
 
   const handleAnswer = async (text: string, post?: PostLinkInfo, comment?: CommentInfo) => {
     if (!post) {
@@ -106,6 +104,27 @@ export default function PostPage() {
 
   const baseRoute = site === 'main' ? '/' : `/s/${site}/`
 
+  // Use a smaller maxTreeDepth on mobile
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
+
+  // Update isMobile state when window resizes
+  useEffect(() => {
+    const handleResize = debounce(() => {
+      const newIsMobile = window.innerWidth <= 768
+      if (newIsMobile !== isMobile) {
+        setIsMobile(newIsMobile)
+      }
+    }, 200)
+
+    window.addEventListener('resize', handleResize)
+    return () => {
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [])
+
+  // Set maxTreeDepth based on screen size
+  const maxTreeDepth = isMobile ? 4 : 12
+
   return (
     <div className={styles.container} ref={containerRef}>
       <div className={styles.feed}>
@@ -137,12 +156,12 @@ export default function PostPage() {
               {comments ? (
                 comments.map((comment) => (
                   <CommentComponent
-                    maxTreeDepth={12}
+                    maxTreeDepth={maxTreeDepth}
                     key={comment.id}
                     comment={comment}
                     onAnswer={handleAnswer}
                     unreadOnly={unreadOnly}
-                    onEdit={handleCommentEdit}
+                    onEdit={editComment}
                     currentUsername={userInfo?.username}
                   />
                 ))

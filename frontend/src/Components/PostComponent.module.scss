@@ -57,14 +57,34 @@ input.title {
   margin-top: 8px;
   margin-left: -4px;
   align-items: center;
-  overflow-x: visible;
+  flex-wrap: nowrap; /* Keep everything on one row */
+  width: 100%; /* Ensure it takes full width */
+  position: relative; /* For positioning context */
+  scrollbar-width: none; /* Hide scrollbar in Firefox */
+  justify-content: flex-start;
+
+  .control {
+    margin-right: max(min(3vw, 30px), 16px);
+  }
+
+  /* On narrow screens, use proportional spacing with justified distribution */
+  @media only screen and (max-width: 600px) {
+    /* Push TokenCounters to right on narrow screens only */
+    .control:last-child {
+      margin-left: auto !important; /* Force right alignment */
+    }
+  }
+
+  &::-webkit-scrollbar {
+    display: none; /* Hide scrollbar in WebKit browsers */
+  }
 }
 
 .control {
-  margin-right: 30px;
   display: flex;
   align-items: center;
   color: var(--fgSoftest);
+  min-width: fit-content; /* Ensure controls don't shrink too much */
 
   button,
   > a {
@@ -136,4 +156,22 @@ input.title {
 }
 .optionsList .label {
   margin-right: 4px;
+}
+
+.optionButton {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 8px 12px;
+  margin: 4px 0;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 14px;
+  color: var(--text-color);
+
+  &:hover {
+    background-color: var(--hover-color, rgba(0, 0, 0, 0.05));
+  }
 }

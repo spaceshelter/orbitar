@@ -8,12 +8,14 @@ import { useUserProfile } from '../API/use/useUserProfile'
 import { useAPI, useAppState } from '../AppState/AppState'
 import DateComponent from '../Components/DateComponent'
 import RatingSwitch from '../Components/RatingSwitch'
+import TokenCounters from '../Components/TokenCounters'
 import Username from '../Components/Username'
 import UserProfileBio from '../Components/UserProfileBio'
 import UserProfileClientsApps from '../Components/UserProfileClientsApps'
 import UserProfileComments from '../Components/UserProfileComments'
 import { UserProfileInvites } from '../Components/UserProfileInvites'
 import { UserProfileKarma } from '../Components/UserProfileKarma'
+import UserProfileMarked from '../Components/UserProfileMarked'
 import UserProfileName from '../Components/UserProfileName'
 import UserProfilePosts from '../Components/UserProfilePosts'
 import UserProfileSettings from '../Components/UserProfileSettings'
@@ -35,12 +37,13 @@ export const UserPage = observer(() => {
 
   const isPosts = page === 'posts'
   const isComments = page === 'comments'
+  const isMarked = page === 'marked'
   const isInvites = page === 'invites'
   const isKarma = page === 'karma'
   const isSettings = page === 'settings'
   const isApps = page === 'apps'
 
-  const isProfile = !isPosts && !isComments && !isInvites && !isKarma && !isSettings && !isApps
+  const isProfile = !isPosts && !isComments && !isMarked && !isInvites && !isKarma && !isSettings && !isApps
 
   useEffect(() => {
     if (state.status === 'ready') {
@@ -108,8 +111,20 @@ export const UserPage = observer(() => {
       <div className={styles.container}>
         <div className={styles.header}>
           <div className={styles.row}>
-            <div>
+            <div className={styles.usernameContainer}>
               <div className={styles.username}>{user.username}</div>
+              <div className={styles.userMarkers}>
+                <TokenCounters
+                  entityId={user.id}
+                  entityType='user'
+                  counts={state.profile.tokenCounts}
+                  userVote={1}
+                  onUpdate={() => {
+                    // Refresh the profile when tokens are updated
+                    refreshProfile()
+                  }}
+                />
+              </div>
             </div>
 
             <div className={styles.karma}>
@@ -144,6 +159,9 @@ export const UserPage = observer(() => {
           </Link>
           <Link className={`${styles.control} ${isComments ? styles.active : ''}`} to={base + '/comments'}>
             Комментарии ({profile.numberOfComments.toLocaleString()})
+          </Link>
+          <Link className={`${styles.control} ${isMarked ? styles.active : ''}`} to={base + '/marked'}>
+            Избранное ({state.status === 'ready' ? state.profile.markedItemsCount : 0})
           </Link>
           <Link className={`${styles.control} ${isKarma ? styles.active : ''}`} to={base + '/karma'}>
             Саморегуляция
@@ -202,6 +220,7 @@ export const UserPage = observer(() => {
           )}
           {isPosts && <UserProfilePosts username={user.username} />}
           {isComments && <UserProfileComments username={user.username} />}
+          {isMarked && <UserProfileMarked username={user.username} />}
           {isInvites && <UserProfileInvites username={user.username} onInvitesChange={handleInvitesChange} />}
           {isKarma && <UserProfileKarma username={user.username} profile={profile} />}
           {isApps && <UserProfileClientsApps />}

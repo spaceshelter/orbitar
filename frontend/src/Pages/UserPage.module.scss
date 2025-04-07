@@ -62,8 +62,19 @@
   display: flex;
 }
 
+.usernameContainer {
+  display: flex;
+  align-items: center;
+}
+
 .username {
   font-size: 40px;
+}
+
+.userMarkers {
+  display: flex;
+  align-items: center;
+  margin-left: 12px;
 }
 
 .name {

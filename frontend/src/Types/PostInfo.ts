@@ -1,4 +1,5 @@
 import { EditFlag } from '../API/PostAPI'
+import { TokenCounts } from './TokenCounts'
 import { UserBaseInfo } from './UserInfo'
 
 export type PostLinkInfo = {
@@ -22,6 +23,9 @@ export interface PostInfo extends PostLinkInfo {
   bookmark?: boolean
   canEdit?: boolean
   language?: string
+
+  // Token counts
+  tokenCounts: TokenCounts
 }
 
 export interface CommentInfo {
@@ -41,4 +45,7 @@ export interface CommentInfo {
   canEdit?: boolean
   parentComment: number
   language?: string
+
+  // Token counts
+  tokenCounts: TokenCounts
 }

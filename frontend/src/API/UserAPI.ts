@@ -2,6 +2,7 @@ import { CommentInfo, PostInfo } from '../Types/PostInfo'
 import { SiteInfo } from '../Types/SiteInfo'
 import { BarmaliniAccessResult, UserGender, UserInfo, UsernameSuggestResult, UserProfileInfo } from '../Types/UserInfo'
 import APIBase from './APIBase'
+import { MarkerType } from './MarkerAPI'
 import { CommentEntity, ContentFormat, PostEntity } from './PostAPI'
 import PostAPIHelper from './PostAPIHelper'
 import { VoteListItemEntity } from './VoteAPI'
@@ -29,6 +30,12 @@ type UserProfileResponse = {
   publicKey: string
   hasOwnApps: boolean
   visitedDaysAgo: number
+  markedItemsCount: number
+  tokenCounts: {
+    stars: number
+    notes: number
+    bookmarks: number
+  }
 }
 type UserProfilePostsRequest = {
   username: string
@@ -189,5 +196,56 @@ export default class UserAPI {
 
   async getUsernameSuggestions(start: string): Promise<UsernameSuggestResult> {
     return this.api.request<{ start: string }, UsernameSuggestResult>('/user/suggest-username', { start })
+  }
+
+  async userMarkedContent(
+    username: string,
+    contentType: 'posts' | 'comments' | 'users' | 'all' = 'all',
+    markerTypes: MarkerType[] = [],
+    filter = '',
+    page = 1,
+    perpage = 20,
+  ): Promise<{
+    posts: PostInfo[]
+    comments: CommentInfo[]
+    markedUsers: UserInfo[]
+    parentComments: Record<number, CommentInfo>
+    total: number
+  }> {
+    const result = await this.api.request<
+      {
+        username: string
+        contentType: string
+        markerTypes?: string[]
+        filter?: string
+        page?: number
+        perpage?: number
+        format?: ContentFormat
+      },
+      {
+        posts: PostEntity[]
+        comments: CommentEntity[]
+        users: Record<number, UserInfo>
+        parentComments: Record<number, CommentEntity>
+        total: number
+        sites: Record<string, SiteInfo>
+      }
+    >('/user/marked-content', {
+      username,
+      contentType,
+      markerTypes: markerTypes.length > 0 ? markerTypes : undefined,
+      filter: filter || undefined,
+      page,
+      perpage,
+      format: 'html',
+    })
+
+    return {
+      posts: this.postAPIHelper.fixPosts(result.posts || [], result.users),
+      comments: this.postAPIHelper.fixComments(result.comments || [], result.users),
+      markedUsers: Object.values(result.users || {}),
+      parentComments: this.postAPIHelper.fixCommentsRecords(result.parentComments || {}, result.users),
+      total: result.total,
+    }
   }
 }

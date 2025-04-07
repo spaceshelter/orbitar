@@ -31,3 +31,18 @@ export type BarmaliniAccessResult = {
 export type UsernameSuggestResult = {
   usernames: string[]
 }
+
+export type UserMarkedContentItem = {
+  id: number
+  title: string
+  url: string
+  createdAt: string
+  markerType: string
+  placedCount: number
+  annotation: string | null
+}
+
+export type UserMarkedContentResult = {
+  items: UserMarkedContentItem[]
+  total: number
+}

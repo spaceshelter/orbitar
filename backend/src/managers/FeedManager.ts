@@ -338,6 +338,12 @@ export default class FeedManager {
         vote: rawPost.vote,
         lastReadCommentId: rawPost.last_read_comment_id,
         language: rawPost.language,
+        // Include marker counts
+        tokenCounts: {
+          stars: rawPost.star_count || 0,
+          notes: rawPost.note_count || 0,
+          bookmarks: rawPost.bookmark_count || 0,
+        },
       }
       if (rawPost.author_id === forUserId) {
         post.canEdit = true

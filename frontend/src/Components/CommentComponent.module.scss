@@ -57,13 +57,33 @@
   margin-top: 4px;
   margin-left: -3px;
   align-items: center;
-  overflow-x: visible;
+  flex-wrap: nowrap; /* Keep everything on one row */
+  width: 100%; /* Ensure it takes full width */
+  position: relative; /* For positioning context */
+  scrollbar-width: none; /* Hide scrollbar in Firefox */
+  justify-content: flex-start;
 
   .control {
-    margin-right: 25px;
+    margin-right: min(3vw, 30px);
+  }
+
+  /* On narrow screens, use proportional spacing with justified distribution */
+  @media only screen and (max-width: 600px) {
+    /* Push TokenCounters to right on narrow screens only */
+    .control:last-child {
+      margin-left: auto !important; /* Force right alignment */
+    }
+  }
+
+  &::-webkit-scrollbar {
+    display: none; /* Hide scrollbar in WebKit browsers */
+  }
+
+  .control {
     color: var(--fgSoftest);
     display: flex;
     align-items: center;
+    min-width: fit-content; /* Ensure controls don't shrink too much */
   }
 
   button:before {
@@ -101,7 +121,6 @@
     fill: var(--fgSoftest);
     color: var(--fgSoftest);
     text-decoration: none;
-
     font-weight: normal;
 
     &.active {
@@ -113,16 +132,19 @@
       color: var(--primary);
     }
   }
+
   a {
     margin: 0 2px;
     &.active {
       color: var(--primary);
     }
   }
+
   button:disabled {
     fill: var(--fgGhost);
     cursor: default;
   }
+
   .label {
     margin-left: 5px;
   }
@@ -151,18 +173,16 @@ $smallShift: 8px;
     border-left: none;
   }
 
-  .unreadOnly :local(.comment):not(.isNew) > .commentBody > :not(:last-child),
-  .unreadOnly :local(.comment):not(.isNew) > .commentBody > :last-child > :not(:first-child),
-  .unreadOnly :local(.comment):not(.isNew) > .commentBody > :last-child > :first-child > * > :first-child {
+  /* Simplify the selectors: only apply transparency to inactive comments without open menus/popups */
+  .unreadOnly :local(.comment).isOld > .commentBody {
     opacity: 0.4;
-    transition: opacity 500ms;
+    transition: opacity 300ms;
   }
 
-  .unreadOnly :local(.comment):not(.isNew) > .commentBody:hover > :not(:last-child),
-  .unreadOnly :local(.comment):not(.isNew) > .commentBody:hover > :last-child > :not(:first-child),
-  .unreadOnly :local(.comment):not(.isNew) > .commentBody:hover > :last-child > :first-child > * > :first-child {
+  /* Override when hovering on the comment body only - restrict to direct hover target */
+  .unreadOnly :local(.comment).isOld > .commentBody:hover {
     opacity: inherit;
-    transition: opacity 500ms;
+    transition: opacity 300ms;
   }
 
   .isNew {

@@ -4,8 +4,10 @@ import Joi from 'joi'
 import { Logger } from 'winston'
 
 import InviteManager from '../managers/InviteManager'
+import MarkerManager from '../managers/MarkerManager'
 import OAuth2Manager from '../managers/OAuth2Manager'
 import PostManager from '../managers/PostManager'
+import { MarkerTargetType } from '../managers/types/MarkerInfo'
 import { UserGender, UserRatingBySubsite } from '../managers/types/UserInfo'
 import UserManager from '../managers/UserManager'
 import VoteManager from '../managers/VoteManager'
@@ -13,6 +15,7 @@ import { APIRequest, APIResponse, joiFormat, joiUsername, validate } from './Api
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
 import { UserProfileEntity } from './types/entities/UserEntity'
 import { UserCommentsRequest, UserCommentsResponse } from './types/requests/UserComments'
+import { UserMarkedContentRequest, UserMarkedContentResponse } from './types/requests/UserMarkedContent'
 import { SuggestUsernameRequest, SuggestUsernameResponse } from './types/requests/UsernameSuggest'
 import { UserPostsRequest, UserPostsResponse } from './types/requests/UserPosts'
 import {
@@ -41,6 +44,7 @@ export default class UserController {
   private readonly postManager: PostManager
   private readonly voteManager: VoteManager
   private readonly inviteManager: InviteManager
+  private readonly markerManager: MarkerManager
   private readonly logger: Logger
   private readonly enricher: Enricher
   private readonly oauthManager: OAuth2Manager
@@ -51,6 +55,7 @@ export default class UserController {
     postManager: PostManager,
     voteManager: VoteManager,
     inviteManager: InviteManager,
+    markerManager: MarkerManager,
     oauth: OAuth2MiddlewareGenerator,
     oauthManager: OAuth2Manager,
     logger: Logger,
@@ -60,6 +65,7 @@ export default class UserController {
     this.postManager = postManager
     this.voteManager = voteManager
     this.inviteManager = inviteManager
+    this.markerManager = markerManager
     this.oauthManager = oauthManager
     this.logger = logger
 
@@ -75,8 +81,8 @@ export default class UserController {
     })
 
     const userCommentsAndPostsLimiter = rateLimit({
-      windowMs: 1000,
-      max: 1,
+      windowMs: 8000,
+      max: 10,
     })
 
     const bioSchema = Joi.object<UserSaveBioRequest>({
@@ -110,6 +116,16 @@ export default class UserController {
       windowMs: 1000 * 60 * 5,
       max: 100,
       keyGenerator: (req) => String(req.session.data?.userId),
+    })
+
+    const markedContentSchema = Joi.object<UserMarkedContentRequest>({
+      username: joiUsername.required(),
+      contentType: Joi.string().valid('posts', 'comments', 'users').required(),
+      markerTypes: Joi.array().items(Joi.string().valid('star', 'note', 'bookmark')),
+      filter: Joi.string().max(120).allow(null, ''),
+      format: joiFormat,
+      page: Joi.number().default(1),
+      perpage: Joi.number().min(1).max(50).default(20),
     })
 
     this.router.post('/user/profile', oauth('читать профиль пользователя'), validate(profileSchema), (req, res) =>
@@ -174,6 +190,13 @@ export default class UserController {
       validate(publicKeySchema),
       (req, res) => this.savePublicKey(req, res),
     )
+    this.router.post(
+      '/user/marked-content',
+      userCommentsAndPostsLimiter,
+      validate(markedContentSchema),
+      oauth('читать избранное пользователя'),
+      (req, res) => this.markedContent(req, res),
+    )
   }
 
   async profile(request: APIRequest<UserProfileRequest>, response: APIResponse<UserProfileResponse>) {
@@ -230,6 +253,12 @@ export default class UserController {
         })
       }
 
+      // Get marker counts for the user
+      const markerCounts = await this.markerManager.getCounters(MarkerTargetType.USER, profileInfo.id)
+
+      // Get distinct target counts for all bookmarks (posts, comments, users combined)
+      const markedItemsCount = await this.markerManager.countDistinctTargetsByCreator(profileInfo.id, 'all')
+
       return response.success({
         profile: profile,
         invitedBy: invitedBy,
@@ -244,6 +273,12 @@ export default class UserController {
         publicKey,
         visitedDaysAgo,
         hasOwnApps,
+        markedItemsCount,
+        tokenCounts: {
+          stars: markerCounts.star_count,
+          notes: markerCounts.note_count,
+          bookmarks: markerCounts.bookmark_count,
+        },
       })
     } catch (error) {
       this.logger.error('Could not get user profile', { username })
@@ -327,13 +362,8 @@ export default class UserController {
         format,
       )
       const rawParentComments = await this.postManager.getParentCommentsForASetOfComments(rawComments, userId, format)
-      const { allComments, users } = await this.enricher.enrichRawComments(rawComments, {}, format, (_) => false)
-      const { allComments: parentCommentsList } = await this.enricher.enrichRawComments(
-        rawParentComments,
-        users,
-        format,
-        (_) => false,
-      )
+      const { allComments, users } = await this.enricher.enrichRawComments(rawComments)
+      const { allComments: parentCommentsList } = await this.enricher.enrichRawComments(rawParentComments, users)
 
       const parentComments = parentCommentsList.reduce((acc, comment) => {
         acc[comment.id] = comment
@@ -546,6 +576,111 @@ export default class UserController {
     } catch (error) {
       this.logger.error('Could not update user public key', { error })
       return res.error('error', `Could not update public key`, 500)
+    }
+  }
+
+  /**
+   * API endpoint to fetch content that has been marked by a user
+   * Supports different content types (posts, comments, users) and marker types (star, note, bookmark)
+   * Handles permission checks, pagination, and proper type conversions for API responses
+   */
+  async markedContent(request: APIRequest<UserMarkedContentRequest>, response: APIResponse<UserMarkedContentResponse>) {
+    if (!request.session.data.userId) {
+      return response.authRequired()
+    }
+
+    const userId = request.session.data.userId
+    const { username, contentType, markerTypes, filter, format, page = 1, perpage = 20 } = request.body
+
+    try {
+      const profile = await this.userManager.getByUsername(username)
+
+      if (!profile) {
+        return response.error(ERROR_CODES.NOT_FOUND, 'User not found', 404)
+      }
+
+      if (await this.userIsRestrictedToOwnContent(userId, profile.id)) {
+        return response.error(ERROR_CODES.NO_PERMISSION, "You are not allowed to view this user's marked content", 403)
+      }
+
+      // Prepare the response with correct types
+      const responseData: UserMarkedContentResponse = { users: {}, total: 0 }
+
+      // Process each content type using specialized methods
+      switch (contentType) {
+        case 'posts': {
+          // Get posts using specialized method
+          const { posts, total } = await this.markerManager.getMarkedPosts(
+            profile.id,
+            userId,
+            markerTypes,
+            filter,
+            format,
+            page,
+            perpage,
+          )
+          const { posts: enrichedPosts, users: enrichedUsers } = await this.enricher.enrichRawPosts(posts)
+          responseData.posts = enrichedPosts
+          responseData.users = enrichedUsers
+          responseData.total = total
+          break
+        }
+
+        case 'comments': {
+          // Get comments using specialized method
+          const { comments, users, parentComments, total } = await this.markerManager.getMarkedComments(
+            profile.id,
+            userId,
+            markerTypes,
+            filter,
+            format,
+            page,
+            perpage,
+          )
+
+          // Enrich comments for API response
+          const { allComments } = await this.enricher.enrichRawComments(comments, users)
+
+          // Enrich parent comments
+          const { allComments: parentCommentsList } = await this.enricher.enrichRawComments(
+            Object.values(parentComments),
+            users,
+          )
+
+          // Convert parent comments array to map indexed by comment ID
+          const parentCommentsMap = parentCommentsList.reduce((acc, comment) => {
+            acc[comment.id] = comment
+            return acc
+          }, {})
+
+          responseData.comments = allComments
+          responseData.parentComments = parentCommentsMap
+          responseData.users = users
+
+          responseData.total = total
+          break
+        }
+
+        case 'users': {
+          // Get users using specialized method
+          const { users, total } = await this.markerManager.getMarkedUsers(
+            profile.id,
+            markerTypes,
+            filter,
+            page,
+            perpage,
+          )
+
+          responseData.users = Object.fromEntries(Object.entries(users).map(([id, user]) => [parseInt(id), user]))
+          responseData.total = total
+          break
+        }
+      }
+
+      response.success(responseData)
+    } catch (error) {
+      this.logger.error('Could not get user marked content', { username, contentType, error })
+      return response.error('error', `Could not get marked content for user ${username}`, 500)
     }
   }
 }

@@ -6,6 +6,13 @@ export type PostBaseEntity = {
   title?: string
 }
 
+// API entity TokenCounts - matches frontend format
+export type TokenCounts = {
+  stars: number
+  notes: number
+  bookmarks: number
+}
+
 export type PostEntity = PostBaseEntity & {
   author: number
   created: string
@@ -19,4 +26,6 @@ export type PostEntity = PostBaseEntity & {
   editFlag?: EditFlag
   vote?: number
   language?: string
+  // Token counts for markers
+  tokenCounts: TokenCounts
 }

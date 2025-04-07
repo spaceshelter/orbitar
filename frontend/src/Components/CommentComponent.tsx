@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react'
 
+import classNames from 'classnames'
 import OutsideClickHandler from 'react-outside-click-handler'
 import { toast } from 'react-toastify'
 
@@ -13,6 +14,7 @@ import { CreateCommentComponentRestricted } from './CreateCommentComponent'
 import { HistoryComponent } from './HistoryComponent'
 import RatingSwitch from './RatingSwitch'
 import { SignatureComponent } from './SignatureComponent'
+import TokenCounters from './TokenCounters'
 import { getPreferredLang, getShowInlineTranslateButton } from './UserProfileSettings'
 
 import { ReactComponent as OptionsIcon } from '../Assets/options.svg'
@@ -24,7 +26,7 @@ interface CommentProps {
   showSite?: boolean
   parent?: CommentInfo
   onAnswer?: (text: string, post?: PostLinkInfo, comment?: CommentInfo) => Promise<CommentInfo | undefined>
-  onEdit?: (text: string, comment: CommentInfo) => Promise<CommentInfo | undefined>
+  onEdit?: (partial: Partial<CommentInfo> & { id: number }) => Promise<CommentInfo | undefined>
   depth?: number
   maxTreeDepth?: number
   idx?: number
@@ -38,6 +40,7 @@ export default function CommentComponent(props: CommentProps) {
   const [editingText, setEditingText] = useState<false | string>(false)
   const [showHistory, setShowHistory] = useState(false)
   const [showOptions, setShowOptions] = useState(false)
+  const [hasOpenList, setHasOpenList] = useState(false)
 
   const api = useAPI()
   const {
@@ -72,9 +75,22 @@ export default function CommentComponent(props: CommentProps) {
 
   const handleEditComplete = async (text: string) => {
     try {
-      const res = await props.onEdit?.(text, props.comment)
+      // First, make the API call to update the content
+      const res = await api.postAPI.editComment(text, props.comment.id)
+
+      if (!res) {
+        throw new Error('Failed to edit comment')
+      }
+
+      // Then update the state through the parent's onEdit handler
+      const updatedComment = await props.onEdit?.({
+        id: props.comment.id,
+        content: res.comment.content,
+        editFlag: res.comment.editFlag,
+      })
+
       setEditingText(false)
-      return res
+      return updatedComment
     } catch (err) {
       console.log('Could not edit comment', err)
       toast.error('Не удалось отредактировать комментарий')
@@ -86,6 +102,12 @@ export default function CommentComponent(props: CommentProps) {
     return (value: number, vote?: number) => {
       props.comment.rating = value
       props.comment.vote = vote
+
+      // a hack to trigger re-render
+      // FIXME: this whole property modification approach is ugly, need to rework with mobx
+      const prevOpenList = hasOpenList
+      setHasOpenList(!prevOpenList)
+      Promise.resolve().then(() => setHasOpenList(prevOpenList))
     }
   }, [props.comment])
 
@@ -102,7 +124,6 @@ export default function CommentComponent(props: CommentProps) {
   const toggleHistory = () => {
     setShowHistory(!showHistory)
   }
-
   const { author, created, site, postLink, editFlag } = props.comment
   const content = altContent || props.comment.content
 
@@ -114,9 +135,21 @@ export default function CommentComponent(props: CommentProps) {
     return getShowInlineTranslateButton() && props.comment.language !== getPreferredLang()
   }, [props.comment])
 
+  // Check if this comment is starred
+  const isStarred = props.comment.tokenCounts && props.comment.tokenCounts.stars > 0
+
+  // Calculate whether we have any active elements
+  const hasActiveElement =
+    showOptions || showHistory || editingText !== false || answerOpen || currentMode !== undefined || hasOpenList
+
   return (
     <div
-      className={`comment ${styles.comment} ${props.comment.isNew ? ' isNew' : ''} ${isFlat ? ' isFlat' : ''}`}
+      className={classNames('comment', styles.comment, {
+        isNew: props.comment.isNew,
+        isOld: !props.comment.isNew && !hasActiveElement && !isStarred,
+        isFlat: isFlat,
+        isStarred: isStarred,
+      })}
       data-comment-id={props.comment.id}
     >
       <div className='commentBody' ref={contentRef}>
@@ -174,6 +207,7 @@ export default function CommentComponent(props: CommentProps) {
                 id={props.comment.id}
                 rating={{ vote: props.comment.vote, value: props.comment.rating }}
                 onVote={handleVote}
+                onListToggle={setHasOpenList}
               />
             </div>
           )}
@@ -245,9 +279,34 @@ export default function CommentComponent(props: CommentProps) {
           </div>
           {props.onAnswer && (
             <div className={styles.control}>
-              <button onClick={handleAnswerSwitch}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</button>
+              <button onClick={handleAnswerSwitch} className={styles.answerButton}>
+                <span className={styles.answerText}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</span>
+              </button>
             </div>
           )}
+
+          {/* Token counters */}
+          <div className={styles.control}>
+            <TokenCounters
+              entityId={props.comment.id}
+              entityType='comment'
+              counts={props.comment.tokenCounts}
+              userVote={props.comment.vote}
+              onListToggle={setHasOpenList}
+              onUpdate={(counts) => {
+                if (props.onEdit) {
+                  props
+                    .onEdit({
+                      id: props.comment.id,
+                      tokenCounts: counts,
+                    })
+                    .catch((err) => {
+                      console.log('Could not update comment with new token counts', err)
+                    })
+                }
+              }}
+            />
+          </div>
         </div>
       </div>
       {props.comment.answers || answerOpen ? (

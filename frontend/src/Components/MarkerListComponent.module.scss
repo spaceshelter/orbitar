@@ -1,0 +1,407 @@
+.markerList {
+  position: absolute;
+  display: flex;
+  width: 312px;
+  max-width: 90vw;
+  background: var(--elevated);
+  box-shadow: 0 0 4px var(--shadow);
+  border-radius: 8px;
+  flex-direction: column;
+  z-index: 500;
+  padding: 16px;
+  max-height: 80vh;
+  overflow-y: visible;
+  font-size: 14px;
+
+  // In user profile context, ensure it's positioned properly
+  :global(.userMarkers) & {
+    top: 100%;
+    left: 0;
+    margin-top: 5px;
+  }
+
+  // Positioning the marker list to the right of the screen
+  // must be no lower than the value in TokenCounters.module.scss
+  @media only screen and (max-width: 800px) {
+    right: 0;
+  }
+}
+
+.inlineMarkerWrapper {
+  width: 100%;
+  margin-bottom: 12px;
+  position: absolute;
+  z-index: 600; // Higher than the MarkerList z-index
+  top: -24px;
+  left: 0;
+
+  // This ensures the inline marker component inherits the same width as the parent
+  & > div {
+    position: absolute;
+    left: 50%;
+    width: calc(100% - 16px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    border-radius: 6px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border-color);
+
+    // Add arrow pointing down
+    &:after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 0;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-top: 8px solid var(--border-color);
+    }
+  }
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--divider);
+  padding-bottom: 8px;
+
+  h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+  }
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--fgSoft);
+  padding: 0;
+  margin: 0;
+  line-height: 1;
+
+  &:hover {
+    color: var(--fg);
+  }
+}
+
+.error {
+  background-color: rgba(var(--danger-rgb), 0.1);
+  color: var(--danger);
+  padding: 8px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.addMarkerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--divider);
+}
+
+.addMarkerLabel {
+  font-weight: 500;
+  color: var(--fg);
+}
+
+.addMarkerButtons {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.markerButton {
+  border-radius: 4px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  white-space: nowrap;
+
+  svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+    margin-right: 0.2rem;
+  }
+
+  &:hover:not(:disabled) {
+    background-color: var(--dim1);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &.active {
+    color: var(--primary);
+
+    svg {
+      filter: drop-shadow(0 0 2px var(--primary));
+    }
+  }
+}
+
+.starButton {
+  color: var(--primary);
+
+  &.active {
+    svg {
+      animation: starPulse 2s infinite ease-in-out;
+    }
+  }
+
+  @keyframes starPulse {
+    0% {
+      filter: drop-shadow(0 0 2px var(--primary));
+    }
+    50% {
+      filter: drop-shadow(0 0 4px var(--primary));
+    }
+    100% {
+      filter: drop-shadow(0 0 2px var(--primary));
+    }
+  }
+}
+
+.noteButton,
+.bookmarkButton,
+.starButton {
+  color: var(--fgSoft);
+}
+
+.loading {
+  text-align: center;
+  padding: 32px 0;
+  color: var(--fgSoft);
+}
+
+.noMarkers {
+  text-align: center;
+  padding: 32px 0;
+  color: var(--fgSoft);
+}
+
+.markersList {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  max-height: 60vh;
+}
+
+.markerItem {
+  display: flex;
+  align-items: flex-start;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--divider-soft, rgba(125, 125, 125, 0.15));
+  position: relative;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.markerType {
+  margin-right: 16px;
+  margin-top: 3px;
+  fill: var(--notification-date-fg);
+  width: 22px;
+  flex-shrink: 0;
+  position: relative;
+
+  svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  &.own {
+    cursor: pointer;
+    transition:
+      transform 0.1s ease-in-out,
+      fill 0.2s ease-in-out;
+
+    &:hover {
+      transform: scale(1.1);
+      fill: var(--primaryHover);
+    }
+  }
+
+  .placedCount {
+    position: absolute;
+    bottom: -6px;
+    right: -8px;
+    background-color: var(--dim3);
+    color: var(--fg);
+    border-radius: 10px;
+    min-width: 18px;
+    height: 18px;
+    font-size: 11px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 2px;
+  }
+}
+
+.markerContent {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 22px;
+  justify-content: center;
+}
+
+.markerSignature {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  line-height: 16px;
+  margin-bottom: 4px;
+  color: var(--notification-date-fg);
+
+  /* Ensure username is consistently styled with gray color from comment view */
+  :global(a),
+  :global(a.username) {
+    color: var(--notification-date-fg) !important;
+    opacity: 0.9;
+    font-weight: normal;
+
+    &:hover {
+      color: var(--primary) !important;
+    }
+  }
+}
+
+.bookmarkHeader {
+  font-size: 13px;
+  line-height: 16px;
+  margin-bottom: 4px;
+  color: var(--notification-date-fg);
+  font-weight: 500;
+}
+
+.markerAnnotation {
+  font-size: 14px;
+  color: var(--notification-text-fg);
+  white-space: pre-line;
+  margin-top: 4px;
+  line-height: 1.4;
+  word-wrap: break-word;
+  word-break: break-word;
+  padding-right: 20px; /* make room for the remove button */
+  pointer-events: auto;
+}
+
+.bookmarksList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--notification-text-fg);
+}
+
+.bookmarkItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 13px;
+
+  /* Ensure username is consistently styled with gray color from comment view */
+  :global(a),
+  :global(a.username) {
+    color: var(--notification-date-fg) !important;
+    opacity: 0.9;
+    font-weight: normal;
+
+    &:hover {
+      color: var(--primary) !important;
+    }
+  }
+}
+
+.removeButton {
+  background: none;
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  padding: 0;
+  font-size: 1.1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  margin-right: 4px;
+  opacity: 0.4;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+
+  &:hover:not(:disabled) {
+    color: var(--dangerHover);
+    opacity: 1;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+/* Make remove button visible on marker item hover */
+.markerItem:hover {
+  .removeButton {
+    opacity: 0.8;
+  }
+}
+
+.removeButtonInline {
+  background: none;
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  margin-left: 2px;
+  padding: 0;
+  font-size: 0.9rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+
+  &:hover:not(:disabled) {
+    color: var(--dangerHover);
+    opacity: 1;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.overlayWrapper {
+  position: relative;
+}

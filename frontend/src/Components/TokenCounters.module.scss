@@ -1,0 +1,160 @@
+.tokenCounters {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap; /* Keep tokens in a single row */
+  gap: 8px; /* Compact gap between tokens */
+  white-space: nowrap; /* Prevent wrapping */
+  cursor: pointer;
+
+  height: 27px;
+
+  /* Ensure tokens stay grouped together regardless of screen size */
+  min-width: fit-content;
+
+  /* Add subtle visual separator on narrow screens */
+  @media only screen and (max-width: 600px) {
+    border-left: 1px solid var(--fgAlmostInvisible);
+    padding-left: 8px;
+    margin-left: 4px;
+  }
+
+  &:hover .tokenCounter {
+    .star svg,
+    .note svg,
+    .bookmark svg,
+    .tokenSphere svg {
+      fill: var(--primaryHover);
+      opacity: 1;
+    }
+  }
+}
+
+// Apply this class to parent comment/post when it has stars
+:global(.comment.isStarred > .commentBody) {
+  background: linear-gradient(to right, rgba(40, 193, 220, 0.05), rgba(100, 120, 255, 0.03)); // Cosmic gradient
+  border-radius: 4px;
+  padding: 4px 8px;
+  margin: -4px -8px;
+
+  @media only screen and (min-width: 990px) {
+    padding: 4px 12px;
+    margin: -4px -12px;
+  }
+}
+
+:global(.postComponent.isStarred) {
+  background: linear-gradient(to right, rgba(40, 193, 220, 0.05), rgba(100, 120, 255, 0.03)); // Cosmic gradient
+  border-radius: 4px;
+  padding: 6px 8px;
+  margin: -6px -8px 58px -8px; // Preserve bottom margin
+}
+
+.tokenCounter {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: var(--fgSoftest);
+
+  .count {
+    margin-left: 2px;
+    font-weight: 600;
+  }
+
+  // Common styles for all icons
+  svg {
+    width: 22px;
+    height: 22px;
+    margin-right: 2px;
+    fill: currentColor;
+    position: relative;
+    top: 2px; /* Shift only the icons down by 2px */
+    transition:
+      fill 0.2s ease,
+      filter 0.2s ease;
+  }
+
+  // Star is displayed with full brightness (primary color) and animated cosmic glow
+  .star {
+    color: var(--primary);
+
+    svg {
+      fill: var(--primary);
+      width: 24px; // Slightly larger than other icons
+      height: 24px;
+      filter: drop-shadow(0 0 2px var(--primary)); // Enhanced glow effect
+      animation: starPulse 2s infinite ease-in-out;
+    }
+  }
+
+  @keyframes starPulse {
+    0% {
+      filter: drop-shadow(0 0 2px var(--primary));
+    }
+    50% {
+      filter: drop-shadow(0 0 4px var(--primary));
+    }
+    100% {
+      filter: drop-shadow(0 0 2px var(--primary));
+    }
+  }
+
+  // Notes and bookmarks are displayed with reduced brightness
+  .note,
+  .bookmark {
+    opacity: 0.7;
+
+    svg {
+      fill: var(--fgSoftest);
+      transition:
+        fill 0.2s ease,
+        opacity 0.2s ease;
+    }
+  }
+
+  // Vote indicator icons are displayed as very subtle ghost-like outlines
+  .votedIcon {
+    color: var(--fgSoftest);
+    height: 24px;
+
+    svg {
+      fill: none;
+      stroke-width: 1px;
+      width: 22px;
+      height: 22px;
+      stroke: var(--fgSoftest);
+    }
+
+    &.downvoted svg {
+      fill: var(--fgGhost);
+      stroke: none;
+    }
+  }
+
+  // Token sphere displayed when there are no counts
+  .tokenSphere {
+    position: relative;
+    top: -1px; /* Align with other icons */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    min-height: 24px;
+    padding: 3px;
+
+    svg {
+      fill: var(--fgSoftest);
+      opacity: 0.4;
+      transition:
+        fill 0.2s ease,
+        opacity 0.2s ease;
+    }
+  }
+}
+
+.markerListWrapper {
+  max-width: 90vw;
+  /* Ensure it doesn't overflow on small screens */
+  @media only screen and (max-width: 600px) {
+    max-width: calc(100vw - 16px); /* 16px padding on each side */
+  }
+}

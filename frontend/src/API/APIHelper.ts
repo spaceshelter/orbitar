@@ -5,6 +5,7 @@ import AuthAPIHelper from './AuthAPIHelper'
 import FeedAPI from './FeedAPI'
 import FeedAPIHelper from './FeedAPIHelper'
 import InviteAPI from './InviteAPI'
+import MarkerAPI from './MarkerAPI'
 import NotificationsAPI from './NotificationsAPI'
 import NotificationsAPIHelper from './NotificationsAPIHelper'
 import OAuth2Api from './OAuth2Api'
@@ -34,6 +35,7 @@ export default class APIHelper {
   feed: FeedAPIHelper
   searchApi: SearchApi
   oauth2Api: OAuth2Api
+  markerAPI: MarkerAPI
   private baseAPI: APIBase
   private initRetryCount = 0
   private appState: AppState
@@ -48,6 +50,7 @@ export default class APIHelper {
     this.voteAPI = new VoteAPI(api)
     this.siteAPI = new SiteAPI(api)
     this.notificationsAPI = new NotificationsAPI(api)
+    this.markerAPI = new MarkerAPI(api)
     this.post = new PostAPIHelper(this.postAPI, appState)
     this.userAPI = new UserAPI(api, this.post)
     this.auth = new AuthAPIHelper(this.authAPI, appState)

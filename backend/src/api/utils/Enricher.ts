@@ -79,22 +79,30 @@ export class Enricher {
 
   async enrichRawComments(
     rawComments: CommentInfoWithPostData[],
-    users: Record<number, UserEntity>,
-    format: string,
-    isNew: (c: CommentEntity) => boolean,
+    users: Record<number, UserEntity> = {},
+    isNew?: (c: CommentEntity) => boolean,
   ): Promise<EnrichedComments> {
     const commentsIndex: Record<number, CommentEntity> = {}
     const rootComments: CommentEntity[] = []
     const allComments: CommentEntity[] = []
 
     for (const rawComment of rawComments) {
+      // Create a new object with everything except tokenCounts
+      const { ...commentWithoutTokenCounts } = rawComment
+
       const comment: CommentEntity = {
-        ...rawComment,
+        ...commentWithoutTokenCounts,
         created: rawComment.created.toISOString(),
         isNew: false,
         answers: undefined,
+        // Add token counts in the correct format
+        tokenCounts: {
+          stars: rawComment.tokenCounts.stars,
+          notes: rawComment.tokenCounts.notes,
+          bookmarks: rawComment.tokenCounts.bookmarks,
+        },
       }
-      if (isNew(comment)) {
+      if (isNew?.(comment)) {
         comment.isNew = true
       }
       if (rawComment.deleted) {

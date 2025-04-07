@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react'
 
+import classNames from 'classnames'
 import OutsideClickHandler from 'react-outside-click-handler'
 import { toast } from 'react-toastify'
 
@@ -14,6 +15,7 @@ import { HistoryComponent } from './HistoryComponent'
 import PostLink from './PostLink'
 import RatingSwitch from './RatingSwitch'
 import { SignatureComponent } from './SignatureComponent'
+import TokenCounters from './TokenCounters'
 import { getPreferredLang, getShowInlineTranslateButton } from './UserProfileSettings'
 
 import { ReactComponent as CommentsIcon } from '../Assets/comments.svg'
@@ -34,7 +36,8 @@ interface PostComponentProps {
 
 export default function PostComponent(props: PostComponentProps) {
   const api = useAPI()
-  const currentUsername = useAppState().userInfo?.username
+  const appState = useAppState()
+  const currentUsername = appState.userInfo?.username
   const [showOptions, setShowOptions] = useState(false)
   const [editingText, setEditingText] = useState<false | string>(false)
   const [editingTitle, setEditingTitle] = useState<string>(props.post.title || '')
@@ -142,15 +145,17 @@ export default function PostComponent(props: PostComponentProps) {
   const toggleHistory = () => {
     setShowHistory(!showHistory)
   }
-
   const altMode = currentMode !== undefined || inProgress
   const autoCut = altMode ? undefined : props.autoCut
   const showTranslateButtonInline = useMemo(() => {
     return getShowInlineTranslateButton() && props.post.language !== getPreferredLang()
   }, [props.post])
 
+  // Check if this post is starred
+  const isStarred = props.post.tokenCounts && props.post.tokenCounts.stars > 0
+
   return (
-    <div className={'postComponent ' + styles.post} ref={contentRef}>
+    <div className={classNames('postComponent', styles.post, { isStarred })} ref={contentRef}>
       <div className={styles.header}>
         <SignatureComponent
           showSite={props.showSite}
@@ -284,6 +289,21 @@ export default function PostComponent(props: PostComponentProps) {
               </div>
             </OutsideClickHandler>
           )}
+        </div>
+
+        {/* Token counters */}
+        <div className={styles.control}>
+          <TokenCounters
+            entityId={props.post.id}
+            entityType='post'
+            counts={props.post.tokenCounts}
+            userVote={props.post.vote}
+            onUpdate={(counts) => {
+              if (props.onChange) {
+                props.onChange(props.post.id, { tokenCounts: counts })
+              }
+            }}
+          />
         </div>
       </div>
       {props.buttons}

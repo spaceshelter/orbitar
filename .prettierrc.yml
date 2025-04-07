@@ -12,6 +12,10 @@ endOfLine: "auto"
 quoteProps: "as-needed"
 plugins:
   - "@ianvs/prettier-plugin-sort-imports"
+importOrderParserPlugins:
+  - "typescript"
+  - "jsx"
+  - "decorators"
 importOrder:
   - ^(react|react-router-dom)$
   - ""

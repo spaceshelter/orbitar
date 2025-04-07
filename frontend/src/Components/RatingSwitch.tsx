@@ -18,6 +18,7 @@ type RatingSwitchProps = {
   double?: boolean
   onVote?: (value: number, vote?: number, postApiCall?: boolean) => void
   votingDisabled?: boolean
+  onListToggle?: (show: boolean) => void
 }
 
 type VoteType = { vote: number; username: string }
@@ -95,6 +96,8 @@ export default function RatingSwitch(props: RatingSwitchProps) {
   const hide = () => {
     setShowPopup(false)
     setVotes(undefined)
+    // Notify parent that popup is closed
+    props.onListToggle?.(false)
   }
 
   const handleVote = (vote: number) => {
@@ -135,7 +138,10 @@ export default function RatingSwitch(props: RatingSwitchProps) {
   const handleVoteList = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    setShowPopup(!showPopup)
+    const newPopupState = !showPopup
+    setShowPopup(newPopupState)
+    // Notify parent about popup state change
+    props.onListToggle?.(newPopupState)
   }
 
   const valueStyles = [styles.value]
