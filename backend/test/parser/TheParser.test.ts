@@ -402,3 +402,47 @@ describe('processInternalUrl', () => {
     )
   })
 })
+
+describe('telegram parsing', () => {
+  test('valid telegram url with t.me domain', () => {
+    const result = p.parse('https://t.me/channel/123')
+    expect(result.text).toEqual(
+      '<span role="button" class="expand-button i i-expand" data-telegram-url="https://t.me/channel/123"></span><a href="https://t.me/channel/123" target="_blank">https://t.me/channel/123</a>',
+    )
+  })
+
+  test('valid telegram url with telegram.me domain', () => {
+    const result = p.parse('https://telegram.me/channel/123')
+    expect(result.text).toEqual(
+      '<span role="button" class="expand-button i i-expand" data-telegram-url="https://t.me/channel/123"></span><a href="https://t.me/channel/123" target="_blank">https://t.me/channel/123</a>',
+    )
+  })
+
+  test('invalid telegram url with wrong domain', () => {
+    const result = p.parse('https://example.com/channel/123')
+    expect(result.text).toEqual(
+      '<a href="https://example.com/channel/123" target="_blank">https://example.com/channel/123</a>',
+    )
+  })
+
+  test('invalid telegram url with wrong path format', () => {
+    const result = p.parse('https://t.me/channel')
+    expect(result.text).toEqual('<a href="https://t.me/channel" target="_blank">https://t.me/channel</a>')
+  })
+
+  test('invalid telegram url with non-numeric post id', () => {
+    const result = p.parse('https://t.me/channel/abc')
+    expect(result.text).toEqual('<a href="https://t.me/channel/abc" target="_blank">https://t.me/channel/abc</a>')
+  })
+
+  test('telegram url parsing in text content', () => {
+    const result = p.parse('Check out this post: https://t.me/channel/123')
+    expect(result.text).toContain('data-telegram-url="https://t.me/channel/123"')
+    expect(result.text).toContain('class="expand-button i i-expand"')
+  })
+
+  test('telegram links in a tag should be rendered as regular links', () => {
+    const result = p.parse('<a href="https://t.me/channel/123">Telegram post</a>')
+    expect(result.text).toEqual('<a href="https://t.me/channel/123" target="_blank">Telegram post</a>')
+  })
+})
