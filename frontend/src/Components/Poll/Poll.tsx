@@ -130,7 +130,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
 
       return (
         <div
-          key={`${idx}-${poll.poll_id}`}
+          key={`${idx}-${poll.id}`}
           className={[styles.option, isSelected && styles.selected, isDisabled && styles.disabled]
             .filter(Boolean)
             .join(' ')}
@@ -141,17 +141,17 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
             <div className={styles.optionSelect}>
               {isMultipleVotesAllowed ? (
                 <Checkbox
-                  id={`poll-option-${idx}-${poll.poll_id}`}
+                  id={`poll-option-${idx}-${poll.id}`}
                   checked={isSelected}
                   disabled={isDisabled}
                   onChange={() => {}}
                 />
               ) : (
                 <Radio
-                  id={`poll-option-${idx}-${poll.poll_id}`}
+                  id={`poll-option-${idx}-${poll.id}`}
                   checked={isSelected}
                   disabled={isDisabled}
-                  name={`poll-option-${poll.poll_id}`}
+                  name={`poll-option-${poll.id}`}
                   onChange={() => {}}
                 />
               )}

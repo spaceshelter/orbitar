@@ -29,7 +29,7 @@ export default class PollRepository {
 
   async getPollsBatch(ids: number[], userId: number): Promise<PollWithUserVoteRaw[]> {
     // get all polls with their options and user vote
-    return await this.db.query<PollWithUserVoteRaw[]>(
+    return await this.db.fetchAll<PollWithUserVoteRaw>(
       `SELECT 
        p.*,
        pv.option_id AS user_voted_option_id

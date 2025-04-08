@@ -1,22 +1,6 @@
 import { PollEntity, PollSettingsEntity } from '../api/types/entities/PollEntity'
 import PollRepository from '../db/repositories/PollRepository'
 
-// interface PollRecord extends RowDataPacket {
-//   poll_id: number
-//   author_id: number
-//   question: string
-//   options: string
-//   settings: string
-//   expires_at: string | null
-//   created_at: string
-//   [key: `opt${number}`]: number
-// }
-
-// interface PollRecordParsed extends Omit<PollRecord, 'options' | 'settings'> {
-//   options: string[]
-//   settings: PollSettingsEntity
-// }
-
 export default class PollManager {
   private pollRepository: PollRepository
 
@@ -93,26 +77,38 @@ export default class PollManager {
     const result = await this.pollRepository.getPollsBatch(ids, userId)
     const polls = Array.isArray(result) ? result : []
 
-    console.log('++polls', polls)
-    return []
+    const res: PollEntity[] = []
+    const pollMap: Record<number, PollEntity> = {}
 
-    // return polls.map((poll: PollRecord) => {
-    //   const parsedPoll = poll as unknown as PollRecordParsed
-    //   const options = parsedPoll.options
-    //   const settings = parsedPoll.settings
-    //   return {
-    //     poll_id: poll.poll_id,
-    //     author_id: poll.author_id,
-    //     question: poll.question,
-    //     options: options.map((text: string, index: number) => ({
-    //       text,
-    //       votes: poll[`opt${index}`] || 0,
-    //     })),
-    //     settings,
-    //     expires_at: poll.expires_at,
-    //     created_at: poll.created_at,
-    //     total_votes: Array.from({ length: 32 }, (_, i) => poll[`opt${i}`] || 0).reduce((sum, count) => sum + count, 0),
-    //   }
-    // })
+    polls.forEach((poll) => {
+      const { poll_id, author_id, question, options, settings, expires_at, created_at, user_voted_option_id } = poll
+      if (!pollMap[poll_id]) {
+        pollMap[poll_id] = {
+          poll_id,
+          author_id,
+          question,
+          options: options.map((text: string, index: number) => ({
+            text,
+            votes: poll[`opt${index}`] || 0,
+          })),
+          settings,
+          expires_at,
+          created_at,
+          total_votes: Array.from({ length: 32 }, (_, i) => poll[`opt${i}`] || 0).reduce(
+            (sum, count) => sum + count,
+            0,
+          ),
+          user_vote: [],
+        }
+
+        res.push(pollMap[poll_id])
+      }
+
+      if (user_voted_option_id !== null) {
+        pollMap[poll_id].user_vote?.push(user_voted_option_id)
+      }
+    })
+
+    return res
   }
 }

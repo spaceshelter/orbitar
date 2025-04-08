@@ -8,7 +8,7 @@ export interface PollOption {
 }
 
 export interface PollBackendResponse {
-  poll_id: string | number
+  poll_id: number
   question: string
   options: PollOption[]
   total_votes: number
@@ -19,7 +19,6 @@ export interface PollBackendResponse {
 
 export interface Poll {
   id: string
-  poll_id: string
   question: string
   options: PollOption[]
   totalVotes: number

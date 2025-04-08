@@ -129,6 +129,22 @@ export default class PollController {
     }
   }
 
+  async getPollsBatch(request: APIRequest<PollBatchRequest>, response: APIResponse<PollBatchResponse>) {
+    const { ids } = request.body
+    const userId = request.session.data.userId
+    const uniqueIds = [...new Set(ids)]
+
+    try {
+      const polls = await this.pollManager.getPollsBatch(uniqueIds, userId)
+      const validPolls = polls.filter((poll): poll is PollEntity => poll !== null)
+
+      response.success({ polls: validPolls })
+    } catch (err) {
+      this.logger.error('Get polls batch error', { error: err, poll_ids: ids })
+      return response.error('error', 'Unknown error', 500)
+    }
+  }
+
   async vote(request: APIRequest<PollVoteRequest>, response: APIResponse<PollVoteResponse>) {
     const userId = request.session.data.userId
     if (!userId) {
@@ -169,22 +185,6 @@ export default class PollController {
       }
 
       this.logger.error('Vote error', { error: err, user_id: userId, poll_id })
-      return response.error('error', 'Unknown error', 500)
-    }
-  }
-
-  async getPollsBatch(request: APIRequest<PollBatchRequest>, response: APIResponse<PollBatchResponse>) {
-    const { ids } = request.body
-    const userId = request.session.data.userId
-    const uniqueIds = [...new Set(ids)]
-
-    try {
-      const polls = await this.pollManager.getPollsBatch(uniqueIds, userId)
-      const validPolls = polls.filter((poll): poll is PollEntity => poll !== null)
-
-      response.success({ polls: validPolls })
-    } catch (err) {
-      this.logger.error('Get polls batch error', { error: err, poll_ids: ids })
       return response.error('error', 'Unknown error', 500)
     }
   }

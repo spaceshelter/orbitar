@@ -12,7 +12,6 @@ class PollService {
   private transformPollResponse(poll: PollBackendResponse): Poll {
     return {
       id: String(poll.poll_id),
-      poll_id: String(poll.poll_id),
       question: poll.question,
       options: poll.options.map((option) => ({
         ...option,

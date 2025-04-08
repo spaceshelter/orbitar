@@ -1,9 +1,14 @@
+import { PollSettingsEntity } from '../../api/types/entities/PollEntity'
+
 export interface PollRaw {
   poll_id: number
+  author_id: number
   question: string
-  created_at: Date
-  option_id: number
-  text: string
+  options: string[]
+  settings: PollSettingsEntity
+  expires_at: string | null
+  created_at: string
+  [key: `opt${number}`]: number
 }
 
 export type PollWithUserVoteRaw = PollRaw & {
