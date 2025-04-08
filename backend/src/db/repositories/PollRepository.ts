@@ -33,25 +33,14 @@ export default class PollRepository {
     return await this.db.fetchOne<PollRecord>('SELECT * FROM polls WHERE poll_id = ?', [pollId])
   }
 
-  async getPolls(limit = 20, offset = 0, activeOnly = false) {
-    const whereClause = activeOnly ? 'WHERE (expires_at IS NULL OR expires_at > NOW())' : ''
-
-    const polls = await this.db.query<PollRecord[]>(
-      `SELECT SQL_CALC_FOUND_ROWS * 
+  async getPollsBatch(ids: number[]) {
+    return await this.db.query<PollRecord[]>(
+      `SELECT * 
              FROM polls 
-             ${whereClause}
-             ORDER BY created_at DESC
-             LIMIT ? OFFSET ?`,
-      [limit, offset],
+             WHERE poll_id IN (?)
+             ORDER BY created_at DESC`,
+      [ids],
     )
-
-    const [rows] = await this.db.query<RowDataPacket[]>('SELECT FOUND_ROWS() as total')
-    const total = rows[0]?.total ?? 0
-
-    return {
-      polls,
-      total,
-    }
   }
 
   async vote(pollId: number, voterId: number, optionId: number) {

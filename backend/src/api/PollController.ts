@@ -9,7 +9,6 @@ import { APIRequest, APIResponse, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
 import { PollEntity } from './types/entities/PollEntity'
 import { PollCreateRequest, PollCreateResponse } from './types/requests/PollCreate'
-import { PollGetRequest, PollGetResponse, PollListRequest, PollListResponse } from './types/requests/PollGet'
 import { PollVoteRequest, PollVoteResponse } from './types/requests/PollVote'
 
 export interface PollBatchRequest {
@@ -75,16 +74,6 @@ export default class PollController {
       option_ids: Joi.array().items(Joi.number().integer().min(0).max(31)).min(1).max(32).required(),
     })
 
-    const getSchema = Joi.object<PollGetRequest>({
-      poll_id: Joi.number().integer().required(),
-    })
-
-    const listSchema = Joi.object<PollListRequest>({
-      limit: Joi.number().min(1).max(100),
-      offset: Joi.number().min(0),
-      active_only: Joi.boolean(),
-    })
-
     const batchSchema = Joi.object<PollBatchRequest>({
       ids: Joi.array().items(Joi.number().integer()).min(1).max(256).required(),
     })
@@ -105,11 +94,7 @@ export default class PollController {
       this.vote(req, res),
     )
 
-    this.router.get('/poll/:pollId', validate(getSchema), oauth('читать'), (req, res) => this.getPoll(req, res))
-
-    this.router.get('/polls', validate(listSchema), oauth('читать'), (req, res) => this.getPolls(req, res))
-
-    this.router.post('/polls/batch', validate(batchSchema), oauth('читать'), (req, res) => this.getPollsBatch(req, res))
+    this.router.post('/polls', validate(batchSchema), oauth('читать'), (req, res) => this.getPollsBatch(req, res))
 
     this.router.post('/poll/rescind', validate(rescindSchema), oauth('голосовать'), (req, res) =>
       this.rescindVote(req, res),
@@ -188,46 +173,13 @@ export default class PollController {
     }
   }
 
-  async getPoll(request: APIRequest<PollGetRequest>, response: APIResponse<PollGetResponse>) {
-    const userId = request.session.data.userId
-    const pollId = parseInt(request.params.pollId)
-
-    try {
-      const poll = await this.pollManager.getPoll(pollId, userId)
-      if (!poll) {
-        return response.error('not-found', 'Poll not found', 404)
-      }
-
-      response.success({ poll })
-    } catch (err) {
-      this.logger.error('Get poll error', { error: err, poll_id: pollId })
-      return response.error('error', 'Unknown error', 500)
-    }
-  }
-
-  async getPolls(request: APIRequest<PollListRequest>, response: APIResponse<PollListResponse>) {
-    const { limit, offset, active_only } = request.query
-
-    try {
-      const result = await this.pollManager.getPolls(
-        limit ? parseInt(limit as string) : undefined,
-        offset ? parseInt(offset as string) : undefined,
-        active_only === 'true',
-      )
-
-      response.success(result)
-    } catch (err) {
-      this.logger.error('Get polls error', { error: err })
-      return response.error('error', 'Unknown error', 500)
-    }
-  }
-
   async getPollsBatch(request: APIRequest<PollBatchRequest>, response: APIResponse<PollBatchResponse>) {
-    const userId = request.session.data.userId
     const { ids } = request.body
 
+    const uniqueIds = [...new Set(ids)]
+
     try {
-      const polls = await Promise.all(ids.map((id) => this.pollManager.getPoll(id, userId)))
+      const polls = await this.pollManager.getPollsBatch(uniqueIds)
       const validPolls = polls.filter((poll): poll is PollEntity => poll !== null)
 
       response.success({ polls: validPolls })

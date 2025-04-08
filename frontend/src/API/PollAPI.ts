@@ -60,7 +60,7 @@ export class PollAPI {
   }
 
   async getPollsBatch(data: GetPollsBatchRequest): Promise<GetPollsBatchResponse> {
-    return await this.api.request<GetPollsBatchRequest, GetPollsBatchResponse>('/polls/batch', data)
+    return await this.api.request<GetPollsBatchRequest, GetPollsBatchResponse>('/polls', data)
   }
 
   async vote(data: PollVoteRequest): Promise<PollVoteResponse> {

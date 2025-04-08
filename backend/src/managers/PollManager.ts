@@ -145,33 +145,27 @@ export default class PollManager {
     return await this.getPollWithVotes(pollId, userId)
   }
 
-  async getPolls(limit = 20, offset = 0, activeOnly = false): Promise<{ polls: PollEntity[]; total: number }> {
-    const result = await this.pollRepository.getPolls(limit, offset, activeOnly)
-    const polls = Array.isArray(result.polls) ? result.polls : []
+  async getPollsBatch(ids: number[]): Promise<PollEntity[]> {
+    const result = await this.pollRepository.getPollsBatch(ids)
+    const polls = Array.isArray(result) ? result : []
 
-    return {
-      polls: polls.map((poll: PollRecord) => {
-        const parsedPoll = poll as unknown as PollRecordParsed
-        const options = parsedPoll.options
-        const settings = parsedPoll.settings
-        return {
-          poll_id: poll.poll_id,
-          author_id: poll.author_id,
-          question: poll.question,
-          options: options.map((text: string, index: number) => ({
-            text,
-            votes: poll[`opt${index}`] || 0,
-          })),
-          settings,
-          expires_at: poll.expires_at,
-          created_at: poll.created_at,
-          total_votes: Array.from({ length: 32 }, (_, i) => poll[`opt${i}`] || 0).reduce(
-            (sum, count) => sum + count,
-            0,
-          ),
-        }
-      }),
-      total: result.total,
-    }
+    return polls.map((poll: PollRecord) => {
+      const parsedPoll = poll as unknown as PollRecordParsed
+      const options = parsedPoll.options
+      const settings = parsedPoll.settings
+      return {
+        poll_id: poll.poll_id,
+        author_id: poll.author_id,
+        question: poll.question,
+        options: options.map((text: string, index: number) => ({
+          text,
+          votes: poll[`opt${index}`] || 0,
+        })),
+        settings,
+        expires_at: poll.expires_at,
+        created_at: poll.created_at,
+        total_votes: Array.from({ length: 32 }, (_, i) => poll[`opt${i}`] || 0).reduce((sum, count) => sum + count, 0),
+      }
+    })
   }
 }
