@@ -1,5 +1,6 @@
 import { PollEntity, PollSettingsEntity } from '../api/types/entities/PollEntity'
 import PollRepository from '../db/repositories/PollRepository'
+import { UserBaseInfo } from './types/UserInfo'
 
 export default class PollManager {
   private pollRepository: PollRepository
@@ -24,7 +25,7 @@ export default class PollManager {
     return pollId
   }
 
-  async getPollsBatch(ids: number[], userId: number): Promise<PollEntity[]> {
+  async getPollsBatch(ids: number[], userId?: number): Promise<PollEntity[]> {
     const result = await this.pollRepository.getPollsBatch(ids, userId)
     const polls = Array.isArray(result) ? result : []
 
@@ -105,5 +106,27 @@ export default class PollManager {
       }
       return 'voted'
     }
+  }
+
+  async getVoters(pollId: number, optionId: number): Promise<UserBaseInfo[]> {
+    if (optionId < 0 || optionId >= 32) {
+      throw new Error('Invalid option ID')
+    }
+
+    const polls = await this.getPollsBatch([pollId])
+    if (!polls.length) {
+      throw new Error('Poll not found')
+    }
+
+    const poll = polls[0]
+    if (
+      poll.settings.result_visibility === 'after_vote_end' &&
+      poll.expires_at &&
+      new Date(poll.expires_at) > new Date()
+    ) {
+      throw new Error('Poll has not ended yet')
+    }
+
+    return await this.pollRepository.getVoters(pollId, optionId)
   }
 }

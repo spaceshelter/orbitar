@@ -1,4 +1,5 @@
 import { PollAPI } from '@api/PollAPI'
+import { UserBaseInfo } from '@entities/UserInfo'
 
 import { Poll, PollBackendResponse, PollVoteRequest, PollVoteResponse } from '../Types/Poll'
 import { BatchedCache } from '../Utils'
@@ -13,7 +14,6 @@ class PollService {
       question: poll.question,
       options: poll.options.map((option) => ({
         ...option,
-        voters: option.voters || [],
       })),
       totalVotes: poll.total_votes || 0,
       settings: {
@@ -83,6 +83,11 @@ class PollService {
       console.error('Error voting:', error)
       throw error
     }
+  }
+
+  public async getVoters(pollId: string, optionId: number): Promise<UserBaseInfo[]> {
+    const result = await this.pollApi.getVoters({ poll_id: Number(pollId), option_id: optionId })
+    return result.voters
   }
 }
 

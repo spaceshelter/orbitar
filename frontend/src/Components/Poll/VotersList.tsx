@@ -1,21 +1,42 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 import Username from '@components/Username'
 import { UserBaseInfo } from '@entities/UserInfo'
+import PollService from '@services/PollService'
+import { useAPI } from '@state/AppState'
 import { pluralize } from '@utils/utils'
 import { createPortal } from 'react-dom'
 
 import styles from './VotersList.module.css'
 
-export const VotersTooltip: React.FC<{ voters: UserBaseInfo[] }> = ({ voters }) => {
+export const VotersTooltip: React.FC<{ pollId: string; optionId: number; votesCount: number }> = ({
+  pollId,
+  optionId,
+  votesCount,
+}) => {
+  const [voters, setVoters] = useState<UserBaseInfo[]>([])
   const [showTooltip, setShowTooltip] = useState(false)
   const tooltipRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
+  const api = useAPI()
+  const pollService = PollService(api.pollAPI)
+
+  const fetchVoters = useCallback(async () => {
+    try {
+      const votersData = await pollService.getVoters(pollId, optionId)
+      setVoters(votersData)
+    } catch (err) {
+      console.error('Не удалось загрузить список голосовавших', err)
+    }
+  }, [pollId, optionId, pollService])
+
   useEffect(() => {
-    if (!showTooltip || !tooltipRef.current || !containerRef.current) {
+    if (!showTooltip || !tooltipRef.current || !containerRef.current || votesCount === 0) {
       return
     }
+
+    fetchVoters()
 
     const container = containerRef.current
     const tooltip = tooltipRef.current
@@ -39,24 +60,26 @@ export const VotersTooltip: React.FC<{ voters: UserBaseInfo[] }> = ({ voters }) 
     return () => {
       document.removeEventListener('mousedown', clickHandler)
     }
-  }, [showTooltip])
+  }, [showTooltip, fetchVoters, votesCount])
+
+  const handleTooltipClick = (e: React.MouseEvent<HTMLSpanElement>) => {
+    if (votesCount === 0) {
+      return
+    }
+
+    e.stopPropagation()
+    setShowTooltip(!showTooltip)
+  }
 
   return (
     <div ref={containerRef} className={styles.votesContainer}>
-      {voters.length > 0 && (
-        <span
-          className={voters.length > 0 ? styles.votes : ''}
-          onClick={(e) => {
-            e.stopPropagation()
-            setShowTooltip(!showTooltip)
-          }}
-        >
-          {pluralize(voters.length, ['голос', 'голоса', 'голосов'])}
+      {
+        <span className={votesCount > 0 ? styles.votes : ''} onClick={handleTooltipClick}>
+          {pluralize(votesCount, ['голос', 'голоса', 'голосов'])}
         </span>
-      )}
+      }
 
       {showTooltip &&
-        voters.length > 0 &&
         createPortal(
           <div ref={tooltipRef} className={styles.votersTooltip}>
             <div className={styles.votersContent}>

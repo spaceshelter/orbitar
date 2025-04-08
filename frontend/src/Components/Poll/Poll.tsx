@@ -161,7 +161,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
               <>
                 <div className={styles.votesContainer}>
                   <span className={styles.votes}>
-                    <VotersTooltip voters={option.voters ?? []} />
+                    <VotersTooltip pollId={poll.id} optionId={idx} votesCount={option.votes} />
                   </span>
                 </div>
                 <div className={styles.results}>

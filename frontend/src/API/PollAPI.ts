@@ -1,3 +1,5 @@
+import { UserBaseInfo } from '@entities/UserInfo'
+
 import { PollBackendResponse, PollVoteRequest, PollVoteResponse } from '../Types/Poll'
 import APIBase from './APIBase'
 
@@ -30,6 +32,14 @@ export interface BackendPollVoteRequest {
   option_ids: number[]
 }
 
+export interface GetVotersRequest {
+  poll_id: number
+  option_id: number
+}
+
+export interface GetVotersResponse {
+  voters: UserBaseInfo[]
+}
 export class PollAPI {
   private api: APIBase
 
@@ -47,5 +57,9 @@ export class PollAPI {
 
   async vote(data: PollVoteRequest): Promise<PollVoteResponse> {
     return await this.api.request<PollVoteRequest, PollVoteResponse>('/poll/vote', data)
+  }
+
+  async getVoters(data: GetVotersRequest): Promise<GetVotersResponse> {
+    return await this.api.request<GetVotersRequest, GetVotersResponse>('/poll/voters', data)
   }
 }

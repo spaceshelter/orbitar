@@ -27,17 +27,23 @@ export default class PollRepository {
     })
   }
 
-  async getPollsBatch(ids: number[], userId: number): Promise<PollWithUserVoteRaw[]> {
-    // get all polls with their options and user vote
-    return await this.db.fetchAll<PollWithUserVoteRaw>(
-      `SELECT 
-       p.*,
-       pv.option_id AS user_voted_option_id
-     FROM polls p
-     LEFT JOIN poll_votes pv ON pv.poll_id = p.poll_id AND pv.voter_id = ?
-     WHERE p.poll_id IN (?)`,
-      [userId, ids],
-    )
+  async getPollsBatch(ids: number[], userId?: number): Promise<PollWithUserVoteRaw[]> {
+    const hasUserId = userId !== undefined && userId !== null
+
+    const query = `
+    SELECT 
+      p.*,
+      pv.option_id AS user_voted_option_id
+    FROM polls p
+    LEFT JOIN poll_votes pv 
+      ON pv.poll_id = p.poll_id
+      ${hasUserId ? 'AND pv.voter_id = ?' : ''}
+    WHERE p.poll_id IN (?)
+  `
+
+    const params = hasUserId ? [userId, ids] : [ids]
+
+    return this.db.fetchAll<PollWithUserVoteRaw>(query, params)
   }
 
   async vote(pollId: number, voterId: number, optionId: number) {
@@ -75,5 +81,16 @@ export default class PollRepository {
       username: v.username,
       gender: v.gender,
     }))
+  }
+
+  async getVoters(pollId: number, optionId: number): Promise<UserBaseEntity[]> {
+    const voters = await this.db.fetchAll<UserBaseEntity>(
+      `SELECT u.user_id as id, u.username, u.gender 
+       FROM poll_votes pv 
+       JOIN users u ON pv.voter_id = u.user_id 
+       WHERE pv.poll_id = ? AND pv.option_id = ?`,
+      [pollId, optionId],
+    )
+    return voters
   }
 }

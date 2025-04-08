@@ -9,7 +9,7 @@ import { APIRequest, APIResponse, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
 import { PollEntity } from './types/entities/PollEntity'
 import { PollCreateRequest, PollCreateResponse } from './types/requests/PollCreate'
-import { PollVoteRequest, PollVoteResponse } from './types/requests/PollVote'
+import { PollVoteRequest, PollVoteResponse, PollVotersRequest, PollVotersResponse } from './types/requests/PollVote'
 
 export interface PollBatchRequest {
   ids: number[]
@@ -78,6 +78,11 @@ export default class PollController {
       option_ids: Joi.array().items(Joi.number().integer().min(0).max(31)).min(0).max(32).required(),
     })
 
+    const votersSchema = Joi.object<PollVotersRequest>({
+      poll_id: Joi.number().integer().required(),
+      option_id: Joi.number().integer().required(),
+    })
+
     this.router.post(
       '/poll/create',
       this.createRateLimiter,
@@ -91,6 +96,8 @@ export default class PollController {
     this.router.post('/poll/vote', this.voteRateLimiter, validate(voteSchema), oauth('голосовать'), (req, res) =>
       this.vote(req, res),
     )
+
+    this.router.post('/poll/voters', validate(votersSchema), oauth('читать'), (req, res) => this.getVoters(req, res))
   }
 
   async createPoll(request: APIRequest<PollCreateRequest>, response: APIResponse<PollCreateResponse>) {
@@ -180,6 +187,22 @@ export default class PollController {
       }
 
       this.logger.error('Vote error', { error: err, user_id: userId, poll_id })
+      return response.error('error', 'Unknown error', 500)
+    }
+  }
+
+  async getVoters(request: APIRequest<PollVotersRequest>, response: APIResponse<PollVotersResponse>) {
+    const { poll_id, option_id } = request.body
+    const userId = request.session.data.userId
+    if (!userId) {
+      return response.authRequired()
+    }
+
+    try {
+      const voters = await this.pollManager.getVoters(poll_id, option_id)
+      response.success({ voters })
+    } catch (err) {
+      this.logger.error('Get voters error', { error: err, user_id: userId, poll_id })
       return response.error('error', 'Unknown error', 500)
     }
   }
