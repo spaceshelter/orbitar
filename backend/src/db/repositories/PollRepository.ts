@@ -44,15 +44,13 @@ export default class PollRepository {
     return this.db.fetchAll<PollWithUserVoteRaw>(query, params)
   }
 
-  async vote(pollId: number, voterId: number, optionId: number) {
+  async vote(pollId: number, voterId: number, optionIds: number[]) {
     return await this.db.inTransaction(async (connection) => {
-      await connection.query('INSERT INTO poll_votes (poll_id, voter_id, option_id) VALUES (?, ?, ?)', [
-        pollId,
-        voterId,
-        optionId,
-      ])
+      const values = optionIds.map((optionId) => [pollId, voterId, optionId])
+      await connection.query('INSERT INTO poll_votes (poll_id, voter_id, option_id) VALUES ?', [values])
 
-      await connection.query(`UPDATE polls SET opt${optionId} = opt${optionId} + 1 WHERE poll_id = ?`, [pollId])
+      const updates = optionIds.map((optionId) => `opt${optionId} = opt${optionId} + 1`).join(', ')
+      await connection.query(`UPDATE polls SET ${updates} WHERE poll_id = ?`, [pollId])
     })
   }
 
@@ -60,9 +58,8 @@ export default class PollRepository {
     return await this.db.inTransaction(async (connection) => {
       await connection.query('DELETE FROM poll_votes WHERE poll_id = ? AND voter_id = ?', [pollId, voterId])
 
-      for (const optionId of previousVotes) {
-        await this.db.query(`UPDATE polls SET opt${optionId} = opt${optionId} - 1 WHERE poll_id = ?`, [pollId])
-      }
+      const updates = previousVotes.map((optionId) => `opt${optionId} = opt${optionId} - 1`).join(', ')
+      await connection.query(`UPDATE polls SET ${updates} WHERE poll_id = ?`, [pollId])
     })
   }
 

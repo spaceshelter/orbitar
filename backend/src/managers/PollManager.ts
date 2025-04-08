@@ -101,9 +101,7 @@ export default class PollManager {
         throw new Error('Multiple choice not allowed')
       }
 
-      for (const optionId of optionIds) {
-        await this.pollRepository.vote(pollId, voterId, optionId)
-      }
+      await this.pollRepository.vote(pollId, voterId, optionIds)
       return 'voted'
     }
   }
