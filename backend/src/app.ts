@@ -264,13 +264,7 @@ const requests = [
   ),
   new SearchController(userManager, searchManager, oauthMiddlewareGenerator, logger.child({ service: 'SEARCH' })),
   new OAuth2Controller(oauth2Manager, userManager, oauthScopesFilter, app.oauth, logger.child({ service: 'OAUTH2' })),
-  new PollController(
-    pollManager,
-    userManager,
-    siteManager,
-    oauthMiddlewareGenerator,
-    logger.child({ service: 'POLL' }),
-  ),
+  new PollController(pollManager, userManager, oauthMiddlewareGenerator, logger.child({ service: 'POLL' })),
 ]
 
 const filterLog = winston.format((info) => {

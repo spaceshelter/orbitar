@@ -9,7 +9,6 @@ export interface PollOptionEntity {
 export interface PollEntity {
   poll_id: number
   author_id: number
-  site_id: number
   question: string
   options: PollOptionEntity[]
   settings: PollSettingsEntity

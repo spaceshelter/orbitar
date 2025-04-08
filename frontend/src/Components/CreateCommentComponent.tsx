@@ -1,6 +1,6 @@
 import React, { ReactNode, useEffect, useRef, useState } from 'react'
 
-import { useAPI, useAppState, useSiteName } from '@state/AppState'
+import { useAPI, useAppState } from '@state/AppState'
 import ReactTextareaAutocomplete from '@webscopeio/react-textarea-autocomplete'
 import classNames from 'classnames'
 import debouncePromise from 'debounce-promise'
@@ -138,7 +138,6 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
   const [mailForm, setFormOpen] = useState(false)
 
   const api = useAPI()
-  const { siteName } = useSiteName()
 
   const pronoun =
     props?.comment?.author?.gender === UserGender.he
@@ -425,7 +424,6 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
   const handlePollCreate = async (pollData: any) => {
     try {
       const result = await api.pollAPI.createPoll({
-        site: siteName,
         question: pollData.question,
         options: pollData.options.map((opt: any) => opt.text),
         settings: {

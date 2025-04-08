@@ -21,18 +21,6 @@ exports.up = async function (db) {
         mapping: 'user_id',
       },
     },
-    site_id: {
-      type: 'int',
-      notNull: true,
-      foreignKey: {
-        name: 'polls_site_fk',
-        table: 'sites',
-        rules: {
-          onDelete: 'CASCADE',
-        },
-        mapping: 'site_id',
-      },
-    },
     question: {
       type: 'text',
       notNull: true,

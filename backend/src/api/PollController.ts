@@ -4,7 +4,6 @@ import Joi from 'joi'
 import { Logger } from 'winston'
 
 import PollManager from '../managers/PollManager'
-import SiteManager from '../managers/SiteManager'
 import UserManager from '../managers/UserManager'
 import { APIRequest, APIResponse, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
@@ -32,7 +31,6 @@ export default class PollController {
   public router = Router()
   private pollManager: PollManager
   private userManager: UserManager
-  private siteManager: SiteManager
   private logger: Logger
 
   // 30 requests per minute for voting
@@ -55,20 +53,12 @@ export default class PollController {
     keyGenerator: (req) => String(req.session.data?.userId),
   })
 
-  constructor(
-    pollManager: PollManager,
-    userManager: UserManager,
-    siteManager: SiteManager,
-    oauth: OAuth2MiddlewareGenerator,
-    logger: Logger,
-  ) {
+  constructor(pollManager: PollManager, userManager: UserManager, oauth: OAuth2MiddlewareGenerator, logger: Logger) {
     this.pollManager = pollManager
     this.userManager = userManager
     this.logger = logger
-    this.siteManager = siteManager
 
     const createSchema = Joi.object<PollCreateRequest>({
-      site: Joi.string().required(),
       question: Joi.string().required().max(1000),
       options: Joi.array().items(Joi.string().max(64)).min(2).max(32).required(),
       settings: Joi.object({
@@ -90,7 +80,6 @@ export default class PollController {
     })
 
     const listSchema = Joi.object<PollListRequest>({
-      site_id: Joi.number().required(),
       limit: Joi.number().min(1).max(100),
       offset: Joi.number().min(0),
       active_only: Joi.boolean(),
@@ -133,7 +122,7 @@ export default class PollController {
     }
 
     const userId = request.session.data.userId
-    const { question, options, settings, expires_at, site } = request.body
+    const { question, options, settings, expires_at } = request.body
 
     try {
       const restrictions = await this.userManager.getUserRestrictions(userId)
@@ -141,17 +130,11 @@ export default class PollController {
         throw new Error('You do not have permission to create polls')
       }
 
-      const siteInfo = await this.siteManager.getSiteByName(site)
-      if (!siteInfo) {
-        return response.error('no-site', 'Site not found')
-      }
-
-      const poll = await this.pollManager.createPoll(userId, siteInfo.id, question, options, settings, expires_at)
+      const poll = await this.pollManager.createPoll(userId, question, options, settings, expires_at)
 
       this.logger.info(`User #${userId} created poll #${poll.poll_id}`, {
         user_id: userId,
         poll_id: poll.poll_id,
-        site_id: siteInfo.id,
       })
 
       response.success({ poll })
@@ -223,11 +206,10 @@ export default class PollController {
   }
 
   async getPolls(request: APIRequest<PollListRequest>, response: APIResponse<PollListResponse>) {
-    const { site_id, limit, offset, active_only } = request.query
+    const { limit, offset, active_only } = request.query
 
     try {
       const result = await this.pollManager.getPolls(
-        parseInt(site_id as string),
         limit ? parseInt(limit as string) : undefined,
         offset ? parseInt(offset as string) : undefined,
         active_only === 'true',
@@ -235,7 +217,7 @@ export default class PollController {
 
       response.success(result)
     } catch (err) {
-      this.logger.error('Get polls error', { error: err, site_id })
+      this.logger.error('Get polls error', { error: err })
       return response.error('error', 'Unknown error', 500)
     }
   }

@@ -6,7 +6,6 @@ import { DBConnection } from '../DB'
 interface PollRecord extends RowDataPacket {
   poll_id: number
   author_id: number
-  site_id: number
   question: string
   options: string
   settings: string
@@ -22,17 +21,10 @@ export default class PollRepository {
     this.db = db
   }
 
-  async createPoll(
-    authorId: number,
-    siteId: number,
-    question: string,
-    options: string[],
-    settings: object,
-    expiresAt?: string,
-  ) {
+  async createPoll(authorId: number, question: string, options: string[], settings: object, expiresAt?: string) {
     const result = await this.db.query(
-      'INSERT INTO polls (author_id, site_id, question, options, settings, expires_at) VALUES (?, ?, ?, ?, ?, ?)',
-      [authorId, siteId, question, JSON.stringify(options), JSON.stringify(settings), expiresAt || null],
+      'INSERT INTO polls (author_id, question, options, settings, expires_at) VALUES (?, ?, ?, ?, ?)',
+      [authorId, question, JSON.stringify(options), JSON.stringify(settings), expiresAt || null],
     )
     return result
   }
@@ -41,10 +33,8 @@ export default class PollRepository {
     return await this.db.fetchOne<PollRecord>('SELECT * FROM polls WHERE poll_id = ?', [pollId])
   }
 
-  async getPolls(siteId: number, limit = 20, offset = 0, activeOnly = false) {
-    const whereClause = activeOnly
-      ? 'WHERE site_id = ? AND (expires_at IS NULL OR expires_at > NOW())'
-      : 'WHERE site_id = ?'
+  async getPolls(limit = 20, offset = 0, activeOnly = false) {
+    const whereClause = activeOnly ? 'WHERE (expires_at IS NULL OR expires_at > NOW())' : ''
 
     const polls = await this.db.query<PollRecord[]>(
       `SELECT SQL_CALC_FOUND_ROWS * 
@@ -52,7 +42,7 @@ export default class PollRepository {
              ${whereClause}
              ORDER BY created_at DESC
              LIMIT ? OFFSET ?`,
-      [siteId, limit, offset],
+      [limit, offset],
     )
 
     const [rows] = await this.db.query<RowDataPacket[]>('SELECT FOUND_ROWS() as total')

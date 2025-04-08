@@ -6,7 +6,6 @@ import PollRepository from '../db/repositories/PollRepository'
 interface PollRecord extends RowDataPacket {
   poll_id: number
   author_id: number
-  site_id: number
   question: string
   options: string
   settings: string
@@ -54,7 +53,6 @@ export default class PollManager {
     return {
       poll_id: poll.poll_id,
       author_id: poll.author_id,
-      site_id: poll.site_id,
       question: poll.question,
       options: optionsWithVoters,
       settings,
@@ -67,7 +65,6 @@ export default class PollManager {
 
   async createPoll(
     authorId: number,
-    siteId: number,
     question: string,
     options: string[],
     settings: PollSettingsEntity,
@@ -76,7 +73,7 @@ export default class PollManager {
     if (options.length < 2 || options.length > 32) {
       throw new Error('Invalid number of options')
     }
-    const result = await this.pollRepository.createPoll(authorId, siteId, question, options, settings, expiresAt)
+    const result = await this.pollRepository.createPoll(authorId, question, options, settings, expiresAt)
 
     const pollId = (result as RowDataPacket).insertId
     const poll = await this.getPollWithVotes(pollId)
@@ -148,13 +145,8 @@ export default class PollManager {
     return await this.getPollWithVotes(pollId, userId)
   }
 
-  async getPolls(
-    siteId: number,
-    limit = 20,
-    offset = 0,
-    activeOnly = false,
-  ): Promise<{ polls: PollEntity[]; total: number }> {
-    const result = await this.pollRepository.getPolls(siteId, limit, offset, activeOnly)
+  async getPolls(limit = 20, offset = 0, activeOnly = false): Promise<{ polls: PollEntity[]; total: number }> {
+    const result = await this.pollRepository.getPolls(limit, offset, activeOnly)
     const polls = Array.isArray(result.polls) ? result.polls : []
 
     return {
@@ -165,7 +157,6 @@ export default class PollManager {
         return {
           poll_id: poll.poll_id,
           author_id: poll.author_id,
-          site_id: poll.site_id,
           question: poll.question,
           options: options.map((text: string, index: number) => ({
             text,
