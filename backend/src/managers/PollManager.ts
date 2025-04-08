@@ -24,25 +24,6 @@ export default class PollManager {
     return pollId
   }
 
-  // async rescindVote(pollId: number, voterId: number): Promise<PollEntity> {
-  // const poll = await this.getPollWithVotes(pollId)
-  // if (!poll) {
-  //   throw new Error('Poll not found')
-  // }
-  // if (poll.expires_at && new Date(poll.expires_at) < new Date()) {
-  //   throw new Error('Poll has expired')
-  // }
-  // if (!poll.settings.allow_vote_rescinding) {
-  //   throw new Error('Vote rescinding not allowed')
-  // }
-  // const previousVotes = await this.pollRepository.getUserVotes(pollId, voterId)
-  // if (previousVotes.length === 0) {
-  //   throw new Error('No vote to rescind')
-  // }
-  // await this.pollRepository.removeVotes(pollId, voterId, previousVotes)
-  // return await this.getPollWithVotes(pollId, voterId)
-  // }
-
   async getPollsBatch(ids: number[], userId: number): Promise<PollEntity[]> {
     const result = await this.pollRepository.getPollsBatch(ids, userId)
     const polls = Array.isArray(result) ? result : []
