@@ -69,17 +69,13 @@ export default class PollController {
       expires_at: Joi.date().greater('now'),
     })
 
-    const voteSchema = Joi.object<PollVoteRequest>({
-      poll_id: Joi.number().integer().required(),
-      option_ids: Joi.array().items(Joi.number().integer().min(0).max(31)).min(1).max(32).required(),
-    })
-
     const batchSchema = Joi.object<PollBatchRequest>({
       ids: Joi.array().items(Joi.number().integer()).min(1).max(256).required(),
     })
 
-    const rescindSchema = Joi.object<PollRescindVoteRequest>({
+    const voteSchema = Joi.object<PollVoteRequest>({
       poll_id: Joi.number().integer().required(),
+      option_ids: Joi.array().items(Joi.number().integer().min(0).max(31)).min(0).max(32).required(),
     })
 
     this.router.post(
@@ -90,14 +86,10 @@ export default class PollController {
       (req, res) => this.createPoll(req, res),
     )
 
-    this.router.post('/poll/vote', this.voteRateLimiter, validate(voteSchema), oauth('голосовать'), (req, res) =>
-      this.vote(req, res),
-    )
-
     this.router.post('/polls', validate(batchSchema), oauth('читать'), (req, res) => this.getPollsBatch(req, res))
 
-    this.router.post('/poll/rescind', validate(rescindSchema), oauth('голосовать'), (req, res) =>
-      this.rescindVote(req, res),
+    this.router.post('/poll/vote', this.voteRateLimiter, validate(voteSchema), oauth('голосовать'), (req, res) =>
+      this.vote(req, res),
     )
   }
 
@@ -159,75 +151,35 @@ export default class PollController {
         return response.error('cant-vote', 'Voting is disabled', 403)
       }
 
-      // const poll = await this.pollManager.vote(poll_id, userId, option_ids)
+      const status = (await this.pollManager.vote(poll_id, userId, option_ids)) as 'voted' | 'rescinded'
 
-      this.logger.info(`User #${userId} voted in poll #${poll_id}`, {
+      this.logger.info(`User #${userId} ${status} in poll #${poll_id}`, {
         user_id: userId,
+        status,
         poll_id,
-        option_ids,
       })
 
-      response.success({ poll: null })
+      response.success({ result: status })
     } catch (err) {
       if (err instanceof Error) {
-        if (err.message === 'Poll not found') {
-          return response.error('not-found', 'Poll not found', 404)
+        const errorMapping: Record<string, { code: string; message: string; status: number }> = {
+          'Poll not found': { code: 'not-found', message: 'Poll not found', status: 404 },
+          'Poll has expired': { code: 'expired', message: 'Poll has expired', status: 403 },
+          'Multiple choice not allowed': {
+            code: 'multiple-choice-not-allowed',
+            message: 'Multiple choice not allowed',
+            status: 400,
+          },
+          'Invalid option ID': { code: 'invalid-option', message: 'Invalid option ID', status: 400 },
         }
-        if (err.message === 'Poll has expired') {
-          return response.error('expired', 'Poll has expired', 403)
-        }
-        if (err.message === 'Multiple choice not allowed') {
-          return response.error('multiple-choice-not-allowed', 'Multiple choice not allowed', 400)
-        }
-        if (err.message === 'Invalid option ID') {
-          return response.error('invalid-option', 'Invalid option ID', 400)
+
+        const mappedError = errorMapping[err.message]
+        if (mappedError) {
+          return response.error(mappedError.code, mappedError.message, mappedError.status)
         }
       }
 
       this.logger.error('Vote error', { error: err, user_id: userId, poll_id })
-      return response.error('error', 'Unknown error', 500)
-    }
-  }
-
-  async rescindVote(request: APIRequest<{ poll_id: number }>, response: APIResponse<PollVoteResponse>) {
-    const userId = request.session.data.userId
-    if (!userId) {
-      return response.authRequired()
-    }
-
-    const { poll_id } = request.body
-
-    try {
-      const restrictions = await this.userManager.getUserRestrictions(userId)
-      if (!restrictions.canVote) {
-        return response.error('cant-vote', 'Voting is disabled', 403)
-      }
-
-      // const poll = await this.pollManager.rescindVote(poll_id, userId)
-
-      this.logger.info(`User #${userId} rescinded vote in poll #${poll_id}`, {
-        user_id: userId,
-        poll_id,
-      })
-
-      response.success({ poll: null })
-    } catch (err) {
-      if (err instanceof Error) {
-        if (err.message === 'Poll not found') {
-          return response.error('not-found', 'Poll not found', 404)
-        }
-        if (err.message === 'Poll has expired') {
-          return response.error('expired', 'Poll has expired', 403)
-        }
-        if (err.message === 'Vote rescinding not allowed') {
-          return response.error('rescind-not-allowed', 'Vote rescinding not allowed', 400)
-        }
-        if (err.message === 'No vote to rescind') {
-          return response.error('no-vote', 'No vote to rescind', 400)
-        }
-      }
-
-      this.logger.error('Vote rescind error', { error: err, user_id: userId, poll_id })
       return response.error('error', 'Unknown error', 500)
     }
   }

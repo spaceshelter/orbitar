@@ -1,4 +1,3 @@
-import AuthAPI from '@api/AuthAPI'
 import { PollAPI } from '@api/PollAPI'
 
 import { Poll, PollBackendResponse, PollVoteRequest, PollVoteResponse } from '../Types/Poll'
@@ -8,7 +7,6 @@ class PollService {
   private static instance: PollService
   private pollCache: BatchedCache<string, Poll>
   private pollApi: PollAPI
-  private authApi: AuthAPI
   private transformPollResponse(poll: PollBackendResponse): Poll {
     return {
       id: String(poll.poll_id),
@@ -29,9 +27,8 @@ class PollService {
     }
   }
 
-  private constructor(pollApi: PollAPI, authApi: AuthAPI) {
+  private constructor(pollApi: PollAPI) {
     this.pollApi = pollApi
-    this.authApi = authApi
 
     this.pollCache = new BatchedCache<string, Poll>({
       debounceTime: 200,
@@ -49,9 +46,9 @@ class PollService {
     })
   }
 
-  public static getInstance(pollApi: PollAPI, authApi: AuthAPI): PollService {
+  public static getInstance(pollApi: PollAPI): PollService {
     if (!PollService.instance) {
-      PollService.instance = new PollService(pollApi, authApi)
+      PollService.instance = new PollService(pollApi)
     }
     return PollService.instance
   }
@@ -74,8 +71,9 @@ class PollService {
       const result = await this.pollApi.vote(request)
 
       // update cache
-      if (result.poll) {
-        const poll = this.transformPollResponse(result.poll)
+      if (result) {
+        const rawPoll = await this.pollApi.getPollsBatch({ ids: [request.poll_id] })
+        const poll = this.transformPollResponse(rawPoll.polls[0])
         this.pollCache.set(String(request.poll_id), poll)
       }
 
@@ -86,24 +84,8 @@ class PollService {
       throw error
     }
   }
-
-  public async rescindVote(pollId: number): Promise<PollVoteResponse> {
-    try {
-      const result = await this.pollApi.rescindVote({ poll_id: pollId })
-
-      if (result.poll) {
-        this.pollCache.delete(String(pollId))
-      }
-
-      result.success = true
-      return result
-    } catch (error) {
-      console.error('Error rescinding vote:', error)
-      throw error
-    }
-  }
 }
 
-const getPollService = (pollApi: PollAPI, authApi: AuthAPI) => PollService.getInstance(pollApi, authApi)
+const getPollService = (pollApi: PollAPI) => PollService.getInstance(pollApi)
 
 export default getPollService

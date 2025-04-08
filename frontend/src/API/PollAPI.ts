@@ -1,10 +1,4 @@
-import {
-  PollBackendResponse,
-  PollRescindVoteRequest,
-  PollRescindVoteResponse,
-  PollVoteRequest,
-  PollVoteResponse,
-} from '../Types/Poll'
+import { PollBackendResponse, PollVoteRequest, PollVoteResponse } from '../Types/Poll'
 import APIBase from './APIBase'
 
 export interface CreatePollRequest {
@@ -21,14 +15,6 @@ export interface CreatePollRequest {
 
 export interface CreatePollResponse {
   pollId: number
-}
-
-export interface GetPollRequest {
-  poll_id: number
-}
-
-export interface GetPollResponse {
-  poll: PollBackendResponse
 }
 
 export interface GetPollsBatchRequest {
@@ -55,19 +41,11 @@ export class PollAPI {
     return await this.api.request<CreatePollRequest, CreatePollResponse>('/poll/create', data)
   }
 
-  async getPoll(data: GetPollRequest): Promise<GetPollResponse> {
-    return await this.api.request<GetPollRequest, GetPollResponse>(`/poll/${data.poll_id}`, data)
-  }
-
   async getPollsBatch(data: GetPollsBatchRequest): Promise<GetPollsBatchResponse> {
     return await this.api.request<GetPollsBatchRequest, GetPollsBatchResponse>('/polls', data)
   }
 
   async vote(data: PollVoteRequest): Promise<PollVoteResponse> {
     return await this.api.request<PollVoteRequest, PollVoteResponse>('/poll/vote', data)
-  }
-
-  async rescindVote(data: PollRescindVoteRequest): Promise<PollRescindVoteResponse> {
-    return await this.api.request<PollRescindVoteRequest, PollRescindVoteResponse>('/poll/rescind', data)
   }
 }

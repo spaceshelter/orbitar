@@ -24,36 +24,6 @@ export default class PollManager {
     return pollId
   }
 
-  // async vote(pollId: number, voterId: number, optionIds: number[]): Promise<PollEntity> {
-  // const poll = await this.getPollWithVotes(pollId)
-  // if (!poll) {
-  //   throw new Error('Poll not found')
-  // }
-  // if (poll.expires_at && new Date(poll.expires_at) < new Date()) {
-  //   throw new Error('Poll has expired')
-  // }
-  // const settings = poll.settings
-  // if (!settings.allow_multiple_choice && optionIds.length > 1) {
-  //   throw new Error('Multiple choice not allowed')
-  // }
-  // if (optionIds.some((id) => id < 0 || id >= poll.options.length)) {
-  //   throw new Error('Invalid option ID')
-  // }
-  // const previousVotes = await this.pollRepository.getUserVotes(pollId, voterId)
-  // if (previousVotes.length > 0) {
-  //   if (!settings.allow_multiple_choice) {
-  //     if (!settings.allow_vote_rescinding) {
-  //       throw new Error('Vote rescinding not allowed')
-  //     }
-  //     await this.pollRepository.removeVotes(pollId, voterId, previousVotes)
-  //   }
-  // }
-  // for (const optionId of optionIds) {
-  //   await this.pollRepository.vote(pollId, voterId, optionId)
-  // }
-  // return await this.getPollWithVotes(pollId, voterId)
-  // }
-
   // async rescindVote(pollId: number, voterId: number): Promise<PollEntity> {
   // const poll = await this.getPollWithVotes(pollId)
   // if (!poll) {
@@ -110,5 +80,49 @@ export default class PollManager {
     })
 
     return res
+  }
+
+  async vote(pollId: number, voterId: number, optionIds: number[]): Promise<string> {
+    const polls = await this.getPollsBatch([pollId], voterId)
+    if (!polls.length) {
+      throw new Error('Poll not found')
+    }
+
+    if (polls.length > 1) {
+      throw new Error('Multiple polls found')
+    }
+
+    const poll = polls[0]
+    if (poll.expires_at && new Date(poll.expires_at) < new Date()) {
+      throw new Error('Poll has expired')
+    }
+
+    const settings = poll.settings
+    if (!settings.allow_multiple_choice && optionIds.length > 1) {
+      throw new Error('Multiple choice not allowed')
+    }
+
+    if (optionIds.length === 0) {
+      if (!settings.allow_vote_rescinding) {
+        throw new Error('Vote rescinding not allowed')
+      }
+
+      await this.pollRepository.removeVotes(pollId, voterId, poll.user_vote || [])
+      return 'rescinded'
+    } else {
+      if (optionIds.some((id) => id < 0 || id >= poll.options.length)) {
+        throw new Error('Invalid option ID')
+      }
+
+      const previousVotes = poll.user_vote || []
+      if (previousVotes.length > 0 && !settings.allow_multiple_choice) {
+        throw new Error('Multiple choice not allowed')
+      }
+
+      for (const optionId of optionIds) {
+        await this.pollRepository.vote(pollId, voterId, optionId)
+      }
+      return 'voted'
+    }
   }
 }

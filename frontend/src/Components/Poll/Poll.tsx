@@ -20,7 +20,7 @@ interface PollProps {
 
 export const Poll: React.FC<PollProps> = ({ pollId }) => {
   const api = useAPI()
-  const pollService = PollService(api.pollAPI, api.authAPI)
+  const pollService = PollService(api.pollAPI)
   const [poll, setPoll] = useState<PollType | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -86,7 +86,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
     if (!poll || !poll.settings.allowVoteRescinding || isPollExpired) return
 
     try {
-      await pollService.rescindVote(Number(pollId))
+      await pollService.vote({ poll_id: Number(pollId), option_ids: [] })
       const updatedPoll = await pollService.getPoll(pollId)
       setPoll(updatedPoll)
       setSelectedOptions([])
