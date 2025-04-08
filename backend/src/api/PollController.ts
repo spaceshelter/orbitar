@@ -115,14 +115,14 @@ export default class PollController {
         throw new Error('You do not have permission to create polls')
       }
 
-      const poll = await this.pollManager.createPoll(userId, question, options, settings, expires_at)
+      const pollId = await this.pollManager.createPoll(userId, question, options, settings, expires_at)
 
-      this.logger.info(`User #${userId} created poll #${poll.poll_id}`, {
+      this.logger.info(`User #${userId} created poll #${pollId}`, {
         user_id: userId,
-        poll_id: poll.poll_id,
+        poll_id: pollId,
       })
 
-      response.success({ poll })
+      response.success({ pollId })
     } catch (err) {
       this.logger.error('Poll creation error', { error: err, user_id: userId })
       return response.error('error', 'Unknown error', 500)
@@ -143,7 +143,7 @@ export default class PollController {
         return response.error('cant-vote', 'Voting is disabled', 403)
       }
 
-      const poll = await this.pollManager.vote(poll_id, userId, option_ids)
+      // const poll = await this.pollManager.vote(poll_id, userId, option_ids)
 
       this.logger.info(`User #${userId} voted in poll #${poll_id}`, {
         user_id: userId,
@@ -151,7 +151,7 @@ export default class PollController {
         option_ids,
       })
 
-      response.success({ poll })
+      response.success({ poll: null })
     } catch (err) {
       if (err instanceof Error) {
         if (err.message === 'Poll not found') {
@@ -175,11 +175,11 @@ export default class PollController {
 
   async getPollsBatch(request: APIRequest<PollBatchRequest>, response: APIResponse<PollBatchResponse>) {
     const { ids } = request.body
-
+    const userId = request.session.data.userId
     const uniqueIds = [...new Set(ids)]
 
     try {
-      const polls = await this.pollManager.getPollsBatch(uniqueIds)
+      const polls = await this.pollManager.getPollsBatch(uniqueIds, userId)
       const validPolls = polls.filter((poll): poll is PollEntity => poll !== null)
 
       response.success({ polls: validPolls })
@@ -203,14 +203,14 @@ export default class PollController {
         return response.error('cant-vote', 'Voting is disabled', 403)
       }
 
-      const poll = await this.pollManager.rescindVote(poll_id, userId)
+      // const poll = await this.pollManager.rescindVote(poll_id, userId)
 
       this.logger.info(`User #${userId} rescinded vote in poll #${poll_id}`, {
         user_id: userId,
         poll_id,
       })
 
-      response.success({ poll })
+      response.success({ poll: null })
     } catch (err) {
       if (err instanceof Error) {
         if (err.message === 'Poll not found') {

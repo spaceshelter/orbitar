@@ -436,10 +436,10 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
           ? moment().add(pollData.settings.expirationDays, 'days').format('YYYY-MM-DD HH:mm:ss')
           : undefined,
       })
-      const pollTag = `<poll>${result.poll.poll_id}</poll>`
+      const pollTag = `<poll>${result.pollId}</poll>`
       replaceText(pollTag, pollTag.length)
       setPollWizardOpen(false)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to create poll:', error)
       if (error instanceof Error) {
         toast.error(`Не удалось создать опрос: ${error.message}`)

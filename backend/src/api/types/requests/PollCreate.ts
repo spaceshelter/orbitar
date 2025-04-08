@@ -1,4 +1,4 @@
-import { PollEntity, PollSettingsEntity } from '../entities/PollEntity'
+import { PollSettingsEntity } from '../entities/PollEntity'
 
 export interface PollCreateRequest {
   site: string
@@ -9,5 +9,5 @@ export interface PollCreateRequest {
 }
 
 export interface PollCreateResponse {
-  poll: PollEntity
+  pollId: number
 }

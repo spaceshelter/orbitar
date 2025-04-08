@@ -20,7 +20,7 @@ export interface CreatePollRequest {
 }
 
 export interface CreatePollResponse {
-  poll: PollBackendResponse
+  pollId: number
 }
 
 export interface GetPollRequest {
