@@ -19,10 +19,6 @@ export interface PollBatchResponse {
   polls: PollEntity[]
 }
 
-export interface PollRescindVoteRequest {
-  poll_id: number
-}
-
 const MAX_VOTES_PER_MINUTE = 30
 const MAX_POLLS_PER_MINUTE = 10
 
@@ -59,7 +55,7 @@ export default class PollController {
 
     const createSchema = Joi.object<PollCreateRequest>({
       question: Joi.string().required().max(1000),
-      options: Joi.array().items(Joi.string().max(64)).min(2).max(32).required(),
+      options: Joi.array().items(Joi.string().min(1).max(64)).min(2).max(32).required(),
       settings: Joi.object({
         allow_multiple_choice: Joi.boolean(),
         result_visibility: Joi.string().valid('always', 'after_vote', 'after_vote_end'),
@@ -114,7 +110,21 @@ export default class PollController {
         throw new Error('You do not have permission to create polls')
       }
 
-      const pollId = await this.pollManager.createPoll(userId, question, options, settings, expires_at)
+      if (settings.allow_vote_rescinding && settings.result_visibility === 'after_vote') {
+        return response.error('invalid-settings', 'after_vote result visibility is not allowed with rescind vote', 400)
+      }
+
+      if (!expires_at && settings.result_visibility === 'after_vote_end') {
+        return response.error('invalid-settings', 'after_vote_end result visibility requires expiration date', 400)
+      }
+
+      const pollId = await this.pollManager.createPoll(
+        userId,
+        question,
+        options,
+        settings,
+        expires_at ? new Date(expires_at) : null,
+      )
 
       this.logger.info(`User #${userId} created poll #${pollId}`, {
         user_id: userId,

@@ -14,7 +14,7 @@ export default class PollRepository {
     question: string,
     options: string[],
     settings: object,
-    expiresAt?: string,
+    expiresAt?: Date,
   ): Promise<number> {
     return await this.db.insert('polls', {
       author_id: authorId,

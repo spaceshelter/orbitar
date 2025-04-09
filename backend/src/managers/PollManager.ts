@@ -21,7 +21,7 @@ export default class PollManager {
     question: string,
     options: string[],
     settings: PollSettingsEntity,
-    expiresAt?: string,
+    expiresAt?: Date,
   ): Promise<number> {
     if (options.length < 2 || options.length > 32) {
       throw new Error('Invalid number of options')
