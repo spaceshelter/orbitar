@@ -3,25 +3,20 @@ import rateLimit from 'express-rate-limit'
 import Joi from 'joi'
 import { Logger } from 'winston'
 
-import PollManager from '../managers/PollManager'
+import PollManager, { IncludePollVotes, PollError } from '../managers/PollManager'
 import UserManager from '../managers/UserManager'
 import { APIRequest, APIResponse, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
-import { PollEntity } from './types/entities/PollEntity'
-import { PollCreateRequest, PollCreateResponse } from './types/requests/PollCreate'
-import { PollVoteRequest, PollVoteResponse, PollVotersRequest, PollVotersResponse } from './types/requests/PollVote'
-
-export interface PollBatchRequest {
-  ids: number[]
-}
-
-export interface PollBatchResponse {
-  polls: PollEntity[]
-}
-
-export interface PollRescindVoteRequest {
-  poll_id: number
-}
+import {
+  PollBatchRequest,
+  PollBatchResponse,
+  PollCreateRequest,
+  PollCreateResponse,
+  PollVoteRequest,
+  PollVoteResponse,
+  PollVotersRequest,
+  PollVotersResponse,
+} from './types/requests/Poll'
 
 const MAX_VOTES_PER_MINUTE = 30
 const MAX_POLLS_PER_MINUTE = 10
@@ -59,7 +54,7 @@ export default class PollController {
 
     const createSchema = Joi.object<PollCreateRequest>({
       question: Joi.string().required().max(1000),
-      options: Joi.array().items(Joi.string().max(64)).min(2).max(32).required(),
+      options: Joi.array().items(Joi.string().min(1).max(64)).min(2).max(32).required(),
       settings: Joi.object({
         allow_multiple_choice: Joi.boolean(),
         result_visibility: Joi.string().valid('always', 'after_vote', 'after_vote_end'),
@@ -91,7 +86,7 @@ export default class PollController {
       (req, res) => this.createPoll(req, res),
     )
 
-    this.router.post('/polls', validate(batchSchema), oauth('читать'), (req, res) => this.getPollsBatch(req, res))
+    this.router.post('/polls', validate(batchSchema), oauth('читать'), (req, res) => this.getPolls(req, res))
 
     this.router.post('/poll/vote', this.voteRateLimiter, validate(voteSchema), oauth('голосовать'), (req, res) =>
       this.vote(req, res),
@@ -111,10 +106,24 @@ export default class PollController {
     try {
       const restrictions = await this.userManager.getUserRestrictions(userId)
       if (!restrictions.canCreatePolls) {
-        throw new Error('You do not have permission to create polls')
+        return response.error('permission-denied', 'You do not have permission to create polls', 403)
       }
 
-      const pollId = await this.pollManager.createPoll(userId, question, options, settings, expires_at)
+      if (settings.allow_vote_rescinding && settings.result_visibility === 'after_vote') {
+        return response.error('invalid-settings', 'after_vote result visibility is not allowed with rescind vote', 400)
+      }
+
+      if (!expires_at && settings.result_visibility === 'after_vote_end') {
+        return response.error('invalid-settings', 'after_vote_end result visibility requires expiration date', 400)
+      }
+
+      const pollId = await this.pollManager.createPoll(
+        userId,
+        question,
+        options,
+        settings,
+        expires_at ? new Date(expires_at) : null,
+      )
 
       this.logger.info(`User #${userId} created poll #${pollId}`, {
         user_id: userId,
@@ -123,23 +132,29 @@ export default class PollController {
 
       response.success({ pollId })
     } catch (err) {
+      if (err instanceof PollError) {
+        return response.error(err.code, err.message, err.status)
+      }
+
       this.logger.error('Poll creation error', { error: err, user_id: userId })
       return response.error('error', 'Unknown error', 500)
     }
   }
 
-  async getPollsBatch(request: APIRequest<PollBatchRequest>, response: APIResponse<PollBatchResponse>) {
+  async getPolls(request: APIRequest<PollBatchRequest>, response: APIResponse<PollBatchResponse>) {
     const { ids } = request.body
     const userId = request.session.data.userId
     const uniqueIds = [...new Set(ids)]
 
     try {
-      const polls = await this.pollManager.getPollsBatch(uniqueIds, userId)
-      const validPolls = polls.filter((poll): poll is PollEntity => poll !== null)
-
-      response.success({ polls: validPolls })
+      const polls = await this.pollManager.getPollsByIds(uniqueIds, userId, IncludePollVotes.AUTO)
+      response.success({ polls })
     } catch (err) {
-      this.logger.error('Get polls batch error', { error: err, poll_ids: ids })
+      if (err instanceof PollError) {
+        return response.error(err.code, err.message, err.status)
+      }
+
+      this.logger.error('Get polls error', { error: err, poll_ids: ids })
       return response.error('error', 'Unknown error', 500)
     }
   }
@@ -168,22 +183,8 @@ export default class PollController {
 
       response.success({ result: status })
     } catch (err) {
-      if (err instanceof Error) {
-        const errorMapping: Record<string, { code: string; message: string; status: number }> = {
-          'Poll not found': { code: 'not-found', message: 'Poll not found', status: 404 },
-          'Poll has expired': { code: 'expired', message: 'Poll has expired', status: 403 },
-          'Multiple choice not allowed': {
-            code: 'multiple-choice-not-allowed',
-            message: 'Multiple choice not allowed',
-            status: 400,
-          },
-          'Invalid option ID': { code: 'invalid-option', message: 'Invalid option ID', status: 400 },
-        }
-
-        const mappedError = errorMapping[err.message]
-        if (mappedError) {
-          return response.error(mappedError.code, mappedError.message, mappedError.status)
-        }
+      if (err instanceof PollError) {
+        return response.error(err.code, err.message, err.status)
       }
 
       this.logger.error('Vote error', { error: err, user_id: userId, poll_id })
@@ -202,6 +203,10 @@ export default class PollController {
       const voters = await this.pollManager.getVoters(poll_id, option_id)
       response.success({ voters })
     } catch (err) {
+      if (err instanceof PollError) {
+        return response.error(err.code, err.message, err.status)
+      }
+
       this.logger.error('Get voters error', { error: err, user_id: userId, poll_id })
       return response.error('error', 'Unknown error', 500)
     }

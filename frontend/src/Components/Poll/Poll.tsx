@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 
 import DateComponent from '@components/DateComponent'
-import { useAPI } from '@state/AppState'
+import { useAPI, useAppState } from '@state/AppState'
 import Button from '@ui/Button'
 import Checkbox from '@ui/Checkbox'
 import Radio from '@ui/Radio'
@@ -26,9 +26,11 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
   const [error, setError] = useState<string | null>(null)
   const [selectedOptions, setSelectedOptions] = useState<number[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const { userRestrictions } = useAppState()
 
   const hasUserVoted = (poll?.userVoted ?? []).length > 0
-  const isPollExpired = poll?.settings.expiresAt && new Date(poll.settings.expiresAt) < new Date()
+  const isPollExpired = poll?.settings.expiresAt && poll.settings.expiresAt < new Date()
+  const allowedToVote = poll?.settings.voteAccess !== 'users_with_full_rights' || userRestrictions?.canVoteKarma
 
   const fetchPoll = useCallback(async () => {
     setLoading(true)
@@ -48,6 +50,12 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
   useEffect(() => {
     fetchPoll()
   }, [fetchPoll])
+
+  useEffect(() => {
+    if (poll?.settings.voteAccess === 'users_with_full_rights' && !userRestrictions) {
+      api.user.refreshUserRestrictions()
+    }
+  }, [userRestrictions])
 
   const handleOptionSelect = (optionId: number) => {
     if (!poll || isPollExpired || hasUserVoted) return
@@ -76,7 +84,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
         setPoll(updatedPoll)
       }
     } catch (err) {
-      toast.error('Не удалось проголосовать')
+      toast.error(`Не удалось проголосовать${err instanceof Error ? `: ${err.message}` : ''}`)
     } finally {
       setIsSubmitting(false)
     }
@@ -91,7 +99,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
       setPoll(updatedPoll)
       setSelectedOptions([])
     } catch (err) {
-      toast.error('Не удалось отменить голос')
+      toast.error(`Не удалось отменить голос${err instanceof Error ? `: ${err.message}` : ''}`)
     }
   }
 
@@ -125,8 +133,8 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
 
     return poll.options.map((option, idx) => {
       const percentage = calculatePercentage(option.votes)
-      const isSelected = selectedOptions.includes(idx)
-      const isDisabled = isPollExpired || hasUserVoted || (!isMultipleVotesAllowed && hasAnyVotes)
+      const isSelected = allowedToVote && selectedOptions.includes(idx)
+      const isDisabled = isPollExpired || hasUserVoted || (!isMultipleVotesAllowed && hasAnyVotes) || !allowedToVote
 
       return (
         <div
@@ -185,7 +193,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
       return (
         <div className={styles.expiration}>
           <span>Окончание: </span>
-          <DateComponent date={new Date(poll.settings.expiresAt)} />
+          <DateComponent date={poll.settings.expiresAt} />
         </div>
       )
     }
@@ -200,12 +208,20 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
   }
 
   const renderActions = () => {
-    if (isPollExpired)
+    if (isPollExpired) {
       return (
         <div className={styles.expiration}>
           <span>Опрос завершен</span>
         </div>
       )
+    }
+    if (!allowedToVote) {
+      return (
+        <div className={styles.expiration}>
+          <span>Нет прав для голосования</span>
+        </div>
+      )
+    }
 
     if (hasUserVoted && poll.settings.allowVoteRescinding) {
       return (

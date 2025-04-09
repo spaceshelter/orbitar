@@ -1,12 +1,34 @@
 import { PollEntity, PollSettingsEntity } from '../api/types/entities/PollEntity'
 import PollRepository from '../db/repositories/PollRepository'
+import { PollRaw } from '../db/types/PollRaw'
 import { UserBaseInfo } from './types/UserInfo'
+import UserManager from './UserManager'
+
+export enum IncludePollVotes {
+  YES = 'yes',
+  NO = 'no',
+  AUTO = 'auto',
+}
+
+export class PollError extends Error {
+  code: string
+  status: number
+
+  constructor(code: string, message: string, status: number) {
+    super(message)
+    this.code = code
+    this.status = status
+    this.name = 'PollError'
+  }
+}
 
 export default class PollManager {
   private pollRepository: PollRepository
+  private userManager: UserManager
 
-  constructor(pollRepository: PollRepository) {
+  constructor(pollRepository: PollRepository, userManager: UserManager) {
     this.pollRepository = pollRepository
+    this.userManager = userManager
   }
 
   async createPoll(
@@ -14,115 +36,117 @@ export default class PollManager {
     question: string,
     options: string[],
     settings: PollSettingsEntity,
-    expiresAt?: string,
+    expiresAt?: Date,
   ): Promise<number> {
     if (options.length < 2 || options.length > 32) {
-      throw new Error('Invalid number of options')
+      throw new PollError('invalid-options', 'Invalid number of options', 400)
     }
     const pollId = await this.pollRepository.createPoll(authorId, question, options, settings, expiresAt)
 
-    if (!pollId) throw new Error('Failed to create poll')
+    if (!pollId) throw new PollError('creation-failed', 'Failed to create poll', 500)
     return pollId
   }
 
-  async getPollsBatch(ids: number[], userId?: number): Promise<PollEntity[]> {
-    const result = await this.pollRepository.getPollsBatch(ids, userId)
-    const polls = Array.isArray(result) ? result : []
+  enrichPoll(poll: PollRaw, includeVotes = true, userVotes?: number[]): PollEntity {
+    return {
+      poll_id: poll.poll_id,
+      author_id: poll.author_id,
+      question: poll.question,
+      settings: poll.settings,
+      expires_at: poll.expires_at,
+      created_at: poll.created_at,
+      options: poll.options.map((text: string, index: number) => ({
+        text,
+        votes: (includeVotes && poll[`opt${index}`]) || 0,
+      })),
+      total_votes:
+        (includeVotes &&
+          Array.from({ length: 32 }, (_, i) => poll[`opt${i}`] || 0).reduce((sum, count) => sum + count, 0)) ||
+        0,
+      user_vote: userVotes,
+    }
+  }
 
-    const res: PollEntity[] = []
-    const pollMap: Record<number, PollEntity> = {}
+  async getPollsByIds(ids: number[], userId?: number, includeVotes = IncludePollVotes.NO): Promise<PollEntity[]> {
+    const polls = await this.pollRepository.getPollsByIds(ids)
 
-    polls.forEach((poll) => {
-      const { poll_id, author_id, question, options, settings, expires_at, created_at, user_voted_option_id } = poll
-      if (!pollMap[poll_id]) {
-        pollMap[poll_id] = {
-          poll_id,
-          author_id,
-          question,
-          options: options.map((text: string, index: number) => ({
-            text,
-            votes: poll[`opt${index}`] || 0,
-          })),
-          settings,
-          expires_at,
-          created_at,
-          total_votes: Array.from({ length: 32 }, (_, i) => poll[`opt${i}`] || 0).reduce(
-            (sum, count) => sum + count,
-            0,
-          ),
-          user_vote: [],
+    const userVotes = new Map<number, number[]>()
+    if (userId) {
+      const votes = await this.pollRepository.getVotesBatch(userId, ids)
+      votes.forEach((vote) => {
+        if (!userVotes.has(vote.poll_id)) {
+          userVotes.set(vote.poll_id, [])
         }
+        userVotes.get(vote.poll_id)?.push(vote.option_id)
+      })
+    }
 
-        res.push(pollMap[poll_id])
-      }
+    return polls.map((poll) => {
+      const userVotesForPoll = (userId && userVotes.get(poll.poll_id)) || []
 
-      if (user_voted_option_id !== null) {
-        pollMap[poll_id].user_vote?.push(user_voted_option_id)
-      }
+      const includeVotesForPoll =
+        includeVotes === IncludePollVotes.YES ||
+        (includeVotes === IncludePollVotes.AUTO &&
+          (poll.settings.result_visibility === 'always' ||
+            (poll.settings.result_visibility === 'after_vote' && userVotesForPoll.length > 0) ||
+            (poll.settings.result_visibility === 'after_vote_end' &&
+              (!poll.expires_at || new Date(poll.expires_at) < new Date()))))
+
+      return this.enrichPoll(poll, includeVotesForPoll, userVotesForPoll)
     })
-
-    return res
   }
 
   async vote(pollId: number, voterId: number, optionIds: number[]): Promise<string> {
-    const polls = await this.getPollsBatch([pollId], voterId)
-    if (!polls.length) {
-      throw new Error('Poll not found')
+    const [poll] = await this.getPollsByIds([pollId])
+    if (!poll) {
+      throw new PollError('not-found', 'Poll not found', 404)
     }
 
-    if (polls.length > 1) {
-      throw new Error('Multiple polls found')
-    }
-
-    const poll = polls[0]
     if (poll.expires_at && new Date(poll.expires_at) < new Date()) {
-      throw new Error('Poll has expired')
+      throw new PollError('expired', 'Poll has expired', 403)
     }
 
     const settings = poll.settings
     if (!settings.allow_multiple_choice && optionIds.length > 1) {
-      throw new Error('Multiple choice not allowed')
+      throw new PollError('multiple-choice-not-allowed', 'Multiple choice not allowed', 400)
     }
 
-    if (optionIds.length === 0) {
-      if (!settings.allow_vote_rescinding) {
-        throw new Error('Vote rescinding not allowed')
-      }
-
-      await this.pollRepository.removeVotes(pollId, voterId, poll.user_vote || [])
-      return 'rescinded'
-    } else {
-      if (optionIds.some((id) => id < 0 || id >= poll.options.length)) {
-        throw new Error('Invalid option ID')
-      }
-
-      const previousVotes = poll.user_vote || []
-      if (previousVotes.length > 0 && !settings.allow_multiple_choice) {
-        throw new Error('Multiple choice not allowed')
-      }
-
-      await this.pollRepository.vote(pollId, voterId, optionIds)
-      return 'voted'
+    if (optionIds.length === 0 && !settings.allow_vote_rescinding) {
+      throw new PollError('rescind-not-allowed', 'Vote rescinding not allowed', 400)
     }
+
+    if (optionIds.some((id) => id < 0 || id >= poll.options.length)) {
+      throw new PollError('invalid-option', 'Invalid option ID', 400)
+    }
+
+    if (
+      settings.vote_access === 'users_with_full_rights' &&
+      !(await this.userManager.getUserRestrictions(voterId)).canVoteKarma /*proxy for full rights*/
+    ) {
+      throw new PollError('permission-denied', 'You do not have permission to vote', 403)
+    }
+
+    await this.pollRepository.vote(pollId, voterId, optionIds)
+
+    return 'voted'
   }
 
   async getVoters(pollId: number, optionId: number): Promise<UserBaseInfo[]> {
     if (optionId < 0 || optionId >= 32) {
-      throw new Error('Invalid option ID')
+      throw new PollError('invalid-option', 'Invalid option ID', 400)
     }
 
-    const polls = await this.getPollsBatch([pollId])
-    if (!polls.length) {
-      throw new Error('Poll not found')
+    const [poll] = await this.getPollsByIds([pollId])
+    if (!poll) {
+      throw new PollError('not-found', 'Poll not found', 404)
     }
 
-    const poll = polls[0]
     if (
       poll.settings.result_visibility === 'after_vote_end' &&
       poll.expires_at &&
       new Date(poll.expires_at) > new Date()
     ) {
-      throw new Error('Poll has not ended yet')
+      throw new PollError('poll-active', 'Poll has not ended yet', 403)
     }
 
     return await this.pollRepository.getVoters(pollId, optionId)

@@ -11,7 +11,7 @@ export interface PollBackendResponse {
   total_votes: number
   user_vote?: number[]
   settings: PollBackendSettingsEntity
-  expires_at?: string
+  expires_at?: Date
 }
 
 export interface Poll {
@@ -28,7 +28,7 @@ export interface PollSettings {
   resultVisibility: 'always' | 'after_vote' | 'after_vote_end'
   allowVoteRescinding: boolean
   voteAccess: 'everybody' | 'users_with_full_rights'
-  expiresAt?: string
+  expiresAt?: Date
 }
 
 export interface PollVoteRequest {
