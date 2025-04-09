@@ -1,5 +1,6 @@
 import { PollEntity, PollSettingsEntity } from '../api/types/entities/PollEntity'
 import PollRepository from '../db/repositories/PollRepository'
+import { PollRaw } from '../db/types/PollRaw'
 import { UserBaseInfo } from './types/UserInfo'
 
 export default class PollManager {
@@ -25,47 +26,39 @@ export default class PollManager {
     return pollId
   }
 
-  async getPollsBatch(ids: number[], userId?: number): Promise<PollEntity[]> {
-    const result = await this.pollRepository.getPollsBatch(ids, userId)
-    const polls = Array.isArray(result) ? result : []
+  enrichPoll(poll: PollRaw, userVotes?: number[]): PollEntity {
+    return {
+      ...poll,
+      options: poll.options.map((text: string, index: number) => ({
+        text,
+        votes: poll[`opt${index}`] || 0,
+      })),
+      total_votes: Array.from({ length: 32 }, (_, i) => poll[`opt${i}`] || 0).reduce((sum, count) => sum + count, 0),
+      user_vote: userVotes,
+    }
+  }
 
-    const res: PollEntity[] = []
-    const pollMap: Record<number, PollEntity> = {}
+  async getPollsByIds(ids: number[], userId?: number): Promise<PollEntity[]> {
+    const polls = await this.pollRepository.getPollsByIds(ids)
 
-    polls.forEach((poll) => {
-      const { poll_id, author_id, question, options, settings, expires_at, created_at, user_voted_option_id } = poll
-      if (!pollMap[poll_id]) {
-        pollMap[poll_id] = {
-          poll_id,
-          author_id,
-          question,
-          options: options.map((text: string, index: number) => ({
-            text,
-            votes: poll[`opt${index}`] || 0,
-          })),
-          settings,
-          expires_at,
-          created_at,
-          total_votes: Array.from({ length: 32 }, (_, i) => poll[`opt${i}`] || 0).reduce(
-            (sum, count) => sum + count,
-            0,
-          ),
-          user_vote: [],
+    const userVotes = new Map<number, number[]>()
+    if (userId) {
+      const votes = await this.pollRepository.getVotesBatch(userId, ids)
+      votes.forEach((vote) => {
+        if (!userVotes.has(vote.poll_id)) {
+          userVotes.set(vote.poll_id, [])
         }
+        userVotes.get(vote.poll_id)?.push(vote.option_id)
+      })
+    }
 
-        res.push(pollMap[poll_id])
-      }
-
-      if (user_voted_option_id !== null) {
-        pollMap[poll_id].user_vote?.push(user_voted_option_id)
-      }
+    return polls.map((poll) => {
+      return this.enrichPoll(poll, userId && userVotes.get(poll.poll_id))
     })
-
-    return res
   }
 
   async vote(pollId: number, voterId: number, optionIds: number[]): Promise<string> {
-    const polls = await this.getPollsBatch([pollId], voterId)
+    const polls = await this.getPollsByIds([pollId], voterId)
     if (!polls.length) {
       throw new Error('Poll not found')
     }
@@ -97,7 +90,7 @@ export default class PollManager {
       throw new Error('Invalid option ID')
     }
 
-    const polls = await this.getPollsBatch([pollId])
+    const polls = await this.getPollsByIds([pollId])
     if (!polls.length) {
       throw new Error('Poll not found')
     }

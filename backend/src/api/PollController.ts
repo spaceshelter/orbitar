@@ -91,7 +91,7 @@ export default class PollController {
       (req, res) => this.createPoll(req, res),
     )
 
-    this.router.post('/polls', validate(batchSchema), oauth('читать'), (req, res) => this.getPollsBatch(req, res))
+    this.router.post('/polls', validate(batchSchema), oauth('читать'), (req, res) => this.getPolls(req, res))
 
     this.router.post('/poll/vote', this.voteRateLimiter, validate(voteSchema), oauth('голосовать'), (req, res) =>
       this.vote(req, res),
@@ -128,16 +128,14 @@ export default class PollController {
     }
   }
 
-  async getPollsBatch(request: APIRequest<PollBatchRequest>, response: APIResponse<PollBatchResponse>) {
+  async getPolls(request: APIRequest<PollBatchRequest>, response: APIResponse<PollBatchResponse>) {
     const { ids } = request.body
     const userId = request.session.data.userId
     const uniqueIds = [...new Set(ids)]
 
     try {
-      const polls = await this.pollManager.getPollsBatch(uniqueIds, userId)
-      const validPolls = polls.filter((poll): poll is PollEntity => poll !== null)
-
-      response.success({ polls: validPolls })
+      const polls = await this.pollManager.getPollsByIds(uniqueIds, userId)
+      response.success({ polls })
     } catch (err) {
       this.logger.error('Get polls batch error', { error: err, poll_ids: ids })
       return response.error('error', 'Unknown error', 500)

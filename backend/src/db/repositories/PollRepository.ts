@@ -1,6 +1,6 @@
 import { UserBaseEntity } from '../../api/types/entities/UserEntity'
 import { DBConnection } from '../DB'
-import { PollWithUserVoteRaw } from '../types/PollRaw'
+import { PollRaw, PollWithUserVoteRaw } from '../types/PollRaw'
 
 export default class PollRepository {
   private db: DBConnection
@@ -25,26 +25,25 @@ export default class PollRepository {
     })
   }
 
-  async getPollsBatch(ids: number[], userId?: number): Promise<PollWithUserVoteRaw[]> {
-    const hasUserId = userId !== undefined && userId !== null
+  async getPollsByIds(ids: number[]): Promise<PollRaw[]> {
+    return this.db.fetchAll<PollWithUserVoteRaw>(
+      `SELECT p.*
+       FROM polls p
+       WHERE p.poll_id IN (:ids)`,
+      { ids },
+    )
+  }
 
-    const query = `
-    SELECT 
-      p.*,
-      pv.option_id AS user_voted_option_id
-    FROM polls p
-    LEFT JOIN poll_votes pv 
-      ON pv.poll_id = p.poll_id
-      ${hasUserId ? 'AND pv.voter_id = :userId' : ''}
-    WHERE p.poll_id IN (:ids)
-    `
-
-    const params = {
-      ids,
-      ...(hasUserId && { userId }),
-    }
-
-    return this.db.fetchAll<PollWithUserVoteRaw>(query, params)
+  async getVotesBatch(voterId: number, pollIds: number[]): Promise<{ poll_id: number; option_id: number }[]> {
+    return this.db.fetchAll(
+      `SELECT pv.poll_id, pv.option_id
+      FROM poll_votes pv
+      WHERE pv.voter_id = :voterId AND pv.poll_id IN (:pollIds)`,
+      {
+        voterId,
+        pollIds,
+      },
+    )
   }
 
   /**
