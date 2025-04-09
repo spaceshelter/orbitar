@@ -2,6 +2,7 @@ import { PollEntity, PollSettingsEntity } from '../api/types/entities/PollEntity
 import PollRepository from '../db/repositories/PollRepository'
 import { PollRaw } from '../db/types/PollRaw'
 import { UserBaseInfo } from './types/UserInfo'
+import UserManager from './UserManager'
 
 export enum IncludePollVotes {
   YES = 'yes',
@@ -9,11 +10,25 @@ export enum IncludePollVotes {
   AUTO = 'auto',
 }
 
+export class PollError extends Error {
+  code: string
+  status: number
+
+  constructor(code: string, message: string, status: number) {
+    super(message)
+    this.code = code
+    this.status = status
+    this.name = 'PollError'
+  }
+}
+
 export default class PollManager {
   private pollRepository: PollRepository
+  private userManager: UserManager
 
-  constructor(pollRepository: PollRepository) {
+  constructor(pollRepository: PollRepository, userManager: UserManager) {
     this.pollRepository = pollRepository
+    this.userManager = userManager
   }
 
   async createPoll(
@@ -24,11 +39,11 @@ export default class PollManager {
     expiresAt?: Date,
   ): Promise<number> {
     if (options.length < 2 || options.length > 32) {
-      throw new Error('Invalid number of options')
+      throw new PollError('invalid-options', 'Invalid number of options', 400)
     }
     const pollId = await this.pollRepository.createPoll(authorId, question, options, settings, expiresAt)
 
-    if (!pollId) throw new Error('Failed to create poll')
+    if (!pollId) throw new PollError('creation-failed', 'Failed to create poll', 500)
     return pollId
   }
 
@@ -84,25 +99,33 @@ export default class PollManager {
   async vote(pollId: number, voterId: number, optionIds: number[]): Promise<string> {
     const [poll] = await this.getPollsByIds([pollId])
     if (!poll) {
-      throw new Error('Poll not found')
+      throw new PollError('not-found', 'Poll not found', 404)
     }
 
     if (poll.expires_at && new Date(poll.expires_at) < new Date()) {
-      throw new Error('Poll has expired')
+      throw new PollError('expired', 'Poll has expired', 403)
     }
 
     const settings = poll.settings
     if (!settings.allow_multiple_choice && optionIds.length > 1) {
-      throw new Error('Multiple choice not allowed')
+      throw new PollError('multiple-choice-not-allowed', 'Multiple choice not allowed', 400)
     }
 
     if (optionIds.length === 0 && !settings.allow_vote_rescinding) {
-      throw new Error('Vote rescinding not allowed')
+      throw new PollError('rescind-not-allowed', 'Vote rescinding not allowed', 400)
     }
 
     if (optionIds.some((id) => id < 0 || id >= poll.options.length)) {
-      throw new Error('Invalid option ID')
+      throw new PollError('invalid-option', 'Invalid option ID', 400)
     }
+
+    if (
+      settings.vote_access === 'users_with_full_rights' &&
+      !(await this.userManager.getUserRestrictions(voterId)).canVoteKarma /*proxy for full rights*/
+    ) {
+      throw new PollError('permission-denied', 'You do not have permission to vote', 403)
+    }
+
     await this.pollRepository.vote(pollId, voterId, optionIds)
 
     return 'voted'
@@ -110,12 +133,12 @@ export default class PollManager {
 
   async getVoters(pollId: number, optionId: number): Promise<UserBaseInfo[]> {
     if (optionId < 0 || optionId >= 32) {
-      throw new Error('Invalid option ID')
+      throw new PollError('invalid-option', 'Invalid option ID', 400)
     }
 
     const [poll] = await this.getPollsByIds([pollId])
     if (!poll) {
-      throw new Error('Poll not found')
+      throw new PollError('not-found', 'Poll not found', 404)
     }
 
     if (
@@ -123,7 +146,7 @@ export default class PollManager {
       poll.expires_at &&
       new Date(poll.expires_at) > new Date()
     ) {
-      throw new Error('Poll has not ended yet')
+      throw new PollError('poll-active', 'Poll has not ended yet', 403)
     }
 
     return await this.pollRepository.getVoters(pollId, optionId)

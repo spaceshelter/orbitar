@@ -76,7 +76,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
         setPoll(updatedPoll)
       }
     } catch (err) {
-      toast.error('Не удалось проголосовать')
+      toast.error(`Не удалось проголосовать${err instanceof Error ? `: ${err.message}` : ''}`)
     } finally {
       setIsSubmitting(false)
     }
@@ -91,7 +91,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
       setPoll(updatedPoll)
       setSelectedOptions([])
     } catch (err) {
-      toast.error('Не удалось отменить голос')
+      toast.error(`Не удалось отменить голос${err instanceof Error ? `: ${err.message}` : ''}`)
     }
   }
 

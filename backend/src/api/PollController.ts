@@ -3,7 +3,7 @@ import rateLimit from 'express-rate-limit'
 import Joi from 'joi'
 import { Logger } from 'winston'
 
-import PollManager, { IncludePollVotes } from '../managers/PollManager'
+import PollManager, { IncludePollVotes, PollError } from '../managers/PollManager'
 import UserManager from '../managers/UserManager'
 import { APIRequest, APIResponse, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
@@ -106,7 +106,7 @@ export default class PollController {
     try {
       const restrictions = await this.userManager.getUserRestrictions(userId)
       if (!restrictions.canCreatePolls) {
-        throw new Error('You do not have permission to create polls')
+        return response.error('permission-denied', 'You do not have permission to create polls', 403)
       }
 
       if (settings.allow_vote_rescinding && settings.result_visibility === 'after_vote') {
@@ -132,6 +132,10 @@ export default class PollController {
 
       response.success({ pollId })
     } catch (err) {
+      if (err instanceof PollError) {
+        return response.error(err.code, err.message, err.status)
+      }
+
       this.logger.error('Poll creation error', { error: err, user_id: userId })
       return response.error('error', 'Unknown error', 500)
     }
@@ -146,7 +150,11 @@ export default class PollController {
       const polls = await this.pollManager.getPollsByIds(uniqueIds, userId, IncludePollVotes.AUTO)
       response.success({ polls })
     } catch (err) {
-      this.logger.error('Get polls batch error', { error: err, poll_ids: ids })
+      if (err instanceof PollError) {
+        return response.error(err.code, err.message, err.status)
+      }
+
+      this.logger.error('Get polls error', { error: err, poll_ids: ids })
       return response.error('error', 'Unknown error', 500)
     }
   }
@@ -175,22 +183,8 @@ export default class PollController {
 
       response.success({ result: status })
     } catch (err) {
-      if (err instanceof Error) {
-        const errorMapping: Record<string, { code: string; message: string; status: number }> = {
-          'Poll not found': { code: 'not-found', message: 'Poll not found', status: 404 },
-          'Poll has expired': { code: 'expired', message: 'Poll has expired', status: 403 },
-          'Multiple choice not allowed': {
-            code: 'multiple-choice-not-allowed',
-            message: 'Multiple choice not allowed',
-            status: 400,
-          },
-          'Invalid option ID': { code: 'invalid-option', message: 'Invalid option ID', status: 400 },
-        }
-
-        const mappedError = errorMapping[err.message]
-        if (mappedError) {
-          return response.error(mappedError.code, mappedError.message, mappedError.status)
-        }
+      if (err instanceof PollError) {
+        return response.error(err.code, err.message, err.status)
       }
 
       this.logger.error('Vote error', { error: err, user_id: userId, poll_id })
@@ -209,6 +203,10 @@ export default class PollController {
       const voters = await this.pollManager.getVoters(poll_id, option_id)
       response.success({ voters })
     } catch (err) {
+      if (err instanceof PollError) {
+        return response.error(err.code, err.message, err.status)
+      }
+
       this.logger.error('Get voters error', { error: err, user_id: userId, poll_id })
       return response.error('error', 'Unknown error', 500)
     }
