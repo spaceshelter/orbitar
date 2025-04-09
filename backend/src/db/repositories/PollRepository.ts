@@ -35,35 +35,104 @@ export default class PollRepository {
     FROM polls p
     LEFT JOIN poll_votes pv 
       ON pv.poll_id = p.poll_id
-      ${hasUserId ? 'AND pv.voter_id = ?' : ''}
-    WHERE p.poll_id IN (?)
-  `
+      ${hasUserId ? 'AND pv.voter_id = :userId' : ''}
+    WHERE p.poll_id IN (:ids)
+    `
 
-    const params = hasUserId ? [userId, ids] : [ids]
+    const params = {
+      ids,
+      ...(hasUserId && { userId }),
+    }
 
     return this.db.fetchAll<PollWithUserVoteRaw>(query, params)
   }
 
-  async vote(pollId: number, voterId: number, optionId: number) {
-    return await this.db.inTransaction(async (connection) => {
-      await connection.query('INSERT INTO poll_votes (poll_id, voter_id, option_id) VALUES (?, ?, ?)', [
-        pollId,
-        voterId,
-        optionId,
-      ])
+  /**
+   * Updates the poll options based on the user's vote.
+   * @param pollId
+   * @param voterId
+   * @param optionIds
+   */
+  async vote(pollId: number, voterId: number, optionIds: number[]) {
+    // validate optionIds
+    if (optionIds.some((id) => !Number.isInteger(id) || id < 0 || id > 31)) {
+      throw new Error('Invalid options')
+    }
 
-      await connection.query(`UPDATE polls SET opt${optionId} = opt${optionId} + 1 WHERE poll_id = ?`, [pollId])
+    return await this.db.inTransaction(async (connection) => {
+      // select for update, needed to lock the row
+      await connection.fetchOne('SELECT * FROM polls WHERE poll_id = :pollId FOR UPDATE', { pollId })
+
+      // find existing votes
+      const existingVotes = (
+        await connection.fetchAll<{ option_id: number }>(
+          'SELECT option_id FROM poll_votes WHERE poll_id = :pollId AND voter_id = :voterId',
+          { pollId, voterId },
+        )
+      ).map((vote) => vote.option_id)
+
+      const newVotes = optionIds.filter((id) => !existingVotes.includes(id))
+      const toRemove = existingVotes.filter((id) => !optionIds.includes(id))
+
+      await this.updatePollOptionsBatch(
+        connection,
+        pollId,
+        new Map<number, number>([
+          ...newVotes.map((id): [number, number] => [id, 1]),
+          ...toRemove.map((id): [number, number] => [id, -1]), // Decrement for removed votes
+        ]),
+      )
+
+      if (toRemove.length > 0) {
+        // Remove votes for options that are no longer selected
+        await connection.query(
+          'DELETE FROM poll_votes WHERE poll_id = :pollId AND voter_id = :voterId AND option_id IN (:toRemove)',
+          { pollId, voterId, toRemove },
+        )
+      }
+      await this.insertVotesBatch(newVotes, pollId, voterId, connection)
     })
   }
 
-  async removeVotes(pollId: number, voterId: number, previousVotes: number[]) {
-    return await this.db.inTransaction(async (connection) => {
-      await connection.query('DELETE FROM poll_votes WHERE poll_id = ? AND voter_id = ?', [pollId, voterId])
+  private async insertVotesBatch(newVotes: number[], pollId: number, voterId: number, connection: DBConnection) {
+    if (newVotes.length > 0) {
+      // parameterized query for batch inserts
+      const placeholders = newVotes.map(() => '(?, ?, ?)').join(', ')
+      const params = []
 
-      for (const optionId of previousVotes) {
-        await this.db.query(`UPDATE polls SET opt${optionId} = opt${optionId} - 1 WHERE poll_id = ?`, [pollId])
-      }
-    })
+      // Flatten the parameters for each row
+      newVotes.forEach((optionId) => {
+        params.push(pollId, voterId, optionId)
+      })
+
+      await connection.query(`INSERT INTO poll_votes (poll_id, voter_id, option_id) VALUES ${placeholders}`, params)
+    }
+  }
+
+  /**
+   * Updates multiple poll options in a single query
+   * @param connection - Database connection to use
+   * @param pollId - The poll ID
+   * @param optionChanges - Map of option IDs to their delta values (can be positive or negative)
+   */
+  private async updatePollOptionsBatch(
+    connection: DBConnection,
+    pollId: number,
+    optionChanges: Map<number, number>,
+  ): Promise<void> {
+    if (optionChanges.size === 0) return
+
+    const setClauses: string[] = []
+    const params: number[] = []
+
+    // Build SET statements for all options in one query
+    for (const [optionId, delta] of optionChanges) {
+      setClauses.push(`opt${optionId} = opt${optionId} + ?`)
+      params.push(delta)
+    }
+
+    params.push(pollId)
+    await connection.query(`UPDATE polls SET ${setClauses.join(', ')} WHERE poll_id = ?`, params)
   }
 
   async getVoters(pollId: number, optionId: number): Promise<UserBaseEntity[]> {

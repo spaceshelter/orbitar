@@ -70,10 +70,6 @@ export default class PollManager {
       throw new Error('Poll not found')
     }
 
-    if (polls.length > 1) {
-      throw new Error('Multiple polls found')
-    }
-
     const poll = polls[0]
     if (poll.expires_at && new Date(poll.expires_at) < new Date()) {
       throw new Error('Poll has expired')
@@ -84,28 +80,16 @@ export default class PollManager {
       throw new Error('Multiple choice not allowed')
     }
 
-    if (optionIds.length === 0) {
-      if (!settings.allow_vote_rescinding) {
-        throw new Error('Vote rescinding not allowed')
-      }
-
-      await this.pollRepository.removeVotes(pollId, voterId, poll.user_vote || [])
-      return 'rescinded'
-    } else {
-      if (optionIds.some((id) => id < 0 || id >= poll.options.length)) {
-        throw new Error('Invalid option ID')
-      }
-
-      const previousVotes = poll.user_vote || []
-      if (previousVotes.length > 0 && !settings.allow_multiple_choice) {
-        throw new Error('Multiple choice not allowed')
-      }
-
-      for (const optionId of optionIds) {
-        await this.pollRepository.vote(pollId, voterId, optionId)
-      }
-      return 'voted'
+    if (optionIds.length === 0 && !settings.allow_vote_rescinding) {
+      throw new Error('Vote rescinding not allowed')
     }
+
+    if (optionIds.some((id) => id < 0 || id >= poll.options.length)) {
+      throw new Error('Invalid option ID')
+    }
+    await this.pollRepository.vote(pollId, voterId, optionIds)
+
+    return 'voted'
   }
 
   async getVoters(pollId: number, optionId: number): Promise<UserBaseInfo[]> {
