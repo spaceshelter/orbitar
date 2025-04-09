@@ -28,7 +28,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const hasUserVoted = (poll?.userVoted ?? []).length > 0
-  const isPollExpired = poll?.settings.expiresAt && new Date(poll.settings.expiresAt) < new Date()
+  const isPollExpired = poll?.settings.expiresAt && poll.settings.expiresAt < new Date()
 
   const fetchPoll = useCallback(async () => {
     setLoading(true)
@@ -185,7 +185,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
       return (
         <div className={styles.expiration}>
           <span>Окончание: </span>
-          <DateComponent date={new Date(poll.settings.expiresAt)} />
+          <DateComponent date={poll.settings.expiresAt} />
         </div>
       )
     }

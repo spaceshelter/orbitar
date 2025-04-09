@@ -12,8 +12,8 @@ export interface PollEntity {
     multiple_choice?: boolean
     hide_results?: boolean
   }
-  expires_at: string | null
-  created_at: string
+  expires_at?: Date
+  created_at?: Date
   total_votes: number
   user_vote?: number[]
 }

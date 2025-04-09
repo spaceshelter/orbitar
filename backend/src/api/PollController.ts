@@ -3,7 +3,7 @@ import rateLimit from 'express-rate-limit'
 import Joi from 'joi'
 import { Logger } from 'winston'
 
-import PollManager from '../managers/PollManager'
+import PollManager, { IncludePollVotes } from '../managers/PollManager'
 import UserManager from '../managers/UserManager'
 import { APIRequest, APIResponse, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
@@ -134,7 +134,7 @@ export default class PollController {
     const uniqueIds = [...new Set(ids)]
 
     try {
-      const polls = await this.pollManager.getPollsByIds(uniqueIds, userId)
+      const polls = await this.pollManager.getPollsByIds(uniqueIds, userId, IncludePollVotes.AUTO)
       response.success({ polls })
     } catch (err) {
       this.logger.error('Get polls batch error', { error: err, poll_ids: ids })

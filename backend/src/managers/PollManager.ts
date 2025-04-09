@@ -3,6 +3,12 @@ import PollRepository from '../db/repositories/PollRepository'
 import { PollRaw } from '../db/types/PollRaw'
 import { UserBaseInfo } from './types/UserInfo'
 
+export enum IncludePollVotes {
+  YES = 'yes',
+  NO = 'no',
+  AUTO = 'auto',
+}
+
 export default class PollManager {
   private pollRepository: PollRepository
 
@@ -26,19 +32,27 @@ export default class PollManager {
     return pollId
   }
 
-  enrichPoll(poll: PollRaw, userVotes?: number[]): PollEntity {
+  enrichPoll(poll: PollRaw, includeVotes = true, userVotes?: number[]): PollEntity {
     return {
-      ...poll,
+      poll_id: poll.poll_id,
+      author_id: poll.author_id,
+      question: poll.question,
+      settings: poll.settings,
+      expires_at: poll.expires_at,
+      created_at: poll.created_at,
       options: poll.options.map((text: string, index: number) => ({
         text,
-        votes: poll[`opt${index}`] || 0,
+        votes: (includeVotes && poll[`opt${index}`]) || 0,
       })),
-      total_votes: Array.from({ length: 32 }, (_, i) => poll[`opt${i}`] || 0).reduce((sum, count) => sum + count, 0),
+      total_votes:
+        (includeVotes &&
+          Array.from({ length: 32 }, (_, i) => poll[`opt${i}`] || 0).reduce((sum, count) => sum + count, 0)) ||
+        0,
       user_vote: userVotes,
     }
   }
 
-  async getPollsByIds(ids: number[], userId?: number): Promise<PollEntity[]> {
+  async getPollsByIds(ids: number[], userId?: number, includeVotes = IncludePollVotes.NO): Promise<PollEntity[]> {
     const polls = await this.pollRepository.getPollsByIds(ids)
 
     const userVotes = new Map<number, number[]>()
@@ -53,17 +67,26 @@ export default class PollManager {
     }
 
     return polls.map((poll) => {
-      return this.enrichPoll(poll, userId && userVotes.get(poll.poll_id))
+      const userVotesForPoll = (userId && userVotes.get(poll.poll_id)) || []
+
+      const includeVotesForPoll =
+        includeVotes === IncludePollVotes.YES ||
+        (includeVotes === IncludePollVotes.AUTO &&
+          (poll.settings.result_visibility === 'always' ||
+            (poll.settings.result_visibility === 'after_vote' && userVotesForPoll.length > 0) ||
+            (poll.settings.result_visibility === 'after_vote_end' &&
+              (!poll.expires_at || new Date(poll.expires_at) < new Date()))))
+
+      return this.enrichPoll(poll, includeVotesForPoll, userVotesForPoll)
     })
   }
 
   async vote(pollId: number, voterId: number, optionIds: number[]): Promise<string> {
-    const polls = await this.getPollsByIds([pollId], voterId)
-    if (!polls.length) {
+    const [poll] = await this.getPollsByIds([pollId])
+    if (!poll) {
       throw new Error('Poll not found')
     }
 
-    const poll = polls[0]
     if (poll.expires_at && new Date(poll.expires_at) < new Date()) {
       throw new Error('Poll has expired')
     }
@@ -90,12 +113,11 @@ export default class PollManager {
       throw new Error('Invalid option ID')
     }
 
-    const polls = await this.getPollsByIds([pollId])
-    if (!polls.length) {
+    const [poll] = await this.getPollsByIds([pollId])
+    if (!poll) {
       throw new Error('Poll not found')
     }
 
-    const poll = polls[0]
     if (
       poll.settings.result_visibility === 'after_vote_end' &&
       poll.expires_at &&

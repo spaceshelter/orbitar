@@ -433,7 +433,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
           vote_access: pollData.settings.voteAccess,
         },
         expires_at: pollData.settings.expirationDays
-          ? moment().add(pollData.settings.expirationDays, 'days').format('YYYY-MM-DD HH:mm:ss')
+          ? moment().add(pollData.settings.expirationDays, 'days').toDate()
           : undefined,
       })
       const pollTag = `<poll>${result.pollId}</poll>`

@@ -6,8 +6,8 @@ export interface PollRaw {
   question: string
   options: string[]
   settings: PollSettingsEntity
-  expires_at: string | null
-  created_at: string
+  expires_at?: Date
+  created_at: Date
   [key: `opt${number}`]: number
 }
 
