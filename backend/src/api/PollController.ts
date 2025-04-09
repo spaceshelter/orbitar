@@ -7,17 +7,16 @@ import PollManager, { IncludePollVotes } from '../managers/PollManager'
 import UserManager from '../managers/UserManager'
 import { APIRequest, APIResponse, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
-import { PollEntity } from './types/entities/PollEntity'
-import { PollCreateRequest, PollCreateResponse } from './types/requests/PollCreate'
-import { PollVoteRequest, PollVoteResponse, PollVotersRequest, PollVotersResponse } from './types/requests/PollVote'
-
-export interface PollBatchRequest {
-  ids: number[]
-}
-
-export interface PollBatchResponse {
-  polls: PollEntity[]
-}
+import {
+  PollBatchRequest,
+  PollBatchResponse,
+  PollCreateRequest,
+  PollCreateResponse,
+  PollVoteRequest,
+  PollVoteResponse,
+  PollVotersRequest,
+  PollVotersResponse,
+} from './types/requests/Poll'
 
 const MAX_VOTES_PER_MINUTE = 30
 const MAX_POLLS_PER_MINUTE = 10
