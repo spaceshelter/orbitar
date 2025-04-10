@@ -56,26 +56,26 @@ export default class PollController {
       question: Joi.string().required().max(1000),
       options: Joi.array().items(Joi.string().min(1).max(64)).min(2).max(32).required(),
       settings: Joi.object({
-        allow_multiple_choice: Joi.boolean(),
-        result_visibility: Joi.string().valid('always', 'after_vote', 'after_vote_end'),
-        allow_vote_rescinding: Joi.boolean(),
-        vote_access: Joi.string().valid('everybody', 'users_with_full_rights'),
+        allowMultipleChoice: Joi.boolean(),
+        resultVisibility: Joi.string().valid('always', 'afterVote', 'afterVoteEnd'),
+        allowVoteRescinding: Joi.boolean(),
+        voteAccess: Joi.string().valid('everybody', 'usersWithFullRights'),
       }),
       expires: Joi.date().greater('now'),
     })
 
     const batchSchema = Joi.object<PollBatchRequest>({
-      ids: Joi.array().items(Joi.number().integer()).min(1).max(256).required(),
+      ids: Joi.array().items(Joi.string()).min(1).max(256).required(),
     })
 
     const voteSchema = Joi.object<PollVoteRequest>({
-      pollId: Joi.number().integer().required(),
+      pollId: Joi.string().required(),
       optionIds: Joi.array().items(Joi.number().integer().min(0).max(31)).min(0).max(32).required(),
     })
 
     const votersSchema = Joi.object<PollVotersRequest>({
-      pollId: Joi.number().integer().required(),
-      optionId: Joi.number().integer().required(),
+      pollId: Joi.string().required(),
+      optionId: Joi.string().required(),
     })
 
     this.router.post(

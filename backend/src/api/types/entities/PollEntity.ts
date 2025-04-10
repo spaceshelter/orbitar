@@ -13,8 +13,8 @@ export interface PollOptionEntity {
 }
 
 export interface PollEntity {
-  id: number
-  author: number
+  id: string
+  author: string
   question: string
   options: PollOptionEntity[]
   settings: PollSettingsEntity
@@ -25,9 +25,9 @@ export interface PollEntity {
 }
 
 export interface PollVoteEntity {
-  voteId: number
-  pollId: number
-  voterId: number
-  optionId: number
-  votedAt: string
+  voteId: string
+  pollId: string
+  voterId: string
+  optionId: string
+  voted: string
 }

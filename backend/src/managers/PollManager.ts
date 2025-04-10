@@ -49,8 +49,8 @@ export default class PollManager {
 
   enrichPoll(poll: PollRaw, includeVotes = true, userVotes?: number[]): PollInfo {
     return {
-      id: poll.poll_id,
-      author: poll.author_id,
+      id: String(poll.poll_id),
+      author: String(poll.author_id),
       question: poll.question,
       settings: {
         allowMultipleChoice: poll.settings.allow_multiple_choice,

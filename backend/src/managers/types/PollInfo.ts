@@ -14,8 +14,8 @@ export interface PollOptionInfo {
 }
 
 export interface PollInfo {
-  id: number
-  author: number
+  id: string
+  author: string
   question: string
   options: PollOptionInfo[]
   settings: PollSettingsInfo
