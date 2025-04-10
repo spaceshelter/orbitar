@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 
 import DateComponent from '@components/DateComponent'
+import { VotersTooltip } from '@components/Poll/VotersList'
 import { useAPI, useAppState } from '@state/AppState'
 import Button from '@ui/Button'
 import Checkbox from '@ui/Checkbox'
@@ -9,7 +10,6 @@ import { pluralize } from '@utils/utils'
 import { toast } from 'react-toastify'
 
 import { PollEntity } from '../../API/types/Poll'
-import { VotersTooltip } from './VotersList'
 
 import styles from './Poll.module.css'
 
@@ -17,7 +17,7 @@ interface PollProps {
   pollId: string
 }
 
-export const Poll: React.FC<PollProps> = ({ pollId }) => {
+export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
   const api = useAPI()
   const [poll, setPoll] = useState<PollEntity | null>(null)
   const [loading, setLoading] = useState(true)

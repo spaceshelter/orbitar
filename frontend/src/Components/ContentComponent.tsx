@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 
+import { PollComponent } from '@components/Poll/PollComponent'
 import type * as Vimeo from '@vimeo/player'
 import classNames from 'classnames'
 import { reaction } from 'mobx'
@@ -14,7 +15,6 @@ import { observeOnHidden } from '../Services/ObserverService'
 import { b64DecodeUnicode } from '../Utils/utils'
 import InternalLinkExpandComponent from './InternalLinkExpandComponent'
 import { OAuthEmbeddedAppComponent } from './OAuth2AppCardModalComponent'
-import { Poll } from './Poll/Poll'
 import { SecretMailDecoderForm, SecretMailEncoderForm } from './SecretMailbox'
 import { getLegacyZoom, getVideoAutopause } from './UserProfileSettings'
 
@@ -642,7 +642,7 @@ function updatePoll(pollEl: HTMLDivElement, appState: AppState, cleanupRegistry:
   if (!pollId) {
     return
   }
-  cleanupRegistry.register(renderWithTheme(pollEl, <Poll pollId={pollId} />, appState))
+  cleanupRegistry.register(renderWithTheme(pollEl, <PollComponent pollId={pollId} />, appState))
 }
 
 export default function ContentComponent(props: ContentComponentProps) {
