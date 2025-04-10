@@ -61,7 +61,7 @@ export default class PollController {
         allow_vote_rescinding: Joi.boolean(),
         vote_access: Joi.string().valid('everybody', 'users_with_full_rights'),
       }),
-      expires_at: Joi.date().greater('now'),
+      expires: Joi.date().greater('now'),
     })
 
     const batchSchema = Joi.object<PollBatchRequest>({
@@ -69,13 +69,13 @@ export default class PollController {
     })
 
     const voteSchema = Joi.object<PollVoteRequest>({
-      poll_id: Joi.number().integer().required(),
-      option_ids: Joi.array().items(Joi.number().integer().min(0).max(31)).min(0).max(32).required(),
+      pollId: Joi.number().integer().required(),
+      optionIds: Joi.array().items(Joi.number().integer().min(0).max(31)).min(0).max(32).required(),
     })
 
     const votersSchema = Joi.object<PollVotersRequest>({
-      poll_id: Joi.number().integer().required(),
-      option_id: Joi.number().integer().required(),
+      pollId: Joi.number().integer().required(),
+      optionId: Joi.number().integer().required(),
     })
 
     this.router.post(
@@ -101,7 +101,7 @@ export default class PollController {
     }
 
     const userId = request.session.data.userId
-    const { question, options, settings, expires_at } = request.body
+    const { question, options, settings, expires } = request.body
 
     try {
       const restrictions = await this.userManager.getUserRestrictions(userId)
@@ -109,11 +109,11 @@ export default class PollController {
         return response.error('permission-denied', 'You do not have permission to create polls', 403)
       }
 
-      if (settings.allow_vote_rescinding && settings.result_visibility === 'after_vote') {
+      if (settings.allowVoteRescinding && settings.resultVisibility === 'afterVote') {
         return response.error('invalid-settings', 'after_vote result visibility is not allowed with rescind vote', 400)
       }
 
-      if (!expires_at && settings.result_visibility === 'after_vote_end') {
+      if (!expires && settings.resultVisibility === 'afterVoteEnd') {
         return response.error('invalid-settings', 'after_vote_end result visibility requires expiration date', 400)
       }
 
@@ -122,7 +122,7 @@ export default class PollController {
         question,
         options,
         settings,
-        expires_at ? new Date(expires_at) : null,
+        expires ? new Date(expires) : null,
       )
 
       this.logger.info(`User #${userId} created poll #${pollId}`, {
@@ -130,7 +130,7 @@ export default class PollController {
         poll_id: pollId,
       })
 
-      response.success({ pollId })
+      response.success({ id: pollId })
     } catch (err) {
       if (err instanceof PollError) {
         return response.error(err.code, err.message, err.status)
@@ -165,7 +165,7 @@ export default class PollController {
       return response.authRequired()
     }
 
-    const { poll_id, option_ids } = request.body
+    const { pollId, optionIds } = request.body
 
     try {
       const restrictions = await this.userManager.getUserRestrictions(userId)
@@ -173,12 +173,12 @@ export default class PollController {
         return response.error('cant-vote', 'Voting is disabled', 403)
       }
 
-      const status = (await this.pollManager.vote(poll_id, userId, option_ids)) as 'voted' | 'rescinded'
+      const status = (await this.pollManager.vote(pollId, userId, optionIds)) as 'voted' | 'rescinded'
 
-      this.logger.info(`User #${userId} ${status} in poll #${poll_id}`, {
-        user_id: userId,
+      this.logger.info(`User #${userId} ${status} in poll #${pollId}`, {
+        userId,
         status,
-        poll_id,
+        pollId,
       })
 
       response.success({ result: status })
@@ -187,27 +187,27 @@ export default class PollController {
         return response.error(err.code, err.message, err.status)
       }
 
-      this.logger.error('Vote error', { error: err, user_id: userId, poll_id })
+      this.logger.error('Vote error', { error: err, user_id: userId, pollId })
       return response.error('error', 'Unknown error', 500)
     }
   }
 
   async getVoters(request: APIRequest<PollVotersRequest>, response: APIResponse<PollVotersResponse>) {
-    const { poll_id, option_id } = request.body
+    const { pollId, optionId } = request.body
     const userId = request.session.data.userId
     if (!userId) {
       return response.authRequired()
     }
 
     try {
-      const voters = await this.pollManager.getVoters(poll_id, option_id)
+      const voters = await this.pollManager.getVoters(pollId, optionId)
       response.success({ voters })
     } catch (err) {
       if (err instanceof PollError) {
         return response.error(err.code, err.message, err.status)
       }
 
-      this.logger.error('Get voters error', { error: err, user_id: userId, poll_id })
+      this.logger.error('Get voters error', { error: err, userId, pollId })
       return response.error('error', 'Unknown error', 500)
     }
   }

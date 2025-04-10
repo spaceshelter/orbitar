@@ -2,20 +2,19 @@ import { UserBaseInfo } from '../../../managers/types/UserInfo'
 import { PollEntity, PollSettingsEntity } from '../entities/PollEntity'
 
 export interface PollCreateRequest {
-  site: string
   question: string
   options: string[]
   settings?: PollSettingsEntity
-  expires_at?: string
+  expires?: string
 }
 
 export interface PollCreateResponse {
-  pollId: number
+  id: number
 }
 
 export interface PollVoteRequest {
-  poll_id: number
-  option_ids: number[]
+  pollId: number
+  optionIds: number[]
 }
 
 export interface PollVoteResponse {
@@ -23,8 +22,8 @@ export interface PollVoteResponse {
 }
 
 export interface PollVotersRequest {
-  poll_id: number
-  option_id: number
+  pollId: number
+  optionId: number
 }
 
 export interface PollVotersResponse {

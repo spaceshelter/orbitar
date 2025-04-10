@@ -1,6 +1,6 @@
-import { PollEntity, PollSettingsEntity } from '../api/types/entities/PollEntity'
 import PollRepository from '../db/repositories/PollRepository'
-import { PollRaw } from '../db/types/PollRaw'
+import { PollRaw, ResultVisibilityRaw, VoteAccessRaw } from '../db/types/PollRaw'
+import { PollInfo, PollSettingsInfo, ResultVisibilityInfo, VoteAccessInfo } from './types/PollInfo'
 import { UserBaseInfo } from './types/UserInfo'
 import UserManager from './UserManager'
 
@@ -35,7 +35,7 @@ export default class PollManager {
     authorId: number,
     question: string,
     options: string[],
-    settings: PollSettingsEntity,
+    settings: PollSettingsInfo,
     expiresAt?: Date,
   ): Promise<number> {
     if (options.length < 2 || options.length > 32) {
@@ -47,27 +47,32 @@ export default class PollManager {
     return pollId
   }
 
-  enrichPoll(poll: PollRaw, includeVotes = true, userVotes?: number[]): PollEntity {
+  enrichPoll(poll: PollRaw, includeVotes = true, userVotes?: number[]): PollInfo {
     return {
-      poll_id: poll.poll_id,
-      author_id: poll.author_id,
+      id: poll.poll_id,
+      author: poll.author_id,
       question: poll.question,
-      settings: poll.settings,
-      expires_at: poll.expires_at,
-      created_at: poll.created_at,
+      settings: {
+        allowMultipleChoice: poll.settings.allow_multiple_choice,
+        resultVisibility: this.convertResultVisibility(poll.settings.result_visibility),
+        allowVoteRescinding: poll.settings.allow_vote_rescinding,
+        voteAccess: this.convertVoteAccess(poll.settings.vote_access),
+      },
+      expires: poll.expires_at,
+      created: poll.created_at,
       options: poll.options.map((text: string, index: number) => ({
         text,
         votes: (includeVotes && poll[`opt${index}`]) || 0,
       })),
-      total_votes:
+      totalVotes:
         (includeVotes &&
           Array.from({ length: 32 }, (_, i) => poll[`opt${i}`] || 0).reduce((sum, count) => sum + count, 0)) ||
         0,
-      user_vote: userVotes,
+      userVotes: userVotes,
     }
   }
 
-  async getPollsByIds(ids: number[], userId?: number, includeVotes = IncludePollVotes.NO): Promise<PollEntity[]> {
+  async getPollsByIds(ids: number[], userId?: number, includeVotes = IncludePollVotes.NO): Promise<PollInfo[]> {
     const polls = await this.pollRepository.getPollsByIds(ids)
 
     const userVotes = new Map<number, number[]>()
@@ -102,16 +107,16 @@ export default class PollManager {
       throw new PollError('not-found', 'Poll not found', 404)
     }
 
-    if (poll.expires_at && new Date(poll.expires_at) < new Date()) {
+    if (poll.expires && new Date(poll.expires) < new Date()) {
       throw new PollError('expired', 'Poll has expired', 403)
     }
 
     const settings = poll.settings
-    if (!settings.allow_multiple_choice && optionIds.length > 1) {
+    if (!settings.allowMultipleChoice && optionIds.length > 1) {
       throw new PollError('multiple-choice-not-allowed', 'Multiple choice not allowed', 400)
     }
 
-    if (optionIds.length === 0 && !settings.allow_vote_rescinding) {
+    if (optionIds.length === 0 && !settings.allowVoteRescinding) {
       throw new PollError('rescind-not-allowed', 'Vote rescinding not allowed', 400)
     }
 
@@ -120,7 +125,7 @@ export default class PollManager {
     }
 
     if (
-      settings.vote_access === 'users_with_full_rights' &&
+      settings.voteAccess === 'usersWithFullRights' &&
       !(await this.userManager.getUserRestrictions(voterId)).canVoteKarma /*proxy for full rights*/
     ) {
       throw new PollError('permission-denied', 'You do not have permission to vote', 403)
@@ -141,14 +146,30 @@ export default class PollManager {
       throw new PollError('not-found', 'Poll not found', 404)
     }
 
-    if (
-      poll.settings.result_visibility === 'after_vote_end' &&
-      poll.expires_at &&
-      new Date(poll.expires_at) > new Date()
-    ) {
+    if (poll.settings.resultVisibility === 'afterVoteEnd' && poll.expires && new Date(poll.expires) > new Date()) {
       throw new PollError('poll-active', 'Poll has not ended yet', 403)
     }
 
     return await this.pollRepository.getVoters(pollId, optionId)
+  }
+
+  private convertResultVisibility(value: ResultVisibilityRaw): ResultVisibilityInfo {
+    switch (value) {
+      case 'always':
+        return 'always'
+      case 'after_vote':
+        return 'afterVote'
+      case 'after_vote_end':
+        return 'afterVoteEnd'
+    }
+  }
+
+  private convertVoteAccess(value: VoteAccessRaw): VoteAccessInfo {
+    switch (value) {
+      case 'everybody':
+        return 'everybody'
+      case 'users_with_full_rights':
+        return 'usersWithFullRights'
+    }
   }
 }
