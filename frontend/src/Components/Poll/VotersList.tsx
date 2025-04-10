@@ -2,14 +2,13 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 import Username from '@components/Username'
 import { UserBaseInfo } from '@entities/UserInfo'
-import PollService from '@services/PollService'
 import { useAPI } from '@state/AppState'
 import { pluralize } from '@utils/utils'
 import { createPortal } from 'react-dom'
 
 import styles from './VotersList.module.css'
 
-export const VotersTooltip: React.FC<{ pollId: string; optionId: number; votesCount: number }> = ({
+export const VotersTooltip: React.FC<{ pollId: string; optionId: string; votesCount: number }> = ({
   pollId,
   optionId,
   votesCount,
@@ -20,16 +19,15 @@ export const VotersTooltip: React.FC<{ pollId: string; optionId: number; votesCo
   const containerRef = useRef<HTMLDivElement>(null)
 
   const api = useAPI()
-  const pollService = PollService(api.pollAPI)
 
   const fetchVoters = useCallback(async () => {
     try {
-      const votersData = await pollService.getVoters(pollId, optionId)
-      setVoters(votersData)
+      const votersData = await api.pollAPI.getVoters({ pollId, optionId })
+      setVoters(votersData.voters)
     } catch (err) {
       console.error('Не удалось загрузить список голосовавших', err)
     }
-  }, [pollId, optionId, pollService])
+  }, [pollId, optionId, api.pollAPI])
 
   useEffect(() => {
     if (!showTooltip || !tooltipRef.current || !containerRef.current || votesCount === 0) {

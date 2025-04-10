@@ -8,8 +8,7 @@ import Radio from '@ui/Radio'
 import { pluralize } from '@utils/utils'
 import { toast } from 'react-toastify'
 
-import PollService from '../../Services/PollService'
-import { Poll as PollType } from '../../Types/Poll'
+import { PollEntity } from '../../API/types/Poll'
 import { VotersTooltip } from './VotersList'
 
 import styles from './Poll.module.css'
@@ -20,47 +19,46 @@ interface PollProps {
 
 export const Poll: React.FC<PollProps> = ({ pollId }) => {
   const api = useAPI()
-  const pollService = PollService(api.pollAPI)
-  const [poll, setPoll] = useState<PollType | null>(null)
+  const [poll, setPoll] = useState<PollEntity | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedOptions, setSelectedOptions] = useState<number[]>([])
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { userRestrictions } = useAppState()
 
-  const hasUserVoted = (poll?.userVoted ?? []).length > 0
-  const isPollExpired = poll?.settings.expiresAt && poll.settings.expiresAt < new Date()
-  const allowedToVote = poll?.settings.voteAccess !== 'users_with_full_rights' || userRestrictions?.canVoteKarma
+  const hasUserVoted = (poll?.userVotes ?? []).length > 0
+  const isPollExpired = poll?.expires && poll.expires < new Date()
+  const allowedToVote = poll?.settings.voteAccess !== 'usersWithFullRights' || userRestrictions?.canVoteKarma
 
   const fetchPoll = useCallback(async () => {
     setLoading(true)
     setError(null)
 
     try {
-      const pollData = await pollService.getPoll(pollId)
-      setPoll(pollData)
-      setSelectedOptions(pollData.userVoted || [])
+      const pollData = await api.pollAPI.getPollsBatch({ ids: [pollId] })
+      setPoll(pollData.polls[0])
+      setSelectedOptions(pollData.polls[0].userVotes || [])
     } catch (err) {
       setError('Не удалось загрузить опрос')
     } finally {
       setLoading(false)
     }
-  }, [pollId, pollService])
+  }, [pollId, api.pollAPI])
 
   useEffect(() => {
     fetchPoll()
   }, [fetchPoll])
 
   useEffect(() => {
-    if (poll?.settings.voteAccess === 'users_with_full_rights' && !userRestrictions) {
+    if (poll?.settings.voteAccess === 'usersWithFullRights' && !userRestrictions) {
       api.user.refreshUserRestrictions()
     }
-  }, [userRestrictions])
+  }, [userRestrictions, api.user, poll?.settings.voteAccess])
 
-  const handleOptionSelect = (optionId: number) => {
+  const handleOptionSelect = (optionId: string) => {
     if (!poll || isPollExpired || hasUserVoted) return
 
-    const isMultipleVotesAllowed = poll.settings.allowMultipleVotes
+    const isMultipleVotesAllowed = poll.settings.allowMultipleChoice
     setSelectedOptions((prev) => {
       if (isMultipleVotesAllowed) {
         return prev.includes(optionId) ? prev.filter((id) => id !== optionId) : [...prev, optionId]
@@ -75,13 +73,13 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
 
     setIsSubmitting(true)
     try {
-      const response = await pollService.vote({
-        poll_id: Number(pollId),
-        option_ids: selectedOptions.map(Number),
+      const response = await api.pollAPI.vote({
+        pollId,
+        optionIds: selectedOptions,
       })
       if (response) {
-        const updatedPoll = await pollService.getPoll(pollId)
-        setPoll(updatedPoll)
+        const updatedPoll = await api.pollAPI.getPollsBatch({ ids: [pollId] })
+        setPoll(updatedPoll.polls[0])
       }
     } catch (err) {
       toast.error(`Не удалось проголосовать${err instanceof Error ? `: ${err.message}` : ''}`)
@@ -94,9 +92,9 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
     if (!poll || !poll.settings.allowVoteRescinding || isPollExpired) return
 
     try {
-      await pollService.vote({ poll_id: Number(pollId), option_ids: [] })
-      const updatedPoll = await pollService.getPoll(pollId)
-      setPoll(updatedPoll)
+      await api.pollAPI.vote({ pollId, optionIds: [] })
+      const updatedPoll = await api.pollAPI.getPollsBatch({ ids: [pollId] })
+      setPoll(updatedPoll.polls[0])
       setSelectedOptions([])
     } catch (err) {
       toast.error(`Не удалось отменить голос${err instanceof Error ? `: ${err.message}` : ''}`)
@@ -115,16 +113,16 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
   if (!poll) return null
 
   const renderOptions = () => {
-    const isMultipleVotesAllowed = poll?.settings.allowMultipleVotes
-    const hasAnyVotes = (poll?.userVoted ?? []).length > 0
+    const isMultipleVotesAllowed = poll?.settings.allowMultipleChoice
+    const hasAnyVotes = (poll?.userVotes ?? []).length > 0
 
     const canShowResults = (() => {
       switch (poll?.settings.resultVisibility) {
         case 'always':
           return true
-        case 'after_vote':
+        case 'afterVote':
           return hasUserVoted
-        case 'after_vote_end':
+        case 'afterVoteEnd':
           return hasUserVoted && isPollExpired
         default:
           return false
@@ -132,31 +130,32 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
     })()
 
     return poll.options.map((option, idx) => {
+      const optionId = String(idx)
       const percentage = calculatePercentage(option.votes)
-      const isSelected = allowedToVote && selectedOptions.includes(idx)
+      const isSelected = allowedToVote && selectedOptions.includes(optionId)
       const isDisabled = isPollExpired || hasUserVoted || (!isMultipleVotesAllowed && hasAnyVotes) || !allowedToVote
 
       return (
         <div
-          key={`${idx}-${poll.id}`}
+          key={`${optionId}-${poll.id}`}
           className={[styles.option, isSelected && styles.selected, isDisabled && styles.disabled]
             .filter(Boolean)
             .join(' ')}
           style={{ cursor: isDisabled ? 'default' : 'pointer' }}
-          onClick={() => handleOptionSelect(idx)}
+          onClick={() => handleOptionSelect(optionId)}
         >
           <div className={styles.optionContent}>
             <div className={styles.optionSelect}>
               {isMultipleVotesAllowed ? (
                 <Checkbox
-                  id={`poll-option-${idx}-${poll.id}`}
+                  id={`poll-option-${optionId}-${poll.id}`}
                   checked={isSelected}
                   disabled={isDisabled}
                   onChange={() => {}}
                 />
               ) : (
                 <Radio
-                  id={`poll-option-${idx}-${poll.id}`}
+                  id={`poll-option-${optionId}-${poll.id}`}
                   checked={isSelected}
                   disabled={isDisabled}
                   name={`poll-option-${poll.id}`}
@@ -169,7 +168,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
               <>
                 <div className={styles.votesContainer}>
                   <span className={styles.votes}>
-                    <VotersTooltip pollId={poll.id} optionId={idx} votesCount={option.votes} />
+                    <VotersTooltip pollId={poll.id} optionId={optionId} votesCount={option.votes} />
                   </span>
                 </div>
                 <div className={styles.results}>
@@ -189,11 +188,11 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
       return null
     }
 
-    if (poll.settings.expiresAt) {
+    if (poll.expires) {
       return (
         <div className={styles.expiration}>
           <span>Окончание: </span>
-          <DateComponent date={poll.settings.expiresAt} />
+          <DateComponent date={poll.expires} />
         </div>
       )
     }

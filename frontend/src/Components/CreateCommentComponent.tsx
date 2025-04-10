@@ -427,16 +427,16 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         question: pollData.question,
         options: pollData.options.map((opt: any) => opt.text),
         settings: {
-          allow_multiple_choice: pollData.settings.isMultipleChoice,
-          result_visibility: pollData.settings.resultVisibility,
-          allow_vote_rescinding: pollData.settings.allowVoteRescinding,
-          vote_access: pollData.settings.voteAccess,
+          allowMultipleChoice: pollData.settings.isMultipleChoice,
+          resultVisibility: pollData.settings.resultVisibility,
+          allowVoteRescinding: pollData.settings.allowVoteRescinding,
+          voteAccess: pollData.settings.voteAccess,
         },
-        expires_at: pollData.settings.expirationDays
+        expires: pollData.settings.expirationDays
           ? moment().add(pollData.settings.expirationDays, 'days').toDate()
           : undefined,
       })
-      const pollTag = `<poll>${result.pollId}</poll>`
+      const pollTag = `<poll>${result.id}</poll>`
       replaceText(pollTag, pollTag.length)
       setPollWizardOpen(false)
     } catch (error: unknown) {
