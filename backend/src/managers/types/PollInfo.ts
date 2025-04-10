@@ -23,5 +23,5 @@ export interface PollInfo {
   created: Date
   [key: `opt${number}`]: number
   totalVotes: number
-  userVotes?: number[]
+  userVotes?: string[]
 }

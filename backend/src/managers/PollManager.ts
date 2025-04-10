@@ -68,7 +68,7 @@ export default class PollManager {
         (includeVotes &&
           Array.from({ length: 32 }, (_, i) => poll[`opt${i}`] || 0).reduce((sum, count) => sum + count, 0)) ||
         0,
-      userVotes: userVotes,
+      userVotes: userVotes?.map(String),
     }
   }
 

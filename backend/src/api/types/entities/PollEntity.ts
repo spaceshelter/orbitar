@@ -21,7 +21,7 @@ export interface PollEntity {
   expires?: Date
   created?: Date
   totalVotes: number
-  userVotes?: number[]
+  userVotes?: string[]
 }
 
 export interface PollVoteEntity {
