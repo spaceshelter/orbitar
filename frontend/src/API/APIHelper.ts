@@ -9,6 +9,7 @@ import NotificationsAPI from './NotificationsAPI'
 import NotificationsAPIHelper from './NotificationsAPIHelper'
 import OAuth2Api from './OAuth2Api'
 import PollAPI from './PollAPI'
+import PollAPIHelper from './PollAPIHelper'
 import PostAPI from './PostAPI'
 import PostAPIHelper from './PostAPIHelper'
 import SearchApi from './SearchApi'
@@ -36,6 +37,7 @@ export default class APIHelper {
   searchApi: SearchApi
   oauth2Api: OAuth2Api
   pollAPI: PollAPI
+  poll: PollAPIHelper
   private baseAPI: APIBase
   private initRetryCount = 0
   private appState: AppState
@@ -61,6 +63,7 @@ export default class APIHelper {
     this.searchApi = new SearchApi(api)
     this.oauth2Api = new OAuth2Api(api)
     this.pollAPI = new PollAPI(api)
+    this.poll = new PollAPIHelper(this.pollAPI)
   }
 
   async init() {

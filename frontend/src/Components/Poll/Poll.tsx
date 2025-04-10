@@ -23,7 +23,6 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedOptions, setSelectedOptions] = useState<string[]>([])
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const { userRestrictions } = useAppState()
 
   const hasUserVoted = (poll?.userVotes ?? []).length > 0
@@ -35,15 +34,15 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
     setError(null)
 
     try {
-      const pollData = await api.pollAPI.getPollsBatch({ ids: [pollId] })
-      setPoll(pollData.polls[0])
-      setSelectedOptions(pollData.polls[0].userVotes || [])
+      const pollData = await api.poll.getPollCached(pollId)
+      setPoll(pollData)
+      setSelectedOptions(pollData.userVotes || [])
     } catch (err) {
       setError('Не удалось загрузить опрос')
     } finally {
       setLoading(false)
     }
-  }, [pollId, api.pollAPI])
+  }, [pollId, api.poll])
 
   useEffect(() => {
     fetchPoll()
@@ -68,23 +67,23 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
     })
   }
 
+  const updatePoll = async () => {
+    api.poll.invalidatePoll(pollId)
+    const updatedPoll = await api.poll.getPollCached(pollId)
+    setPoll(updatedPoll)
+  }
+
   const handleSubmitVote = async () => {
     if (!poll || selectedOptions.length === 0 || isPollExpired || hasUserVoted) return
 
-    setIsSubmitting(true)
     try {
-      const response = await api.pollAPI.vote({
+      await api.pollAPI.vote({
         pollId,
         optionIds: selectedOptions,
       })
-      if (response) {
-        const updatedPoll = await api.pollAPI.getPollsBatch({ ids: [pollId] })
-        setPoll(updatedPoll.polls[0])
-      }
+      await updatePoll()
     } catch (err) {
       toast.error(`Не удалось проголосовать${err instanceof Error ? `: ${err.message}` : ''}`)
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
@@ -93,8 +92,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
 
     try {
       await api.pollAPI.vote({ pollId, optionIds: [] })
-      const updatedPoll = await api.pollAPI.getPollsBatch({ ids: [pollId] })
-      setPoll(updatedPoll.polls[0])
+      await updatePoll()
       setSelectedOptions([])
     } catch (err) {
       toast.error(`Не удалось отменить голос${err instanceof Error ? `: ${err.message}` : ''}`)
@@ -235,7 +233,7 @@ export const Poll: React.FC<PollProps> = ({ pollId }) => {
     if (!hasUserVoted) {
       return (
         <div className={styles.voteButtonContainer}>
-          <Button variant='positive' onClick={handleSubmitVote} disabled={selectedOptions.length === 0 || isSubmitting}>
+          <Button variant='positive' onClick={handleSubmitVote} disabled={selectedOptions.length === 0}>
             Голосовать
           </Button>
         </div>
