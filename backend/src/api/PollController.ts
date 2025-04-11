@@ -180,11 +180,6 @@ export default class PollController {
     const { pollId, optionIds } = request.body
 
     try {
-      const restrictions = await this.userManager.getUserRestrictions(userId)
-      if (!restrictions.canVote) {
-        return response.error('cant-vote', 'Voting is disabled', 403)
-      }
-
       await this.pollManager.vote(pollId, userId, optionIds)
 
       const [poll] = await this.pollManager.getPollsByIds([pollId], userId, IncludePollVotes.AUTO)
