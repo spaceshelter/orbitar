@@ -132,7 +132,17 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
   }
 
   const handleSettingChange = (key: keyof PollSettings, value: string | number | boolean | null) => {
-    setSettings({ ...settings, [key]: value })
+    const newSettings = { ...settings, [key]: value }
+
+    if (key === 'resultVisibility' && value === ResultVisibility.AFTER_VOTE) {
+      newSettings.allowVoteRescinding = false
+    }
+
+    if (key === 'allowVoteRescinding' && value === true && settings.resultVisibility === ResultVisibility.AFTER_VOTE) {
+      newSettings.resultVisibility = ResultVisibility.ALWAYS
+    }
+
+    setSettings(newSettings)
   }
 
   const handleSubmit = async () => {
@@ -231,20 +241,6 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
           <div className={styles.settingsSection}>
             <label>Настройки</label>
             <div className={styles.settingRow}>
-              <label htmlFor='expiration'>Срок действия (дни)</label>
-              <Field
-                type='number'
-                id='expiration'
-                min='1'
-                value={settings.expirationDays || ''}
-                onChange={(e) =>
-                  handleSettingChange('expirationDays', e.target.value ? parseInt(e.target.value) : null)
-                }
-                placeholder='Без ограничений'
-              />
-            </div>
-
-            <div className={styles.settingRow}>
               <label htmlFor='multipleChoice'>Множественный выбор</label>
               <Checkbox
                 type='checkbox'
@@ -261,6 +257,7 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
                 id='allowRescind'
                 checked={settings.allowVoteRescinding}
                 onChange={(e) => handleSettingChange('allowVoteRescinding', e.target.checked)}
+                disabled={settings.resultVisibility === ResultVisibility.AFTER_VOTE}
               />
             </div>
 
@@ -291,6 +288,23 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
                 ]}
               />
             </div>
+
+            {settings.resultVisibility === ResultVisibility.AFTER_VOTE_END && (
+              <div className={styles.settingRow}>
+                <label htmlFor='expiration'>Срок действия (дни)</label>
+                <Field
+                  type='number'
+                  id='expiration'
+                  min='1'
+                  value={settings.expirationDays || ''}
+                  onChange={(e) =>
+                    handleSettingChange('expirationDays', e.target.value ? parseInt(e.target.value) : null)
+                  }
+                  placeholder='Укажите срок действия'
+                  required
+                />
+              </div>
+            )}
           </div>
 
           <div className={styles.actions}>
