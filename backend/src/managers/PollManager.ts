@@ -1,4 +1,4 @@
-import { ResultVisibility } from '../api/types/entities/PollEntity'
+import { ResultVisibility, VoteAccess } from '../api/types/entities/PollEntity'
 import PollRepository from '../db/repositories/PollRepository'
 import { PollRaw } from '../db/types/PollRaw'
 import { PollInfo, PollSettingsInfo } from './types/PollInfo'
@@ -121,7 +121,7 @@ export default class PollManager {
     }
 
     if (
-      settings.voteAccess === 'usersWithFullRights' &&
+      settings.voteAccess === VoteAccess.USERS_WITH_FULL_RIGHTS &&
       !(await this.userManager.getUserRestrictions(voterId)).canVoteKarma /*proxy for full rights*/
     ) {
       throw new PollError('permission-denied', 'You do not have permission to vote', 403)

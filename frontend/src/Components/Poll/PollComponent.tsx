@@ -9,7 +9,7 @@ import Radio from '@ui/Radio'
 import { pluralize } from '@utils/utils'
 import { toast } from 'react-toastify'
 
-import { PollEntity, ResultVisibility } from '../../API/types/Poll'
+import { PollEntity, ResultVisibility, VoteAccess } from '../../API/types/Poll'
 
 import styles from './Poll.module.css'
 
@@ -27,7 +27,7 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
 
   const hasUserVoted = (poll?.userVotes ?? []).length > 0
   const isPollExpired = poll?.expires && poll.expires < new Date()
-  const allowedToVote = poll?.settings.voteAccess !== 'usersWithFullRights' || userRestrictions?.canVoteKarma
+  const allowedToVote = poll?.settings.voteAccess !== VoteAccess.USERS_WITH_FULL_RIGHTS || userRestrictions?.canVoteKarma
 
   const fetchPoll = useCallback(async () => {
     setLoading(true)
@@ -49,7 +49,7 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
   }, [fetchPoll])
 
   useEffect(() => {
-    if (poll?.settings.voteAccess === 'usersWithFullRights' && !userRestrictions) {
+    if (poll?.settings.voteAccess === VoteAccess.USERS_WITH_FULL_RIGHTS && !userRestrictions) {
       api.user.refreshUserRestrictions()
     }
   }, [userRestrictions, api.user, poll?.settings.voteAccess])

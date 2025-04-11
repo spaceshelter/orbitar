@@ -2,13 +2,13 @@ import { UserBaseInfo } from '@entities/UserInfo'
 
 export enum ResultVisibility {
   ALWAYS = 'always',
-  AFTER_VOTE = 'afterVote',
-  AFTER_VOTE_END = 'afterVoteEnd',
+  AFTER_VOTE = 'after_vote',
+  AFTER_VOTE_END = 'after_vote_end',
 }
 
 export enum VoteAccess {
   EVERYBODY = 'everybody',
-  USERS_WITH_FULL_RIGHTS = 'usersWithFullRights',
+  USERS_WITH_FULL_RIGHTS = 'users_with_full_rights',
 }
 
 export interface PollOptionEntity {
