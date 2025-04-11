@@ -149,10 +149,6 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
       }
     }
 
-    if (key === 'allowVoteRescinding' && value === true && settings.resultVisibility === ResultVisibility.AFTER_VOTE) {
-      newSettings.resultVisibility = ResultVisibility.ALWAYS
-    }
-
     setSettings(newSettings)
   }
 
