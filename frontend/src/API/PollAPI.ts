@@ -31,7 +31,7 @@ export default class PollAPI {
   }
 
   async getPollsBatch(data: GetPollsBatchRequest): Promise<GetPollsBatchResponse> {
-    const res = await this.api.request<GetPollsBatchRequest, GetPollsBatchResponse>('/polls', data)
+    const res = await this.api.request<GetPollsBatchRequest, GetPollsBatchResponse>('/poll/get', data)
     for (const poll of res.polls) {
       this.fixPoll(poll)
     }
