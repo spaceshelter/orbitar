@@ -389,6 +389,8 @@ export default class UserManager {
     const daysOnSite = this.getDaysOnSite(user)
     const userIsNew = daysOnSite < NEW_USER_AGE_DAYS
 
+    const onTrial = user.ontrial
+
     const effectiveKarmaWOPenalty =
       localCachedValue?.effectiveKarmaWOPenalty ?? (await this.getUserEffectiveKarma(userId)).effectiveKarma
     const penalty = ~~(await this.redis.get(`karma_penalty_${userId}`)) // parses string to int or 0
@@ -425,35 +427,32 @@ export default class UserManager {
       })
     }
 
-    const canVote = effectiveKarma >= NEG_KARMA_THRESH
-    const canVoteKarma = !userIsNew && effectiveKarma >= POS_KARMA_THRESH
-    const canInvite = !userIsNew && effectiveKarma >= POS_KARMA_THRESH
-    const canCreateSubsites = !userIsNew && effectiveKarma >= POS_KARMA_THRESH
-    const canEditOwnContent = effectiveKarma >= NEG_KARMA_THRESH
-    const canCreatePolls = effectiveKarma > MIN_KARMA
-
-    const restrictions: UserRestrictions = {
+    return {
       effectiveKarma,
       senatePenalty: penalty,
+
       postSlowModeWaitSec: canCreatePosts ? postSlowModeDelay : 0,
       postSlowModeWaitSecRemain:
         canCreatePosts && lastOwnPost
           ? Math.max(lastOwnPost.created_at.getTime() / 1000 - Date.now() / 1000 + postSlowModeDelay, 0)
           : 0,
+
       commentSlowModeWaitSec: commentSlowModeDelay,
       commentSlowModeWaitSecRemain: lastCommentTime
         ? Math.max(lastCommentTime.getTime() / 1000 - Date.now() / 1000 + commentSlowModeDelay, 0)
         : 0,
-      restrictedToPostId,
-      canVote,
-      canVoteKarma,
-      canInvite,
-      canCreateSubsites,
-      canEditOwnContent,
-      canCreatePolls,
-    }
 
-    return restrictions
+      restrictedToPostId,
+
+      canVote: effectiveKarma >= NEG_KARMA_THRESH,
+      canVoteKarma: effectiveKarma >= POS_KARMA_THRESH && !userIsNew && !onTrial,
+
+      canInvite: (effectiveKarma >= POS_KARMA_THRESH && !userIsNew && !onTrial) || userId <= 1 /* Orbitar, Plotva */,
+
+      canCreateSubsites: effectiveKarma > 0,
+      canEditOwnContent: effectiveKarma > MIN_KARMA,
+      canCreatePolls: effectiveKarma > MIN_KARMA,
+    }
   }
 
   private mapUserRaw(rawUser: UserRaw): UserInfo {
