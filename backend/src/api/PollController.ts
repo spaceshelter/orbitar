@@ -173,15 +173,16 @@ export default class PollController {
         return response.error('cant-vote', 'Voting is disabled', 403)
       }
 
-      const status = (await this.pollManager.vote(pollId, userId, optionIds)) as 'voted' | 'rescinded'
+      await this.pollManager.vote(pollId, userId, optionIds)
 
-      this.logger.info(`User #${userId} ${status} in poll #${pollId}`, {
+      const [poll] = await this.pollManager.getPollsByIds([pollId], userId, IncludePollVotes.AUTO)
+
+      this.logger.info(`User #${userId} voted in poll #${pollId}`, {
         userId,
-        status,
         pollId,
       })
 
-      response.success({ result: status })
+      response.success({ poll })
     } catch (err) {
       if (err instanceof PollError) {
         return response.error(err.code, err.message, err.status)

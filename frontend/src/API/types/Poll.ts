@@ -66,5 +66,5 @@ export interface PollVoteRequest {
 }
 
 export interface PollVoteResponse {
-  result: 'voted' | 'rescinded'
+  poll: PollEntity
 }

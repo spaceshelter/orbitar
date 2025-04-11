@@ -67,21 +67,20 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
     })
   }
 
-  const updatePoll = async () => {
-    api.poll.invalidatePoll(pollId)
-    const updatedPoll = await api.poll.getPollCached(pollId)
+  const updatePoll = async (updatedPoll: PollEntity) => {
     setPoll(updatedPoll)
+    api.poll.invalidatePoll(pollId)
   }
 
   const handleSubmitVote = async () => {
     if (!poll || selectedOptions.length === 0 || isPollExpired || hasUserVoted) return
 
     try {
-      await api.pollAPI.vote({
+      const updatedPoll = await api.pollAPI.vote({
         pollId,
         optionIds: selectedOptions,
       })
-      await updatePoll()
+      await updatePoll(updatedPoll.poll)
     } catch (err) {
       toast.error(`Не удалось проголосовать${err instanceof Error ? `: ${err.message}` : ''}`)
     }
@@ -91,8 +90,8 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
     if (!poll || !poll.settings.allowVoteRescinding || isPollExpired) return
 
     try {
-      await api.pollAPI.vote({ pollId, optionIds: [] })
-      await updatePoll()
+      const updatedPoll = await api.pollAPI.vote({ pollId, optionIds: [] })
+      await updatePoll(updatedPoll.poll)
       setSelectedOptions([])
     } catch (err) {
       toast.error(`Не удалось отменить голос${err instanceof Error ? `: ${err.message}` : ''}`)

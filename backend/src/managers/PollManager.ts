@@ -1,6 +1,6 @@
 import PollRepository from '../db/repositories/PollRepository'
-import { PollRaw, ResultVisibilityRaw, VoteAccessRaw } from '../db/types/PollRaw'
-import { PollInfo, PollSettingsInfo, ResultVisibilityInfo, VoteAccessInfo } from './types/PollInfo'
+import { PollRaw } from '../db/types/PollRaw'
+import { PollInfo, PollSettingsInfo } from './types/PollInfo'
 import { UserBaseInfo } from './types/UserInfo'
 import UserManager from './UserManager'
 
@@ -52,12 +52,7 @@ export default class PollManager {
       id: String(poll.poll_id),
       author: String(poll.author_id),
       question: poll.question,
-      settings: {
-        allowMultipleChoice: poll.settings.allow_multiple_choice,
-        resultVisibility: this.convertResultVisibility(poll.settings.result_visibility),
-        allowVoteRescinding: poll.settings.allow_vote_rescinding,
-        voteAccess: this.convertVoteAccess(poll.settings.vote_access),
-      },
+      settings: poll.settings,
       expires: poll.expires_at,
       created: poll.created_at,
       options: poll.options.map((text: string, index: number) => ({
@@ -92,16 +87,16 @@ export default class PollManager {
       const includeVotesForPoll =
         includeVotes === IncludePollVotes.YES ||
         (includeVotes === IncludePollVotes.AUTO &&
-          (poll.settings.result_visibility === 'always' ||
-            (poll.settings.result_visibility === 'after_vote' && userVotesForPoll.length > 0) ||
-            (poll.settings.result_visibility === 'after_vote_end' &&
+          (poll.settings.resultVisibility === 'always' ||
+            (poll.settings.resultVisibility === 'afterVote' && userVotesForPoll.length > 0) ||
+            (poll.settings.resultVisibility === 'afterVoteEnd' &&
               (!poll.expires_at || new Date(poll.expires_at) < new Date()))))
 
       return this.enrichPoll(poll, includeVotesForPoll, userVotesForPoll)
     })
   }
 
-  async vote(pollId: number, voterId: number, optionIds: number[]): Promise<string> {
+  async vote(pollId: number, voterId: number, optionIds: number[]) {
     const [poll] = await this.getPollsByIds([pollId])
     if (!poll) {
       throw new PollError('not-found', 'Poll not found', 404)
@@ -132,8 +127,6 @@ export default class PollManager {
     }
 
     await this.pollRepository.vote(pollId, voterId, optionIds)
-
-    return 'voted'
   }
 
   async getVoters(pollId: number, optionId: number): Promise<UserBaseInfo[]> {
@@ -151,25 +144,5 @@ export default class PollManager {
     }
 
     return await this.pollRepository.getVoters(pollId, optionId)
-  }
-
-  private convertResultVisibility(value: ResultVisibilityRaw): ResultVisibilityInfo {
-    switch (value) {
-      case 'always':
-        return 'always'
-      case 'after_vote':
-        return 'afterVote'
-      case 'after_vote_end':
-        return 'afterVoteEnd'
-    }
-  }
-
-  private convertVoteAccess(value: VoteAccessRaw): VoteAccessInfo {
-    switch (value) {
-      case 'everybody':
-        return 'everybody'
-      case 'users_with_full_rights':
-        return 'usersWithFullRights'
-    }
   }
 }

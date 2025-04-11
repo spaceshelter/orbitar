@@ -1,11 +1,11 @@
-export type ResultVisibilityRaw = 'always' | 'after_vote' | 'after_vote_end'
-export type VoteAccessRaw = 'everybody' | 'users_with_full_rights'
+export type ResultVisibilityRaw = 'always' | 'afterVote' | 'afterVoteEnd'
+export type VoteAccessRaw = 'everybody' | 'usersWithFullRights'
 
 export interface PollSettingsRaw {
-  allow_multiple_choice: boolean
-  result_visibility: ResultVisibilityRaw
-  allow_vote_rescinding: boolean
-  vote_access: VoteAccessRaw
+  allowMultipleChoice: boolean
+  resultVisibility: ResultVisibilityRaw
+  allowVoteRescinding: boolean
+  voteAccess: VoteAccessRaw
 }
 
 export interface PollRaw {
