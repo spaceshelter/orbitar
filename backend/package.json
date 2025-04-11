@@ -5,6 +5,7 @@
   "main": "dist/app.js",
   "scripts": {
     "start:dev": "npx tsc && NODE_ENV=development node build/app.js",
+    "watch:dev": "nodemon --watch src --ext ts --exec \"npm run start:dev\"",
     "build": "npx tsc",
     "start:production": "NODE_ENV=production node build/app.js",
     "migration:dev": "NODE_ENV=development node migrations.js",
@@ -41,7 +42,8 @@
     "eslint-plugin-prettier": "^5.2.1",
     "image-size": "^1.0.2",
     "jest": "^28.1.0",
-    "ts-jest": "^28.0.3"
+    "ts-jest": "^28.0.3",
+    "nodemon": "^3.0.1"
   },
   "dependencies": {
     "@elastic/elasticsearch": "^7.17.0",
