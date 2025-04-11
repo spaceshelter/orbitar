@@ -9,6 +9,7 @@
     width: 100%;
     cursor: pointer;
     transition: border-color 0.2s ease;
+    text-overflow: ellipsis;
 
     &:focus {
         border-color: var(--primary);

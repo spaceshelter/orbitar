@@ -66,28 +66,25 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
-
-  @media (max-width: 768px) {
-    gap: 0.5rem;
-  }
 
   label {
     color: var(--fgSoft);
     font-size: 0.9rem;
+    min-width: 50%;
 
     @media (max-width: 768px) {
       font-size: 0.85rem;
-      min-width: 50%;
     }
   }
 
-  input[type='number'],
+
   select {
-    width: 160px;
+    width: max-content;
+    max-width: 50%;
 
     @media (max-width: 768px) {
-      width: 100%;
+      width: 50%;
+      max-width: 50%;
     }
   }
 
