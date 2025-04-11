@@ -9,7 +9,7 @@ import Radio from '@ui/Radio'
 import { pluralize } from '@utils/utils'
 import { toast } from 'react-toastify'
 
-import { PollEntity } from '../../API/types/Poll'
+import { PollEntity, ResultVisibility } from '../../API/types/Poll'
 
 import styles from './Poll.module.css'
 
@@ -115,11 +115,11 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
 
     const canShowResults = (() => {
       switch (poll?.settings.resultVisibility) {
-        case 'always':
+        case ResultVisibility.ALWAYS:
           return true
-        case 'afterVote':
+        case ResultVisibility.AFTER_VOTE:
           return hasUserVoted
-        case 'afterVoteEnd':
+        case ResultVisibility.AFTER_VOTE_END:
           return hasUserVoted && isPollExpired
         default:
           return false

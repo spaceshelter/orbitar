@@ -13,6 +13,8 @@ import Select from '@ui/Select'
 import { autorun } from 'mobx'
 import { toast } from 'react-toastify'
 
+import { ResultVisibility, VoteAccess } from '../API/types/Poll'
+
 import styles from './PollCreationWizard.module.scss'
 
 interface PollOption {
@@ -24,8 +26,8 @@ interface PollSettings {
   expirationDays: number | null
   isMultipleChoice: boolean
   allowVoteRescinding: boolean
-  voteAccess: 'everybody' | 'users_with_full_rights'
-  resultVisibility: 'always' | 'after_vote' | 'after_end'
+  voteAccess: VoteAccess
+  resultVisibility: ResultVisibility
 }
 
 interface PollDraft {
@@ -54,8 +56,8 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
     expirationDays: null,
     isMultipleChoice: false,
     allowVoteRescinding: true,
-    voteAccess: 'everybody',
-    resultVisibility: 'always',
+    voteAccess: VoteAccess.EVERYBODY,
+    resultVisibility: ResultVisibility.ALWAYS,
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
@@ -266,9 +268,12 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
               <label htmlFor='voteAccess'>Голосовать смогут только полноправные</label>
               <Checkbox
                 id='voteAccess'
-                checked={settings.voteAccess === 'users_with_full_rights'}
+                checked={settings.voteAccess === VoteAccess.USERS_WITH_FULL_RIGHTS}
                 onChange={(e) =>
-                  handleSettingChange('voteAccess', e.target.checked ? 'users_with_full_rights' : 'everybody')
+                  handleSettingChange(
+                    'voteAccess',
+                    e.target.checked ? VoteAccess.USERS_WITH_FULL_RIGHTS : VoteAccess.EVERYBODY,
+                  )
                 }
               />
             </div>
@@ -280,9 +285,9 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
                 value={settings.resultVisibility}
                 onChange={(value) => handleSettingChange('resultVisibility', value)}
                 options={[
-                  { value: 'always', label: 'Всегда' },
-                  { value: 'after_vote', label: 'После ответа' },
-                  { value: 'after_vote_end', label: 'После окончания опроса' },
+                  { value: ResultVisibility.ALWAYS, label: 'Всегда' },
+                  { value: ResultVisibility.AFTER_VOTE, label: 'После ответа' },
+                  { value: ResultVisibility.AFTER_VOTE_END, label: 'После окончания опроса' },
                 ]}
               />
             </div>

@@ -1,11 +1,10 @@
-export type ResultVisibilityRaw = 'always' | 'afterVote' | 'afterVoteEnd'
-export type VoteAccessRaw = 'everybody' | 'usersWithFullRights'
+import { ResultVisibility, VoteAccess } from '../../api/types/entities/PollEntity'
 
 export interface PollSettingsRaw {
   allowMultipleChoice: boolean
-  resultVisibility: ResultVisibilityRaw
+  resultVisibility: ResultVisibility
   allowVoteRescinding: boolean
-  voteAccess: VoteAccessRaw
+  voteAccess: VoteAccess
 }
 
 export interface PollRaw {

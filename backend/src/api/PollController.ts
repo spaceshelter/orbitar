@@ -7,6 +7,7 @@ import PollManager, { IncludePollVotes, PollError } from '../managers/PollManage
 import UserManager from '../managers/UserManager'
 import { APIRequest, APIResponse, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
+import { ResultVisibility, VoteAccess } from './types/entities/PollEntity'
 import {
   PollBatchRequest,
   PollBatchResponse,
@@ -57,9 +58,9 @@ export default class PollController {
       options: Joi.array().items(Joi.string().min(1).max(64)).min(2).max(32).required(),
       settings: Joi.object({
         allowMultipleChoice: Joi.boolean(),
-        resultVisibility: Joi.string().valid('always', 'afterVote', 'afterVoteEnd'),
+        resultVisibility: Joi.string().valid(...Object.values(ResultVisibility)),
         allowVoteRescinding: Joi.boolean(),
-        voteAccess: Joi.string().valid('everybody', 'usersWithFullRights'),
+        voteAccess: Joi.string().valid(...Object.values(VoteAccess)),
       }),
       expires: Joi.date().greater('now'),
     })
@@ -109,11 +110,11 @@ export default class PollController {
         return response.error('permission-denied', 'You do not have permission to create polls', 403)
       }
 
-      if (settings.allowVoteRescinding && settings.resultVisibility === 'afterVote') {
+      if (settings.allowVoteRescinding && settings.resultVisibility === ResultVisibility.AFTER_VOTE) {
         return response.error('invalid-settings', 'after_vote result visibility is not allowed with rescind vote', 400)
       }
 
-      if (!expires && settings.resultVisibility === 'afterVoteEnd') {
+      if (!expires && settings.resultVisibility === ResultVisibility.AFTER_VOTE_END) {
         return response.error('invalid-settings', 'after_vote_end result visibility requires expiration date', 400)
       }
 

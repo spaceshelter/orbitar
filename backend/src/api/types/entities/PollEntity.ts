@@ -1,5 +1,14 @@
-export type ResultVisibility = 'always' | 'afterVote' | 'afterVoteEnd'
-export type VoteAccess = 'everybody' | 'usersWithFullRights'
+export enum ResultVisibility {
+  ALWAYS = 'always',
+  AFTER_VOTE = 'afterVote',
+  AFTER_VOTE_END = 'afterVoteEnd',
+}
+
+export enum VoteAccess {
+  EVERYBODY = 'everybody',
+  USERS_WITH_FULL_RIGHTS = 'usersWithFullRights',
+}
+
 export interface PollSettingsEntity {
   allowMultipleChoice: boolean
   resultVisibility: ResultVisibility

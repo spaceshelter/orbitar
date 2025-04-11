@@ -1,3 +1,4 @@
+import { ResultVisibility } from '../api/types/entities/PollEntity'
 import PollRepository from '../db/repositories/PollRepository'
 import { PollRaw } from '../db/types/PollRaw'
 import { PollInfo, PollSettingsInfo } from './types/PollInfo'
@@ -87,9 +88,9 @@ export default class PollManager {
       const includeVotesForPoll =
         includeVotes === IncludePollVotes.YES ||
         (includeVotes === IncludePollVotes.AUTO &&
-          (poll.settings.resultVisibility === 'always' ||
-            (poll.settings.resultVisibility === 'afterVote' && userVotesForPoll.length > 0) ||
-            (poll.settings.resultVisibility === 'afterVoteEnd' &&
+          (poll.settings.resultVisibility === ResultVisibility.ALWAYS ||
+            (poll.settings.resultVisibility === ResultVisibility.AFTER_VOTE && userVotesForPoll.length > 0) ||
+            (poll.settings.resultVisibility === ResultVisibility.AFTER_VOTE_END &&
               (!poll.expires_at || new Date(poll.expires_at) < new Date()))))
 
       return this.enrichPoll(poll, includeVotesForPoll, userVotesForPoll)
@@ -139,7 +140,11 @@ export default class PollManager {
       throw new PollError('not-found', 'Poll not found', 404)
     }
 
-    if (poll.settings.resultVisibility === 'afterVoteEnd' && poll.expires && new Date(poll.expires) > new Date()) {
+    if (
+      poll.settings.resultVisibility === ResultVisibility.AFTER_VOTE_END &&
+      poll.expires &&
+      new Date(poll.expires) > new Date()
+    ) {
       throw new PollError('poll-active', 'Poll has not ended yet', 403)
     }
 
