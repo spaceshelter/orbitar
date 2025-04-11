@@ -23,11 +23,3 @@ export interface PollEntity {
   totalVotes: number
   userVotes?: string[]
 }
-
-export interface PollVoteEntity {
-  voteId: string
-  pollId: string
-  voterId: string
-  optionId: string
-  voted: string
-}
