@@ -134,8 +134,19 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
   const handleSettingChange = (key: keyof PollSettings, value: string | number | boolean | null) => {
     const newSettings = { ...settings, [key]: value }
 
-    if (key === 'resultVisibility' && value === ResultVisibility.AFTER_VOTE) {
-      newSettings.allowVoteRescinding = false
+    if (key === 'resultVisibility') {
+      switch (value) {
+        case ResultVisibility.ALWAYS:
+          newSettings.expirationDays = null
+          break
+        case ResultVisibility.AFTER_VOTE:
+          newSettings.allowVoteRescinding = false
+          newSettings.expirationDays = null
+          break
+        case ResultVisibility.AFTER_VOTE_END:
+          newSettings.expirationDays = 1
+          break
+      }
     }
 
     if (key === 'allowVoteRescinding' && value === true && settings.resultVisibility === ResultVisibility.AFTER_VOTE) {
@@ -300,7 +311,6 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
                   onChange={(e) =>
                     handleSettingChange('expirationDays', e.target.value ? parseInt(e.target.value) : null)
                   }
-                  placeholder='Укажите срок действия'
                   required
                 />
               </div>
