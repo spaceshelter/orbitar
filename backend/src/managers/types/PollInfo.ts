@@ -13,8 +13,8 @@ export interface PollOptionInfo {
 }
 
 export interface PollInfo {
-  id: string
-  author: string
+  id: number
+  author: number
   question: string
   options: PollOptionInfo[]
   settings: PollSettingsInfo
@@ -22,5 +22,5 @@ export interface PollInfo {
   created: Date
   [key: `opt${number}`]: number
   totalVotes: number
-  userVotes?: string[]
+  userVotes?: number[]
 }

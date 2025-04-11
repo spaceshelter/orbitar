@@ -66,17 +66,17 @@ export default class PollController {
     })
 
     const batchSchema = Joi.object<PollBatchRequest>({
-      ids: Joi.array().items(Joi.string()).min(1).max(256).required(),
+      ids: Joi.array().items(Joi.number().integer()).min(1).max(256).required(),
     })
 
     const voteSchema = Joi.object<PollVoteRequest>({
-      pollId: Joi.string().required(),
+      pollId: Joi.number().integer().required(),
       optionIds: Joi.array().items(Joi.number().integer().min(0).max(31)).min(0).max(32).required(),
     })
 
     const votersSchema = Joi.object<PollVotersRequest>({
-      pollId: Joi.string().required(),
-      optionId: Joi.string().required(),
+      pollId: Joi.number().integer().required(),
+      optionId: Joi.number().integer().min(0).max(31).required(),
     })
 
     this.router.post(

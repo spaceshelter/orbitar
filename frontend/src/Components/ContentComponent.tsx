@@ -642,7 +642,7 @@ function updatePoll(pollEl: HTMLDivElement, appState: AppState, cleanupRegistry:
   if (!pollId) {
     return
   }
-  cleanupRegistry.register(renderWithTheme(pollEl, <PollComponent pollId={pollId} />, appState))
+  cleanupRegistry.register(renderWithTheme(pollEl, <PollComponent pollId={Number(pollId)} />, appState))
 }
 
 export default function ContentComponent(props: ContentComponentProps) {

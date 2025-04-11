@@ -22,13 +22,13 @@ export interface PollOptionEntity {
 }
 
 export interface PollEntity {
-  id: string
-  author: string
+  id: number
+  author: number
   question: string
   options: PollOptionEntity[]
   settings: PollSettingsEntity
   expires?: Date
   created?: Date
   totalVotes: number
-  userVotes?: string[]
+  userVotes?: number[]
 }

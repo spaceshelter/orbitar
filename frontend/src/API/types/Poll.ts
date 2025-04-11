@@ -24,15 +24,15 @@ export interface PollSettingsEntity {
 }
 
 export interface PollEntity {
-  id: string
-  author: string
+  id: number
+  author: number
   question: string
   options: PollOptionEntity[]
   settings: PollSettingsEntity
   expires?: Date
   created?: Date
   totalVotes: number
-  userVotes?: string[]
+  userVotes?: number[]
 }
 
 export interface CreatePollRequest {
@@ -43,7 +43,7 @@ export interface CreatePollRequest {
 }
 
 export interface CreatePollResponse {
-  id: string
+  id: number
 }
 
 export interface GetPollsBatchRequest {
@@ -55,13 +55,13 @@ export interface GetPollsBatchResponse {
 }
 
 export interface BackendPollVoteRequest {
-  pollId: string
-  optionIds: string[]
+  pollId: number
+  optionIds: number[]
 }
 
 export interface GetVotersRequest {
-  pollId: string
-  optionId: string
+  pollId: number
+  optionId: number
 }
 
 export interface GetVotersResponse {
@@ -69,8 +69,8 @@ export interface GetVotersResponse {
 }
 
 export interface PollVoteRequest {
-  pollId: string
-  optionIds: string[]
+  pollId: number
+  optionIds: number[]
 }
 
 export interface PollVoteResponse {

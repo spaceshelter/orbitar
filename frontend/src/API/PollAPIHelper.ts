@@ -17,15 +17,15 @@ export default class PollAPIHelper {
         const response = await this.api.getPollsBatch({ ids: pollIds })
         const result = new Map<string, PollEntity>()
         for (const poll of response.polls) {
-          result.set(poll.id, poll)
+          result.set(String(poll.id), poll)
         }
         return result
       },
     })
   }
 
-  async getPollCached(pollId: string): Promise<PollEntity> {
-    return this.batchedCache.get(pollId)
+  async getPollCached(pollId: number): Promise<PollEntity> {
+    return this.batchedCache.get(String(pollId))
   }
 
   invalidatePoll(pollId: string) {

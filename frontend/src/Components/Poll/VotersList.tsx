@@ -8,7 +8,7 @@ import { createPortal } from 'react-dom'
 
 import styles from './VotersList.module.css'
 
-export const VotersTooltip: React.FC<{ pollId: string; optionId: string; votesCount: number }> = ({
+export const VotersTooltip: React.FC<{ pollId: number; optionId: number; votesCount: number }> = ({
   pollId,
   optionId,
   votesCount,

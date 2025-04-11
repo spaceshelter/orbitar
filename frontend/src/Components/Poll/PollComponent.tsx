@@ -14,7 +14,7 @@ import { PollEntity, ResultVisibility, VoteAccess } from '../../API/types/Poll'
 import styles from './Poll.module.css'
 
 interface PollProps {
-  pollId: string
+  pollId: number
 }
 
 export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
@@ -22,12 +22,13 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
   const [poll, setPoll] = useState<PollEntity | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedOptions, setSelectedOptions] = useState<string[]>([])
+  const [selectedOptions, setSelectedOptions] = useState<number[]>([])
   const { userRestrictions } = useAppState()
 
   const hasUserVoted = (poll?.userVotes ?? []).length > 0
   const isPollExpired = poll?.expires && poll.expires < new Date()
-  const allowedToVote = poll?.settings.voteAccess !== VoteAccess.USERS_WITH_FULL_RIGHTS || userRestrictions?.canVoteKarma
+  const allowedToVote =
+    poll?.settings.voteAccess !== VoteAccess.USERS_WITH_FULL_RIGHTS || userRestrictions?.canVoteKarma
 
   const fetchPoll = useCallback(async () => {
     setLoading(true)
@@ -54,7 +55,7 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
     }
   }, [userRestrictions, api.user, poll?.settings.voteAccess])
 
-  const handleOptionSelect = (optionId: string) => {
+  const handleOptionSelect = (optionId: number) => {
     if (!poll || isPollExpired || hasUserVoted) return
 
     const isMultipleVotesAllowed = poll.settings.allowMultipleChoice
@@ -69,7 +70,7 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
 
   const updatePoll = async (updatedPoll: PollEntity) => {
     setPoll(updatedPoll)
-    api.poll.invalidatePoll(pollId)
+    api.poll.invalidatePoll(String(pollId))
   }
 
   const handleSubmitVote = async () => {
@@ -126,8 +127,7 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
       }
     })()
 
-    return poll.options.map((option, idx) => {
-      const optionId = String(idx)
+    return poll.options.map((option, optionId) => {
       const percentage = calculatePercentage(option.votes)
       const isSelected = allowedToVote && selectedOptions.includes(optionId)
       const isDisabled = isPollExpired || hasUserVoted || (!isMultipleVotesAllowed && hasAnyVotes) || !allowedToVote

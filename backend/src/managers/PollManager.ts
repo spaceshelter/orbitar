@@ -48,10 +48,10 @@ export default class PollManager {
     return pollId
   }
 
-  enrichPoll(poll: PollRaw, includeVotes = true, userVotes?: number[]): PollInfo {
+  enrichPoll(poll: PollRaw, includeVotes = true, userVotes: number[] = []): PollInfo {
     return {
-      id: String(poll.poll_id),
-      author: String(poll.author_id),
+      id: poll.poll_id,
+      author: poll.author_id,
       question: poll.question,
       settings: poll.settings,
       expires: poll.expires_at,
@@ -64,7 +64,7 @@ export default class PollManager {
         (includeVotes &&
           Array.from({ length: 32 }, (_, i) => poll[`opt${i}`] || 0).reduce((sum, count) => sum + count, 0)) ||
         0,
-      userVotes: userVotes?.map(String),
+      userVotes,
     }
   }
 
