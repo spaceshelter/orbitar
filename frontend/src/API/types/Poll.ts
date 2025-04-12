@@ -54,11 +54,6 @@ export interface GetPollsBatchResponse {
   polls: PollEntity[]
 }
 
-export interface BackendPollVoteRequest {
-  pollId: number
-  optionIds: number[]
-}
-
 export interface GetVotersRequest {
   pollId: number
   optionId: number
