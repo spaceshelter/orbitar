@@ -261,12 +261,30 @@ export default class TheParser {
       this.processImage(pUrl) ||
       this.processCoub(pUrl) ||
       this.processVideo(pUrl) ||
+      this.processTelegram(pUrl) ||
       this.processInternalUrl(url)
     if (res !== false) {
       return res
     }
 
     return `<a href="${encodeURI(decodeURI(url))}" target="_blank">${htmlEscape(decodeURI(url))}</a>`
+  }
+
+  processTelegram(url: Url<string>) {
+    if (url.host !== 't.me' && url.host !== 'telegram.me') {
+      return false
+    }
+
+    const match = url.pathname.match(/^\/([^/]+)\/(\d+)/)
+    if (match === null) {
+      return false
+    }
+
+    const [, channelName, postId] = match
+    const telegramUrl = `https://t.me/${channelName}/${postId}`
+    const expandButton = `<span role="button" class="expand-button i i-expand" data-telegram-url="${encodeURI(telegramUrl)}"></span>`
+
+    return `${expandButton}<a href="${encodeURI(telegramUrl)}" target="_blank">${htmlEscape(decodeURI(telegramUrl))}</a>`
   }
 
   processImage(url: Url<string>) {

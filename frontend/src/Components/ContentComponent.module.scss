@@ -101,6 +101,14 @@
     }
   }
 
+  :global(iframe.telegram-embed) {
+    width: calc(min(500px, 100vw));
+    max-width: 100%;
+    border: none;
+    // Allow Telegram's own aspect ratio to control height
+    aspect-ratio: unset;
+  }
+
   :global(.interpretation) {
     color: var(--fgGhost);
 
