@@ -129,6 +129,19 @@
     color: var(--primary);
     background-color: var(--dim2);
   }
+
+  &.rotating {
+    animation: rotate-once 0.5s ease-in-out;
+  }
+}
+
+@keyframes rotate-once {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loading {
