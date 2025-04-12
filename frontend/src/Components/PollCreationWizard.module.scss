@@ -1,0 +1,237 @@
+// Drawer styles
+.drawerContent {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem;
+  overflow-y: auto;
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
+}
+
+.header {
+  display: flex;
+  margin-bottom: 2rem;
+  align-items: center;
+
+  h2 {
+    margin: 0;
+    font-size: 1.5rem;
+
+    @media (max-width: 768px) {
+      font-size: 1.25rem;
+    }
+  }
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  flex: 1;
+
+  @media (max-width: 768px) {
+    gap: 1.5rem;
+  }
+}
+
+// Section styles
+.questionSection,
+.optionsSection,
+.settingsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  @media (max-width: 768px) {
+    gap: 0.75rem;
+  }
+
+  label {
+    font-size: 1rem;
+
+    @media (max-width: 768px) {
+      font-size: 0.9rem;
+    }
+  }
+}
+
+// Option styles
+.optionRow {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+
+  @media (max-width: 768px) {
+    gap: 0.25rem;
+  }
+}
+
+// Settings styles
+.settingRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+
+  label {
+    color: var(--fgSoft);
+    font-size: 0.9rem;
+    min-width: 50%;
+
+    @media (max-width: 768px) {
+      font-size: 0.85rem;
+    }
+  }
+
+  select {
+    width: max-content;
+    max-width: 50%;
+
+    @media (max-width: 768px) {
+      width: 50%;
+      max-width: 50%;
+    }
+  }
+
+  input[type='checkbox'],
+  input[type='radio'] {
+    width: 20px;
+    height: 20px;
+
+    @media (max-width: 768px) {
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  &.radioGroup {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+
+    .radioOptions {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+  }
+}
+
+// Poll expiration styles
+.expirationContainer {
+  margin-bottom: 1rem;
+}
+
+.expirationCheckboxRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+
+  label {
+    color: var(--fgSoft);
+    font-size: 0.9rem;
+  }
+}
+
+.datePickerContainer {
+  margin-top: 0.5rem;
+}
+
+.dateControls {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  width: 100%;
+
+  @media (max-width: 768px) {
+    grid-template-columns: auto 1fr auto;
+  }
+}
+
+.buttonsGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  @media (max-width: 768px) {
+    gap: 0.1rem;
+  }
+}
+
+.dateButton {
+  padding: 0.2rem 0.1rem;
+  min-width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    min-width: 1.75rem;
+    height: 1.75rem;
+  }
+}
+
+.dateDisplay {
+  padding: 0.25rem 0.5rem;
+  background-color: var(--lowered);
+  border-radius: 4px;
+  margin: 0 0.5rem;
+  text-align: center;
+  justify-self: stretch;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  @media (max-width: 768px) {
+    margin: 0 0.25rem;
+    padding: 0.25rem;
+    font-size: 0.85rem;
+  }
+}
+
+// Custom button styles
+.addOption {
+  margin-top: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+
+  @media (max-width: 768px) {
+    padding: 6px;
+    font-size: 0.85rem;
+  }
+
+  &:hover {
+    background: var(--dim3);
+  }
+}
+
+// Action buttons container
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: auto;
+  margin-bottom: 3rem;
+  //padding-top: 24px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 16px;
+
+    button {
+      width: 100%;
+    }
+  }
+}

@@ -1,0 +1,156 @@
+.pollContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+  position: relative;
+
+  @media (max-width: 400px) {
+    padding: 1rem 0;
+  }
+}
+
+.question {
+  font-weight: 600;
+  color: var(--fg);
+  overflow-wrap: break-word;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.option {
+  border: 1px solid var(--bg);
+  border-radius: 6px;
+  padding: 0.75rem;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+
+  &:hover:not(.disabled) {
+    background-color: var(--dim2);
+  }
+
+  &:nth-child(even) {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+}
+
+.selected {
+  border: 1px solid var(--primary);
+}
+
+.disabled {
+  opacity: 0.7;
+}
+
+.optionContent {
+  display: grid;
+  grid-template-columns: 1.25rem minmax(0, 1fr) auto;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+  gap: 0.5rem;
+}
+
+.optionSelect {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.25rem;
+}
+
+.optionText {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.progressBar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+
+  background-color: rgba(33, 150, 243, 0.1);
+  .disabled & {
+    background-color: rgba(33, 150, 243, 0.4);
+  }
+
+  transition: width 0.3s ease;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.votesContainer {
+  text-align: right;
+}
+
+.votes {
+  font-size: 0.8rem;
+}
+
+.expiration {
+  font-size: 0.8rem;
+  color: var(--fgSoft);
+  font-style: italic;
+  display: flex;
+  flex-wrap: wrap;
+  /*gap: 0.25rem;*/
+
+  span {
+    white-space: nowrap;
+  }
+}
+
+.totalVotes {
+  color: var(--fgSofter);
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.loading {
+}
+
+.error {
+  padding: 1rem;
+  color: var(--danger);
+}
+
+.voteButtonContainer {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.actionsContainer {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.infoContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  text-align: right;
+
+  .expiration {
+    justify-content: flex-end;
+  }
+}

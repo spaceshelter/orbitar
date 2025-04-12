@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 
+import { PollComponent } from '@components/Poll/PollComponent'
 import type * as Vimeo from '@vimeo/player'
 import classNames from 'classnames'
 import { reaction } from 'mobx'
@@ -135,6 +136,10 @@ function updateContent(
 
   div.querySelectorAll('div.oauth-app').forEach((appEl) => {
     updateOauthAppEmbed(appEl as HTMLDivElement, appState, cleanupRegistry)
+  })
+
+  div.querySelectorAll('div.poll').forEach((pollEl) => {
+    updatePoll(pollEl as HTMLDivElement, appState, cleanupRegistry)
   })
 }
 
@@ -672,6 +677,14 @@ function stopInnerVideos(el: Element, except?: HTMLVideoElement | HTMLIFrameElem
       stopVideo(iframe as HTMLIFrameElement | HTMLVideoElement)
     }
   })
+}
+
+function updatePoll(pollEl: HTMLDivElement, appState: AppState, cleanupRegistry: CleanupRegistry) {
+  const pollId = pollEl.getAttribute('data-poll-id')
+  if (!pollId) {
+    return
+  }
+  cleanupRegistry.register(renderWithTheme(pollEl, <PollComponent pollId={Number(pollId)} />, appState))
 }
 
 export default function ContentComponent(props: ContentComponentProps) {

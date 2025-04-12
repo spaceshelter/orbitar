@@ -49,9 +49,10 @@ export type UserRestrictions = {
   restrictedToPostId: number | true | false /* if number: post id to restrict commenting to,
                                                   if true - restriction active, but no posts,
                                                   if false - no restriction */
-  canVote: boolean /* if user can vote for posts, comments*/
+  canVote: boolean /* if user can vote for posts, comments, polls*/
   canVoteKarma: boolean /* if user can vote for karma */
   canInvite: boolean /* whether invites by this user should work */
   canCreateSubsites: boolean /* whether this user can create subsites */
   canEditOwnContent: boolean /* whether this user can edit own content */
+  canCreatePolls: boolean /* whether this user can create polls */
 }

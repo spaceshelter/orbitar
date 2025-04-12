@@ -1,0 +1,27 @@
+.select {
+    background: var(--dim1);
+    color: var(--fgSoft);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 14px;
+    width: 100%;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+    text-overflow: ellipsis;
+
+    &:focus {
+        border-color: var(--primary);
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    option {
+        background-color: var(--bg);
+        color: var(--fgSoft);
+    }
+}
