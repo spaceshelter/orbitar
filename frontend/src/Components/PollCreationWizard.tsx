@@ -50,7 +50,7 @@ interface PollCreationWizardProps {
 }
 
 const STORAGE_KEY = 'poll_draft'
-const tomorrow = () => moment().add(1, 'day').startOf('day').toDate()
+const tomorrow = () => moment().add(1, 'day').add(30, 'minutes').startOf('hour').toDate()
 
 export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, onClose, onSubmit }) => {
   useNoScroll()
