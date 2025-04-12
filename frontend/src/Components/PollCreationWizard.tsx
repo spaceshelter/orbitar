@@ -12,6 +12,7 @@ import Button from '@ui/Button'
 import Checkbox from '@ui/Checkbox'
 import { Field } from '@ui/Field'
 import Radio from '@ui/Radio'
+import classNames from 'classnames'
 import { autorun } from 'mobx'
 import moment from 'moment'
 import { toast } from 'react-toastify'
@@ -243,7 +244,7 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
               onChange={(e) => setQuestion(e.target.value)}
               placeholder='Введите ваш вопрос'
               required
-              rows={isMobile ? 3 : 4}
+              minRows={2}
             />
           </div>
 
@@ -297,7 +298,7 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
 
             {/* Expiration checkbox */}
             <div className={styles.expirationContainer}>
-              <div className={styles.expirationCheckboxRow}>
+              <div className={classNames(styles.expirationCheckboxRow, styles.settingRow)}>
                 <label htmlFor='hasExpiration'>Опрос заканчивается</label>
                 <Checkbox
                   id='hasExpiration'

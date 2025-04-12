@@ -1,118 +1,118 @@
 .field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    width: 100%;
-    overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  overflow: hidden;
 }
 
 .label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
 .input,
 .textarea {
-    width: auto !important;
-    padding: 0.75rem 1rem;
-    border: 1px solid var(--border);
-    border-radius: 0.5rem;
-    background: var(--lowered);
-    color: var(--text);
-    font-size: 0.875rem;
-    transition: border-color 0.2s, box-shadow 0.2s;
+  width: auto !important;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--lowered);
+  color: var(--text);
+  font-size: 0.875rem;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 
-    &:focus {
-        outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 2px var(--primary-light);
+  &:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--primary-light);
+  }
+
+  &::placeholder {
+    opacity: 0.5;
+  }
+
+  &[type='number'] {
+    padding-right: 1.5rem;
+
+    //remove arrows for firefox
+    appearance: textfield;
+    -moz-appearance: textfield;
+
+    //remove arrows for chrome, safari, edge, opera
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
     }
 
-    &::placeholder {
-        opacity: 0.5;
-    }
+    // TODO: make custom arrows work
+    //add custom arrows
+    &::-webkit-outer-spin-button {
+      opacity: 1;
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      width: 20px;
+      background: transparent;
 
-    &[type="number"] {
-        padding-right: 1.5rem;
+      &::before,
+      &::after {
+        content: '';
+        display: block;
+        width: 0;
+        height: 0;
+        border-left: 4px solid transparent;
+        border-right: 4px solid transparent;
+      }
 
-        //remove arrows for firefox
-        appearance: textfield;
-        -moz-appearance: textfield;
+      &::before {
+        border-bottom: 4px solid var(--text);
+        margin-bottom: 3px;
+      }
 
-        //remove arrows for chrome, safari, edge, opera
-        &::-webkit-outer-spin-button,
-        &::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
+      &::after {
+        border-top: 4px solid var(--text);
+      }
+
+      &:hover {
+        &::before {
+          border-bottom-color: var(--primary);
         }
 
-        // TODO: make custom arrows work 
-        //add custom arrows
-        &::-webkit-outer-spin-button {
-            opacity: 1;
-            position: absolute;
-            top: 0;
-            right: 0;
-            height: 100%;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            width: 20px;
-            background: transparent;
-
-            &::before,
-            &::after {
-                content: "";
-                display: block;
-                width: 0;
-                height: 0;
-                border-left: 4px solid transparent;
-                border-right: 4px solid transparent;
-            }
-
-            &::before {
-                border-bottom: 4px solid var(--text);
-                margin-bottom: 3px;
-            }
-
-            &::after {
-                border-top: 4px solid var(--text);
-            }
-
-            &:hover {
-                &::before {
-                    border-bottom-color: var(--primary);
-                }
-
-                &::after {
-                    border-top-color: var(--primary);
-                }
-            }
+        &::after {
+          border-top-color: var(--primary);
         }
+      }
     }
+  }
 }
 
 .textarea {
-    min-height: 100px;
-    resize: vertical;
+  resize: vertical;
 }
 
 .error {
+  .input,
+  .textarea {
+    border-color: var(--error);
 
-    .input,
-    .textarea {
-        border-color: var(--error);
-
-        &:focus {
-            box-shadow: 0 0 0 2px var(--error-light);
-        }
+    &:focus {
+      box-shadow: 0 0 0 2px var(--error-light);
     }
+  }
 }
 
 .errorText {
-    font-size: 0.75rem;
-    color: var(--error);
+  font-size: 0.75rem;
+  color: var(--error);
 }

@@ -48,6 +48,14 @@
   @media (max-width: 768px) {
     gap: 0.75rem;
   }
+
+  label {
+    font-size: 1rem;
+
+    @media (max-width: 768px) {
+      font-size: 0.9rem;
+    }
+  }
 }
 
 // Option styles
