@@ -7,7 +7,7 @@ import PollManager, { IncludePollVotes, PollError } from '../managers/PollManage
 import UserManager from '../managers/UserManager'
 import { APIRequest, APIResponse, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
-import { ResultVisibility, VoteAccess } from './types/entities/PollEntity'
+import { PollSettingsEntity, ResultVisibility, VoteAccess } from './types/entities/PollEntity'
 import {
   PollBatchRequest,
   PollBatchResponse,
@@ -113,7 +113,16 @@ export default class PollController {
     }
 
     const userId = request.session.data.userId
-    const { question, options, settings, expires } = request.body
+    const { question, options, settings = {}, expires } = request.body
+
+    // Apply default settings
+    const pollSettings: PollSettingsEntity = {
+      allowMultipleChoice: false,
+      resultVisibility: ResultVisibility.ALWAYS,
+      allowVoteRescinding: false,
+      voteAccess: VoteAccess.EVERYBODY,
+      ...settings,
+    }
 
     try {
       const restrictions = await this.userManager.getUserRestrictions(userId)
@@ -121,11 +130,11 @@ export default class PollController {
         return response.error('permission-denied', 'You do not have permission to create polls', 403)
       }
 
-      if (settings.allowVoteRescinding && settings.resultVisibility === ResultVisibility.AFTER_VOTE) {
+      if (pollSettings.allowVoteRescinding && pollSettings.resultVisibility === ResultVisibility.AFTER_VOTE) {
         return response.error('invalid-settings', 'after_vote result visibility is not allowed with rescind vote', 400)
       }
 
-      if (!expires && settings.resultVisibility === ResultVisibility.AFTER_VOTE_END) {
+      if (!expires && pollSettings.resultVisibility === ResultVisibility.AFTER_VOTE_END) {
         return response.error('invalid-settings', 'after_vote_end result visibility requires expiration date', 400)
       }
 
@@ -133,7 +142,7 @@ export default class PollController {
         userId,
         question,
         options,
-        settings,
+        pollSettings,
         expires ? new Date(expires) : null,
       )
 
