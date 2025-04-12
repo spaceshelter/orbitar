@@ -10,7 +10,7 @@ import Radio from '@ui/Radio'
 import { pluralize } from '@utils/utils'
 import { toast } from 'react-toastify'
 
-import styles from './Poll.module.css'
+import styles from './PollComponent.module.css'
 
 interface PollProps {
   pollId: number
