@@ -3,7 +3,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import Username from '@components/Username'
 import { UserBaseInfo } from '@entities/UserInfo'
 import { useAPI } from '@state/AppState'
-import { pluralize } from '@utils/utils'
+import classNames from 'classnames'
+// import { pluralize } from '@utils/utils'
 import { createPortal } from 'react-dom'
 
 import styles from './VotersList.module.css'
@@ -70,12 +71,13 @@ export const VotersTooltip: React.FC<{ pollId: number; optionId: number; votesCo
   }
 
   return (
-    <div ref={containerRef} className={styles.votesContainer}>
-      {
-        <span className={votesCount > 0 ? styles.votes : ''} onClick={handleTooltipClick}>
-          {pluralize(votesCount, ['голос', 'голоса', 'голосов'])}
+    <div ref={containerRef} className={styles.votesContainer} onClick={handleTooltipClick}>
+      {votesCount > 0 && (
+        <span className={styles.votes}>
+          {votesCount}
+          <span className={classNames('i i-user', styles.userIcon)} />
         </span>
-      }
+      )}
 
       {showTooltip &&
         createPortal(

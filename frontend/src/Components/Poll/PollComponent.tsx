@@ -160,19 +160,19 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
                 />
               )}
             </div>
-            <span className={styles.optionText}>{option.text}</span>
-            {canShowResults && (
-              <>
-                <div className={styles.votesContainer}>
-                  <span className={styles.votes}>
-                    <VotersTooltip pollId={poll.id} optionId={optionId} votesCount={option.votes} />
-                  </span>
-                </div>
-                <div className={styles.results}>
-                  <span className={styles.percentage}>{percentage}%</span>
-                </div>
-              </>
-            )}
+            <span className={styles.optionText} title={option.text}>
+              {option.text}
+            </span>
+            <div className={styles.votesContainer}>
+              {canShowResults && (
+                <span className={styles.votes}>
+                  <VotersTooltip pollId={poll.id} optionId={optionId} votesCount={option.votes} />
+                </span>
+              )}
+            </div>
+            <div className={styles.results}>
+              {canShowResults && <span className={styles.percentage}>{percentage}%</span>}
+            </div>
           </div>
           <div className={styles.progressBar} style={{ width: `${percentage}%` }} />
         </div>
@@ -189,7 +189,10 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
       return (
         <div className={styles.expiration}>
           <span>Окончание: </span>
-          <DateComponent date={poll.expires} />
+          <span>&nbsp;</span>
+          <span>
+            <DateComponent date={poll.expires} />
+          </span>
         </div>
       )
     }

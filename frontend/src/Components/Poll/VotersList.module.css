@@ -7,8 +7,10 @@
 
 .votes {
   cursor: pointer;
-  text-decoration: underline;
   color: var(--fg);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
 }
 
 .votersTooltip {
