@@ -3,6 +3,7 @@
   display: inline-block;
   z-index: 2;
   min-width: max-content;
+  font-size: 1rem;
 }
 
 .votes {
@@ -11,6 +12,12 @@
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
+}
+
+.percentage {
+  font-weight: 600;
+  color: var(--primary);
+  margin-left: 0.5rem;
 }
 
 .votersTooltip {

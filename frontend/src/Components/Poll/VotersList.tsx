@@ -12,8 +12,9 @@ export const VotersTooltip: React.FC<{
   pollId: number
   optionId: number
   votesCount: number
+  percentage?: number
   onClick?: () => void
-}> = ({ pollId, optionId, votesCount, onClick }) => {
+}> = ({ pollId, optionId, votesCount, percentage, onClick }) => {
   const [voters, setVoters] = useState<UserBaseInfo[]>([])
   const [showTooltip, setShowTooltip] = useState(false)
   const tooltipRef = useRef<HTMLDivElement>(null)
@@ -80,6 +81,7 @@ export const VotersTooltip: React.FC<{
         <span className={styles.votes}>
           {votesCount}
           <span className={classNames('i i-user', styles.userIcon)} />
+          {percentage !== undefined && <span className={styles.percentage}>{percentage}%</span>}
         </span>
       )}
 

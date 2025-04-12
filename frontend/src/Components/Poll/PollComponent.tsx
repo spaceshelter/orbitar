@@ -185,13 +185,11 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
                     pollId={poll.id}
                     optionId={optionId}
                     votesCount={option.votes}
+                    percentage={canShowResults ? percentage : undefined}
                     onClick={() => fetchPoll(true)}
                   />
                 </span>
               )}
-            </div>
-            <div className={styles.results}>
-              {canShowResults && <span className={styles.percentage}>{percentage}%</span>}
             </div>
           </div>
           <div className={styles.progressBar} style={{ width: `${percentage}%` }} />
