@@ -1,7 +1,7 @@
-import { ResultVisibility, VoteAccess } from '../api/types/entities/PollEntity'
+import { PollSettingsEntity, ResultVisibility, VoteAccess } from '../api/types/entities/PollEntity'
 import PollRepository from '../db/repositories/PollRepository'
 import { PollRaw } from '../db/types/PollRaw'
-import { PollInfo, PollSettingsInfo } from './types/PollInfo'
+import { PollInfo } from './types/PollInfo'
 import { UserBaseInfo } from './types/UserInfo'
 import UserManager from './UserManager'
 
@@ -36,7 +36,7 @@ export default class PollManager {
     authorId: number,
     question: string,
     options: string[],
-    settings: PollSettingsInfo,
+    settings: PollSettingsEntity,
     expiresAt?: Date,
   ): Promise<number> {
     if (options.length < 2 || options.length > 32) {
