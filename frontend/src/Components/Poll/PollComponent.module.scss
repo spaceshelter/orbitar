@@ -113,37 +113,6 @@
   gap: 0.5rem;
 }
 
-.refreshButton {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--fgSofter);
-  padding: 0.2rem;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-
-  &:hover {
-    color: var(--primary);
-    background-color: var(--dim2);
-  }
-
-  &.rotating {
-    animation: rotate-once 0.5s ease-in-out;
-  }
-}
-
-@keyframes rotate-once {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 .loading {
 }
 

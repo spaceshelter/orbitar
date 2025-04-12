@@ -2,13 +2,13 @@ import React, { useCallback, useEffect, useState } from 'react'
 
 import { PollEntity, ResultVisibility, VoteAccess } from '@api/types/Poll'
 import DateComponent from '@components/DateComponent'
+import { RefreshButton } from '@components/Poll/RefreshButton'
 import { VotersTooltip } from '@components/Poll/VotersList'
 import { useAPI, useAppState } from '@state/AppState'
 import Button from '@ui/Button'
 import Checkbox from '@ui/Checkbox'
 import Radio from '@ui/Radio'
 import { pluralize } from '@utils/utils'
-import { FaSyncAlt } from 'react-icons/fa'
 import { toast } from 'react-toastify'
 
 import styles from './PollComponent.module.scss'
@@ -22,7 +22,6 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
   const [poll, setPoll] = useState<PollEntity | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [selectedOptions, setSelectedOptions] = useState<number[]>([])
-  const [isRefreshing, setIsRefreshing] = useState(false)
   const { userRestrictions } = useAppState()
 
   const hasUserVoted = (poll?.userVotes ?? []).length > 0
@@ -222,20 +221,7 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
       <div className={styles.totalVotes}>
         {(poll.totalVotes && pluralize(poll.totalVotes || 0, ['голос', 'голоса', 'голосов']) + ' всего') || ''}
         {(canShowResults && !(poll.expires && poll.expires < new Date()) && (
-          <button
-            className={`${styles.refreshButton} ${isRefreshing ? styles.rotating : ''}`}
-            onClick={(e) => {
-              e.stopPropagation()
-              if (isRefreshing) return
-              setIsRefreshing(true)
-              fetchPoll(true).finally(() => {
-                setTimeout(() => setIsRefreshing(false), 500) // Match animation duration
-              })
-            }}
-            title='Обновить результаты'
-          >
-            <FaSyncAlt size={14} />
-          </button>
+          <RefreshButton onClick={() => fetchPoll(true)} title='Обновить результаты' />
         )) ||
           ''}
         {(!canShowResults &&
