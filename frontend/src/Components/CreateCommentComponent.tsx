@@ -5,7 +5,7 @@ import ReactTextareaAutocomplete from '@webscopeio/react-textarea-autocomplete'
 import classNames from 'classnames'
 import debouncePromise from 'debounce-promise'
 import { observer } from 'mobx-react-lite'
-import moment from 'moment'
+import { createPortal } from 'react-dom'
 import { useHotkeys } from 'react-hotkeys-hook'
 import TextareaAutosize from 'react-textarea-autosize'
 import { toast } from 'react-toastify'
@@ -16,7 +16,7 @@ import { CommentInfo, PostLinkInfo } from '../Types/PostInfo'
 import { UserGender } from '../Types/UserInfo'
 import ContentComponent from './ContentComponent'
 import MediaUploader from './MediaUploader'
-import { PollCreationWizard } from './PollCreationWizard'
+import { PollCreationWizard, PollCreationWizardSubmitData } from './PollCreationWizard'
 import { SecretMailEncoderForm } from './SecretMailbox'
 import SlowMode from './SlowMode'
 import ThemeToggleComponent from './ThemeToggleComponent'
@@ -421,7 +421,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     }
   }
 
-  const handlePollCreate = async (pollData: any) => {
+  const handlePollCreate = async (pollData: PollCreationWizardSubmitData) => {
     try {
       const result = await api.pollAPI.createPoll({
         question: pollData.question,
@@ -432,9 +432,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
           allowVoteRescinding: pollData.settings.allowVoteRescinding,
           voteAccess: pollData.settings.voteAccess,
         },
-        expires: pollData.settings.expirationDays
-          ? moment().add(pollData.settings.expirationDays, 'days').toDate()
-          : undefined,
+        expires: pollData.settings.expirationDate || undefined,
       })
       const pollTag = `<poll>${result.id}</poll>`
       replaceText(pollTag, pollTag.length)
@@ -609,13 +607,15 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             onClose={handleMailClose}
           />
         )}
-        {pollWizardOpen && (
-          <PollCreationWizard
-            isOpen={pollWizardOpen}
-            onClose={() => setPollWizardOpen(false)}
-            onSubmit={handlePollCreate}
-          />
-        )}
+        {pollWizardOpen &&
+          createPortal(
+            <PollCreationWizard
+              isOpen={pollWizardOpen}
+              onClose={() => setPollWizardOpen(false)}
+              onSubmit={handlePollCreate}
+            />,
+            document.body,
+          )}
       </div>
     </div>
   )

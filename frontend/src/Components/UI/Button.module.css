@@ -1,4 +1,4 @@
-button.buttonComponent {
+.buttonComponent {
   height: 36px;
   border: none;
   display: flex;
@@ -16,7 +16,8 @@ button.buttonComponent {
 
   &.disabled {
     pointer-events: none;
-    opacity: 0.8;
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   &.default {

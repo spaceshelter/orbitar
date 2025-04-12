@@ -56,6 +56,7 @@ export const Radio: React.FC<RadioProps> = ({
       [styles.large]: checkboxSize === 'large',
       [styles.error]: error,
     },
+
     className,
   )
 
@@ -63,7 +64,7 @@ export const Radio: React.FC<RadioProps> = ({
     <div className={styles.radioWrapper}>
       <input type='radio' id={id} className={radioClass} {...props} />
       {label && (
-        <label htmlFor={id} className={styles.label}>
+        <label htmlFor={id} className={classNames(styles.label, { [styles.disabled]: props.disabled })}>
           {label}
         </label>
       )}

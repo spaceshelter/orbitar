@@ -4,16 +4,17 @@ import Drawer from 'react-modern-drawer'
 
 import 'react-modern-drawer/dist/index.css'
 
+import { ResultVisibility, VoteAccess } from '@api/types/Poll'
 import useNoScroll from '@api/use/useNoScroll'
+import DateComponent from '@components/DateComponent'
 import { useAPI, useAppState } from '@state/AppState'
 import Button from '@ui/Button'
 import Checkbox from '@ui/Checkbox'
 import { Field } from '@ui/Field'
-import Select from '@ui/Select'
+import Radio from '@ui/Radio'
 import { autorun } from 'mobx'
+import moment from 'moment'
 import { toast } from 'react-toastify'
-
-import { ResultVisibility, VoteAccess } from '../API/types/Poll'
 
 import styles from './PollCreationWizard.module.scss'
 
@@ -23,7 +24,7 @@ interface PollOption {
 }
 
 interface PollSettings {
-  expirationDays: number | null
+  expirationDate: Date | null
   isMultipleChoice: boolean
   allowVoteRescinding: boolean
   voteAccess: VoteAccess
@@ -36,13 +37,20 @@ interface PollDraft {
   settings: PollSettings
 }
 
+export interface PollCreationWizardSubmitData {
+  question: string
+  options: PollOption[]
+  settings: PollSettings
+}
+
 interface PollCreationWizardProps {
   isOpen: boolean
   onClose: () => void
-  onSubmit: (data: { question: string; options: PollOption[]; settings: PollSettings }) => Promise<void>
+  onSubmit: (data: PollCreationWizardSubmitData) => Promise<void>
 }
 
 const STORAGE_KEY = 'poll_draft'
+const tomorrow = () => moment().add(1, 'day').startOf('day').toDate()
 
 export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, onClose, onSubmit }) => {
   useNoScroll()
@@ -53,7 +61,7 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
     { id: '1', text: '' },
   ])
   const [settings, setSettings] = useState<PollSettings>({
-    expirationDays: null,
+    expirationDate: null,
     isMultipleChoice: false,
     allowVoteRescinding: true,
     voteAccess: VoteAccess.EVERYBODY,
@@ -131,22 +139,27 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
     setOptions(options.map((opt) => (opt.id === id ? { ...opt, text } : opt)))
   }
 
-  const handleSettingChange = (key: keyof PollSettings, value: string | number | boolean | null) => {
+  const handleSettingChange = (key: keyof PollSettings, value: string | number | boolean | Date | null) => {
     const newSettings = { ...settings, [key]: value }
 
     if (key === 'resultVisibility') {
       switch (value) {
         case ResultVisibility.ALWAYS:
-          newSettings.expirationDays = null
           break
         case ResultVisibility.AFTER_VOTE:
           newSettings.allowVoteRescinding = false
-          newSettings.expirationDays = null
           break
         case ResultVisibility.AFTER_VOTE_END:
-          newSettings.expirationDays = 1
+          if (!newSettings.expirationDate) {
+            newSettings.expirationDate = tomorrow()
+          }
           break
       }
+    }
+
+    // date is in the past
+    if (newSettings.expirationDate && newSettings.expirationDate < new Date()) {
+      newSettings.expirationDate = tomorrow()
     }
 
     setSettings(newSettings)
@@ -282,35 +295,69 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
               />
             </div>
 
-            <div className={styles.settingRow}>
-              <label htmlFor='resultVisibility'>Видимость результатов</label>
-              <Select
-                id='resultVisibility'
-                value={settings.resultVisibility}
-                onChange={(value) => handleSettingChange('resultVisibility', value)}
-                options={[
-                  { value: ResultVisibility.ALWAYS, label: 'Всегда' },
-                  { value: ResultVisibility.AFTER_VOTE, label: 'После ответа' },
-                  { value: ResultVisibility.AFTER_VOTE_END, label: 'После окончания опроса' },
-                ]}
-              />
-            </div>
-
-            {settings.resultVisibility === ResultVisibility.AFTER_VOTE_END && (
-              <div className={styles.settingRow}>
-                <label htmlFor='expiration'>Срок действия (дни)</label>
-                <Field
-                  type='number'
-                  id='expiration'
-                  min='1'
-                  value={settings.expirationDays || ''}
-                  onChange={(e) =>
-                    handleSettingChange('expirationDays', e.target.value ? parseInt(e.target.value) : null)
-                  }
-                  required
+            {/* Expiration checkbox */}
+            <div className={styles.expirationContainer}>
+              <div className={styles.expirationCheckboxRow}>
+                <label htmlFor='hasExpiration'>Опрос заканчивается</label>
+                <Checkbox
+                  id='hasExpiration'
+                  checked={settings.expirationDate !== null}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      handleSettingChange('expirationDate', tomorrow())
+                    } else {
+                      handleSettingChange('expirationDate', null)
+                    }
+                  }}
+                  disabled={settings.resultVisibility === ResultVisibility.AFTER_VOTE_END}
                 />
               </div>
-            )}
+
+              {/* Date picker */}
+              {settings.expirationDate !== null && (
+                <PollExpiration
+                  date={settings.expirationDate}
+                  onChange={(date) => {
+                    handleSettingChange('expirationDate', date)
+                  }}
+                  validator={(date) => date > new Date()}
+                />
+              )}
+            </div>
+
+            {/* Result visibility as radio buttons */}
+            <div className={`${styles.settingRow} ${styles.radioGroup}`}>
+              <label>Видимость результатов</label>
+              <div className={styles.radioOptions}>
+                <Radio
+                  id='resultVisibility_always'
+                  label='Всегда'
+                  name='resultVisibility'
+                  checked={settings.resultVisibility === ResultVisibility.ALWAYS}
+                  onChange={() => handleSettingChange('resultVisibility', ResultVisibility.ALWAYS)}
+                />
+
+                <Radio
+                  id='resultVisibility_afterVote'
+                  label='После ответа'
+                  name='resultVisibility'
+                  checked={settings.resultVisibility === ResultVisibility.AFTER_VOTE}
+                  onChange={() => handleSettingChange('resultVisibility', ResultVisibility.AFTER_VOTE)}
+                  disabled={settings.allowVoteRescinding}
+                />
+
+                <Radio
+                  id='resultVisibility_afterEnd'
+                  label='После окончания опроса'
+                  name='resultVisibility'
+                  checked={settings.resultVisibility === ResultVisibility.AFTER_VOTE_END}
+                  onChange={() => {
+                    handleSettingChange('resultVisibility', ResultVisibility.AFTER_VOTE_END)
+                  }}
+                  disabled={settings.expirationDate === null}
+                />
+              </div>
+            </div>
           </div>
 
           <div className={styles.actions}>
@@ -324,5 +371,53 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
         </div>
       </div>
     </Drawer>
+  )
+}
+
+const PollExpiration: React.FC<{
+  date: Date
+  onChange: (date: Date) => void
+  disabled?: boolean
+  validator?: (date: Date) => boolean
+}> = ({ date, onChange, disabled = false, validator }) => {
+  const DateButton: React.FC<{
+    delta: number
+    unit: 'hours' | 'days' | 'months'
+  }> = ({ delta, unit }) => {
+    const nxtDate = moment(date).add(delta, unit).toDate()
+    return (
+      <Button
+        variant='ghost'
+        className={styles.dateButton}
+        onClick={() => {
+          onChange(nxtDate)
+        }}
+        disabled={disabled || (validator && !validator(nxtDate))}
+      >
+        {delta < 0 && '◂'}
+        {unit.charAt(0) === 'm' ? 'м' : unit.charAt(0) === 'd' ? 'д' : 'ч'}
+        {delta > 0 && '▸'}
+      </Button>
+    )
+  }
+
+  return (
+    <div className={styles.datePickerContainer}>
+      <div className={styles.dateControls}>
+        <div className={styles.buttonsGroup}>
+          <DateButton unit='months' delta={-1} />
+          <DateButton unit='days' delta={-1} />
+          <DateButton unit='hours' delta={-1} />
+        </div>
+        <div className={styles.dateDisplay}>
+          <DateComponent date={date} />
+        </div>
+        <div className={styles.buttonsGroup}>
+          <DateButton unit='hours' delta={1} />
+          <DateButton unit='days' delta={1} />
+          <DateButton unit='months' delta={1} />
+        </div>
+      </div>
+    </div>
   )
 }

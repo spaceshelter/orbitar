@@ -66,6 +66,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 0.75rem;
 
   label {
     color: var(--fgSoft);
@@ -77,7 +78,6 @@
     }
   }
 
-
   select {
     width: max-content;
     max-width: 50%;
@@ -88,7 +88,8 @@
     }
   }
 
-  input[type='checkbox'] {
+  input[type='checkbox'],
+  input[type='radio'] {
     width: 20px;
     height: 20px;
 
@@ -96,6 +97,95 @@
       width: 18px;
       height: 18px;
     }
+  }
+
+  &.radioGroup {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+
+    .radioOptions {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+  }
+}
+
+// Poll expiration styles
+.expirationContainer {
+  margin-bottom: 1rem;
+}
+
+.expirationCheckboxRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+
+  label {
+    color: var(--fgSoft);
+    font-size: 0.9rem;
+  }
+}
+
+.datePickerContainer {
+  margin-top: 0.5rem;
+}
+
+.dateControls {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  width: 100%;
+
+  @media (max-width: 768px) {
+    grid-template-columns: auto 1fr auto;
+  }
+}
+
+.buttonsGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  @media (max-width: 768px) {
+    gap: 0.1rem;
+  }
+}
+
+.dateButton {
+  padding: 0.2rem 0.1rem;
+  min-width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    min-width: 1.75rem;
+    height: 1.75rem;
+  }
+}
+
+.dateDisplay {
+  padding: 0.25rem 0.5rem;
+  background-color: var(--lowered);
+  border-radius: 4px;
+  margin: 0 0.5rem;
+  text-align: center;
+  justify-self: stretch;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  @media (max-width: 768px) {
+    margin: 0 0.25rem;
+    padding: 0.25rem;
+    font-size: 0.85rem;
   }
 }
 
@@ -125,7 +215,7 @@
   gap: 12px;
   margin-top: auto;
   margin-bottom: 3rem;
-  padding-top: 24px;
+  //padding-top: 24px;
 
   @media (max-width: 768px) {
     flex-direction: column;
