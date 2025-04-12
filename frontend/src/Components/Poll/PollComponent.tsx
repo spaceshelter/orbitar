@@ -242,10 +242,12 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
   }
 
   const renderActions = () => {
-    if (isPollExpired) {
+    if (isPollExpired && poll.expires) {
       return (
         <div className={styles.expiration}>
-          <span>Опрос завершен</span>
+          <span>
+            Опрос завершен <DateComponent date={poll.expires} />
+          </span>
         </div>
       )
     }
