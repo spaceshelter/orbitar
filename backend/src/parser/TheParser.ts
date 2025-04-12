@@ -86,7 +86,7 @@ export default class TheParser {
       mail: ['a', 'mailbox', 'mail'],
       app: ['a', 'mailbox', 'mail'],
       expand: ['a', 'mailbox', 'mail'],
-      poll: ['a', 'mailbox', 'mail'],
+      poll: ['a', 'mailbox', 'mail', 'b', 'i', 'u', 'strike', 'irony', 'spoiler'],
     }
 
     this.parseChildNodesStack = []
