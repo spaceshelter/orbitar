@@ -4,16 +4,16 @@ import Username from '@components/Username'
 import { UserBaseInfo } from '@entities/UserInfo'
 import { useAPI } from '@state/AppState'
 import classNames from 'classnames'
-// import { pluralize } from '@utils/utils'
 import { createPortal } from 'react-dom'
 
 import styles from './VotersList.module.scss'
 
-export const VotersTooltip: React.FC<{ pollId: number; optionId: number; votesCount: number }> = ({
-  pollId,
-  optionId,
-  votesCount,
-}) => {
+export const VotersTooltip: React.FC<{
+  pollId: number
+  optionId: number
+  votesCount: number
+  onClick?: () => void
+}> = ({ pollId, optionId, votesCount, onClick }) => {
   const [voters, setVoters] = useState<UserBaseInfo[]>([])
   const [showTooltip, setShowTooltip] = useState(false)
   const tooltipRef = useRef<HTMLDivElement>(null)
@@ -62,6 +62,10 @@ export const VotersTooltip: React.FC<{ pollId: number; optionId: number; votesCo
   }, [showTooltip, fetchVoters, votesCount])
 
   const handleTooltipClick = (e: React.MouseEvent<HTMLSpanElement>) => {
+    if (onClick) {
+      onClick()
+    }
+
     if (votesCount === 0) {
       return
     }

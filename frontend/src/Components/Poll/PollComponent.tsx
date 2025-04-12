@@ -8,6 +8,7 @@ import Button from '@ui/Button'
 import Checkbox from '@ui/Checkbox'
 import Radio from '@ui/Radio'
 import { pluralize } from '@utils/utils'
+import { FaSyncAlt } from 'react-icons/fa'
 import { toast } from 'react-toastify'
 
 import styles from './PollComponent.module.scss'
@@ -19,7 +20,6 @@ interface PollProps {
 export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
   const api = useAPI()
   const [poll, setPoll] = useState<PollEntity | null>(null)
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedOptions, setSelectedOptions] = useState<number[]>([])
   const { userRestrictions } = useAppState()
@@ -30,20 +30,23 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
     (poll?.settings.voteAccess !== VoteAccess.USERS_WITH_FULL_RIGHTS || userRestrictions?.canVoteKarma) &&
     userRestrictions?.canVote
 
-  const fetchPoll = useCallback(async () => {
-    setLoading(true)
-    setError(null)
+  const fetchPoll = useCallback(
+    async (force = false) => {
+      setError(null)
 
-    try {
-      const pollData = await api.poll.getPollCached(pollId)
-      setPoll(pollData)
-      setSelectedOptions(pollData.userVotes || [])
-    } catch (err) {
-      setError('Не удалось загрузить опрос')
-    } finally {
-      setLoading(false)
-    }
-  }, [pollId, api.poll])
+      try {
+        if (force) {
+          api.poll.invalidatePoll(pollId)
+        }
+        const pollData = await api.poll.getPollCached(pollId)
+        setPoll(pollData)
+        setSelectedOptions(pollData.userVotes || [])
+      } catch (err) {
+        setError('Не удалось загрузить опрос')
+      }
+    },
+    [pollId, api.poll],
+  )
 
   useEffect(() => {
     fetchPoll()
@@ -104,11 +107,10 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
     return Math.round((votes / poll.totalVotes) * 100)
   }
 
-  if (loading) return <div className={styles.loading}>Загрузка...</div>
   if (error) {
     return <div className={styles.error}>{error}</div>
   }
-  if (!poll) return null
+  if (!poll) return <div className={styles.loading}>Загрузка...</div>
 
   const renderOptions = () => {
     const isMultipleVotesAllowed = poll?.settings.allowMultipleChoice
@@ -166,7 +168,12 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
             <div className={styles.votesContainer}>
               {canShowResults && (
                 <span className={styles.votes}>
-                  <VotersTooltip pollId={poll.id} optionId={optionId} votesCount={option.votes} />
+                  <VotersTooltip
+                    pollId={poll.id}
+                    optionId={optionId}
+                    votesCount={option.votes}
+                    onClick={() => fetchPoll(true)}
+                  />
                 </span>
               )}
             </div>
@@ -201,7 +208,22 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
   const renderTotalVotes = () => {
     return (
       <div className={styles.totalVotes}>
-        {poll.totalVotes === 0 ? '' : pluralize(poll.totalVotes || 0, ['голос', 'голоса', 'голосов']) + ' всего'}
+        {(poll.totalVotes && (
+          <>
+            {pluralize(poll.totalVotes || 0, ['голос', 'голоса', 'голосов']) + ' всего'}
+            <button
+              className={styles.refreshButton}
+              onClick={(e) => {
+                e.stopPropagation()
+                fetchPoll(true)
+              }}
+              title='Обновить результаты'
+            >
+              <FaSyncAlt size={14} />
+            </button>
+          </>
+        )) ||
+          ''}
       </div>
     )
   }
