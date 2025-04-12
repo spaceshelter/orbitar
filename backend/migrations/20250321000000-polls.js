@@ -40,7 +40,7 @@ exports.up = async function (db) {
     created_at: {
       type: 'datetime',
       notNull: true,
-      defaultValue: new String('CURRENT_TIMESTAMP'),
+      defaultValue: 'CURRENT_TIMESTAMP',
     },
   })
 
@@ -97,7 +97,7 @@ exports.up = async function (db) {
     voted_at: {
       type: 'datetime',
       notNull: true,
-      defaultValue: new String('CURRENT_TIMESTAMP'),
+      defaultValue: 'CURRENT_TIMESTAMP',
     },
   })
 
