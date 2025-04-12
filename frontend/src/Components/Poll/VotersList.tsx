@@ -7,7 +7,7 @@ import classNames from 'classnames'
 // import { pluralize } from '@utils/utils'
 import { createPortal } from 'react-dom'
 
-import styles from './VotersList.module.css'
+import styles from './VotersList.module.scss'
 
 export const VotersTooltip: React.FC<{ pollId: number; optionId: number; votesCount: number }> = ({
   pollId,
