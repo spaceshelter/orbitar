@@ -129,6 +129,7 @@
 }
 
 .error {
+  padding: 1rem;
   color: var(--danger);
 }
 
@@ -154,11 +155,9 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 0.25rem;
-}
+  text-align: right;
 
-@media (max-width: 600px) {
-  .infoContainer {
-    max-width: 50%;
-    text-align: right;
+  .expiration {
+    justify-content: flex-end;
   }
 }
