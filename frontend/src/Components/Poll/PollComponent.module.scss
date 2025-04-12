@@ -7,6 +7,10 @@
   padding: 1rem;
   margin: 1rem 0;
   position: relative;
+
+  @media (max-width: 400px) {
+    padding: 1rem 0;
+  }
 }
 
 .question {
