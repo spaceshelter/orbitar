@@ -47,7 +47,7 @@ export interface CreatePollResponse {
 }
 
 export interface GetPollsBatchRequest {
-  ids: string[]
+  ids: number[]
 }
 
 export interface GetPollsBatchResponse {

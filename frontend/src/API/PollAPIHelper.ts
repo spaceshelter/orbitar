@@ -5,19 +5,19 @@ import { PollEntity } from './types/Poll'
 
 export default class PollAPIHelper {
   private api: PollAPI
-  private batchedCache: BatchedCache<string, PollEntity>
+  private batchedCache: BatchedCache<number, PollEntity>
 
   constructor(api: PollAPI) {
     this.api = api
-    this.batchedCache = new BatchedCache<string, PollEntity>({
+    this.batchedCache = new BatchedCache({
       debounceTime: 200,
       batchSize: 128,
       cacheTTL: 5 * 60 * 1000, // 5 minutes
       fetchFunction: async (pollIds) => {
         const response = await this.api.getPollsBatch({ ids: pollIds })
-        const result = new Map<string, PollEntity>()
+        const result = new Map<number, PollEntity>()
         for (const poll of response.polls) {
-          result.set(String(poll.id), poll)
+          result.set(poll.id, poll)
         }
         return result
       },
@@ -25,10 +25,10 @@ export default class PollAPIHelper {
   }
 
   async getPollCached(pollId: number): Promise<PollEntity> {
-    return this.batchedCache.get(String(pollId))
+    return this.batchedCache.get(pollId)
   }
 
-  invalidatePoll(pollId: string) {
+  invalidatePoll(pollId: number) {
     this.batchedCache.delete(pollId)
   }
 }

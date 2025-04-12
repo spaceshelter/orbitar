@@ -4,7 +4,7 @@ interface Controllable<T> {
   reject: (reason?: unknown) => void
 }
 
-interface BatchedCacheOptions<K, V> {
+interface BatchedCacheOptions<K extends keyof any, V> {
   /** Maximum number of keys to collect before sending a batch request */
   batchSize: number
   /** Time in milliseconds that cached values remain valid */
@@ -12,13 +12,13 @@ interface BatchedCacheOptions<K, V> {
   /** Time in milliseconds to wait before sending a batch request */
   debounceTime?: number
   /** Function to fetch data for multiple keys in a single request */
-  fetchFunction: (keys: K[]) => Promise<Record<string, V | null> | Map<K, V>>
+  fetchFunction: (keys: K[]) => Promise<Record<K, V | null> | Map<K, V>>
 }
 
 /**
  * BatchedCache provides efficient data retrieval by batching multiple requests into a single API call.
  */
-export class BatchedCache<K extends string, V> {
+export class BatchedCache<K extends keyof any, V> {
   private cache = new Map<K, { data: V; expiresAt: number }>()
   private queue = new Set<K>()
   private pendingResolvers = new Map<K, Controllable<V>>()
@@ -120,7 +120,7 @@ export class BatchedCache<K extends string, V> {
       // Update cache & resolve each request
       for (const key of keys) {
         // Handle both Map and Record return types
-        const value = results instanceof Map ? results.get(key) : results[key] || null
+        const value: V | null = (results instanceof Map ? results.get(key) : results[key]) || null
         if (value) {
           this.cache.set(key, {
             data: value,

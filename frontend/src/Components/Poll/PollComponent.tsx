@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react'
 
+import { PollEntity, ResultVisibility, VoteAccess } from '@api/types/Poll'
 import DateComponent from '@components/DateComponent'
 import { VotersTooltip } from '@components/Poll/VotersList'
 import { useAPI, useAppState } from '@state/AppState'
@@ -8,8 +9,6 @@ import Checkbox from '@ui/Checkbox'
 import Radio from '@ui/Radio'
 import { pluralize } from '@utils/utils'
 import { toast } from 'react-toastify'
-
-import { PollEntity, ResultVisibility, VoteAccess } from '../../API/types/Poll'
 
 import styles from './Poll.module.css'
 
@@ -70,7 +69,7 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
 
   const updatePoll = async (updatedPoll: PollEntity) => {
     setPoll(updatedPoll)
-    api.poll.invalidatePoll(String(pollId))
+    api.poll.invalidatePoll(pollId)
   }
 
   const handleSubmitVote = async () => {

@@ -39,7 +39,9 @@ export default class PollAPI {
   }
 
   async vote(data: PollVoteRequest): Promise<PollVoteResponse> {
-    return await this.api.request<PollVoteRequest, PollVoteResponse>('/poll/vote', data)
+    const res = await this.api.request<PollVoteRequest, PollVoteResponse>('/poll/vote', data)
+    this.fixPoll(res.poll)
+    return res
   }
 
   async getVoters(data: GetVotersRequest): Promise<GetVotersResponse> {
