@@ -120,9 +120,11 @@ export default class PollManager {
       throw new PollError('invalid-option', 'Invalid option ID', 400)
     }
 
+    const userRestrictions = await this.userManager.getUserRestrictions(voterId)
     if (
-      settings.voteAccess === VoteAccess.USERS_WITH_FULL_RIGHTS &&
-      !(await this.userManager.getUserRestrictions(voterId)).canVoteKarma /*proxy for full rights*/
+      !userRestrictions.canVote ||
+      (settings.voteAccess === VoteAccess.USERS_WITH_FULL_RIGHTS &&
+        !userRestrictions.canVoteKarma) /*proxy for full rights*/
     ) {
       throw new PollError('permission-denied', 'You do not have permission to vote', 403)
     }

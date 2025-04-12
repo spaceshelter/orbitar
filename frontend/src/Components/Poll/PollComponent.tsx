@@ -27,7 +27,8 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
   const hasUserVoted = (poll?.userVotes ?? []).length > 0
   const isPollExpired = poll?.expires && poll.expires < new Date()
   const allowedToVote =
-    poll?.settings.voteAccess !== VoteAccess.USERS_WITH_FULL_RIGHTS || userRestrictions?.canVoteKarma
+    (poll?.settings.voteAccess !== VoteAccess.USERS_WITH_FULL_RIGHTS || userRestrictions?.canVoteKarma) &&
+    userRestrictions?.canVote
 
   const fetchPoll = useCallback(async () => {
     setLoading(true)
@@ -49,10 +50,10 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
   }, [fetchPoll])
 
   useEffect(() => {
-    if (poll?.settings.voteAccess === VoteAccess.USERS_WITH_FULL_RIGHTS && !userRestrictions) {
+    if (!userRestrictions) {
       api.user.refreshUserRestrictions()
     }
-  }, [userRestrictions, api.user, poll?.settings.voteAccess])
+  }, [userRestrictions, api.user])
 
   const handleOptionSelect = (optionId: number) => {
     if (!poll || isPollExpired || hasUserVoted) return
