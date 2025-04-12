@@ -348,7 +348,7 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
 
                 <Radio
                   id='resultVisibility_afterEnd'
-                  label='После окончания опроса'
+                  label='После завершения опроса'
                   name='resultVisibility'
                   checked={settings.resultVisibility === ResultVisibility.AFTER_VOTE_END}
                   onChange={() => {

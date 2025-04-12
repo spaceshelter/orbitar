@@ -58,6 +58,19 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
     }
   }, [userRestrictions, api.user])
 
+  // if expiration date is in the future, schedule a refresh
+  useEffect(() => {
+    if (poll && poll?.expires && poll.expires > new Date()) {
+      const refreshTimer = setTimeout(
+        () => {
+          fetchPoll(true)
+        },
+        Math.max(0, poll.expires.getTime() - Date.now() + 1000),
+      )
+      return () => clearTimeout(refreshTimer)
+    }
+  }, [poll])
+
   const handleOptionSelect = (optionId: number) => {
     if (!poll || isPollExpired || hasUserVoted) return
 
@@ -112,22 +125,22 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
   }
   if (!poll) return <div className={styles.loading}>Загрузка...</div>
 
+  const canShowResults = (() => {
+    switch (poll?.settings.resultVisibility) {
+      case ResultVisibility.ALWAYS:
+        return true
+      case ResultVisibility.AFTER_VOTE:
+        return hasUserVoted
+      case ResultVisibility.AFTER_VOTE_END:
+        return hasUserVoted && isPollExpired
+      default:
+        return false
+    }
+  })()
+
   const renderOptions = () => {
     const isMultipleVotesAllowed = poll?.settings.allowMultipleChoice
     const hasAnyVotes = (poll?.userVotes ?? []).length > 0
-
-    const canShowResults = (() => {
-      switch (poll?.settings.resultVisibility) {
-        case ResultVisibility.ALWAYS:
-          return true
-        case ResultVisibility.AFTER_VOTE:
-          return hasUserVoted
-        case ResultVisibility.AFTER_VOTE_END:
-          return hasUserVoted && isPollExpired
-        default:
-          return false
-      }
-    })()
 
     return poll.options.map((option, optionId) => {
       const percentage = calculatePercentage(option.votes)
@@ -195,7 +208,7 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
     if (poll.expires) {
       return (
         <div className={styles.expiration}>
-          <span>Окончание: </span>
+          <span>завершение: </span>
           <span>&nbsp;</span>
           <span>
             <DateComponent date={poll.expires} />
@@ -208,21 +221,23 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
   const renderTotalVotes = () => {
     return (
       <div className={styles.totalVotes}>
-        {(poll.totalVotes && (
-          <>
-            {pluralize(poll.totalVotes || 0, ['голос', 'голоса', 'голосов']) + ' всего'}
-            <button
-              className={styles.refreshButton}
-              onClick={(e) => {
-                e.stopPropagation()
-                fetchPoll(true)
-              }}
-              title='Обновить результаты'
-            >
-              <FaSyncAlt size={14} />
-            </button>
-          </>
+        {(poll.totalVotes && pluralize(poll.totalVotes || 0, ['голос', 'голоса', 'голосов']) + ' всего') || ''}
+        {(canShowResults && !(poll.expires && poll.expires < new Date()) && (
+          <button
+            className={styles.refreshButton}
+            onClick={(e) => {
+              e.stopPropagation()
+              fetchPoll(true)
+            }}
+            title='Обновить результаты'
+          >
+            <FaSyncAlt size={14} />
+          </button>
         )) ||
+          ''}
+        {(!canShowResults &&
+          ((poll.settings.resultVisibility === ResultVisibility.AFTER_VOTE && 'результаты после ответа') ||
+            (poll.settings.resultVisibility === ResultVisibility.AFTER_VOTE_END && 'результаты после завершения'))) ||
           ''}
       </div>
     )
