@@ -10,7 +10,6 @@
 }
 
 .question {
-  font-size: 1.2rem;
   font-weight: 600;
   color: var(--fg);
   overflow-wrap: break-word;

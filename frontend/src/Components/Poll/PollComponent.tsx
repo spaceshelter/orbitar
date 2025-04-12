@@ -242,7 +242,7 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
 
   return (
     <div className={styles.pollContainer}>
-      <h3 className={styles.question}>{poll.question}</h3>
+      <span className={styles.question}>{poll.question}</span>
 
       <div className={styles.options}>{renderOptions()}</div>
 
