@@ -48,7 +48,7 @@ export default class PollManager {
     return pollId
   }
 
-  enrichPoll(poll: PollRaw, includeVotes = true, userVotes: number[] = []): PollInfo {
+  enrichPoll(poll: PollRaw, canShowResults = true, userVotes: number[] = []): PollInfo {
     return {
       id: poll.poll_id,
       author: poll.author_id,
@@ -58,13 +58,14 @@ export default class PollManager {
       created: poll.created_at,
       options: poll.options.map((text: string, index: number) => ({
         text,
-        votes: (includeVotes && poll[`opt${index}`]) || 0,
+        votes: (canShowResults && poll[`opt${index}`]) || 0,
       })),
       totalVotes:
-        (includeVotes &&
+        (canShowResults &&
           Array.from({ length: 32 }, (_, i) => poll[`opt${i}`] || 0).reduce((sum, count) => sum + count, 0)) ||
         0,
       userVotes,
+      canShowResults,
     }
   }
 
@@ -85,13 +86,14 @@ export default class PollManager {
     return polls.map((poll) => {
       const userVotesForPoll = (userId && userVotes.get(poll.poll_id)) || []
 
+      const canShowResults =
+        poll.settings.resultVisibility === ResultVisibility.ALWAYS ||
+        (poll.settings.resultVisibility === ResultVisibility.AFTER_VOTE && userVotesForPoll.length > 0) ||
+        (poll.settings.resultVisibility === ResultVisibility.AFTER_VOTE_END &&
+          (poll.expires_at || new Date()) < new Date())
+
       const includeVotesForPoll =
-        includeVotes === IncludePollVotes.YES ||
-        (includeVotes === IncludePollVotes.AUTO &&
-          (poll.settings.resultVisibility === ResultVisibility.ALWAYS ||
-            (poll.settings.resultVisibility === ResultVisibility.AFTER_VOTE && userVotesForPoll.length > 0) ||
-            (poll.settings.resultVisibility === ResultVisibility.AFTER_VOTE_END &&
-              (!poll.expires_at || new Date(poll.expires_at) < new Date()))))
+        includeVotes === IncludePollVotes.YES || (includeVotes === IncludePollVotes.AUTO && canShowResults)
 
       return this.enrichPoll(poll, includeVotesForPoll, userVotesForPoll)
     })
@@ -132,22 +134,18 @@ export default class PollManager {
     await this.pollRepository.vote(pollId, voterId, optionIds)
   }
 
-  async getVoters(pollId: number, optionId: number): Promise<UserBaseInfo[]> {
+  async getVoters(pollId: number, optionId: number, userId?: number): Promise<UserBaseInfo[]> {
     if (optionId < 0 || optionId >= 32) {
       throw new PollError('invalid-option', 'Invalid option ID', 400)
     }
 
-    const [poll] = await this.getPollsByIds([pollId])
+    const [poll] = await this.getPollsByIds([pollId], userId, IncludePollVotes.AUTO)
     if (!poll) {
       throw new PollError('not-found', 'Poll not found', 404)
     }
 
-    if (
-      poll.settings.resultVisibility === ResultVisibility.AFTER_VOTE_END &&
-      poll.expires &&
-      new Date(poll.expires) > new Date()
-    ) {
-      throw new PollError('poll-active', 'Poll has not ended yet', 403)
+    if (!poll.canShowResults) {
+      throw new PollError('results-hidden', 'Poll results are not available', 403)
     }
 
     return await this.pollRepository.getVoters(pollId, optionId)
