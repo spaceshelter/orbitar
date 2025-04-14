@@ -125,18 +125,7 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
   }
   if (!poll) return <div className={styles.loading}>Загрузка...</div>
 
-  const canShowResults = (() => {
-    switch (poll?.settings.resultVisibility) {
-      case ResultVisibility.ALWAYS:
-        return true
-      case ResultVisibility.AFTER_VOTE:
-        return hasUserVoted
-      case ResultVisibility.AFTER_VOTE_END:
-        return hasUserVoted && isPollExpired
-      default:
-        return false
-    }
-  })()
+  const canShowResults = poll.canShowResults
 
   const renderOptions = () => {
     const isMultipleVotesAllowed = poll?.settings.allowMultipleChoice

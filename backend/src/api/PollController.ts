@@ -217,7 +217,7 @@ export default class PollController {
     }
 
     try {
-      const voters = await this.pollManager.getVoters(pollId, optionId)
+      const voters = await this.pollManager.getVoters(pollId, optionId, userId)
       response.success({ voters })
     } catch (err) {
       if (err instanceof PollError) {

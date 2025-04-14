@@ -31,4 +31,5 @@ export interface PollEntity {
   created?: Date
   totalVotes: number
   userVotes?: number[]
+  canShowResults: boolean
 }
