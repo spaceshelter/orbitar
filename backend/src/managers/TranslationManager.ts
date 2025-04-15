@@ -16,10 +16,31 @@ const openai = new OpenAI({
   apiKey: config.openai.apiKey,
 })
 
-const TEXT_SIZE_LIMIT = 64 * 1024
+const TEXT_SIZE_LIMIT = 128 * 1024
 
-export const TRANSLATION_MODES = ['altTranslate', 'annotate'] as const
+export const TRANSLATION_MODES = ['altTranslate', 'annotate', 'translate'] as const
 export type TranslationMode = (typeof TRANSLATION_MODES)[number]
+
+export const TRANSLATION_LANGUAGES = {
+  az: 'Azərbaycanca',
+  be: 'Беларуская',
+  bg: 'Български',
+  et: 'Eesti',
+  ka: 'ქართული',
+  kk: 'Қазақша',
+  ky: 'Кыргызча',
+  lt: 'Lietuvių',
+  lv: 'Latviešu',
+  mn: 'Монгол',
+  ru: 'Русский',
+  tg: 'Тоҷикӣ',
+  tk: 'Türkmençe',
+  uk: 'Українська',
+  hy: 'Հայերեն',
+  uz: 'oʻzbek',
+} as const
+
+export type TranslationLanguage = keyof typeof TRANSLATION_LANGUAGES
 
 const fasttextModelPromise: Promise<FastTextModel> = new Promise<FastText>((resolve) => {
   addOnPostRun(() => {
@@ -112,7 +133,7 @@ export default class TranslationManager {
 
     return openai.chat.completions.create({
       messages: messages,
-      model: 'gpt-4o-mini',
+      model: 'gpt-4.1-mini',
       stream: true,
       temperature: temperature,
     })
@@ -129,13 +150,18 @@ export default class TranslationManager {
     type: 'post' | 'comment',
     mode: TranslationMode,
     write: (str: string) => void,
+    language?: TranslationLanguage,
   ): Promise<void> {
     const contentSource = await this.postRepository.getLatestContentSource(ref_id, type)
     if (!contentSource) {
       throw new Error('ContentSource not found')
     }
 
-    const cachedTranslation = await this.translationRepository.getTranslation(contentSource.content_source_id, mode)
+    const cachedTranslation = await this.translationRepository.getTranslation(
+      contentSource.content_source_id,
+      mode,
+      language,
+    )
     if (cachedTranslation) {
       write(cachedTranslation.html)
       return
@@ -153,17 +179,35 @@ export default class TranslationManager {
         hint = '<span class="interpretation"><span class="i i-annotate"></span>TL;DR</span><br />'
         temp = 0.5
         break
+      case 'translate': {
+        if (!language) {
+          throw new Error('Language is required for translation mode')
+        }
+
+        const langName = TRANSLATION_LANGUAGES[language] || language.toUpperCase()
+        prompt = `Translate this text to ${language} language (${langName}). Make sure HTML is valid and preserved.\n`
+        hint = ''
+        temp = 0.3
+        break
+      }
     }
 
     if (!prompt) {
       throw new Error('Invalid prompt')
     }
     // TODO review limitations to fit into budget
-    const parsingResult = this.parser.parse(TranslationManager.stripMailboxTags(contentSource.source)).text
+    let parsingResult = this.parser.parse(TranslationManager.stripMailboxTags(contentSource.source)).text
+
+    if (mode === 'translate' && contentSource.title) {
+      // hax: client-side parser doesn't like quotes, even escaped
+      const title = JSON.stringify(contentSource.title.replace(/"/g, '”'))
+      parsingResult = `<title data-title=${title} ></title>` + parsingResult
+    }
+
     const content = parsingResult.substring(0, TEXT_SIZE_LIMIT)
 
     // if parsingResult without html tags and whitespace is too short, don't do anything
-    if (stripHtml(parsingResult).result.trim().length < 6) {
+    if (stripHtml(((mode === 'translate' && contentSource.title) || '') + parsingResult).result.trim().length < 6) {
       // return empty response
       return Promise.resolve()
     }
@@ -190,11 +234,13 @@ export default class TranslationManager {
       }
     }
     const fullResponseStr = fullResponse.join('')
+
     await this.translationRepository.saveTranslation(
       contentSource.content_source_id,
       mode,
-      contentSource.title || '',
+      '',
       fullResponseStr,
+      language,
     )
   }
 

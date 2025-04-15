@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react'
 
+import { getPreferredLang } from '@components/UserProfileSettings'
+import { useAPI } from '@state/AppState'
+import { scrollUnderTopbar } from '@utils/utils'
 import { toast } from 'react-toastify'
-import xss from 'xss'
+import xss, { friendlyAttrValue } from 'xss'
 
-import { useAPI } from '../../AppState/AppState'
-import googleTranslate from '../../Utils/googleTranslate'
-import { scrollUnderTopbar } from '../../Utils/utils'
 import xssFilter from '../../Utils/xssFilter'
 import { TranslateModes } from '../PostAPI'
 import { useLazy } from './useLazy'
@@ -29,6 +29,7 @@ export function useInterpreter(
   const [cachedContentTranslation, setCachedContentTranslation] = useState<string | undefined>()
   const [streamingAnnotation, setStreamingAnnotation] = useState<string | undefined | null>() // null is a special value indication that content is being fetched
   const [cachedAnnotation, setCachedAnnotation] = useState<string | undefined>()
+  const [streamingTranslation, setStreamingTranslation] = useState<string | undefined | null>() // null is a special value indication that content is being fetched
   const [streamingAltTranslation, setStreamingAltTranslation] = useState<string | undefined | null>() // null is a special value indication that content is being fetched
   const [cachedAltTranslation, setCachedAltTranslation] = useState<string | undefined>()
   const [inProgress, setInProgress] = useState<boolean>(false)
@@ -51,35 +52,22 @@ export function useInterpreter(
   const altTitle = currentMode === 'translate' && cachedTitleTranslation ? xssFilter(cachedTitleTranslation) : undefined
 
   const altContent =
-    (currentMode === 'translate' && cachedContentTranslation) ||
+    (currentMode === 'translate' && (cachedContentTranslation || streamingTranslation)) ||
     (currentMode === 'altTranslate' && mergeContent(cachedAltTranslation, streamingAltTranslation, originalContent)) ||
     (currentMode === 'annotate' && mergeContent(cachedAnnotation, streamingAnnotation, originalContent)) ||
     undefined
-
-  const translate = () => {
-    getAlternative('translate', currentMode, setCurrentMode, cachedContentTranslation, undefined, async () => {
-      setInProgress(true)
-
-      if (originalTitle) {
-        const title = await googleTranslate(originalTitle)
-        setCachedTitleTranslation(title)
-      }
-
-      const html = await googleTranslate(originalContent)
-      setCachedContentTranslation(html)
-      setInProgress(false)
-    })
-  }
 
   const retrieveStreamResponse = (
     mode: TranslateModes,
     setStreamingValue: (str: string | undefined | null) => void,
     setCachedValue: (str: string) => void,
+    setTitle?: (str: string) => void,
+    language?: string,
   ): (() => Promise<void>) => {
     return async () => {
       // set special value to indicate that content is being fetched
       setStreamingValue(null)
-      const rs = await api.postAPI.translate(id, type, mode)
+      const rs = await api.postAPI.translate(id, type, mode, language)
       const reader = rs
         .pipeThrough(new TextDecoderStream() as unknown as ReadableWritablePair<string, string>)
         .getReader()
@@ -90,26 +78,60 @@ export function useInterpreter(
       const chunks: string[] = []
       let done,
         value,
-        finalValue = ''
+        finalValue = '',
+        titleSet = false
+
       while (!done) {
         ;({ value, done } = await reader.read())
-
-        if (done) {
-          finalValue = chunks.join('')
-          setStreamingValue(undefined)
-          setCachedValue(finalValue)
-        }
 
         if (value && value !== '') {
           // FIXME: This is a dirty hack, succeptible to injection attack
           if (value.indexOf('{"result":"error","code":"error"') !== -1) {
             throw new Error('Error fetching interpretation')
           }
-          setStreamingValue(xssFilter(chunks.join('')))
           chunks.push(value)
+          const intermediateValue = chunks.join('')
+          setStreamingValue(xssFilter(intermediateValue))
+
+          if (!titleSet && setTitle && intermediateValue.includes('<title')) {
+            xss(intermediateValue, {
+              whiteList: {
+                title: ['data-title'],
+              },
+              onTagAttr: (tag, name, value) => {
+                if (tag === 'title' && name === 'data-title') {
+                  setTitle?.(friendlyAttrValue(value))
+                  titleSet = true
+                }
+              },
+            })
+          }
+        }
+
+        if (done) {
+          finalValue = chunks.join('')
+          setStreamingValue(undefined)
+          setCachedValue(finalValue)
         }
       }
     }
+  }
+
+  const translate = () => {
+    getAlternative(
+      'translate',
+      currentMode,
+      setCurrentMode,
+      cachedContentTranslation,
+      streamingTranslation,
+      retrieveStreamResponse(
+        'translate',
+        setStreamingTranslation,
+        setCachedContentTranslation,
+        setCachedTitleTranslation,
+        getPreferredLang(),
+      ),
+    )
   }
 
   const altTranslate = () => {
@@ -163,7 +185,7 @@ export function useInterpreter(
 
   // bring top of the content into view when updating content
   useEffect(() => {
-    if (!currentMode) {
+    if (!currentMode || currentMode === 'translate') {
       return
     }
     if (contentRef.current) {

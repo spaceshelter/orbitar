@@ -205,12 +205,13 @@ export type GetPostPublicKeyResponse = {
   publicKey?: string
 }
 
-export type TranslateModes = 'altTranslate' | 'annotate'
+export type TranslateModes = 'altTranslate' | 'annotate' | 'translate'
 
 export type TranslateRequest = {
   id: number
   type: 'post' | 'comment'
   mode: TranslateModes
+  language?: string
 }
 
 export type TranslateResponse = ReadableStream<string>
@@ -307,11 +308,12 @@ export default class PostAPI {
     })
   }
 
-  translate(id: number, type: 'post' | 'comment', mode: 'altTranslate' | 'annotate'): Promise<TranslateResponse> {
+  translate(id: number, type: 'post' | 'comment', mode: TranslateModes, language?: string): Promise<TranslateResponse> {
     return this.api.stream<TranslateRequest, TranslateResponse>('/post/translate', {
       id,
       type,
       mode,
+      language,
     })
   }
 

@@ -2,6 +2,7 @@ import xss from 'xss'
 
 export default function xssFilter(html: string): string {
   return xss(html, {
+    stripIgnoreTag: true,
     whiteList: {
       a: ['href', 'target', 'class'],
       img: ['src', 'alt', 'data-video'],
