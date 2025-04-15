@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react'
 
+import { TranslateType } from '@api/PostAPI'
+import { useInterpreter } from '@api/use/useInterpreter'
+import { useAPI, useAppState } from '@state/AppState'
 import OutsideClickHandler from 'react-outside-click-handler'
 import { toast } from 'react-toastify'
 
-import { useInterpreter } from '../API/use/useInterpreter'
-import { useAPI, useAppState } from '../AppState/AppState'
 import Conf from '../Conf'
 import { PostInfo } from '../Types/PostInfo'
 import { AltTranslateButton, AnnotateButton, TranslateButton, UnwatchButton, WatchButton } from './ContentButtons'
@@ -50,7 +51,7 @@ export default function PostComponent(props: PostComponentProps) {
     altTranslate,
     calcShowAltTranslate,
     calcShowAnnotate,
-  } = useInterpreter(props.post.content, props.post.title, props.post.id, 'post')
+  } = useInterpreter(props.post.content, props.post.id, TranslateType.POST)
 
   const handleVote = useMemo(() => {
     return (value: number, vote?: number) => {

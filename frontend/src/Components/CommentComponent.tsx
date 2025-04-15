@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react'
 
+import { TranslateType } from '@api/PostAPI'
+import { useInterpreter } from '@api/use/useInterpreter'
+import { useAPI } from '@state/AppState'
 import OutsideClickHandler from 'react-outside-click-handler'
 import { toast } from 'react-toastify'
 
-import { useInterpreter } from '../API/use/useInterpreter'
-import { useAPI } from '../AppState/AppState'
 import Conf from '../Conf'
 import { CommentInfo, PostLinkInfo } from '../Types/PostInfo'
 import { AltTranslateButton, AnnotateButton, TranslateButton } from './ContentButtons'
@@ -50,7 +51,7 @@ export default function CommentComponent(props: CommentProps) {
     altTranslate,
     calcShowAnnotate,
     calcShowAltTranslate,
-  } = useInterpreter(props.comment.content, undefined, props.comment.id, 'comment')
+  } = useInterpreter(props.comment.content, props.comment.id, TranslateType.COMMENT)
 
   const handleAnswerSwitch = (e: React.MouseEvent) => {
     e.preventDefault()

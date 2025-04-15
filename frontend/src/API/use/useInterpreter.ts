@@ -7,7 +7,7 @@ import { toast } from 'react-toastify'
 import xss, { friendlyAttrValue } from 'xss'
 
 import xssFilter from '../../Utils/xssFilter'
-import { TranslateModes } from '../PostAPI'
+import { TranslateModes, TranslateType } from '../PostAPI'
 import { useLazy } from './useLazy'
 
 export type AltContentType = 'translate' | TranslateModes
@@ -16,12 +16,7 @@ export type AltContentType = 'translate' | TranslateModes
 export const ANNOTATE_LIMIT = 1024
 export const ALT_TRANSLATE_LIMIT = 4 * 1024
 
-export function useInterpreter(
-  originalContent: string,
-  originalTitle: string | undefined,
-  id: number,
-  type: 'post' | 'comment',
-) {
+export function useInterpreter(originalContent: string, id: number, type: TranslateType) {
   const api = useAPI()
   const contentRef = useRef<HTMLDivElement>(null)
   const [currentMode, setCurrentMode] = React.useState<AltContentType | undefined>()
