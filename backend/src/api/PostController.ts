@@ -8,7 +8,7 @@ import CodeError from '../CodeError'
 import FeedManager from '../managers/FeedManager'
 import PostManager from '../managers/PostManager'
 import SiteManager from '../managers/SiteManager'
-import TranslationManager, { TRANSLATION_MODES } from '../managers/TranslationManager'
+import TranslationManager, { TRANSLATION_LANGUAGES, TRANSLATION_MODES } from '../managers/TranslationManager'
 import UserManager from '../managers/UserManager'
 import { APIRequest, APIResponse, joiFormat, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
@@ -143,6 +143,9 @@ export default class PostController {
       mode: Joi.string()
         .valid(...TRANSLATION_MODES)
         .required(),
+      language: Joi.string()
+        .valid(...Object.keys(TRANSLATION_LANGUAGES))
+        .optional(),
     })
     const historySchema = Joi.object<PostHistoryRequest>({
       id: Joi.number().required(),
@@ -577,7 +580,7 @@ export default class PostController {
     if (!request.session.data.userId) {
       return response.authRequired()
     }
-    const { id, type, mode } = request.body
+    const { id, type, mode, language } = request.body
     try {
       const restrictions = await this.userManager.getUserRestrictions(request.session.data.userId)
       if (restrictions.restrictedToPostId !== false) {
@@ -585,7 +588,12 @@ export default class PostController {
         return response.error('access-denied', `Translation is not allowed.`, 403)
       }
 
-      await this.translationManager.translateEntity(id, type, mode, (chunk) => response.write(chunk))
+      // Validate that language is provided when mode is 'translate'
+      if (mode === 'translate' && !language) {
+        return response.error('invalid-params', 'Language is required for translation mode', 400)
+      }
+
+      await this.translationManager.translateEntity(id, type, mode, (chunk) => response.write(chunk), language)
       response.end()
     } catch (err) {
       let msg = 'Unknown error'
