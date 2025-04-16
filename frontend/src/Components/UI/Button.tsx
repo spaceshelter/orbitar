@@ -21,39 +21,50 @@ export const BUTTON_SIZES = {
 export type ButtonType = keyof typeof BUTTON_TYPES
 export type ButtonSize = keyof typeof BUTTON_SIZES
 
+type BaseButtonProps = ButtonHTMLAttributes<HTMLButtonElement>
+
 /**
  * Interface for Button component props
+ *
  * @interface ButtonProps
  * @extends {ButtonHTMLAttributes<HTMLButtonElement>}
  */
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  /** Button variant/style type
-   * @default 'solid'
-   */
+interface ButtonProps extends BaseButtonProps {
+  /** Button variant/style type */
   variant?: ButtonType
+
   /** Button size
    * @default 'normal'
    */
   size?: ButtonSize
+
   /** Disabled state of the button
    * @default false
    */
   disabled?: boolean
+
   /** Loading state of the button
    * @default false
    */
   loading?: boolean
+
   /** Dynamic state for theme buttons
    * @default false
    */
   dynamic?: boolean
+
   /** Rotating state for refresh buttons
    * @default false
    */
   rotating?: boolean
+
   /** Content to be rendered inside the button */
   children: React.ReactNode
 }
+
+type StrictButtonProps =
+  | (Omit<ButtonProps, 'variant' | 'children'> & { variant: 'link'; children: string })
+  | (Omit<ButtonProps, 'variant'> & { variant?: Exclude<ButtonType, 'link'> })
 
 /**
  * A customizable button component that supports different variants and sizes
@@ -66,7 +77,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  * </Button>
  * ```
  */
-export const Button: React.FC<ButtonProps> = ({
+export const Button: React.FC<StrictButtonProps> = ({
   variant = 'solid',
   size = 'normal',
   disabled = false,
@@ -77,6 +88,12 @@ export const Button: React.FC<ButtonProps> = ({
   className,
   ...props
 }) => {
+  const isIconOnly = (): boolean => {
+    const childArray = React.Children.toArray(children)
+
+    return childArray.length === 1 && React.isValidElement(childArray[0]) && typeof childArray[0].type !== 'string'
+  }
+
   const buttonClass = classNames(
     {
       [BUTTON_TYPES[variant]]: true,
@@ -84,6 +101,7 @@ export const Button: React.FC<ButtonProps> = ({
       [styles.disabled]: disabled,
       [styles.dynamic]: dynamic,
       [styles.rotating]: rotating,
+      [styles.iconOnly]: isIconOnly(),
     },
     styles.buttonComponent,
     className,
