@@ -20,6 +20,8 @@
   opacity: 0.8;
   background: none;
 
+  transition: background-color 0.2s ease;
+
   &:hover {
     opacity: 1;
   }
@@ -60,12 +62,20 @@
     @include button-variant(var(--fgSoft));
   }
 
+  &.solidAccent {
+    @include button-variant(var(--fg), null, var(--fgSoftest), var(--fgSofter));
+  }
+
   &.primary {
     @include button-variant(var(--primary), var(--primaryHover));
 
     &.disabled {
       color: var(--fgSoft);
     }
+  }
+
+  &.primaryAccent {
+    @include button-variant(var(--onAccent), null, var(--primary), var(--primaryHover));
   }
 
   &.danger {
@@ -76,8 +86,17 @@
     }
   }
 
+  &.dangerAccent {
+    @include button-variant(var(--onAccent), null, var(--danger), var(--dangerHover));
+  }
+
   &.ghost {
     @include button-variant(var(--fgSoft), null, transparent);
+  }
+
+  &.ghostAccent {
+    @include button-variant(var(--fg), null, transparent, var(--dim3));
+    border: 1px solid var(--inactive-fg);
   }
 
   &.link {

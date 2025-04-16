@@ -9,6 +9,10 @@ export const BUTTON_TYPES = {
   primary: styles.primary,
   danger: styles.danger,
   ghost: styles.ghost,
+  solidAccent: styles.solidAccent,
+  primaryAccent: styles.primaryAccent,
+  dangerAccent: styles.dangerAccent,
+  ghostAccent: styles.ghostAccent,
   link: styles.link,
 } as const
 
