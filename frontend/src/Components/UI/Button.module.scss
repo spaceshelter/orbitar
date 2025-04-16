@@ -1,4 +1,13 @@
-.buttonComponent {
+@keyframes rotate {
+  from {
+    transform: rotate(1deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+%baseButton {
   height: 36px;
   border: none;
   display: flex;
@@ -9,44 +18,50 @@
   gap: 8px;
   fill: var(--fgSoft);
   opacity: 0.8;
+  background: none;
 
   &:hover {
     opacity: 1;
   }
+}
+
+%unstyledButton {
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+@mixin button-variant($color, $hoverColor: null, $bg: var(--dim1), $hoverBg: var(--dim3)) {
+  background: $bg;
+  color: $color;
+
+  &:hover {
+    @if $hoverColor {
+      color: $hoverColor;
+    }
+    background: $hoverBg;
+  }
+}
+
+@mixin disabled-style {
+  pointer-events: none;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.buttonComponent {
+  @extend %baseButton;
 
   &.disabled {
-    pointer-events: none;
-    opacity: 0.6;
-    cursor: not-allowed;
+    @include disabled-style;
   }
 
-  &.default {
-    background: var(--dim1);
-    color: var(--fgSoft);
-
-    &:hover {
-      background: var(--dim3);
-    }
-  }
-
-  &.link {
-    border: none;
-    background: none;
-    color: var(--link);
-    margin: 0;
-
-    &:hover {
-      color: var(--linkHover);
-    }
+  &.solid {
+    @include button-variant(var(--fgSoft));
   }
 
   &.primary {
-    background: var(--dim1);
-    color: var(--primary);
-
-    &:hover {
-      color: var(--primaryHover);
-    }
+    @include button-variant(var(--primary), var(--primaryHover));
 
     &.disabled {
       color: var(--fgSoft);
@@ -54,12 +69,7 @@
   }
 
   &.danger {
-    background: var(--dim1);
-    color: var(--danger);
-
-    &:hover {
-      color: var(--dangerHover);
-    }
+    @include button-variant(var(--danger), var(--dangerHover));
 
     &.disabled {
       color: var(--fgSoft);
@@ -67,30 +77,26 @@
   }
 
   &.ghost {
-    background: var(--dim1);
-    color: var(--fgSoft);
-
-    &:hover {
-      background: var(--dim3);
-    }
+    @include button-variant(var(--fgSoft), null, transparent);
   }
 
-  &.positive {
-    color: var(--button-fg);
-    background: var(--positive);
-
-    &:hover {
-      color: var(--button-fg);
-    }
-
-    &.disabled {
-      color: var(--fgSoft);
-      background: var(--dim1);
-    }
+  &.link {
+    @extend %unstyledButton;
+    color: var(--fg);
   }
 
-  &.condensed {
+  &.small {
+    height: 32px;
     padding: 4px 8px;
-    height: 24px;
+  }
+
+  &.normal {
+    height: 36px;
+    padding: 8px 16px;
+  }
+
+  &.big {
+    height: 40px;
+    padding: 12px 24px;
   }
 }
