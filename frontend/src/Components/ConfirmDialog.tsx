@@ -1,17 +1,9 @@
 import React from 'react'
 
 import Overlay from './Overlay'
+import { Button, ButtonType } from './UI/Button'
 
 import styles from './ConfirmDialog.module.scss'
-
-export const BUTTON_TYPES = {
-  primary: styles.primaryButton,
-  secondary: styles.secondaryButton,
-  danger: styles.dangerButton,
-  ghost: styles.ghostButton,
-} as const
-
-export type ButtonType = keyof typeof BUTTON_TYPES
 
 export interface ConfirmDialogProps {
   title?: string
@@ -32,8 +24,8 @@ export default function ConfirmDialog(props: ConfirmDialogProps) {
     cancelLabel = 'Отмена',
     onConfirm,
     onCancel,
-    confirmButtonType = 'danger',
-    cancelButtonType = 'secondary',
+    confirmButtonType = 'dangerAccent',
+    cancelButtonType = 'solidAccent',
   } = props
 
   return (
@@ -43,12 +35,12 @@ export default function ConfirmDialog(props: ConfirmDialogProps) {
         {title && <h2 className={styles.title}>{title}</h2>}
         <div className={styles.message}>{message}</div>
         <div className={styles.buttons}>
-          <button className={BUTTON_TYPES[confirmButtonType]} onClick={onConfirm}>
+          <Button variant={confirmButtonType} onClick={onConfirm}>
             {confirmLabel}
-          </button>
-          <button className={BUTTON_TYPES[cancelButtonType]} onClick={onCancel}>
+          </Button>
+          <Button variant={cancelButtonType} onClick={onCancel}>
             {cancelLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </>
