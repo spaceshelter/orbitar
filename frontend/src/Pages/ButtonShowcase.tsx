@@ -167,27 +167,32 @@ const ButtonShowcase: React.FC = () => {
       <section className={styles.section}>
         <h2>Mixed</h2>
         <div className={styles.buttonGroup}>
-          <Button size='small'>small</Button>
-          <Button size='small' variant='dangerAccent'>
-            <SendIcon />
+          <Button size='small' variant='minimal'>
+            <EditIcon /> Редактировать
+          </Button>
+          <Button size='small' variant='danger'>
+            <SendIcon /> Удалить
           </Button>
           <Button size='small' variant='ghost'>
-            <SendIcon />
-          </Button>
-          <Button size='small'>
-            <SendIcon />
-          </Button>
-          <Button>
-            <SendIcon /> send
+            <BookmarkIcon /> Сохранить
           </Button>
           <Button variant='primary'>
-            <SendIcon /> send <SendIcon />
+            <SendIcon /> Отправить
           </Button>
           <Button variant='primaryAccent'>
-            <EditIcon /> edit
+            <EditIcon /> Подтвердить
           </Button>
           <Button variant='solidAccent'>
-            <BookmarkIcon /> bookmark
+            <BookmarkIcon /> Сохранить изменения
+          </Button>
+          <Button variant='dangerAccent'>
+            <SendIcon /> Удалить навсегда
+          </Button>
+          <Button variant='ghostAccent'>
+            <BookmarkIcon /> Отменить
+          </Button>
+          <Button variant='ghost'>
+            <EditIcon /> Подробнее
           </Button>
         </div>
       </section>
