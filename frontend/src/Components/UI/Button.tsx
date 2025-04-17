@@ -14,6 +14,7 @@ export const BUTTON_TYPES = {
   dangerAccent: styles.dangerAccent,
   ghostAccent: styles.ghostAccent,
   link: styles.link,
+  minimal: styles.minimal,
 } as const
 
 export const BUTTON_SIZES = {
@@ -41,6 +42,11 @@ interface ButtonProps extends BaseButtonProps {
    * @default 'normal'
    */
   size?: ButtonSize
+
+  /** Active state of the button
+   * @default false
+   */
+  active?: boolean
 
   /** Disabled state of the button
    * @default false
@@ -88,6 +94,7 @@ export const Button: React.FC<StrictButtonProps> = ({
   dynamic = false,
   rotating = false,
   loading = false,
+  active = false,
   children,
   className,
   ...props
@@ -106,6 +113,7 @@ export const Button: React.FC<StrictButtonProps> = ({
       [styles.dynamic]: dynamic,
       [styles.rotating]: rotating,
       [styles.iconOnly]: isIconOnly(),
+      [styles.active]: active,
     },
     styles.buttonComponent,
     className,
