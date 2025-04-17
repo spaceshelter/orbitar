@@ -23,6 +23,45 @@ const ButtonShowcase: React.FC = () => {
     <div className={styles.container}>
       <h1>Button Showcase</h1>
       <section className={styles.section}>
+        <h2>Description</h2>
+        <div className={styles.description}>
+          <p>This demo shows different button variants used in the application:</p>
+          <ul>
+            <li>
+              <strong>minimal</strong> - minimal button used for main content like posts, comments, etc.
+            </li>
+            <li>
+              <strong>solid</strong> - solid button used for settings
+            </li>
+            <li>
+              <strong>primary</strong> - primary button used in polls
+            </li>
+            <li>
+              <strong>danger</strong> - danger button
+            </li>
+            <li>
+              <strong>ghost</strong> - ghost button
+            </li>
+            <li>
+              <strong>link</strong> - link button
+            </li>
+            <li>
+              <strong>solidAccent</strong> - solid button with accent color used in confirm dialogs
+            </li>
+            <li>
+              <strong>primaryAccent</strong> - primary button with accent color used in confirm dialogs
+            </li>
+            <li>
+              <strong>dangerAccent</strong> - danger button with accent color used in confirm dialogs
+            </li>
+            <li>
+              <strong>ghostAccent</strong> - ghost button with accent color used in confirm dialogs
+            </li>
+          </ul>
+          <p>Buttons also support different sizes (small, normal, big) and can contain icons.</p>
+        </div>
+      </section>
+      <section className={styles.section}>
         <h2>Loader</h2>
         <div className={styles.buttonGroup}>
           <Loader />

@@ -27,3 +27,24 @@
   flex-wrap: wrap;
   gap: 8px;
 }
+
+.description {
+  background-color: var(--bg);
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+
+  ul {
+    margin: 15px 0;
+    padding-left: 20px;
+  }
+
+  li {
+    margin-bottom: 8px;
+  }
+
+  p {
+    margin: 10px 0;
+    line-height: 1.5;
+  }
+}
