@@ -67,17 +67,22 @@
   }
 }
 
-button.bold {
-  font-weight: bold;
+.bold {
+  font-weight: bold !important;
 }
-button.italic {
-  font-style: italic;
+.italic {
+  font-style: italic !important;
 }
-button.underline {
-  text-decoration: underline;
+.underline {
+  text-decoration: underline !important;
 }
-button.strike {
-  text-decoration: line-through;
+.strike {
+  text-decoration: line-through !important;
+}
+
+.editorButton {
+  font-size: 16px !important;
+  font-weight: 400;
 }
 
 .editor {
@@ -119,40 +124,14 @@ button.strike {
   }
 }
 
-button.pre {
-  font-family: monospace;
-  font-size: 14px;
-}
-
 .final {
   margin: 4px 0;
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  height: 40px;
 
-  button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    height: 40px;
-    padding: 0 16px;
-    background: none;
-    border: none;
-    color: var(--fg);
+  button.buttonSend {
     fill: var(--primary);
-    border-radius: 4px;
-    font-weight: bold;
-
-    &:hover {
-      fill: var(--primaryHover);
-      color: var(--fgHarder);
-    }
-    &:disabled {
-      color: var(--fgSofter);
-      fill: var(--fgGhost);
-      cursor: default;
-    }
-    &.buttonSend {
-      margin-right: -8px;
-    }
   }
 }

@@ -1,5 +1,7 @@
 import React from 'react'
 
+import Button from '@ui/Button'
+
 import styles from './ContentButtons.module.scss'
 
 interface BaseButtonProps {
@@ -23,11 +25,12 @@ function BaseButton({
     i i-${icon} ${styles.icon} 
     ${inProgress ? styles.inProgress : ''} 
     ${isActive ? styles.active : ''}`
+  console.log(inProgress)
 
   return (
-    <button className={className} onClick={onClick}>
+    <Button variant='minimal' className={className} onClick={onClick}>
       {label && <div className={styles.label}>{label}</div>}
-    </button>
+    </Button>
   )
 }
 

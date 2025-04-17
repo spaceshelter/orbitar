@@ -1,7 +1,6 @@
 .logoutButton,
 .settingsButton,
-.createClientAppButton,
-.themeButton {
+.createClientAppButton {
   background: var(--dim1);
   color: var(--fgSoft);
   border: none;
@@ -15,8 +14,7 @@
 }
 
 .logoutButton:hover,
-.settingsButton:hover,
-.themeButton.dynamic:hover {
+.settingsButton:hover {
   fill: var(--fg);
   color: var(--fg);
   background: var(--dim3);

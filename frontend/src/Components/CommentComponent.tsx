@@ -3,6 +3,7 @@ import React, { useMemo, useState } from 'react'
 import { TranslateType } from '@api/PostAPI'
 import { useInterpreter } from '@api/use/useInterpreter'
 import { useAPI } from '@state/AppState'
+import Button from '@ui/Button'
 import OutsideClickHandler from 'react-outside-click-handler'
 import { toast } from 'react-toastify'
 
@@ -16,6 +17,7 @@ import RatingSwitch from './RatingSwitch'
 import { SignatureComponent } from './SignatureComponent'
 import { getPreferredLang, getShowInlineTranslateButton } from './UserProfileSettings'
 
+import { ReactComponent as EditIcon } from '../Assets/edit.svg'
 import { ReactComponent as OptionsIcon } from '../Assets/options.svg'
 import styles from './CommentComponent.module.scss'
 import postStyles from './PostComponent.module.scss'
@@ -180,7 +182,9 @@ export default function CommentComponent(props: CommentProps) {
           )}
           {props.comment.canEdit && props.onEdit && (
             <div className={styles.control}>
-              <button onClick={handleEdit} className='i i-edit' />
+              <Button onClick={handleEdit} variant='minimal'>
+                <EditIcon />
+              </Button>
             </div>
           )}
 
@@ -206,9 +210,9 @@ export default function CommentComponent(props: CommentProps) {
               </div>
             )}
 
-            <button onClick={toggleOptions} className={styles.options + ' ' + (showOptions ? styles.active : '')}>
+            <Button variant='minimal' onClick={toggleOptions} active={showOptions}>
               <OptionsIcon />
-            </button>
+            </Button>
             {showOptions && (
               <OutsideClickHandler onOutsideClick={() => setShowOptions(false)}>
                 <div className={postStyles.optionsList}>
@@ -246,7 +250,9 @@ export default function CommentComponent(props: CommentProps) {
           </div>
           {props.onAnswer && (
             <div className={styles.control}>
-              <button onClick={handleAnswerSwitch}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</button>
+              <Button variant='minimal' onClick={handleAnswerSwitch} active={answerOpen}>
+                {!answerOpen ? 'Ответить' : 'Не отвечать'}
+              </Button>
             </div>
           )}
         </div>
