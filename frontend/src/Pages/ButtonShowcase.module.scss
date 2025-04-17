@@ -1,0 +1,29 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+
+  h1 {
+    margin-bottom: 2rem;
+    color: var(--fg);
+  }
+
+  h2 {
+    margin-bottom: 1rem;
+    color: var(--fgSoft);
+  }
+}
+
+.section {
+  margin-bottom: 3rem;
+  padding: 1.5rem;
+  background: var(--bg);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.buttonGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
