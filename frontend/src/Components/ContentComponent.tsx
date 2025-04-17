@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 
 import { PollComponent } from '@components/Poll/PollComponent'
+import Button from '@ui/Button'
 import type * as Vimeo from '@vimeo/player'
 import classNames from 'classnames'
 import { reaction } from 'mobx'
@@ -789,9 +790,9 @@ export default function ContentComponent(props: ContentComponentProps) {
       />
       {cut && (
         <div className={styles.cutCover}>
-          <button className={styles.cutButton} onClick={handleCut}>
+          <Button onClick={handleCut} size='small' className={styles.cutButton}>
             Читать дальше
-          </button>
+          </Button>
         </div>
       )}
       {zoomedImg && <ZoomComponent {...zoomedImg} onExit={() => setZoomedImg(null)} />}
