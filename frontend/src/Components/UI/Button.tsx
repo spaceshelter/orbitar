@@ -2,6 +2,8 @@ import React, { ButtonHTMLAttributes } from 'react'
 
 import classNames from 'classnames'
 
+import { Loader } from './Loader'
+
 import styles from './Button.module.scss'
 
 export const BUTTON_TYPES = {
@@ -109,7 +111,7 @@ export const Button: React.FC<StrictButtonProps> = ({
     {
       [BUTTON_TYPES[variant]]: true,
       [BUTTON_SIZES[size]]: true,
-      [styles.disabled]: disabled,
+      [styles.disabled]: disabled || loading,
       [styles.dynamic]: dynamic,
       [styles.rotating]: rotating,
       [styles.iconOnly]: isIconOnly(),
@@ -120,9 +122,8 @@ export const Button: React.FC<StrictButtonProps> = ({
   )
 
   return (
-    <button className={buttonClass} disabled={disabled} {...props}>
-      {loading && <span className={styles.loading} />}
-      {children}
+    <button className={buttonClass} disabled={disabled || loading} {...props}>
+      {loading ? <Loader /> : children}
     </button>
   )
 }
