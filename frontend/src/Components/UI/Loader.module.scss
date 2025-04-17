@@ -1,0 +1,41 @@
+.loaderContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  animation: spin 5s infinite linear;
+}
+
+.circle {
+  width: 60%;
+  height: 60%;
+  position: absolute;
+  .inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 100%;
+    border: 1px solid var(--primary);
+    border-right: none;
+    border-top: none;
+    background-clip: padding;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@for $i from 0 through 2 {
+  .circle:nth-of-type(#{$i}) {
+    transform: rotate($i * 70deg);
+
+    .inner {
+      animation: spin 2s infinite linear;
+    }
+  }
+}
