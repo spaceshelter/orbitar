@@ -252,7 +252,7 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
     if (!hasUserVoted) {
       return (
         <div className={styles.voteButtonContainer}>
-          <Button variant='positive' onClick={handleSubmitVote} disabled={selectedOptions.length === 0}>
+          <Button variant='primary' onClick={handleSubmitVote} disabled={selectedOptions.length === 0}>
             Голосовать
           </Button>
         </div>
