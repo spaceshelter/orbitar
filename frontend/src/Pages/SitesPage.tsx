@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import Button from '@ui/Button'
 import { observer } from 'mobx-react-lite'
 import { toast } from 'react-toastify'
 
@@ -55,19 +56,15 @@ export const SitesPage = observer(() => {
               {pluralize(site.subscribers, ['подписчик', 'подписчика', 'подписчиков'])}
             </div>
           </div>
-          <div className='subscribe'>
+          <div>
             {site.subscribe?.main ? (
-              <button className='subscribed' disabled={subsDisabled} onClick={() => handleSubscribe(site.site, false)}>
+              <Button variant='ghost' disabled={subsDisabled} onClick={() => handleSubscribe(site.site, false)}>
                 Отписаться
-              </button>
+              </Button>
             ) : (
-              <button
-                className='not-subscribed'
-                disabled={subsDisabled}
-                onClick={() => handleSubscribe(site.site, true)}
-              >
+              <Button variant='primary' disabled={subsDisabled} onClick={() => handleSubscribe(site.site, true)}>
                 Подписаться
-              </button>
+              </Button>
             )}
           </div>
         </div>

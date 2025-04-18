@@ -45,28 +45,6 @@
 
     .subscribe {
       margin: 20px 0;
-
-      button {
-        padding: 6px 10px;
-        border-radius: 4px;
-
-        &.subscribed {
-          background: var(--dim2);
-          color: var(--fg);
-          border: none;
-        }
-
-        &.not-subscribed {
-          background: var(--primary);
-          color: var(--onAccent);
-          border: none;
-        }
-
-        &:disabled {
-          background: var(--dim1);
-          color: var(--fgSofter);
-        }
-      }
     }
 
     .site-info {
