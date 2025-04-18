@@ -31,6 +31,7 @@
   padding: 0;
   border: none;
   background: transparent;
+  font-weight: normal;
 }
 
 @mixin button-variant($color, $hoverColor: null, $bg: var(--dim1), $hoverBg: var(--dim3)) {
@@ -106,7 +107,7 @@
 
   &.link {
     @extend %unstyledButton;
-    color: var(--fg);
+    color: var(--link);
   }
 
   &.small {

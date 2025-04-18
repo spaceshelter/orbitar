@@ -41,6 +41,7 @@ interface ButtonProps extends BaseButtonProps {
   variant?: ButtonType
 
   /** Button size
+   * incompatable with link variant
    * @default 'normal'
    */
   size?: ButtonSize
@@ -75,8 +76,11 @@ interface ButtonProps extends BaseButtonProps {
 }
 
 type StrictButtonProps =
-  | (Omit<ButtonProps, 'variant' | 'children'> & { variant: 'link'; children: string })
-  | (Omit<ButtonProps, 'variant'> & { variant?: Exclude<ButtonType, 'link'> })
+  | (Omit<ButtonProps, 'variant' | 'children' | 'size'> & { variant: 'link'; children: string; size?: never })
+  | (Omit<ButtonProps, 'variant' | 'size'> & {
+      variant?: Exclude<ButtonType, 'link'>
+      size?: ButtonSize
+    })
 
 /**
  * A customizable button component that supports different variants and sizes
@@ -107,10 +111,12 @@ export const Button: React.FC<StrictButtonProps> = ({
     return childArray.length === 1 && React.isValidElement(childArray[0]) && typeof childArray[0].type !== 'string'
   }
 
+  const isLink = variant === 'link'
+
   const buttonClass = classNames(
     {
       [BUTTON_TYPES[variant]]: true,
-      [BUTTON_SIZES[size]]: true,
+      [BUTTON_SIZES[size]]: !isLink,
       [styles.disabled]: disabled || loading,
       [styles.dynamic]: dynamic,
       [styles.rotating]: rotating,
