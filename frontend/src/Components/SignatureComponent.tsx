@@ -1,6 +1,8 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 
+import Button from '@ui/Button'
+
 import { EditFlag } from '../API/PostAPI'
 import { PostLinkInfo } from '../Types/PostInfo'
 import { UserBaseInfo } from '../Types/UserInfo'
@@ -57,9 +59,9 @@ export const SignatureComponent = (props: SignatureComponentProps) => {
         <>
           {' '}
           •{' '}
-          <button className={styles.toggleHistory} onClick={props.onHistoryClick}>
+          <Button variant='link' className={styles.toggleHistory} onClick={props.onHistoryClick}>
             изменён
-          </button>
+          </Button>
         </>
       )}
     </div>
