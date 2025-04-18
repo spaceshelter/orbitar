@@ -93,40 +93,17 @@
   color: var(--fg);
 }
 
-.buttons {
+.actions {
   display: flex;
   justify-content: right;
-  margin: 16px;
+  margin: 16px 32px;
+  gap: 32px;
 }
 
-.buttons button {
-  padding: 8px 16px;
-  border: none;
-  color: var(--button-fg);
-  border-radius: 4px;
-  margin-left: 4px;
+.clear {
+  color: var(--danger) !important;
 }
 
-.buttons button.buttonClear {
-  background: none;
-  color: var(--danger);
-}
-
-.buttons button.buttonRead {
-  background: none;
-  color: var(--fg);
-}
-
-.buttons button.buttonAll {
-  background: var(--button-bg);
-}
-
-.buttons button:hover.buttonAll {
-  background: var(--button-hover-bg);
-}
-
-.buttons button:disabled.buttonAll {
-  background: var(--button-dis-bg);
-  color: var(--button-dis-fg);
-  cursor: default;
+.read {
+  color: var(--fg) !important ;
 }

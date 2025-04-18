@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 
+import Button from '@ui/Button'
+import ButtonGroup from '@ui/ButtonGroup'
 import classNames from 'classnames'
 import { toast } from 'react-toastify'
 
@@ -187,15 +189,15 @@ export default function NotificationsPopup(props: NotificationsPopupProps) {
                 )
               })}
           </div>
-          <div className={styles.buttons}>
-            <button className={styles.buttonClear} onClick={handleClearAll}>
+          <ButtonGroup className={styles.actions}>
+            <Button variant='link' className={styles.clear} onClick={handleClearAll}>
               Очистить прочитанные
-            </button>
-            <button className={styles.buttonRead} onClick={handleReadAll}>
+            </Button>
+            <Button variant='link' className={styles.read} onClick={handleReadAll}>
               Прочитать все
-            </button>
-            {/*TODO <button className={styles.buttonAll} disabled={true}>Все чпяки</button>*/}
-          </div>
+            </Button>
+            {/*TODO <Button disabled={true}>Все чпяки</Button>*/}
+          </ButtonGroup>
         </div>
       </>
     )
