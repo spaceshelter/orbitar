@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useLocation, useMatch } from 'react-router-dom'
 
+import Button from '@ui/Button'
 import classNames from 'classnames'
 import { observer } from 'mobx-react-lite'
 import useLocalStorage from 'use-local-storage'
@@ -54,9 +55,9 @@ export const Topbar = observer((props: TopbarProps) => {
     <>
       <div id='topbar' className={styles.topbar}>
         <div className={styles.left}>
-          <button className={menuClasses.join(' ')} onClick={menuToggle}>
+          <Button variant='minimal' className={menuClasses.join(' ')} onClick={menuToggle}>
             <Hamburger open={props.menuState === 'close'} />
-          </button>
+          </Button>
           <HomeButton />
           <CreateButton />
         </div>
@@ -145,13 +146,14 @@ const NotificationsButton = observer((props: React.ComponentPropsWithRef<'button
   }
 
   return (
-    <button
+    <Button
+      variant='minimal'
       {...props}
       disabled={visibleNotificationsCount === 0}
-      className={classNames({ [styles.active]: unreadNotificationsCount })}
+      className={classNames({ [styles.active]: unreadNotificationsCount }, styles.notificationButton)}
     >
       <NotificationIcon />
       <span className={styles.label}>{label}</span>
-    </button>
+    </Button>
   )
 })

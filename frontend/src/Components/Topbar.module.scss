@@ -61,9 +61,9 @@
     }
 
     &.active {
-      fill: var(--primary);
+      fill: var(--primary) !important;
       &:hover {
-        fill: var(--primaryHover);
+        fill: var(--primaryHover) !important;
       }
     }
 
@@ -100,4 +100,10 @@
     fill: var(--fgGhost);
     cursor: default;
   }
+}
+
+.notificationButton {
+  fill: var(--fgSoft) !important;
+  font-weight: normal !important;
+  gap: 0 !important;
 }
