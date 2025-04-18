@@ -1,5 +1,3 @@
-.logoutButton,
-.settingsButton,
 .createClientAppButton {
   background: var(--dim1);
   color: var(--fgSoft);
@@ -11,13 +9,6 @@
   align-items: center;
   gap: 8px;
   fill: var(--fgSoft);
-}
-
-.logoutButton:hover,
-.settingsButton:hover {
-  fill: var(--fg);
-  color: var(--fg);
-  background: var(--dim3);
 }
 
 button.linkButton {
