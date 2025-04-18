@@ -1,12 +1,11 @@
 import React from 'react'
 
-import classNames from 'classnames'
+import Button from '@ui/Button'
 
 import APIBase from '../API/APIBase'
 import { OAuth2ClientEntity } from '../Types/OAuth2'
 import OAuth2ScopesComponent from './OAuth2ScopesComponent'
 
-import buttonStyles from './Buttons.module.scss'
 import styles from './OAuth2AppCardModalComponent.module.scss'
 
 interface OAuth2AuthorizeComponentProps {
@@ -37,22 +36,19 @@ export function OAuth2AuthorizeComponent(props: OAuth2AuthorizeComponentProps) {
             <input type='hidden' name='response_type' value='code' />
 
             <div className={styles.buttonsContainer}>
-              <button
-                type='submit'
-                className={classNames(buttonStyles.settingsButton, buttonStyles.positiveButton, buttonStyles.bigger)}
-              >
+              <Button variant='primary' size='big' type='submit'>
                 Подключить
-              </button>
-              <button
+              </Button>
+              <Button
+                size='big'
                 type='button'
-                className={classNames(buttonStyles.settingsButton, buttonStyles.cancelButton, buttonStyles.bigger)}
                 onClick={(e) => {
                   e.preventDefault()
                   props.onAuthorizeDeny?.()
                 }}
               >
                 Не, спасибо
-              </button>
+              </Button>
             </div>
           </form>
         </div>

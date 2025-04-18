@@ -11,18 +11,6 @@
   fill: var(--fgSoft);
 }
 
-button.linkButton {
-  border: none;
-  background: none;
-  color: var(--link);
-  margin: 0;
-  padding: 0 10px 0 0;
-
-  &:hover {
-    color: var(--linkHover);
-  }
-}
-
 button.positiveButton {
   color: var(--button-fg);
   background: var(--positive);

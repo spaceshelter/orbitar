@@ -132,16 +132,6 @@
     &.ownerButtons {
       flex-direction: row;
       gap: 16px;
-
-      button {
-        margin: 0;
-        font-size: 0.875rem;
-        color: var(--link);
-
-        &.danger {
-          color: var(--negative-fg);
-        }
-      }
     }
   }
 
