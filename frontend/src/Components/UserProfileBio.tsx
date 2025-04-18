@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 
+import Button from '@ui/Button'
 import { toast } from 'react-toastify'
 
 import { useAPI, useAppState } from '../AppState/AppState'
@@ -52,9 +53,9 @@ export default function UserProfileBio(props: UserProfileBioProps) {
       <div className={styles.controls}>
         {props.mine && !editing && (
           <div className={postStyles.control}>
-            <button onClick={() => setEditing(true)}>
+            <Button variant='ghost' onClick={() => setEditing(true)}>
               <EditIcon /> {source ? 'Редактировать' : 'Расскажите что-нибудь о себе'}
-            </button>
+            </Button>
           </div>
         )}
       </div>
