@@ -270,12 +270,14 @@ export default class TheParser {
     return `<a href="${encodeURI(decodeURI(url))}" target="_blank">${htmlEscape(decodeURI(url))}</a>`
   }
 
-  processTelegram(url: Url<string>) {
-    if (url.host !== 't.me' && url.host !== 'telegram.me') {
+  processTelegram(url: Url<string> | string, text?: string) {
+    const pUrl = typeof url === 'string' ? new Url(url) : url
+
+    if (pUrl.host !== 't.me' && pUrl.host !== 'telegram.me') {
       return false
     }
 
-    const match = url.pathname.match(/^\/([^/]+)\/(\d+)/)
+    const match = pUrl.pathname.match(/^\/([^/]+)\/(\d+)/)
     if (match === null) {
       return false
     }
@@ -284,7 +286,8 @@ export default class TheParser {
     const telegramUrl = `https://t.me/${channelName}/${postId}`
     const expandButton = `<span role="button" class="expand-button i i-expand" data-telegram-url="${encodeURI(telegramUrl)}"></span>`
 
-    return `${expandButton}<a href="${encodeURI(telegramUrl)}" target="_blank">${htmlEscape(decodeURI(telegramUrl))}</a>`
+    const displayText = text || htmlEscape(decodeURI(telegramUrl))
+    return `${expandButton}<a href="${encodeURI(telegramUrl)}" target="_blank">${displayText}</a>`
   }
 
   processImage(url: Url<string>) {
@@ -491,8 +494,11 @@ export default class TheParser {
     if (result.urls.length > 0 || result.mentions.length > 0) {
       return result
     }
-    const parsedInternalUrl = this.processInternalUrl(url, result.text)
-    const text = parsedInternalUrl || `<a href="${encodeURI(decodeURI(url))}" target="_blank">${result.text}</a>`
+
+    const text =
+      this.processTelegram(url, result.text) ||
+      this.processInternalUrl(url, result.text) ||
+      `<a href="${encodeURI(decodeURI(url))}" target="_blank">${result.text}</a>`
 
     return { ...result, text, urls: [...result.urls, url] }
   }
