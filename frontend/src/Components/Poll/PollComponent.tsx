@@ -58,18 +58,18 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
     }
   }, [userRestrictions, api.user])
 
+  const expiresTs = poll?.expires?.getTime() ?? null
   // if expiration date is in the future, schedule a refresh
   useEffect(() => {
-    if (poll && poll?.expires && poll.expires > new Date()) {
-      const refreshTimer = setTimeout(
-        () => {
-          fetchPoll(true)
-        },
-        Math.max(0, poll.expires.getTime() - Date.now() + 1000),
-      )
-      return () => clearTimeout(refreshTimer)
-    }
-  }, [poll])
+    if (!expiresTs || expiresTs < Date.now()) return
+
+    const delay = Math.max(0, expiresTs - Date.now() + 1000)
+    const refreshTimer = setTimeout(() => {
+      fetchPoll(true)
+    }, delay)
+
+    return () => clearTimeout(refreshTimer)
+  }, [expiresTs, fetchPoll])
 
   const handleOptionSelect = (optionId: number) => {
     if (!poll || isPollExpired || hasUserVoted) return
