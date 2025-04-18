@@ -36,11 +36,13 @@
 @mixin button-variant($color, $hoverColor: null, $bg: var(--dim1), $hoverBg: var(--dim3)) {
   background: $bg;
   color: $color;
+  fill: $color;
 
   &:hover,
   &.active {
     @if $hoverColor {
       color: $hoverColor;
+      fill: $hoverColor;
     }
     @if $hoverBg {
       background: $hoverBg;
