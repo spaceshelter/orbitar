@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useLocation, useSearchParams } from 'react-router-dom'
 
+import classNames from 'classnames'
 import { useDebouncedCallback } from 'use-debounce'
 
 import { useCache } from '../API/use/useCache'
@@ -20,16 +21,18 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
   const perpage = 20
   const page = parseInt(searchParams.get('page') || '1')
   const defaultFilter = searchParams.get('filter') as string
+  const defaultSort = searchParams.get('sort') || 'date'
 
   const api = useAPI()
   const [cachedComments, setCachedComments] = useCache<CommentInfo[]>('user-profile-comments', [
     props.username,
     page,
     perpage,
+    defaultSort,
   ])
   const [cachedParentComments, setCachedParentComments] = useCache<Record<number, CommentInfo> | undefined>(
     'user-profile-parent-comments',
-    [props.username, page, perpage],
+    [props.username, page, perpage, defaultSort],
   )
   const [comments, setComments] = useState<CommentInfo[] | undefined>(cachedComments)
   const [parentComments, setParentComments] = useState<Record<number, CommentInfo> | undefined>(cachedParentComments)
@@ -38,13 +41,14 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
   const [error, setError] = useState<string>()
   const [reloadIdx, setReloadIdx] = useState(0)
   const [filter, setFilter] = useState(defaultFilter || null)
+  const [sort, setSort] = useState(defaultSort)
   const { search } = useLocation()
   const filterInputRef = useRef<HTMLInputElement>(null)
   const currentUsername = useAppState().userInfo?.username
 
   const setDebouncedFilter = useDebouncedCallback((value: string) => {
     setFilter(value)
-    setSearchParams({ filter: value })
+    setSearchParams({ filter: value, sort })
   }, 1000)
 
   const reload = () => {
@@ -55,10 +59,17 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
     if (e.nativeEvent instanceof KeyboardEvent && e.nativeEvent.key === 'Enter') {
       const value = e.currentTarget.value
       setFilter(value)
-      setSearchParams({ filter: value })
+      setSearchParams({ filter: value, sort })
     } else {
       setDebouncedFilter(e.currentTarget.value)
     }
+  }
+
+  const handleSortChange = (newSort: string) => (e: React.MouseEvent) => {
+    e.preventDefault()
+    setSort(newSort)
+    setSearchParams({ sort: newSort })
+    setLoading(true)
   }
 
   const getParentComment = (commentId: number): CommentInfo | undefined => {
@@ -71,7 +82,9 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
   useEffect(() => {
     const newSearchParams = new URLSearchParams(search)
     const newFilterValue = newSearchParams.get('filter') as string
+    const newSortValue = newSearchParams.get('sort') || 'date'
     setFilter(newFilterValue)
+    setSort(newSortValue)
     if (filterInputRef.current) {
       filterInputRef.current.value = newFilterValue
     }
@@ -79,7 +92,7 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
 
   useEffect(() => {
     api.userAPI
-      .userComments(props.username, filter || '', page, perpage)
+      .userComments(props.username, filter || '', page, perpage, sort)
       .then((result) => {
         setCachedComments(result.comments)
         setCachedParentComments(result.parentComments)
@@ -94,25 +107,23 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
         console.log('USER PROFILE COMMENTS ERROR', error)
         setError('Не удалось загрузить ленту комментариев пользователя')
       })
-  }, [page, reloadIdx, filter])
+  }, [page, reloadIdx, filter, sort])
 
   useEffect(() => {
     window.scrollTo({ top: 0 })
   }, [page])
 
-  const params = filter ? { filter } : undefined
+  const params = { ...(filter ? { filter } : {}), ...(sort !== 'date' ? { sort } : {}) }
   const handleEdit = async (text: string, comment: CommentInfo) => {
     try {
-      const res = await api.postAPI.editComment(text, comment.id) // text comes first, then id
+      const res = await api.postAPI.editComment(text, comment.id)
       if (!res) return undefined
 
-      // Create an updated comment that preserves all CommentInfo properties
       const updatedComment: CommentInfo = {
         ...comment,
-        content: res.comment.content, // access content through res.comment
+        content: res.comment.content,
       }
 
-      // Update the comment in the local state
       setComments(comments?.map((c) => (c.id === comment.id ? updatedComment : c)))
 
       return updatedComment
@@ -133,6 +144,20 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
           type='search'
           defaultValue={defaultFilter}
         />
+      </div>
+      <div className={styles.feedControlsWrapper}>
+        <div className={styles.feedControls}>
+          <a href='#' className={classNames({ [styles.active]: sort === 'date' })} onClick={handleSortChange('date')}>
+            <i className='i i-new'></i>ПО ДАТЕ
+          </a>
+          <a
+            href='#'
+            className={classNames({ [styles.active]: sort === 'rating' })}
+            onClick={handleSortChange('rating')}
+          >
+            <i className='i i-live'></i>ПО РЕЙТИНГУ
+          </a>
+        </div>
       </div>
       <div className={styles.feed}>
         {loading ? (

@@ -125,9 +125,16 @@ export default class PostRepository {
     filter: string,
     page: number,
     perPage: number,
+    sort = 'date',
     sorting: FeedSorting = FeedSorting.postCreatedAt,
   ): Promise<PostRawWithUserData[]> {
     const limitFrom = (page - 1) * perPage
+    const orderBy =
+      sort === 'rating'
+        ? 'p.rating desc'
+        : sorting === FeedSorting.postCreatedAt
+          ? 'p.created_at desc'
+          : 'p.commented_at desc'
     return await this.db.query(
       `
             select p.*, v.vote, b.read_comments, b.bookmark, b.last_read_comment_id, b.watch
@@ -136,7 +143,7 @@ export default class PostRepository {
                      left join user_bookmarks b on (b.post_id = p.post_id and b.user_id = :for_user_id)
             where p.author_id = :user_id
                 ${filter ? ' and (p.source like :filter or p.title like :filter) ' : ''}
-            order by ${sorting === FeedSorting.postCommentedAt ? 'commented_at' : 'created_at'} desc
+            order by ${orderBy}
             limit :limit_from, :limit_count
         `,
       {

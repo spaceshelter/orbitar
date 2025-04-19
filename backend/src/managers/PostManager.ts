@@ -65,8 +65,9 @@ export default class PostManager {
     page: number,
     perpage: number,
     format: ContentFormat,
+    sort = 'date',
   ): Promise<PostInfo[]> {
-    const posts = await this.postRepository.getPostsByUser(userId, forUserId, filter, page, perpage)
+    const posts = await this.postRepository.getPostsByUser(userId, forUserId, filter, page, perpage, sort)
     return await this.feedManager.convertRawPosts(forUserId, posts, format)
   }
 
@@ -192,8 +193,9 @@ export default class PostManager {
     page: number,
     perpage: number,
     format: ContentFormat,
+    sort = 'date',
   ): Promise<CommentInfoWithPostData[]> {
-    const rawComments = await this.commentRepository.getUserComments(userId, forUserId, filter, page, perpage)
+    const rawComments = await this.commentRepository.getUserComments(userId, forUserId, filter, page, perpage, sort)
     return await this.convertRawCommentsWithPostData(forUserId, rawComments, format)
   }
 

@@ -59,19 +59,22 @@ export default class CommentRepository {
     filter: string,
     page: number,
     perPage: number,
+    sort = 'date',
   ): Promise<CommentRawWithUserData[]> {
     const limitFrom = (page - 1) * perPage
+    const orderBy = sort === 'rating' ? 'c.rating desc, c.created_at desc' : 'c.created_at desc'
+
     return await this.db.query(
       `
-            select c.*, v.vote
-            from comments c
-                     left join comment_votes v on (v.comment_id = c.comment_id and v.voter_id = :for_user_id)
-            where
-                c.author_id = :user_id
-              and c.deleted = 0 ${filter ? ' and c.source like :filter ' : ''}
-            order by c.created_at desc
-            limit :limit_from, :limit_count
-        `,
+        select c.*, v.vote
+        from comments c
+                 left join comment_votes v on (v.comment_id = c.comment_id and v.voter_id = :for_user_id)
+        where
+            c.author_id = :user_id
+          and c.deleted = 0 ${filter ? ' and c.source like :filter ' : ''}
+        order by ${orderBy}
+        limit :limit_from, :limit_count
+      `,
       {
         user_id: userId,
         for_user_id: forUserId,
