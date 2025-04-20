@@ -124,30 +124,32 @@ const CreateButton = observer(() => {
 
 const WatchButton = observer(() => {
   const { watchCommentsCount } = useAppState()
+
+  let label = ''
+  if (watchCommentsCount > 0) {
+    label = watchCommentsCount > 99 ? '99+' : `${watchCommentsCount}`
+  }
+
   return (
     <ReloadingLink to={'/watch'} className={watchCommentsCount > 0 ? styles.active : ''}>
       <HotIcon />
-      <span className={styles.label}>{watchCommentsCount > 0 ? watchCommentsCount : ''}</span>
+      <span className={styles.label}>{label}</span>
     </ReloadingLink>
   )
 })
 
 const NotificationsButton = observer((props: React.ComponentPropsWithRef<'button'>) => {
-  const { unreadNotificationsCount, visibleNotificationsCount } = useAppState()
+  const { unreadNotificationsCount, visibleNotifications } = useAppState()
 
   let label = ''
-  if (visibleNotificationsCount > 0) {
-    if (unreadNotificationsCount > 0 && unreadNotificationsCount !== visibleNotificationsCount) {
-      label = `${unreadNotificationsCount}/${visibleNotificationsCount}`
-    } else {
-      label = `${visibleNotificationsCount}`
-    }
+  if (visibleNotifications && unreadNotificationsCount > 0) {
+    label = unreadNotificationsCount > 9 ? '9+' : `${unreadNotificationsCount}`
   }
 
   return (
     <button
       {...props}
-      disabled={visibleNotificationsCount === 0}
+      disabled={!visibleNotifications && !unreadNotificationsCount}
       className={classNames({ [styles.active]: unreadNotificationsCount })}
     >
       <NotificationIcon />

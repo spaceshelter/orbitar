@@ -199,18 +199,20 @@ export default class UserRepository {
     )
   }
 
+  /**
+   * Returns the number of unread watched posts for the user.
+   */
   async getUserUnreadComments(forUserId: number, ownOnly = false): Promise<number> {
     const res = await this.db.fetchOne<{ cnt: string }>(
       `
-          select sum(p.comments - ub.read_comments) cnt
-            from
-              user_bookmarks ub
-              join posts p on (p.post_id = ub.post_id)
-            where
-              ub.user_id = :user_id
-              and watch = 1
+          select count(*) cnt
+          from user_bookmarks ub
+                   join posts p on (p.post_id = ub.post_id)
+          where ub.user_id = :user_id
+            and watch = 1
+            and p.comments > ub.read_comments
               ${ownOnly ? 'and p.author_id = :user_id' : ''}
-        `,
+      `,
       {
         user_id: forUserId,
       },

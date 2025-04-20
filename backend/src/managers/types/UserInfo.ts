@@ -23,7 +23,7 @@ export type UserInfo = UserBaseInfo & {
 export type UserStats = {
   notifications: {
     unread: number
-    visible: number
+    visible: boolean
   }
   watch: {
     posts: number

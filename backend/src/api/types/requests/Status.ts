@@ -10,6 +10,6 @@ export type StatusResponse = {
   }
   notifications: {
     unread: number
-    visible: number
+    visible: boolean
   }
 }

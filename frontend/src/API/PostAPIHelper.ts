@@ -204,7 +204,7 @@ export default class PostAPIHelper {
     const result = await this.postAPI.read(postId, comments, lastCommentId)
     if (result.watch !== undefined && result.notifications !== undefined) {
       this.appState.setUnreadNotificationsCount(result.notifications.unread)
-      this.appState.setVisibleNotificationsCount(result.notifications.visible)
+      this.appState.setVisibleNotifications(result.notifications.visible)
       this.appState.setWatchCommentsCount(result.watch.comments)
     }
     return result

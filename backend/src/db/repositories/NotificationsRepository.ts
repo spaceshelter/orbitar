@@ -20,14 +20,14 @@ export default class NotificationsRepository {
     return parseInt(result?.cnt || '0')
   }
 
-  async getVisibleNotificationsCount(forUserId: number): Promise<number> {
+  async hasVisibleNotifications(forUserId: number): Promise<boolean> {
     const result = await this.db.fetchOne<{ cnt: string }>(
-      'select count(*) cnt from notifications where user_id=:user_id and hidden=0',
+      `select 1 as cnt from notifications where user_id=:user_id and hidden=0 limit 1`,
       {
         user_id: forUserId,
       },
     )
-    return parseInt(result?.cnt || '0')
+    return !!result?.cnt
   }
 
   async getNotifications(forUserId: number, limit = 20): Promise<NotificationRaw[]> {

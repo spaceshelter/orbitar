@@ -153,7 +153,7 @@ type PostReadRequest = {
 type PostReadResponse = {
   notifications?: {
     unread: number
-    visible: number
+    visible: boolean
   }
   watch?: {
     comments: number
