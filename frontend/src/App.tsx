@@ -23,7 +23,6 @@ import { observer } from 'mobx-react-lite'
 
 import { ForcedReload } from './Components/ForcedReload'
 import { SiteSidebar } from './Components/SiteSidebar'
-import ButtonShowcase from './Pages/ButtonShowcase'
 import KarmaCalculatorPage from './Pages/KarmaCalculatorPage'
 import { OAuthClientPage } from './Pages/OAuthClientPage'
 import ResetPasswordPage from './Pages/ResetPasswordPage'
@@ -183,8 +182,6 @@ const Ready = observer(() => {
           <Route path='oauth2'>
             <Route path='authorize' element={<OAuthClientPage />} />
           </Route>
-
-          <Route path='/button-showcase' element={<ButtonShowcase />} />
         </Route>
       </Routes>
     </>
