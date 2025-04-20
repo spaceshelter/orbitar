@@ -9,6 +9,7 @@ import Button from '@ui/Button'
 import Checkbox from '@ui/Checkbox'
 import Radio from '@ui/Radio'
 import { pluralize } from '@utils/utils'
+import moment from 'moment'
 import { toast } from 'react-toastify'
 
 import styles from './PollComponent.module.scss'
@@ -60,7 +61,12 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
 
   // if expiration date is in the future, schedule a refresh
   useEffect(() => {
-    if (poll && poll?.expires && poll.expires > new Date()) {
+    if (
+      poll &&
+      poll?.expires &&
+      poll.expires > new Date() &&
+      poll.expires < moment().add(1, 'day').startOf('day').toDate()
+    ) {
       const refreshTimer = setTimeout(
         () => {
           fetchPoll(true)
