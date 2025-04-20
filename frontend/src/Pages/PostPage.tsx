@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom'
 
+import Button from '@ui/Button'
+
 import { usePost } from '../API/use/usePost'
 import { useAppState } from '../AppState/AppState'
 import CommentComponent from '../Components/CommentComponent'
@@ -150,7 +152,7 @@ export default function PostPage() {
                 <div className={styles.error}>
                   {error}
                   <div>
-                    <button onClick={() => reload(unreadOnly)}>Повторить</button>
+                    <Button onClick={() => reload(unreadOnly)}>Повторить</Button>
                   </div>
                 </div>
               ) : (
@@ -169,7 +171,7 @@ export default function PostPage() {
           <div className={styles.error}>
             {error}
             <div>
-              <button onClick={() => reload(unreadOnly)}>Повторить</button>
+              <Button onClick={() => reload(unreadOnly)}>Повторить</Button>
             </div>
           </div>
         ) : (
