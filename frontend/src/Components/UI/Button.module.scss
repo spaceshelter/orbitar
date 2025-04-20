@@ -34,7 +34,7 @@
   font-weight: normal;
 }
 
-@mixin button-variant($color, $hoverColor: null, $bg: var(--dim1), $hoverBg: var(--dim3)) {
+@mixin button-variant($color, $hoverColor: null, $bg: var(--dim3), $hoverBg: var(--fgGhost), $disabledBg: var(--dim1)) {
   background: $bg;
   color: $color;
   fill: $color;
@@ -49,20 +49,17 @@
       background: $hoverBg;
     }
   }
-}
-
-@mixin disabled-style {
-  pointer-events: none;
-  opacity: 0.6;
-  cursor: not-allowed;
+  &.disabled {
+    color: inherit;
+    background: $disabledBg;
+    pointer-events: none;
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 }
 
 .buttonComponent {
   @extend %baseButton;
-
-  &.disabled {
-    @include disabled-style;
-  }
 
   &.solid {
     @include button-variant(var(--fgSoft));
