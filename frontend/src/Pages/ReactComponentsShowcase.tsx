@@ -5,12 +5,12 @@ import { FaSkull } from 'react-icons/fa'
 
 import Button from '../Components/UI/Button'
 
-import { ReactComponent as BookmarkIcon } from '../Assets/bookmark.svg'
-import { ReactComponent as EditIcon } from '../Assets/edit.svg'
-import { ReactComponent as SendIcon } from '../Assets/send.svg'
-import styles from './ButtonShowcase.module.scss'
+import styles from './ReactComponentsShowcase.module.scss'
+import { ReactComponent as BookmarkIcon } from '@assets/bookmark.svg'
+import { ReactComponent as EditIcon } from '@assets/edit.svg'
+import { ReactComponent as SendIcon } from '@assets/send.svg'
 
-const ButtonShowcase: React.FC = () => {
+const ReactComponentsShowcase: React.FC = () => {
   const [loading, setLoading] = useState(false)
 
   const handleLoading = () => {
@@ -22,7 +22,7 @@ const ButtonShowcase: React.FC = () => {
 
   return (
     <div className={styles.container}>
-      <h1>Button Showcase</h1>
+      <h1>React Components Showcase</h1>
       <section className={styles.section}>
         <h2>Description</h2>
         <div className={styles.description}>
@@ -201,4 +201,4 @@ const ButtonShowcase: React.FC = () => {
   )
 }
 
-export default ButtonShowcase
+export default ReactComponentsShowcase
