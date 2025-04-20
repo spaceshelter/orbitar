@@ -194,9 +194,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
         body: formData,
       })
         .then((response) => {
-          setTimeout(() => {
-            setUploading(false)
-          }, 1000)
+          setUploading(false)
 
           console.log('UPLOAD RESPONSE', response)
 
@@ -230,9 +228,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
           }
         })
         .catch((error) => {
-          setTimeout(() => {
-            setUploading(false)
-          }, 1000)
+          setUploading(false)
           console.error('UPLOAD FAILED', file.type, error)
           handleError('Произошла ошибка при загрузке 🥺')
         })
