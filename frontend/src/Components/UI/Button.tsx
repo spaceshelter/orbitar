@@ -121,6 +121,8 @@ export const Button: React.FC<StrictButtonProps> = ({
   )
 
   return (
+    // that's our button component
+    // eslint-disable-next-line react/forbid-elements
     <button className={buttonClass} disabled={disabled || loading} {...props}>
       {loading ? <Loader /> : children}
     </button>

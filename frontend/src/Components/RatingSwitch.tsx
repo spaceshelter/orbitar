@@ -180,6 +180,8 @@ export default function RatingSwitch(props: RatingSwitchProps) {
     buttons.reverse()
   }
   const renderedButtons = buttons.map((button) => (
+    // very custom and lightweight button
+    // eslint-disable-next-line react/forbid-elements
     <button
       key={`vote-${button.vote}`}
       {...buttonExtraProps}

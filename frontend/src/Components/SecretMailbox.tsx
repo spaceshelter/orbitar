@@ -155,6 +155,8 @@ export function SecretMailEncoderForm(props: {
           </>
         )}
         <div className={createCommentStyles.final}>
+          {/* FIXME replace with <Button */}
+          {/* eslint-disable-next-line react/forbid-elements */}
           <button className={classNames(styles.copyButton, mediaFormStyles.choose)} onClick={handleSubmit}>
             Готово
           </button>
@@ -360,6 +362,8 @@ export function SecretMailKeyGeneratorForm(props: SecretMailKeyGeneratorFormProp
 
           <div className={classNames(styles.columns, styles.submit)}>
             <div className={styles.cutCover}>
+              {/* FIXME replace with <Button */}
+              {/* eslint-disable-next-line react/forbid-elements */}
               <button
                 className={classNames('button', styles.cutButton)}
                 type='button'
