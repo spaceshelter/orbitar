@@ -483,8 +483,10 @@ describe('telegram parsing', () => {
     expect(result.text).toContain('class="expand-button i i-expand"')
   })
 
-  test('telegram links in a tag should be rendered as regular links', () => {
+  test('telegram links in a tag should be rendered with expand button', () => {
     const result = p.parse('<a href="https://t.me/channel/123">Telegram post</a>')
-    expect(result.text).toEqual('<a href="https://t.me/channel/123" target="_blank">Telegram post</a>')
+    expect(result.text).toEqual(
+      '<span role="button" class="expand-button i i-expand" data-telegram-url="https://t.me/channel/123"></span><a href="https://t.me/channel/123" target="_blank">Telegram post</a>',
+    )
   })
 })

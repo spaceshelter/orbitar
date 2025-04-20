@@ -7,7 +7,7 @@ import {observable, makeObservable, autorun, action, computed, makeAutoObservabl
 import APICache from '../API/APICache';
 import {createBrowserHistory} from 'history';
 import {RouterStore} from '@superwf/mobx-react-router';
-import {UserRestrictionsResponse} from '../API/UserAPI';
+import {UserRestrictionsResponse} from '@api/UserAPI';
 import MediaUploader, {MediaUploaderProps} from '../Components/MediaUploader';
 import ConfirmDialog, {ConfirmDialogProps} from '../Components/ConfirmDialog';
 import { themes } from '../theme'
@@ -111,13 +111,22 @@ export class AppState {
             return 'light';
         };
 
-        // load from localStorage
-        this.theme = localStorage.getItem('theme') || getPreferredColorScheme();
-
-        // fallback if the value in localStorage is not in the themes
-        if (themes[this.theme] === undefined) {
-            this.theme = Object.keys(themes)[0];
+        let loadedTheme = localStorage.getItem('theme');
+        // support the previous storage format
+        if (loadedTheme && loadedTheme.startsWith('{')) {
+            try {
+                loadedTheme = JSON.parse(loadedTheme).theme
+            } catch (e) {
+            }
         }
+        if (!loadedTheme || !themes[loadedTheme]) {
+            loadedTheme = getPreferredColorScheme();
+            if (!themes[loadedTheme]) {
+                // fallback to the last defined theme
+                loadedTheme = Object.keys(themes)[Object.keys(themes).length - 1];
+            }
+        }
+        this.theme = loadedTheme;
     }
 
     @computed
