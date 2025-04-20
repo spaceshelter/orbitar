@@ -3,7 +3,8 @@ import React, { useState } from 'react'
 import { Loader } from '@ui/Loader'
 import { FaSkull } from 'react-icons/fa'
 
-import Button from '../Components/UI/Button'
+import Button, { ButtonSize, ButtonType } from '../Components/UI/Button'
+import ButtonGroup, { ButtonGroupSpacing } from '../Components/UI/ButtonGroup'
 
 import styles from './ReactComponentsShowcase.module.scss'
 import { ReactComponent as BookmarkIcon } from '@assets/bookmark.svg'
@@ -12,6 +13,21 @@ import { ReactComponent as SendIcon } from '@assets/send.svg'
 
 const ReactComponentsShowcase: React.FC = () => {
   const [loading, setLoading] = useState(false)
+  const [buttonVariant, setButtonVariant] = useState<ButtonType>('primary')
+  const [buttonSize, setButtonSize] = useState<ButtonSize>('normal')
+
+  // Helper function to handle rendering the right button based on variant
+  const renderButton = (label: string) => {
+    if (buttonVariant === 'link') {
+      return <Button variant='link'>{label}</Button>
+    } else {
+      return (
+        <Button variant={buttonVariant as Exclude<ButtonType, 'link'>} size={buttonSize}>
+          {label}
+        </Button>
+      )
+    }
+  }
 
   const handleLoading = () => {
     setLoading(true)
@@ -19,6 +35,21 @@ const ReactComponentsShowcase: React.FC = () => {
       setLoading(false)
     }, 1000)
   }
+
+  const buttonVariants: ButtonType[] = [
+    'minimal',
+    'solid',
+    'primary',
+    'danger',
+    'ghost',
+    'link',
+    'solidAccent',
+    'primaryAccent',
+    'dangerAccent',
+    'ghostAccent',
+  ]
+
+  const buttonSizes: ButtonSize[] = ['small', 'normal', 'big']
 
   return (
     <div className={styles.container}>
@@ -64,13 +95,13 @@ const ReactComponentsShowcase: React.FC = () => {
       </section>
       <section className={styles.section}>
         <h2>Loader</h2>
-        <div className={styles.buttonGroup}>
+        <ButtonGroup>
           <Loader />
-        </div>
+        </ButtonGroup>
       </section>
       <section className={styles.section}>
         <h2>Variants</h2>
-        <div className={styles.buttonGroup}>
+        <ButtonGroup>
           <Button variant='minimal'>minimal</Button>
           <Button variant='solid'>solid</Button>
           <Button variant='primary'>primary</Button>
@@ -81,12 +112,12 @@ const ReactComponentsShowcase: React.FC = () => {
           <Button variant='primaryAccent'>primaryAccent</Button>
           <Button variant='dangerAccent'>dangerAccent</Button>
           <Button variant='ghostAccent'>ghostAccent</Button>
-        </div>
+        </ButtonGroup>
       </section>
 
       <section className={styles.section}>
         <h2>Disabled</h2>
-        <div className={styles.buttonGroup}>
+        <ButtonGroup>
           <Button disabled>solid</Button>
           <Button variant='primary' disabled>
             primary
@@ -112,21 +143,21 @@ const ReactComponentsShowcase: React.FC = () => {
           <Button variant='ghostAccent' disabled>
             ghostAccent
           </Button>
-        </div>
+        </ButtonGroup>
       </section>
 
       <section className={styles.section}>
         <h2>Sizes</h2>
-        <div className={styles.buttonGroup}>
+        <ButtonGroup>
           <Button size='small'>small</Button>
           <Button size='normal'>normal</Button>
           <Button size='big'>big</Button>
-        </div>
+        </ButtonGroup>
       </section>
 
       <section className={styles.section}>
         <h2>Loading</h2>
-        <div className={styles.buttonGroup}>
+        <ButtonGroup>
           <Button variant='primary' onClick={handleLoading} loading={loading}>
             Click to load
           </Button>
@@ -143,12 +174,12 @@ const ReactComponentsShowcase: React.FC = () => {
           <Button variant='link' loading>
             link
           </Button>
-        </div>
+        </ButtonGroup>
       </section>
 
       <section className={styles.section}>
         <h2>Icons</h2>
-        <div className={styles.buttonGroup}>
+        <ButtonGroup>
           <Button variant='minimal'>
             <EditIcon />
           </Button>
@@ -162,12 +193,12 @@ const ReactComponentsShowcase: React.FC = () => {
             bookmark <BookmarkIcon />
           </Button>
           <Button variant='link'>link</Button>
-        </div>
+        </ButtonGroup>
       </section>
 
       <section className={styles.section}>
         <h2>Mixed</h2>
-        <div className={styles.buttonGroup}>
+        <ButtonGroup>
           <Button size='small' variant='minimal'>
             <EditIcon /> Редактировать
           </Button>
@@ -195,6 +226,75 @@ const ReactComponentsShowcase: React.FC = () => {
           <Button variant='ghost'>
             <EditIcon /> Подробнее
           </Button>
+        </ButtonGroup>
+      </section>
+
+      <section className={styles.section}>
+        <h2>Button Group Spacing</h2>
+
+        <div className={styles.controls}>
+          <div className={styles.controlGroup}>
+            <h3>Button Variant</h3>
+            <ButtonGroup>
+              {buttonVariants.map((variant) => (
+                <Button
+                  key={variant}
+                  variant={variant === 'link' ? 'minimal' : variant}
+                  size='small'
+                  active={buttonVariant === variant}
+                  onClick={() => setButtonVariant(variant)}
+                >
+                  {variant}
+                </Button>
+              ))}
+            </ButtonGroup>
+          </div>
+
+          <div className={styles.controlGroup}>
+            <h3>Button Size</h3>
+            <ButtonGroup>
+              {buttonSizes.map((size) => (
+                <Button
+                  key={size}
+                  variant='minimal'
+                  size='small'
+                  active={buttonSize === size}
+                  onClick={() => setButtonSize(size)}
+                >
+                  {size}
+                </Button>
+              ))}
+            </ButtonGroup>
+          </div>
+        </div>
+
+        <div className={styles.spacingDisplay}>
+          <div>
+            <h3>Compact</h3>
+            <ButtonGroup spacing={ButtonGroupSpacing.COMPACT}>
+              {renderButton('First')}
+              {renderButton('Second')}
+              {renderButton('Third')}
+            </ButtonGroup>
+          </div>
+
+          <div>
+            <h3>Default</h3>
+            <ButtonGroup spacing={ButtonGroupSpacing.DEFAULT}>
+              {renderButton('First')}
+              {renderButton('Second')}
+              {renderButton('Third')}
+            </ButtonGroup>
+          </div>
+
+          <div>
+            <h3>Spacious</h3>
+            <ButtonGroup spacing={ButtonGroupSpacing.SPACIOUS}>
+              {renderButton('First')}
+              {renderButton('Second')}
+              {renderButton('Third')}
+            </ButtonGroup>
+          </div>
         </div>
       </section>
     </div>

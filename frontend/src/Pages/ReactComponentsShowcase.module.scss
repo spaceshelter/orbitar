@@ -48,3 +48,40 @@
     line-height: 1.5;
   }
 }
+
+.controls {
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.controlGroup {
+  padding: 16px;
+  background-color: var(--bgSoft);
+  border-radius: 8px;
+
+  h3 {
+    margin-bottom: 12px;
+    color: var(--fgSoft);
+    font-size: 1rem;
+  }
+}
+
+.spacingDisplay {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+
+  > div {
+    padding: 16px;
+    background-color: var(--bgMedium);
+    border-radius: 8px;
+  }
+
+  h3 {
+    margin-bottom: 12px;
+    color: var(--fgSoft);
+    font-size: 1rem;
+  }
+}

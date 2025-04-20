@@ -1,5 +1,16 @@
 .buttonGroup {
   display: flex;
   flex-wrap: wrap;
+}
+
+.compact {
+  gap: 0;
+}
+
+.default {
   gap: 8px;
+}
+
+.spacious {
+  gap: 32px;
 }

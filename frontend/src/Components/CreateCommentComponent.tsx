@@ -2,7 +2,7 @@ import React, { ReactNode, useEffect, useRef, useState } from 'react'
 
 import { useAPI, useAppState } from '@state/AppState'
 import Button from '@ui/Button'
-import ButtonGroup from '@ui/ButtonGroup'
+import ButtonGroup, { ButtonGroupSpacing } from '@ui/ButtonGroup'
 import ReactTextareaAutocomplete from '@webscopeio/react-textarea-autocomplete'
 import classNames from 'classnames'
 import debouncePromise from 'debounce-promise'
@@ -618,7 +618,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         </div>
       )}
       <div className={styles.final}>
-        <ButtonGroup>
+        <ButtonGroup spacing={ButtonGroupSpacing.SPACIOUS}>
           {previewing && <ThemeToggleComponent buttonLabel='Превью с другой темой' resetOnOnmount={true} />}
           <Button variant='minimal' disabled={isPosting || !answerText} onClick={handlePreview}>
             {previewing === null ? 'Превью' : 'Редактор'}
