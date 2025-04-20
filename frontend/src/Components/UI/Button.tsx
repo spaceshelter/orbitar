@@ -66,11 +66,6 @@ interface ButtonProps extends BaseButtonProps {
    */
   dynamic?: boolean
 
-  /** Rotating state for refresh buttons
-   * @default false
-   */
-  rotating?: boolean
-
   /** Content to be rendered inside the button */
   children: React.ReactNode
 }
@@ -98,7 +93,6 @@ export const Button: React.FC<StrictButtonProps> = ({
   size = 'normal',
   disabled = false,
   dynamic = false,
-  rotating = false,
   loading = false,
   active = false,
   children,
@@ -119,7 +113,6 @@ export const Button: React.FC<StrictButtonProps> = ({
       [BUTTON_SIZES[size]]: !isLink,
       [styles.disabled]: disabled || loading,
       [styles.dynamic]: dynamic,
-      [styles.rotating]: rotating,
       [styles.iconOnly]: isIconOnly(),
       [styles.active]: active,
     },
