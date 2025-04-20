@@ -24,8 +24,10 @@
         font-size: 20px;
       }
     }
-    .confirm {
-      text-align: right;
-    }
   }
+}
+
+.confirm {
+  display: flex;
+  justify-content: flex-end;
 }

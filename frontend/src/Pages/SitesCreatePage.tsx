@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import Button from '@ui/Button'
+
 import { APIError } from '../API/APIBase'
 import { useAPI } from '../AppState/AppState'
 import Conf from '../Conf'
@@ -89,10 +91,10 @@ export const SitesCreatePage = () => {
             onChange={handleSiteNameChange}
           />
         </div>
-        <div className='confirm'>
-          <button className='button' disabled={!createEnabled} onClick={handleCreate}>
+        <div className={styles.confirm}>
+          <Button variant='primary' disabled={!createEnabled} onClick={handleCreate}>
             Создать
-          </button>
+          </Button>
         </div>
       </div>
     </div>
