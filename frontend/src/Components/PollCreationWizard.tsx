@@ -204,8 +204,8 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
           maxLength={64}
         />
         {options.length > 2 && (
-          <Button variant='ghost' onClick={() => handleRemoveOption(option.id)}>
-            ×
+          <Button variant='minimal' onClick={() => handleRemoveOption(option.id)}>
+            X
           </Button>
         )}
       </div>
@@ -388,7 +388,7 @@ const PollExpiration: React.FC<{
     const nxtDate = moment(date).add(delta, unit).toDate()
     return (
       <Button
-        variant='ghost'
+        variant='solid'
         className={styles.dateButton}
         onClick={() => {
           onChange(nxtDate)
