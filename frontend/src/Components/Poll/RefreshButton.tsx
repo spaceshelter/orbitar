@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 
+import Button from '@ui/Button'
 import { FaSyncAlt } from 'react-icons/fa'
 
 import styles from './RefreshButton.module.scss'
@@ -26,13 +27,14 @@ export const RefreshButton: React.FC<RefreshButtonProps> = ({ onClick, title = '
   }
 
   return (
-    <button
+    <Button
+      variant='minimal'
       className={`${styles.refreshButton} ${isRefreshing ? styles.rotating : ''}`}
       onClick={handleClick}
       title={title}
       disabled={disabled}
     >
       <FaSyncAlt size={14} />
-    </button>
+    </Button>
   )
 }
