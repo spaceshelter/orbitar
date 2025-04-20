@@ -16,6 +16,7 @@ import InviteController from './api/InviteController'
 import NotificationsController from './api/NotificationsController'
 import OAuth2Controller from './api/OAuth2Controller'
 import createOauth2MiddlewareGenerator, { ExpressOauth2ScopesFilter } from './api/OAuth2Middleware'
+import PollController from './api/PollController'
 import PostController from './api/PostController'
 import SearchController from './api/SearchController'
 import SiteController from './api/SiteController'
@@ -31,6 +32,7 @@ import CommentRepository from './db/repositories/CommentRepository'
 import InviteRepository from './db/repositories/InviteRepository'
 import NotificationsRepository from './db/repositories/NotificationsRepository'
 import OAuth2Repository from './db/repositories/OAuth2Repository'
+import PollRepository from './db/repositories/PollRepository'
 import PostRepository from './db/repositories/PostRepository'
 import SiteRepository from './db/repositories/SiteRepository'
 import TranslationRepository from './db/repositories/TranslationRepository'
@@ -42,6 +44,7 @@ import FeedManager from './managers/FeedManager'
 import InviteManager from './managers/InviteManager'
 import NotificationManager from './managers/NotificationManager'
 import OAuth2Manager from './managers/OAuth2Manager'
+import PollManager from './managers/PollManager'
 import PostManager from './managers/PostManager'
 import SearchManager from './managers/SearchManager'
 import SiteManager from './managers/SiteManager'
@@ -116,6 +119,7 @@ const userRepository = new UserRepository(db)
 const webPushRepository = new WebPushRepository(db)
 const translationRepository = new TranslationRepository(db)
 const oauthRepository = new OAuth2Repository(db)
+const pollRepository = new PollRepository(db)
 
 const oauthScopesFilter = new ExpressOauth2ScopesFilter(app)
 const oauthModel = new AuthorizationCodeModelImpl(
@@ -192,6 +196,7 @@ const postManager = new PostManager(
 const voteManager = new VoteManager(voteRepository, postManager, userManager, redis.client)
 const searchManager = new SearchManager(userManager, siteManager, logger.child({ service: 'SEARCH' }))
 const oauth2Manager = new OAuth2Manager(oauthRepository, userManager, logger.child({ service: 'OAUTH2' }))
+const pollManager = new PollManager(pollRepository, userManager)
 
 const apiEnricher = new Enricher(siteManager, userManager)
 
@@ -259,6 +264,7 @@ const requests = [
   ),
   new SearchController(userManager, searchManager, oauthMiddlewareGenerator, logger.child({ service: 'SEARCH' })),
   new OAuth2Controller(oauth2Manager, userManager, oauthScopesFilter, app.oauth, logger.child({ service: 'OAUTH2' })),
+  new PollController(pollManager, userManager, oauthMiddlewareGenerator, logger.child({ service: 'POLL' })),
 ]
 
 const filterLog = winston.format((info) => {

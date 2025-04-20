@@ -1,20 +1,22 @@
 import React, { ReactNode, useEffect, useRef, useState } from 'react'
 
+import { useAPI, useAppState } from '@state/AppState'
 import ReactTextareaAutocomplete from '@webscopeio/react-textarea-autocomplete'
 import classNames from 'classnames'
 import debouncePromise from 'debounce-promise'
 import { observer } from 'mobx-react-lite'
+import { createPortal } from 'react-dom'
 import { useHotkeys } from 'react-hotkeys-hook'
 import TextareaAutosize from 'react-textarea-autosize'
 import { toast } from 'react-toastify'
 import getCaretCoordinates from 'textarea-caret'
 import { useDebouncedCallback } from 'use-debounce'
 
-import { useAPI, useAppState } from '../AppState/AppState'
 import { CommentInfo, PostLinkInfo } from '../Types/PostInfo'
 import { UserGender } from '../Types/UserInfo'
 import ContentComponent from './ContentComponent'
 import MediaUploader from './MediaUploader'
+import { PollCreationWizard, PollCreationWizardSubmitData } from './PollCreationWizard'
 import { SecretMailEncoderForm } from './SecretMailbox'
 import SlowMode from './SlowMode'
 import ThemeToggleComponent from './ThemeToggleComponent'
@@ -25,6 +27,7 @@ import { ReactComponent as ImageIcon } from '../Assets/image.svg'
 import { ReactComponent as IronyIcon } from '../Assets/irony.svg'
 import { ReactComponent as LinkIcon } from '../Assets/link.svg'
 import { ReactComponent as OptionsIcon } from '../Assets/options.svg'
+import { ReactComponent as PollIcon } from '../Assets/poll.svg'
 import { ReactComponent as QuoteIcon } from '../Assets/quote.svg'
 import { ReactComponent as SendIcon } from '../Assets/send.svg'
 import { ReactComponent as SpoilerIcon } from '../Assets/spoiler.svg'
@@ -118,6 +121,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
   const [previewing, setPreviewing] = useState<string | null>(null)
   const [mediaUploaderOpen, setMediaUploaderOpen] = useState(false)
   const [mediaUploaderData, setMediaUploaderData] = useState<File | undefined>()
+  const [pollWizardOpen, setPollWizardOpen] = useState(false)
   const containerRef = useHotkeys<HTMLDivElement>(allowedKeys.join(','), (e) => handleHotKey(e), {
     enableOnFormTags: ['TEXTAREA'],
     preventDefault: true,
@@ -132,6 +136,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     | undefined
   >(undefined)
   const [mailForm, setFormOpen] = useState(false)
+
   const api = useAPI()
 
   const pronoun =
@@ -416,6 +421,32 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     }
   }
 
+  const handlePollCreate = async (pollData: PollCreationWizardSubmitData) => {
+    try {
+      const result = await api.pollAPI.createPoll({
+        question: pollData.question,
+        options: pollData.options.map((opt: any) => opt.text),
+        settings: {
+          allowMultipleChoice: pollData.settings.isMultipleChoice,
+          resultVisibility: pollData.settings.resultVisibility,
+          allowVoteRescinding: pollData.settings.allowVoteRescinding,
+          voteAccess: pollData.settings.voteAccess,
+        },
+        expires: pollData.settings.expirationDate || undefined,
+      })
+      const pollTag = `<poll>${result.id}</poll>`
+      replaceText(pollTag, pollTag.length)
+      setPollWizardOpen(false)
+    } catch (error: unknown) {
+      console.error('Failed to create poll:', error)
+      if (error instanceof Error) {
+        toast.error(`Не удалось создать опрос: ${error.message}`)
+      } else {
+        toast.error('Не удалось создать опрос')
+      }
+    }
+  }
+
   if (!props.open) {
     return <></>
   }
@@ -512,6 +543,11 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
               <SpoilerIcon />
             </button>
           </div>
+          <div className={styles.control}>
+            <button disabled={disabledButtons} onClick={() => setPollWizardOpen(true)} title='Создать опрос'>
+              <PollIcon />
+            </button>
+          </div>
           {/*{parentPublicKey &&*/}
           {/*<div className={styles.control}>*/}
           {/*    <button disabled={disabledButtons} onClick={() => setFormOpen(true)} title="Шифрованное послание"><MailIcon /></button></div>*/}
@@ -571,6 +607,15 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             onClose={handleMailClose}
           />
         )}
+        {pollWizardOpen &&
+          createPortal(
+            <PollCreationWizard
+              isOpen={pollWizardOpen}
+              onClose={() => setPollWizardOpen(false)}
+              onSubmit={handlePollCreate}
+            />,
+            document.body,
+          )}
       </div>
     </div>
   )

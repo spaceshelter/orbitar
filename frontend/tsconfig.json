@@ -1,14 +1,9 @@
 {
   "compilerOptions": {
     "target": "es5",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext",
-      "webworker"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext", "webworker"],
     "experimentalDecorators": true, // needed for @observable
-    "useDefineForClassFields": true,  // needed for @observable
+    "useDefineForClassFields": true, // needed for @observable
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -21,7 +16,20 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "baseUrl": "src",
+    "paths": {
+      "@ui/*": ["Components/UI/*"],
+      "@components/*": ["Components/*"],
+      "@pages/*": ["Pages/*"],
+      "@services/*": ["Services/*"],
+      "@entities/*": ["Types/*"] /*@types is reserved*/,
+      "@assets/*": ["Assets/*"],
+      "@theme/*": ["Theme/*"],
+      "@utils/*": ["Utils/*"],
+      "@api/*": ["API/*"],
+      "@state/*": ["AppState/*"]
+    }
   },
   "include": ["src"]
 }

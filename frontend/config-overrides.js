@@ -29,5 +29,19 @@ module.exports = function override(config, env) {
         ...config.module.rules[1].oneOf
     ];
 
+    config.resolve.alias = {
+        ...config.resolve.alias,
+        '@ui': path.resolve(__dirname, 'src/Components/UI'),
+        '@components': path.resolve(__dirname, 'src/Components'),
+        '@pages': path.resolve(__dirname, 'src/Pages'),
+        '@services': path.resolve(__dirname, 'src/Services'),
+        '@types': path.resolve(__dirname, 'src/Types'),
+        '@assets': path.resolve(__dirname, 'src/Assets'),
+        '@theme': path.resolve(__dirname, 'src/Theme'),
+        '@utils': path.resolve(__dirname, 'src/Utils'),
+        '@api': path.resolve(__dirname, 'src/API'),
+        '@state': path.resolve(__dirname, 'src/AppState'),
+    };
+
     return config;
 };

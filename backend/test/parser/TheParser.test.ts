@@ -371,6 +371,48 @@ test('base64 validation', () => {
   expect(TheParser.isValidBase64('"SGVsbG8=')).toEqual(false)
 })
 
+describe('parsePoll', () => {
+  test('valid poll ID', () => {
+    const result = p.parse('<poll>123</poll>')
+    expect(result.text).toEqual('<div class="poll" data-poll-id="123"></div>')
+  })
+
+  test('invalid poll ID - non-numeric', () => {
+    const result = p.parse('<poll>abc</poll>')
+    expect(result.text).toEqual('&lt;poll&gt;abc&lt;/poll&gt;')
+  })
+
+  test('invalid poll ID - negative number', () => {
+    const result = p.parse('<poll>-123</poll>')
+    expect(result.text).toEqual('&lt;poll&gt;-123&lt;/poll&gt;')
+  })
+
+  test('invalid poll ID - zero', () => {
+    const result = p.parse('<poll>0</poll>')
+    expect(result.text).toEqual('&lt;poll&gt;0&lt;/poll&gt;')
+  })
+
+  test('invalid poll ID - decimal number', () => {
+    const result = p.parse('<poll>123.45</poll>')
+    expect(result.text).toEqual('&lt;poll&gt;123.45&lt;/poll&gt;')
+  })
+
+  test('invalid poll ID - empty', () => {
+    const result = p.parse('<poll></poll>')
+    expect(result.text).toEqual('&lt;poll/&gt;&lt;/poll&gt;')
+  })
+
+  test('poll tag with nested content is treated as text', () => {
+    const result = p.parse('<poll><b>123</b></poll>')
+    expect(result.text).toEqual('&lt;poll&gt;<b>123</b>&lt;/poll&gt;')
+  })
+
+  test('poll cannot be inside a tag', () => {
+    const result = p.parse('<a href="https://test.com"><poll>123</poll></a>')
+    expect(result.text).toEqual('<a href="https://test.com" target="_blank">123</a>')
+  })
+})
+
 describe('processInternalUrl', () => {
   test('valid internal url', () => {
     const url = 'https://orbitar.local/s/site/p123'
@@ -399,6 +441,52 @@ describe('processInternalUrl', () => {
     const result = p.processInternalUrl(url)
     expect(result).toEqual(
       '<span role="button" class="expand-button i i-expand" data-post-id="123"></span><a href="https://orbitar.local/s/site/p123" target="_blank">https://orbitar.local/s/site/p123</a>',
+    )
+  })
+})
+
+describe('telegram parsing', () => {
+  test('valid telegram url with t.me domain', () => {
+    const result = p.parse('https://t.me/channel/123')
+    expect(result.text).toEqual(
+      '<span role="button" class="expand-button i i-expand" data-telegram-url="https://t.me/channel/123"></span><a href="https://t.me/channel/123" target="_blank">https://t.me/channel/123</a>',
+    )
+  })
+
+  test('valid telegram url with telegram.me domain', () => {
+    const result = p.parse('https://telegram.me/channel/123')
+    expect(result.text).toEqual(
+      '<span role="button" class="expand-button i i-expand" data-telegram-url="https://t.me/channel/123"></span><a href="https://t.me/channel/123" target="_blank">https://t.me/channel/123</a>',
+    )
+  })
+
+  test('invalid telegram url with wrong domain', () => {
+    const result = p.parse('https://example.com/channel/123')
+    expect(result.text).toEqual(
+      '<a href="https://example.com/channel/123" target="_blank">https://example.com/channel/123</a>',
+    )
+  })
+
+  test('invalid telegram url with wrong path format', () => {
+    const result = p.parse('https://t.me/channel')
+    expect(result.text).toEqual('<a href="https://t.me/channel" target="_blank">https://t.me/channel</a>')
+  })
+
+  test('invalid telegram url with non-numeric post id', () => {
+    const result = p.parse('https://t.me/channel/abc')
+    expect(result.text).toEqual('<a href="https://t.me/channel/abc" target="_blank">https://t.me/channel/abc</a>')
+  })
+
+  test('telegram url parsing in text content', () => {
+    const result = p.parse('Check out this post: https://t.me/channel/123')
+    expect(result.text).toContain('data-telegram-url="https://t.me/channel/123"')
+    expect(result.text).toContain('class="expand-button i i-expand"')
+  })
+
+  test('telegram links in a tag should be rendered with expand button', () => {
+    const result = p.parse('<a href="https://t.me/channel/123">Telegram post</a>')
+    expect(result.text).toEqual(
+      '<span role="button" class="expand-button i i-expand" data-telegram-url="https://t.me/channel/123"></span><a href="https://t.me/channel/123" target="_blank">Telegram post</a>',
     )
   })
 })

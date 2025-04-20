@@ -1,0 +1,96 @@
+.buttonComponent {
+  height: 36px;
+  border: none;
+  display: flex;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: bold;
+  align-items: center;
+  gap: 8px;
+  fill: var(--fgSoft);
+  opacity: 0.8;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  &.disabled {
+    pointer-events: none;
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &.default {
+    background: var(--dim1);
+    color: var(--fgSoft);
+
+    &:hover {
+      background: var(--dim3);
+    }
+  }
+
+  &.link {
+    border: none;
+    background: none;
+    color: var(--link);
+    margin: 0;
+
+    &:hover {
+      color: var(--linkHover);
+    }
+  }
+
+  &.primary {
+    background: var(--dim1);
+    color: var(--primary);
+
+    &:hover {
+      color: var(--primaryHover);
+    }
+
+    &.disabled {
+      color: var(--fgSoft);
+    }
+  }
+
+  &.danger {
+    background: var(--dim1);
+    color: var(--danger);
+
+    &:hover {
+      color: var(--dangerHover);
+    }
+
+    &.disabled {
+      color: var(--fgSoft);
+    }
+  }
+
+  &.ghost {
+    background: var(--dim1);
+    color: var(--fgSoft);
+
+    &:hover {
+      background: var(--dim3);
+    }
+  }
+
+  &.positive {
+    color: var(--button-fg);
+    background: var(--positive);
+
+    &:hover {
+      color: var(--button-fg);
+    }
+
+    &.disabled {
+      color: var(--fgSoft);
+      background: var(--dim1);
+    }
+  }
+
+  &.condensed {
+    padding: 4px 8px;
+    height: 24px;
+  }
+}

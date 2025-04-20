@@ -67,6 +67,7 @@ export default class TheParser {
       app: (node) => this.parseOauthApp(node),
       mail: (node) => this.parseSecretMail(node),
       pre: (node) => this.parsePre(node),
+      poll: (node) => this.parsePoll(node),
       blockquote: true,
       b: true,
       i: true,
@@ -85,6 +86,7 @@ export default class TheParser {
       mail: ['a', 'mailbox', 'mail'],
       app: ['a', 'mailbox', 'mail'],
       expand: ['a', 'mailbox', 'mail'],
+      poll: ['a', 'mailbox', 'mail', 'b', 'i', 'u', 'strike', 'irony', 'spoiler'],
     }
 
     this.parseChildNodesStack = []
@@ -259,12 +261,33 @@ export default class TheParser {
       this.processImage(pUrl) ||
       this.processCoub(pUrl) ||
       this.processVideo(pUrl) ||
+      this.processTelegram(pUrl) ||
       this.processInternalUrl(url)
     if (res !== false) {
       return res
     }
 
     return `<a href="${encodeURI(decodeURI(url))}" target="_blank">${htmlEscape(decodeURI(url))}</a>`
+  }
+
+  processTelegram(url: Url<string> | string, text?: string) {
+    const pUrl = typeof url === 'string' ? new Url(url) : url
+
+    if (pUrl.host !== 't.me' && pUrl.host !== 'telegram.me') {
+      return false
+    }
+
+    const match = pUrl.pathname.match(/^\/([^/]+)\/(\d+)/)
+    if (match === null) {
+      return false
+    }
+
+    const [, channelName, postId] = match
+    const telegramUrl = `https://t.me/${channelName}/${postId}`
+    const expandButton = `<span role="button" class="expand-button i i-expand" data-telegram-url="${encodeURI(telegramUrl)}"></span>`
+
+    const displayText = text || htmlEscape(decodeURI(telegramUrl))
+    return `${expandButton}<a href="${encodeURI(telegramUrl)}" target="_blank">${displayText}</a>`
   }
 
   processImage(url: Url<string>) {
@@ -471,8 +494,11 @@ export default class TheParser {
     if (result.urls.length > 0 || result.mentions.length > 0) {
       return result
     }
-    const parsedInternalUrl = this.processInternalUrl(url, result.text)
-    const text = parsedInternalUrl || `<a href="${encodeURI(decodeURI(url))}" target="_blank">${result.text}</a>`
+
+    const text =
+      this.processTelegram(url, result.text) ||
+      this.processInternalUrl(url, result.text) ||
+      `<a href="${encodeURI(decodeURI(url))}" target="_blank">${result.text}</a>`
 
     return { ...result, text, urls: [...result.urls, url] }
   }
@@ -628,6 +654,23 @@ export default class TheParser {
     const text = `<details class="expand"><summary>${htmlEscape(title)}</summary>${result.text}<div role="button"></div></details>`
 
     return { ...result, text }
+  }
+
+  parsePoll(node: Element): ParseResult {
+    // poll tag with poll_id as text inside
+    let pollId = ''
+    if (node.children.length === 1 && node.children[0].type === 'text') {
+      pollId = (node.children[0] as unknown as Text).data.trim()
+    }
+    if (!pollId || isNaN(Number(pollId)) || Number(pollId) <= 0 || !Number.isInteger(Number(pollId))) {
+      return this.parseDisallowedTag(node)
+    }
+    return {
+      text: `<div class="poll" data-poll-id="${pollId}"></div>`,
+      mentions: [],
+      urls: [],
+      images: [],
+    }
   }
 
   validUrl(url: string): boolean {
