@@ -1,25 +1,25 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
+import { useUserProfile } from '@api/use/useUserProfile'
+import { useAPI, useAppState } from '@state/AppState'
 import Button from '@ui/Button'
+import { selectElementText } from '@utils/utils'
 import classNames from 'classnames'
 import { observer } from 'mobx-react-lite'
 import { toast } from 'react-toastify'
 
-import { useUserProfile } from '../API/use/useUserProfile'
-import { useAPI, useAppState } from '../AppState/AppState'
 import { BarmaliniAccessResult, UserGender } from '../Types/UserInfo'
-import { selectElementText } from '../Utils/utils'
 import { SecretMailKeyGeneratorForm } from './SecretMailbox'
 import ThemeToggleComponent from './ThemeToggleComponent'
 
-import { ReactComponent as CopyIcon } from '../Assets/copy.svg'
-import { ReactComponent as GhostIcon } from '../Assets/ghost.svg'
-import { ReactComponent as LogoutIcon } from '../Assets/logout.svg'
-import { ReactComponent as MailboxSecureIcon } from '../Assets/mailbox-secure.svg'
-import { ReactComponent as TranslateIcon } from '../Assets/translate.svg'
-import { ReactComponent as UserIcon } from '../Assets/user.svg'
 import styles from './UserProfileSettings.module.scss'
+import { ReactComponent as CopyIcon } from '@assets/copy.svg'
+import { ReactComponent as GhostIcon } from '@assets/ghost.svg'
+import { ReactComponent as LogoutIcon } from '@assets/logout.svg'
+import { ReactComponent as MailboxSecureIcon } from '@assets/mailbox-secure.svg'
+import { ReactComponent as TranslateIcon } from '@assets/translate.svg'
+import { ReactComponent as UserIcon } from '@assets/user.svg'
 
 type UserProfileSettingsProps = {
   onChange: () => void
