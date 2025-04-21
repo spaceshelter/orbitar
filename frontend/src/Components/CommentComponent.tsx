@@ -3,7 +3,6 @@ import React, { useMemo, useState } from 'react'
 import { TranslateType } from '@api/PostAPI'
 import { useInterpreter } from '@api/use/useInterpreter'
 import { useAPI } from '@state/AppState'
-import Button from '@ui/Button'
 import OutsideClickHandler from 'react-outside-click-handler'
 import { toast } from 'react-toastify'
 
@@ -17,7 +16,6 @@ import RatingSwitch from './RatingSwitch'
 import { SignatureComponent } from './SignatureComponent'
 import { getPreferredLang, getShowInlineTranslateButton } from './UserProfileSettings'
 
-import { ReactComponent as EditIcon } from '../Assets/edit.svg'
 import { ReactComponent as OptionsIcon } from '../Assets/options.svg'
 import styles from './CommentComponent.module.scss'
 import postStyles from './PostComponent.module.scss'
@@ -182,9 +180,9 @@ export default function CommentComponent(props: CommentProps) {
           )}
           {props.comment.canEdit && props.onEdit && (
             <div className={styles.control}>
-              <Button onClick={handleEdit} variant='minimal'>
-                <EditIcon />
-              </Button>
+              {/*comment component is rendered 4+k times, let's keep it extremely lightweight*/}
+              {/* eslint-disable-next-line react/forbid-elements */}
+              <button onClick={handleEdit} className='i i-edit' />
             </div>
           )}
 
@@ -209,10 +207,11 @@ export default function CommentComponent(props: CommentProps) {
                 <AnnotateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={annotate} />
               </div>
             )}
-
-            <Button variant='minimal' onClick={toggleOptions} active={showOptions}>
+            {/*comment component is rendered 4+k times, let's keep it extremely lightweight*/}
+            {/* eslint-disable-next-line react/forbid-elements */}
+            <button onClick={toggleOptions} className={styles.options + ' ' + (showOptions ? styles.active : '')}>
               <OptionsIcon />
-            </Button>
+            </button>
             {showOptions && (
               <OutsideClickHandler onOutsideClick={() => setShowOptions(false)}>
                 <div className={postStyles.optionsList}>
@@ -250,9 +249,9 @@ export default function CommentComponent(props: CommentProps) {
           </div>
           {props.onAnswer && (
             <div className={styles.control}>
-              <Button variant='minimal' onClick={handleAnswerSwitch} active={answerOpen}>
-                {!answerOpen ? 'Ответить' : 'Не отвечать'}
-              </Button>
+              {/*comment component is rendered 4+k times, let's keep it extremely lightweight*/}
+              {/* eslint-disable-next-line react/forbid-elements */}
+              <button onClick={handleAnswerSwitch}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</button>
             </div>
           )}
         </div>

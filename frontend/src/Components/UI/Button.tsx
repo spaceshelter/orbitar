@@ -77,6 +77,17 @@ type StrictButtonProps =
       size?: ButtonSize
     })
 
+function isIconOnlyChild(node: React.ReactNode): boolean {
+  // 1. Must be exactly one child → bail fast on arrays / fragments
+  if (Array.isArray(node)) return false
+
+  // 2. Not a primitive (text / number / etc.)
+  if (typeof node === 'string' || typeof node === 'number') return false
+
+  // 3. Must be a single custom React element, not an intrinsic <div>, <svg>, …
+  return React.isValidElement(node) && typeof node.type !== 'string'
+}
+
 /**
  * A customizable button component that supports different variants and sizes
  *
@@ -88,7 +99,7 @@ type StrictButtonProps =
  * </Button>
  * ```
  */
-export const Button: React.FC<StrictButtonProps> = ({
+const ButtonComponent: React.FC<StrictButtonProps> = ({
   variant = 'solid',
   size = 'normal',
   disabled = false,
@@ -99,12 +110,6 @@ export const Button: React.FC<StrictButtonProps> = ({
   className,
   ...props
 }) => {
-  const isIconOnly = (): boolean => {
-    const childArray = React.Children.toArray(children)
-
-    return childArray.length === 1 && React.isValidElement(childArray[0]) && typeof childArray[0].type !== 'string'
-  }
-
   const isLink = variant === 'link'
 
   const buttonClass = classNames(
@@ -113,7 +118,7 @@ export const Button: React.FC<StrictButtonProps> = ({
       [BUTTON_SIZES[size]]: !isLink,
       [styles.disabled]: disabled || loading,
       [styles.dynamic]: dynamic,
-      [styles.iconOnly]: isIconOnly(),
+      [styles.iconOnly]: isIconOnlyChild(children),
       [styles.active]: active,
     },
     styles.buttonComponent,
@@ -128,5 +133,7 @@ export const Button: React.FC<StrictButtonProps> = ({
     </button>
   )
 }
+
+export const Button = React.memo(ButtonComponent)
 
 export default Button

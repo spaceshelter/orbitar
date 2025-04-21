@@ -1,9 +1,8 @@
-import React from 'react'
+import React, { memo } from 'react'
 import { Link } from 'react-router-dom'
 
-import Button from '@ui/Button'
+import { EditFlag } from '@api/PostAPI'
 
-import { EditFlag } from '../API/PostAPI'
 import { PostLinkInfo } from '../Types/PostInfo'
 import { UserBaseInfo } from '../Types/UserInfo'
 import DateComponent from './DateComponent'
@@ -26,7 +25,7 @@ interface SignatureComponentProps {
   commentId?: number
 }
 
-export const SignatureComponent = (props: SignatureComponentProps) => {
+export const SignatureComponent = memo((props: SignatureComponentProps) => {
   return (
     <div className={styles.signature}>
       {props.showSite && props.site && props.site !== 'main' ? (
@@ -57,13 +56,13 @@ export const SignatureComponent = (props: SignatureComponentProps) => {
       )}
       {props.editFlag && (
         <>
-          {' '}
-          •{' '}
-          <Button variant='link' className={styles.toggleHistory} onClick={props.onHistoryClick}>
+          • {/*this element could be rendered 4k+ times on the page, let's keep it lightweight*/}
+          {/* eslint-disable-next-line react/forbid-elements */}
+          <button className={styles.toggleHistory} onClick={props.onHistoryClick}>
             изменён
-          </Button>
+          </button>
         </>
       )}
     </div>
   )
-}
+})

@@ -25,8 +25,6 @@ function BaseButton({
     i i-${icon} ${styles.icon} 
     ${inProgress ? styles.inProgress : ''} 
     ${isActive ? styles.active : ''}`
-  console.log(inProgress)
-
   return (
     <Button variant='minimal' className={className} onClick={onClick}>
       {label && <div className={styles.label}>{label}</div>}
