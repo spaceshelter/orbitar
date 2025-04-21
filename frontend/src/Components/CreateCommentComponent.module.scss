@@ -67,22 +67,22 @@
   }
 }
 
-.bold {
-  font-weight: bold !important;
-}
-.italic {
-  font-style: italic !important;
-}
-.underline {
-  text-decoration: underline !important;
-}
-.strike {
-  text-decoration: line-through !important;
-}
-
-.editorButton {
-  font-size: 16px !important;
+button.editorButton {
+  font-size: 16px;
   font-weight: 400;
+
+  &.bold {
+    font-weight: bold;
+  }
+  &.italic {
+    font-style: italic;
+  }
+  &.underline {
+    text-decoration: underline;
+  }
+  &.strike {
+    text-decoration: line-through;
+  }
 }
 
 .editor {
@@ -133,5 +133,11 @@
 
   button.buttonSend {
     fill: var(--primary);
+  }
+
+  @media (max-width: 500px) {
+    button {
+      padding: 0 8px;
+    }
   }
 }

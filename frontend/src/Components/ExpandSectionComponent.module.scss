@@ -9,9 +9,9 @@
   font-weight: 500;
   display: flex;
   align-items: center;
-  padding: 8px !important;
-  color: var(--fg) !important;
-  gap: 0 !important;
+  padding: 8px;
+  color: var(--fg);
+  gap: 0;
 
   &::before {
     content: '►';

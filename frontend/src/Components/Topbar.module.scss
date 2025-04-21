@@ -61,9 +61,9 @@
     }
 
     &.active {
-      fill: var(--primary) !important;
+      fill: var(--primary);
       &:hover {
-        fill: var(--primaryHover) !important;
+        fill: var(--primaryHover);
       }
     }
 
@@ -102,8 +102,8 @@
   }
 }
 
-.notificationButton {
-  fill: var(--fgSoft) !important;
-  font-weight: normal !important;
-  gap: 0 !important;
+button.notificationButton {
+  fill: var(--fgSoft);
+  font-weight: normal;
+  gap: 0;
 }

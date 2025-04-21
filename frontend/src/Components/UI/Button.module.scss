@@ -58,90 +58,100 @@
   }
 }
 
-.buttonComponent {
+/* Button variants */
+.solid {
   @extend %baseButton;
+  @include button-variant(var(--fgSoft));
+}
 
-  &.solid {
-    @include button-variant(var(--fgSoft));
+.solidAccent {
+  @extend %baseButton;
+  @include button-variant(var(--fg), null, var(--fgSoftest), var(--fgSofter));
+}
+
+.primary {
+  @extend %baseButton;
+  @include button-variant(var(--primary), var(--primaryHover));
+
+  &.disabled {
+    color: var(--fgSoft);
+  }
+}
+
+.primaryAccent {
+  @extend %baseButton;
+  @include button-variant(var(--onAccent), null, var(--primary), var(--primaryHover));
+}
+
+.danger {
+  @extend %baseButton;
+  @include button-variant(var(--danger), var(--dangerHover));
+
+  &.disabled {
+    color: var(--fgSoft);
+  }
+}
+
+.dangerAccent {
+  @extend %baseButton;
+  @include button-variant(var(--onAccent), null, var(--danger), var(--dangerHover));
+}
+
+.ghost {
+  @extend %baseButton;
+  @include button-variant(var(--fgSoft), null, transparent);
+}
+
+.ghostAccent {
+  @extend %baseButton;
+  @include button-variant(var(--fg), null, transparent, var(--dim3));
+  border: 1px solid var(--inactive-fg);
+}
+
+.link {
+  @extend %baseButton;
+  @extend %unstyledButton;
+  color: var(--link);
+}
+
+.minimal {
+  @extend %baseButton;
+  height: 24px;
+  min-width: 24px;
+  padding: 0;
+  opacity: 1;
+  color: var(--fgSoftest);
+  fill: var(--fgSoftest);
+
+  &:hover,
+  &.active {
+    color: var(--primaryHover);
+    fill: var(--primaryHover);
   }
 
-  &.solidAccent {
-    @include button-variant(var(--fg), null, var(--fgSoftest), var(--fgSofter));
+  &.disabled {
+    opacity: 0.6;
   }
+}
 
-  &.primary {
-    @include button-variant(var(--primary), var(--primaryHover));
+/* Button sizes */
 
-    &.disabled {
-      color: var(--fgSoft);
-    }
-  }
+.small {
+  height: 32px;
+  padding: 4px 8px;
+}
 
-  &.primaryAccent {
-    @include button-variant(var(--onAccent), null, var(--primary), var(--primaryHover));
-  }
+.normal {
+  height: 36px;
+  padding: 8px 16px;
+}
 
-  &.danger {
-    @include button-variant(var(--danger), var(--dangerHover));
+.big {
+  height: 40px;
+  padding: 12px 24px;
+}
 
-    &.disabled {
-      color: var(--fgSoft);
-    }
-  }
-
-  &.dangerAccent {
-    @include button-variant(var(--onAccent), null, var(--danger), var(--dangerHover));
-  }
-
-  &.ghost {
-    @include button-variant(var(--fgSoft), null, transparent);
-  }
-
-  &.ghostAccent {
-    @include button-variant(var(--fg), null, transparent, var(--dim3));
-    border: 1px solid var(--inactive-fg);
-  }
-
-  &.link {
-    @extend %unstyledButton;
-    color: var(--link);
-  }
-
-  &.small {
-    height: 32px;
-    padding: 4px 8px;
-  }
-
-  &.normal {
-    height: 36px;
-    padding: 8px 16px;
-  }
-
-  &.big {
-    height: 40px;
-    padding: 12px 24px;
-  }
-
-  &.iconOnly {
-    padding: 8px;
-  }
-
-  &.minimal {
-    height: 24px;
-    min-width: 24px;
-    padding: 0;
-    opacity: 1;
-    color: var(--fgSoftest);
-    fill: var(--fgSoftest);
-
-    &:hover,
-    &.active {
-      color: var(--primaryHover);
-      fill: var(--primaryHover);
-    }
-
-    &.disabled {
-      opacity: 0.6;
-    }
-  }
+/* special case */
+.iconOnly {
+  padding: 8px;
 }

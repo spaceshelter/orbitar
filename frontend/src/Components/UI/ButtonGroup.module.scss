@@ -9,8 +9,16 @@
 
 .default {
   gap: 8px;
+
+  @media (max-width: 500px) {
+    gap: 4px;
+  }
 }
 
 .spacious {
   gap: 32px;
+
+  @media (max-width: 500px) {
+    gap: 8px;
+  }
 }
