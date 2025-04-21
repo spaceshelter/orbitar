@@ -62,7 +62,7 @@ export const SitesPage = observer(() => {
                 Отписаться
               </Button>
             ) : (
-              <Button variant='primary' disabled={subsDisabled} onClick={() => handleSubscribe(site.site, true)}>
+              <Button variant='primaryAccent' disabled={subsDisabled} onClick={() => handleSubscribe(site.site, true)}>
                 Подписаться
               </Button>
             )}
