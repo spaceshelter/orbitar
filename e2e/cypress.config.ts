@@ -1,7 +1,4 @@
 import { defineConfig } from 'cypress'
-import dotenv from 'dotenv'
-
-dotenv.config()
 
 export default defineConfig({
   e2e: {
@@ -11,8 +8,8 @@ export default defineConfig({
     viewportWidth: 1280,
     viewportHeight: 720,
     env: {
-      username: process.env.CYPRESS_USERNAME,
-      password: process.env.CYPRESS_PASSWORD,
+      username: 'testuser',
+      password: 'testpassword',
     },
   },
 })
