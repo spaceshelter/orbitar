@@ -1,0 +1,92 @@
+version: '3.9'
+
+services:
+  mysql-test:
+    platform: linux/amd64
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: orbitar
+    volumes:
+      - mysql_test_db:/var/lib/mysql
+      - ../mysql/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    ports:
+      - "3307:3306"
+    healthcheck:
+        test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-porbitar" ]
+        interval: 5s
+        timeout: 20s
+        retries: 10
+
+  redis-test:
+    image: redis:7
+    restart: always
+    command: redis-server --save 20 1 --requirepass testpass
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_test_data:/data
+
+  feed-test:
+    build:
+      context: ../feed
+    ports:
+      - "6768:6767"
+
+  backend-test:
+    build:
+      context: ../backend
+    environment:
+      NODE_ENV: production
+      MYSQL_HOST: mysql-test
+      MYSQL_PORT: 3306
+      MYSQL_USER: orbitar
+      MYSQL_PASSWORD: orbitar
+      MYSQL_DATABASE: orbitar_db
+      REDIS_HOST: redis-test
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: testpass
+      FEED_INDEX_HOST: feed-test
+      FEED_INDEX_PORT: 6767
+    ports:
+      - "4000:5001"
+    command: >
+      sh -c "
+        sleep 10 &&
+        npm run migration:production wait-and-up &&
+        npm run start:production
+      "
+    depends_on:
+      mysql-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_started
+      feed-test:
+        condition: service_started
+
+  frontend-test:
+    image: node:18
+    working_dir: /app
+    volumes:
+      - ../frontend:/app
+    environment:
+      BABEL_DISABLE_CACHE: "1"
+      NODE_ENV: production
+      REACT_APP_ROOT_DOMAIN: localhost:3000
+      REACT_APP_API_DOMAIN: http://backend-test:4000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend-test
+    command: >
+      sh -c "
+        rm -rf node_modules/.cache &&
+        npm ci &&
+        npm install -g serve cross-env react-app-rewired &&
+        npm run build &&
+        serve -s build -l 3000
+      "
+
+volumes:
+  mysql_test_db:
+  redis_test_data:

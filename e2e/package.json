@@ -7,7 +7,11 @@
     "cy:run": "cypress run",
     "test": "cypress run",
     "lint": "eslint . --ext .ts,.js",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test:e2e:up": "docker-compose -f docker-compose.test.yml up",
+    "test:e2e:down": "docker-compose -f docker-compose.test.yml down",
+    "test:e2e:wait": "wait-on http://localhost:4000 http://localhost:3000",
+    "test:e2e": "npm run test:e2e:up && npm run test:e2e:wait && cypress run && npm run test:e2e:down"
   },
   "devDependencies": {
     "cypress": "^13.17.0",
@@ -15,6 +19,7 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-cypress": "^2.12.1",
     "prettier": "^3.5.3",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "wait-on": "^8.0.3"
   }
 }
