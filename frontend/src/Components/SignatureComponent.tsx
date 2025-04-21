@@ -1,4 +1,4 @@
-import React, { memo } from 'react'
+import React from 'react'
 import { Link } from 'react-router-dom'
 
 import { EditFlag } from '@api/PostAPI'
@@ -25,7 +25,7 @@ interface SignatureComponentProps {
   commentId?: number
 }
 
-export const SignatureComponent = memo((props: SignatureComponentProps) => {
+export const SignatureComponent = (props: SignatureComponentProps) => {
   return (
     <div className={styles.signature}>
       {props.showSite && props.site && props.site !== 'main' ? (
@@ -65,4 +65,4 @@ export const SignatureComponent = memo((props: SignatureComponentProps) => {
       )}
     </div>
   )
-})
+}
