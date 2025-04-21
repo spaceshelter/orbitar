@@ -244,7 +244,9 @@ export const UserProfileInvites = observer((props: UserProfileInvitesProps) => {
 
       {usernameFilter && (
         <div>
-          <Button onClick={resetUsernameFilter}>Показать всю историю</Button>
+          <Button variant='link' onClick={resetUsernameFilter}>
+            Показать всю историю
+          </Button>
         </div>
       )}
     </div>
