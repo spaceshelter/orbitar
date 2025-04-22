@@ -110,9 +110,7 @@ export default function CommentComponent(props: CommentProps) {
   const { author, created, site, postLink, editFlag } = props.comment
   const content = altContent || props.comment.content
 
-  const depth = props.depth || 0
-  const maxDepth = props.maxTreeDepth || 0
-  const isFlat = depth > maxDepth
+  const depth = Math.min(props.depth || 0, props.maxTreeDepth || Number.MAX_SAFE_INTEGER)
 
   const showTranslateButtonInline = useMemo(() => {
     return getShowInlineTranslateButton() && props.comment.language !== getPreferredLang()
@@ -130,7 +128,8 @@ export default function CommentComponent(props: CommentProps) {
 
   return (
     <div
-      className={`comment ${styles.comment} ${props.comment.isNew ? ' isNew' : ''} ${isFlat ? ' isFlat' : ''}`}
+      className={`comment ${styles.comment} ${props.comment.isNew ? ' isNew' : ''}`}
+      style={depth > 0 ? { paddingLeft: `${depth * 16}px` } : undefined}
       data-comment-id={props.comment.id}
     >
       <div className='commentBody' ref={setContentRef}>
@@ -275,8 +274,8 @@ export default function CommentComponent(props: CommentProps) {
           </VirtualizedWrapper>
         </div>
       </div>
-      {props.comment.answers || answerOpen ? (
-        <div className={styles.answers + (isFlat ? ' isFlat' : '')}>
+      {answerOpen && (
+        <div className={styles.answers}>
           {props.onAnswer && (
             <CreateCommentComponentRestricted
               open={answerOpen}
@@ -286,28 +285,7 @@ export default function CommentComponent(props: CommentProps) {
               storageKey={`cp:${props.comment.id}`}
             />
           )}
-          {props.comment.answers && props.onAnswer ? (
-            props.comment.answers.map((comment, idx) => (
-              <CommentComponent
-                maxTreeDepth={maxDepth}
-                depth={depth + 1}
-                parent={props.comment}
-                key={comment.id}
-                comment={comment}
-                onAnswer={props.onAnswer}
-                onEdit={props.onEdit}
-                unreadOnly={props.unreadOnly}
-                idx={idx}
-                currentUsername={props.currentUsername}
-                virtualizedItems={props.virtualizedItems}
-              />
-            ))
-          ) : (
-            <></>
-          )}
         </div>
-      ) : (
-        <></>
       )}
     </div>
   )

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom'
 
 import { usePost } from '../API/use/usePost'
@@ -11,6 +11,28 @@ import { CommentInfo, PostInfo, PostLinkInfo } from '../Types/PostInfo'
 import { scrollUnderTopbar } from '../Utils/utils'
 
 import styles from './PostPage.module.css'
+
+// Function to flatten comments tree into an array
+function flattenComments(
+  comments: CommentInfo[],
+  parent?: CommentInfo,
+  depth = 0,
+  result: { comment: CommentInfo; parent?: CommentInfo; depth: number }[] = [],
+): { comment: CommentInfo; parent?: CommentInfo; depth: number }[] {
+  if (!comments || comments.length === 0) return result
+
+  for (const comment of comments) {
+    // Add current comment
+    result.push({ comment, parent, depth })
+
+    // Recursively add child comments if they exist
+    if (comment.answers && comment.answers.length > 0) {
+      flattenComments(comment.answers, comment, depth + 1, result)
+    }
+  }
+
+  return result
+}
 
 export default function PostPage() {
   const params = useParams<{ postId: string }>()
@@ -33,6 +55,9 @@ export default function PostPage() {
     updatePost,
     virtualizedCommentItems,
   } = usePost(site, postId, unreadOnly)
+
+  // Flatten comments tree
+  const flattenedComments = useMemo(() => (comments ? flattenComments(comments) : []), [comments])
 
   useEffect(() => {
     let docTitle = `Пост #${postId}`
@@ -141,12 +166,14 @@ export default function PostPage() {
               </Link>
             </div>
             <div className={styles.comments + (unreadOnly ? ' unreadOnly' : '')}>
-              {comments ? (
-                comments.map((comment) => (
+              {flattenedComments.length > 0 ? (
+                flattenedComments.map(({ comment, parent, depth }) => (
                   <CommentComponent
-                    maxTreeDepth={12}
                     key={comment.id}
+                    maxTreeDepth={6}
                     comment={comment}
+                    parent={parent}
+                    depth={depth}
                     onAnswer={handleAnswer}
                     unreadOnly={unreadOnly}
                     onEdit={handleCommentEdit}
@@ -154,7 +181,7 @@ export default function PostPage() {
                     virtualizedItems={virtualizedCommentItems}
                   />
                 ))
-              ) : error ? (
+              ) : comments === null ? (
                 <div className={styles.error}>
                   {error}
                   <div>

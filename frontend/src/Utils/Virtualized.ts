@@ -4,94 +4,54 @@
 
 import { action, makeObservable, observable } from 'mobx'
 
-/**
- * What React components receive.
- *   • call `setRef(domNode)` once in useEffect
- *   • read `isVisible` (mobx observable)
- */
+/* ------------------------------------------------------------------ */
+/* Public surface                                                     */
+/* ------------------------------------------------------------------ */
+
 export interface VirtualizedItem {
   setRef(node: HTMLElement | null): void
   readonly isVisible: boolean
 }
 
-/**
- * Implementation (private to this module)
- */
-class _VirtualizedItem implements VirtualizedItem {
-  private ref: HTMLElement | null = null
-  isVisible = false
-
-  constructor() {
-    makeObservable<this, 'isVisible' | 'setVisible'>(this, {
-      isVisible: observable,
-      setVisible: action,
-    })
-  }
-
-  // React component connects its DOM node here
-  setRef = (node: HTMLElement | null) => {
-    this.ref = node
-  }
-
-  /** Document‑space top edge (re‑measured every call). */
-  getTop(): number {
-    if (!this.ref) return Infinity // treat unmounted nodes as off‑screen
-    const { top } = this.ref.getBoundingClientRect()
-    return top + (window.scrollY || document.documentElement.scrollTop)
-  }
-
-  /** Document‑space bottom edge (re‑measured every call). */
-  getBottom(): number {
-    if (!this.ref) return -Infinity
-    const { bottom } = this.ref.getBoundingClientRect()
-    return bottom + (window.scrollY || document.documentElement.scrollTop)
-  }
-
-  /** Only the container may flip visibility. */
-  setVisible = (v: boolean) => {
-    if (v !== this.isVisible) this.isVisible = v
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Container — maintains a sorted array of items and diff‑updates visibility
-// ─────────────────────────────────────────────────────────────────────────────
 export class VirtualizedContainer {
-  private items: _VirtualizedItem[] = []
+  private items: VirtualizedItemImpl[] = []
   private visStart = 0
   private visEnd = -1
 
+  /** bufferPx   – extra guard band above & below viewport (default 600 px) */
   constructor(private bufferPx = 600) {}
 
-  /**
-   * Create an item and hand it to the caller as an **interface** only.
-   * They can’t mutate internals this way.
-   */
+  /** give the returned item to each comment as a prop */
   createChild(): VirtualizedItem {
-    const it = new _VirtualizedItem()
-    this.items.push(it)
-    return it
+    const impl = new VirtualizedItemImpl()
+    this.items.push(impl)
+    return impl // typed as interface – mutation API hidden
   }
 
-  /** Call from scroll / resize / rAF.  O(log n) reads + O(diff) mobx writes. */
-  updateVisibility = () => {
+  /**
+   * Main loop – call from throttled scroll / resize / rAF handler.
+   *   • reads:  O(log n) DOM rects via binary search
+   *   • writes: O(diff) mobx actions
+   */
+  updateVisibility(): void {
     if (!this.items.length) return
 
-    const vpTop = window.scrollY
-    const vpBottom = vpTop + window.innerHeight
-    const min = vpTop - this.bufferPx
-    const max = vpBottom + this.bufferPx
+    /* ────────── viewport‑relative range we consider “visible” ───────── */
+    const vpMin = -this.bufferPx
+    const vpMax = window.innerHeight + this.bufferPx
 
-    const newStart = this.lowerBound(min)
-    const newEnd = this.upperBound(max)
+    /* binary search for first item whose bottom ≥ vpMin */
+    const newStart = this.lowerBound(vpMin)
+    /* binary search for last  item whose top    ≤ vpMax */
+    const newEnd = this.upperBound(vpMax)
 
-    if (newStart === this.visStart && newEnd === this.visEnd) return // no diff
+    if (newStart === this.visStart && newEnd === this.visEnd) return // nothing changed
 
-    // Turn on newcomers
+    // invisible → visible
     for (let i = newStart; i <= newEnd; i++) {
       if (i < this.visStart || i > this.visEnd) this.items[i].setVisible(true)
     }
-    // Turn off leavers
+    // visible → invisible
     for (let i = this.visStart; i <= this.visEnd; i++) {
       if (i < newStart || i > newEnd) this.items[i].setVisible(false)
     }
@@ -100,9 +60,18 @@ export class VirtualizedContainer {
     this.visEnd = newEnd
   }
 
-  // ───────────── helpers ─────────────
+  /* ------------------------------------------------------------------ */
+  /* Binary‑search helpers (viewport coordinates only)                  */
+  /* ------------------------------------------------------------------ */
 
-  /** first index whose bottom ≥ value */
+  /**
+   * Monotone property we rely on:
+   *   items are stored in DOM order, so
+   *     item[i].bottom ≤ item[i+1].bottom   AND   item[i].top ≤ item[i+1].top
+   *   even when heights differ.
+   */
+
+  /** first index whose `bottom` ≥ value (or items.length if none) */
   private lowerBound(value: number): number {
     let lo = 0,
       hi = this.items.length - 1,
@@ -118,7 +87,7 @@ export class VirtualizedContainer {
     return res
   }
 
-  /** last index whose top ≤ value */
+  /** last index whose `top` ≤ value (or -1 if none) */
   private upperBound(value: number): number {
     let lo = 0,
       hi = this.items.length - 1,
@@ -131,5 +100,54 @@ export class VirtualizedContainer {
       } else hi = mid - 1
     }
     return res
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Item implementation (private)                                      */
+/* ------------------------------------------------------------------ */
+
+class VirtualizedItemImpl implements VirtualizedItem {
+  private ref: HTMLElement | null = null
+
+  isVisible = false
+
+  constructor() {
+    makeObservable(this, {
+      isVisible: observable,
+      setVisible: action,
+    })
+  }
+
+  /* -------- public surface -------- */
+
+  setRef = (node: HTMLElement | null): void => {
+    this.ref = node
+  }
+
+  /* -------- container helpers ----- */
+
+  /** viewport‑relative `top` */
+  getTop(): number {
+    return this.measure().top
+  }
+  /** viewport‑relative `bottom` */
+  getBottom(): number {
+    return this.measure().bottom
+  }
+
+  /* mobx action – only container calls this */
+  setVisible(v: boolean): void {
+    if (v !== this.isVisible) this.isVisible = v
+  }
+
+  /* ---- internal DOM measurement ---- */
+  private measure(): { top: number; bottom: number } {
+    if (!this.ref) {
+      const far = Number.POSITIVE_INFINITY
+      return { top: far, bottom: far }
+    }
+    const rect = this.ref.getBoundingClientRect() // already viewport coords
+    return { top: rect.top, bottom: rect.bottom }
   }
 }
