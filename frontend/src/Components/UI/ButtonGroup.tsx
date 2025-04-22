@@ -8,6 +8,7 @@ import styles from './ButtonGroup.module.scss'
 export enum ButtonGroupSpacing {
   COMPACT = 'compact',
   DEFAULT = 'default',
+  MEDIUM = 'medium',
   SPACIOUS = 'spacious',
 }
 
