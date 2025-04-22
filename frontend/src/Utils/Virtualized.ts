@@ -51,8 +51,12 @@ export class VirtualizedContainer {
     if (newStart === this.visStart && newEnd === this.visEnd) return // nothing changed
 
     // invisible → visible
+    let cnt = 0
     for (let i = newStart; i <= newEnd; i++) {
-      if (i < this.visStart || i > this.visEnd) this.items[i].setVisible(true)
+      if (i < this.visStart || i > this.visEnd) {
+        this.items[i].setVisible(true)
+        cnt++
+      }
     }
     // visible → invisible
     if (this.hideWhenLeaving) {
@@ -60,6 +64,8 @@ export class VirtualizedContainer {
         if (i < newStart || i > newEnd) this.items[i].setVisible(false)
       }
     }
+
+    console.log('update cnt: ', cnt)
 
     this.visStart = newStart
     this.visEnd = newEnd

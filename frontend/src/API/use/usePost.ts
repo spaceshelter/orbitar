@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { VirtualizedContainer, VirtualizedItem } from '@utils/Virtualized'
-import debounce from 'debounce-promise'
+
+// import debounce from 'debounce-promise'
 
 import { useAppState } from '../../AppState/AppState'
 import { CommentInfo, PostInfo } from '../../Types/PostInfo'
@@ -225,10 +226,22 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
       processCommentsRec(comments)
     }
 
-    const updateScroll = debounce(() => {
-      requestAnimationFrame(virtualizedContainer.updateVisibility.bind(virtualizedContainer))
-    }, 16)
+    // const updateScroll = debounce(() => {
+    //   requestAnimationFrame(virtualizedContainer.updateVisibility.bind(virtualizedContainer))
+    // }, 16)
     // const updateScroll = virtualizedContainer.updateVisibility.bind(virtualizedContainer)
+
+    let scheduled = false
+    const updateScroll = () => {
+      if (scheduled) {
+        return
+      }
+      scheduled = true
+      requestAnimationFrame(() => {
+        virtualizedContainer.updateVisibility()
+        scheduled = false
+      })
+    }
 
     return { virtualizedCommentItems, updateScroll }
   }, [comments])
