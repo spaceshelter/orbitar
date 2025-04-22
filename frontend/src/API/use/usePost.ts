@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
+import { VirtualizedContainer, VirtualizedItem } from '@utils/Virtualized'
+import debounce from 'debounce-promise'
+
 import { useAppState } from '../../AppState/AppState'
 import { CommentInfo, PostInfo } from '../../Types/PostInfo'
 import { SiteInfo } from '../../Types/SiteInfo'
@@ -12,6 +15,7 @@ type UsePost = {
   comments?: CommentInfo[]
   error?: string
   anonymousUser?: UserInfo
+  virtualizedCommentItems: Map<number, VirtualizedItem>
 
   postComment(comment: string, answerToCommentId?: number): Promise<CommentInfo>
   editComment(comment: string, commentId: number): Promise<CommentInfo>
@@ -204,12 +208,51 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
     reload(showUnreadOnly || false)
   }, [siteName, postId, showUnreadOnly, api, rawComments, prev, reload])
 
+  const { virtualizedCommentItems, updateScroll } = useMemo(() => {
+    const virtualizedCommentItems = new Map<number, VirtualizedItem>()
+    const virtualizedContainer = new VirtualizedContainer()
+
+    function processCommentsRec(comments: CommentInfo[]) {
+      for (const comment of comments) {
+        virtualizedCommentItems.set(comment.id, virtualizedContainer.createChild())
+        if (comment.answers) {
+          processCommentsRec(comment.answers)
+        }
+      }
+    }
+    if (comments) {
+      processCommentsRec(comments)
+    }
+
+    const updateScroll = debounce(
+      () => {
+        virtualizedContainer.updateVisibility()
+      },
+      100,
+      { leading: true },
+    )
+
+    return { virtualizedCommentItems, updateScroll }
+  }, [comments])
+
+  useEffect(() => {
+    // initial pass
+    updateScroll()
+    window.addEventListener('scroll', updateScroll, { passive: true })
+    window.addEventListener('resize', updateScroll)
+    return () => {
+      window.removeEventListener('scroll', updateScroll)
+      window.removeEventListener('resize', updateScroll)
+    }
+  }, [updateScroll])
+
   return {
     site,
     post,
     comments,
     error,
     anonymousUser,
+    virtualizedCommentItems,
     postComment,
     editComment,
     editPost,

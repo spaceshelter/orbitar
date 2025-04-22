@@ -21,11 +21,18 @@ export default function PostPage() {
   const { site, userInfo } = useAppState()
   const containerRef = useRef<HTMLDivElement>(null)
   const unreadOnly = search.get('new') !== null
-  const { post, comments, anonymousUser, postComment, editComment, editPost, error, reload, updatePost } = usePost(
-    site,
-    postId,
-    unreadOnly,
-  )
+  const {
+    post,
+    comments,
+    anonymousUser,
+    postComment,
+    editComment,
+    editPost,
+    error,
+    reload,
+    updatePost,
+    virtualizedCommentItems,
+  } = usePost(site, postId, unreadOnly)
 
   useEffect(() => {
     let docTitle = `Пост #${postId}`
@@ -144,6 +151,7 @@ export default function PostPage() {
                     unreadOnly={unreadOnly}
                     onEdit={handleCommentEdit}
                     currentUsername={userInfo?.username}
+                    virtualizedItems={virtualizedCommentItems}
                   />
                 ))
               ) : error ? (

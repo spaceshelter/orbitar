@@ -1,8 +1,10 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 
 import { TranslateType } from '@api/PostAPI'
 import { useInterpreter } from '@api/use/useInterpreter'
 import { useAPI } from '@state/AppState'
+import { VirtualizedItem } from '@utils/Virtualized'
+import { observer } from 'mobx-react-lite'
 import OutsideClickHandler from 'react-outside-click-handler'
 import { toast } from 'react-toastify'
 
@@ -32,6 +34,7 @@ interface CommentProps {
   unreadOnly?: boolean
   hideRating?: boolean
   currentUsername?: string
+  virtualizedItems?: Map<number, VirtualizedItem>
 }
 
 export default function CommentComponent(props: CommentProps) {
@@ -115,6 +118,11 @@ export default function CommentComponent(props: CommentProps) {
     return getShowInlineTranslateButton() && props.comment.language !== getPreferredLang()
   }, [props.comment])
 
+  const virtualizedItem = props.virtualizedItems?.get(props.comment.id)
+  useEffect(() => {
+    virtualizedItem?.setRef(contentRef.current)
+  }, [])
+
   return (
     <div
       className={`comment ${styles.comment} ${props.comment.isNew ? ' isNew' : ''} ${isFlat ? ' isFlat' : ''}`}
@@ -133,6 +141,7 @@ export default function CommentComponent(props: CommentProps) {
           postLinkIsNew={props.unreadOnly}
           date={created}
           editFlag={editFlag}
+          virtualizedItem={virtualizedItem}
         />
         {editingText === false ? (
           showHistory ? (
@@ -166,89 +175,99 @@ export default function CommentComponent(props: CommentProps) {
             onAnswer={handleEditComplete}
           />
         )}
-
         <div className={styles.controls}>
-          {!props.hideRating && (
-            <div className={styles.control}>
-              <RatingSwitch
-                type='comment'
-                id={props.comment.id}
-                rating={{ vote: props.comment.vote, value: props.comment.rating }}
-                onVote={handleVote}
-              />
-            </div>
-          )}
-          {props.comment.canEdit && props.onEdit && (
-            <div className={styles.control}>
-              <button onClick={handleEdit} className='i i-edit' />
-            </div>
-          )}
-
-          <div className={styles.control + ' ' + postStyles.options}>
-            {(showTranslateButtonInline || currentMode === 'translate') && (
-              <div className={styles.control}>
-                <TranslateButton
-                  iconOnly={true}
-                  isActive={currentMode === 'translate'}
-                  inProgress={inProgress}
-                  onClick={translate}
-                />
-              </div>
-            )}
-            {currentMode === 'altTranslate' && (
-              <div className={styles.control}>
-                <AltTranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={altTranslate} />
-              </div>
-            )}
-            {currentMode === 'annotate' && (
-              <div className={styles.control}>
-                <AnnotateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={annotate} />
-              </div>
-            )}
-
-            <button onClick={toggleOptions} className={styles.options + ' ' + (showOptions ? styles.active : '')}>
-              <OptionsIcon />
-            </button>
-            {showOptions && (
-              <OutsideClickHandler onOutsideClick={() => setShowOptions(false)}>
-                <div className={postStyles.optionsList}>
-                  <TranslateButton
-                    inProgress={inProgress}
-                    onClick={() => {
-                      setShowOptions(false)
-                      translate()
-                    }}
-                    isActive={currentMode === 'translate'}
-                  />
-                  {calcShowAltTranslate() && (
-                    <AltTranslateButton
-                      inProgress={inProgress}
-                      onClick={() => {
-                        setShowOptions(false)
-                        altTranslate()
-                      }}
-                      isActive={currentMode === 'altTranslate'}
+          <VirtualizedWrapper virtualizedItem={virtualizedItem}>
+            {() => (
+              <>
+                {!props.hideRating && (
+                  <div className={styles.control}>
+                    <RatingSwitch
+                      type='comment'
+                      id={props.comment.id}
+                      rating={{ vote: props.comment.vote, value: props.comment.rating }}
+                      onVote={handleVote}
                     />
+                  </div>
+                )}
+                {props.comment.canEdit && props.onEdit && (
+                  <div className={styles.control}>
+                    <button onClick={handleEdit} className='i i-edit' />
+                  </div>
+                )}
+
+                <div className={styles.control + ' ' + postStyles.options}>
+                  {(showTranslateButtonInline || currentMode === 'translate') && (
+                    <div className={styles.control}>
+                      <TranslateButton
+                        iconOnly={true}
+                        isActive={currentMode === 'translate'}
+                        inProgress={inProgress}
+                        onClick={translate}
+                      />
+                    </div>
                   )}
-                  {calcShowAnnotate() && (
-                    <AnnotateButton
-                      inProgress={inProgress}
-                      onClick={() => {
-                        setShowOptions(false)
-                        annotate()
-                      }}
-                      isActive={currentMode === 'annotate'}
-                    />
+                  {currentMode === 'altTranslate' && (
+                    <div className={styles.control}>
+                      <AltTranslateButton
+                        iconOnly={true}
+                        isActive={true}
+                        inProgress={inProgress}
+                        onClick={altTranslate}
+                      />
+                    </div>
+                  )}
+                  {currentMode === 'annotate' && (
+                    <div className={styles.control}>
+                      <AnnotateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={annotate} />
+                    </div>
+                  )}
+
+                  <button onClick={toggleOptions} className={styles.options + ' ' + (showOptions ? styles.active : '')}>
+                    <OptionsIcon />
+                  </button>
+                  {showOptions && (
+                    <OutsideClickHandler onOutsideClick={() => setShowOptions(false)}>
+                      <div className={postStyles.optionsList}>
+                        <TranslateButton
+                          inProgress={inProgress}
+                          onClick={() => {
+                            setShowOptions(false)
+                            translate()
+                          }}
+                          isActive={currentMode === 'translate'}
+                        />
+                        {calcShowAltTranslate() && (
+                          <AltTranslateButton
+                            inProgress={inProgress}
+                            onClick={() => {
+                              setShowOptions(false)
+                              altTranslate()
+                            }}
+                            isActive={currentMode === 'altTranslate'}
+                          />
+                        )}
+                        {calcShowAnnotate() && (
+                          <AnnotateButton
+                            inProgress={inProgress}
+                            onClick={() => {
+                              setShowOptions(false)
+                              annotate()
+                            }}
+                            isActive={currentMode === 'annotate'}
+                          />
+                        )}
+                      </div>
+                    </OutsideClickHandler>
                   )}
                 </div>
-              </OutsideClickHandler>
+                {props.onAnswer && (
+                  <div className={styles.control}>
+                    <button onClick={handleAnswerSwitch}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</button>
+                  </div>
+                )}
+              </>
             )}
-          </div>
-          {props.onAnswer && (
-            <div className={styles.control}>
-              <button onClick={handleAnswerSwitch}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</button>
-            </div>
-          )}
+          </VirtualizedWrapper>
         </div>
       </div>
       {props.comment.answers || answerOpen ? (
@@ -275,6 +294,7 @@ export default function CommentComponent(props: CommentProps) {
                 unreadOnly={props.unreadOnly}
                 idx={idx}
                 currentUsername={props.currentUsername}
+                virtualizedItems={props.virtualizedItems}
               />
             ))
           ) : (
@@ -287,3 +307,7 @@ export default function CommentComponent(props: CommentProps) {
     </div>
   )
 }
+
+const VirtualizedWrapper = observer((props: { virtualizedItem?: VirtualizedItem; children: () => React.ReactNode }) => {
+  return props.virtualizedItem && !props.virtualizedItem.isVisible ? <></> : <>{props.children()}</>
+})
