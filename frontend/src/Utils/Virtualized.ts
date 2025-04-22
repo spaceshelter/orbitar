@@ -19,7 +19,10 @@ export class VirtualizedContainer {
   private visEnd = -1
 
   /** bufferPx   – extra guard band above & below viewport (default 600 px) */
-  constructor(private bufferPx = 600) {}
+  constructor(
+    private bufferPx = 600,
+    private hideWhenLeaving = true,
+  ) {}
 
   /** give the returned item to each comment as a prop */
   createChild(): VirtualizedItem {
@@ -52,8 +55,10 @@ export class VirtualizedContainer {
       if (i < this.visStart || i > this.visEnd) this.items[i].setVisible(true)
     }
     // visible → invisible
-    for (let i = this.visStart; i <= this.visEnd; i++) {
-      if (i < newStart || i > newEnd) this.items[i].setVisible(false)
+    if (this.hideWhenLeaving) {
+      for (let i = this.visStart; i <= this.visEnd; i++) {
+        if (i < newStart || i > newEnd) this.items[i].setVisible(false)
+      }
     }
 
     this.visStart = newStart

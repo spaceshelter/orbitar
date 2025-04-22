@@ -210,7 +210,7 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
   const { virtualizedCommentItems, updateScroll } = useMemo(() => {
     console.log('create virtualized items', comments?.length)
     const virtualizedCommentItems = new Map<number, VirtualizedItem>()
-    const virtualizedContainer = new VirtualizedContainer()
+    const virtualizedContainer = new VirtualizedContainer(1200, false)
 
     function processCommentsRec(comments: CommentInfo[]) {
       for (const comment of comments) {
