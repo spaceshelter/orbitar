@@ -618,9 +618,16 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         </div>
       )}
       <div className={styles.final}>
-        <ButtonGroup spacing={ButtonGroupSpacing.SPACIOUS}>
-          {previewing && <ThemeToggleComponent buttonLabel='Превью с другой темой' resetOnOnmount={true} />}
-          <Button variant='minimal' disabled={isPosting || !answerText} onClick={handlePreview}>
+        <ButtonGroup spacing={ButtonGroupSpacing.MEDIUM} className={styles.commentButtonGroup}>
+          <div className={styles.buttonThemeToggle}>
+            {previewing && <ThemeToggleComponent buttonLabel='Превью с другой темой' resetOnOnmount={true} />}
+          </div>
+          <Button
+            variant='minimal'
+            disabled={isPosting || !answerText}
+            onClick={handlePreview}
+            className={styles.buttonPreview}
+          >
             {previewing === null ? 'Превью' : 'Редактор'}
           </Button>
           <Button

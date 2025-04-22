@@ -130,15 +130,37 @@ button.editorButton {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  height: 40px;
+  // height: 40px;
 
   button.buttonSend {
     fill: var(--primary);
+    order: 2;
   }
+}
 
-  @media (max-width: 500px) {
+.buttonPreview {
+  @media (max-width: 420px) {
+    order: 1;
+  }
+}
+
+.buttonThemeToggle {
+  @media (max-width: 420px) {
+    order: 3;
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
     button {
-      padding: 0 8px;
+      padding: 8px;
+    }
+  }
+}
+
+.commentButtonGroup {
+  @media (max-width: 420px) {
+    justify-content: flex-end;
+    button {
+      padding: 8px;
     }
   }
 }
