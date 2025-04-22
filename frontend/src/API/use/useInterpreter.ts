@@ -18,7 +18,7 @@ export const ALT_TRANSLATE_LIMIT = 4 * 1024
 
 export function useInterpreter(originalContent: string, id: number, type: TranslateType) {
   const api = useAPI()
-  const contentRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement | null>(null)
   const [currentMode, setCurrentMode] = React.useState<AltContentType | undefined>()
   const [cachedTitleTranslation, setCachedTitleTranslation] = useState<string | undefined>()
   const [cachedContentTranslation, setCachedContentTranslation] = useState<string | undefined>()

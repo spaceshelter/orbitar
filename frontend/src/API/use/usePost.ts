@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { VirtualizedContainer, VirtualizedItem } from '@utils/Virtualized'
-import debounce from 'debounce-promise'
 
 import { useAppState } from '../../AppState/AppState'
 import { CommentInfo, PostInfo } from '../../Types/PostInfo'
@@ -209,6 +208,7 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
   }, [siteName, postId, showUnreadOnly, api, rawComments, prev, reload])
 
   const { virtualizedCommentItems, updateScroll } = useMemo(() => {
+    console.log('create virtualized items', comments?.length)
     const virtualizedCommentItems = new Map<number, VirtualizedItem>()
     const virtualizedContainer = new VirtualizedContainer()
 
@@ -224,13 +224,14 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
       processCommentsRec(comments)
     }
 
-    const updateScroll = debounce(
-      () => {
-        virtualizedContainer.updateVisibility()
-      },
-      100,
-      { leading: true },
-    )
+    // const updateScroll = debounce(
+    //   () => {
+    //     virtualizedContainer.updateVisibility()
+    //   },
+    //   100,
+    //   { leading: true },
+    // )
+    const updateScroll = virtualizedContainer.updateVisibility.bind(virtualizedContainer)
 
     return { virtualizedCommentItems, updateScroll }
   }, [comments])

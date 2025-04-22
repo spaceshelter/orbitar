@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 
 import { TranslateType } from '@api/PostAPI'
 import { useInterpreter } from '@api/use/useInterpreter'
@@ -119,16 +119,21 @@ export default function CommentComponent(props: CommentProps) {
   }, [props.comment])
 
   const virtualizedItem = props.virtualizedItems?.get(props.comment.id)
-  useEffect(() => {
-    virtualizedItem?.setRef(contentRef.current)
-  }, [])
+
+  const setContentRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      contentRef.current = node
+      virtualizedItem?.setRef(node)
+    },
+    [virtualizedItem],
+  )
 
   return (
     <div
       className={`comment ${styles.comment} ${props.comment.isNew ? ' isNew' : ''} ${isFlat ? ' isFlat' : ''}`}
       data-comment-id={props.comment.id}
     >
-      <div className='commentBody' ref={contentRef}>
+      <div className='commentBody' ref={setContentRef}>
         <SignatureComponent
           showSite={props.showSite}
           site={site}
