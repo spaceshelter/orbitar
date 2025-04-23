@@ -242,8 +242,7 @@ const ReactComponentsShowcase: React.FC = () => {
               {buttonVariants.map((variant) => (
                 <Button
                   key={variant}
-                  variant={variant === 'link' ? 'minimal' : variant}
-                  size='small'
+                  variant={variant}
                   active={buttonVariant === variant}
                   onClick={() => setButtonVariant(variant)}
                 >
@@ -259,8 +258,8 @@ const ReactComponentsShowcase: React.FC = () => {
               {buttonSizes.map((size) => (
                 <Button
                   key={size}
-                  variant='minimal'
-                  size='small'
+                  variant='solid'
+                  size={size}
                   active={buttonSize === size}
                   onClick={() => setButtonSize(size)}
                 >
