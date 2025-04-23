@@ -107,6 +107,10 @@
   @extend %baseButton;
   @extend %unstyledButton;
   color: var(--link);
+  &:hover,
+  &.active {
+    color: var(--linkHover);
+  }
 }
 
 .minimal {
