@@ -118,6 +118,9 @@ const ReactComponentsShowcase: React.FC = () => {
       <section className={styles.section}>
         <h2>Disabled</h2>
         <ButtonGroup>
+          <Button variant={'minimal'} disabled>
+            minimal
+          </Button>
           <Button disabled>solid</Button>
           <Button variant='primary' disabled>
             primary

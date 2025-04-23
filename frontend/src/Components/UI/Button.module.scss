@@ -25,6 +25,13 @@
   &:hover {
     opacity: 1;
   }
+
+  &.disabled {
+    color: var(--fgSoftest);
+    pointer-events: none;
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 }
 
 %unstyledButton {
@@ -50,11 +57,7 @@
     }
   }
   &.disabled {
-    color: inherit;
     background: $disabledBg;
-    pointer-events: none;
-    opacity: 0.6;
-    cursor: not-allowed;
   }
 }
 
@@ -72,10 +75,6 @@
 .primary {
   @extend %baseButton;
   @include button-variant(var(--primary), var(--primaryHover));
-
-  &.disabled {
-    color: var(--fgSoft);
-  }
 }
 
 .primaryAccent {
@@ -86,10 +85,6 @@
 .danger {
   @extend %baseButton;
   @include button-variant(var(--danger), var(--dangerHover));
-
-  &.disabled {
-    color: var(--fgSoft);
-  }
 }
 
 .dangerAccent {
@@ -120,8 +115,8 @@
   min-width: 24px;
   padding: 0;
   opacity: 1;
-  color: var(--fgSoftest);
-  fill: var(--fgSoftest);
+  color: var(--fgSofter);
+  fill: var(--fgSofter);
 
   &:hover,
   &.active {
@@ -130,6 +125,7 @@
   }
 
   &.disabled {
+    color: var(--fgSoftest);
     opacity: 0.6;
   }
 }
