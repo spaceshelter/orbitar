@@ -1,8 +1,10 @@
-import React, { useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 
 import { TranslateType } from '@api/PostAPI'
 import { useInterpreter } from '@api/use/useInterpreter'
 import { useAPI } from '@state/AppState'
+import { VirtualizedItem } from '@utils/Virtualized'
+import { observer } from 'mobx-react-lite'
 import OutsideClickHandler from 'react-outside-click-handler'
 import { toast } from 'react-toastify'
 
@@ -32,6 +34,7 @@ interface CommentProps {
   unreadOnly?: boolean
   hideRating?: boolean
   currentUsername?: string
+  virtualizedItems?: Map<number, VirtualizedItem>
 }
 
 export default function CommentComponent(props: CommentProps) {
@@ -107,20 +110,29 @@ export default function CommentComponent(props: CommentProps) {
   const { author, created, site, postLink, editFlag } = props.comment
   const content = altContent || props.comment.content
 
-  const depth = props.depth || 0
-  const maxDepth = props.maxTreeDepth || 0
-  const isFlat = depth > maxDepth
+  const depth = Math.min(props.depth || 0, props.maxTreeDepth || Number.MAX_SAFE_INTEGER)
 
   const showTranslateButtonInline = useMemo(() => {
     return getShowInlineTranslateButton() && props.comment.language !== getPreferredLang()
   }, [props.comment])
 
+  const virtualizedItem = props.virtualizedItems?.get(props.comment.id)
+
+  const setContentRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      contentRef.current = node
+      virtualizedItem?.setRef(node)
+    },
+    [virtualizedItem],
+  )
+
   return (
     <div
-      className={`comment ${styles.comment} ${props.comment.isNew ? ' isNew' : ''} ${isFlat ? ' isFlat' : ''}`}
+      className={`comment ${styles.comment} ${props.comment.isNew ? ' isNew' : ''}`}
+      style={depth > 0 ? { paddingLeft: `${depth * 16}px` } : undefined}
       data-comment-id={props.comment.id}
     >
-      <div className='commentBody' ref={contentRef}>
+      <div className='commentBody' ref={setContentRef}>
         <SignatureComponent
           showSite={props.showSite}
           site={site}
@@ -133,6 +145,7 @@ export default function CommentComponent(props: CommentProps) {
           postLinkIsNew={props.unreadOnly}
           date={created}
           editFlag={editFlag}
+          virtualizedItem={virtualizedItem}
         />
         {editingText === false ? (
           showHistory ? (
@@ -166,93 +179,103 @@ export default function CommentComponent(props: CommentProps) {
             onAnswer={handleEditComplete}
           />
         )}
-
         <div className={styles.controls}>
-          {!props.hideRating && (
-            <div className={styles.control}>
-              <RatingSwitch
-                type='comment'
-                id={props.comment.id}
-                rating={{ vote: props.comment.vote, value: props.comment.rating }}
-                onVote={handleVote}
-              />
-            </div>
-          )}
-          {props.comment.canEdit && props.onEdit && (
-            <div className={styles.control}>
-              <button onClick={handleEdit} className='i i-edit' />
-            </div>
-          )}
-
-          <div className={styles.control + ' ' + postStyles.options}>
-            {(showTranslateButtonInline || currentMode === 'translate') && (
-              <div className={styles.control}>
-                <TranslateButton
-                  iconOnly={true}
-                  isActive={currentMode === 'translate'}
-                  inProgress={inProgress}
-                  onClick={translate}
-                />
-              </div>
-            )}
-            {currentMode === 'altTranslate' && (
-              <div className={styles.control}>
-                <AltTranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={altTranslate} />
-              </div>
-            )}
-            {currentMode === 'annotate' && (
-              <div className={styles.control}>
-                <AnnotateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={annotate} />
-              </div>
-            )}
-
-            <button onClick={toggleOptions} className={styles.options + ' ' + (showOptions ? styles.active : '')}>
-              <OptionsIcon />
-            </button>
-            {showOptions && (
-              <OutsideClickHandler onOutsideClick={() => setShowOptions(false)}>
-                <div className={postStyles.optionsList}>
-                  <TranslateButton
-                    inProgress={inProgress}
-                    onClick={() => {
-                      setShowOptions(false)
-                      translate()
-                    }}
-                    isActive={currentMode === 'translate'}
-                  />
-                  {calcShowAltTranslate() && (
-                    <AltTranslateButton
-                      inProgress={inProgress}
-                      onClick={() => {
-                        setShowOptions(false)
-                        altTranslate()
-                      }}
-                      isActive={currentMode === 'altTranslate'}
+          <VirtualizedWrapper virtualizedItem={virtualizedItem}>
+            {() => (
+              <>
+                {!props.hideRating && (
+                  <div className={styles.control}>
+                    <RatingSwitch
+                      type='comment'
+                      id={props.comment.id}
+                      rating={{ vote: props.comment.vote, value: props.comment.rating }}
+                      onVote={handleVote}
                     />
+                  </div>
+                )}
+                {props.comment.canEdit && props.onEdit && (
+                  <div className={styles.control}>
+                    <button onClick={handleEdit} className='i i-edit' />
+                  </div>
+                )}
+
+                <div className={styles.control + ' ' + postStyles.options}>
+                  {(showTranslateButtonInline || currentMode === 'translate') && (
+                    <div className={styles.control}>
+                      <TranslateButton
+                        iconOnly={true}
+                        isActive={currentMode === 'translate'}
+                        inProgress={inProgress}
+                        onClick={translate}
+                      />
+                    </div>
                   )}
-                  {calcShowAnnotate() && (
-                    <AnnotateButton
-                      inProgress={inProgress}
-                      onClick={() => {
-                        setShowOptions(false)
-                        annotate()
-                      }}
-                      isActive={currentMode === 'annotate'}
-                    />
+                  {currentMode === 'altTranslate' && (
+                    <div className={styles.control}>
+                      <AltTranslateButton
+                        iconOnly={true}
+                        isActive={true}
+                        inProgress={inProgress}
+                        onClick={altTranslate}
+                      />
+                    </div>
+                  )}
+                  {currentMode === 'annotate' && (
+                    <div className={styles.control}>
+                      <AnnotateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={annotate} />
+                    </div>
+                  )}
+
+                  <button onClick={toggleOptions} className={styles.options + ' ' + (showOptions ? styles.active : '')}>
+                    <OptionsIcon />
+                  </button>
+                  {showOptions && (
+                    <OutsideClickHandler onOutsideClick={() => setShowOptions(false)}>
+                      <div className={postStyles.optionsList}>
+                        <TranslateButton
+                          inProgress={inProgress}
+                          onClick={() => {
+                            setShowOptions(false)
+                            translate()
+                          }}
+                          isActive={currentMode === 'translate'}
+                        />
+                        {calcShowAltTranslate() && (
+                          <AltTranslateButton
+                            inProgress={inProgress}
+                            onClick={() => {
+                              setShowOptions(false)
+                              altTranslate()
+                            }}
+                            isActive={currentMode === 'altTranslate'}
+                          />
+                        )}
+                        {calcShowAnnotate() && (
+                          <AnnotateButton
+                            inProgress={inProgress}
+                            onClick={() => {
+                              setShowOptions(false)
+                              annotate()
+                            }}
+                            isActive={currentMode === 'annotate'}
+                          />
+                        )}
+                      </div>
+                    </OutsideClickHandler>
                   )}
                 </div>
-              </OutsideClickHandler>
+                {props.onAnswer && (
+                  <div className={styles.control}>
+                    <button onClick={handleAnswerSwitch}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</button>
+                  </div>
+                )}
+              </>
             )}
-          </div>
-          {props.onAnswer && (
-            <div className={styles.control}>
-              <button onClick={handleAnswerSwitch}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</button>
-            </div>
-          )}
+          </VirtualizedWrapper>
         </div>
       </div>
-      {props.comment.answers || answerOpen ? (
-        <div className={styles.answers + (isFlat ? ' isFlat' : '')}>
+      {answerOpen && (
+        <div className={styles.answers}>
           {props.onAnswer && (
             <CreateCommentComponentRestricted
               open={answerOpen}
@@ -262,28 +285,12 @@ export default function CommentComponent(props: CommentProps) {
               storageKey={`cp:${props.comment.id}`}
             />
           )}
-          {props.comment.answers && props.onAnswer ? (
-            props.comment.answers.map((comment, idx) => (
-              <CommentComponent
-                maxTreeDepth={maxDepth}
-                depth={depth + 1}
-                parent={props.comment}
-                key={comment.id}
-                comment={comment}
-                onAnswer={props.onAnswer}
-                onEdit={props.onEdit}
-                unreadOnly={props.unreadOnly}
-                idx={idx}
-                currentUsername={props.currentUsername}
-              />
-            ))
-          ) : (
-            <></>
-          )}
         </div>
-      ) : (
-        <></>
       )}
     </div>
   )
 }
+
+const VirtualizedWrapper = observer((props: { virtualizedItem?: VirtualizedItem; children: () => React.ReactNode }) => {
+  return props.virtualizedItem && !props.virtualizedItem.isVisible ? <></> : <>{props.children()}</>
+})

@@ -1,7 +1,10 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 
-import { EditFlag } from '../API/PostAPI'
+import { EditFlag } from '@api/PostAPI'
+import { VirtualizedItem } from '@utils/Virtualized'
+import { observer } from 'mobx-react-lite'
+
 import { PostLinkInfo } from '../Types/PostInfo'
 import { UserBaseInfo } from '../Types/UserInfo'
 import DateComponent from './DateComponent'
@@ -22,9 +25,18 @@ interface SignatureComponentProps {
   parentCommentAuthor?: string
   date: Date
   commentId?: number
+  virtualizedItem?: VirtualizedItem
 }
 
-export const SignatureComponent = (props: SignatureComponentProps) => {
+export const SignatureComponent = observer((props: SignatureComponentProps) => {
+  if (props.virtualizedItem && !props.virtualizedItem.isVisible) {
+    return (
+      <div className={styles.signature}>
+        {props.author.username} {props.parentCommentAuthor}
+      </div>
+    )
+  }
+
   return (
     <div className={styles.signature}>
       {props.showSite && props.site && props.site !== 'main' ? (
@@ -64,4 +76,4 @@ export const SignatureComponent = (props: SignatureComponentProps) => {
       )}
     </div>
   )
-}
+})

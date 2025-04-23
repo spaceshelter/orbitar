@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
+import { VirtualizedContainer, VirtualizedItem } from '@utils/Virtualized'
+
+// import debounce from 'debounce-promise'
+
 import { useAppState } from '../../AppState/AppState'
 import { CommentInfo, PostInfo } from '../../Types/PostInfo'
 import { SiteInfo } from '../../Types/SiteInfo'
@@ -12,6 +16,7 @@ type UsePost = {
   comments?: CommentInfo[]
   error?: string
   anonymousUser?: UserInfo
+  virtualizedCommentItems: Map<number, VirtualizedItem>
 
   postComment(comment: string, answerToCommentId?: number): Promise<CommentInfo>
   editComment(comment: string, commentId: number): Promise<CommentInfo>
@@ -204,12 +209,47 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
     reload(showUnreadOnly || false)
   }, [siteName, postId, showUnreadOnly, api, rawComments, prev, reload])
 
+  const { virtualizedCommentItems, virtualizedContainer } = useMemo(() => {
+    console.log('create virtualized items', comments?.length)
+    const virtualizedCommentItems = new Map<number, VirtualizedItem>()
+    const virtualizedContainer = new VirtualizedContainer(1600, true, 1, 32)
+
+    function processCommentsRec(comments: CommentInfo[]) {
+      for (const comment of comments) {
+        virtualizedCommentItems.set(comment.id, virtualizedContainer.createChild())
+        if (comment.answers) {
+          processCommentsRec(comment.answers)
+        }
+      }
+    }
+    if (comments) {
+      processCommentsRec(comments)
+    }
+
+    return { virtualizedCommentItems, virtualizedContainer }
+  }, [comments])
+
+  useEffect(() => {
+    const onScroll = () => {
+      virtualizedContainer.registerScroll()
+      virtualizedContainer.updateVisibility()
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    onScroll() // initial pass
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+    }
+  }, [virtualizedContainer])
+
   return {
     site,
     post,
     comments,
     error,
     anonymousUser,
+    virtualizedCommentItems,
     postComment,
     editComment,
     editPost,
