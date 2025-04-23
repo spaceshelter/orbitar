@@ -135,6 +135,10 @@ button.editorButton {
   button.buttonSend {
     fill: var(--primary);
     order: 2;
+
+    &:hover {
+      fill: var(--primaryHover);
+    }
   }
 }
 
