@@ -1,11 +1,11 @@
 import rateLimit, { Options } from 'express-rate-limit'
 
 export class RateLimitManager {
-  private static isTestEnv = process.env.NODE_ENV === 'development'
+  private static isTestEnv = process.env.NODE_ENV === 'test'
 
   /**
    * Creates a rate limiter for routes.
-   * If `NODE_ENV=development`, simply skips the limiter.
+   * If `NODE_ENV=test`, simply skips the limiter.
    *
    * @param options Rate limit options
    * @returns Express middleware
