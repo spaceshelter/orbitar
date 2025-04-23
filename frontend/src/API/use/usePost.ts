@@ -209,10 +209,10 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
     reload(showUnreadOnly || false)
   }, [siteName, postId, showUnreadOnly, api, rawComments, prev, reload])
 
-  const { virtualizedCommentItems, updateScroll } = useMemo(() => {
+  const { virtualizedCommentItems, virtualizedContainer } = useMemo(() => {
     console.log('create virtualized items', comments?.length)
     const virtualizedCommentItems = new Map<number, VirtualizedItem>()
-    const virtualizedContainer = new VirtualizedContainer(1600, false)
+    const virtualizedContainer = new VirtualizedContainer(1600, true, 1, 32)
 
     function processCommentsRec(comments: CommentInfo[]) {
       for (const comment of comments) {
@@ -226,36 +226,22 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
       processCommentsRec(comments)
     }
 
-    // const updateScroll = debounce(() => {
-    //   requestAnimationFrame(virtualizedContainer.updateVisibility.bind(virtualizedContainer))
-    // }, 16)
-    // const updateScroll = virtualizedContainer.updateVisibility.bind(virtualizedContainer)
-
-    let scheduled = false
-    const updateScroll = () => {
-      if (scheduled) {
-        return
-      }
-      scheduled = true
-      requestAnimationFrame(() => {
-        virtualizedContainer.updateVisibility()
-        scheduled = false
-      })
-    }
-
-    return { virtualizedCommentItems, updateScroll }
+    return { virtualizedCommentItems, virtualizedContainer }
   }, [comments])
 
   useEffect(() => {
-    // initial pass
-    updateScroll()
-    window.addEventListener('scroll', updateScroll, { passive: true })
-    window.addEventListener('resize', updateScroll)
-    return () => {
-      window.removeEventListener('scroll', updateScroll)
-      window.removeEventListener('resize', updateScroll)
+    const onScroll = () => {
+      virtualizedContainer.registerScroll()
+      virtualizedContainer.updateVisibility()
     }
-  }, [updateScroll])
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    onScroll() // initial pass
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+    }
+  }, [virtualizedContainer])
 
   return {
     site,

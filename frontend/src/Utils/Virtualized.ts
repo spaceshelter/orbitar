@@ -1,12 +1,20 @@
-// virtualized.ts — thin, rAF‑friendly virtual‑list helper
-// Public surface: IVirtualizedItem + VirtualizedContainer
-// Internals (_VirtualizedItem) are hidden, so callers cannot mutate visibility.
-
+// Virtualized.ts
+// ---------------------------------------------------------------------
+// Tiny, allocation-free virtual-list helper – tuned for mobile smoothness
+//
+//  • VirtualizedContainer(bufferPx = 600, incremental = true)
+//      - bufferPx:   guard band around viewport
+//      - incremental: false  ⇒   immediate mount/unmount   (old behaviour)
+//                      true   ⇒   queue + trickle-flush     (default)
+//
+//  Typical React wiring shown at the bottom of the file.
+//
+// ---------------------------------------------------------------------
 import { action, makeObservable, observable } from 'mobx'
 
-/* ------------------------------------------------------------------ */
-/* Public surface                                                     */
-/* ------------------------------------------------------------------ */
+/* ===================================================================== */
+/*   Public surface                                                      */
+/* ===================================================================== */
 
 export interface VirtualizedItem {
   setRef(node: HTMLElement | null): void
@@ -14,75 +22,79 @@ export interface VirtualizedItem {
 }
 
 export class VirtualizedContainer {
-  private items: VirtualizedItemImpl[] = []
-  private visStart = 0
-  private visEnd = -1
-
-  /** bufferPx   – extra guard band above & below viewport (default 600 px) */
+  /* -------------------------------- constructor -------------------- */
   constructor(
     private bufferPx = 600,
-    private hideWhenLeaving = true,
+    private incremental = true,
+    /** items to (un)mount per animation frame when incremental = true */
+    private maxPerFrame = 3,
+    /** ms without scroll events before we start flushing */
+    private idleMs = 120,
   ) {}
 
-  /** give the returned item to each comment as a prop */
+  /* ------------------- item creation (called from render) ---------- */
   createChild(): VirtualizedItem {
     const impl = new VirtualizedItemImpl()
     this.items.push(impl)
-    return impl // typed as interface – mutation API hidden
+    return impl
   }
 
-  /**
-   * Main loop – call from throttled scroll / resize / rAF handler.
-   *   • reads:  O(log n) DOM rects via binary search
-   *   • writes: O(diff) mobx actions
-   */
+  /* ------------------------------ main API ------------------------- */
+  /** call this from a passive scroll / resize listener or rAF */
   updateVisibility(): void {
     if (!this.items.length) return
 
-    /* ────────── viewport‑relative range we consider “visible” ───────── */
+    /* 1. figure out which indices *should* be visible */
     const vpMin = -this.bufferPx
     const vpMax = window.innerHeight + this.bufferPx
 
-    /* binary search for first item whose bottom ≥ vpMin */
     const newStart = this.lowerBound(vpMin)
-    /* binary search for last  item whose top    ≤ vpMax */
     const newEnd = this.upperBound(vpMax)
 
-    if (newStart === this.visStart && newEnd === this.visEnd) return // nothing changed
+    if (newStart === this.visStart && newEnd === this.visEnd) return
 
-    // invisible → visible
-    let cnt = 0
-    for (let i = newStart; i <= newEnd; i++) {
-      if (i < this.visStart || i > this.visEnd) {
-        this.items[i].setVisible(true)
-        cnt++
+    /* 2. queue diffs instead of mutating instantly */
+    if (this.incremental) {
+      for (let i = newStart; i <= newEnd; i++) {
+        if (i < this.visStart || i > this.visEnd) this.enqueueShow(i)
       }
-    }
-    // visible → invisible
-    if (this.hideWhenLeaving) {
+      for (let i = this.visStart; i <= this.visEnd; i++) {
+        if (i < newStart || i > newEnd) this.toHide.push(i)
+      }
+      this.scheduleFlush()
+    } else {
+      /* old immediate behaviour */
+      for (let i = newStart; i <= newEnd; i++) {
+        if (i < this.visStart || i > this.visEnd) this.items[i].setVisible(true)
+      }
       for (let i = this.visStart; i <= this.visEnd; i++) {
         if (i < newStart || i > newEnd) this.items[i].setVisible(false)
       }
     }
 
-    console.log('update cnt: ', cnt)
-
     this.visStart = newStart
     this.visEnd = newEnd
   }
 
-  /* ------------------------------------------------------------------ */
-  /* Binary‑search helpers (viewport coordinates only)                  */
-  /* ------------------------------------------------------------------ */
+  /* ================================================================= */
+  /*   Implementation details below                                    */
+  /* ================================================================= */
 
-  /**
-   * Monotone property we rely on:
-   *   items are stored in DOM order, so
-   *     item[i].bottom ≤ item[i+1].bottom   AND   item[i].top ≤ item[i+1].top
-   *   even when heights differ.
-   */
+  /* -------- state -------- */
+  private items: VirtualizedItemImpl[] = []
+  private visStart = 0
+  private visEnd = -1
 
-  /** first index whose `bottom` ≥ value (or items.length if none) */
+  /* -------- diff queues (incremental mode) -------- */
+  private toShow: number[] = [] // sorted by distance to viewport centre
+  private toHide: number[] = [] // FIFO is fine
+  private flushScheduled = false
+  private lastScroll = performance.now()
+
+  /* ------------------------------------------------ scroll idle ---- */
+  private isScrollIdle = () => performance.now() - this.lastScroll > this.idleMs
+
+  /* ---------------------- binary search helpers ------------------- */
   private lowerBound(value: number): number {
     let lo = 0,
       hi = this.items.length - 1,
@@ -98,7 +110,6 @@ export class VirtualizedContainer {
     return res
   }
 
-  /** last index whose `top` ≤ value (or -1 if none) */
   private upperBound(value: number): number {
     let lo = 0,
       hi = this.items.length - 1,
@@ -112,53 +123,100 @@ export class VirtualizedContainer {
     }
     return res
   }
+
+  /* ------------------ diff-queue helpers -------------------------- */
+  private enqueueShow(idx: number) {
+    // compute distance to viewport centre for prioritisation
+    const mid = this.items[idx].getMid()
+    const dist = mid === null ? Number.POSITIVE_INFINITY : Math.abs(mid - window.innerHeight * 0.5)
+
+    // simple insertion sort at tail (queues are very small)
+    let i = this.toShow.length
+    this.toShow.push(idx)
+    while (i > 0 && dist < this.showDist(i - 1)) {
+      this.toShow[i] = this.toShow[i - 1]
+      i--
+    }
+    this.toShow[i] = idx
+  }
+  private showDist = (i: number) => {
+    const mid = this.items[this.toShow[i]].getMid()
+    return mid === null ? Number.POSITIVE_INFINITY : Math.abs(mid - window.innerHeight * 0.5)
+  }
+
+  /* ----------------------- flush logic ---------------------------- */
+  private scheduleFlush() {
+    if (this.flushScheduled) return
+    this.flushScheduled = true
+    requestAnimationFrame(this.flushQueues)
+  }
+
+  private flushQueues = () => {
+    this.flushScheduled = false
+
+    if (!this.isScrollIdle()) {
+      // postpone until scrolling slows down
+      this.scheduleFlush()
+      return
+    }
+
+    let budget = this.maxPerFrame
+
+    // 1) mount items closest to viewport first
+    while (budget && this.toShow.length) {
+      const idx = this.toShow.shift()!
+      this.items[idx].setVisible(true)
+      budget--
+    }
+    // 2) unmount items (cheaper)
+    while (budget && this.toHide.length) {
+      const idx = this.toHide.shift()!
+      this.items[idx].setVisible(false)
+      budget--
+    }
+
+    if (this.toShow.length || this.toHide.length) this.scheduleFlush()
+  }
+
+  /* make callers register scroll activity so we can detect idle time */
+  public registerScroll = () => {
+    this.lastScroll = performance.now()
+  }
 }
 
-/* ------------------------------------------------------------------ */
-/* Item implementation (private)                                      */
-/* ------------------------------------------------------------------ */
+/* ===================================================================== */
+/*   Item implementation (private)                                       */
+/* ===================================================================== */
 
 class VirtualizedItemImpl implements VirtualizedItem {
   private ref: HTMLElement | null = null
-
   isVisible = false
 
   constructor() {
-    makeObservable(this, {
-      isVisible: observable,
-      setVisible: action,
-    })
+    makeObservable(this, { isVisible: observable, setVisible: action })
   }
 
-  /* -------- public surface -------- */
-
-  setRef = (node: HTMLElement | null): void => {
+  setRef = (node: HTMLElement | null) => {
     this.ref = node
   }
 
-  /* -------- container helpers ----- */
-
-  /** viewport‑relative `top` */
   getTop(): number {
-    return this.measure().top
+    const r = this.ref?.getBoundingClientRect()
+    return r ? r.top : Number.POSITIVE_INFINITY
   }
-  /** viewport‑relative `bottom` */
   getBottom(): number {
-    return this.measure().bottom
+    const r = this.ref?.getBoundingClientRect()
+    return r ? r.bottom : Number.POSITIVE_INFINITY
+  }
+  getMid(): number | null {
+    const r = this.ref?.getBoundingClientRect()
+    return r ? (r.top + r.bottom) * 0.5 : null
   }
 
-  /* mobx action – only container calls this */
-  setVisible(v: boolean): void {
-    if (v !== this.isVisible) this.isVisible = v
-  }
-
-  /* ---- internal DOM measurement ---- */
-  private measure(): { top: number; bottom: number } {
-    if (!this.ref) {
-      const far = Number.POSITIVE_INFINITY
-      return { top: far, bottom: far }
+  setVisible(v: boolean) {
+    if (v !== this.isVisible) {
+      this.isVisible = v
+      console.log('visible', v)
     }
-    const rect = this.ref.getBoundingClientRect() // already viewport coords
-    return { top: rect.top, bottom: rect.bottom }
   }
 }
