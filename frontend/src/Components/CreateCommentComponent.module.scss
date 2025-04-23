@@ -19,6 +19,7 @@
 .controls {
   display: flex;
   align-items: center;
+  max-width: 100%;
 
   .control {
     color: var(--fgSofter);
