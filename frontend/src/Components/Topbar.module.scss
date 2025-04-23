@@ -101,3 +101,9 @@
     cursor: default;
   }
 }
+
+button.notificationButton {
+  fill: var(--fgSoft);
+  font-weight: normal;
+  gap: 0;
+}

@@ -204,8 +204,8 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
           maxLength={64}
         />
         {options.length > 2 && (
-          <Button variant='link' onClick={() => handleRemoveOption(option.id)}>
-            ×
+          <Button variant='minimal' onClick={() => handleRemoveOption(option.id)}>
+            X
           </Button>
         )}
       </div>
@@ -228,7 +228,7 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
         <div className={styles.header}>
           <h2>Создание опроса</h2>
           {isMobile && (
-            <Button variant='link' onClick={handleClose} style={{ marginLeft: 'auto' }}>
+            <Button variant='ghost' onClick={handleClose} style={{ marginLeft: 'auto' }}>
               ✕
             </Button>
           )}
@@ -253,7 +253,7 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
             {renderOptions()}
 
             {options.length < 32 && (
-              <Button variant='link' onClick={handleAddOption} className={styles.addOption}>
+              <Button variant='ghost' onClick={handleAddOption} className={styles.addOption}>
                 + Добавить вариант
               </Button>
             )}
@@ -365,7 +365,7 @@ export const PollCreationWizard: React.FC<PollCreationWizardProps> = ({ isOpen, 
             <Button variant='ghost' onClick={handleClose} disabled={isSubmitting}>
               Отмена
             </Button>
-            <Button variant='positive' onClick={handleSubmit} disabled={isSubmitting}>
+            <Button variant='primary' onClick={handleSubmit} disabled={isSubmitting}>
               {isSubmitting ? 'Создание...' : 'Создать опрос'}
             </Button>
           </div>
@@ -388,7 +388,7 @@ const PollExpiration: React.FC<{
     const nxtDate = moment(date).add(delta, unit).toDate()
     return (
       <Button
-        variant='ghost'
+        variant='solid'
         className={styles.dateButton}
         onClick={() => {
           onChange(nxtDate)

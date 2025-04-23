@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 
+import Button from '@ui/Button'
 import classNames from 'classnames'
 import { toast } from 'react-toastify'
 
@@ -10,7 +11,6 @@ import Overlay from './Overlay'
 import UserProfileClientAppsCreateForm from './UserProfileClientAppsCreateForm'
 import UserProfileClientAppsList from './UserProfileClientAppsList'
 
-import buttonStyles from './Buttons.module.scss'
 import mediaFormStyles from './MediaUploader.module.scss'
 import styles from './UserProfileClientApps.module.scss'
 
@@ -144,15 +144,15 @@ export default function UserProfileClientsApps() {
 
       <div className={styles.forDevContainer}>
         <h4>Для разработчиков</h4>
-        <button
-          {...(creating && { disabled: true })}
-          className={buttonStyles.linkButton}
+        <Button
+          variant='link'
+          disabled={creating}
           onClick={() => {
             setCreating(true)
           }}
         >
           Зарегистрировать своё приложение
-        </button>
+        </Button>
         {creating && (
           <>
             <Overlay

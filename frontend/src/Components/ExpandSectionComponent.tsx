@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 
+import Button from '@ui/Button'
 import classNames from 'classnames'
 
 import styles from './ExpandSectionComponent.module.scss'
@@ -15,12 +16,13 @@ export default function ExpandSection({ title, children, initiallyExpanded = fal
 
   return (
     <div className={styles.expandSection}>
-      <button
+      <Button
+        variant='ghost'
         className={classNames(styles.expandHeader, { [styles.expanded]: expanded })}
         onClick={() => setExpanded(!expanded)}
       >
         {title}
-      </button>
+      </Button>
       {expanded && <div className={styles.expandContent}>{children}</div>}
     </div>
   )

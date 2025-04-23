@@ -1,22 +1,25 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
+import { useUserProfile } from '@api/use/useUserProfile'
+import { useAPI, useAppState } from '@state/AppState'
+import Button from '@ui/Button'
+import { selectElementText } from '@utils/utils'
 import classNames from 'classnames'
 import { observer } from 'mobx-react-lite'
 import { toast } from 'react-toastify'
 
-import { useUserProfile } from '../API/use/useUserProfile'
-import { useAPI, useAppState } from '../AppState/AppState'
 import { BarmaliniAccessResult, UserGender } from '../Types/UserInfo'
-import { selectElementText } from '../Utils/utils'
 import { SecretMailKeyGeneratorForm } from './SecretMailbox'
 import ThemeToggleComponent from './ThemeToggleComponent'
 
-import { ReactComponent as LogoutIcon } from '../Assets/logout.svg'
-import { ReactComponent as TranslateIcon } from '../Assets/translate.svg'
-import { ReactComponent as UserIcon } from '../Assets/user.svg'
-import buttonStyles from '../Components/Buttons.module.scss'
 import styles from './UserProfileSettings.module.scss'
+import { ReactComponent as CopyIcon } from '@assets/copy.svg'
+import { ReactComponent as GhostIcon } from '@assets/ghost.svg'
+import { ReactComponent as LogoutIcon } from '@assets/logout.svg'
+import { ReactComponent as MailboxSecureIcon } from '@assets/mailbox-secure.svg'
+import { ReactComponent as TranslateIcon } from '@assets/translate.svg'
+import { ReactComponent as UserIcon } from '@assets/user.svg'
 
 type UserProfileSettingsProps = {
   onChange: () => void
@@ -168,17 +171,13 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
     <>
       <div>
         {gender !== undefined && (
-          <button className={buttonStyles.logoutButton} onClick={handleGenderChange}>
+          <Button onClick={handleGenderChange}>
             <UserIcon /> Пол:{' '}
             {gender === UserGender.fluid ? 'не указан' : gender === UserGender.she ? 'женщина' : 'мужчина'}{' '}
-          </button>
+          </Button>
         )}
-        <button className={buttonStyles.settingsButton} onClick={toggleAutoStop}>
-          Видео автопауза: {autoStop ? 'Вкл' : 'Выкл'}
-        </button>
-        <button className={buttonStyles.settingsButton} onClick={toggleLegacyZoom}>
-          Легаси зум: {legacyZoom ? 'Вкл' : 'Выкл'}
-        </button>
+        <Button onClick={toggleAutoStop}>Видео автопауза: {autoStop ? 'Вкл' : 'Выкл'}</Button>
+        <Button onClick={toggleLegacyZoom}>Легаси зум: {legacyZoom ? 'Вкл' : 'Выкл'}</Button>
         {<ThemeToggleComponent dynamic={true} buttonLabel='Сменить тему' />}
       </div>
       <div className={styles.select}>
@@ -190,12 +189,12 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
             </option>
           ))}
         </select>
-        <button className={buttonStyles.settingsButton} onClick={toggleShowInlineTranslateButton}>
+        <Button onClick={toggleShowInlineTranslateButton}>
           Показывать <TranslateIcon />: {showInlineTranslateButton ? 'Авто' : 'Под ...'}
-        </button>
+        </Button>
       </div>
 
-      {/*<MailboxSettings/>*/}
+      {/* <MailboxSettings /> */}
       {props.barmaliniAccess && <BarmaliniAccess />}
 
       {!props.hasApps && (
@@ -208,16 +207,13 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
 
       <div>
         {!props.isBarmalini && (
-          <button
-            className={classNames(buttonStyles.settingsButton, styles.dropSessions)}
-            onClick={handleResetSessions}
-          >
-            <span className={classNames('i i-ghost')} /> Сброс пароля и сессий{' '}
-          </button>
+          <Button variant='danger' onClick={handleResetSessions}>
+            <GhostIcon /> Сброс пароля и сессий
+          </Button>
         )}
-        <button className={buttonStyles.logoutButton} onClick={handleLogout}>
+        <Button onClick={handleLogout}>
           <LogoutIcon /> Выйти{' '}
-        </button>
+        </Button>
       </div>
     </>
   )
@@ -272,19 +268,15 @@ const BarmaliniAccess = observer(() => {
               {access.password}
             </span>
             &nbsp;
-            <button className={buttonStyles.linkButton} onClick={handleCopy}>
-              скопировать
-            </button>
+            <Button variant='ghost' onClick={handleCopy}>
+              <CopyIcon /> скопировать
+            </Button>
           </div>
           <div>
             <span className={styles.label}>Счастливого бармаления. Пароль истекает через час.</span>
           </div>
         </div>
-      )) || (
-        <button className={buttonStyles.settingsButton} onClick={handleShowPassword}>
-          Бармалинить
-        </button>
-      )}
+      )) || <Button onClick={handleShowPassword}>Бармалинить</Button>}
     </div>
   )
 })
@@ -366,13 +358,13 @@ export const MailboxSettings = observer(() => {
                 Почтовый ящик готов!
               </div>
               <div className={styles.mailboxActions}>
-                <button className={classNames(buttonStyles.settingsButton, styles.delete)} onClick={handleDelete}>
+                <Button variant='danger' onClick={handleDelete}>
                   Удалить
-                </button>
+                </Button>
                 {!revealPublicKey && (
-                  <button className={buttonStyles.settingsButton} onClick={() => setRevealPublicKey(!revealPublicKey)}>
+                  <Button variant='ghost' onClick={() => setRevealPublicKey(!revealPublicKey)}>
                     Показать публичный ключ
-                  </button>
+                  </Button>
                 )}
                 {revealPublicKey && (
                   <div>
@@ -388,15 +380,13 @@ export const MailboxSettings = observer(() => {
           )) || (
             <div>
               {/*Mailbox doesn't exist*/}
-              <button
-                className={buttonStyles.settingsButton}
+              <Button
                 onClick={() => {
                   setCreatingMailbox(true)
                 }}
               >
-                <span className={classNames('i i-mailbox-secure', { [styles.mailboxCreated]: !!publicKey })} />
-                Создать ключ для приема шифровок
-              </button>
+                <MailboxSecureIcon /> Создать ключ для приема шифровок
+              </Button>
             </div>
           )}
         </div>

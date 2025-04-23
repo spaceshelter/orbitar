@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 
+import Button from '@ui/Button'
 import { toast } from 'react-toastify'
 
 import useFocus from '../API/use/useFocus'
@@ -260,9 +261,9 @@ export default function MediaUploader(props: MediaUploaderProps) {
               <div className={styles.choose}>Выбрать</div>
             </label>
           </div>
-          <button disabled={!uploadEnabled || uploading} className={styles.done + ' button'} type='submit'>
+          <Button variant='primary' disabled={!uploadEnabled || uploading} type='submit' loading={uploading}>
             {uploading ? 'Загрузка' : 'Фьють'}
-          </button>
+          </Button>
         </form>
         <div
           className={styles.dropbox + (dragActive ? ' ' + styles.active : '')}

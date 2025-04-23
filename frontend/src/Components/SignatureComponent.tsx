@@ -1,7 +1,8 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 
-import { EditFlag } from '../API/PostAPI'
+import { EditFlag } from '@api/PostAPI'
+
 import { PostLinkInfo } from '../Types/PostInfo'
 import { UserBaseInfo } from '../Types/UserInfo'
 import DateComponent from './DateComponent'
@@ -55,8 +56,8 @@ export const SignatureComponent = (props: SignatureComponentProps) => {
       )}
       {props.editFlag && (
         <>
-          {' '}
-          •{' '}
+          • {/*this element could be rendered 4k+ times on the page, let's keep it lightweight*/}
+          {/* eslint-disable-next-line react/forbid-elements */}
           <button className={styles.toggleHistory} onClick={props.onHistoryClick}>
             изменён
           </button>

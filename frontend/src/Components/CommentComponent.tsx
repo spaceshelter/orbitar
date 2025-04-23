@@ -180,6 +180,8 @@ export default function CommentComponent(props: CommentProps) {
           )}
           {props.comment.canEdit && props.onEdit && (
             <div className={styles.control}>
+              {/*comment component is rendered 4+k times, let's keep it extremely lightweight*/}
+              {/* eslint-disable-next-line react/forbid-elements */}
               <button onClick={handleEdit} className='i i-edit' />
             </div>
           )}
@@ -205,7 +207,8 @@ export default function CommentComponent(props: CommentProps) {
                 <AnnotateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={annotate} />
               </div>
             )}
-
+            {/*comment component is rendered 4+k times, let's keep it extremely lightweight*/}
+            {/* eslint-disable-next-line react/forbid-elements */}
             <button onClick={toggleOptions} className={styles.options + ' ' + (showOptions ? styles.active : '')}>
               <OptionsIcon />
             </button>
@@ -246,6 +249,8 @@ export default function CommentComponent(props: CommentProps) {
           </div>
           {props.onAnswer && (
             <div className={styles.control}>
+              {/*comment component is rendered 4+k times, let's keep it extremely lightweight*/}
+              {/* eslint-disable-next-line react/forbid-elements */}
               <button onClick={handleAnswerSwitch}>{!answerOpen ? 'Ответить' : 'Не отвечать'}</button>
             </div>
           )}

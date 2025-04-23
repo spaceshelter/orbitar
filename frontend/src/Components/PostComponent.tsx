@@ -3,6 +3,7 @@ import React, { useMemo, useState } from 'react'
 import { TranslateType } from '@api/PostAPI'
 import { useInterpreter } from '@api/use/useInterpreter'
 import { useAPI, useAppState } from '@state/AppState'
+import Button from '@ui/Button'
 import OutsideClickHandler from 'react-outside-click-handler'
 import { toast } from 'react-toastify'
 
@@ -212,12 +213,12 @@ export default function PostComponent(props: PostComponentProps) {
         <div className={styles.control}>
           <CommentsCount post={props.post} />
         </div>
-        {/*<div className={styles.control}><button disabled={true} onClick={toggleBookmark} className={bookmark ? styles.active : ''}><BookmarkIcon /><span className={styles.label}></span></button></div>*/}
+        {/* <div className={styles.control}><Button disabled={true} onClick={toggleBookmark} active={bookmark}><BookmarkIcon /><span className={styles.label}></span></Button></div> */}
         {props.post.canEdit && props.onEdit && (
           <div className={styles.control}>
-            <button onClick={handleEdit}>
+            <Button variant='minimal' onClick={handleEdit}>
               <EditIcon />
-            </button>
+            </Button>
           </div>
         )}
         <div className={styles.control + ' ' + styles.options}>
@@ -242,9 +243,9 @@ export default function PostComponent(props: PostComponentProps) {
             </div>
           )}
 
-          <button onClick={toggleOptions} className={styles.options + ' ' + (showOptions ? styles.active : '')}>
+          <Button variant='minimal' onClick={toggleOptions} active={showOptions}>
             <OptionsIcon />
-          </button>
+          </Button>
           {showOptions && (
             <OutsideClickHandler onOutsideClick={() => setShowOptions(false)}>
               <div className={styles.optionsList}>

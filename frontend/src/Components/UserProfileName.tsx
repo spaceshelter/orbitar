@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 
+import Button from '@ui/Button'
 import { useHotkeys } from 'react-hotkeys-hook'
 import { toast } from 'react-toastify'
 
@@ -62,16 +63,16 @@ export default function UserProfileName(props: UserProfileNameProps) {
 
         {props.mine && !editing && (
           <div className={postStyles.control}>
-            <button onClick={() => setEditing(true)}>
+            <Button variant='minimal' onClick={() => setEditing(true)}>
               <EditIcon />
-            </button>
+            </Button>
           </div>
         )}
         {props.mine && editing && (
           <div className={postStyles.control}>
-            <button onClick={handleEditNameComplete}>
+            <Button variant='minimal' onClick={handleEditNameComplete}>
               <SendIcon />
-            </button>
+            </Button>
           </div>
         )}
       </div>

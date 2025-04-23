@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import { useAPI, useAppState } from '@state/AppState'
+import Button from '@ui/Button'
 import classNames from 'classnames'
 import { observer } from 'mobx-react-lite'
 import { toast } from 'react-toastify'
 
-import { useAPI, useAppState } from '../AppState/AppState'
 import { TopbarMenuState } from './Topbar'
 
 import styles from './SiteSidebar.module.scss'
@@ -76,21 +77,17 @@ export const SiteSidebar = observer((props: SidebarProps) => {
           {site !== 'main' && (
             <div className='subscribe'>
               {!siteInfo || siteInfo.subscribe?.main ? (
-                <button
-                  className='subscribed'
-                  disabled={!siteInfo || subsDisabled}
-                  onClick={() => handleSubscribe(false)}
-                >
+                <Button variant='ghost' disabled={!siteInfo || subsDisabled} onClick={() => handleSubscribe(false)}>
                   Отписаться
-                </button>
+                </Button>
               ) : (
-                <button
-                  className='not-subscribed'
+                <Button
+                  variant='primaryAccent'
                   disabled={!siteInfo || subsDisabled}
                   onClick={() => handleSubscribe(true)}
                 >
                   Подписаться
-                </button>
+                </Button>
               )}
             </div>
           )}

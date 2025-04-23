@@ -1,4 +1,13 @@
-.buttonComponent {
+@keyframes rotate {
+  from {
+    transform: rotate(1deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+%baseButton {
   height: 36px;
   border: none;
   display: flex;
@@ -9,88 +18,140 @@
   gap: 8px;
   fill: var(--fgSoft);
   opacity: 0.8;
+  background: none;
+
+  transition: background-color 0.2s ease;
 
   &:hover {
     opacity: 1;
   }
 
   &.disabled {
+    color: var(--fgSoftest);
     pointer-events: none;
     opacity: 0.6;
     cursor: not-allowed;
   }
+}
 
-  &.default {
-    background: var(--dim1);
-    color: var(--fgSoft);
+%unstyledButton {
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-weight: normal;
+}
 
-    &:hover {
-      background: var(--dim3);
+@mixin button-variant($color, $hoverColor: null, $bg: var(--dim3), $hoverBg: var(--fgGhost), $disabledBg: var(--dim1)) {
+  background: $bg;
+  color: $color;
+  fill: $color;
+
+  &:hover,
+  &.active {
+    @if $hoverColor {
+      color: $hoverColor;
+      fill: $hoverColor;
+    }
+    @if $hoverBg {
+      background: $hoverBg;
     }
   }
+  &.disabled {
+    background: $disabledBg;
+  }
+}
 
-  &.link {
-    border: none;
-    background: none;
-    color: var(--link);
-    margin: 0;
+/* Button variants */
+.solid {
+  @extend %baseButton;
+  @include button-variant(var(--fgSoft));
+}
 
-    &:hover {
-      color: var(--linkHover);
-    }
+.solidAccent {
+  @extend %baseButton;
+  @include button-variant(var(--fg), null, var(--fgSoftest), var(--fgSofter));
+}
+
+.primary {
+  @extend %baseButton;
+  @include button-variant(var(--primary), var(--primaryHover));
+}
+
+.primaryAccent {
+  @extend %baseButton;
+  @include button-variant(var(--onAccent), null, var(--primary), var(--primaryHover));
+}
+
+.danger {
+  @extend %baseButton;
+  @include button-variant(var(--danger), var(--dangerHover));
+}
+
+.dangerAccent {
+  @extend %baseButton;
+  @include button-variant(var(--onAccent), null, var(--danger), var(--dangerHover));
+}
+
+.ghost {
+  @extend %baseButton;
+  @include button-variant(var(--fgSoft), null, transparent);
+}
+
+.ghostAccent {
+  @extend %baseButton;
+  @include button-variant(var(--fg), null, transparent, var(--dim3));
+  border: 1px solid var(--inactive-fg);
+}
+
+.link {
+  @extend %baseButton;
+  @extend %unstyledButton;
+  color: var(--link);
+  &:hover,
+  &.active {
+    color: var(--linkHover);
+  }
+}
+
+.minimal {
+  @extend %baseButton;
+  height: 24px;
+  min-width: 24px;
+  padding: 0;
+  opacity: 1;
+  color: var(--fgSofter);
+  fill: var(--fgSofter);
+
+  &:hover,
+  &.active {
+    color: var(--primaryHover);
+    fill: var(--primaryHover);
   }
 
-  &.primary {
-    background: var(--dim1);
-    color: var(--primary);
-
-    &:hover {
-      color: var(--primaryHover);
-    }
-
-    &.disabled {
-      color: var(--fgSoft);
-    }
+  &.disabled {
+    color: var(--fgSoftest);
+    opacity: 0.6;
   }
+}
 
-  &.danger {
-    background: var(--dim1);
-    color: var(--danger);
+/* Button sizes */
 
-    &:hover {
-      color: var(--dangerHover);
-    }
+.small {
+  height: 32px;
+  padding: 4px 8px;
+}
 
-    &.disabled {
-      color: var(--fgSoft);
-    }
-  }
+.normal {
+  height: 36px;
+  padding: 8px 16px;
+}
 
-  &.ghost {
-    background: var(--dim1);
-    color: var(--fgSoft);
+.big {
+  height: 40px;
+  padding: 12px 24px;
+}
 
-    &:hover {
-      background: var(--dim3);
-    }
-  }
-
-  &.positive {
-    color: var(--button-fg);
-    background: var(--positive);
-
-    &:hover {
-      color: var(--button-fg);
-    }
-
-    &.disabled {
-      color: var(--fgSoft);
-      background: var(--dim1);
-    }
-  }
-
-  &.condensed {
-    padding: 4px 8px;
-    height: 24px;
-  }
+/* special case */
+.iconOnly {
+  padding: 8px;
 }

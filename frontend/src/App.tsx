@@ -1,41 +1,40 @@
 import React, { useState } from 'react'
 import { Outlet, Route, Routes } from 'react-router-dom'
 
+import { Topbar, TopbarMenuState } from '@components/Topbar'
+import { CreatePostPage } from '@pages/CreatePostPage'
+import FeedPage from '@pages/FeedPage'
+import InvitePage from '@pages/InvitePage'
+import LoadingPage from '@pages/LoadingPage'
+import PostPage from '@pages/PostPage'
+import SignInPage from '@pages/SignInPage'
+import { UserPage } from '@pages/UserPage'
+import { AppLoadingState, useAppState } from '@state/AppState'
 import { Theme, ToastContainer } from 'react-toastify'
-
-import { AppLoadingState, useAppState } from './AppState/AppState'
-import { Topbar, TopbarMenuState } from './Components/Topbar'
-import { CreatePostPage } from './Pages/CreatePostPage'
-import FeedPage from './Pages/FeedPage'
-import InvitePage from './Pages/InvitePage'
-import LoadingPage from './Pages/LoadingPage'
-import PostPage from './Pages/PostPage'
-import SignInPage from './Pages/SignInPage'
-import { UserPage } from './Pages/UserPage'
 
 import styles from './App.module.css'
 
 import './index.scss'
 import 'react-toastify/dist/ReactToastify.css'
 
+import { ForcedReload } from '@components/ForcedReload'
+import { SiteSidebar } from '@components/SiteSidebar'
+import KarmaCalculatorPage from '@pages/KarmaCalculatorPage'
+import { OAuthClientPage } from '@pages/OAuthClientPage'
+import ReactComponentsShowcase from '@pages/ReactComponentsShowcase'
+import ResetPasswordPage from '@pages/ResetPasswordPage'
+import SearchPage from '@pages/SearchPage'
+import { SitesCreatePage } from '@pages/SitesCreatePage'
+import { SitesPage } from '@pages/SitesPage'
+import ThemePreviewPage from '@pages/ThemePreviewPage'
+import WatchPage from '@pages/WatchPage'
+import { useTheme } from '@theme/ThemeProvider'
 import classNames from 'classnames'
 import { observer } from 'mobx-react-lite'
 
-import { ForcedReload } from './Components/ForcedReload'
-import { SiteSidebar } from './Components/SiteSidebar'
-import KarmaCalculatorPage from './Pages/KarmaCalculatorPage'
-import { OAuthClientPage } from './Pages/OAuthClientPage'
-import ResetPasswordPage from './Pages/ResetPasswordPage'
-import SearchPage from './Pages/SearchPage'
-import { SitesCreatePage } from './Pages/SitesCreatePage'
-import { SitesPage } from './Pages/SitesPage'
-import ThemePreviewPage from './Pages/ThemePreviewPage'
-import WatchPage from './Pages/WatchPage'
-import { useTheme } from './Theme/ThemeProvider'
-
-import { ReactComponent as MonsterIconNy } from './Assets/monster_large_ny.svg'
-import { ReactComponent as MonsterIcon } from './Assets/monster_large.svg'
-import { ReactComponent as SpoilerMask } from './Assets/spoiler-mask.svg'
+import { ReactComponent as MonsterIconNy } from '@assets/monster_large_ny.svg'
+import { ReactComponent as MonsterIcon } from '@assets/monster_large.svg'
+import { ReactComponent as SpoilerMask } from '@assets/spoiler-mask.svg'
 
 export const App = observer(() => {
   const { appLoadingState } = useAppState()
@@ -182,6 +181,10 @@ const Ready = observer(() => {
           <Route path='oauth2'>
             <Route path='authorize' element={<OAuthClientPage />} />
           </Route>
+
+          {(!process.env.NODE_ENV || process.env.NODE_ENV === 'development') && (
+            <Route path='/react-components-showcase' element={<ReactComponentsShowcase />} />
+          )}
         </Route>
       </Routes>
     </>

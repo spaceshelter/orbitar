@@ -5,15 +5,13 @@
 .expandHeader {
   width: 100%;
   text-align: left;
-  padding: 8px;
-  background: none;
-  border: none;
-  cursor: pointer;
   font-size: 1rem;
   font-weight: 500;
   display: flex;
   align-items: center;
-  color: var(--text-fg);
+  padding: 8px;
+  color: var(--fg);
+  gap: 0;
 
   &::before {
     content: '►';
@@ -23,10 +21,6 @@
 
   &.expanded::before {
     transform: rotate(90deg);
-  }
-
-  &:hover {
-    background-color: var(--hover-bg);
   }
 }
 

@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react'
 
-import classNames from 'classnames'
+import Button from '@ui/Button'
 
 import { useTheme } from '../Theme/ThemeProvider'
 
 import { ReactComponent as DarkIcon } from '../Assets/theme_dark.svg'
 import { ReactComponent as LightIcon } from '../Assets/theme_light.svg'
-import buttonStyles from '../Components/Buttons.module.scss'
 
 interface ThemeToggleComponentProps {
   buttonLabel?: string
@@ -14,14 +13,14 @@ interface ThemeToggleComponentProps {
   dynamic?: boolean
 }
 
-export default function ThemeToggleComponent(props: ThemeToggleComponentProps) {
+export default function ThemeToggleComponent({ buttonLabel, resetOnOnmount, dynamic }: ThemeToggleComponentProps) {
   const { theme, setTheme } = useTheme()
   const [initialTheme] = useState(theme)
 
   useEffect(() => {
     if (theme) {
       return () => {
-        if (props.resetOnOnmount) {
+        if (resetOnOnmount) {
           setTheme(initialTheme || 'light')
         }
       }
@@ -50,11 +49,8 @@ export default function ThemeToggleComponent(props: ThemeToggleComponentProps) {
   }
 
   return (
-    <button
-      className={classNames(buttonStyles.themeButton, props.dynamic ? buttonStyles.dynamic : '')}
-      onClick={toggleTheme}
-    >
-      {theme === 'dark' ? <LightIcon /> : <DarkIcon />} {props.buttonLabel ? props.buttonLabel : ''}
-    </button>
+    <Button variant={dynamic ? 'solid' : 'minimal'} onClick={toggleTheme}>
+      {theme === 'dark' ? <LightIcon /> : <DarkIcon />} {buttonLabel ? buttonLabel : ''}
+    </Button>
   )
 }

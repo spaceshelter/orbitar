@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useLocation, useSearchParams } from 'react-router-dom'
 
+import Button from '@ui/Button'
 import { useDebouncedCallback } from 'use-debounce'
 
 import { useCache } from '../API/use/useCache'
@@ -156,7 +157,9 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
               <div className={styles.error}>
                 {error}
                 <div>
-                  <button onClick={reload}>Повторить</button>
+                  <Button variant='ghost' onClick={reload}>
+                    Повторить
+                  </Button>
                 </div>
               </div>
             ) : (

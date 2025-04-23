@@ -4,13 +4,14 @@
   .preview {
     width: 100%;
     padding: 10px;
-    min-height: 100px;
+    min-height: 120px;
+    box-sizing: border-box;
     font-size: 16px;
     line-height: 1.5em;
   }
   .preview {
     box-sizing: border-box;
-    min-height: 120px;
+    min-height: 124px;
     background: var(--dim1);
   }
 }
@@ -18,6 +19,7 @@
 .controls {
   display: flex;
   align-items: center;
+  max-width: 100%;
 
   .control {
     color: var(--fgSofter);
@@ -67,17 +69,22 @@
   }
 }
 
-button.bold {
-  font-weight: bold;
-}
-button.italic {
-  font-style: italic;
-}
-button.underline {
-  text-decoration: underline;
-}
-button.strike {
-  text-decoration: line-through;
+button.editorButton {
+  font-size: 16px;
+  font-weight: 400;
+
+  &.bold {
+    font-weight: bold;
+  }
+  &.italic {
+    font-style: italic;
+  }
+  &.underline {
+    text-decoration: underline;
+  }
+  &.strike {
+    text-decoration: line-through;
+  }
 }
 
 .editor {
@@ -119,40 +126,45 @@ button.strike {
   }
 }
 
-button.pre {
-  font-family: monospace;
-  font-size: 14px;
-}
-
 .final {
   margin: 4px 0;
   display: flex;
   justify-content: flex-end;
+  align-items: center;
 
-  button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    height: 40px;
-    padding: 0 16px;
-    background: none;
-    border: none;
-    color: var(--fg);
+  button.buttonSend {
     fill: var(--primary);
-    border-radius: 4px;
-    font-weight: bold;
+    order: 2;
 
     &:hover {
       fill: var(--primaryHover);
-      color: var(--fgHarder);
     }
-    &:disabled {
-      color: var(--fgSofter);
-      fill: var(--fgGhost);
-      cursor: default;
+  }
+}
+
+.buttonPreview {
+  @media (max-width: 420px) {
+    order: 1;
+  }
+}
+
+.buttonThemeToggle {
+  @media (max-width: 420px) {
+    order: 3;
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    button {
+      padding: 8px;
     }
-    &.buttonSend {
-      margin-right: -8px;
+  }
+}
+
+.commentButtonGroup {
+  @media (max-width: 420px) {
+    justify-content: flex-end;
+    button {
+      padding: 8px;
     }
   }
 }

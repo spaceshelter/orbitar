@@ -1,5 +1,6 @@
 import React, { MouseEventHandler, useEffect, useState } from 'react'
 
+import Button from '@ui/Button'
 import classNames from 'classnames'
 import { FaEdit, FaKey, FaLink, FaTrash } from 'react-icons/fa'
 import { toast } from 'react-toastify'
@@ -16,7 +17,6 @@ import Overlay from './Overlay'
 import Username from './Username'
 import UserProfileClientAppsCreateForm from './UserProfileClientAppsCreateForm'
 
-import buttonStyles from './Buttons.module.scss'
 import styles from './OAuth2AppCardModalComponent.module.scss'
 import createFormStyles from './UserProfileClientApps.module.scss'
 
@@ -248,19 +248,19 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
 
         {shouldShowManagementControls && (
           <div className={classNames(styles.buttonsContainer, styles.ownerButtons)}>
-            <button onClick={handleClientEdit} className={buttonStyles.linkButton}>
+            <Button onClick={handleClientEdit}>
               <FaEdit />
               редактировать
-            </button>
-            <button onClick={handleClientSecretUpdate} className={buttonStyles.linkButton}>
+            </Button>
+            <Button onClick={handleClientSecretUpdate}>
               <FaKey />
               сбросить секрет
-            </button>
+            </Button>
             {!client.installationsCount && (
-              <button onClick={handleClientDelete} className={classNames(buttonStyles.linkButton, buttonStyles.danger)}>
+              <Button variant='danger' onClick={handleClientDelete}>
                 <FaTrash />
                 удалить
-              </button>
+              </Button>
             )}
           </div>
         )}
@@ -284,20 +284,14 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
         {!props.children && (
           <div className={styles.buttonsContainer}>
             {client.initialAuthorizationUrl && (
-              <button
-                onClick={handleInstallClick}
-                className={classNames(buttonStyles.settingsButton, buttonStyles.positiveButton, buttonStyles.bigger)}
-              >
+              <Button variant='primary' size='big' onClick={handleInstallClick}>
                 Подключить {authorized ? 'еще раз' : ''}
-              </button>
+              </Button>
             )}
             {authorized && (
-              <button
-                onClick={handleUnInstallClick}
-                className={classNames(buttonStyles.settingsButton, buttonStyles.danger, buttonStyles.bigger)}
-              >
+              <Button variant='danger' size='big' onClick={handleUnInstallClick}>
                 Отключить
-              </button>
+              </Button>
             )}
           </div>
         )}

@@ -1,0 +1,32 @@
+.buttonGroup {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.compact {
+  gap: 0;
+}
+
+.default {
+  gap: 8px;
+
+  @media (max-width: 599px) {
+    gap: 4px;
+  }
+}
+
+.medium {
+  gap: 16px;
+
+  @media (max-width: 599px) {
+    gap: 12px;
+  }
+}
+
+.spacious {
+  gap: 32px;
+
+  @media (max-width: 599px) {
+    gap: 8px;
+  }
+}

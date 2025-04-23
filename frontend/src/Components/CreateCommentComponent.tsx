@@ -1,6 +1,8 @@
 import React, { ReactNode, useEffect, useRef, useState } from 'react'
 
 import { useAPI, useAppState } from '@state/AppState'
+import Button from '@ui/Button'
+import ButtonGroup, { ButtonGroupSpacing } from '@ui/ButtonGroup'
 import ReactTextareaAutocomplete from '@webscopeio/react-textarea-autocomplete'
 import classNames from 'classnames'
 import debouncePromise from 'debounce-promise'
@@ -469,88 +471,119 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     <div className={styles.answer}>
       <div className={classNames(styles.controls, postComponentStyles.options)} ref={controlsRef}>
         <div className={styles.control}>
-          <button disabled={disabledButtons} onClick={() => applyTag('b')} title='Болд' className={styles.bold}>
+          <Button
+            variant='minimal'
+            disabled={disabledButtons}
+            onClick={() => applyTag('b')}
+            title='Болд'
+            className={classNames(styles.bold, styles.editorButton)}
+          >
             B
-          </button>
+          </Button>
         </div>
         <div className={styles.control}>
-          <button disabled={disabledButtons} onClick={() => applyTag('i')} title='Италик' className={styles.italic}>
+          <Button
+            variant='minimal'
+            disabled={disabledButtons}
+            onClick={() => applyTag('i')}
+            title='Италик'
+            className={classNames(styles.italic, styles.editorButton)}
+          >
             I
-          </button>
+          </Button>
         </div>
         <div className={styles.control}>
-          <button
+          <Button
+            variant='minimal'
             disabled={disabledButtons}
             onClick={() => applyTag('u')}
             title='Подчеркнуть'
-            className={styles.underline}
+            className={classNames(styles.underline, styles.editorButton)}
           >
             U
-          </button>
+          </Button>
         </div>
         <div className={styles.control}>
-          <button
+          <Button
+            variant='minimal'
             disabled={disabledButtons}
             onClick={() => applyTag('strike')}
             title='Перечеркнуть'
-            className={styles.strike}
+            className={classNames(styles.strike, styles.editorButton)}
           >
             S
-          </button>
+          </Button>
         </div>
         <div className={styles.control}>
-          <button disabled={disabledButtons} onClick={() => applyTag('irony')} title='Ирония'>
+          <Button variant='minimal' disabled={disabledButtons} onClick={() => applyTag('irony')} title='Ирония'>
             <IronyIcon />
-          </button>
+          </Button>
         </div>
         <div className={styles.control}>
-          <button disabled={disabledButtons} onClick={() => applyTag('blockquote')} title='Цитировать'>
+          <Button
+            variant='minimal'
+            disabled={disabledButtons}
+            onClick={() => applyTag('blockquote')}
+            title='Цитировать'
+          >
             <QuoteIcon />
-          </button>
+          </Button>
         </div>
         <div className={styles.control}>
-          <button disabled={disabledButtons} onClick={() => applyTag('img')} title='Вставить картинку/видео'>
+          <Button
+            variant='minimal'
+            disabled={disabledButtons}
+            onClick={() => applyTag('img')}
+            title='Вставить картинку/видео'
+          >
             <ImageIcon />
-          </button>
+          </Button>
         </div>
         <div className={styles.control}>
-          <button disabled={disabledButtons} onClick={() => applyTag('a')} title='Вставить ссылку'>
+          <Button variant='minimal' disabled={disabledButtons} onClick={() => applyTag('a')} title='Вставить ссылку'>
             <LinkIcon />
-          </button>
+          </Button>
         </div>
         <SpilloverWrapper threshold={350} parentRef={controlsRef}>
           <div className={styles.control}>
-            <button
+            <Button
+              variant='minimal'
               disabled={disabledButtons}
               onClick={() => applyTag('expand', { title: '' })}
               title='Свернуть/Развернуть'
             >
               <ExpandIcon />
-            </button>
+            </Button>
           </div>
           <div className={styles.control}>
-            <button
+            <Button
+              variant='minimal'
               disabled={disabledButtons}
               onClick={() => applyTag('pre')}
               title='Форматированный текст'
               className={styles.pre}
             >
               <CodeIcon />
-            </button>
+            </Button>
           </div>
           <div className={styles.control}>
-            <button disabled={disabledButtons} onClick={() => applyTag('spoiler')} title='Спойлер'>
+            <Button variant='minimal' disabled={disabledButtons} onClick={() => applyTag('spoiler')} title='Спойлер'>
               <SpoilerIcon />
-            </button>
+            </Button>
           </div>
           <div className={styles.control}>
-            <button disabled={disabledButtons} onClick={() => setPollWizardOpen(true)} title='Создать опрос'>
+            <Button
+              variant='minimal'
+              disabled={disabledButtons}
+              onClick={() => setPollWizardOpen(true)}
+              title='Создать опрос'
+            >
               <PollIcon />
-            </button>
+            </Button>
           </div>
           {/*{parentPublicKey &&*/}
           {/*<div className={styles.control}>*/}
-          {/*    <button disabled={disabledButtons} onClick={() => setFormOpen(true)} title="Шифрованное послание"><MailIcon /></button></div>*/}
+          {/*    <Button variant='minimal' disabled={disabledButtons} onClick={() => setFormOpen(true)} title="Шифрованное послание"><MailIcon /></Button></div>*/}
           {/*}*/}
         </SpilloverWrapper>
       </div>
@@ -585,13 +618,27 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         </div>
       )}
       <div className={styles.final}>
-        {previewing && <ThemeToggleComponent buttonLabel='Превью с другой темой' resetOnOnmount={true} />}
-        <button disabled={isPosting || !answerText} className={styles.buttonPreview} onClick={handlePreview}>
-          {previewing === null ? 'Превью' : 'Редактор'}
-        </button>
-        <button disabled={isPosting || !answerText} className={styles.buttonSend} onClick={handleAnswer}>
-          <SendIcon />
-        </button>
+        <ButtonGroup spacing={ButtonGroupSpacing.MEDIUM} className={styles.commentButtonGroup}>
+          <div className={styles.buttonThemeToggle}>
+            {previewing && <ThemeToggleComponent buttonLabel='Превью с другой темой' resetOnOnmount={true} />}
+          </div>
+          <Button
+            variant='minimal'
+            disabled={isPosting || !answerText}
+            onClick={handlePreview}
+            className={styles.buttonPreview}
+          >
+            {previewing === null ? 'Превью' : 'Редактор'}
+          </Button>
+          <Button
+            variant='minimal'
+            disabled={isPosting || !answerText}
+            onClick={handleAnswer}
+            className={styles.buttonSend}
+          >
+            <SendIcon />
+          </Button>
+        </ButtonGroup>
         {mediaUploaderOpen && (
           <MediaUploader
             onSuccess={handleMediaUpload}
@@ -699,12 +746,9 @@ const SpilloverWrapper = (props: {
     <>{props.children}</>
   ) : (
     <div className={styles.control + ' ' + postComponentStyles.options}>
-      <button
-        onClick={toggleOptions}
-        className={postComponentStyles.options + ' ' + (showOptions ? styles.active : '')}
-      >
+      <Button variant='minimal' onClick={toggleOptions} active={showOptions} className={postComponentStyles.options}>
         <OptionsIcon />
-      </button>
+      </Button>
       {showOptions && <div className={postComponentStyles.optionsList}>{props.children}</div>}
     </div>
   )

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 
+import Button from '@ui/Button'
+import ButtonGroup from '@ui/ButtonGroup'
 import classNames from 'classnames'
 import { observer } from 'mobx-react-lite'
 import moment from 'moment'
@@ -16,6 +18,7 @@ import CreateCommentComponent from './CreateCommentComponent'
 import DateComponent from './DateComponent' // Import css
 import Username from './Username'
 
+import { ReactComponent as CopyIcon } from '../Assets/copy.svg'
 import createPostStyles from '../Pages/CreatePostPage.module.css'
 import commentStyles from './CommentComponent.module.scss'
 import styles from './UserProfileInvites.module.scss'
@@ -241,7 +244,9 @@ export const UserProfileInvites = observer((props: UserProfileInvitesProps) => {
 
       {usernameFilter && (
         <div>
-          <button onClick={resetUsernameFilter}>Показать всю историю</button>
+          <Button variant='link' onClick={resetUsernameFilter}>
+            Показать всю историю
+          </Button>
         </div>
       )}
     </div>
@@ -320,22 +325,26 @@ const Invite = (props: {
               {process.env.REACT_APP_ROOT_DOMAIN}/invite/{invite.code}
             </Link>
           </div>
-          <button onClick={handleCopyInvite}>Скопировать</button>
-          <ConfirmButton
-            onAction={() => props.handleRegenerate(invite.code, props.idx)}
-            message={`Вы уверены, что хотите сгенерировать новый код для приглашения?`}
-          >
-            Отозвать
-          </ConfirmButton>
-          <button onClick={() => setEditing(!editing)}>{editing ? 'Отмена' : 'Редактировать'}</button>
-          {invite.restricted && props.active && !invite.invited?.length && (
+          <ButtonGroup>
+            <Button onClick={handleCopyInvite}>
+              <CopyIcon /> Скопировать
+            </Button>
             <ConfirmButton
-              onAction={() => props.handleDelete(invite.code)}
-              message={`Вы уверены, что хотите удалить приглашение?`}
+              onAction={() => props.handleRegenerate(invite.code, props.idx)}
+              message={`Вы уверены, что хотите сгенерировать новый код для приглашения?`}
             >
-              Удалить
+              Отозвать
             </ConfirmButton>
-          )}
+            <Button onClick={() => setEditing(!editing)}>{editing ? 'Отмена' : 'Редактировать'}</Button>
+            {invite.restricted && props.active && !invite.invited?.length && (
+              <ConfirmButton
+                onAction={() => props.handleDelete(invite.code)}
+                message={`Вы уверены, что хотите удалить приглашение?`}
+              >
+                Удалить
+              </ConfirmButton>
+            )}
+          </ButtonGroup>
         </>
       )}
     </div>
@@ -359,7 +368,7 @@ const ConfirmButton = (props: ConfirmButtonProps) => {
 
   return (
     <>
-      <button onClick={handleConfirm}>{props.children}</button>
+      <Button onClick={handleConfirm}>{props.children}</Button>
     </>
   )
 }

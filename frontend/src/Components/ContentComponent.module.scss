@@ -215,14 +215,6 @@
   position: absolute;
   bottom: 8px;
   left: 0;
-  background: var(--dim2);
-  color: var(--fgMedium);
-  border: none;
-  //border: 1px solid var(--dim3);
-  padding: 8px;
-  border-radius: 4px;
+  font-weight: normal;
   font-size: 15px;
-  &:hover {
-    background: var(--dim3);
-  }
 }
