@@ -62,6 +62,11 @@ services:
         npm run migration:production wait-and-up &&
         npm run start:production
       "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-X", "POST", "http://localhost:5001/api/v1/status"]
+      interval: 5s
+      timeout: 20s
+      retries: 10
     depends_on:
       mysql-test:
         condition: service_healthy
@@ -90,8 +95,10 @@ services:
       - caddy_test_data:/data
       - caddy_test_config:/config
     depends_on:
-      - frontend-test
-      - backend-test
+      backend-test:
+        condition: service_healthy
+      frontend-test:
+        condition: service_started
 
 volumes:
   mysql_test_db:
