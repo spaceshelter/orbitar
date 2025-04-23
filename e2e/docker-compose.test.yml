@@ -13,10 +13,10 @@ services:
     ports:
       - "3307:3306"
     healthcheck:
-        test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-porbitar" ]
-        interval: 5s
-        timeout: 20s
-        retries: 10
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost", "-uroot", "-porbitar"]
+      interval: 5s
+      timeout: 20s
+      retries: 10
 
   redis-test:
     image: redis:7
@@ -27,16 +27,22 @@ services:
     volumes:
       - redis_test_data:/data
 
-  feed-test:
+  frontend-test:
     build:
-      context: ../feed
-    ports:
-      - "6768:6767"
+      context: ../frontend
+      args:
+        NODE_ENV: production
+        SERVER_DOMAIN: test.orbitar.local
+        API_DOMAIN: api.test.orbitar.local
+    restart: "no"
+    volumes:
+      - frontend_test_build:/frontend
 
   backend-test:
     build:
       context: ../backend
     environment:
+      SITE_DOMAIN: test.orbitar.local
       NODE_ENV: production
       MYSQL_HOST: mysql-test
       MYSQL_PORT: 3306
@@ -49,7 +55,7 @@ services:
       FEED_INDEX_HOST: feed-test
       FEED_INDEX_PORT: 6767
     ports:
-      - "4000:5001"
+      - "5001:5001"
     command: >
       sh -c "
         sleep 10 &&
@@ -64,29 +70,32 @@ services:
       feed-test:
         condition: service_started
 
-  frontend-test:
-    image: node:18
-    working_dir: /app
-    volumes:
-      - ../frontend:/app
-    environment:
-      BABEL_DISABLE_CACHE: "1"
-      NODE_ENV: production
-      REACT_APP_ROOT_DOMAIN: localhost:3000
-      REACT_APP_API_DOMAIN: http://backend-test:4000
+  feed-test:
+    build:
+      context: ../feed
     ports:
-      - "3000:3000"
+      - "6768:6767"
+
+  caddy-test:
+    image: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    environment:
+      SERVER_DOMAIN: test.orbitar.local
+      API_DOMAIN: api.test.orbitar.local
+    volumes:
+      - ../caddy/Caddyfile.test:/etc/caddy/Caddyfile:ro
+      - frontend_test_build:/srv:ro
+      - caddy_test_data:/data
+      - caddy_test_config:/config
     depends_on:
+      - frontend-test
       - backend-test
-    command: >
-      sh -c "
-        rm -rf node_modules/.cache &&
-        npm ci &&
-        npm install -g serve cross-env react-app-rewired &&
-        npm run build &&
-        serve -s build -l 3000
-      "
 
 volumes:
   mysql_test_db:
   redis_test_data:
+  frontend_test_build:
+  caddy_test_data:
+  caddy_test_config:
