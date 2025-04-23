@@ -1,0 +1,23 @@
+{
+  "include": [
+    "./**/*.ts",
+    "./cypress.d.ts",
+    "../cypress.config.ts"
+  ],
+  "exclude": [],
+  "compilerOptions": {
+    "target": "es2017",
+    "module": "esnext",
+    "lib": ["es2017", "dom"],
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "allowJs": true,
+    "skipLibCheck": true,
+    "types": ["cypress"],
+    "noEmit": true,
+    "baseUrl": "cypress"
+  }
+}

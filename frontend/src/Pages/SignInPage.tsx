@@ -88,7 +88,11 @@ export default function SignInPage() {
         <div>
           <input type='submit' disabled={!isValid || isSigningIn} value='Войти' />
         </div>
-        {error && <p className={styles.error}>{error}</p>}
+        {error && (
+          <p className={styles.error} data-testid='sign-in-error'>
+            {error}
+          </p>
+        )}
       </form>
       <div className={styles.resetLink}>
         <Link to='/forgot-password'>Забыли пароль?</Link>

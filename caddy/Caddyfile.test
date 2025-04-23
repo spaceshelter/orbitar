@@ -1,0 +1,22 @@
+{
+    admin off
+}
+
+:80 {
+    root * /srv
+    encode gzip
+    file_server
+
+    handle /static/* {
+        root * /srv
+        file_server
+    }
+
+    handle /api/* {
+        reverse_proxy http://backend-test:5001
+    }
+
+    handle {
+        try_files {path} /index.html
+    }
+} 

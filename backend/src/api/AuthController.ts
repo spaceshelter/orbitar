@@ -3,6 +3,7 @@ import rateLimit from 'express-rate-limit'
 import Joi from 'joi'
 import { Logger } from 'winston'
 
+import { RateLimitManager } from '../managers/RateLimitManager'
 import UserManager from '../managers/UserManager'
 import { APIRequest, APIResponse, joiPassword, validate } from './ApiMiddleware'
 import { UserEntity } from './types/entities/UserEntity'
@@ -32,7 +33,7 @@ export default class AuthController {
     this.logger = logger
 
     // 5 failed requests per hour
-    const signInLimiter = rateLimit({
+    const signInLimiter = RateLimitManager.createLimiter({
       windowMs: 60 * 60 * 1000,
       max: 5,
       skipSuccessfulRequests: true,
