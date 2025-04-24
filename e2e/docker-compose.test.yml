@@ -10,10 +10,11 @@ services:
     volumes:
       - mysql_test_db:/var/lib/mysql
       - ../mysql/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+      - ../mysql/test-users.sql:/docker-entrypoint-initdb.d/test-users.sql:ro
     ports:
-      - "3307:3306"
+      - '3307:3306'
     healthcheck:
-      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost", "-uroot", "-porbitar"]
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-uroot', '-porbitar']
       interval: 5s
       timeout: 20s
       retries: 10
@@ -23,7 +24,7 @@ services:
     restart: always
     command: redis-server --save 20 1 --requirepass testpass
     ports:
-      - "6380:6379"
+      - '6380:6379'
     volumes:
       - redis_test_data:/data
 
@@ -34,7 +35,7 @@ services:
         NODE_ENV: production
         SERVER_DOMAIN: test.orbitar.local
         API_DOMAIN: api.test.orbitar.local
-    restart: "no"
+    restart: 'no'
     volumes:
       - frontend_test_build:/frontend
 
@@ -55,7 +56,7 @@ services:
       FEED_INDEX_HOST: feed-test
       FEED_INDEX_PORT: 6767
     ports:
-      - "5001:5001"
+      - '5001:5001'
     command: >
       sh -c "
         sleep 5 &&
@@ -63,7 +64,7 @@ services:
         npm run start:test
       "
     healthcheck:
-      test: ["CMD", "curl", "-f", "-X", "POST", "http://localhost:5001/api/v1/status"]
+      test: ['CMD', 'curl', '-f', '-X', 'POST', 'http://localhost:5001/api/v1/status']
       interval: 5s
       timeout: 20s
       retries: 10
@@ -79,13 +80,13 @@ services:
     build:
       context: ../feed
     ports:
-      - "6768:6767"
+      - '6768:6767'
 
   caddy-test:
     image: caddy
     restart: unless-stopped
     ports:
-      - "80:80"
+      - '80:80'
     environment:
       SERVER_DOMAIN: test.orbitar.local
       API_DOMAIN: api.test.orbitar.local
