@@ -68,9 +68,46 @@
 
 .optionText {
   font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  position: relative;
+
+  span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: clip;
+    display: block;
+    margin-right: 20px;
+  }
+
+  .ellipsis {
+    position: absolute;
+    right: -16px;
+    top: 0;
+    padding-left: 4px;
+    cursor: pointer;
+    color: var(--primary);
+    font-weight: bold;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.fullTextTooltip {
+  position: absolute;
+  padding: 12px;
+  max-width: 300px;
+  max-height: 300px;
+  word-break: break-word;
+  background-color: var(--elevated);
+  box-shadow: 0 2px 8px var(--shadow);
+  border-radius: 8px;
+  z-index: 9999;
+  overflow-y: auto;
+  overflow-x: hidden;
+  backdrop-filter: blur(10px);
+  margin-top: 8px;
+  overscroll-behavior: contain;
 }
 
 .progressBar {
