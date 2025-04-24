@@ -65,6 +65,7 @@ export const CreatePostPage = observer(() => {
           {userRestrictions?.restrictedToPostId === true && <LastPostMessage />}
           <input
             className={styles.title}
+            data-testid='create-post-title'
             type='text'
             placeholder='Без названия'
             maxLength={64}

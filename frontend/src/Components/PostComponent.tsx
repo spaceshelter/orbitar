@@ -173,13 +173,13 @@ export default function PostComponent(props: PostComponentProps) {
             ) : (
               <>
                 {title && (
-                  <div className={styles.title}>
+                  <div className={styles.title} data-testid='post-title'>
                     <PostLink post={props.post}>
                       {props.dangerousHtmlTitle ? <span dangerouslySetInnerHTML={{ __html: title }} /> : title}
                     </PostLink>
                   </div>
                 )}
-                <div className={styles.content}>
+                <div className={styles.content} data-testid='post-content'>
                   <ContentComponent
                     className={styles.content}
                     {...{ autoCut, content, currentUsername }}

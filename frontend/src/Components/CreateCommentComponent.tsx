@@ -557,6 +557,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
       {previewing === null ? (
         <div className={styles.editor} ref={containerRef}>
           <ReactTextareaAutocomplete<string>
+            data-testid='create-comment-textarea'
             placeholder={placeholderText}
             innerRef={(el: HTMLTextAreaElement) => {
               answerRef.current = el
@@ -589,7 +590,12 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         <button disabled={isPosting || !answerText} className={styles.buttonPreview} onClick={handlePreview}>
           {previewing === null ? 'Превью' : 'Редактор'}
         </button>
-        <button disabled={isPosting || !answerText} className={styles.buttonSend} onClick={handleAnswer}>
+        <button
+          data-testid='create-comment-button-send'
+          disabled={isPosting || !answerText}
+          className={styles.buttonSend}
+          onClick={handleAnswer}
+        >
           <SendIcon />
         </button>
         {mediaUploaderOpen && (
