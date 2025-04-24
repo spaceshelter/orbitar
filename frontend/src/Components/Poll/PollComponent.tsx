@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 
 import { PollEntity, ResultVisibility, VoteAccess } from '@api/types/Poll'
 import DateComponent from '@components/DateComponent'
+import { PollOptionTextWithTooltip } from '@components/Poll/PollOptionTextTooltip'
 import { RefreshButton } from '@components/Poll/RefreshButton'
 import { VotersTooltip } from '@components/Poll/VotersList'
 import { useAPI, useAppState } from '@state/AppState'
@@ -170,9 +171,9 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
                 />
               )}
             </div>
-            <span className={styles.optionText} title={option.text}>
-              {option.text}
-            </span>
+            <div className={styles.optionText}>
+              <PollOptionTextWithTooltip>{option.text}</PollOptionTextWithTooltip>
+            </div>
             <div className={styles.votesContainer}>
               {canShowResults && (
                 <span className={styles.votes}>
