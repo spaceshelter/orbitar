@@ -1,5 +1,7 @@
 import { defineConfig } from 'cypress'
 
+import { setupNodeEvents } from './cypress/plugins/database'
+
 export default defineConfig({
   e2e: {
     baseUrl: 'http://test.orbitar.local',
@@ -7,5 +9,7 @@ export default defineConfig({
     specPattern: 'cypress/e2e/**/*.cy.{js,jsx,ts,tsx}',
     viewportWidth: 1280,
     viewportHeight: 720,
+    experimentalStudio: true,
+    setupNodeEvents,
   },
 })

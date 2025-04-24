@@ -16,6 +16,7 @@
   "devDependencies": {
     "@ianvs/prettier-plugin-sort-imports": "^4.4.1",
     "@types/bcryptjs": "^2.4.6",
+    "@types/mysql": "^2.15.27",
     "@types/node": "^20.11.24",
     "cypress": "^13.17.0",
     "eslint": "^9.25.0",
@@ -24,5 +25,8 @@
     "prettier": "^3.5.3",
     "typescript": "^5.8.3",
     "wait-on": "^8.0.3"
+  },
+  "dependencies": {
+    "mysql2": "^3.14.0"
   }
 }

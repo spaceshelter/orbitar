@@ -31,3 +31,7 @@ Cypress.Commands.add(
     cy.get('input[type="submit"]').click()
   },
 )
+
+Cypress.Commands.add('database', (operation: 'select' | 'delete' | 'insert', tableName: string, query: any = {}) => {
+  return cy.task('queryDatabase', { operation, tableName, query })
+})
