@@ -172,7 +172,9 @@ export const PollComponent: React.FC<PollProps> = ({ pollId }) => {
               )}
             </div>
             <div className={styles.optionText}>
-              <PollOptionTextWithTooltip>{option.text}</PollOptionTextWithTooltip>
+              <PollOptionTextWithTooltip key={`t-${isSelected}-${isDisabled}-${option.votes}`}>
+                {option.text}
+              </PollOptionTextWithTooltip>
             </div>
             <div className={styles.votesContainer}>
               {canShowResults && (
