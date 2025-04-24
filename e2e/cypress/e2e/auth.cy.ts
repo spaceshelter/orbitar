@@ -1,3 +1,5 @@
+import { testUsers } from '../data'
+
 describe('Authentication', () => {
   beforeEach(() => {
     cy.visit('/')
@@ -15,12 +17,12 @@ describe('Authentication', () => {
   })
 
   it('should show error on wrong credentials', () => {
-    cy.login('wrongUsername', 'wrongPassword')
+    cy.login(testUsers.wrong.username, testUsers.wrong.password)
     cy.get('[data-testid="sign-in-error"]').should('be.visible')
   })
 
   it('should login with correct credentials', () => {
-    cy.login()
+    cy.login(testUsers.fullrights.username, testUsers.fullrights.password)
     cy.get('title').should('contain', 'Главная')
   })
 })
