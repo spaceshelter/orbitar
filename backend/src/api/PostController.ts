@@ -1,5 +1,4 @@
 import { Router } from 'express'
-import rateLimit from 'express-rate-limit'
 import Joi from 'joi'
 import { APIError, AuthenticationError, RateLimitError } from 'openai'
 import { Logger } from 'winston'
@@ -7,6 +6,7 @@ import { Logger } from 'winston'
 import CodeError from '../CodeError'
 import FeedManager from '../managers/FeedManager'
 import PostManager from '../managers/PostManager'
+import { RateLimitManager } from '../managers/RateLimitManager'
 import SiteManager from '../managers/SiteManager'
 import TranslationManager, { TRANSLATION_LANGUAGES, TRANSLATION_MODES } from '../managers/TranslationManager'
 import UserManager from '../managers/UserManager'
@@ -51,21 +51,21 @@ export default class PostController {
   private readonly enricher: Enricher
 
   // 5 per hour
-  private readonly postCreateRateLimiter = rateLimit({
+  private readonly postCreateRateLimiter = RateLimitManager.createLimiter({
     max: 5,
     windowMs: 3600 * 1000,
     ...commonRateLimitConfig,
   })
 
   /* 40/(30 mins) */
-  private readonly postEditRateLimiter = rateLimit({
+  private readonly postEditRateLimiter = RateLimitManager.createLimiter({
     max: 40,
     windowMs: 30 * 60 * 1000,
     ...commonRateLimitConfig,
   })
 
   /* 40/(30 mins) */
-  private readonly commentRateLimiter = rateLimit({
+  private readonly commentRateLimiter = RateLimitManager.createLimiter({
     max: 40,
     windowMs: 30 * 60 * 1000,
     ...commonRateLimitConfig,
