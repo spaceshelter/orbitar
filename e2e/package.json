@@ -8,16 +8,17 @@
     "test": "cypress run",
     "lint": "eslint . --ext .ts,.js",
     "format": "prettier --write .",
-    "test:e2e:up": "docker-compose -f docker-compose.test.yml up",
+    "test:e2e:up": "docker-compose -f docker-compose.test.yml up -d",
     "test:e2e:down": "docker-compose -f docker-compose.test.yml down",
-    "test:e2e:wait": "wait-on http://localhost:4000 http://localhost:3000",
-    "test:e2e": "npm run test:e2e:up && npm run test:e2e:wait && node scripts/create-test-users.js && cypress run && npm run test:e2e:down"
+    "test:e2e:wait": "node -r dotenv/config -e \"console.log('SERVER_DOMAIN=' + process.env.SERVER_DOMAIN + ', API_DOMAIN=' + process.env.API_DOMAIN); require('child_process').execSync('wait-on --verbose http://' + process.env.SERVER_DOMAIN + ' http://' + process.env.API_DOMAIN, {stdio: 'inherit'})\"",
+    "test:e2e": "npm run test:e2e:up && npm run test:e2e:wait && cypress run && npm run test:e2e:down"
   },
   "devDependencies": {
     "@ianvs/prettier-plugin-sort-imports": "^4.4.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/mysql": "^2.15.27",
     "@types/node": "^20.11.24",
+    "cross-env": "^7.0.3",
     "cypress": "^13.17.0",
     "dotenv": "^16.5.0",
     "eslint": "^9.25.0",
