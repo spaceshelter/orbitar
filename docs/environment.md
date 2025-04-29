@@ -40,6 +40,11 @@
    Same as `frontend/.env`, but used in node development environment.
    See `frontend/package.json`.
 
+* `e2e/.env`
+    Env file specific for end-to-end testing environment.
+    Contains variables needed for running e2e tests, like test credentials and API endpoints.
+    Should be created locally from `e2e/.env.sample` if needed.
+
 ---
 
 ### Where to add things?

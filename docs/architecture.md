@@ -27,6 +27,14 @@ Orbitar is a social network/forum platform with multiple components:
 - OAuth2 implementation
 - Content parsing and processing
 
+### E2E Testing
+
+- Cypress-based end-to-end testing framework
+- Tests cover critical user flows and functionality
+- Separate test environment with its own configuration
+- CI/CD integration for automated testing
+- Test data management through environment variables
+
 ### Key Concepts
 
 - **Sites**: Sub-communities within the platform
@@ -99,6 +107,10 @@ npm test
 # Database migrations
 cd backend
 node migrations.js
+
+# e2e testing with Cypress
+cd e2e
+npm run test:e2e
 ```
 
 ## Common File Locations
@@ -110,3 +122,4 @@ node migrations.js
 - Backend managers: `/backend/src/managers/`
 - Database migrations: `/backend/migrations/`
 - Global styles: `/frontend/src/index.scss`
+- E2E tests: `/e2e/cypress/e2e/`

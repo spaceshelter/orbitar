@@ -21,6 +21,10 @@
 ```
 127.0.0.1 idiod.orbitar.local
 ```
+Для Cypress тестов нужно добавить
+```
+127.0.0.1 test.orbitar.local api.test.orbitar.local
+```
 
 ### Особенности
 
