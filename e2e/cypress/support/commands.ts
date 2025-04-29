@@ -1,5 +1,7 @@
 /// <reference types="cypress" />
 
+import { OkPacketParams } from 'mysql2'
+
 // ***********************************************
 // This example commands.ts shows you how to
 // create various custom commands and overwrite
@@ -32,6 +34,57 @@ Cypress.Commands.add(
   },
 )
 
-Cypress.Commands.add('database', (operation: 'select' | 'delete' | 'insert', tableName: string, query: any = {}) => {
-  return cy.task('queryDatabase', { operation, tableName, query })
-})
+Cypress.Commands.add(
+  'database',
+  (
+    operation: Operation,
+    entity: Table,
+    query?: SelectQuery | DeleteQuery | UpdateQuery | InsertQuery,
+    logTask = false,
+  ) => {
+    const params = { entity, query }
+
+    const log = Cypress.log({
+      name: 'database',
+      displayName: 'DATABASE',
+      message: [`🔎 ${operation} in ${entity}`],
+      autoEnd: false,
+      consoleProps() {
+        return params
+      },
+    })
+
+    return cy.task<OkPacketParams>(`${operation}:database`, params, { log: logTask }).then((data) => {
+      const resultCount = data.affectedRows || 0
+
+      let message: string
+
+      switch (operation) {
+        case 'find':
+        case 'findall':
+          message = `🔍 Found ${resultCount} record(s)`
+          break
+        case 'delete':
+        case 'deleteall':
+          message = `🗑️ Deleted ${resultCount} record(s)`
+          break
+        case 'update':
+          message = `📝 Updated ${resultCount} record(s)`
+          break
+        case 'insert':
+          message = `➕ Inserted ${resultCount} record(s)`
+          break
+        default:
+          message = `✔️ Operation ${operation} completed (${resultCount})`
+      }
+
+      log.set({
+        message: message,
+      })
+
+      log.snapshot()
+      log.end()
+      return data
+    })
+  },
+)
