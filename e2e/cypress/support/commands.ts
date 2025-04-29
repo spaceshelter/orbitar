@@ -24,15 +24,13 @@ import { OkPacketParams } from 'mysql2'
 // -- This will overwrite an existing command --
 // Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })
 
-Cypress.Commands.add(
-  'login',
-  (username: string = Cypress.env('username'), password: string = Cypress.env('password')) => {
-    cy.visit('/')
-    cy.get('input[type="text"]').type(username)
-    cy.get('input[type="password"]').type(password)
-    cy.get('input[type="submit"]').click()
-  },
-)
+Cypress.Commands.add('loginViaAPI', (username: string, password: string) => {
+  cy.request('POST', Cypress.env('API_DOMAIN') + '/api/v1/auth/signin', { username, password }).then((response) => {
+    const sessionId = response.body.payload.session
+
+    cy.setCookie('session', sessionId)
+  })
+})
 
 Cypress.Commands.add(
   'database',

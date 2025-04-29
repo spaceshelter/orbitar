@@ -16,6 +16,7 @@ export default defineConfig({
     setupNodeEvents,
     env: {
       TEST_USER_PASSWORD: process.env.TEST_USER_PASSWORD,
+      API_DOMAIN: process.env.API_DOMAIN,
     },
   },
 })

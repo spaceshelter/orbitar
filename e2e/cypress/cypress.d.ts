@@ -29,7 +29,7 @@ declare global {
 
   namespace Cypress {
     interface Chainable {
-      login(username?: string, password?: string): Chainable
+      loginViaAPI(username: string, password: string): Chainable
       database(operation: 'find', tableName: Table, query: SelectQuery, logTask?: boolean): Chainable<any>
       database(operation: 'findall', tableName: Table, query?: undefined, logTask?: boolean): Chainable<any>
       database(operation: 'delete', tableName: Table, query: DeleteQuery, logTask?: boolean): Chainable<any>
