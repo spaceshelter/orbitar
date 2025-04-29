@@ -91,3 +91,13 @@ Cypress.Commands.add('getBySel', (selector, ...args) => {
   console.log('getBySel', `[data-testid=${selector}]`, ...args)
   return cy.get(`[data-testid=${selector}]`, ...args)
 })
+
+Cypress.Commands.add('reactType', { prevSubject: ['element'] }, (subject, text) => {
+  const textarea = subject[0] as HTMLTextAreaElement
+  const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set
+
+  nativeInputValueSetter?.call(textarea, text)
+  textarea.dispatchEvent(new Event('input', { bubbles: true }))
+
+  return cy.wrap(subject)
+})
