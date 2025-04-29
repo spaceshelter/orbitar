@@ -36,6 +36,7 @@ declare global {
       database(operation: 'deleteall', tableName: Table, query?: undefined, logTask?: boolean): Chainable<any>
       database(operation: 'insert', tableName: Table, query: InsertQuery, logTask?: boolean): Chainable<any>
       database(operation: 'update', tableName: Table, query: UpdateQuery, logTask?: boolean): Chainable<any>
+      getBySel(dataTestAttribute: string, args?: any): Chainable<JQuery<HTMLElement>>
     }
   }
 }

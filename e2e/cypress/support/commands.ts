@@ -88,3 +88,8 @@ Cypress.Commands.add(
     })
   },
 )
+
+Cypress.Commands.add('getBySel', (selector, ...args) => {
+  console.log('getBySel', `[data-testid=${selector}]`, ...args)
+  return cy.get(`[data-testid=${selector}]`, ...args)
+})
