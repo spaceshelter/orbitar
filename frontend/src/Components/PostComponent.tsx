@@ -151,7 +151,7 @@ export default function PostComponent(props: PostComponentProps) {
   }, [props.post])
 
   return (
-    <div className={'postComponent ' + styles.post} ref={contentRef}>
+    <div className={'postComponent ' + styles.post} ref={contentRef} data-testid='post'>
       <div className={styles.header}>
         <SignatureComponent
           showSite={props.showSite}

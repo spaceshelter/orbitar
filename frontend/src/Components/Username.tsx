@@ -19,6 +19,7 @@ export default function Username(props: UsernameProps) {
       onClick={props.onClick}
       to={'/u/' + props.user.username}
       className={classNames('i i-user', styles.username, props.inactive && styles.inactive, props.className)}
+      data-testid='username'
     >
       {props.user.username}
     </Link>

@@ -789,7 +789,7 @@ export default function ContentComponent(props: ContentComponentProps) {
       />
       {cut && (
         <div className={styles.cutCover}>
-          <button className={styles.cutButton} onClick={handleCut}>
+          <button className={styles.cutButton} onClick={handleCut} data-testid='read-more-button'>
             Читать дальше
           </button>
         </div>

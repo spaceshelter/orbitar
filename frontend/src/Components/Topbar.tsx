@@ -116,7 +116,11 @@ const CreateButton = observer(() => {
   const { site } = useAppState()
 
   return (
-    <Link className={[styles.button, styles.newPost].join(' ')} to={site === 'main' ? '/create' : `/s/${site}/create`}>
+    <Link
+      className={[styles.button, styles.newPost].join(' ')}
+      to={site === 'main' ? '/create' : `/s/${site}/create`}
+      data-testid='create-post-button'
+    >
       <PostIcon /> <span>Новый пост</span>{' '}
     </Link>
   )

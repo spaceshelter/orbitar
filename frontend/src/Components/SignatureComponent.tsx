@@ -26,7 +26,7 @@ interface SignatureComponentProps {
 
 export const SignatureComponent = (props: SignatureComponentProps) => {
   return (
-    <div className={styles.signature}>
+    <div className={styles.signature} data-testid='signature'>
       {props.showSite && props.site && props.site !== 'main' ? (
         <>
           <Link to={`/s/${props.site}`}>{props.site}</Link> •{' '}
