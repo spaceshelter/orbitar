@@ -1,4 +1,4 @@
-import { testUsers } from '../data'
+import { testUsers } from 'data'
 
 describe('Authentication', () => {
   beforeEach(() => {
