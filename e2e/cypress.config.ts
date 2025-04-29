@@ -1,6 +1,9 @@
 import { defineConfig } from 'cypress'
+import dotenv from 'dotenv'
 
 import { setupNodeEvents } from './cypress/plugins/database'
+
+dotenv.config()
 
 export default defineConfig({
   e2e: {
@@ -11,5 +14,8 @@ export default defineConfig({
     viewportHeight: 720,
     experimentalStudio: true,
     setupNodeEvents,
+    env: {
+      TEST_USER_PASSWORD: process.env.TEST_USER_PASSWORD,
+    },
   },
 })

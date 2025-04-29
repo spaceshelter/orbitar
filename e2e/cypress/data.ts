@@ -1,3 +1,5 @@
+import path from 'path'
+
 const userTypes = ['fullrights', 'norights', 'lowkarma', 'wrong'] as const
 
 interface TestUser {
@@ -8,15 +10,15 @@ interface TestUser {
 export const testUsers: Record<(typeof userTypes)[number], TestUser> = {
   fullrights: {
     username: 'testuser1',
-    password: 'testpass1',
+    password: Cypress.env('TEST_USER_PASSWORD') ?? '',
   },
   norights: {
     username: 'testuser2',
-    password: 'testpass2',
+    password: Cypress.env('TEST_USER_PASSWORD') ?? '',
   },
   lowkarma: {
     username: 'testuser3',
-    password: 'testpass3',
+    password: Cypress.env('TEST_USER_PASSWORD') ?? '',
   },
   wrong: {
     username: 'wronguser',
