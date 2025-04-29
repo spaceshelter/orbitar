@@ -17,12 +17,16 @@ describe('Authentication', () => {
   })
 
   it('should show error on wrong credentials', () => {
-    cy.login(testUsers.wrong.username, testUsers.wrong.password)
+    cy.get('input[type="text"]').type(testUsers.wrong.username)
+    cy.get('input[type="password"]').type(testUsers.wrong.password)
+    cy.get('input[type="submit"]').click()
     cy.get('[data-testid="sign-in-error"]').should('be.visible')
   })
 
   it('should login with correct credentials', () => {
-    cy.login(testUsers.fullrights.username, testUsers.fullrights.password)
+    cy.get('input[type="text"]').type(testUsers.fullrights.username)
+    cy.get('input[type="password"]').type(testUsers.fullrights.password)
+    cy.get('input[type="submit"]').click()
     cy.get('title').should('contain', 'Главная')
   })
 })
