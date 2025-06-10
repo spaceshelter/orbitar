@@ -4,7 +4,7 @@ import { Tweet } from 'react-tweet'
 
 import { useTheme } from '../Theme/ThemeProvider'
 
-import 'react-tweet/dist/twitter-theme/theme.css'
+import 'react-tweet/theme.css'
 
 interface TwitterEmbedProps {
   url: string
