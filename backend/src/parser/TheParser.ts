@@ -262,6 +262,7 @@ export default class TheParser {
       this.processCoub(pUrl) ||
       this.processVideo(pUrl) ||
       this.processTelegram(pUrl) ||
+      this.processTwitter(pUrl) ||
       this.processInternalUrl(url)
     if (res !== false) {
       return res
@@ -288,6 +289,31 @@ export default class TheParser {
 
     const displayText = text || htmlEscape(decodeURI(telegramUrl))
     return `${expandButton}<a href="${encodeURI(telegramUrl)}" target="_blank">${displayText}</a>`
+  }
+
+  processTwitter(url: Url<string> | string, text?: string) {
+    const pUrl = typeof url === 'string' ? new Url(url) : url
+
+    if (
+      pUrl.host !== 'twitter.com' &&
+      pUrl.host !== 'www.twitter.com' &&
+      pUrl.host !== 'x.com' &&
+      pUrl.host !== 'www.x.com'
+    ) {
+      return false
+    }
+
+    const match = pUrl.pathname.match(/^\/(?:i\/web\/)?([^/]+)\/status\/(\d+)/)
+    if (!match) {
+      return false
+    }
+
+    const [, user, tweetId] = match
+    const twitterUrl = `https://twitter.com/${user}/status/${tweetId}`
+    const expandButton = `<span role="button" class="expand-button i i-expand" data-twitter-url="${encodeURI(twitterUrl)}"></span>`
+
+    const displayText = text || htmlEscape(decodeURI(twitterUrl))
+    return `${expandButton}<a href="${encodeURI(twitterUrl)}" target="_blank">${displayText}</a>`
   }
 
   processImage(url: Url<string>) {
@@ -497,6 +523,7 @@ export default class TheParser {
 
     const text =
       this.processTelegram(url, result.text) ||
+      this.processTwitter(url, result.text) ||
       this.processInternalUrl(url, result.text) ||
       `<a href="${encodeURI(decodeURI(url))}" target="_blank">${result.text}</a>`
 

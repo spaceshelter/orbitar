@@ -490,3 +490,44 @@ describe('telegram parsing', () => {
     )
   })
 })
+
+describe('twitter parsing', () => {
+  test('valid twitter url with twitter.com domain', () => {
+    const result = p.parse('https://twitter.com/user/status/123')
+    expect(result.text).toEqual(
+      '<span role="button" class="expand-button i i-expand" data-twitter-url="https://twitter.com/user/status/123"></span><a href="https://twitter.com/user/status/123" target="_blank">https://twitter.com/user/status/123</a>',
+    )
+  })
+
+  test('valid twitter url with x.com domain', () => {
+    const result = p.parse('https://x.com/user/status/123')
+    expect(result.text).toEqual(
+      '<span role="button" class="expand-button i i-expand" data-twitter-url="https://twitter.com/user/status/123"></span><a href="https://twitter.com/user/status/123" target="_blank">https://twitter.com/user/status/123</a>',
+    )
+  })
+
+  test('invalid twitter url with wrong domain', () => {
+    const result = p.parse('https://example.com/user/status/123')
+    expect(result.text).toEqual(
+      '<a href="https://example.com/user/status/123" target="_blank">https://example.com/user/status/123</a>',
+    )
+  })
+
+  test('invalid twitter url with wrong path format', () => {
+    const result = p.parse('https://twitter.com/user')
+    expect(result.text).toEqual('<a href="https://twitter.com/user" target="_blank">https://twitter.com/user</a>')
+  })
+
+  test('twitter url parsing in text content', () => {
+    const result = p.parse('Check: https://twitter.com/user/status/123')
+    expect(result.text).toContain('data-twitter-url="https://twitter.com/user/status/123"')
+    expect(result.text).toContain('class="expand-button i i-expand"')
+  })
+
+  test('twitter links in a tag should be rendered with expand button', () => {
+    const result = p.parse('<a href="https://twitter.com/user/status/123">Tweet</a>')
+    expect(result.text).toEqual(
+      '<span role="button" class="expand-button i i-expand" data-twitter-url="https://twitter.com/user/status/123"></span><a href="https://twitter.com/user/status/123" target="_blank">Tweet</a>',
+    )
+  })
+})
