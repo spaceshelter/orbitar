@@ -13,7 +13,7 @@ test('wrong input', () => {
     expect(aesDecryptFromBase64('TGBv/lDGJdJo9SK8kDxiaEnu4i9dFxUhl5pDJVDzCG8=', key)).toBe('');
 });
 
-test('ransdom input', () => {
+test('random input', () => {
     const key = 'mVRW8ycqHYZQSgYcBN8PUz8hVRWB5n5q';
     // try length 1 to 10
     for (let l = 1; l < 10; l++) {
