@@ -1,8 +1,7 @@
 import React from 'react'
 
+import { useTheme } from '@theme/ThemeProvider'
 import { Tweet } from 'react-tweet'
-
-import { useTheme } from '../Theme/ThemeProvider'
 
 import 'react-tweet/theme.css'
 
