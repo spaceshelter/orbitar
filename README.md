@@ -45,7 +45,7 @@ docker compose -p orbitar -f docker-compose.local.yml up
 
 в корне проекта:
 ```sh
-npm run install # установит зависимости и pre-commit хук
+npm install # установит зависимости и pre-commit хук
 ```
 
 линт и форматирование:
