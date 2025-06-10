@@ -106,6 +106,7 @@ export default class TheParser {
 
     const doc = this.parseDocument(text, {
       decodeEntities: false,
+      recognizeSelfClosing: true,
     })
 
     this.parseChildNodesStack.length = 0 // clear stack, should not be necessary, but just in case

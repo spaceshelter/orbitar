@@ -490,3 +490,162 @@ describe('telegram parsing', () => {
     )
   })
 })
+
+describe('pre tag parsing', () => {
+  test('basic pre tag', () => {
+    const result = p.parse('<pre>console.log("Hello World");</pre>')
+    expect(result.text).toEqual('<pre>console.log(&quot;Hello World&quot;);</pre>')
+  })
+
+  test('pre tag with nested HTML elements', () => {
+    const result = p.parse('<pre>function test() {\n  return <div>Hello</div>;\n}</pre>')
+    expect(result.text).toEqual('<pre>function test() {\n  return &lt;div&gt;Hello&lt;/div&gt;;\n}</pre>')
+  })
+
+  test('pre tag with nested links', () => {
+    const result = p.parse('<pre>Visit <a href="https://example.com">example.com</a> for more info</pre>')
+    expect(result.text).toEqual(
+      '<pre>Visit &lt;a href=&quot;https://example.com&quot;&gt;example.com&lt;/a&gt; for more info</pre>',
+    )
+  })
+
+  test('pre tag with nested bold and italic', () => {
+    const result = p.parse('<pre>This is <b>bold</b> and <i>italic</i> text</pre>')
+    expect(result.text).toEqual('<pre>This is &lt;b&gt;bold&lt;/b&gt; and &lt;i&gt;italic&lt;/i&gt; text</pre>')
+  })
+
+  test('pre tag with nested code tag', () => {
+    const result = p.parse('<pre>Use <code>console.log()</code> for debugging</pre>')
+    expect(result.text).toEqual('<pre>Use &lt;code&gt;console.log()&lt;/code&gt; for debugging</pre>')
+  })
+
+  test('pre tag with multiple nested elements', () => {
+    const result = p.parse(
+      '<pre><span class="keyword">const</span> <span class="var">x</span> = <span class="number">42</span>;</pre>',
+    )
+    expect(result.text).toEqual(
+      '<pre>&lt;span class=&quot;keyword&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;var&quot;&gt;x&lt;/span&gt; = &lt;span class=&quot;number&quot;&gt;42&lt;/span&gt;;</pre>',
+    )
+  })
+
+  test('pre tag with nested pre tag', () => {
+    const result = p.parse('<pre>Outer pre <pre>Inner pre</pre> back to outer</pre>')
+    expect(result.text).toEqual('<pre>Outer pre &lt;pre&gt;Inner pre&lt;/pre&gt; back to outer</pre>')
+  })
+
+  test('pre tag with special characters and nested HTML', () => {
+    const result = p.parse('<pre>&lt;script&gt;alert("<b>XSS</b>");&lt;/script&gt;</pre>')
+    expect(result.text).toEqual(
+      '<pre>&amp;lt;script&amp;gt;alert(&quot;&lt;b&gt;XSS&lt;/b&gt;&quot;);&amp;lt;/script&amp;gt;</pre>',
+    )
+  })
+
+  test('pre tag preserves whitespace with nested elements', () => {
+    const result = p.parse('<pre>  Line 1\n    <b>Line 2</b>\n      Line 3</pre>')
+    expect(result.text).toEqual('<pre>  Line 1\n    &lt;b&gt;Line 2&lt;/b&gt;\n      Line 3</pre>')
+  })
+
+  test('pre tag with self-closing tags', () => {
+    const result = p.parse('<pre>Image: <img src="test.jpg" /><br />New line</pre>')
+    expect(result.text).toEqual('<pre>Image: &lt;img src=&quot;test.jpg&quot;&gt;&lt;br&gt;New line</pre>')
+  })
+
+  test('pre tag cannot be nested inside a tag', () => {
+    const result = p.parse('<a href="https://test.com"><pre>code</pre></a>')
+    expect(result.text).toEqual('<a href="https://test.com" target="_blank">code</a>')
+  })
+
+  test('pre tag with complex nested structure', () => {
+    const result = p.parse(
+      '<pre><div class="code">\n  <span>function</span> <em>test</em>() {\n    <strong>return</strong> true;\n  }\n</div></pre>',
+    )
+    expect(result.text).toEqual(
+      '<pre>&lt;div class=&quot;code&quot;&gt;\n  &lt;span&gt;function&lt;/span&gt; &lt;em&gt;test&lt;/em&gt;() {\n    &lt;strong&gt;return&lt;/strong&gt; true;\n  }\n&lt;/div&gt;</pre>',
+    )
+  })
+
+  test('pre tag with nested self-closing tags', () => {
+    const result = p.parse('<pre>Line 1<br />Line 2<hr />Line 3<img src="test.jpg" /></pre>')
+    expect(result.text).toEqual('<pre>Line 1&lt;br&gt;Line 2&lt;hr&gt;Line 3&lt;img src=&quot;test.jpg&quot;&gt;</pre>')
+  })
+
+  test('pre tag with deeply nested self-closing tags', () => {
+    const result = p.parse('<pre><div>Text<br /><span>More<img src="icon.png" />text</span></div></pre>')
+    expect(result.text).toEqual(
+      '<pre>&lt;div&gt;Text&lt;br&gt;&lt;span&gt;More&lt;img src=&quot;icon.png&quot;&gt;text&lt;/span&gt;&lt;/div&gt;</pre>',
+    )
+  })
+
+  test('pre tag with content before and after', () => {
+    const result = p.parse('Before text<pre>Inside pre</pre>After text')
+    expect(result.text).toEqual('Before text<pre>Inside pre</pre>After text')
+  })
+
+  test('pre tag with HTML content before and after', () => {
+    const result = p.parse('<b>Bold before</b><pre>Code here</pre><i>Italic after</i>')
+    expect(result.text).toEqual('<b>Bold before</b><pre>Code here</pre><i>Italic after</i>')
+  })
+
+  test('pre tag with self-closing tags before and after', () => {
+    const result = p.parse('Text<br /><pre>Code block</pre><hr />More text')
+    // Note: htmlparser2 bug - self-closing tags are incorrectly parsed
+    expect(result.text).toEqual('Text&lt;br/&gt;&lt;/br&gt;<pre>Code block</pre>&lt;hr/&gt;&lt;/hr&gt;More text')
+  })
+
+  test('multiple pre tags with content between', () => {
+    const result = p.parse('<pre>First code</pre><p>Paragraph between</p><pre>Second code</pre>')
+    // Note: <p> tag is not in allowedTags, so it gets escaped
+    expect(result.text).toEqual('<pre>First code</pre>&lt;p&gt;Paragraph between&lt;/p&gt;<pre>Second code</pre>')
+  })
+
+  test('pre tag with nested self-closing tags and outer HTML', () => {
+    const result = p.parse('<div>Outer<pre>Inner<br />content<img /></pre>After</div>')
+    // Note: <div> tag is not in allowedTags, so it gets escaped
+    expect(result.text).toEqual('&lt;div&gt;Outer<pre>Inner&lt;br&gt;content&lt;img&gt;</pre>After&lt;/div&gt;')
+  })
+
+  test('pre tag with mixed self-closing and regular tags inside', () => {
+    const result = p.parse('<pre><input type="text" /><button>Click</button><br /></pre>')
+    expect(result.text).toEqual(
+      '<pre>&lt;input type=&quot;text&quot;&gt;&lt;button&gt;Click&lt;/button&gt;&lt;br&gt;</pre>',
+    )
+  })
+
+  test('pre tag with self-closing span tag - demonstrates htmlparser2 bug', () => {
+    const result = p.parse('<pre>Before<span />After</pre>')
+    // Note: htmlparser2 bug - self-closing span incorrectly becomes <span></span>
+    expect(result.text).toEqual('<pre>Before&lt;span&gt;&lt;/span&gt;After</pre>')
+  })
+
+  test('complex nested structure with self-closing tags inside and outside pre', () => {
+    const result = p.parse(
+      '<article>Start<br /><pre>Code with<br />breaks<hr />and<img src="x" />images</pre><br />End</article>',
+    )
+    // Note: demonstrates multiple issues:
+    // 1. <article> is not in allowedTags
+    // 2. htmlparser2 bug with self-closing tags outside pre
+    expect(result.text).toEqual(
+      '&lt;article&gt;Start&lt;br/&gt;&lt;/br&gt;<pre>Code with&lt;br&gt;breaks&lt;hr&gt;and&lt;img src=&quot;x&quot;&gt;images</pre>&lt;br/&gt;&lt;/br&gt;End&lt;/article&gt;',
+    )
+  })
+
+  test('htmlparser2 bug - self-closing span followed by content', () => {
+    const result = p.parse('<span />content')
+    // Bug: self-closing span should not consume the following content
+    // Expected: '<span></span>content' or '<span />content'
+    // Actual: '<span/></span>content'
+    expect(result.text).toEqual('&lt;span/&gt;&lt;/span&gt;content')
+  })
+
+  test('htmlparser2 bug - self-closing tags outside pre', () => {
+    const result = p.parse('Before<br />After')
+    // Bug: self-closing br becomes <br></br>
+    expect(result.text).toEqual('Before&lt;br/&gt;&lt;/br&gt;After')
+  })
+
+  test('htmlparser2 bug - multiple self-closing tags', () => {
+    const result = p.parse('<span />text<br />more<hr />end')
+    // Bug: self-closing tags are parsed incorrectly
+    expect(result.text).toEqual('&lt;span/&gt;&lt;/span&gt;text&lt;br/&gt;&lt;/br&gt;more&lt;hr/&gt;&lt;/hr&gt;end')
+  })
+})
