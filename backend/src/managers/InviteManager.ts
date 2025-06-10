@@ -86,7 +86,7 @@ export default class InviteManager {
     const code = crypto.randomBytes(16).toString('hex')
     await this.inviteRepository.createInvite(forUserId, code, reasonParseResult.text, reasonRaw, true)
     const invite = await this.inviteRepository.getInviteWithIssuer(code)
-    delete this.invitesAvailabilityCache[forUserId]
+    this.invitesAvailabilityCache.delete(forUserId)
     return this.mapInvite(invite)
   }
 
@@ -99,7 +99,7 @@ export default class InviteManager {
       throw new CodeError('unknown', 'Could not update invite reason')
     }
     const invite = await this.inviteRepository.getInviteWithIssuer(code)
-    delete this.invitesAvailabilityCache[forUserId]
+    this.invitesAvailabilityCache.delete(forUserId)
     return this.mapInvite(invite)
   }
 
@@ -110,7 +110,7 @@ export default class InviteManager {
   async delete(userId: number, code: string) {
     await this.verifyInviteExistsAndAvailable(userId, code)
 
-    delete this.invitesAvailabilityCache[userId]
+    this.invitesAvailabilityCache.delete(userId)
     return this.inviteRepository.deleteInvite(userId, code)
   }
 
@@ -122,12 +122,9 @@ export default class InviteManager {
   }
 
   async getInvitesAvailability(userId: number, skipCache = false): Promise<InvitesAvailability> {
-    if (
-      !skipCache &&
-      this.invitesAvailabilityCache[userId] &&
-      this.invitesAvailabilityCache[userId].ts + this.invitesAvailabilityCacheLifeTimeMs > Date.now()
-    ) {
-      return this.invitesAvailabilityCache[userId].value
+    const cached = this.invitesAvailabilityCache.get(userId)
+    if (!skipCache && cached && cached.ts.getTime() + this.invitesAvailabilityCacheLifeTimeMs > Date.now()) {
+      return cached.value
     }
     const thisUserRestrictions = await this.userManager.getUserRestrictions(userId)
     if (!thisUserRestrictions || !thisUserRestrictions.canInvite) {
@@ -198,10 +195,10 @@ export default class InviteManager {
       inviteWaitPeriodDays,
       invitesPerPeriod,
     }
-    this.invitesAvailabilityCache[userId] = {
+    this.invitesAvailabilityCache.set(userId, {
       value,
-      ts: Date.now(),
-    }
+      ts: new Date(),
+    })
     return value
   }
 }
