@@ -85,6 +85,7 @@ export default class APIHelper {
       } else {
         console.error('ERROR', error)
         this.initRetryCount++
+        // retry delay in milliseconds
         let retryIn = 60 * 1000
         if (this.initRetryCount === 1) {
           // first retry in 3 seconds
@@ -97,7 +98,7 @@ export default class APIHelper {
         }
         setTimeout(() => {
           this.init().then().catch()
-        }, retryIn * 1000)
+        }, retryIn)
       }
     }
   }
