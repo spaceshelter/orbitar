@@ -59,7 +59,6 @@ export const HistoryComponent = (props: HistoryComponentProps) => {
     setSelectedId(id)
     setContent(entry.content)
     setTitle(entry.title)
-    setShowDiff(false)
   }
 
   useEffect(() => {
@@ -99,6 +98,7 @@ export const HistoryComponent = (props: HistoryComponentProps) => {
             hideLineNumbers={true}
             useDarkTheme={theme === 'dark'}
             compareMethod={DiffMethod.WORDS}
+            codeFoldMessageRenderer={(n) => <pre>{`Развернуть ${n} строк ...`}</pre>}
           />
         ) : (
           <ContentComponent {...{ currentUsername, content }} />
