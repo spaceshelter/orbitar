@@ -73,12 +73,7 @@ export const CreatePostPage = observer(() => {
             autoFocus
             tabIndex={1}
           />
-          <CreateCommentComponent
-            open={true}
-            onAnswer={handleAnswer}
-            storageKey={`np:${site}`}
-            textareaTabIndex={2}
-          />
+          <CreateCommentComponent open={true} onAnswer={handleAnswer} storageKey={`np:${site}`} />
         </div>
       </div>
     </div>
