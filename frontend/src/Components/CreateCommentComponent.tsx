@@ -400,8 +400,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     if (
       e.dataTransfer.items.length > 0 &&
       e.dataTransfer.items[0].kind === 'file' &&
-      (e.dataTransfer.items[0].type.startsWith('image/') ||
-        e.dataTransfer.items[0].type.startsWith('video/'))
+      (e.dataTransfer.items[0].type.startsWith('image/') || e.dataTransfer.items[0].type.startsWith('video/'))
     ) {
       setMediaUploaderOpen(true)
     }
