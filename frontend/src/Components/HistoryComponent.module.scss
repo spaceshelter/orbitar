@@ -10,6 +10,13 @@
       flex: 1 1 auto;
       padding: 16px;
       overflow-y: auto;
+
+      table[class^='react-diff'] {
+        td pre span {
+          font-size: 12px;
+          line-height: 14px;
+        }
+      }
     }
     .title {
       color: var(--fgHard);

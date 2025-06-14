@@ -5,6 +5,7 @@ import DiffViewer, { DiffMethod } from 'react-diff-viewer-continued'
 import { toast } from 'react-toastify'
 
 import { useAPI, useAppState } from '../AppState/AppState'
+import { useTheme } from '../Theme/ThemeProvider'
 import { HistoryInfo } from '../Types/HistoryInfo'
 import ContentComponent from './ContentComponent'
 import DateComponent from './DateComponent'
@@ -65,7 +66,6 @@ export const HistoryComponent = (props: HistoryComponentProps) => {
     api.post
       .history(history.id, history.type)
       .then((result) => {
-        console.log(history)
         setHistoryEntries(result)
         if (result.length > 0) {
           const last = result[0]
@@ -85,6 +85,8 @@ export const HistoryComponent = (props: HistoryComponentProps) => {
   const prevEntry =
     selectedIndex >= 0 && selectedIndex < historyEntries.length - 1 ? historyEntries[selectedIndex + 1] : undefined
 
+  const { theme } = useTheme()
+
   return (
     <div className={styles.history}>
       <div className='content'>
@@ -93,7 +95,9 @@ export const HistoryComponent = (props: HistoryComponentProps) => {
           <DiffViewer
             oldValue={prevEntry.content}
             newValue={content}
-            splitView={true}
+            splitView={false}
+            hideLineNumbers={true}
+            useDarkTheme={theme === 'dark'}
             compareMethod={DiffMethod.WORDS}
           />
         ) : (
