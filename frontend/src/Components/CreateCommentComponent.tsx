@@ -396,11 +396,11 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
 
   const onDragEnter = (e: React.DragEvent<HTMLTextAreaElement>) => {
     // open media uploader on drag enter
-    // check that image files are dragged
+    // check that media files are dragged
     if (
       e.dataTransfer.items.length > 0 &&
       e.dataTransfer.items[0].kind === 'file' &&
-      e.dataTransfer.items[0].type.startsWith('image/')
+      (e.dataTransfer.items[0].type.startsWith('image/') || e.dataTransfer.items[0].type.startsWith('video/'))
     ) {
       setMediaUploaderOpen(true)
     }
