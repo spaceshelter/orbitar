@@ -125,6 +125,10 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
   const textareaTabIndex = props.textareaTabIndex
   const toolbarTabIndex =
     props.textareaTabIndex !== undefined ? props.textareaTabIndex + 1 : undefined
+  const actionPreviewTabIndex =
+    props.textareaTabIndex !== undefined ? props.textareaTabIndex + 2 : undefined
+  const actionSendTabIndex =
+    props.textareaTabIndex !== undefined ? props.textareaTabIndex + 3 : undefined
   const [answerText, setAnswerText] = useState<string>(
     props.text || (props.storageKey && localStorage.getItem('crCmp:' + props.storageKey)) || '',
   )
@@ -664,6 +668,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             disabled={isPosting || !answerText}
             onClick={handlePreview}
             className={styles.buttonPreview}
+            tabIndex={isPosting || !answerText ? -1 : actionPreviewTabIndex}
           >
             {previewing === null ? 'Превью' : 'Редактор'}
           </Button>
@@ -672,6 +677,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             disabled={isPosting || !answerText}
             onClick={handleAnswer}
             className={styles.buttonSend}
+            tabIndex={isPosting || !answerText ? -1 : actionSendTabIndex}
           >
             <SendIcon />
           </Button>
