@@ -19,6 +19,7 @@ import InternalLinkExpandComponent from './InternalLinkExpandComponent'
 import { OAuthEmbeddedAppComponent } from './OAuth2AppCardModalComponent'
 import { SecretMailDecoderForm, SecretMailEncoderForm } from './SecretMailbox'
 import TelegramEmbed from './TelegramEmbed'
+import TwitterEmbed from './TwitterEmbed'
 import { getLegacyZoom, getVideoAutopause } from './UserProfileSettings'
 
 import styles from './ContentComponent.module.scss'
@@ -354,6 +355,13 @@ function processTelegramEmbed(expandButton: HTMLElement, appState: AppState, cle
   )
 }
 
+function processTwitterEmbed(expandButton: HTMLElement, appState: AppState, cleanupRegistry: CleanupRegistry): void {
+  const src = expandButton.getAttribute('data-twitter-url')
+  if (!src) return
+
+  processExpandLink(expandButton, () => <TwitterEmbed url={src} />, appState, cleanupRegistry)
+}
+
 function processInternalLink(expandButton: HTMLElement, appState: AppState, cleanupRegistry: CleanupRegistry): void {
   const postId = expandButton.getAttribute('data-post-id')
   const commentId = expandButton.getAttribute('data-comment-id')
@@ -376,10 +384,13 @@ function processInternalLink(expandButton: HTMLElement, appState: AppState, clea
 }
 
 function updateInternalExpandButton(expandButton: HTMLElement, appState: AppState, cleanupRegistry: CleanupRegistry) {
-  const src = expandButton.getAttribute('data-telegram-url')
+  const tg = expandButton.getAttribute('data-telegram-url')
+  const tw = expandButton.getAttribute('data-twitter-url')
 
-  if (src) {
+  if (tg) {
     processTelegramEmbed(expandButton, appState, cleanupRegistry)
+  } else if (tw) {
+    processTwitterEmbed(expandButton, appState, cleanupRegistry)
   } else if (expandButton.getAttribute('data-post-id')) {
     processInternalLink(expandButton, appState, cleanupRegistry)
   }
