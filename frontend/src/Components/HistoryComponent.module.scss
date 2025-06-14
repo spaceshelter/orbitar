@@ -18,12 +18,23 @@
           line-height: 14px;
         }
 
+        tr[class*='diff'] {
+          background-color: var(--bg);
+        }
+
         td[class*='diff-removed'] {
-          background-color: var(--diff-removed-bg);
+          background-color: var(--dangerAlmostInvisible);
         }
 
         td[class*='diff-added'] {
-          background-color: var(--diff-added-bg);
+          background-color: var(--positiveAlmostInvisible);
+        }
+
+        span[class*='word-added'] {
+          background-color: var(--positiveGhost);
+        }
+        span[class*='word-removed'] {
+          background-color: var(--dangerGhost);
         }
       }
     }
