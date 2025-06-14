@@ -122,9 +122,11 @@ export default class InviteManager {
   }
 
   async getInvitesAvailability(userId: number, skipCache = false): Promise<InvitesAvailability> {
-    const cached = this.invitesAvailabilityCache.get(userId)
-    if (!skipCache && cached && cached.ts.getTime() + this.invitesAvailabilityCacheLifeTimeMs > Date.now()) {
-      return cached.value
+    if (!skipCache) {
+      const cached = this.invitesAvailabilityCache.get(userId)
+      if (cached && cached.ts.getTime() + this.invitesAvailabilityCacheLifeTimeMs > Date.now()) {
+        return cached.value
+      }
     }
     const thisUserRestrictions = await this.userManager.getUserRestrictions(userId)
     if (!thisUserRestrictions || !thisUserRestrictions.canInvite) {
