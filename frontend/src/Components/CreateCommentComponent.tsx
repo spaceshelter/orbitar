@@ -46,6 +46,12 @@ interface CreateCommentProps {
   storageKey?: string
   parentAuthorUserName?: string
 
+  /**
+   * Optional tab index for the textarea. When provided, formatting buttons
+   * will use the next index in sequence.
+   */
+  textareaTabIndex?: number
+
   onAnswer: (text: string, post?: PostLinkInfo, comment?: CommentInfo) => Promise<CommentInfo | string | undefined>
 }
 
@@ -116,6 +122,9 @@ const allowedKeys = [
 
 export default function CreateCommentComponent(props: CreateCommentProps) {
   const answerRef = useRef<HTMLTextAreaElement>()
+  const textareaTabIndex = props.textareaTabIndex
+  const toolbarTabIndex =
+    props.textareaTabIndex !== undefined ? props.textareaTabIndex + 1 : undefined
   const [answerText, setAnswerText] = useState<string>(
     props.text || (props.storageKey && localStorage.getItem('crCmp:' + props.storageKey)) || '',
   )
@@ -477,6 +486,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             onClick={() => applyTag('b')}
             title='Болд'
             className={classNames(styles.bold, styles.editorButton)}
+            tabIndex={toolbarTabIndex}
           >
             B
           </Button>
@@ -488,6 +498,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             onClick={() => applyTag('i')}
             title='Италик'
             className={classNames(styles.italic, styles.editorButton)}
+            tabIndex={toolbarTabIndex}
           >
             I
           </Button>
@@ -499,6 +510,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             onClick={() => applyTag('u')}
             title='Подчеркнуть'
             className={classNames(styles.underline, styles.editorButton)}
+            tabIndex={toolbarTabIndex}
           >
             U
           </Button>
@@ -510,12 +522,19 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             onClick={() => applyTag('strike')}
             title='Перечеркнуть'
             className={classNames(styles.strike, styles.editorButton)}
+            tabIndex={toolbarTabIndex}
           >
             S
           </Button>
         </div>
         <div className={styles.control}>
-          <Button variant='minimal' disabled={disabledButtons} onClick={() => applyTag('irony')} title='Ирония'>
+          <Button
+            variant='minimal'
+            disabled={disabledButtons}
+            onClick={() => applyTag('irony')}
+            title='Ирония'
+            tabIndex={toolbarTabIndex}
+          >
             <IronyIcon />
           </Button>
         </div>
@@ -525,6 +544,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             disabled={disabledButtons}
             onClick={() => applyTag('blockquote')}
             title='Цитировать'
+            tabIndex={toolbarTabIndex}
           >
             <QuoteIcon />
           </Button>
@@ -535,12 +555,19 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             disabled={disabledButtons}
             onClick={() => applyTag('img')}
             title='Вставить картинку/видео'
+            tabIndex={toolbarTabIndex}
           >
             <ImageIcon />
           </Button>
         </div>
         <div className={styles.control}>
-          <Button variant='minimal' disabled={disabledButtons} onClick={() => applyTag('a')} title='Вставить ссылку'>
+          <Button
+            variant='minimal'
+            disabled={disabledButtons}
+            onClick={() => applyTag('a')}
+            title='Вставить ссылку'
+            tabIndex={toolbarTabIndex}
+          >
             <LinkIcon />
           </Button>
         </div>
@@ -551,6 +578,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
               disabled={disabledButtons}
               onClick={() => applyTag('expand', { title: '' })}
               title='Свернуть/Развернуть'
+              tabIndex={toolbarTabIndex}
             >
               <ExpandIcon />
             </Button>
@@ -562,12 +590,19 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
               onClick={() => applyTag('pre')}
               title='Форматированный текст'
               className={styles.pre}
+              tabIndex={toolbarTabIndex}
             >
               <CodeIcon />
             </Button>
           </div>
           <div className={styles.control}>
-            <Button variant='minimal' disabled={disabledButtons} onClick={() => applyTag('spoiler')} title='Спойлер'>
+            <Button
+              variant='minimal'
+              disabled={disabledButtons}
+              onClick={() => applyTag('spoiler')}
+              title='Спойлер'
+              tabIndex={toolbarTabIndex}
+            >
               <SpoilerIcon />
             </Button>
           </div>
@@ -577,6 +612,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
               disabled={disabledButtons}
               onClick={() => setPollWizardOpen(true)}
               title='Создать опрос'
+              tabIndex={toolbarTabIndex}
             >
               <PollIcon />
             </Button>
@@ -590,6 +626,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
       {previewing === null ? (
         <div className={styles.editor} ref={containerRef}>
           <ReactTextareaAutocomplete<string>
+            tabIndex={textareaTabIndex}
             placeholder={placeholderText}
             innerRef={(el: HTMLTextAreaElement) => {
               answerRef.current = el
