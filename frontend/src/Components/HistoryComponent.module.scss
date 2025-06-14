@@ -36,6 +36,24 @@
           color: var(--fg);
           flex: 1 1 auto;
         }
+        .diffToggle {
+          height: 16px;
+          flex: 0 0 16px;
+          text-align: center;
+          background: var(--bg);
+          border-radius: 4px;
+          cursor: pointer;
+          color: var(--fg);
+          line-height: 16px;
+          margin-right: 4px;
+          &:hover {
+            background: var(--dim3);
+          }
+          &.active {
+            background: var(--primary);
+            color: var(--onAccent);
+          }
+        }
         .close {
           height: 16px;
           flex: 0 0 16px;

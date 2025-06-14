@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 
 import classNames from 'classnames'
+import DiffViewer, { DiffMethod } from 'react-diff-viewer-continued'
 import { toast } from 'react-toastify'
 
 import { useAPI, useAppState } from '../AppState/AppState'
@@ -30,6 +31,7 @@ export const HistoryComponent = (props: HistoryComponentProps) => {
   const [title, setTitle] = useState(props.initial?.title)
   const [content, setContent] = useState(props.initial?.content || '')
   const [selectedId, setSelectedId] = useState(0)
+  const [showDiff, setShowDiff] = useState(false)
   const [historyEntries, setHistoryEntries] = useState<HistoryInfo[]>(
     props.initial
       ? [
@@ -56,6 +58,7 @@ export const HistoryComponent = (props: HistoryComponentProps) => {
     setSelectedId(id)
     setContent(entry.content)
     setTitle(entry.title)
+    setShowDiff(false)
   }
 
   useEffect(() => {
@@ -78,15 +81,33 @@ export const HistoryComponent = (props: HistoryComponentProps) => {
       })
   }, [api, history, onClose])
 
+  const selectedIndex = historyEntries.findIndex((h) => h.id === selectedId)
+  const prevEntry =
+    selectedIndex >= 0 && selectedIndex < historyEntries.length - 1 ? historyEntries[selectedIndex + 1] : undefined
+
   return (
     <div className={styles.history}>
       <div className='content'>
         {title && <div className='title'>{title}</div>}
-        <ContentComponent {...{ currentUsername, content }} />
+        {showDiff && prevEntry ? (
+          <DiffViewer
+            oldValue={prevEntry.content}
+            newValue={content}
+            splitView={true}
+            compareMethod={DiffMethod.WORDS}
+          />
+        ) : (
+          <ContentComponent {...{ currentUsername, content }} />
+        )}
       </div>
       <div className='sideNav'>
         <div className='top'>
           <span>История</span>
+          {prevEntry && (
+            <div className={classNames('diffToggle', showDiff ? 'active' : '')} onClick={() => setShowDiff(!showDiff)}>
+              &plusmn;
+            </div>
+          )}
           <div className='close' onClick={props.onClose}>
             <CloseIcon />
           </div>
