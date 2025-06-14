@@ -276,7 +276,7 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
         )}
 
         {authorized && (
-          <ExpandSection title='Текушие разрешения'>
+          <ExpandSection title='Текущие разрешения'>
             <OAuth2ScopesComponent appRequests={client.scopes} />
           </ExpandSection>
         )}

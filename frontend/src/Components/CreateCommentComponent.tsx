@@ -123,12 +123,9 @@ const allowedKeys = [
 export default function CreateCommentComponent(props: CreateCommentProps) {
   const answerRef = useRef<HTMLTextAreaElement>()
   const textareaTabIndex = props.textareaTabIndex
-  const toolbarTabIndex =
-    props.textareaTabIndex !== undefined ? props.textareaTabIndex + 1 : undefined
-  const actionPreviewTabIndex =
-    props.textareaTabIndex !== undefined ? props.textareaTabIndex + 2 : undefined
-  const actionSendTabIndex =
-    props.textareaTabIndex !== undefined ? props.textareaTabIndex + 3 : undefined
+  const toolbarTabIndex = props.textareaTabIndex !== undefined ? props.textareaTabIndex + 1 : undefined
+  const actionPreviewTabIndex = props.textareaTabIndex !== undefined ? props.textareaTabIndex + 2 : undefined
+  const actionSendTabIndex = props.textareaTabIndex !== undefined ? props.textareaTabIndex + 3 : undefined
   const [answerText, setAnswerText] = useState<string>(
     props.text || (props.storageKey && localStorage.getItem('crCmp:' + props.storageKey)) || '',
   )
