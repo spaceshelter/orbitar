@@ -12,6 +12,11 @@
       overflow-y: auto;
 
       table[class^='react-diff'] {
+        background-color: inherit !important;
+        & > tbody {
+          background-color: inherit !important;
+        }
+
         td pre,
         td pre span {
           font-size: 12px;
