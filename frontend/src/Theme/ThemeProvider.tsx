@@ -155,14 +155,17 @@ const preprocessTheme = (theme: ThemeStyles) => {
   // generate primary variants
   colors.primaryHover ??= increaseSaturation(colors.primary as string, 0.75) //+75% saturation
   colors.primaryGhost ??= reduceAlpha(colors.primary as string, 0.7) //-70% alpha
+  colors.primaryAlmostInvisible ??= reduceAlpha(colors.primary as string, 0.9) //-90% alpha
 
   // generate danger variants
   colors.dangerHover ??= increaseSaturation(colors.danger as string, 0.75)
   colors.dangerGhost ??= reduceAlpha(colors.danger as string, 0.7)
+  colors.dangerAlmostInvisible ??= reduceAlpha(colors.danger as string, 0.9)
 
   // generate positive variants
   colors.positiveHover ??= increaseSaturation(colors.positive as string, 0.75)
   colors.positiveGhost ??= reduceAlpha(colors.positive as string, 0.7)
+  colors.positiveAlmostInvisible ??= reduceAlpha(colors.positive as string, 0.9)
 
   // generate link variants
   colors.linkHover ??= increaseSaturation(colors.link as string, 0.75)

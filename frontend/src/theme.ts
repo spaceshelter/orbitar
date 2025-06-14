@@ -36,10 +36,6 @@ export const themes: ThemeCollection = {
       shadow: 'rgba(0,0,0,0.15)', // shadows for elevated elements
       glass: 'rgba(16,42,39,0.7)', // semi-transparent background
 
-      // Diff colors for debug theme
-      'diff-removed-bg': 'rgba(186, 94, 88, 0.1)',
-      'diff-added-bg': 'rgba(122, 186, 88, 0.1)',
-
       // ALL COLORS BELOW ARE DEPRECATED
       'sidebar-bg': '#663355',
       'text-fg': '#663355',
@@ -142,10 +138,6 @@ export const themes: ThemeCollection = {
       linkHover: '#2a74bd',
       shadow: 'rgba(0,0,0,0.15)', // shadows for elevated elements
       glass: 'rgba(255,255,255,0.7)', // semi-transparent background
-
-      // Diff colors for light theme - pale greens
-      'diff-removed-bg': 'rgba(237, 97, 88, 0.08)',
-      'diff-added-bg': 'rgba(116, 182, 94, 0.08)',
 
       // ALL COLORS BELOW ARE DEPRECATED
       'sidebar-bg': 'rgb(255, 255, 255, 0.7)',
@@ -262,10 +254,6 @@ export const themes: ThemeCollection = {
       //lowered: 'rgba(0,0,0,0.2)',
       shadow: 'rgba(0,0,0,0.15)',
       glass: 'rgba(33,33,33,0.7)',
-
-      // Diff colors for dark theme - subtle grays
-      'diff-removed-bg': 'rgba(255, 255, 255, 0.03)',
-      'diff-added-bg': 'rgba(255, 255, 255, 0.06)',
 
       // ALL COLORS BELOW ARE DEPRECATED
 
