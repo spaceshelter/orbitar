@@ -1,0 +1,148 @@
+name: orbitar-agent-spec
+
+project:
+  name: Orbitar
+  description: Reference guide for AI coding assistants (OpenAI Codex, Copilot, etc)
+  purpose: Provide conventions and architecture context for reliable code generation
+
+architecture:
+  root:
+    frontend: "React + TypeScript SPA"
+    backend: "Node.js + TypeScript (Express)"
+    feed: "Rust microservice for feed generation"
+    search: "Elasticsearch indexing utilities"
+    docs: "Architecture and API docs"
+    docker: "Dev/prod docker-compose files"
+
+  frontend:
+    port: 5000
+    url: http://orbitar.local
+
+  backend:
+    port: 5001
+    url: http://api.orbitar.local
+
+  services:
+    database: MySQL
+    cache: Redis
+    search: Elasticsearch
+    feed_engine: Rust
+
+style:
+  naming:
+    variables_functions: camelCase
+    components_interfaces: PascalCase
+    scss: kebab-case
+  imports: "builtin → external → internal → parent → sibling → index (alphabetized)"
+  formatting:
+    prettier_config: ".prettierrc.yml"
+    rules:
+      quotes: single
+      semicolons: true
+      trailing_commas: false
+      brace_style: 1TBS
+  typescript:
+    rules:
+      noImplicitAny: true
+      noUnusedVariables: true
+      explicitReturnTypes: true
+    enums: "Alphabetical in proto.ts"
+    literals: "Extract repeated strings into constants"
+  react:
+    components: functional-only
+    hooks: strict
+    props_interface_threshold: 3
+  comments: "block only (/* … */ for >2 lines)"
+  scss:
+    indent: 2
+    max_nesting: 3
+    no_hard_coded_values: true
+
+workflow:
+  steps:
+    - docker_compose_up: "docker-compose.dev.yml"
+    - frontend:
+        path: frontend
+        commands:
+          - npm install
+          - npm start
+    - backend:
+        path: backend
+        commands:
+          - npm install
+          - npm run migration:dev up
+          - npm run start:dev
+  utilities:
+    - search:
+        path: search
+        commands:
+          - npm run index
+          - npm run re-index
+    - backend:
+        path: backend
+        commands:
+          - npm run generate-dummy-content
+
+placement:
+  rules:
+    - component: frontend/src/components/ComponentName/
+    - route: frontend/src/pages/
+    - global_styles: frontend/src/index.scss
+    - api_handler: backend/src/api/
+    - business_logic: backend/src/managers/
+    - migration: backend/migrations/<timestamp>_description.sql
+    - shared_types:
+        - frontend/src/types/
+        - backend/src/types/
+    - utility_function: colocated utils.ts or helpers.ts
+
+domain_concepts:
+  site: "sub-community, appears as s/:site"
+  post_comment: "threaded content"
+  user: "identified by username and ID, owns karma"
+  oauth2_client: "third-party app, see docs/api/oauth2.md"
+
+api:
+  pattern:
+    method: POST
+    body: JSON
+    response_format: 
+      result: success
+      payload: object
+  endpoints:
+    - /api/v1/auth/signin
+    - /api/v1/status
+    - /api/v1/feed/subscriptions
+    - /api/v1/post/create
+  docs: docs/api/README.md
+
+testing_ci:
+  backend: 
+    path: backend
+    command: npm test
+  frontend:
+    path: frontend
+    command: npm test
+  ci: .github/workflows/build.yml
+
+codex_guidance:
+  writing:
+    - follow_style_rules: true
+    - prefer_existing_helpers: true
+    - prefer_typescript_over_any: true
+    - use_react_interfaces: true
+    - prefer_minimal_diff: true
+  file_changes:
+    - format: Cursor-style (path:start-end)
+    - consistent_indentation: true
+    - reuse_constants: true
+    - avoid_unnecessary_scaffolding: true
+  cli_suggestions:
+    - add_automation_flags: true
+    - avoid_prompts: true
+    - prefer_idempotent: true
+  completion_engines:
+    - context_aware: true
+    - isolated_edits: true
+    - avoid_refactoring: true
+
