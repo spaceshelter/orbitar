@@ -132,11 +132,12 @@ export default class Session {
 
   async destroy() {
     if (!this.id) return
+    const userId = this.data.userId
     this.data.clear()
     this.data = new SessionData('')
     delete sessionStorage[this.id]
-    if (this.data.userId) {
-      deleteFromUserSessions(this.data.userId, this.id)
+    if (userId) {
+      deleteFromUserSessions(userId, this.id)
     }
     this.logger.verbose(`Session ${this.id} removed from DB`, { session: this.id })
 
