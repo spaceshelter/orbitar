@@ -153,8 +153,14 @@ export default class PostManager {
       return post
     }
 
-    const html = (await this.parser.parse(content)).text
+    const newParseResult = this.parser.parse(content)
+    const html = newParseResult.text
     const language = await this.translationManager.detectLanguage(title, html)
+
+    let oldMentions: string[] = []
+    if (newParseResult.mentions.length) {
+      oldMentions = this.parser.parse(rawPost.source).mentions
+    }
 
     const updated = await this.postRepository.updatePostText(forUserId, postId, title, content, language, html)
     if (!updated) {
@@ -163,6 +169,12 @@ export default class PostManager {
 
     ;[rawPost] = await this.postRepository.getPostsWithUserData([postId], forUserId)
     const [post] = await this.feedManager.convertRawPosts(forUserId, [rawPost], format)
+
+    for (const mention of newParseResult.mentions) {
+      if (!oldMentions.includes(mention)) {
+        await this.notificationManager.sendMentionNotify(mention, forUserId, postId)
+      }
+    }
 
     return post
   }
@@ -376,8 +388,14 @@ export default class PostManager {
       return comment
     }
 
-    const html = (await this.parser.parse(content)).text
+    const newParseResult = this.parser.parse(content)
+    const html = newParseResult.text
     const language = await this.translationManager.detectLanguage('', html)
+
+    let oldMentions: string[] = []
+    if (newParseResult.mentions.length) {
+      oldMentions = this.parser.parse(rawComment.source).mentions
+    }
 
     const updated = await this.commentRepository.updateCommentText(forUserId, commentId, content, language, html)
     if (!updated) {
@@ -386,6 +404,13 @@ export default class PostManager {
 
     rawComment = await this.commentRepository.getCommentWithUserData(forUserId, commentId)
     const [comment] = await this.convertRawCommentsWithPostData(forUserId, [rawComment], format)
+
+    for (const mention of newParseResult.mentions) {
+      if (!oldMentions.includes(mention)) {
+        await this.notificationManager.sendMentionNotify(mention, forUserId, rawComment.post_id, comment.id)
+      }
+    }
+
     return comment
   }
 
