@@ -10,6 +10,38 @@
       flex: 1 1 auto;
       padding: 16px;
       overflow-y: auto;
+
+      table[class^='react-diff'] {
+        background-color: inherit !important;
+        & > tbody {
+          background-color: inherit !important;
+        }
+
+        td pre,
+        td pre span {
+          font-size: 12px;
+          line-height: 14px;
+        }
+
+        tr[class*='diff'] {
+          background-color: var(--bg);
+        }
+
+        td[class*='diff-removed'] {
+          background-color: var(--dangerAlmostInvisible);
+        }
+
+        td[class*='diff-added'] {
+          background-color: var(--positiveAlmostInvisible);
+        }
+
+        span[class*='word-added'] {
+          background-color: var(--positiveGhost);
+        }
+        span[class*='word-removed'] {
+          background-color: var(--dangerGhost);
+        }
+      }
     }
     .title {
       color: var(--fgHard);
@@ -26,25 +58,53 @@
       gap: 1px;
 
       .top {
+        top: 0;
+        z-index: 10;
+        position: sticky;
         display: flex;
         font-size: 14px;
-        padding: 0 8px 0 16px;
+        padding: 2px 4px 2px 16px;
         height: 32px;
         align-items: center;
-        background: var(--dim2);
+        background: var(--bg);
         span {
           color: var(--fg);
           flex: 1 1 auto;
         }
+        .diffToggle {
+          height: 20px;
+          width: 20px;
+          flex: 0 0 20px;
+          text-align: center;
+          background: var(--bg);
+          border-radius: 4px;
+          cursor: pointer;
+          color: var(--fg);
+          line-height: 20px;
+          margin-right: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          &:hover {
+            background: var(--dim3);
+          }
+          &.active {
+            background: var(--primary);
+            color: var(--onAccent);
+          }
+        }
         .close {
-          height: 16px;
-          flex: 0 0 16px;
+          height: 20px;
+          width: 20px;
+          flex: 0 0 20px;
           text-align: center;
           background: var(--bg);
           border-radius: 4px;
           cursor: pointer;
           fill: var(--fg);
-          padding: 2px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           &:hover {
             background: var(--danger);
             fill: var(--onAccent);
