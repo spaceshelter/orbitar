@@ -4,7 +4,8 @@ type APIResponseError = {
   result: 'error'
   code: string
   message: string
-  meta?: Record<string, unknown>
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  meta?: Record<string, any>
 }
 type APIResponseSuccess<Response> = {
   result: 'success'
