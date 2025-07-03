@@ -4,6 +4,7 @@ type APIResponseError = {
   result: 'error'
   code: string
   message: string
+  meta?: any
 }
 type APIResponseSuccess<Response> = {
   result: 'success'
@@ -52,10 +53,6 @@ export default class APIBase {
       responseCallback(response)
     }
 
-    if (response.status === 429) {
-      throw new APIError('rate-limit', 'Rate limit exceeded', response.status)
-    }
-
     const sessionId = response.headers.get('x-session-id')
     if (sessionId) {
       this.sessionId = sessionId
@@ -63,6 +60,15 @@ export default class APIBase {
     }
 
     const responseJson = (await response.json()) as APIResponse<Res>
+
+    if (response.status === 429 && responseJson.result === 'error') {
+      let message = 'Rate limit exceeded'
+      if (responseJson.meta?.waitSeconds) {
+        const minutes = Math.ceil(responseJson.meta.waitSeconds / 60)
+        message = `Rate limit exceeded. Wait ${minutes} minute${minutes === 1 ? '' : 's'} before trying again`
+      }
+      throw new APIError('rate-limit', message, response.status)
+    }
 
     if (responseJson.result === 'error') {
       throw new APIError(responseJson.code, responseJson.message, response.status)
