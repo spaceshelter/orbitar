@@ -120,9 +120,9 @@ export default function PostComponent(props: PostComponentProps) {
       setEditingText(false)
       // return res;
       return undefined
-    } catch (err) {
+    } catch (err: any) {
       console.log('Could not edit post', err)
-      toast.error('Не удалось отредактировать пост')
+      toast.error(err.message || 'Не удалось отредактировать пост')
       throw err
     }
   }

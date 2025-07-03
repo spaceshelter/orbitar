@@ -451,4 +451,26 @@ export default class PostRepository {
       })
       .then((row) => row?.author_id)
   }
+
+  async getEditStats(
+    userId: number,
+    refType: 'post' | 'comment',
+    refId: number,
+  ): Promise<{ lastEditTime: Date | null; numberOfEdits: number }> {
+    const result = await this.db.fetchOne<{ last_edit_time: Date | null; edit_count: number }>(
+      `select 
+        max(created_at) as last_edit_time,
+        count(*) - 1 as edit_count
+       from content_source 
+       where author_id = :userId 
+       and ref_type = :refType 
+       and ref_id = :refId`,
+      { userId, refType, refId },
+    )
+
+    return {
+      lastEditTime: result?.last_edit_time || null,
+      numberOfEdits: result?.edit_count || 0,
+    }
+  }
 }

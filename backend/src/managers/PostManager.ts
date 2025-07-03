@@ -147,6 +147,12 @@ export default class PostManager {
       throw new CodeError('access-denied', 'Access denied')
     }
 
+    // Check edit delay restrictions
+    const waitTimeToEditSec = await this.calcTimeToEdit(forUserId, 'post', postId)
+    if (waitTimeToEditSec > 0) {
+      throw new CodeError('rate-limit', 'Edit rate limit exceeded', 429, { waitSeconds: Math.ceil(waitTimeToEditSec) })
+    }
+
     if (rawPost.source === content && rawPost.title === title) {
       // nothing changed
       const [post] = await this.feedManager.convertRawPosts(forUserId, [rawPost], format)
@@ -370,6 +376,12 @@ export default class PostManager {
       throw new CodeError('access-denied', 'Access denied')
     }
 
+    // Check edit delay restrictions
+    const waitTimeToEditSec = await this.calcTimeToEdit(forUserId, 'comment', commentId)
+    if (waitTimeToEditSec > 0) {
+      throw new CodeError('rate-limit', 'Edit rate limit exceeded', 429, { waitSeconds: Math.ceil(waitTimeToEditSec) })
+    }
+
     if (rawComment.source === content) {
       // nothing changed
       const [comment] = await this.convertRawCommentsWithPostData(forUserId, [rawComment], format)
@@ -387,6 +399,28 @@ export default class PostManager {
     rawComment = await this.commentRepository.getCommentWithUserData(forUserId, commentId)
     const [comment] = await this.convertRawCommentsWithPostData(forUserId, [rawComment], format)
     return comment
+  }
+
+  private async calcTimeToEdit(userId: number, contentType: 'post' | 'comment', contentId: number): Promise<number> {
+    const restrictions = await this.userManager.getUserRestrictions(userId)
+
+    if (!restrictions.editSlowModeEnabled) {
+      return 0
+    }
+
+    const { lastEditTime, numberOfEdits } = await this.postRepository.getEditStats(userId, contentType, contentId)
+
+    // Base delay: 5 minutes, doubling with each edit
+    const baseDelay = 5 * 60 // 5 minutes in seconds
+    // Prevent overflow: 2^53 is the max safe integer, so limit exponent
+    const editDelay = baseDelay * Math.pow(2, Math.min(numberOfEdits, 50))
+
+    if (!lastEditTime) {
+      return 0 // No previous edits, no delay
+    }
+
+    const timeSinceLastEdit = (Date.now() - lastEditTime.getTime()) / 1000
+    return Math.max(0, editDelay - timeSinceLastEdit)
   }
 
   async setRead(postId: number, userId: number, readComments: number, lastCommentId?: number): Promise<boolean> {

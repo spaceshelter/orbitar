@@ -76,9 +76,9 @@ export default function CommentComponent(props: CommentProps) {
       const res = await props.onEdit?.(text, props.comment)
       setEditingText(false)
       return res
-    } catch (err) {
+    } catch (err: any) {
       console.log('Could not edit comment', err)
-      toast.error('Не удалось отредактировать комментарий')
+      toast.error(err.message || 'Не удалось отредактировать комментарий')
       throw err
     }
   }

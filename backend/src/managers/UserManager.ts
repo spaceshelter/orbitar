@@ -452,6 +452,7 @@ export default class UserManager {
       canCreateSubsites: effectiveKarma > 0,
       canEditOwnContent: effectiveKarma > MIN_KARMA,
       canCreatePolls: effectiveKarma > MIN_KARMA,
+      editSlowModeEnabled: effectiveKarma < NEG_KARMA_THRESH,
     }
   }
 

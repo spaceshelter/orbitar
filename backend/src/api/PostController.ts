@@ -314,6 +314,10 @@ export default class PostController {
         return response.error('access-denied', 'Access-denied')
       }
 
+      if (err instanceof CodeError && err.code === 'rate-limit') {
+        return response.error('rate-limit', err.message, err.statusCode || 429, err.meta)
+      }
+
       return response.error('error', 'Unknown error', 500)
     }
   }
@@ -570,6 +574,10 @@ export default class PostController {
 
       if (err instanceof CodeError && err.code === 'access-denied') {
         return response.error('access-denied', 'Access-denied')
+      }
+
+      if (err instanceof CodeError && err.code === 'rate-limit') {
+        return response.error('rate-limit', err.message, err.statusCode || 429, err.meta)
       }
 
       return response.error('error', 'Unknown error', 500)

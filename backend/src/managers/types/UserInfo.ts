@@ -55,4 +55,5 @@ export type UserRestrictions = {
   canCreateSubsites: boolean /* whether this user can create subsites */
   canEditOwnContent: boolean /* whether this user can edit own content */
   canCreatePolls: boolean /* whether this user can create polls */
+  editSlowModeEnabled: boolean /* whether exponential edit delays apply (karma < -10) */
 }
