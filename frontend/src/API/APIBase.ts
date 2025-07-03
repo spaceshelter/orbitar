@@ -4,7 +4,7 @@ type APIResponseError = {
   result: 'error'
   code: string
   message: string
-  meta?: any
+  meta?: Record<string, unknown>
 }
 type APIResponseSuccess<Response> = {
   result: 'success'
