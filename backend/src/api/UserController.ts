@@ -506,7 +506,24 @@ export default class UserController {
     try {
       const restrictions = await this.userManager.getUserRestrictions(userId)
       if (this.userManager.isBarmaliniUser(userId) || !restrictions.canVoteKarma) {
-        return response.error('error', `Not enough permissions`, 403)
+        return response.error('insufficient-karma', `Not enough permissions`, 403)
+      }
+
+      // Check if user is active
+      const isActive = await this.userManager.isUserActive(userId)
+      if (!isActive) {
+        return response.error('user-not-active', `Пользователь должен быть активным`, 403)
+      }
+
+      // Check if user has commented within last 24 hours
+      const lastComment = await this.postManager.getLastUserComment(userId)
+      if (!lastComment || !lastComment.created_at) {
+        return response.error('no-recent-comments', `Необходимо оставить хотя бы один комментарий`, 403)
+      }
+
+      const hoursSinceLastComment = (Date.now() - lastComment.created_at.getTime()) / (1000 * 60 * 60)
+      if (hoursSinceLastComment > 24) {
+        return response.error('no-recent-comments', `Последний комментарий должен быть не старше 24 часов`, 403)
       }
 
       const barmaliniUser = await this.userManager.getBarmaliniUser()

@@ -12,6 +12,11 @@
   cursor: pointer;
 }
 
+.barmalini .hint {
+  color: var(--fgSoft);
+  padding: 8px 0;
+}
+
 .select {
   display: flex;
   align-items: center; /* This will align items vertically */
