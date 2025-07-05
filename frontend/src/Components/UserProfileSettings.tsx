@@ -227,6 +227,8 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
 const BarmaliniAccess = observer(() => {
   const api = useAPI()
   const [access, setAccess] = React.useState<BarmaliniAccessResult | undefined>()
+  const [error, setError] = React.useState<string | undefined>()
+  const [expanded, setExpanded] = React.useState(false)
 
   const handleCopy = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -239,44 +241,71 @@ const BarmaliniAccess = observer(() => {
       ?.catch()
   }
 
+  const getErrorMessage = (errorCode: string): string => {
+    const errorMessages: Record<string, string> = {
+      'user-not-active': 'Бармалини недоступен. Надо почаще заходить на сайт ¯\\_(ツ)_/¯',
+      'no-recent-comments': 'Бармалини недоступен. Напишите что-нибудь в комментариях сегодня!',
+      'insufficient-karma': 'Бармалини недоступен. Нужны полные права.',
+    }
+    return errorMessages[errorCode] || 'Бармалини недоступен. Что-то пошло не так...'
+  }
+
   const handleShowPassword = (e: React.MouseEvent) => {
     e.preventDefault()
-    if (!access) {
+    if (!expanded) {
+      setExpanded(true)
+      setError(undefined)
       api.userAPI
         .getBarmaliniAccess()
         .then((data) => {
           setAccess(data)
+          setError(undefined)
         })
         .catch((error) => {
-          toast.error(error?.message || 'Не удалось получить пароль.')
+          setAccess(undefined)
+          setError(getErrorMessage(error?.code || 'error'))
         })
     } else {
+      setExpanded(false)
       setAccess(undefined)
+      setError(undefined)
     }
   }
 
   return (
     <div className={styles.barmalini}>
-      {(access && (
+      {expanded ? (
         <div>
-          <div>
-            <span className={styles.label}>Логин:</span> {access.login}
-          </div>
-          <div>
-            <span className={styles.label}>Пароль:</span>&nbsp;
-            <span className={styles.password} onClick={selectElementText}>
-              {access.password}
-            </span>
-            &nbsp;
-            <Button variant='ghost' onClick={handleCopy}>
-              <CopyIcon /> скопировать
-            </Button>
-          </div>
-          <div>
-            <span className={styles.label}>Счастливого бармаления. Пароль истекает через час.</span>
-          </div>
+          {access ? (
+            <>
+              <div>
+                <span className={styles.label}>Логин:</span> {access.login}
+              </div>
+              <div>
+                <span className={styles.label}>Пароль:</span>&nbsp;
+                <span className={styles.password} onClick={selectElementText}>
+                  {access.password}
+                </span>
+                &nbsp;
+                <Button variant='ghost' onClick={handleCopy}>
+                  <CopyIcon /> скопировать
+                </Button>
+              </div>
+              <div>
+                <span className={styles.label}>Счастливого бармаления. Пароль истекает через час.</span>
+              </div>
+            </>
+          ) : error ? (
+            <div className={styles.hint}>
+              <span>{error}</span>
+            </div>
+          ) : (
+            <div>Загрузка...</div>
+          )}
         </div>
-      )) || <Button onClick={handleShowPassword}>Бармалинить</Button>}
+      ) : (
+        <Button onClick={handleShowPassword}>Бармалинить</Button>
+      )}
     </div>
   )
 })

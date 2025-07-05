@@ -478,6 +478,10 @@ export default class PostManager {
   getUserIdOverride(postId: number): Promise<number | undefined> {
     return this.postRepository.getUserIdOverride(postId)
   }
+
+  getLastUserComment(userId: number) {
+    return this.commentRepository.getLastUserComment(userId)
+  }
 }
 
 class ContentNumberCache {
