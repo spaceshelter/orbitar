@@ -18,6 +18,8 @@ import { UserPostsRequest, UserPostsResponse } from './types/requests/UserPosts'
 import {
   BarmaliniPasswordRequest,
   BarmaliniPasswordResponse,
+  UserAnonymizeRequest,
+  UserAnonymizeResponse,
   UserKarmaResponse,
   UserProfileRequest,
   UserProfileResponse,
@@ -174,6 +176,7 @@ export default class UserController {
       validate(publicKeySchema),
       (req, res) => this.savePublicKey(req, res),
     )
+    this.router.post('/user/anonymize-account', settingsSaveLimiter, (req, res) => this.anonymizeAccount(req, res))
   }
 
   async profile(request: APIRequest<UserProfileRequest>, response: APIResponse<UserProfileResponse>) {
@@ -563,6 +566,29 @@ export default class UserController {
     } catch (error) {
       this.logger.error('Could not update user public key', { error })
       return res.error('error', `Could not update public key`, 500)
+    }
+  }
+
+  async anonymizeAccount(req: APIRequest<UserAnonymizeRequest>, res: APIResponse<UserAnonymizeResponse>) {
+    if (!req.session.data.userId) {
+      return res.authRequired()
+    }
+
+    const userId = req.session.data.userId
+
+    try {
+      const userInfo = await this.userManager.getById(userId)
+      if (!userInfo) {
+        return res.error('user-not-found', 'User not found', 404)
+      }
+
+      await this.userManager.anonymizeAccount(userId)
+      await this.userManager.resetAllPushSubscriptions(userId)
+      await req.session.destroyAllForCurrentUser()
+      return res.success({})
+    } catch (error) {
+      this.logger.error('Failed to anonymize account', { error, user_id: userId })
+      return res.error('unknown', 'Unknown error', 500)
     }
   }
 }

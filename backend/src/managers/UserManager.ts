@@ -733,6 +733,15 @@ export default class UserManager {
     await this.userRepository.dropPassword(userId)
   }
 
+  async anonymizeAccount(userId: number) {
+    if (!this.barmaliniUserConfigured()) {
+      throw new Error('Barmalini user not configured')
+    }
+    await this.userRepository.anonymizeAccount(userId, config.barmalini.userId!)
+    this.clearCache(userId)
+    this.clearUserRestrictionsCache(userId)
+  }
+
   savePublicKey(publicKey: string, userId: number) {
     const res = this.userRepository.savePublicKey(publicKey, userId)
     this.userCache.clearPublicKeysCache(userId)
