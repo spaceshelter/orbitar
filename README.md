@@ -15,11 +15,11 @@
 
 В hosts добавить:
 ```
-127.0.0.1 orbitar.test api.orbitar.test
+127.0.0.1 orbitar.local api.orbitar.local
 ```
 Можно дополнить списком подсайтов по вкусу (опционально)
 ```
-127.0.0.1 idiod.orbitar.test
+127.0.0.1 idiod.orbitar.local
 ```
 
 ### Особенности
