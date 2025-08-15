@@ -10,10 +10,12 @@ import { observer } from 'mobx-react-lite'
 import { toast } from 'react-toastify'
 
 import { BarmaliniAccessResult, UserGender } from '../Types/UserInfo'
+import AnonymizeAccountDialog from './AnonymizeAccountDialog'
 import { SecretMailKeyGeneratorForm } from './SecretMailbox'
 import ThemeToggleComponent from './ThemeToggleComponent'
 
 import styles from './UserProfileSettings.module.scss'
+import { ReactComponent as AnonIcon } from '@assets/anon.svg'
 import { ReactComponent as CopyIcon } from '@assets/copy.svg'
 import { ReactComponent as GhostIcon } from '@assets/ghost.svg'
 import { ReactComponent as LogoutIcon } from '@assets/logout.svg'
@@ -73,7 +75,8 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
   const api = useAPI()
   const navigate = useNavigate()
   const location = useLocation()
-  const { confirmAlert } = useAppState()
+  const appState = useAppState()
+  const { confirmAlert, userInfo } = appState
 
   let gender = props.gender
 
@@ -110,6 +113,23 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
       })
     },
   )
+
+  const handleAnonymize = (e: React.MouseEvent) => {
+    e.preventDefault()
+    if (!userInfo) return
+    appState.setModal(
+      <AnonymizeAccountDialog
+        username={userInfo.username}
+        onConfirm={() => {
+          api.user.anonymizeAccount().then(() => {
+            navigate(location.pathname)
+          })
+          appState.setModal(undefined)
+        }}
+        onCancel={() => appState.setModal(undefined)}
+      />,
+    )
+  }
 
   const toggleAutoStop = () => {
     setAutoStop(!autoStop)
@@ -209,6 +229,11 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
         {!props.isBarmalini && (
           <Button variant='danger' onClick={handleResetSessions}>
             <GhostIcon /> Сброс пароля и сессий
+          </Button>
+        )}
+        {!props.isBarmalini && (
+          <Button variant='danger' onClick={handleAnonymize}>
+            <AnonIcon /> Анонимизировать аккаунт
           </Button>
         )}
         <Button onClick={handleLogout}>

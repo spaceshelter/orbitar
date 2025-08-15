@@ -482,6 +482,11 @@ export default class PostManager {
   getLastUserComment(userId: number) {
     return this.commentRepository.getLastUserComment(userId)
   }
+
+  clearUserContentCaches(userId: number) {
+    delete this.numberOfPostsCache[userId]
+    delete this.numberOfCommentsCache[userId]
+  }
 }
 
 class ContentNumberCache {

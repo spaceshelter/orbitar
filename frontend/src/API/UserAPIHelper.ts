@@ -1,4 +1,4 @@
-import { AppState } from '../AppState/AppState'
+import { AppLoadingState, AppState } from '../AppState/AppState'
 import { UserInfo, UserProfileInfo } from '../Types/UserInfo'
 import UserAPI from './UserAPI'
 import { VoteListItemEntity } from './VoteAPI'
@@ -55,5 +55,12 @@ export default class UserAPIHelper {
           this.restrictionRefreshInProgress = false
         })
     }
+  }
+
+  async anonymizeAccount() {
+    await this.api.anonymizeAccount()
+    this.appState.setUserInfo(undefined)
+    this.appState.setAppLoadingState(AppLoadingState.unauthorized)
+    this.appState.clearCachesOnLogout()
   }
 }

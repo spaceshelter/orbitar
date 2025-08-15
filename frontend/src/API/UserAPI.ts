@@ -190,4 +190,8 @@ export default class UserAPI {
   async getUsernameSuggestions(start: string): Promise<UsernameSuggestResult> {
     return this.api.request<{ start: string }, UsernameSuggestResult>('/user/suggest-username', { start })
   }
+
+  async anonymizeAccount(): Promise<Record<string, never>> {
+    return this.api.request<Record<string, never>, Record<string, never>>('/user/anonymize-account', {})
+  }
 }
