@@ -582,8 +582,13 @@ export default class UserController {
         return res.error('user-not-found', 'User not found', 404)
       }
 
+      if (this.userManager.isBarmaliniUser(userId)) {
+        return res.error('forbidden', 'Cannot anonymize Barmalini account', 403)
+      }
+
       await this.userManager.anonymizeAccount(userId)
       await this.userManager.resetAllPushSubscriptions(userId)
+      this.postManager.clearUserContentCaches(userId)
       await req.session.destroyAllForCurrentUser()
       return res.success({})
     } catch (error) {

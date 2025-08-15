@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
 
+import { Button } from '@ui/Button'
+import { Field } from '@ui/Field'
 import { toast } from 'react-toastify'
 
 import Overlay from './Overlay'
-import { Button } from './UI/Button'
-import { Field } from './UI/Field'
 
 import styles from './AnonymizeAccountDialog.module.scss'
 
@@ -32,7 +32,16 @@ export default function AnonymizeAccountDialog({ username, onConfirm, onCancel }
       <Overlay onClick={onCancel} zIndex={9999} />
       <div className={styles.container} style={{ zIndex: 10000 }}>
         <h2 className={styles.title}>Анонимизировать аккаунт?</h2>
-        <p className={styles.message}>Это действие необратимо. Введите имя пользователя наоборот для подтверждения.</p>
+        <p className={styles.message}>Вы потеряете доступ к аккаунту.</p>
+        <p className={styles.message}>
+          Все опубликованные посты и комментарии останутся доступны другим пользователям.
+        </p>
+        <p className={styles.message}>Авторство постов и комментариев будет изменено на анонимного пользователя</p>
+        <p className={styles.message}>
+          Другие полноправные пользователи смогут редактировать этот контент через общий доступ.
+        </p>
+        <p className={styles.message}>Это действие необратимо.</p>
+        <p className={styles.message}>Введите имя пользователя наоборот для подтверждения.</p>
         <form onSubmit={handleSubmit} className={styles.form}>
           <Field autoFocus value={value} onChange={(e) => setValue(e.target.value)} />
           <div className={styles.buttons}>
