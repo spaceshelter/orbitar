@@ -1,11 +1,41 @@
 {
     "short_name": "ЪУЪ",
     "name": "Orbitar",
+    "description": "Это орбитар. Асоциальная сеть",
     "icons": [
         {
-            "src": "/favicon.ico",
+            "src": "/favicon-16.ico",
             "type": "image/x-icon",
-            "sizes": "64x64 32x32 24x24 16x16"
+            "sizes": "16x16"
+        },
+        {
+            "src": "/favicon-24.ico",
+            "type": "image/x-icon",
+            "sizes": "24x24"
+        },
+        {
+            "src": "/favicon-64.ico",
+            "type": "image/x-icon",
+            "sizes": "64x64"
+        },
+        {
+            "src": "/favicon-144.png",
+            "type": "image/png",
+            "sizes": "144x144",
+            "purpose": "any"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "/screenshot-wide.png",
+            "type": "image/png",
+            "sizes": "1280x720",
+            "form_factor": "wide"
+        },
+        {
+            "src": "/screenshot-mobile.png",
+            "type": "image/png",
+            "sizes": "375x812"
         }
     ],
     "categories": [
