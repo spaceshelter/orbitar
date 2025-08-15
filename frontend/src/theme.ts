@@ -15,7 +15,7 @@ Each theme is defined using key colors
 - glass          semi-transparent background
 
 All other color variants are generated automatically (if not defined manually)
-preview of all theme colors is available at http://orbitar.local/theme
+preview of all theme colors is available at http://orbitar.test/theme
 
 
 */

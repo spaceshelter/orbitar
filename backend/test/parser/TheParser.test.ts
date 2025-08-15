@@ -5,7 +5,7 @@ const p = new TheParser({
     url: 'https://orbitar.media',
     dimsAesKey: '',
   },
-  siteDomain: 'orbitar.local',
+  siteDomain: 'orbitar.test',
 })
 
 test('parse A tag', () => {
@@ -415,10 +415,10 @@ describe('parsePoll', () => {
 
 describe('processInternalUrl', () => {
   test('valid internal url', () => {
-    const url = 'https://orbitar.local/s/site/p123'
+    const url = 'https://orbitar.test/s/site/p123'
     const result = p.processInternalUrl(url)
     expect(result).toEqual(
-      '<span role="button" class="expand-button i i-expand" data-post-id="123"></span><a href="https://orbitar.local/s/site/p123" target="_blank">https://orbitar.local/s/site/p123</a>',
+      '<span role="button" class="expand-button i i-expand" data-post-id="123"></span><a href="https://orbitar.test/s/site/p123" target="_blank">https://orbitar.test/s/site/p123</a>',
     )
   })
 
@@ -429,18 +429,18 @@ describe('processInternalUrl', () => {
   })
 
   test('internal url with comment id', () => {
-    const url = 'https://orbitar.local/s/site/p123#456'
+    const url = 'https://orbitar.test/s/site/p123#456'
     const result = p.processInternalUrl(url)
     expect(result).toEqual(
-      '<span role="button" class="expand-button i i-expand" data-post-id="123" data-comment-id="456"></span><a href="https://orbitar.local/s/site/p123#456" target="_blank">https://orbitar.local/s/site/p123#456</a>',
+      '<span role="button" class="expand-button i i-expand" data-post-id="123" data-comment-id="456"></span><a href="https://orbitar.test/s/site/p123#456" target="_blank">https://orbitar.test/s/site/p123#456</a>',
     )
   })
 
   test('internal url without comment id', () => {
-    const url = 'https://orbitar.local/s/site/p123'
+    const url = 'https://orbitar.test/s/site/p123'
     const result = p.processInternalUrl(url)
     expect(result).toEqual(
-      '<span role="button" class="expand-button i i-expand" data-post-id="123"></span><a href="https://orbitar.local/s/site/p123" target="_blank">https://orbitar.local/s/site/p123</a>',
+      '<span role="button" class="expand-button i i-expand" data-post-id="123"></span><a href="https://orbitar.test/s/site/p123" target="_blank">https://orbitar.test/s/site/p123</a>',
     )
   })
 })

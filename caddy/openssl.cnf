@@ -9,7 +9,7 @@ req_extensions = req_ext
 countryName = Country Name
 countryName_default = US
 commonName = Common Name
-commonName_default = orbitar.local
+commonName_default = orbitar.test
 
 [ req_attributes ]
 challengePassword = orbitar
@@ -23,5 +23,5 @@ subjectAltName = @alt_names
 #subjectAltName = @alt_names
 
 [ alt_names ]
-DNS.1 = orbitar.local
-DNS.2 = *.orbitar.local
+DNS.1 = orbitar.test
+DNS.2 = *.orbitar.test
