@@ -1,0 +1,18 @@
+{
+    "short_name": "ЪУЪ",
+    "name": "Orbitar",
+    "icons": [
+        {
+            "src": "/favicon.ico",
+            "type": "image/x-icon",
+            "sizes": "64x64 32x32 24x24 16x16"
+        }
+    ],
+    "categories": [
+        "social"
+    ],
+    "start_url": "./",
+    "display": "standalone",
+    "theme_color": "#2A2A2A",
+    "background_color": "#2A2A2A"
+}
