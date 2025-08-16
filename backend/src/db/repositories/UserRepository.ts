@@ -366,9 +366,12 @@ export default class UserRepository {
         anon: anonymousUserId,
         user: userId,
       })
-      await db.query("update users set email = '', password = '' where user_id = :user", {
-        user: userId,
-      })
+      await db.query(
+        "update users set email = '', password = '', bio_source = null, bio_html = null where user_id = :user",
+        {
+          user: userId,
+        },
+      )
     })
   }
 
