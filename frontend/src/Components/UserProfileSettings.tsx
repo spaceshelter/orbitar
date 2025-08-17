@@ -55,6 +55,18 @@ export function getVideoAutopause(): boolean {
   return JSON.parse(localStorage.getItem('autoStopVideos') || 'false')
 }
 
+export function getAutoMuteVideos(): boolean {
+  return localStorage.getItem('autoMuteVideos') === 'true'
+}
+
+export function getVideoVolume(): number {
+  return parseFloat(localStorage.getItem('videoVolume') || '1')
+}
+
+export function setVideoVolume(volume: number): void {
+  localStorage.setItem('videoVolume', volume.toString())
+}
+
 export function getLegacyZoom(): boolean {
   return localStorage.getItem('legacyZoom') === 'true'
 }
@@ -81,6 +93,7 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
   let gender = props.gender
 
   const [autoStop, setAutoStop] = useState<boolean>(getVideoAutopause())
+  const [autoMute, setAutoMute] = useState<boolean>(getAutoMuteVideos())
   const [legacyZoom, setLegacyZoom] = useState<boolean>(getLegacyZoom())
   const [preferredLang, setPreferredLang] = useState<string>(getPreferredLang())
   const [showInlineTranslateButton, setShowInlineTranslateButton] = useState<boolean>(getShowInlineTranslateButton())
@@ -135,6 +148,10 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
     setAutoStop(!autoStop)
   }
 
+  const toggleAutoMute = () => {
+    setAutoMute(!autoMute)
+  }
+
   const toggleLegacyZoom = () => {
     setLegacyZoom(!legacyZoom)
   }
@@ -176,6 +193,10 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
   }, [autoStop])
 
   useEffect(() => {
+    localStorage.setItem('autoMuteVideos', JSON.stringify(autoMute))
+  }, [autoMute])
+
+  useEffect(() => {
     localStorage.setItem('legacyZoom', JSON.stringify(legacyZoom))
   }, [legacyZoom])
 
@@ -197,6 +218,7 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
           </Button>
         )}
         <Button onClick={toggleAutoStop}>Видео автопауза: {autoStop ? 'Вкл' : 'Выкл'}</Button>
+        <Button onClick={toggleAutoMute}>Видео без звука: {autoMute ? 'Вкл' : 'Выкл'}</Button>
         <Button onClick={toggleLegacyZoom}>Легаси зум: {legacyZoom ? 'Вкл' : 'Выкл'}</Button>
         {<ThemeToggleComponent dynamic={true} buttonLabel='Сменить тему' />}
       </div>
