@@ -515,10 +515,8 @@ function processVideoEmbed(img: HTMLImageElement) {
       video.style.width = img.width.toString() + 'px'
       video.style.height = img.height.toString() + 'px'
       img.parentElement?.replaceWith(video)
-      video.addEventListener('play', () => stopInnerVideos(document.body, video))
-      if (getVideoAutopause()) {
-        observeOnHidden(video, () => stopVideo(video))
-      }
+      // Apply standard video behavior (mute/volume/autopause/stop-on-play/aspect ratio)
+      updateVideo(video)
     })
   }
   return !!videoUrl
