@@ -15,6 +15,7 @@ import { FakeRoot } from '../index'
 import { observeOnHidden } from '../Services/ObserverService'
 import { useTheme } from '../Theme/ThemeProvider'
 import { b64DecodeUnicode } from '../Utils/utils'
+import GalleryComponent, { ImageItem } from './GalleryComponent'
 import InternalLinkExpandComponent from './InternalLinkExpandComponent'
 import { OAuthEmbeddedAppComponent } from './OAuth2AppCardModalComponent'
 import { SecretMailDecoderForm, SecretMailEncoderForm } from './SecretMailbox'
@@ -101,6 +102,10 @@ function updateContent(
   cleanupRegistry: CleanupRegistry,
   currentUsername?: string,
 ): void {
+  div.querySelectorAll('div.gallery').forEach((gallery) => {
+    updateGallery(gallery as HTMLDivElement, appState, cleanupRegistry, setZoomedImg)
+  })
+
   div.querySelectorAll('img').forEach((img) => {
     if (img.complete) {
       updateImg(img, setZoomedImg)
@@ -590,6 +595,12 @@ function updateImg(img: HTMLImageElement, setZoomedImg: (img: ZoomedImg | null) 
     return
   }
 
+  if (img.className.includes('thumbnail')) {
+    return
+  }
+
+  // if image is large enough and not inside a link or secret-mail, make it scalable
+
   if (img.naturalWidth > 500 || img.naturalHeight > 500) {
     // will be displayed as block if not immediately surrounded by <br>
     const nextBr = !img.nextSibling || img.nextSibling.nodeName === 'BR'
@@ -697,6 +708,42 @@ function updatePoll(pollEl: HTMLDivElement, appState: AppState, cleanupRegistry:
     return
   }
   cleanupRegistry.register(renderWithTheme(pollEl, <PollComponent pollId={Number(pollId)} />, appState))
+}
+
+function updateGallery(
+  galleryEl: HTMLDivElement,
+  appState: AppState,
+  cleanupRegistry: CleanupRegistry,
+  setZoomedImg: (img: ZoomedImg | null) => void,
+) {
+  const imgsEl = galleryEl.querySelectorAll('img')
+  if (imgsEl.length === 0) {
+    return
+  }
+  const images = Array.from(imgsEl).map(
+    (img): ImageItem => ({
+      src: img.src,
+      alt: img.alt || undefined,
+    }),
+  )
+
+  const autoPlayInterval = Number(galleryEl.getAttribute('auto-play-interval') || 0)
+  const showArrows = galleryEl.getAttribute('show-arrows') !== 'false'
+  const showIndicators = galleryEl.getAttribute('show-indicators') !== 'false'
+  const showThumbnails = galleryEl.getAttribute('show-thumbnails') !== 'false'
+
+  const component = (
+    <GalleryComponent
+      images={images}
+      showArrows={showArrows}
+      autoPlayInterval={autoPlayInterval}
+      showIndicators={showIndicators}
+      showThumbnails={showThumbnails}
+      setZoomedImg={setZoomedImg}
+    />
+  )
+
+  cleanupRegistry.register(renderWithTheme(galleryEl, component, appState))
 }
 
 export default function ContentComponent(props: ContentComponentProps) {

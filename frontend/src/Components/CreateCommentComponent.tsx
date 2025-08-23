@@ -25,6 +25,7 @@ import ThemeToggleComponent from './ThemeToggleComponent'
 
 import { ReactComponent as CodeIcon } from '../Assets/code-slash.svg'
 import { ReactComponent as ExpandIcon } from '../Assets/expand.svg'
+import { ReactComponent as Gallerycon } from '../Assets/gallery.svg'
 import { ReactComponent as ImageIcon } from '../Assets/image.svg'
 import { ReactComponent as IronyIcon } from '../Assets/irony.svg'
 import { ReactComponent as LinkIcon } from '../Assets/link.svg'
@@ -253,7 +254,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
       case 'img': {
         if (/^https?:/.test(oldValue)) {
           // noinspection HtmlRequiredAltAttribute
-          newValue = `<img src="${oldValue}"/>`
+          newValue = `<img src="${oldValue}" alt=""/>`
           newPos = newValue.length
         } else {
           setMediaUploaderOpen(true)
@@ -383,7 +384,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     setMediaUploaderOpen(false)
     if (type === 'image') {
       // noinspection HtmlRequiredAltAttribute
-      const text = `<img src="${uri}"/>`
+      const text = `<img src="${uri}" alt=""/>`
       replaceText(text, text.length)
     } else {
       const text = `<video src="${uri}"/>`
@@ -559,6 +560,24 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             tabIndex={toolbarTabIndex}
           >
             <ImageIcon />
+          </Button>
+        </div>
+        <div className={styles.control}>
+          <Button
+            variant='minimal'
+            disabled={disabledButtons}
+            onClick={() =>
+              applyTag('gallery', {
+                'auto-play-interval': '0',
+                'show-arrows': 'true',
+                'show-indicators': 'true',
+                'show-thumbnails': 'true',
+              })
+            }
+            title='Галерея изображений'
+            tabIndex={toolbarTabIndex}
+          >
+            <Gallerycon />
           </Button>
         </div>
         <div className={styles.control}>

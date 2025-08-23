@@ -270,6 +270,46 @@ test('parse expand tag', () => {
   )
 })
 
+test('parse gallery tag', () => {
+  // Basic gallery
+  expect(p.parse('<gallery><img src="https://orbitar.media/image1.jpg" /></gallery>').text).toEqual(
+    '<div class="gallery" show-arrows=true show-indicators="true" show-thumbnails="true" auto-play-interval="0"><img src="https://b.orbitar.media/image1.jpg" alt=""/></div>',
+  )
+
+  // Gallery with attributes
+  expect(
+    p.parse(
+      '<gallery show-arrows="false" show-indicators="false" show-thumbnails="false" auto-play-interval="5"><img src="https://orbitar.media/image2.jpg" /></gallery>',
+    ).text,
+  ).toEqual(
+    '<div class="gallery" show-arrows=false show-indicators="false" show-thumbnails="false" auto-play-interval="5000"><img src="https://b.orbitar.media/image2.jpg" alt=""/></div>',
+  )
+
+  // Gallery with multiple images
+  expect(
+    p.parse(
+      '<gallery><img src="https://orbitar.media/image1.jpg" /><img src="https://orbitar.media/image2.jpg" /></gallery>',
+    ).text,
+  ).toEqual(
+    '<div class="gallery" show-arrows=true show-indicators="true" show-thumbnails="true" auto-play-interval="0"><img src="https://b.orbitar.media/image1.jpg" alt=""/><img src="https://b.orbitar.media/image2.jpg" alt=""/></div>',
+  )
+
+  // Gallery with nested disallowed tag (should escape)
+  expect(p.parse('<gallery><invalid>test</invalid></gallery>').text).toEqual(
+    '<div class="gallery" show-arrows=true show-indicators="true" show-thumbnails="true" auto-play-interval="0">&lt;invalid&gt;test&lt;/invalid&gt;</div>',
+  )
+
+  // Gallery with no children
+  expect(p.parse('<gallery></gallery>').text).toEqual(
+    '<div class="gallery" show-arrows=true show-indicators="true" show-thumbnails="true" auto-play-interval="0"></div>',
+  )
+
+  // Gallery cannot be inside a, blockquote, pre, mailbox, mail, b, i, u, strike, irony
+  expect(
+    p.parse('<a href="https://test.com"><gallery><img src="https://orbitar.media/image1.jpg" /></gallery></a>').text,
+  ).toEqual('<a href="https://test.com" target="_blank"><img src="https://b.orbitar.media/image1.jpg" alt=""/></a>')
+})
+
 test('parse secret mailbox with valid secret attribute', () => {
   const result = p.parse('<mailbox secret="12345">Hello</mailbox>')
   expect(result.text).toEqual(

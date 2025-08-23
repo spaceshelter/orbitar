@@ -68,6 +68,7 @@ export default class TheParser {
       mail: (node) => this.parseSecretMail(node),
       pre: (node) => this.parsePre(node),
       poll: (node) => this.parsePoll(node),
+      gallery: (node) => this.parseGallery(node),
       blockquote: true,
       b: true,
       i: true,
@@ -76,7 +77,7 @@ export default class TheParser {
     }
 
     /* Tags that render as blocks, have special behavior for removing extra line breaks below them */
-    this.blockTags = ['blockquote', 'expand', 'pre']
+    this.blockTags = ['blockquote', 'expand', 'pre', 'gallery']
 
     /* Child tag -> list of disallowed parent tags */
     this.disallowedTagNesting = {
@@ -87,6 +88,7 @@ export default class TheParser {
       app: ['a', 'mailbox', 'mail'],
       expand: ['a', 'mailbox', 'mail'],
       poll: ['a', 'mailbox', 'mail', 'b', 'i', 'u', 'strike', 'irony', 'spoiler'],
+      gallery: ['a', 'blockquote', 'pre', 'mailbox', 'mail', 'b', 'i', 'u', 'strike', 'irony'],
     }
 
     this.parseChildNodesStack = []
@@ -543,7 +545,9 @@ export default class TheParser {
       )
     }
 
-    return { text: `<img src="${encodeURI(url)}" alt=""/>`, mentions: [], urls: [], images: [url] }
+    const alt = node.attribs['alt'] ? htmlEscape(node.attribs['alt']) : ''
+
+    return { text: `<img src="${encodeURI(url)}" alt="${alt}"/>`, mentions: [], urls: [], images: [url] }
   }
 
   parsePre(node: Element): ParseResult {
@@ -679,6 +683,17 @@ export default class TheParser {
 
     const result = this.parseChildNodes(node.children)
     const text = `<details class="expand"><summary>${htmlEscape(title)}</summary>${result.text}<div role="button"></div></details>`
+
+    return { ...result, text }
+  }
+
+  parseGallery(node: Element): ParseResult {
+    const showArrows = node.attribs['show-arrows'] !== 'false'
+    const showIndicators = node.attribs['show-indicators'] !== 'false'
+    const showThumbnails = node.attribs['show-thumbnails'] !== 'false'
+    const autoPlayInterval = parseInt(node.attribs['auto-play-interval'] || '0', 10) * 1000
+    const result = this.parseChildNodes(node.children)
+    const text = `<div class="gallery" show-arrows=${showArrows} show-indicators="${showIndicators}" show-thumbnails="${showThumbnails}" auto-play-interval="${autoPlayInterval}">${result.text}</div>`
 
     return { ...result, text }
   }
