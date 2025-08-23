@@ -21,7 +21,13 @@ import { OAuthEmbeddedAppComponent } from './OAuth2AppCardModalComponent'
 import { SecretMailDecoderForm, SecretMailEncoderForm } from './SecretMailbox'
 import TelegramEmbed from './TelegramEmbed'
 import TwitterEmbed from './TwitterEmbed'
-import { getLegacyZoom, getVideoAutopause } from './UserProfileSettings'
+import {
+  getAutoMuteVideos,
+  getLegacyZoom,
+  getVideoAutopause,
+  getVideoVolume,
+  setVideoVolume,
+} from './UserProfileSettings'
 
 import styles from './ContentComponent.module.scss'
 import overlayStyles from './Overlay.module.scss'
@@ -415,6 +421,22 @@ function updateVideo(video: HTMLVideoElement) {
     observeOnHidden(video, () => stopVideo(video))
   }
 
+  if (getAutoMuteVideos()) {
+    video.muted = true
+  } else {
+    const volume = getVideoVolume()
+    if (!isNaN(volume)) {
+      video.volume = volume
+    }
+  }
+
+  if (!video.dataset.volumeProcessed) {
+    video.addEventListener('volumechange', () => {
+      setVideoVolume(video.volume)
+    })
+    video.dataset.volumeProcessed = '1'
+  }
+
   if (video.dataset.aspectRatioProcessed) {
     return
   }
@@ -498,10 +520,8 @@ function processVideoEmbed(img: HTMLImageElement) {
       video.style.width = img.width.toString() + 'px'
       video.style.height = img.height.toString() + 'px'
       img.parentElement?.replaceWith(video)
-      video.addEventListener('play', () => stopInnerVideos(document.body, video))
-      if (getVideoAutopause()) {
-        observeOnHidden(video, () => stopVideo(video))
-      }
+      // Apply standard video behavior (mute/volume/autopause/stop-on-play/aspect ratio)
+      updateVideo(video)
     })
   }
   return !!videoUrl

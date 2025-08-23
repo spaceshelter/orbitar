@@ -10,10 +10,12 @@ import { observer } from 'mobx-react-lite'
 import { toast } from 'react-toastify'
 
 import { BarmaliniAccessResult, UserGender } from '../Types/UserInfo'
+import AnonymizeAccountDialog from './AnonymizeAccountDialog'
 import { SecretMailKeyGeneratorForm } from './SecretMailbox'
 import ThemeToggleComponent from './ThemeToggleComponent'
 
 import styles from './UserProfileSettings.module.scss'
+import { ReactComponent as AnonIcon } from '@assets/anon.svg'
 import { ReactComponent as CopyIcon } from '@assets/copy.svg'
 import { ReactComponent as GhostIcon } from '@assets/ghost.svg'
 import { ReactComponent as LogoutIcon } from '@assets/logout.svg'
@@ -53,6 +55,18 @@ export function getVideoAutopause(): boolean {
   return JSON.parse(localStorage.getItem('autoStopVideos') || 'false')
 }
 
+export function getAutoMuteVideos(): boolean {
+  return localStorage.getItem('autoMuteVideos') === 'true'
+}
+
+export function getVideoVolume(): number {
+  return parseFloat(localStorage.getItem('videoVolume') || '1')
+}
+
+export function setVideoVolume(volume: number): void {
+  localStorage.setItem('videoVolume', volume.toString())
+}
+
 export function getLegacyZoom(): boolean {
   return localStorage.getItem('legacyZoom') === 'true'
 }
@@ -73,11 +87,13 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
   const api = useAPI()
   const navigate = useNavigate()
   const location = useLocation()
-  const { confirmAlert } = useAppState()
+  const appState = useAppState()
+  const { confirmAlert, userInfo } = appState
 
   let gender = props.gender
 
   const [autoStop, setAutoStop] = useState<boolean>(getVideoAutopause())
+  const [autoMute, setAutoMute] = useState<boolean>(getAutoMuteVideos())
   const [legacyZoom, setLegacyZoom] = useState<boolean>(getLegacyZoom())
   const [preferredLang, setPreferredLang] = useState<string>(getPreferredLang())
   const [showInlineTranslateButton, setShowInlineTranslateButton] = useState<boolean>(getShowInlineTranslateButton())
@@ -111,8 +127,29 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
     },
   )
 
+  const handleAnonymize = (e: React.MouseEvent) => {
+    e.preventDefault()
+    if (!userInfo) return
+    appState.setModal(
+      <AnonymizeAccountDialog
+        username={userInfo.username}
+        onConfirm={() => {
+          api.user.anonymizeAccount().then(() => {
+            navigate(location.pathname)
+          })
+          appState.setModal(undefined)
+        }}
+        onCancel={() => appState.setModal(undefined)}
+      />,
+    )
+  }
+
   const toggleAutoStop = () => {
     setAutoStop(!autoStop)
+  }
+
+  const toggleAutoMute = () => {
+    setAutoMute(!autoMute)
   }
 
   const toggleLegacyZoom = () => {
@@ -156,6 +193,10 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
   }, [autoStop])
 
   useEffect(() => {
+    localStorage.setItem('autoMuteVideos', JSON.stringify(autoMute))
+  }, [autoMute])
+
+  useEffect(() => {
     localStorage.setItem('legacyZoom', JSON.stringify(legacyZoom))
   }, [legacyZoom])
 
@@ -177,6 +218,7 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
           </Button>
         )}
         <Button onClick={toggleAutoStop}>Видео автопауза: {autoStop ? 'Вкл' : 'Выкл'}</Button>
+        <Button onClick={toggleAutoMute}>Видео без звука: {autoMute ? 'Вкл' : 'Выкл'}</Button>
         <Button onClick={toggleLegacyZoom}>Легаси зум: {legacyZoom ? 'Вкл' : 'Выкл'}</Button>
         {<ThemeToggleComponent dynamic={true} buttonLabel='Сменить тему' />}
       </div>
@@ -209,6 +251,11 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
         {!props.isBarmalini && (
           <Button variant='danger' onClick={handleResetSessions}>
             <GhostIcon /> Сброс пароля и сессий
+          </Button>
+        )}
+        {!props.isBarmalini && (
+          <Button variant='danger' onClick={handleAnonymize}>
+            <AnonIcon /> Анонимизировать аккаунт
           </Button>
         )}
         <Button onClick={handleLogout}>

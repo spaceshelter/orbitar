@@ -98,3 +98,7 @@ export type BarmaliniPasswordResponse = {
   login: string
   password: string
 }
+
+export type UserAnonymizeRequest = Record<string, never>
+
+export type UserAnonymizeResponse = Record<string, never>

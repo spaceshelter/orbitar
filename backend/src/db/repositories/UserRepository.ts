@@ -352,6 +352,29 @@ export default class UserRepository {
     return this.db.query(`update users set password = '' where user_id = :user_id`, { user_id: userId })
   }
 
+  async anonymizeAccount(userId: number, anonymousUserId: number) {
+    await this.db.inTransaction(async (db) => {
+      await db.query('update content_source set author_id = :anon where author_id = :user', {
+        anon: anonymousUserId,
+        user: userId,
+      })
+      await db.query('update posts set author_id = :anon where author_id = :user', {
+        anon: anonymousUserId,
+        user: userId,
+      })
+      await db.query('update comments set author_id = :anon where author_id = :user', {
+        anon: anonymousUserId,
+        user: userId,
+      })
+      await db.query(
+        "update users set email = '', password = '', bio_source = null, bio_html = null where user_id = :user",
+        {
+          user: userId,
+        },
+      )
+    })
+  }
+
   async savePublicKey(publicKey: string, userId: number) {
     return this.db.query(
       `UPDATE users
