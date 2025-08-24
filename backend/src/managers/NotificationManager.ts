@@ -195,7 +195,9 @@ export default class NotificationManager {
     this.userCache.deleteUserStatsCache(forUserId)
 
     // send push in background
-    this.sendWebPush(forUserId, notification).then().catch()
+    this.sendWebPush(forUserId, notification)
+      .then()
+      .catch((err) => this.logger.error(err))
   }
 
   async sendAnswerNotify(forUserId: number, byUserId: number, postId: number, commentId?: number) {
