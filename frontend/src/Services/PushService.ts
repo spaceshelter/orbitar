@@ -56,8 +56,6 @@ export class PushService {
       return
     }
 
-    console.debug('Subscribing to push notifications', process.env.REACT_APP_VAPID_PUBLIC_KEY)
-
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: process.env.REACT_APP_VAPID_PUBLIC_KEY,
