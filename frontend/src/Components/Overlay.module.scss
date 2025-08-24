@@ -22,3 +22,16 @@
   /* Animation */
   animation: overlayFadeIn 0.2s ease-out;
 }
+
+.overlayCloseButton {
+  position: absolute;
+  top: 35px;
+  right: 30px;
+  font-size: 40px;
+  cursor: pointer;
+  text-shadow:
+    -1px 1px 2px #000,
+    1px 1px 2px #000,
+    1px -1px 2px #000,
+    -1px -1px 2px #000;
+}

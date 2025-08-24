@@ -6,16 +6,13 @@ import type * as Vimeo from '@vimeo/player'
 import classNames from 'classnames'
 import { reaction } from 'mobx'
 import { createRoot } from 'react-dom/client'
-import { useHotkeys } from 'react-hotkeys-hook'
-import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch'
 
-import useOnBack from '../API/use/useOnBack'
-import { AppState, useAppState } from '../AppState/AppState'
+import { AppState, useAppState, ZoomedImg } from '../AppState/AppState'
 import { FakeRoot } from '../index'
 import { observeOnHidden } from '../Services/ObserverService'
 import { useTheme } from '../Theme/ThemeProvider'
 import { b64DecodeUnicode } from '../Utils/utils'
-import GalleryComponent, { ImageItem } from './GalleryComponent'
+import GalleryComponent, { GalleryElement } from './GalleryComponent'
 import InternalLinkExpandComponent from './InternalLinkExpandComponent'
 import { OAuthEmbeddedAppComponent } from './OAuth2AppCardModalComponent'
 import { SecretMailDecoderForm, SecretMailEncoderForm } from './SecretMailbox'
@@ -28,9 +25,9 @@ import {
   getVideoVolume,
   setVideoVolume,
 } from './UserProfileSettings'
+import ZoomComponent from './ZoomComponent'
 
 import styles from './ContentComponent.module.scss'
-import overlayStyles from './Overlay.module.scss'
 
 type CleanupHandler = {
   cleanup: () => void
@@ -80,12 +77,6 @@ export const SMALL_AUTO_CUT = 100
 
 const iframeToOriginalEl = new WeakMap<HTMLIFrameElement, HTMLElement>()
 
-type ZoomedImg = {
-  src: string
-  width: number
-  height: number
-}
-
 type MailboxKey = {
   type: 'mailbox'
   mailboxTitle?: string
@@ -102,24 +93,23 @@ type MailKey = {
 function updateContent(
   appState: AppState,
   div: HTMLDivElement,
-  setZoomedImg: (img: ZoomedImg | null) => void,
   setMailboxKey: (key: MailboxKey | MailKey | null) => void,
   setCut: (cut: boolean) => void,
   cleanupRegistry: CleanupRegistry,
   currentUsername?: string,
 ): void {
   div.querySelectorAll('div.gallery').forEach((gallery) => {
-    updateGallery(gallery as HTMLDivElement, appState, cleanupRegistry, setZoomedImg)
+    updateGallery(gallery as HTMLDivElement, appState, cleanupRegistry)
   })
 
   div.querySelectorAll('img').forEach((img) => {
     if (img.complete) {
-      updateImg(img, setZoomedImg)
+      updateImg(img, appState.setZoomedImg.bind(appState))
       return
     }
 
     img.onload = () => {
-      updateImg(img, setZoomedImg)
+      updateImg(img, appState.setZoomedImg.bind(appState))
     }
   })
 
@@ -730,36 +720,39 @@ function updatePoll(pollEl: HTMLDivElement, appState: AppState, cleanupRegistry:
   cleanupRegistry.register(renderWithTheme(pollEl, <PollComponent pollId={Number(pollId)} />, appState))
 }
 
-function updateGallery(
-  galleryEl: HTMLDivElement,
-  appState: AppState,
-  cleanupRegistry: CleanupRegistry,
-  setZoomedImg: (img: ZoomedImg | null) => void,
-) {
-  const imgsEl = galleryEl.querySelectorAll('img')
-  if (imgsEl.length === 0) {
+function updateGallery(galleryEl: HTMLDivElement, appState: AppState, cleanupRegistry: CleanupRegistry) {
+  const elements: GalleryElement[] = []
+  galleryEl.querySelectorAll(':scope > img, :scope > a[class$="-embed"]').forEach((el) => {
+    if (el.tagName.toLowerCase() === 'img') {
+      const img = el as HTMLImageElement
+      elements.push({ image: { src: img.src, alt: img.alt || undefined } })
+    } else if (el.tagName.toLowerCase() === 'a') {
+      const img = el.querySelector('img')
+      if (!img) return
+      elements.push({
+        isVideo: true,
+        htmlElement: el as HTMLElement,
+        image: { src: img.src, alt: img.alt || undefined },
+      })
+    }
+  })
+
+  if (elements.length === 0) {
     return
   }
-  const images = Array.from(imgsEl).map(
-    (img): ImageItem => ({
-      src: img.src,
-      alt: img.alt || undefined,
-    }),
-  )
 
   const autoPlayInterval = Number(galleryEl.getAttribute('auto-play-interval') || 0)
-  const showArrows = galleryEl.getAttribute('show-arrows') !== 'false'
-  const showIndicators = galleryEl.getAttribute('show-indicators') !== 'false'
-  const showThumbnails = galleryEl.getAttribute('show-thumbnails') !== 'false'
+  const showArrows = !galleryEl.hasAttribute('data-no-arrows')
+  const showIndicators = !galleryEl.hasAttribute('data-no-indicators')
+  const showThumbnails = !galleryEl.hasAttribute('data-no-thumbnails')
 
   const component = (
     <GalleryComponent
-      images={images}
+      elements={elements}
       showArrows={showArrows}
       autoPlayInterval={autoPlayInterval}
       showIndicators={showIndicators}
       showThumbnails={showThumbnails}
-      setZoomedImg={setZoomedImg}
     />
   )
 
@@ -769,7 +762,6 @@ function updateGallery(
 export default function ContentComponent(props: ContentComponentProps) {
   const contentDiv = useRef<HTMLDivElement>(null)
   const [cut, setCut] = useState(false)
-  const [zoomedImg, setZoomedImg] = useState<ZoomedImg | null>(null)
   const [mailboxKey, setMailboxKey] = useState<MailboxKey | MailKey | null>(null)
   const cleanupRegistryRef = useRef<CleanupRegistry>(new CleanupRegistry())
   const appState = useAppState()
@@ -798,7 +790,7 @@ export default function ContentComponent(props: ContentComponentProps) {
     cleanupRegistry.cleanup()
 
     // Update content using the registry
-    updateContent(appState, content, setZoomedImg, setMailboxKey, setCut, cleanupRegistry, props.currentUsername)
+    updateContent(appState, content, setMailboxKey, setCut, cleanupRegistry, props.currentUsername)
 
     let resizeObserver: ResizeObserver | null = null
 
@@ -873,67 +865,10 @@ export default function ContentComponent(props: ContentComponentProps) {
           </Button>
         </div>
       )}
-      {zoomedImg && <ZoomComponent {...zoomedImg} onExit={() => setZoomedImg(null)} />}
+      <ZoomComponent />
       {mailboxKey && mailboxKey.type === 'mailbox' && (
         <SecretMailEncoderForm {...mailboxKey} onClose={() => setMailboxKey(null)} />
       )}
     </>
-  )
-}
-
-// extract zoom component
-
-interface ZoomComponentProps {
-  src: string
-  width: number
-  height: number
-  onExit: () => void
-}
-
-function ZoomComponent(props: ZoomComponentProps) {
-  // need to account for retina displays
-  const minScale = Math.min(1, window.innerWidth / props.width, window.innerHeight / props.height)
-  const defaultScale = Math.min(window.innerWidth / props.width, window.innerHeight / props.height)
-  const defaultTranslateX = (window.innerWidth - props.width * defaultScale) / 2
-  const defaultTranslateY = (window.innerHeight - props.height * defaultScale) / 2
-  useHotkeys('esc', props.onExit)
-  useOnBack(props.onExit)
-
-  return (
-    <div
-      className={overlayStyles.overlay}
-      onClick={(e) => {
-        // check if click originated from this element
-        if ((e.target as HTMLElement).classList.contains('react-transform-wrapper')) {
-          props.onExit()
-        }
-      }}
-    >
-      <TransformWrapper
-        initialScale={defaultScale}
-        limitToBounds={true}
-        centerZoomedOut={true}
-        minScale={minScale}
-        initialPositionX={defaultTranslateX}
-        initialPositionY={defaultTranslateY}
-      >
-        <TransformComponent
-          wrapperStyle={{
-            width: '100vw',
-            height: '100vh',
-          }}
-        >
-          <img
-            src={props.src}
-            alt=''
-            style={{
-              maxWidth: 'auto !important',
-              maxHeight: 'auto !important',
-            }}
-          />
-        </TransformComponent>
-      </TransformWrapper>
-      <span className={classNames('i i-close', styles.overlayCloseButton)} onClick={props.onExit} />
-    </div>
   )
 }

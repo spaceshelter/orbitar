@@ -545,7 +545,7 @@ export default class TheParser {
       )
     }
 
-    const alt = node.attribs['alt'] ? htmlEscape(node.attribs['alt']) : ''
+    const alt = node.attribs['alt'] ?? ''
 
     return { text: `<img src="${encodeURI(url)}" alt="${alt}"/>`, mentions: [], urls: [], images: [url] }
   }
@@ -688,12 +688,18 @@ export default class TheParser {
   }
 
   parseGallery(node: Element): ParseResult {
-    const showArrows = node.attribs['show-arrows'] !== 'false'
-    const showIndicators = node.attribs['show-indicators'] !== 'false'
-    const showThumbnails = node.attribs['show-thumbnails'] !== 'false'
-    const autoPlayInterval = parseInt(node.attribs['auto-play-interval'] || '0', 10) * 1000
+    const props = [
+      node.attribs['no-arrows'] != undefined ? 'data-no-arrows' : '',
+      node.attribs['no-indicators'] != undefined ? 'data-no-indicators' : '',
+      node.attribs['no-thumbnails'] != undefined ? 'data-no-thumbnails' : '',
+    ]
+    const autoPlayInterval = parseInt(node.attribs['auto-play-interval'] || '0', 10)
+    if (autoPlayInterval > 0) {
+      props.push(`auto-play-interval="${autoPlayInterval * 1000}"`)
+    }
+    const propsText = props.join(' ').trim()
     const result = this.parseChildNodes(node.children)
-    const text = `<div class="gallery" show-arrows=${showArrows} show-indicators="${showIndicators}" show-thumbnails="${showThumbnails}" auto-play-interval="${autoPlayInterval}">${result.text}</div>`
+    const text = `<div class="gallery" ${propsText}>${result.text}</div>`
 
     return { ...result, text }
   }

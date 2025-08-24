@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react'
 
+import { useAppState } from '@state/AppState'
 import Button from '@ui/Button'
 import classNames from 'classnames'
+import { observer } from 'mobx-react-lite'
 
 import { ReactComponent as ChevronLeft } from '../Assets/chevron-left.svg'
 import { ReactComponent as ChevronRight } from '../Assets/chevron-right.svg'
@@ -12,34 +14,29 @@ export interface ImageItem {
   alt?: string
 }
 
-type ZoomedImg = {
-  src: string
-  width: number
-  height: number
+export interface GalleryElement {
+  image: ImageItem
+  htmlElement?: HTMLElement
+  isVideo?: boolean
 }
 
-interface ImageGalleryProps {
-  images?: ImageItem[]
+interface GalleryComponentProps {
+  elements: GalleryElement[]
   autoPlayInterval?: number
   showThumbnails?: boolean
   showIndicators?: boolean
   showArrows?: boolean
   className?: string
-  setZoomedImg?: (img: ZoomedImg | null) => void
 }
 
-const ImageGallery: React.FC<ImageGalleryProps> = ({
-  images: propImages,
+const GalleryComponent: React.FC<GalleryComponentProps> = ({
+  elements,
   autoPlayInterval = 0,
   showThumbnails = true,
   showIndicators = true,
   showArrows = true,
-  setZoomedImg,
   className,
 }) => {
-  const defaultImages: ImageItem[] = []
-
-  const images = propImages || defaultImages
   const [currentIndex, setCurrentIndex] = useState<number>(0)
 
   const [touchStart, setTouchStart] = useState<number>(0)
@@ -48,8 +45,10 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
 
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null)
   const [isTransitioning, setIsTransitioning] = useState<boolean>(false)
-  const [isScalable, setIsScalable] = useState<boolean>(false)
   const [imageLarge, setImageLarge] = useState<boolean>(false)
+  const [maxHeight, setMaxHeight] = useState<number>(0)
+
+  const appState = useAppState()
 
   const getLegacyZoom = (): boolean => {
     const legacy = localStorage.getItem('legacyZoom')
@@ -58,40 +57,50 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
 
   const minSwipeDistance = 50
 
-  const goToPrevious = (): void => {
+  const goToPrevious = (e: React.MouseEvent | undefined = undefined): void => {
     if (isTransitioning) return
 
-    const newIndex = currentIndex === 0 ? images.length - 1 : currentIndex - 1
-    setSlideDirection('right')
-    setIsTransitioning(true)
-
-    setTimeout(() => handleStopTransition(newIndex), 300)
+    const newIndex = currentIndex === 0 ? elements.length - 1 : currentIndex - 1
+    goToSlide(newIndex, e)
   }
 
-  const goToNext = (): void => {
+  const goToNext = (e: React.MouseEvent | undefined = undefined): void => {
     if (isTransitioning) return
 
-    const newIndex = currentIndex === images.length - 1 ? 0 : currentIndex + 1
-    setSlideDirection('left')
-    setIsTransitioning(true)
-
-    setTimeout(() => handleStopTransition(newIndex), 300)
+    const newIndex = currentIndex === elements.length - 1 ? 0 : currentIndex + 1
+    goToSlide(newIndex, e)
   }
 
-  const goToSlide = (index: number): void => {
+  const goToSlide = (index: number, e: React.MouseEvent | undefined = undefined): void => {
     if (isTransitioning || index === currentIndex) return
+    e?.stopPropagation()
 
     const direction = index > currentIndex ? 'left' : 'right'
     setSlideDirection(direction)
     setIsTransitioning(true)
 
-    setTimeout(() => handleStopTransition(index), 300)
+    setTimeout(() => {
+      setSlideDirection(null)
+      setIsTransitioning(false)
+      setCurrentIndex(index)
+    }, 300)
   }
 
-  const handleStopTransition = (index: number): void => {
-    setSlideDirection(null)
-    setIsTransitioning(false)
-    setCurrentIndex(index)
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement, Event>): void => {
+    const img = e.currentTarget
+    if (!maxHeight) {
+      setMaxHeight(img.clientHeight)
+    }
+
+    if (!getLegacyZoom() && appState.zoomedImg) {
+      appState.setZoomedImg({
+        src: img.src,
+        width: img.naturalWidth,
+        height: img.naturalHeight,
+        goLeft: goToPrevious,
+        goRight: goToNext,
+      })
+    }
   }
 
   const handleTouchStart = (e: React.TouchEvent): void => {
@@ -125,39 +134,27 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
     setIsDragging(false)
   }
 
-  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement, Event>): void => {
-    const img = e.currentTarget
-    if (img.naturalWidth > 800 || img.naturalHeight > 800) {
-      setIsScalable(true)
-    } else {
-      setIsScalable(false)
-    }
-  }
-
   const handleImageClick = (e: React.MouseEvent<HTMLImageElement, MouseEvent>): void => {
-    if (!isScalable) return
+    if (imageLarge) return
 
     const img = e.currentTarget
-    if (getLegacyZoom()) {
-      if (imageLarge) {
-        setImageLarge(false)
-        return
-      }
 
-      setImageLarge(true)
+    if (getLegacyZoom()) {
+      setImageLarge(!imageLarge)
     } else {
-      setZoomedImg &&
-        setZoomedImg({
-          src: img.src,
-          width: img.naturalWidth,
-          height: img.naturalHeight,
-        })
+      appState.setZoomedImg({
+        src: img.src,
+        width: img.naturalWidth,
+        height: img.naturalHeight,
+        goLeft: goToPrevious,
+        goRight: goToNext,
+      })
     }
   }
 
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent): void => {
-      if (isTransitioning) return
+      if (isTransitioning || !appState.zoomedImg) return
 
       if (event.key === 'ArrowLeft') {
         goToPrevious()
@@ -180,7 +177,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
     return () => clearInterval(interval)
   }, [autoPlayInterval, currentIndex, isTransitioning])
 
-  if (!images || images.length === 0) {
+  if (!elements || elements.length === 0) {
     return (
       <div className={classNames(styles.gallery, className)}>
         <div className={styles.noImages}>А где все картинки?</div>
@@ -188,7 +185,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
     )
   }
 
-  const currentImage = images[currentIndex]
+  const currentElement = elements[currentIndex]
 
   return (
     <div className={classNames(styles.gallery, className)}>
@@ -202,16 +199,29 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        style={maxHeight ? { height: `${maxHeight}px` } : {}}
       >
-        <img
-          src={currentImage.src}
-          alt={currentImage.alt}
-          className={classNames(styles.mainImage, isScalable && 'image-scalable', imageLarge && 'image-preview')}
-          onClick={handleImageClick}
-          onLoad={handleImageLoad}
-        />
+        {currentElement.isVideo && currentElement.htmlElement ? (
+          <span
+            className={classNames(styles.mainImage, styles.videoWrapper)}
+            ref={(ref) => {
+              if (ref && currentElement.htmlElement && !ref.contains(currentElement.htmlElement)) {
+                ref.innerHTML = ''
+                ref.appendChild(currentElement.htmlElement)
+              }
+            }}
+          />
+        ) : (
+          <img
+            src={currentElement.image.src}
+            alt={currentElement.image.alt}
+            className={classNames(styles.mainImage, 'image-scalable', imageLarge && 'image-preview')}
+            onClick={handleImageClick}
+            onLoad={handleImageLoad}
+          />
+        )}
 
-        {showArrows && images.length > 1 && (
+        {showArrows && (
           <>
             <Button
               onClick={goToPrevious}
@@ -233,12 +243,12 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
           </>
         )}
 
-        {showIndicators && images.length > 1 && (
+        {showIndicators && (
           <div className={styles.indicators}>
-            {images.map((_, index) => (
+            {elements.map((_, index) => (
               <Button
                 key={index}
-                onClick={() => goToSlide(index)}
+                onClick={(e: React.MouseEvent) => goToSlide(index, e)}
                 className={classNames(styles.indicator, { [styles.indicatorActive]: index === currentIndex })}
                 aria-label={`Перейти к изображению ${index + 1}`}
                 disabled={isTransitioning}
@@ -250,19 +260,22 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
         )}
       </div>
 
-      {currentImage.alt && <div className={styles.caption}>{currentImage.alt}</div>}
+      {currentElement.image.alt && <div className={styles.caption}>{currentElement.image.alt}</div>}
 
-      {showThumbnails && images.length > 1 && (
+      {showThumbnails && (
         <div className={styles.thumbnails}>
-          {images.map((image, index) => (
+          {elements.map((el, index) => (
             <Button
               key={index}
-              onClick={() => goToSlide(index)}
-              className={classNames(styles.thumbnail, { [styles.thumbnailActive]: index === currentIndex })}
+              onClick={(e: React.MouseEvent) => goToSlide(index, e)}
+              className={classNames(styles.thumbnail, {
+                [styles.thumbnailActive]: index === currentIndex,
+                [styles.thumbnailVideo]: el.isVideo,
+              })}
               aria-label={`Миниатюра ${index + 1}`}
               disabled={isTransitioning}
             >
-              <img src={image.src} alt={image.alt} className={styles.thumbnailImage} />
+              <img src={el.image.src} alt={el.image.alt} className={styles.thumbnailImage} />
             </Button>
           ))}
         </div>
@@ -271,4 +284,4 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
   )
 }
 
-export default ImageGallery
+export default observer(GalleryComponent)

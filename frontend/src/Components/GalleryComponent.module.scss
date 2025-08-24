@@ -31,6 +31,8 @@ $slide-transition-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .main {
+  display: flex;
+  align-items: center;
   position: relative;
   border-radius: $gallery-border-radius;
   overflow: hidden;
@@ -46,8 +48,15 @@ $slide-transition-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   transition: opacity 300ms $transition-easing, transform $slide-transition-duration $slide-transition-easing;
   animation: fadeIn 0.3s $transition-easing;
   border-radius: $gallery-border-radius;
-  height: auto;
+  height: 100%;
   
+  &>a {
+    height: calc(100% - 10px);
+    
+    &>img {
+        height: 100%;
+    }
+  }
 }
 
 .slideLeft {
@@ -76,7 +85,7 @@ $slide-transition-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background-color: var(--fgSoftest);
+  background-color: var(--primary);
   color: white;
   border: none;
   border-radius: 10%;
@@ -124,7 +133,7 @@ $slide-transition-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
 
 .indicators {
   position: absolute;
-  bottom: 1rem;
+  bottom: 5px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -132,7 +141,10 @@ $slide-transition-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   z-index: 10;
   flex-wrap: wrap;
   justify-content: center;
-  width: 80%;
+  max-width: 80%;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  background-color: var(--fgSoftest);
 }
 
 .indicator {
@@ -154,7 +166,7 @@ $slide-transition-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background-color: var(--fgSoftest);
+  background-color: var(--bg);
   transition: all $transition-duration $transition-easing;
 
   .indicator:hover:not(:disabled) & {
@@ -231,6 +243,24 @@ $slide-transition-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
     cursor: not-allowed;
     opacity: 0.4;
   }
+}
+
+.thumbnailVideo {
+  position: relative;
+
+  &:after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.4);
+    width: 96px;
+    height: 96px;
+    background: url(../Assets/play.svg) no-repeat center center;
+    content: ' ';
+    display: block;
+    opacity: 0.8;
+  }
+
 }
 
 .thumbnailActive {

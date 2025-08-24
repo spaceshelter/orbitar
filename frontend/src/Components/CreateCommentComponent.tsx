@@ -17,7 +17,7 @@ import { useDebouncedCallback } from 'use-debounce'
 import { CommentInfo, PostLinkInfo } from '../Types/PostInfo'
 import { UserGender } from '../Types/UserInfo'
 import ContentComponent from './ContentComponent'
-import MediaUploader from './MediaUploader'
+import MediaUploader, { CreateGalletyOption } from './MediaUploader'
 import { PollCreationWizard, PollCreationWizardSubmitData } from './PollCreationWizard'
 import { SecretMailEncoderForm } from './SecretMailbox'
 import SlowMode from './SlowMode'
@@ -25,7 +25,6 @@ import ThemeToggleComponent from './ThemeToggleComponent'
 
 import { ReactComponent as CodeIcon } from '../Assets/code-slash.svg'
 import { ReactComponent as ExpandIcon } from '../Assets/expand.svg'
-import { ReactComponent as Gallerycon } from '../Assets/gallery.svg'
 import { ReactComponent as ImageIcon } from '../Assets/image.svg'
 import { ReactComponent as IronyIcon } from '../Assets/irony.svg'
 import { ReactComponent as LinkIcon } from '../Assets/link.svg'
@@ -379,12 +378,24 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
       })
   }
 
-  const handleMediaUpload = (uri: string, type: 'video' | 'image') => {
+  const handleMediaUpload = (uri: string, type: 'video' | 'image', gallery?: CreateGalletyOption | undefined) => {
     setMediaUploaderData(undefined)
     setMediaUploaderOpen(false)
     if (type === 'image') {
       // noinspection HtmlRequiredAltAttribute
-      const text = `<img src="${uri}" alt=""/>`
+      let text = `<img src="${uri}" alt=""/>`
+      if (gallery?.create) {
+        const props = [
+          gallery.autoPlayInterval! > 0 ? `auto-play-interval="${gallery.autoPlayInterval}"` : '',
+          gallery.disableArrows ? 'no-arrows' : '',
+          gallery.disableIndicators ? 'no-indicators' : '',
+          gallery.disableThumbnails ? 'no-thumbnails' : '',
+        ]
+          .join(' ')
+          .trim()
+
+        text = `<gallery ${props}>\n<img src="${uri}" alt=""/>\n</gallery>`
+      }
       replaceText(text, text.length)
     } else {
       const text = `<video src="${uri}"/>`
@@ -560,24 +571,6 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             tabIndex={toolbarTabIndex}
           >
             <ImageIcon />
-          </Button>
-        </div>
-        <div className={styles.control}>
-          <Button
-            variant='minimal'
-            disabled={disabledButtons}
-            onClick={() =>
-              applyTag('gallery', {
-                'auto-play-interval': '0',
-                'show-arrows': 'true',
-                'show-indicators': 'true',
-                'show-thumbnails': 'true',
-              })
-            }
-            title='Галерея изображений'
-            tabIndex={toolbarTabIndex}
-          >
-            <Gallerycon />
           </Button>
         </div>
         <div className={styles.control}>

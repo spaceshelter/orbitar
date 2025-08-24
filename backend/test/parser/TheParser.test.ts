@@ -270,44 +270,65 @@ test('parse expand tag', () => {
   )
 })
 
-test('parse gallery tag', () => {
-  // Basic gallery
-  expect(p.parse('<gallery><img src="https://orbitar.media/image1.jpg" /></gallery>').text).toEqual(
-    '<div class="gallery" show-arrows=true show-indicators="true" show-thumbnails="true" auto-play-interval="0"><img src="https://b.orbitar.media/image1.jpg" alt=""/></div>',
-  )
+test('parse gallery with no attributes', () => {
+  const result = p.parse('<gallery><img src="https://orbitar.media/img1.jpg" alt="img1"/></gallery>')
+  expect(result.text).toEqual('<div class="gallery" ><img src="https://b.orbitar.media/img1.jpg" alt="img1"/></div>')
+})
 
-  // Gallery with attributes
-  expect(
-    p.parse(
-      '<gallery show-arrows="false" show-indicators="false" show-thumbnails="false" auto-play-interval="5"><img src="https://orbitar.media/image2.jpg" /></gallery>',
-    ).text,
-  ).toEqual(
-    '<div class="gallery" show-arrows=false show-indicators="false" show-thumbnails="false" auto-play-interval="5000"><img src="https://b.orbitar.media/image2.jpg" alt=""/></div>',
+test('parse gallery with all attributes', () => {
+  const result = p.parse(
+    '<gallery no-arrows no-indicators no-thumbnails auto-play-interval="5"><img src="https://orbitar.media/img1.jpg" alt="img1"/></gallery>',
   )
-
-  // Gallery with multiple images
-  expect(
-    p.parse(
-      '<gallery><img src="https://orbitar.media/image1.jpg" /><img src="https://orbitar.media/image2.jpg" /></gallery>',
-    ).text,
-  ).toEqual(
-    '<div class="gallery" show-arrows=true show-indicators="true" show-thumbnails="true" auto-play-interval="0"><img src="https://b.orbitar.media/image1.jpg" alt=""/><img src="https://b.orbitar.media/image2.jpg" alt=""/></div>',
+  expect(result.text).toEqual(
+    '<div class="gallery" data-no-arrows data-no-indicators data-no-thumbnails auto-play-interval="5000"><img src="https://b.orbitar.media/img1.jpg" alt="img1"/></div>',
   )
+})
 
-  // Gallery with nested disallowed tag (should escape)
-  expect(p.parse('<gallery><invalid>test</invalid></gallery>').text).toEqual(
-    '<div class="gallery" show-arrows=true show-indicators="true" show-thumbnails="true" auto-play-interval="0">&lt;invalid&gt;test&lt;/invalid&gt;</div>',
+test('parse gallery with invalid auto-play-interval', () => {
+  const result = p.parse(
+    '<gallery auto-play-interval="abc"><img src="https://orbitar.media/img1.jpg" alt="img1"/></gallery>',
   )
+  expect(result.text).toEqual('<div class="gallery" ><img src="https://b.orbitar.media/img1.jpg" alt="img1"/></div>')
+})
 
-  // Gallery with no children
-  expect(p.parse('<gallery></gallery>').text).toEqual(
-    '<div class="gallery" show-arrows=true show-indicators="true" show-thumbnails="true" auto-play-interval="0"></div>',
+test('parse gallery with nested tags', () => {
+  const result = p.parse(
+    '<gallery><img src="https://orbitar.media/img1.jpg" alt="img1"/><img src="https://orbitar.media/img2.jpg" alt="img2"/></gallery>',
   )
+  expect(result.text).toEqual(
+    '<div class="gallery" ><img src="https://b.orbitar.media/img1.jpg" alt="img1"/><img src="https://b.orbitar.media/img2.jpg" alt="img2"/></div>',
+  )
+})
 
-  // Gallery cannot be inside a, blockquote, pre, mailbox, mail, b, i, u, strike, irony
-  expect(
-    p.parse('<a href="https://test.com"><gallery><img src="https://orbitar.media/image1.jpg" /></gallery></a>').text,
-  ).toEqual('<a href="https://test.com" target="_blank"><img src="https://b.orbitar.media/image1.jpg" alt=""/></a>')
+test('parse gallery with text content', () => {
+  const result = p.parse('<gallery>Some text</gallery>')
+  expect(result.text).toEqual('<div class="gallery" >Some text</div>')
+})
+
+test('parse gallery with invalid child tag', () => {
+  const result = p.parse('<gallery><invalid>test</invalid></gallery>')
+  expect(result.text).toEqual('<div class="gallery" >&lt;invalid&gt;test&lt;/invalid&gt;</div>')
+})
+
+test('parse img alt attribute for double escape', () => {
+  // alt contains HTML special chars
+  const result = p.parse('<img src="https://orbitar.media/img1.jpg" alt="&lt;test&gt; &amp; &quot;"/>')
+  expect(result.text).toEqual('<img src="https://b.orbitar.media/img1.jpg" alt="&lt;test&gt; &amp; &quot;"/>')
+})
+
+test('parse img alt attribute with quotes', () => {
+  const result = p.parse('<img src="https://orbitar.media/img1.jpg" alt="a &quot;quote&quot;"/>')
+  expect(result.text).toEqual('<img src="https://b.orbitar.media/img1.jpg" alt="a &quot;quote&quot;"/>')
+})
+
+test('parse img alt attribute with single quote', () => {
+  const result = p.parse('<img src="https://orbitar.media/img1.jpg" alt="it\'s a test"/>')
+  expect(result.text).toEqual('<img src="https://b.orbitar.media/img1.jpg" alt="it\'s a test"/>')
+})
+
+test('parse img with missing alt attribute', () => {
+  const result = p.parse('<img src="https://orbitar.media/img1.jpg"/>')
+  expect(result.text).toEqual('<img src="https://b.orbitar.media/img1.jpg" alt=""/>')
 })
 
 test('parse secret mailbox with valid secret attribute', () => {

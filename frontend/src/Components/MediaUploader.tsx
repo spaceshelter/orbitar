@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 
 import Button from '@ui/Button'
+import Checkbox from '@ui/Checkbox'
+import { Field } from '@ui/Field'
 import { toast } from 'react-toastify'
 
 import useFocus from '../API/use/useFocus'
@@ -22,8 +24,16 @@ export type UploadData = UploadDataUri | UploadDataFile
 export type MediaUploaderProps = {
   onCancel: () => void
   onError?: (error: string) => void
-  onSuccess: (uri: string, type: 'video' | 'image') => void
+  onSuccess: (uri: string, type: 'video' | 'image', gallery?: CreateGalletyOption | undefined) => void
   mediaData?: File
+}
+
+export type CreateGalletyOption = {
+  create: boolean
+  disableArrows?: boolean
+  disableIndicators?: boolean
+  disableThumbnails?: boolean
+  autoPlayInterval?: number
 }
 
 export default function MediaUploader(props: MediaUploaderProps) {
@@ -37,6 +47,13 @@ export default function MediaUploader(props: MediaUploaderProps) {
   const [uploadEnabled, setUploadEnabled] = useState<boolean>(false)
   const [uploadData, setUploadData] = useState<UploadData>()
   const [uploading, setUploading] = useState(false)
+  const [galleryOption, setGalleryOption] = useState<CreateGalletyOption>({
+    create: false,
+    disableArrows: false,
+    disableIndicators: false,
+    disableThumbnails: false,
+    autoPlayInterval: 0,
+  })
 
   useEffect(() => {
     if (props.mediaData) {
@@ -177,10 +194,10 @@ export default function MediaUploader(props: MediaUploaderProps) {
     }
 
     if (uploadData.type === 'video-uri') {
-      props.onSuccess(uploadData.uri, 'video')
+      props.onSuccess(uploadData.uri, 'video', galleryOption)
       return
     } else if (uploadData.type === 'image-uri') {
-      props.onSuccess(uploadData.uri, 'image')
+      props.onSuccess(uploadData.uri, 'image', galleryOption)
       return
     } else if (uploadData.type === 'video' || uploadData.type === 'image') {
       const file = uploadData.file
@@ -204,7 +221,11 @@ export default function MediaUploader(props: MediaUploaderProps) {
               .then((data) => {
                 if (data.status === 'ok') {
                   console.log('UPLOAD COMPLETE', data)
-                  props.onSuccess(process.env.REACT_APP_MEDIA_HOSTING_URL + '/' + data.url, uploadData.type)
+                  props.onSuccess(
+                    process.env.REACT_APP_MEDIA_HOSTING_URL + '/' + data.url,
+                    uploadData.type,
+                    galleryOption,
+                  )
                 } else {
                   console.log('UPLOAD FAILED: no link', data, file.type)
                   handleError('Произошла ошибка при загрузке 🥺')
@@ -290,6 +311,56 @@ export default function MediaUploader(props: MediaUploaderProps) {
             )}
           </div>
         </div>
+        <Checkbox
+          id='createGallery'
+          label='Создать галерею'
+          checked={galleryOption.create}
+          onChange={(e) => setGalleryOption({ ...galleryOption, create: e.target.checked })}
+        />
+
+        {galleryOption.create && (
+          <>
+            <div className={styles.disclaimer}>
+              Внутрь тега {'<gallery>'} можно вставлять теги img и video или просто ссылки на видео и изображения. Все
+              остальное игнорируется
+              <br />
+              Параметр alt у картинки можно использовать для создания подписи под каждой картинкой
+            </div>
+            <Checkbox
+              id='disableArrows'
+              label='Отключить стрелки'
+              checked={galleryOption.disableArrows}
+              onChange={(e) => setGalleryOption({ ...galleryOption, disableArrows: e.target.checked })}
+            />
+            <Checkbox
+              id='disableIndicators'
+              label='Отключить индикаторы'
+              checked={galleryOption.disableIndicators}
+              onChange={(e) => setGalleryOption({ ...galleryOption, disableIndicators: e.target.checked })}
+            />
+            <Checkbox
+              id='disableThumbnails'
+              label='Отключить миниатюры'
+              checked={galleryOption.disableThumbnails}
+              onChange={(e) => setGalleryOption({ ...galleryOption, disableThumbnails: e.target.checked })}
+            />
+            <Field
+              variant='input'
+              type='number'
+              label='Автопроигрывание в секундах (0 - выкл.)'
+              className={styles.autoPlayInterval}
+              min={0}
+              max={60}
+              value={galleryOption.autoPlayInterval?.toString() || '0'}
+              onChange={(e) =>
+                setGalleryOption({
+                  ...galleryOption,
+                  autoPlayInterval: Math.min(60, Math.max(0, Number(e.target.value))),
+                })
+              }
+            />
+          </>
+        )}
         <div className={styles.disclaimer}>Загрузка картинок и видео в тестовом режиме, если не работает - сорян!</div>
       </div>
     </>
