@@ -55,7 +55,6 @@ export default function MediaUploader(props: MediaUploaderProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
 
   const [dragActive, setDragActive] = useState(false)
-  const [uploadEnabled, setUploadEnabled] = useState<boolean>(true)
   const [uploading, setUploading] = useState(false)
 
   const [uploadArray, setUploadArray] = useState<MediaData[]>([])
@@ -382,7 +381,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
               <div className={styles.choose}>Выбрать</div>
             </label>
           </div>
-          <Button variant='primary' disabled={!uploadEnabled || uploading} type='submit' loading={uploading}>
+          <Button variant='primary' disabled={uploading} type='submit' loading={uploading}>
             {uploading ? 'Загрузка' : 'Фьють'}
           </Button>
           {currentMedia.preview && (
