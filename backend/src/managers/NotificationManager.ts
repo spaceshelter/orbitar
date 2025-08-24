@@ -36,6 +36,7 @@ export default class NotificationManager {
     notificationsRepository: NotificationsRepository,
     postRepository: PostRepository,
     userCache: UserCache,
+    siteRepository: SiteRepository,
     siteManagerLazy: () => SiteManager /*FIXME: HAX*/,
     webPushRepository: WebPushRepository,
     vapidConfig: VapidConfig,
@@ -46,6 +47,7 @@ export default class NotificationManager {
     this.commentRepository = commentRepository
     this.notificationsRepository = notificationsRepository
     this.postRepository = postRepository
+    this.siteRepository = siteRepository
     this.userCache = userCache
 
     this.webPushRepository = webPushRepository

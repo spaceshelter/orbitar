@@ -11,7 +11,7 @@ export class PushService {
       return
     }
 
-    const registration = await navigator.serviceWorker.getRegistration('/service.js')
+    const registration = await navigator.serviceWorker.getRegistration('/serviceWorker.ts')
     if (!registration) {
       return
     }
@@ -55,6 +55,8 @@ export class PushService {
     if (!registration) {
       return
     }
+
+    console.debug('Subscribing to push notifications', process.env.REACT_APP_VAPID_PUBLIC_KEY)
 
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
