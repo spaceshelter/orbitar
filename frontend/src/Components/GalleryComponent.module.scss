@@ -48,6 +48,15 @@ $slide-transition-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   transition: opacity 300ms $transition-easing, transform $slide-transition-duration $slide-transition-easing;
   animation: fadeIn 0.3s $transition-easing;
   border-radius: $gallery-border-radius;
+  height: 100%;
+  
+  &>a {
+    height: calc(100% - 10px);
+    
+    &>img {
+        height: 100%;
+    }
+  }
 }
 
 .slideLeft {
@@ -311,6 +320,19 @@ $slide-transition-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
     -khtml-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
+  }
+}
+
+@media (max-width: 1024px) {
+  .mainImage {
+    height: auto;
+    &>a {
+      height: auto;
+    
+      &>img {
+          height: auto;
+      }
+    }
   }
 }
 
