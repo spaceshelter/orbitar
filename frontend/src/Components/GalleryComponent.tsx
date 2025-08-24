@@ -15,9 +15,10 @@ export interface ImageItem {
 }
 
 export interface GalleryElement {
-  image: ImageItem
+  image?: ImageItem
   htmlElement?: HTMLElement
   isVideo?: boolean
+  element?: React.ReactNode
 }
 
 interface GalleryComponentProps {
@@ -26,15 +27,19 @@ interface GalleryComponentProps {
   showThumbnails?: boolean
   showIndicators?: boolean
   showArrows?: boolean
+  disableZoom?: boolean
+  onChangeIndex?: (index: number) => void
   className?: string
 }
 
 const GalleryComponent: React.FC<GalleryComponentProps> = ({
   elements,
   autoPlayInterval = 0,
-  showThumbnails = true,
-  showIndicators = true,
-  showArrows = true,
+  showThumbnails = false,
+  showIndicators = false,
+  showArrows = false,
+  disableZoom = false,
+  onChangeIndex,
   className,
 }) => {
   const [currentIndex, setCurrentIndex] = useState<number>(0)
@@ -78,6 +83,7 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
     const direction = index > currentIndex ? 'left' : 'right'
     setSlideDirection(direction)
     setIsTransitioning(true)
+    onChangeIndex?.(index)
 
     setTimeout(() => {
       setSlideDirection(null)
@@ -135,7 +141,7 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
   }
 
   const handleImageClick = (e: React.MouseEvent<HTMLImageElement, MouseEvent>): void => {
-    if (imageLarge) return
+    if (imageLarge || disableZoom) return
 
     const img = e.currentTarget
 
@@ -201,47 +207,18 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
         onTouchEnd={handleTouchEnd}
         style={maxHeight ? { height: `${maxHeight}px` } : {}}
       >
-        {currentElement.isVideo && currentElement.htmlElement ? (
-          <span
-            className={classNames(styles.mainImage, styles.videoWrapper)}
-            ref={(ref) => {
-              if (ref && currentElement.htmlElement && !ref.contains(currentElement.htmlElement)) {
-                ref.innerHTML = ''
-                ref.appendChild(currentElement.htmlElement)
-              }
-            }}
+        <span className={styles.mediaContainer}>
+          <GalleryElement
+            image={currentElement.image}
+            htmlElement={currentElement.htmlElement}
+            isVideo={currentElement.isVideo}
+            element={currentElement.element}
+            handleImageClick={handleImageClick}
+            handleImageLoad={handleImageLoad}
+            imageLarge={imageLarge}
+            disableZoom={disableZoom}
           />
-        ) : (
-          <img
-            src={currentElement.image.src}
-            alt={currentElement.image.alt}
-            className={classNames(styles.mainImage, 'image-scalable', imageLarge && 'image-preview')}
-            onClick={handleImageClick}
-            onLoad={handleImageLoad}
-          />
-        )}
-
-        {showArrows && (
-          <>
-            <Button
-              onClick={goToPrevious}
-              className={classNames(styles.arrow, styles.arrowPrev)}
-              aria-label='Предыдущее изображение'
-              disabled={isTransitioning}
-            >
-              <ChevronLeft />
-            </Button>
-
-            <Button
-              onClick={goToNext}
-              className={classNames(styles.arrow, styles.arrowNext)}
-              aria-label='Следующее изображение'
-              disabled={isTransitioning}
-            >
-              <ChevronRight />
-            </Button>
-          </>
-        )}
+        </span>
 
         {showIndicators && (
           <div className={styles.indicators}>
@@ -260,7 +237,29 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
         )}
       </div>
 
-      {currentElement.image.alt && <div className={styles.caption}>{currentElement.image.alt}</div>}
+      {showArrows && (
+        <>
+          <Button
+            onClick={goToPrevious}
+            className={classNames(styles.arrow, styles.arrowPrev)}
+            aria-label='Предыдущее изображение'
+            disabled={isTransitioning}
+          >
+            <ChevronLeft />
+          </Button>
+
+          <Button
+            onClick={goToNext}
+            className={classNames(styles.arrow, styles.arrowNext)}
+            aria-label='Следующее изображение'
+            disabled={isTransitioning}
+          >
+            <ChevronRight />
+          </Button>
+        </>
+      )}
+
+      {currentElement.image?.alt && <div className={styles.caption}>{currentElement.image.alt}</div>}
 
       {showThumbnails && (
         <div className={styles.thumbnails}>
@@ -275,13 +274,55 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
               aria-label={`Миниатюра ${index + 1}`}
               disabled={isTransitioning}
             >
-              <img src={el.image.src} alt={el.image.alt} className={styles.thumbnailImage} />
+              <img src={el.image?.src} alt={el.image?.alt} className={styles.thumbnailImage} />
             </Button>
           ))}
         </div>
       )}
     </div>
   )
+}
+
+interface GalleryElementProps {
+  image?: ImageItem
+  htmlElement?: HTMLElement
+  isVideo?: boolean
+  element?: React.ReactNode
+  handleImageClick: (e: React.MouseEvent<HTMLImageElement, MouseEvent>) => void
+  handleImageLoad: (e: React.SyntheticEvent<HTMLImageElement, Event>) => void
+  imageLarge?: boolean
+  disableZoom?: boolean
+}
+
+function GalleryElement(props: GalleryElementProps): JSX.Element {
+  const { isVideo, image, htmlElement, element, handleImageClick, handleImageLoad, imageLarge, disableZoom } = props
+
+  if (isVideo && htmlElement) {
+    return (
+      <span
+        ref={(ref) => {
+          if (ref && htmlElement && !ref.contains(htmlElement)) {
+            ref.innerHTML = ''
+            ref.appendChild(htmlElement)
+          }
+        }}
+      ></span>
+    )
+  }
+
+  if (image) {
+    return (
+      <img
+        src={image.src}
+        alt={image.alt}
+        className={classNames(styles.image, !disableZoom && 'image-scalable', imageLarge && 'image-preview')}
+        onClick={handleImageClick}
+        onLoad={handleImageLoad}
+      />
+    )
+  }
+
+  return <>{element}</>
 }
 
 export default observer(GalleryComponent)

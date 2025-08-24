@@ -17,7 +17,7 @@ import { useDebouncedCallback } from 'use-debounce'
 import { CommentInfo, PostLinkInfo } from '../Types/PostInfo'
 import { UserGender } from '../Types/UserInfo'
 import ContentComponent from './ContentComponent'
-import MediaUploader, { CreateGalletyOption } from './MediaUploader'
+import MediaUploader, { CreateGalletyOption, MediaResult } from './MediaUploader'
 import { PollCreationWizard, PollCreationWizardSubmitData } from './PollCreationWizard'
 import { SecretMailEncoderForm } from './SecretMailbox'
 import SlowMode from './SlowMode'
@@ -378,29 +378,31 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
       })
   }
 
-  const handleMediaUpload = (uri: string, type: 'video' | 'image', gallery?: CreateGalletyOption | undefined) => {
+  const handleMediaUpload = (result: MediaResult[], gallery?: CreateGalletyOption | undefined) => {
     setMediaUploaderData(undefined)
     setMediaUploaderOpen(false)
-    if (type === 'image') {
-      // noinspection HtmlRequiredAltAttribute
-      let text = `<img src="${uri}" alt=""/>`
-      if (gallery?.create) {
-        const props = [
-          gallery.autoPlayInterval! > 0 ? `auto-play-interval="${gallery.autoPlayInterval}"` : '',
-          gallery.disableArrows ? 'no-arrows' : '',
-          gallery.disableIndicators ? 'no-indicators' : '',
-          gallery.disableThumbnails ? 'no-thumbnails' : '',
-        ]
-          .join(' ')
-          .trim()
+    let text = result
+      .map((data) => {
+        if (data.type === 'image') {
+          return `<img src="${data.url}" alt=""/>`
+        } else if (data.type === 'video') {
+          return `<video src="${data.url}"/>`
+        }
+      })
+      .join('\n')
+    if (gallery?.create) {
+      const props = [
+        gallery.autoPlayInterval! > 0 ? `auto-play-interval="${gallery.autoPlayInterval}"` : '',
+        gallery.disableArrows ? 'no-arrows' : '',
+        gallery.disableIndicators ? 'no-indicators' : '',
+        gallery.disableThumbnails ? 'no-thumbnails' : '',
+      ]
+        .join(' ')
+        .trim()
 
-        text = `<gallery ${props}>\n<img src="${uri}" alt=""/>\n</gallery>`
-      }
-      replaceText(text, text.length)
-    } else {
-      const text = `<video src="${uri}"/>`
-      replaceText(text, text.length)
+      text = `<gallery ${props}>\n${text}\n</gallery>`
     }
+    replaceText(text, text.length)
   }
 
   const handleMediaUploadCancel = () => {

@@ -3,12 +3,20 @@ import React, { useEffect, useRef, useState } from 'react'
 import Button from '@ui/Button'
 import Checkbox from '@ui/Checkbox'
 import { Field } from '@ui/Field'
+import classNames from 'classnames'
 import { toast } from 'react-toastify'
 
 import useFocus from '../API/use/useFocus'
+import GalleryComponent, { GalleryElement } from './GalleryComponent'
 import Overlay from './Overlay'
 
+import { ReactComponent as RemoveIcon } from '../Assets/trash.svg'
 import styles from './MediaUploader.module.scss'
+
+export type MediaResult = {
+  type: 'video' | 'image'
+  url: string
+}
 
 type UploadDataUri = {
   type: 'video-uri' | 'image-uri'
@@ -24,7 +32,7 @@ export type UploadData = UploadDataUri | UploadDataFile
 export type MediaUploaderProps = {
   onCancel: () => void
   onError?: (error: string) => void
-  onSuccess: (uri: string, type: 'video' | 'image', gallery?: CreateGalletyOption | undefined) => void
+  onSuccess: (result: MediaResult[], gallery?: CreateGalletyOption | undefined) => void
   mediaData?: File
 }
 
@@ -36,17 +44,23 @@ export type CreateGalletyOption = {
   autoPlayInterval?: number
 }
 
+type MediaData = {
+  preview?: string
+  url?: string
+  uploadData?: UploadData
+}
+
 export default function MediaUploader(props: MediaUploaderProps) {
   const uriRef = useFocus()
   const videoRef = useRef<HTMLVideoElement>(null)
-  const previewRef = useRef<HTMLImageElement>(null)
+
   const [dragActive, setDragActive] = useState(false)
-  const [uri, setUri] = useState<string>('')
-  const [preview, setPreview] = useState<string | undefined>()
-  const [videoPreview, setVideoPreview] = useState<{ uri: string; type: string } | undefined>()
-  const [uploadEnabled, setUploadEnabled] = useState<boolean>(false)
-  const [uploadData, setUploadData] = useState<UploadData>()
+  const [uploadEnabled, setUploadEnabled] = useState<boolean>(true)
   const [uploading, setUploading] = useState(false)
+
+  const [uploadArray, setUploadArray] = useState<MediaData[]>([])
+  const [index, setIndex] = useState(0)
+
   const [galleryOption, setGalleryOption] = useState<CreateGalletyOption>({
     create: false,
     disableArrows: false,
@@ -55,36 +69,30 @@ export default function MediaUploader(props: MediaUploaderProps) {
     autoPlayInterval: 0,
   })
 
-  useEffect(() => {
-    if (props.mediaData) {
-      readFile(props.mediaData)
-    }
-    document.addEventListener('paste', handlePaste)
-    return () => {
-      document.removeEventListener('paste', handlePaste)
-    }
-  }, [])
+  const currentMedia = uploadArray[index] || ({} as MediaData)
 
-  const readFile = (file: File) => {
-    setUri('')
-    if (file.type.startsWith('image/')) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setVideoPreview(undefined)
-        setPreview(reader.result as string)
+  const readFile = (file: File): Promise<MediaData> => {
+    return new Promise((resolve) => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          resolve({
+            uploadData: { type: 'image', file },
+            preview: reader.result as string,
+          })
+        }
+        reader.readAsDataURL(file)
+      } else if (file.type.startsWith('video/')) {
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          resolve({
+            uploadData: { type: 'video', file },
+            preview: reader.result as string,
+          })
+        }
+        reader.readAsDataURL(file)
       }
-      reader.readAsDataURL(file)
-      setUploadData({ type: 'image', file })
-    } else if (file.type.startsWith('video/')) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setPreview(undefined)
-        setVideoPreview({ uri: reader.result as string, type: 'video/mp4' })
-        videoRef.current?.load()
-      }
-      reader.readAsDataURL(file)
-      setUploadData({ type: 'video', file })
-    }
+    })
   }
 
   const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
@@ -101,82 +109,107 @@ export default function MediaUploader(props: MediaUploaderProps) {
     e.stopPropagation()
     e.preventDefault()
   }
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.stopPropagation()
+    e.preventDefault()
+
     const data = e.dataTransfer
 
     if (data.files.length) {
-      readFile(data.files[0])
-    } else if (data.types.indexOf('text/uri-list') !== -1) {
-      const uri = data.getData('text/uri-list')
-
-      if (uri) {
-        setUri(uri)
-        setPreview(uri)
-      }
+      const files = Array.from(data.files)
+      await handleAddFiles(files)
     }
 
-    e.stopPropagation()
-    e.preventDefault()
     setDragActive(false)
   }
 
-  const handleUriChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const uri = e.target.value
-
-    if (uri.match(/^file:\/\//)) {
-      return // skip local files
-    }
-
-    setUri(uri)
-
-    if (uri.match(/\.(png|jpg|gif|jpeg)$/i)) {
-      setPreview(undefined)
-      setVideoPreview(undefined)
-      setTimeout(() => {
-        setPreview(uri)
-      }, 1)
-
-      setUploadData({ type: 'image-uri', uri })
-    } else if (uri.match(/\.(mp4|webm|mov)/)) {
-      setPreview(undefined)
-      setVideoPreview(undefined)
-      setTimeout(() => {
-        setVideoPreview({ uri, type: 'video/mp4' })
-      }, 1)
-
-      setUploadData({ type: 'video-uri', uri })
-    }
-  }
-
-  const handleFileChoose = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChoose = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files.length) {
       return
     }
-    readFile(e.target.files[0])
+
+    const files = Array.from(e.target.files)
+    await handleAddFiles(files)
   }
 
-  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const image = e.target as HTMLImageElement
-    if (image.complete) {
-      setUploadEnabled(true)
+  const handleAddFiles = async (files: File[]) => {
+    const processedFiles: MediaData[] = []
+
+    for (const file of files) {
+      const mediaData = await readFile(file)
+      processedFiles.push(mediaData)
     }
+
+    if (!processedFiles.length) return
+
+    setUploadArray([...uploadArray, ...processedFiles])
   }
 
-  const handlePaste = (e: ClipboardEvent) => {
+  const handlePaste = async (e: ClipboardEvent) => {
     const items = e.clipboardData?.items
     if (!items) return
+
+    const processedFiles: MediaData[] = []
     for (let i = 0; i < items.length; i++) {
       const file = items[i].getAsFile()
       if (file) {
-        readFile(file)
+        const mediaData = await readFile(file)
+        processedFiles.push(mediaData)
         // prevent pasting into the editor
         e.preventDefault()
       }
     }
+
+    if (!processedFiles.length) return
+
+    setUploadArray((prev) => [...prev, ...processedFiles])
   }
 
-  const handleLoadVideo = () => {
-    setUploadEnabled(true)
+  const handleUriChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const text = e.target.value.trim()
+
+    const arr = text
+      .split(' ')
+      .filter((u) => u.trim())
+      .map((url) => {
+        const type = parseUrl(url)
+        if (!type) return { url }
+        return {
+          uploadData: { type: parseUrl(url), uri: url },
+          preview: url,
+          url,
+        } as MediaData
+      })
+
+    if (!arr.length) return
+
+    if (arr.length > 1) {
+      setUploadArray([...uploadArray, ...arr])
+      return
+    }
+
+    const data = arr[0]
+    if (index === uploadArray.length) {
+      setUploadArray([...uploadArray, ...arr])
+      return
+    }
+
+    const newArr = [...uploadArray]
+    newArr[index] = data
+    setUploadArray(newArr)
+  }
+
+  const parseUrl = (url: string) => {
+    console.log('parseUrl', url)
+    if (url.match(/^file:\/\//)) {
+      return // skip local files
+    }
+
+    if (url.match(/\.(png|jpg|gif|jpeg)$/i)) {
+      return 'image-uri'
+    } else if (url.match(/\.(mp4|webm|mov)/)) {
+      return 'video-uri'
+    }
   }
 
   const handleError = (error: string) => {
@@ -186,75 +219,141 @@ export default function MediaUploader(props: MediaUploaderProps) {
     }
   }
 
-  const handleUpload = (e: React.SyntheticEvent) => {
+  const handleUpload = async (e: React.SyntheticEvent) => {
     e.preventDefault()
 
-    if (!uploadData) {
+    const result: MediaResult[] = []
+    try {
+      for (const data of uploadArray) {
+        const res = await uploadMedia(data)
+        if (res) {
+          result.push(res)
+        }
+      }
+
+      props.onSuccess(result, galleryOption)
+    } catch (e) {
+      handleError('Произошла ошибка при загрузке 🥺')
+    }
+  }
+
+  const uploadMedia = async (mediaData: MediaData) => {
+    if (!mediaData.uploadData) {
       return
     }
 
+    const { uploadData } = mediaData
+
     if (uploadData.type === 'video-uri') {
-      props.onSuccess(uploadData.uri, 'video', galleryOption)
-      return
-    } else if (uploadData.type === 'image-uri') {
-      props.onSuccess(uploadData.uri, 'image', galleryOption)
-      return
-    } else if (uploadData.type === 'video' || uploadData.type === 'image') {
-      const file = uploadData.file
+      return {
+        url: uploadData.uri!,
+        type: 'video',
+      } as MediaResult
+    }
+
+    if (uploadData.type === 'image-uri') {
+      return {
+        url: uploadData.uri!,
+        type: 'image',
+      } as MediaResult
+    }
+
+    if (uploadData.type === 'video' || uploadData.type === 'image') {
+      return await uploadFile(uploadData.file, uploadData.type)
+    }
+  }
+
+  const uploadFile = async (file: File, type: string) => {
+    try {
+      setUploading(true)
+
       const formData = new FormData()
       formData.append('file', file)
 
-      setUploading(true)
-
-      fetch('/upload', {
+      const response = await fetch('/upload', {
         method: 'POST',
         body: formData,
       })
-        .then((response) => {
-          setUploading(false)
 
-          console.log('UPLOAD RESPONSE', response)
+      console.debug('UPLOAD RESPONSE', response)
 
-          if (response.ok) {
-            response
-              .json()
-              .then((data) => {
-                if (data.status === 'ok') {
-                  console.log('UPLOAD COMPLETE', data)
-                  props.onSuccess(
-                    process.env.REACT_APP_MEDIA_HOSTING_URL + '/' + data.url,
-                    uploadData.type,
-                    galleryOption,
-                  )
-                } else {
-                  console.log('UPLOAD FAILED: no link', data, file.type)
-                  handleError('Произошла ошибка при загрузке 🥺')
-                }
-              })
-              .catch((error) => {
-                console.error('UPLOAD FAILED', error, file.type)
-                handleError('Произошла ошибка при загрузке 🥺')
-              })
-          } else {
-            response
-              .text()
-              .then((text) => {
-                console.error('UPLOAD FAILED', response.status, file.type, text)
-              })
-              .catch((err) => {
-                console.error('UPLOAD FAILED', response.status, file.type, response, err)
-              })
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Неизвестная ошибка')
+        console.error('UPLOAD FAILED', response.status, file.type, errorText)
+        throw new Error('UPLOAD FAILED: ' + errorText)
+      }
 
-            handleError('Произошла ошибка при загрузке 🥺')
-          }
-        })
-        .catch((error) => {
-          setUploading(false)
-          console.error('UPLOAD FAILED', file.type, error)
-          handleError('Произошла ошибка при загрузке 🥺')
-        })
+      const data = await response.json()
+
+      if (data.status === 'ok') {
+        console.debug('UPLOAD COMPLETE', data)
+        return {
+          type,
+          url: process.env.REACT_APP_MEDIA_HOSTING_URL + '/' + data.url,
+        } as MediaResult
+      } else {
+        console.error('UPLOAD FAILED: no link', data, file.type)
+        throw new Error('UPLOAD FAILED: no link')
+      }
+    } finally {
+      setUploading(false)
     }
   }
+
+  useEffect(() => {
+    if (props.mediaData) {
+      readFile(props.mediaData).then((data) => setUploadArray([...uploadArray, data]))
+    }
+  }, [])
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.load()
+    }
+
+    document.addEventListener('paste', handlePaste)
+    return () => {
+      document.removeEventListener('paste', handlePaste)
+    }
+  }, [currentMedia])
+
+  const removeMedia = () => {
+    const newArray = [...uploadArray]
+    newArray.splice(index, 1)
+    setUploadArray(newArray)
+  }
+
+  const galleryElements = uploadArray
+    .filter((u) => u.preview)
+    .map((data, i) => {
+      if (data.uploadData?.type === 'image' || data.uploadData?.type === 'image-uri') {
+        return {
+          image: { src: data.preview || '', alt: '' },
+        } as GalleryElement
+      }
+
+      return {
+        element: (
+          <video className={styles.video} ref={videoRef} loop={false} preload='metadata' controls={true}>
+            <source src={data.preview} type='video/mp4' />
+          </video>
+        ),
+      } as GalleryElement
+    })
+
+  galleryElements.push({
+    element: (
+      <div
+        className={styles.dropbox + (dragActive ? ' ' + styles.active : '')}
+        onDragEnter={handleDragEnter}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        <div style={{ pointerEvents: 'none' }}>Перетащите сюда и отпустите</div>
+      </div>
+    ),
+  } as GalleryElement)
 
   return (
     <>
@@ -269,7 +368,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
               type='text'
               placeholder='https://'
               title='Вставьте ссылку или картинку'
-              value={uri}
+              value={currentMedia.url || ''}
               onChange={handleUriChange}
             />
             <label className={styles.selector}>
@@ -278,6 +377,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
                 type='file'
                 accept='image/*,video/mp4,video/webm'
                 onChange={handleFileChoose}
+                multiple
               />
               <div className={styles.choose}>Выбрать</div>
             </label>
@@ -285,39 +385,26 @@ export default function MediaUploader(props: MediaUploaderProps) {
           <Button variant='primary' disabled={!uploadEnabled || uploading} type='submit' loading={uploading}>
             {uploading ? 'Загрузка' : 'Фьють'}
           </Button>
+          {currentMedia.preview && (
+            <Button onClick={removeMedia} className={classNames(styles.remove)} aria-label='Следующее изображение'>
+              <RemoveIcon />
+            </Button>
+          )}
         </form>
-        <div
-          className={styles.dropbox + (dragActive ? ' ' + styles.active : '')}
-          onDragEnter={handleDragEnter}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-        >
-          <div className={styles.preview}>
-            {preview && (
-              <img
-                draggable={false}
-                className={styles.preview}
-                src={preview}
-                onLoad={handleImageLoad}
-                ref={previewRef}
-                alt=''
-              />
-            )}
-            {videoPreview && (
-              <video ref={videoRef} loop={false} preload='metadata' controls={true} onLoadedMetadata={handleLoadVideo}>
-                <source src={videoPreview.uri} type={videoPreview.type} />
-              </video>
-            )}
-          </div>
-        </div>
+        <GalleryComponent
+          className={styles.gallery}
+          elements={galleryElements}
+          showArrows={galleryElements.length > 1}
+          showIndicators={galleryElements.length > 1}
+          disableZoom
+          onChangeIndex={setIndex}
+        />
         <Checkbox
           id='createGallery'
           label='Создать галерею'
           checked={galleryOption.create}
           onChange={(e) => setGalleryOption({ ...galleryOption, create: e.target.checked })}
         />
-
         {galleryOption.create && (
           <>
             <div className={styles.disclaimer}>
