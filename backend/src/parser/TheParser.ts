@@ -545,7 +545,7 @@ export default class TheParser {
       )
     }
 
-    const alt = node.attribs['alt'] ?? ''
+    const alt = node.attribs['alt'] ? htmlEscape(node.attribs['alt']) : ''
 
     return { text: `<img src="${encodeURI(url)}" alt="${alt}"/>`, mentions: [], urls: [], images: [url] }
   }

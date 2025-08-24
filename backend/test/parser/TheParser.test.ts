@@ -313,17 +313,24 @@ test('parse gallery with invalid child tag', () => {
 test('parse img alt attribute for double escape', () => {
   // alt contains HTML special chars
   const result = p.parse('<img src="https://orbitar.media/img1.jpg" alt="&lt;test&gt; &amp; &quot;"/>')
-  expect(result.text).toEqual('<img src="https://b.orbitar.media/img1.jpg" alt="&lt;test&gt; &amp; &quot;"/>')
+  expect(result.text).toEqual(
+    '<img src="https://b.orbitar.media/img1.jpg" alt="&amp;lt;test&amp;gt; &amp;amp; &amp;quot;"/>',
+  )
 })
 
 test('parse img alt attribute with quotes', () => {
   const result = p.parse('<img src="https://orbitar.media/img1.jpg" alt="a &quot;quote&quot;"/>')
-  expect(result.text).toEqual('<img src="https://b.orbitar.media/img1.jpg" alt="a &quot;quote&quot;"/>')
+  expect(result.text).toEqual('<img src="https://b.orbitar.media/img1.jpg" alt="a &amp;quot;quote&amp;quot;"/>')
+})
+
+test('parse img alt attribute vulnerable with single quote', () => {
+  const result = p.parse('<img src="https://example.com/pic.jpg" alt=\'"><b>INJECTED</b>\'>')
+  expect(result.text).toEqual('<img src="https://example.com/pic.jpg" alt="&quot;&gt;&lt;b&gt;INJECTED&lt;/b&gt;"/>')
 })
 
 test('parse img alt attribute with single quote', () => {
   const result = p.parse('<img src="https://orbitar.media/img1.jpg" alt="it\'s a test"/>')
-  expect(result.text).toEqual('<img src="https://b.orbitar.media/img1.jpg" alt="it\'s a test"/>')
+  expect(result.text).toEqual('<img src="https://b.orbitar.media/img1.jpg" alt="it&#39;s a test"/>')
 })
 
 test('parse img with missing alt attribute', () => {
