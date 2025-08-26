@@ -31,8 +31,6 @@ export type ZoomedImg = {
     src: string;
     width: number;
     height: number;
-    goLeft?: () => void;
-    goRight?: () => void;
 };
 
 type AppStateContextState = {

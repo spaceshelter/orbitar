@@ -51,7 +51,6 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null)
   const [isTransitioning, setIsTransitioning] = useState<boolean>(false)
   const [imageLarge, setImageLarge] = useState<boolean>(false)
-  const [maxHeight, setMaxHeight] = useState<number>(0)
 
   const appState = useAppState()
 
@@ -77,6 +76,7 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
   }
 
   const goToSlide = (index: number, e: React.MouseEvent | undefined = undefined): void => {
+    console.log('goToSlide', index)
     if (isTransitioning || index === currentIndex) return
     e?.stopPropagation()
 
@@ -90,23 +90,6 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
       setIsTransitioning(false)
       setCurrentIndex(index)
     }, 300)
-  }
-
-  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement, Event>): void => {
-    const img = e.currentTarget
-    if (!maxHeight) {
-      setMaxHeight(img.clientHeight)
-    }
-
-    if (!getLegacyZoom() && appState.zoomedImg) {
-      appState.setZoomedImg({
-        src: img.src,
-        width: img.naturalWidth,
-        height: img.naturalHeight,
-        goLeft: goToPrevious,
-        goRight: goToNext,
-      })
-    }
   }
 
   const handleTouchStart = (e: React.TouchEvent): void => {
@@ -141,37 +124,22 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
   }
 
   const handleImageClick = (e: React.MouseEvent<HTMLImageElement, MouseEvent>): void => {
-    if (imageLarge || disableZoom) return
+    if (disableZoom) return
 
     const img = e.currentTarget
 
     if (getLegacyZoom()) {
       setImageLarge(!imageLarge)
     } else {
-      appState.setZoomedImg({
-        src: img.src,
-        width: img.naturalWidth,
-        height: img.naturalHeight,
-        goLeft: goToPrevious,
-        goRight: goToNext,
-      })
-    }
-  }
-
-  useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent): void => {
-      if (isTransitioning || !appState.zoomedImg) return
-
-      if (event.key === 'ArrowLeft') {
-        goToPrevious()
-      } else if (event.key === 'ArrowRight') {
-        goToNext()
+      if (!getLegacyZoom() && !appState.zoomedImg) {
+        appState.setZoomedImg({
+          src: img.src,
+          width: img.naturalWidth,
+          height: img.naturalHeight,
+        })
       }
     }
-
-    window.addEventListener('keydown', handleKeyPress)
-    return () => window.removeEventListener('keydown', handleKeyPress)
-  }, [isTransitioning])
+  }
 
   useEffect(() => {
     if (!autoPlayInterval || autoPlayInterval <= 0 || isTransitioning) return
@@ -205,19 +173,41 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={maxHeight ? { height: `${maxHeight}px` } : {}}
       >
-        <span className={styles.mediaContainer}>
-          <GalleryElement
-            image={currentElement.image}
-            htmlElement={currentElement.htmlElement}
-            isVideo={currentElement.isVideo}
-            element={currentElement.element}
-            handleImageClick={handleImageClick}
-            handleImageLoad={handleImageLoad}
-            imageLarge={imageLarge}
-            disableZoom={disableZoom}
-          />
+        <span>
+          <span className={styles.mediaContainer}>
+            <GalleryElement
+              image={currentElement.image}
+              htmlElement={currentElement.htmlElement}
+              isVideo={currentElement.isVideo}
+              element={currentElement.element}
+              handleImageClick={handleImageClick}
+              imageLarge={imageLarge}
+              disableZoom={disableZoom}
+            />
+          </span>
+
+          {showArrows && (
+            <>
+              <Button
+                onClick={goToPrevious}
+                className={classNames(styles.arrow, styles.arrowPrev)}
+                aria-label='Предыдущее изображение'
+                disabled={isTransitioning}
+              >
+                <ChevronLeft />
+              </Button>
+
+              <Button
+                onClick={goToNext}
+                className={classNames(styles.arrow, styles.arrowNext)}
+                aria-label='Следующее изображение'
+                disabled={isTransitioning}
+              >
+                <ChevronRight />
+              </Button>
+            </>
+          )}
         </span>
 
         {showIndicators && (
@@ -236,28 +226,6 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
           </div>
         )}
       </div>
-
-      {showArrows && (
-        <>
-          <Button
-            onClick={goToPrevious}
-            className={classNames(styles.arrow, styles.arrowPrev)}
-            aria-label='Предыдущее изображение'
-            disabled={isTransitioning}
-          >
-            <ChevronLeft />
-          </Button>
-
-          <Button
-            onClick={goToNext}
-            className={classNames(styles.arrow, styles.arrowNext)}
-            aria-label='Следующее изображение'
-            disabled={isTransitioning}
-          >
-            <ChevronRight />
-          </Button>
-        </>
-      )}
 
       {currentElement.image?.alt && <div className={styles.caption}>{currentElement.image.alt}</div>}
 
@@ -289,13 +257,12 @@ interface GalleryElementProps {
   isVideo?: boolean
   element?: React.ReactNode
   handleImageClick: (e: React.MouseEvent<HTMLImageElement, MouseEvent>) => void
-  handleImageLoad: (e: React.SyntheticEvent<HTMLImageElement, Event>) => void
   imageLarge?: boolean
   disableZoom?: boolean
 }
 
 function GalleryElement(props: GalleryElementProps): JSX.Element {
-  const { isVideo, image, htmlElement, element, handleImageClick, handleImageLoad, imageLarge, disableZoom } = props
+  const { isVideo, image, htmlElement, element, handleImageClick, imageLarge, disableZoom } = props
 
   if (isVideo && htmlElement) {
     return (
@@ -317,7 +284,6 @@ function GalleryElement(props: GalleryElementProps): JSX.Element {
         alt={image.alt}
         className={classNames(styles.image, !disableZoom && 'image-scalable', imageLarge && 'image-preview')}
         onClick={handleImageClick}
-        onLoad={handleImageLoad}
       />
     )
   }
