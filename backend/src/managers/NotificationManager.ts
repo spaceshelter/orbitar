@@ -197,7 +197,7 @@ export default class NotificationManager {
     // send push in background
     this.sendWebPush(forUserId, notification)
       .then()
-      .catch((err) => this.logger.error('Failed to send web push', { forUserId, error })
+      .catch((err) => this.logger.error('Failed to send web push', { forUserId, err })
   }
 
   async sendAnswerNotify(forUserId: number, byUserId: number, postId: number, commentId?: number) {
