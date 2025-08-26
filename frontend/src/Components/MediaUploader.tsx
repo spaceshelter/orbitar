@@ -3,7 +3,6 @@ import React, { useEffect, useRef, useState } from 'react'
 import Button from '@ui/Button'
 import Checkbox from '@ui/Checkbox'
 import { Field } from '@ui/Field'
-import classNames from 'classnames'
 import { toast } from 'react-toastify'
 
 import useFocus from '../API/use/useFocus'
@@ -316,7 +315,10 @@ export default function MediaUploader(props: MediaUploaderProps) {
     }
   }, [currentMedia])
 
-  const removeMedia = () => {
+  const removeMedia = (e?: React.MouseEvent) => {
+    e?.preventDefault()
+    e?.stopPropagation()
+
     const newArray = [...uploadArray]
     newArray.splice(index, 1)
     setUploadArray(newArray)
@@ -378,17 +380,15 @@ export default function MediaUploader(props: MediaUploaderProps) {
                 onChange={handleFileChoose}
                 multiple
               />
+              <div className={styles.remove} onClick={removeMedia}>
+                <RemoveIcon />
+              </div>
               <div className={styles.choose}>Выбрать</div>
             </label>
           </div>
           <Button variant='primary' disabled={uploading} type='submit' loading={uploading}>
             {uploading ? 'Загрузка' : 'Фьють'}
           </Button>
-          {currentMedia.preview && (
-            <Button onClick={removeMedia} className={classNames(styles.remove)} aria-label='Следующее изображение'>
-              <RemoveIcon />
-            </Button>
-          )}
         </form>
         <GalleryComponent
           className={styles.gallery}

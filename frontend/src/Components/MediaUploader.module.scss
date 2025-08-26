@@ -71,15 +71,16 @@
 }
 
 .remove {
-  position: absolute;
-  right: 20px;
-  top: 65px;
-  z-index: 1000;
-  background-color: var(--primary);
+  border: none;
+  background: var(--inactive-fg);
   color: var(--button-fg);
+  padding: 8px;
+  cursor: pointer;
+  align-items: center;
+  display: flex;
   
   &:hover {
-    background-color: var(--danger);
+    background: var(--danger);
   }
 }
 
