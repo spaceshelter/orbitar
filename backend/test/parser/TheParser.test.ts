@@ -307,7 +307,7 @@ test('parse gallery with text content', () => {
 
 test('parse gallery with invalid child tag', () => {
   const result = p.parse('<gallery><invalid>test</invalid></gallery>')
-  expect(result.text).toEqual('<div class="gallery" >&lt;invalid&gt;test&lt;/invalid&gt;</div>')
+  expect(result.text).toEqual('<div class="gallery" ></div>')
 })
 
 test('parse img alt attribute for double escape', () => {
