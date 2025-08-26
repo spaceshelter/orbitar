@@ -698,7 +698,25 @@ export default class TheParser {
       props.push(`auto-play-interval="${autoPlayInterval * 1000}"`)
     }
     const propsText = props.join(' ').trim()
-    const result = this.parseChildNodes(node.children)
+    const result: ParseResult = { text: '', mentions: [], urls: [], images: [] }
+    const appendResult = (res: ParseResult) => {
+      result.text += res.text
+      result.mentions.push(...res.mentions)
+      result.urls.push(...res.urls)
+      result.images.push(...res.images)
+    }
+
+    const allowedTags = ['img', 'video']
+    for (let child of node.children) {
+      if (child.type === 'tag') {
+        if (allowedTags.includes(child.name)) {
+          appendResult(this.parseNode(child))
+        }
+      } else {
+        appendResult(this.parseNode(child))
+      }
+    }
+    //const result = this.parseChildNodes(node.children)
     const text = `<div class="gallery" ${propsText}>${result.text}</div>`
 
     return { ...result, text }
