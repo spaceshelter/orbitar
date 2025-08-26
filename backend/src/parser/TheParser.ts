@@ -707,7 +707,7 @@ export default class TheParser {
     }
 
     const allowedTags = ['img', 'video']
-    for (let child of node.children) {
+    for (const child of node.children) {
       if (child.type === 'tag') {
         if (allowedTags.includes(child.name)) {
           appendResult(this.parseNode(child))
