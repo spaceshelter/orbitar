@@ -422,6 +422,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
           showArrows={galleryElements.length > 1}
           showIndicators={galleryElements.length > 1}
           disableZoom
+          disableDynamicHeight
           onChangeIndex={setIndex}
         />
         <Checkbox

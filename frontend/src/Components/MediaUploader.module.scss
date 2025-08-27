@@ -92,8 +92,8 @@
   flex-flow: row wrap;
   justify-content: center;
   align-items: center;
-  width: 378px;
-  height: 257px;
+  width: 375px;
+  height: 255px;
   padding: 10px;
   z-index: 100;
 }
@@ -109,7 +109,7 @@
 
 .gallery {
   display: flex;
-  padding: 0;
+  padding: 0 !important;
   object-fit: contain;
   height: 280px;
   width: 100%;

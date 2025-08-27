@@ -32,51 +32,63 @@ $slide-transition-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .main {
-  display: flex;
-  align-items: center;
   position: relative;
   border-radius: $gallery-border-radius;
   overflow: hidden;
   box-shadow: var(--shadow);
-  display: flex;
-  justify-content: center;
   user-select: none;
   touch-action: pan-y;
-  height: 500px;
-  max-height: 100%;
+  max-height: 500px;
   width: 100%;
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
 }
 
-.mediaContainer {
+.slidesContainer {
+  display: flex;
+  height: 100%;
+  width: 300%; 
+  will-change: transform;
+  transform: translateX(-33.333%);
+}
+
+.slide {
+  flex: 0 0 33.333%; 
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 300ms $transition-easing, transform $slide-transition-duration $slide-transition-easing;
-  animation: fadeIn 0.3s $transition-easing;
-  border-radius: $gallery-border-radius;
   height: 100%;
-}
-
-.slideLeft {
-  .mediaContainer {
-    animation: slideOutLeft $slide-transition-duration $slide-transition-easing forwards;
-  }
-}
-
-.slideRight {
-  .mediaContainer {
-    animation: slideOutRight $slide-transition-duration $slide-transition-easing forwards;
-  }
+  position: relative;
 }
 
 .image {
   object-fit: contain;
   height: 100%;
   max-width: 100%;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .transitioning {
   pointer-events: none;
+}
+
+.dragging {
+  .slide {
+    pointer-events: none;
+  }
+}
+
+.noDragging {
+    user-drag: none;
+    -webkit-user-drag: none;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
 }
 
 .caption {
@@ -100,7 +112,7 @@ $slide-transition-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   justify-content: center;
   cursor: pointer;
   transition: all $transition-duration $transition-easing;
-  z-index: 1000;
+  z-index: 200;
 
   &:hover:not(:disabled) {
     background-color: var(--primary);
@@ -196,6 +208,8 @@ $slide-transition-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   width: fit-content;
   margin: auto;
   max-width: calc(100% - 1rem);
+  max-height: 100px;
+  overflow-y: hidden;
 
   &::-webkit-scrollbar {
     height: 4px;
@@ -222,7 +236,7 @@ $slide-transition-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   height: $thumbnail-height;
   border-radius: 4px;
   overflow: hidden;
-  border: 2px solid var(--fgSoftest);;
+  border: 2px solid var(--fgSoftest);
   cursor: pointer;
   transition: all $transition-duration $transition-easing;
   opacity: 0.6;
@@ -264,7 +278,6 @@ $slide-transition-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
     display: block;
     opacity: 0.8;
   }
-
 }
 
 .thumbnailActive {
@@ -357,62 +370,6 @@ $slide-transition-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
 
   .arrowNext {
     right: 0.25rem;
-  }
-}
-
-@keyframes slideOutLeft {
-  0% {
-    transform: translateX(0);
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(-100%);
-    opacity: 0;
-  }
-}
-
-@keyframes slideOutRight {
-  0% {
-    transform: translateX(0);
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-}
-
-@keyframes slideInFromRight {
-  0% {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  100% {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes slideInFromLeft {
-  0% {
-    transform: translateX(-100%);
-    opacity: 0;
-  }
-  100% {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes swipeRightHint {
-  0% {
-    transform: translateY(-50%) translateX(0);
-  }
-  50% {
-    transform: translateY(-50%) translateX(10px);
-  }
-  100% {
-    transform: translateY(-50%) translateX(0);
   }
 }
 
