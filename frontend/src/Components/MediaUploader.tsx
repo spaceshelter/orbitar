@@ -416,6 +416,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
             {uploading ? 'Загрузка' : 'Фьють'}
           </Button>
         </form>
+        <div className={styles.disclaimer}>Можете вставлять много ссылок списком. Прямо в поле ввода</div>
         <GalleryComponent
           className={styles.gallery}
           elements={galleryElements}
