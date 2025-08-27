@@ -404,7 +404,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
                 onChange={handleFileChoose}
                 multiple
               />
-              {currentMedia.url && (
+              {uploadArray.length > 0 && (
                 <div className={styles.remove} onClick={removeMedia}>
                   <RemoveIcon />
                 </div>
