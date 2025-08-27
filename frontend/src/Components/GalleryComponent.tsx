@@ -76,7 +76,6 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
   }
 
   const goToSlide = (index: number, e: React.MouseEvent | undefined = undefined): void => {
-    console.log('goToSlide', index)
     if (isTransitioning || index === currentIndex) return
     e?.stopPropagation()
 

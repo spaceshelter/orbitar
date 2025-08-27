@@ -58,6 +58,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
 
   const [uploadArray, setUploadArray] = useState<MediaData[]>([])
   const [index, setIndex] = useState(0)
+  const [loading, setLoading] = useState<boolean>(false)
 
   const [galleryOption, setGalleryOption] = useState<CreateGalletyOption>({
     create: false,
@@ -163,51 +164,80 @@ export default function MediaUploader(props: MediaUploaderProps) {
     setUploadArray((prev) => [...prev, ...processedFiles])
   }
 
-  const handleUriChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const text = e.target.value.trim()
+  const handleUriChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLoading(true)
 
-    const arr = text
-      .split(' ')
+    const text = e.target.value
+    const lines = text
+      .trim()
+      .split(text.includes('\n') ? '\n' : ' ')
       .filter((u) => u.trim())
-      .map((url) => {
-        const type = parseUrl(url)
-        if (!type) return { url }
-        return {
-          uploadData: { type: parseUrl(url), uri: url },
+
+    const arr: MediaData[] = []
+    for (const url of lines) {
+      const type = await parseUrl(url)
+      if (!type) {
+        arr.push({ url })
+      } else {
+        arr.push({
+          uploadData: { type: type, uri: url },
           preview: url,
           url,
-        } as MediaData
-      })
-
-    if (!arr.length) return
-
-    if (arr.length > 1) {
-      setUploadArray([...uploadArray, ...arr])
-      return
+        })
+      }
     }
 
-    const data = arr[0]
-    if (index === uploadArray.length) {
-      setUploadArray([...uploadArray, ...arr])
-      return
-    }
+    try {
+      if (!arr.length) return
 
-    const newArr = [...uploadArray]
-    newArr[index] = data
-    setUploadArray(newArr)
+      if (arr.length > 1) {
+        setUploadArray([...uploadArray, ...arr])
+        return
+      }
+
+      const data = arr[0]
+      if (index === uploadArray.length) {
+        setUploadArray([...uploadArray, ...arr])
+        return
+      }
+
+      const newArr = [...uploadArray]
+      newArr[index] = data
+      setUploadArray(newArr)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const parseUrl = (url: string) => {
-    console.log('parseUrl', url)
-    if (url.match(/^file:\/\//)) {
+  const parseUrl = async (text: string) => {
+    if (text.match(/^file:\/\//)) {
       return // skip local files
     }
 
-    if (url.match(/\.(png|jpg|gif|jpeg)$/i)) {
-      return 'image-uri'
-    } else if (url.match(/\.(mp4|webm|mov)/)) {
-      return 'video-uri'
+    const getType = (value: string) => {
+      const imageRegexp = /(png|jpg|gif|jpeg|webp)$/i
+      const videoRegexp = /(mp4|webm|mov|quicktime)$/
+
+      if (value.match(imageRegexp)) {
+        return 'image-uri'
+      } else if (value.match(videoRegexp)) {
+        return 'video-uri'
+      }
     }
+
+    const type = getType(text)
+    if (type) return type
+
+    try {
+      const url = new URL(text)
+      const response = await fetch(url.toString())
+      if (!response.ok) {
+        return
+      }
+
+      const contentType = response.headers.get('Content-Type')
+      if (contentType) return getType(contentType)
+    } catch {}
   }
 
   const handleError = (error: string) => {
@@ -302,18 +332,12 @@ export default function MediaUploader(props: MediaUploaderProps) {
     if (props.mediaData) {
       readFile(props.mediaData).then((data) => setUploadArray([...uploadArray, data]))
     }
-  }, [])
-
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.load()
-    }
 
     document.addEventListener('paste', handlePaste)
     return () => {
       document.removeEventListener('paste', handlePaste)
     }
-  }, [currentMedia])
+  }, [])
 
   const removeMedia = (e?: React.MouseEvent) => {
     e?.preventDefault()
@@ -335,7 +359,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
 
       return {
         element: (
-          <video className={styles.video} ref={videoRef} loop={false} preload='metadata' controls={true}>
+          <video className={styles.video} ref={videoRef} loop={false} controls={true}>
             <source src={data.preview} type='video/mp4' />
           </video>
         ),
@@ -363,7 +387,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
         <form className={styles.controls} onSubmit={handleUpload}>
           <div className={styles.upload}>
             <input
-              disabled={uploading}
+              disabled={uploading || loading}
               className={styles.url}
               ref={uriRef}
               type='text'
@@ -380,9 +404,11 @@ export default function MediaUploader(props: MediaUploaderProps) {
                 onChange={handleFileChoose}
                 multiple
               />
-              <div className={styles.remove} onClick={removeMedia}>
-                <RemoveIcon />
-              </div>
+              {currentMedia.url && (
+                <div className={styles.remove} onClick={removeMedia}>
+                  <RemoveIcon />
+                </div>
+              )}
               <div className={styles.choose}>Выбрать</div>
             </label>
           </div>

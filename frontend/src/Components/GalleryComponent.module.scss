@@ -100,7 +100,7 @@ $slide-transition-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   justify-content: center;
   cursor: pointer;
   transition: all $transition-duration $transition-easing;
-  z-index: 10;
+  z-index: 1000;
 
   &:hover:not(:disabled) {
     background-color: var(--primary);
