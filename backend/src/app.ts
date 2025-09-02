@@ -146,6 +146,7 @@ const notificationManager = new NotificationManager(
   notificationsRepository,
   postRepository,
   userCache,
+  siteRepository,
   () => siteManager /*FIXME: HAX! circular dependency, will refactor later */,
   webPushRepository,
   config.vapid,
