@@ -1,28 +1,48 @@
-version: '3.9'
-
 services:
   caddy:
     image: caddy
     restart: unless-stopped
+    # noinspection ComposeUnknownValues
     ports:
-      - "443:443"
+      # expose port 80 if TLS is disabled, 443 if enabled
+      - "${TLS_ENABLED+443:443}${TLS_ENABLED-80:80}"
+
+    # Common environment variables
     environment:
-      SERVER_DOMAIN: ${SERVER_DOMAIN}
-      API_DOMAIN: ${API_DOMAIN}
-      MEDIA_HOSTING_URL: ${MEDIA_HOSTING_URL}
-      MEDIA_HOSTING_CLIENT_ID: ${MEDIA_HOSTING_CLIENT_ID}
-      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
-      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
-      VAPID_CONTACT: ${VAPID_CONTACT}
-      FINGERPRINT: ${FINGERPRINT}
+      # If TLS_ENABLED is set, use https in SERVER_HOST; otherwise http
+      SERVER_HOST: "http${TLS_ENABLED+s}://${SERVER_DOMAIN}"
+      API_HOST: "http${TLS_ENABLED+s}://${API_DOMAIN}"
+
+      # Cert/Key paths: only set if TLS_ENABLED is non-empty *and* file is non-empty
+      TLS_CERT_PATH: "${TLS_ENABLED+${TLS_CERT_FILE:+/certs/${TLS_CERT_FILE}}}"
+      TLS_KEY_PATH: "${TLS_ENABLED+${TLS_KEY_FILE:+/certs/${TLS_KEY_FILE}}}"
+
+
+      # tls_on if TLS_ENABLED is set and cert/key files are non-empty
+      # tls_off if TLS_ENABLED is not set
+      # tls_ if TLS_ENABLED is set but cert/key files are empty
+      TLS_MODE: "tls_${TLS_ENABLED+${TLS_CERT_FILE:+on}}${TLS_ENABLED-off}"
+
+      SERVER_DOMAIN: "${SERVER_DOMAIN}"
+      API_DOMAIN: "${API_DOMAIN}"
+      BACKEND_DOMAIN: "backend"
+      MEDIA_HOSTING_URL: "${MEDIA_HOSTING_URL}"
+      MEDIA_HOSTING_CLIENT_ID: "${MEDIA_HOSTING_CLIENT_ID}"
+      FINGERPRINT: "${FINGERPRINT-}"
+
     volumes:
-      - $PWD/caddy/Caddyfile.ssl.local:/etc/caddy/Caddyfile:ro
+      - $PWD/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - $PWD/caddy/certs:/certs:ro
-      - frontend_build:/srv:ro
       - caddy_data:/data
       - caddy_config:/config
+      - frontend_build:/srv:ro
+
     depends_on:
       - backend
+      - frontend
+    # Default caddy command borrowed from https://github.com/caddyserver/caddy-docker/blob/master/Dockerfile.tmpl
+    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
+
 
   mysql:
     platform: linux/amd64
@@ -71,6 +91,7 @@ services:
     environment:
       SITE_DOMAIN: ${SERVER_DOMAIN}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
       SENDING_BLUE_API_KEY: ${SENDING_BLUE_API_KEY}
       DEEPL_API_KEY: ${DEEPL_API_KEY}
       MEDIA_HOSTING_URL: ${MEDIA_HOSTING_URL}

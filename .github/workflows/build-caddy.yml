@@ -1,0 +1,36 @@
+name: Validate Caddyfile
+on:
+  push:
+    branches:
+      - dev
+      - main
+  pull_request:
+    paths:
+      - .github/workflows/build-caddy.yml
+      - caddy/**/*
+  workflow_dispatch:
+        
+jobs:
+  validate-caddyfile:
+    runs-on: ubuntu-latest
+    container: caddy
+    env:
+      SERVER_DOMAIN: orbitar.test
+      BACKEND_DOMAIN: orbitar.backend
+      TLS_CERT_PATH: '{}'
+      TLS_KEY_PATH:
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Validate Caddyfile in dev configuration
+        env:
+          DEV: true
+          SERVER_HOST: http://orbitar.test
+          API_HOST: http://api.orbitar.test    
+        run: caddy validate --config caddy/Caddyfile
+      - name: Validate Caddyfile in prod configuration
+        env:
+          SERVER_HOST: https://orbitar.test
+          API_HOST: https://api.orbitar.test    
+        run: caddy validate --config caddy/Caddyfile
+

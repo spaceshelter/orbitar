@@ -1,0 +1,73 @@
+services:
+  caddy:
+    extends:
+      file: 'compose.yml'
+      service: caddy
+    environment:
+      DEV: "true"
+    cap_add:
+      - NET_ADMIN
+    # noinspection ComposeUnknownValues
+    ports:
+      # expose port 80 if TLS is disabled, 443 if enabled
+      - "${TLS_ENABLED+443:443}${TLS_ENABLED-80:80}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  mysql:
+    extends:
+      file: 'compose.yml'
+      service: mysql
+    ports:
+      - "3306:3306"
+      - "33060:33060"
+
+  redis:
+    extends:
+      file: 'compose.yml'
+      service: redis
+    ports:
+      - "6379:6379"
+
+  feed:
+    extends:
+      file: 'compose.yml'
+      service: feed
+    ports:
+      - "6767:6767"
+
+  elasticsearch:
+    extends:
+      file: 'compose.yml'
+      service: elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+
+  elasticsearch-setup:
+    extends:
+      file: 'compose.yml'
+      service: elasticsearch-setup
+
+  elasticsearch-indexer:
+    extends:
+      file: 'compose.yml'
+      service: elasticsearch-indexer
+
+  # dummy placeholder to satisfy the depends_on
+  # make sure to run the backend service separately
+  backend:
+    image: busybox
+
+  # dummy placeholder to satisfy the depends_on
+  # make sure to run the frontend service separately
+  frontend:
+    image: busybox
+
+volumes:
+  caddy_data:
+  caddy_config:
+  frontend_build: # unused, for compatibility with prod
+  mysql_db:
+  redis_data:
+  elasticsearch_data:

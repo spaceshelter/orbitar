@@ -1,0 +1,82 @@
+(setup) {
+	@is_dev expression {env.DEV} == "true"
+}
+
+(tls_on) {
+	tls {$TLS_CERT_PATH} {$TLS_KEY_PATH}
+}
+
+(tls_) {
+	tls internal
+}
+
+(tls_off) {
+}
+
+(upload) {
+	# idiod.video proxy
+	handle_path /upload {
+		rewrite * /api/upload.php
+		reverse_proxy {$MEDIA_HOSTING_URL} {
+			header_up Host {upstream_hostport}
+			header_up +authorization "Client-ID {$MEDIA_HOSTING_CLIENT_ID}"
+			header_up -origin
+			header_up -referer
+		}
+	}
+}
+
+(frontend) {
+	handle @is_dev {
+		reverse_proxy http://host.docker.internal:5000
+	}
+
+	handle {
+		root * /srv
+		file_server
+		try_files {path} /index.html
+	}
+}
+
+{$SERVER_HOST:http://orbitar.local} {
+	import setup
+
+	import {$TLS_MODE:tls_off}
+
+	import upload
+
+	import frontend
+}
+
+www.{$SERVER_DOMAIN:orbitar.local} {
+	import setup
+	import {$TLS_MODE:tls_off}
+	redir {$SERVER_HOST}{uri}
+}
+
+{$API_HOST:api.orbitar.local} {
+	import setup
+	import {$TLS_MODE:tls_off}
+
+	header X-Fingerprint "{$FINGERPRINT}"
+	header Access-Control-Allow-Origin *
+	header Access-Control-Expose-Headers "X-Fingerprint, X-Session-Id"
+
+	@cors_preflight method OPTIONS
+	handle @cors_preflight {
+		header {
+			Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE"
+			Access-Control-Max-Age "3600"
+			Access-Control-Allow-Headers *
+		}
+		respond "" 204
+	}
+
+	reverse_proxy @is_dev http://host.docker.internal:5001 {
+		header_down -Access-Control-*
+	}
+
+	reverse_proxy http://{$BACKEND_DOMAIN}:5001 {
+		header_down -Access-Control-*
+	}
+}

@@ -1,4 +1,4 @@
-name: build-docker
+name: Build Docker
 on:
   push:
     branches:
@@ -7,10 +7,8 @@ on:
   pull_request:
     paths:
       - .github/workflows/build-docker-dev.yml
-      - docker-compose.dev.yml
-      - docker-compose.local.yml
-      - docker-compose.ssl.dev.yml
-      - docker-compose.ssl.local.yml
+      - compose.yml
+      - compose-dev.yml
   workflow_dispatch:
 
 jobs:
@@ -18,29 +16,25 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
         matrix:
-            dc-file: [docker-compose.ssl.local.yml, docker-compose.local.yml]
+            dc-file: [compose.yml, compose-dev.yml]
+            extra-env: ["", "TLS_ENABLED=''"]
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Build backend & frontend
-        run: docker compose -f ${{ matrix.dc-file }} build --no-cache backend frontend feed
+      - name: Build docker
+        run: ${{ matrix.extra-env }} docker compose -f ${{ matrix.dc-file }} build --no-cache
+
 
   validate-docker-compose:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dc-file: [ compose.yml, compose-dev.yml ]
+        extra-env: ["", "TLS_ENABLED=''"]
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Validate docker-compose.dev.yml
-        run: docker compose -f docker-compose.dev.yml config
-
-      - name: Validate docker-compose.ssl.dev.yml
-        run: docker compose -f docker-compose.ssl.dev.yml config
-
-      - name: Validate docker-compose.local.yml
-        run: docker compose -f docker-compose.local.yml config
-
-      - name: Validate docker-compose.ssl.local.yml
-        run: docker compose -f docker-compose.ssl.local.yml config
-
+      - name: Validate
+        run: ${{ matrix.extra-env }} docker compose -f ${{ matrix.dc-file }} config --quiet
