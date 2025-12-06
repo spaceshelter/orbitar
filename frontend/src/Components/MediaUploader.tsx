@@ -49,6 +49,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const skipNextUriChange = useRef(false)
+  const dragCounter = useRef(0)
 
   const [dragActive, setDragActive] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -87,22 +88,25 @@ export default function MediaUploader(props: MediaUploaderProps) {
   }
 
   const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
-    e.stopPropagation()
     e.preventDefault()
+    dragCounter.current++
     setDragActive(true)
   }
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.stopPropagation()
     e.preventDefault()
-    setDragActive(false)
+    dragCounter.current--
+    if (dragCounter.current === 0) {
+      setDragActive(false)
+    }
   }
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.stopPropagation()
     e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
   }
   const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
-    e.stopPropagation()
     e.preventDefault()
+    dragCounter.current = 0
+    setDragActive(false)
 
     const data = e.dataTransfer
 
@@ -110,8 +114,6 @@ export default function MediaUploader(props: MediaUploaderProps) {
       const files = Array.from(data.files)
       await handleAddFiles(files)
     }
-
-    setDragActive(false)
   }
 
   const handleFileChoose = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -321,8 +323,19 @@ export default function MediaUploader(props: MediaUploaderProps) {
     }
 
     document.addEventListener('paste', handlePaste)
+
+    // Show "forbidden" cursor when dragging outside the form
+    const handleDocumentDragOver = (e: DragEvent) => {
+      if (!containerRef.current?.contains(e.target as Node)) {
+        e.preventDefault()
+        e.dataTransfer!.dropEffect = 'none'
+      }
+    }
+    document.addEventListener('dragover', handleDocumentDragOver)
+
     return () => {
       document.removeEventListener('paste', handlePaste)
+      document.removeEventListener('dragover', handleDocumentDragOver)
     }
   }, [])
 
@@ -353,24 +366,18 @@ export default function MediaUploader(props: MediaUploaderProps) {
       } as GalleryElement
     })
 
-  galleryElements.push({
-    element: (
+  return (
+    <>
+      <Overlay onClick={props.onCancel} zIndex={9999} />
       <div
-        className={styles.dropbox + (dragActive ? ' ' + styles.active : '')}
+        ref={containerRef}
+        className={styles.container + (dragActive ? ' ' + styles.dragActive : '')}
+        style={{ zIndex: 10000 }}
         onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <div style={{ pointerEvents: 'none' }}>Перетащите сюда и отпустите</div>
-      </div>
-    ),
-  } as GalleryElement)
-
-  return (
-    <>
-      <Overlay onClick={props.onCancel} zIndex={9999} />
-      <div ref={containerRef} className={styles.container} style={{ zIndex: 10000 }}>
         <form className={styles.controls} onSubmit={handleUpload}>
           <div className={styles.upload}>
             <input

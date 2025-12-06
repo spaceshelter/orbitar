@@ -15,6 +15,10 @@
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
+
+  &.dragActive {
+    border: 2px dashed var(--primary);
+  }
 }
 
 @media screen and (max-width: 600px) {
@@ -78,7 +82,7 @@
   cursor: pointer;
   align-items: center;
   display: flex;
-  
+
   &:hover {
     background: var(--danger);
   }

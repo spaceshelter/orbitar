@@ -26,9 +26,7 @@ $slide-transition-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   text-align: center;
   padding: 2rem;
   font-size: 1.125rem;
-  background-color: var(--bg);
-  border-radius: $gallery-border-radius;
-  border: 2px dashed var(--fgSoftest);
+  color: var(--fgSoftest);
 }
 
 .main {
@@ -50,13 +48,13 @@ $slide-transition-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
 .slidesContainer {
   display: flex;
   height: 100%;
-  width: 300%; 
+  width: 300%;
   will-change: transform;
   transform: translateX(-33.333%);
 }
 
 .slide {
-  flex: 0 0 33.333%; 
+  flex: 0 0 33.333%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -83,12 +81,12 @@ $slide-transition-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .noDragging {
-    user-drag: none;
-    -webkit-user-drag: none;
-    user-select: none;
-    -moz-user-select: none;
-    -webkit-user-select: none;
-    -ms-user-select: none;
+  user-drag: none;
+  -webkit-user-drag: none;
+  user-select: none;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
 }
 
 .caption {
@@ -329,7 +327,7 @@ $slide-transition-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
     width: 4rem;
     height: 3rem;
   }
-  
+
   .main {
     touch-action: pan-y;
     -webkit-touch-callout: none;
