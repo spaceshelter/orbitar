@@ -47,13 +47,14 @@ type MediaData = {
 export default function MediaUploader(props: MediaUploaderProps) {
   const uriRef = useFocus()
   const videoRef = useRef<HTMLVideoElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const skipNextUriChange = useRef(false)
 
   const [dragActive, setDragActive] = useState(false)
   const [uploading, setUploading] = useState(false)
 
   const [uploadArray, setUploadArray] = useState<MediaData[]>([])
   const [index, setIndex] = useState(0)
-  const [loading, setLoading] = useState<boolean>(false)
 
   const [galleryOption, setGalleryOption] = useState<CreateGalletyOption>({
     create: false,
@@ -135,28 +136,42 @@ export default function MediaUploader(props: MediaUploaderProps) {
     setUploadArray([...uploadArray, ...processedFiles])
   }
 
-  const handlePaste = async (e: ClipboardEvent) => {
+  const handlePaste = (e: ClipboardEvent) => {
+    // Only handle paste if it originated within our container
+    if (!containerRef.current?.contains(e.target as Node)) return
+
     const items = e.clipboardData?.items
     if (!items) return
 
-    const processedFiles: MediaData[] = []
-    for (let i = 0; i < items.length; i++) {
-      const file = items[i].getAsFile()
-      if (file) {
-        const mediaData = await readFile(file)
-        processedFiles.push(mediaData)
-        // prevent pasting into the editor
-        e.preventDefault()
+    const hasFiles = Array.from(items).some((item) => item.getAsFile())
+    if (!hasFiles) return
+
+    // Prevent default and skip onChange before async processing
+    e.preventDefault()
+    skipNextUriChange.current = true
+
+    const processFiles = async () => {
+      const processedFiles: MediaData[] = []
+      for (let i = 0; i < items.length; i++) {
+        const file = items[i].getAsFile()
+        if (file) {
+          const mediaData = await readFile(file)
+          processedFiles.push(mediaData)
+        }
+      }
+      if (processedFiles.length) {
+        setUploadArray((prev) => [...prev, ...processedFiles])
       }
     }
-
-    if (!processedFiles.length) return
-
-    setUploadArray((prev) => [...prev, ...processedFiles])
+    processFiles()
   }
 
-  const handleUriChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLoading(true)
+  const handleUriChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Skip if this change was triggered by a file paste
+    if (skipNextUriChange.current) {
+      skipNextUriChange.current = false
+      return
+    }
 
     const text = e.target.value
     const lines = text
@@ -166,7 +181,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
 
     const arr: MediaData[] = []
     for (const url of lines) {
-      const type = await parseUrl(url)
+      const type = parseUrl(url)
       if (!type) {
         arr.push({ url })
       } else {
@@ -178,57 +193,38 @@ export default function MediaUploader(props: MediaUploaderProps) {
       }
     }
 
-    try {
-      if (!arr.length) return
+    if (!arr.length) return
 
-      if (arr.length > 1) {
-        setUploadArray([...uploadArray, ...arr])
-        return
-      }
-
-      const data = arr[0]
-      if (index === uploadArray.length) {
-        setUploadArray([...uploadArray, ...arr])
-        return
-      }
-
-      const newArr = [...uploadArray]
-      newArr[index] = data
-      setUploadArray(newArr)
-    } finally {
-      setLoading(false)
+    if (arr.length > 1) {
+      setUploadArray([...uploadArray, ...arr])
+      return
     }
+
+    const data = arr[0]
+    if (index === uploadArray.length) {
+      setUploadArray([...uploadArray, ...arr])
+      return
+    }
+
+    const newArr = [...uploadArray]
+    newArr[index] = data
+    setUploadArray(newArr)
   }
 
-  const parseUrl = async (text: string) => {
-    if (text.match(/^file:\/\//)) {
-      return // skip local files
+  const parseUrl = (text: string): 'image-uri' | 'video-uri' | undefined => {
+    // Skip local files and data URLs
+    if (text.match(/^(file|data|blob):/)) {
+      return
     }
 
-    const getType = (value: string) => {
-      const imageRegexp = /(png|jpg|gif|jpeg|webp)$/i
-      const videoRegexp = /(mp4|webm|mov|quicktime)$/
+    const imageRegexp = /\.(png|jpg|gif|jpeg|webp)(\?.*)?$/i
+    const videoRegexp = /\.(mp4|webm|mov)(\?.*)?$/i
 
-      if (value.match(imageRegexp)) {
-        return 'image-uri'
-      } else if (value.match(videoRegexp)) {
-        return 'video-uri'
-      }
+    if (text.match(imageRegexp)) {
+      return 'image-uri'
+    } else if (text.match(videoRegexp)) {
+      return 'video-uri'
     }
-
-    const type = getType(text)
-    if (type) return type
-
-    try {
-      const url = new URL(text)
-      const response = await fetch(url.toString())
-      if (!response.ok) {
-        return
-      }
-
-      const contentType = response.headers.get('Content-Type')
-      if (contentType) return getType(contentType)
-    } catch {}
   }
 
   const handleError = (error: string) => {
@@ -321,7 +317,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
 
   useEffect(() => {
     if (props.mediaData) {
-      readFile(props.mediaData).then((data) => setUploadArray([...uploadArray, data]))
+      readFile(props.mediaData).then((data) => setUploadArray((prev) => [...prev, data]))
     }
 
     document.addEventListener('paste', handlePaste)
@@ -374,11 +370,11 @@ export default function MediaUploader(props: MediaUploaderProps) {
   return (
     <>
       <Overlay onClick={props.onCancel} zIndex={9999} />
-      <div className={styles.container} style={{ zIndex: 10000 }}>
+      <div ref={containerRef} className={styles.container} style={{ zIndex: 10000 }}>
         <form className={styles.controls} onSubmit={handleUpload}>
           <div className={styles.upload}>
             <input
-              disabled={uploading || loading}
+              disabled={uploading}
               className={styles.url}
               ref={uriRef}
               type='text'
