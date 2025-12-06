@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react'
 
 import Button from '@ui/Button'
 import Checkbox from '@ui/Checkbox'
-import { Field } from '@ui/Field'
 import { toast } from 'react-toastify'
 
 import useFocus from '../API/use/useFocus'
@@ -37,10 +36,6 @@ export type MediaUploaderProps = {
 
 export type CreateGalletyOption = {
   create: boolean
-  disableArrows?: boolean
-  disableIndicators?: boolean
-  disableThumbnails?: boolean
-  autoPlayInterval?: number
 }
 
 type MediaData = {
@@ -62,10 +57,6 @@ export default function MediaUploader(props: MediaUploaderProps) {
 
   const [galleryOption, setGalleryOption] = useState<CreateGalletyOption>({
     create: false,
-    disableArrows: false,
-    disableIndicators: false,
-    disableThumbnails: false,
-    autoPlayInterval: 0,
   })
 
   const currentMedia = uploadArray[index] || ({} as MediaData)
@@ -436,45 +427,13 @@ export default function MediaUploader(props: MediaUploaderProps) {
           <>
             <div className={styles.disclaimer}>
               Внутрь тега {'<gallery>'} можно вставлять теги img и video или просто ссылки на видео и изображения. Все
-              остальное игнорируется
+              остальное игнорируется.
               <br />
-              Параметр alt у картинки можно использовать для создания подписи под каждой картинкой
+              Параметр alt у картинки можно использовать для создания подписи под каждой картинкой.
             </div>
-            <Checkbox
-              id='disableArrows'
-              label='Отключить стрелки'
-              checked={galleryOption.disableArrows}
-              onChange={(e) => setGalleryOption({ ...galleryOption, disableArrows: e.target.checked })}
-            />
-            <Checkbox
-              id='disableIndicators'
-              label='Отключить индикаторы'
-              checked={galleryOption.disableIndicators}
-              onChange={(e) => setGalleryOption({ ...galleryOption, disableIndicators: e.target.checked })}
-            />
-            <Checkbox
-              id='disableThumbnails'
-              label='Отключить миниатюры'
-              checked={galleryOption.disableThumbnails}
-              onChange={(e) => setGalleryOption({ ...galleryOption, disableThumbnails: e.target.checked })}
-            />
-            <Field
-              variant='input'
-              type='number'
-              label='Автопроигрывание в секундах (0 - выкл.)'
-              className={styles.autoPlayInterval}
-              min={0}
-              max={60}
-              value={galleryOption.autoPlayInterval?.toString() || '0'}
-              onChange={(e) =>
-                setGalleryOption({
-                  ...galleryOption,
-                  autoPlayInterval: Math.min(60, Math.max(0, Number(e.target.value))),
-                })
-              }
-            />
           </>
         )}
+
         <div className={styles.disclaimer}>Загрузка картинок и видео в тестовом режиме, если не работает - сорян!</div>
       </div>
     </>

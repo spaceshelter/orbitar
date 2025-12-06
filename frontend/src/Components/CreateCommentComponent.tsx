@@ -391,16 +391,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
       })
       .join('\n')
     if (gallery?.create) {
-      const props = [
-        gallery.autoPlayInterval! > 0 ? `auto-play-interval="${gallery.autoPlayInterval}"` : '',
-        gallery.disableArrows ? 'no-arrows' : '',
-        gallery.disableIndicators ? 'no-indicators' : '',
-        gallery.disableThumbnails ? 'no-thumbnails' : '',
-      ]
-        .join(' ')
-        .trim()
-
-      text = `<gallery ${props}>\n${text}\n</gallery>`
+      text = `<gallery>\n${text}\n</gallery>`
     }
     replaceText(text, text.length)
   }

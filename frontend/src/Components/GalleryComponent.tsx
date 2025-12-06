@@ -298,7 +298,7 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
     }, autoPlayInterval)
 
     return () => clearInterval(interval)
-  }, [autoPlayInterval, currentIndex, isTransitioning, dragActivated])
+  }, [goToNext, autoPlayInterval, currentIndex, isTransitioning, dragActivated])
 
   if (!elements || elements.length === 0) {
     return (
