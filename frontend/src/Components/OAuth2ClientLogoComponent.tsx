@@ -24,6 +24,7 @@ export default function OAuth2ClientLogoComponent(props: OAuth2ClientLogoCompone
         onError: () => {
           toast('Не удалось обновить логотип', { type: 'error' })
         },
+        singleUpload: true,
       })
     }
   }

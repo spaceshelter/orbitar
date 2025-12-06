@@ -32,6 +32,7 @@ export type MediaUploaderProps = {
   onError?: (error: string) => void
   onSuccess: (result: MediaResult[], gallery?: CreateGalletyOption | undefined) => void
   mediaData?: File
+  singleUpload?: boolean
 }
 
 export type CreateGalletyOption = {
@@ -126,16 +127,21 @@ export default function MediaUploader(props: MediaUploaderProps) {
   }
 
   const handleAddFiles = async (files: File[]) => {
+    const filesToProcess = props.singleUpload ? files.slice(0, 1) : files
     const processedFiles: MediaData[] = []
 
-    for (const file of files) {
+    for (const file of filesToProcess) {
       const mediaData = await readFile(file)
       processedFiles.push(mediaData)
     }
 
     if (!processedFiles.length) return
 
-    setUploadArray([...uploadArray, ...processedFiles])
+    if (props.singleUpload) {
+      setUploadArray(processedFiles)
+    } else {
+      setUploadArray([...uploadArray, ...processedFiles])
+    }
   }
 
   const handlePaste = (e: ClipboardEvent) => {
@@ -159,10 +165,15 @@ export default function MediaUploader(props: MediaUploaderProps) {
         if (file) {
           const mediaData = await readFile(file)
           processedFiles.push(mediaData)
+          if (props.singleUpload) break
         }
       }
       if (processedFiles.length) {
-        setUploadArray((prev) => [...prev, ...processedFiles])
+        if (props.singleUpload) {
+          setUploadArray(processedFiles)
+        } else {
+          setUploadArray((prev) => [...prev, ...processedFiles])
+        }
       }
     }
     processFiles()
@@ -196,6 +207,12 @@ export default function MediaUploader(props: MediaUploaderProps) {
     }
 
     if (!arr.length) return
+
+    if (props.singleUpload) {
+      // In single upload mode, only use the first URL and replace the array
+      setUploadArray([arr[0]])
+      return
+    }
 
     if (arr.length > 1) {
       setUploadArray([...uploadArray, ...arr])
@@ -396,7 +413,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
                 type='file'
                 accept='image/*,video/mp4,video/webm'
                 onChange={handleFileChoose}
-                multiple
+                multiple={!props.singleUpload}
               />
               {uploadArray.length > 0 && (
                 <div className={styles.remove} onClick={removeMedia}>
@@ -410,7 +427,6 @@ export default function MediaUploader(props: MediaUploaderProps) {
             {uploading ? 'Загрузка' : 'Фьють'}
           </Button>
         </form>
-        <div className={styles.disclaimer}>Можете вставлять много ссылок списком. Прямо в поле ввода</div>
         <GalleryComponent
           className={styles.gallery}
           elements={galleryElements}
@@ -420,20 +436,22 @@ export default function MediaUploader(props: MediaUploaderProps) {
           disableDynamicHeight
           onChangeIndex={setIndex}
         />
-        <Checkbox
-          id='createGallery'
-          label='Создать галерею'
-          checked={galleryOption.create}
-          onChange={(e) => setGalleryOption({ ...galleryOption, create: e.target.checked })}
-        />
-        {galleryOption.create && (
+        {!props.singleUpload && (
           <>
-            <div className={styles.disclaimer}>
-              Внутрь тега {'<gallery>'} можно вставлять теги img и video или просто ссылки на видео и изображения. Все
-              остальное игнорируется.
-              <br />
-              Параметр alt у картинки можно использовать для создания подписи под каждой картинкой.
-            </div>
+            <Checkbox
+              id='createGallery'
+              label='Создать галерею'
+              checked={galleryOption.create}
+              onChange={(e) => setGalleryOption({ ...galleryOption, create: e.target.checked })}
+            />
+            {galleryOption.create && (
+              <div className={styles.disclaimer}>
+                Внутрь тега {'<gallery>'} можно вставлять теги img и video или просто ссылки на видео и изображения. Все
+                остальное игнорируется.
+                <br />
+                Параметр alt у картинки можно использовать для создания подписи под каждой картинкой.
+              </div>
+            )}
           </>
         )}
 
