@@ -378,10 +378,46 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
       })
   }
 
+  /**
+   * Detects if cursor is inside or at the border of a <gallery> tag.
+   * Returns insert position inside the gallery if found, or null otherwise.
+   */
+  const getGalleryInsertPosition = (text: string, cursorPos: number): number | null => {
+    const galleryRegex = /<gallery[^>]*>([\s\S]*?)<\/gallery>/gi
+    let match
+
+    while ((match = galleryRegex.exec(text)) !== null) {
+      const start = match.index
+      const end = start + match[0].length
+      const contentStart = start + match[0].indexOf('>') + 1
+      const contentEnd = end - '</gallery>'.length
+
+      // Cursor inside gallery content: <gallery>...|...</gallery>
+      if (cursorPos >= contentStart && cursorPos <= contentEnd) {
+        return cursorPos
+      }
+
+      // Cursor right after </gallery>: <gallery>...</gallery>|
+      if (cursorPos === end) {
+        return contentEnd
+      }
+    }
+
+    return null
+  }
+
   const handleMediaUpload = (result: MediaResult[], gallery?: CreateGalletyOption | undefined) => {
     setMediaUploaderData(undefined)
     setMediaUploaderOpen(false)
-    let text = result
+
+    const answer = answerRef.current
+    if (!answer) return
+
+    const cursorPos = answer.selectionStart
+    const currentText = answer.value
+    const galleryInsertPos = getGalleryInsertPosition(currentText, cursorPos)
+
+    let mediaText = result
       .map((data) => {
         if (data.type === 'image') {
           return `<img src="${data.url}" alt=""/>`
@@ -390,10 +426,37 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         }
       })
       .join('\n')
-    if (gallery?.create) {
-      text = `<gallery>\n${text}\n</gallery>`
+
+    // If inside/at-border of gallery, insert directly without wrapping
+    if (galleryInsertPos !== null) {
+      // Insert at the gallery position (may differ from cursor if cursor was after </gallery>)
+      const text1 = currentText.substring(0, galleryInsertPos)
+      const text2 = currentText.substring(galleryInsertPos)
+
+      // Add newline before if there's content before insert point
+      const needsNewlineBefore = galleryInsertPos > 0 && !/\n$/.test(text1)
+      // Add newline after if there's content after insert point
+      const needsNewlineAfter = text2.length > 0 && !/^\n/.test(text2)
+
+      if (needsNewlineBefore) mediaText = '\n' + mediaText
+      if (needsNewlineAfter) mediaText = mediaText + '\n'
+
+      const newValue = text1 + mediaText + text2
+      answer.value = newValue
+      setAnswerText(newValue)
+
+      const newCursorPos = galleryInsertPos + mediaText.length - (needsNewlineAfter ? 1 : 0)
+      setTimeout(() => {
+        answer.selectionStart = newCursorPos
+        answer.selectionEnd = newCursorPos
+      })
+    } else {
+      // Not inside gallery - wrap if checkbox is checked
+      if (gallery?.create) {
+        mediaText = `<gallery>\n${mediaText}\n</gallery>`
+      }
+      replaceText(mediaText, mediaText.length)
     }
-    replaceText(text, text.length)
   }
 
   const handleMediaUploadCancel = () => {
