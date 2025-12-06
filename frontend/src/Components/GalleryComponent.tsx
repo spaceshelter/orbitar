@@ -302,14 +302,14 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
 
   if (!elements || elements.length === 0) {
     return (
-      <div className={classNames(styles.gallery, className)}>
+      <div className={classNames(styles.gallery, 'gallery', className)}>
         <div className={styles.noImages}>Сюда можно вставить файл.</div>
       </div>
     )
   }
 
   return (
-    <div className={classNames(styles.gallery, className)}>
+    <div className={classNames(styles.gallery, 'gallery', className)}>
       <div
         ref={containerRef}
         className={classNames(styles.main, {

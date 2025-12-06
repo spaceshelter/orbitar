@@ -353,7 +353,8 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
       isPosting ||
       previewIgnoredTagNames.includes(el.tagName) ||
       el.getAttribute('role') === 'button' ||
-      el.classList.contains('image-scalable')
+      el.classList.contains('image-scalable') ||
+      el.closest('.gallery')
     ) {
       return
     }
