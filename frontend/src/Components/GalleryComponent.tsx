@@ -34,6 +34,8 @@ interface GalleryComponentProps {
   disableZoom?: boolean
   disableDynamicHeight?: boolean
   onChangeIndex?: (index: number) => void
+  scrollToIndex?: number
+  scrollToKey?: number
   className?: string
 }
 
@@ -46,6 +48,8 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
   disableZoom = false,
   disableDynamicHeight = false,
   onChangeIndex,
+  scrollToIndex,
+  scrollToKey,
   className,
 }) => {
   const [currentIndex, setCurrentIndex] = useState<number>(0)
@@ -144,6 +148,16 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
       emblaApi.off('select', onSelect)
     }
   }, [emblaApi, onChangeIndex])
+
+  // Scroll to index when prop changes
+  useEffect(() => {
+    if (scrollToIndex !== undefined && emblaApi) {
+      setTimeout(() => {
+        emblaApi.scrollTo(scrollToIndex)
+        setCurrentIndex(scrollToIndex)
+      }, 100)
+    }
+  }, [emblaApi, scrollToIndex, scrollToKey])
 
   // Autoplay
   useEffect(() => {

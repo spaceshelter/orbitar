@@ -57,10 +57,17 @@ export default function MediaUploader(props: MediaUploaderProps) {
 
   const [uploadArray, setUploadArray] = useState<MediaData[]>([])
   const [index, setIndex] = useState(0)
+  const [scrollToIndex, setScrollToIndex] = useState<{ index: number; key: number } | undefined>(undefined)
+  const scrollKeyRef = useRef(0)
 
   const [galleryOption, setGalleryOption] = useState<CreateGalletyOption>({
     create: false,
   })
+
+  const scrollToGalleryIndex = (idx: number) => {
+    scrollKeyRef.current++
+    setScrollToIndex({ index: idx, key: scrollKeyRef.current })
+  }
 
   const currentMedia = uploadArray[index] || ({} as MediaData)
 
@@ -139,8 +146,11 @@ export default function MediaUploader(props: MediaUploaderProps) {
 
     if (props.singleUpload) {
       setUploadArray(processedFiles)
+      scrollToGalleryIndex(0)
     } else {
+      const newLength = uploadArray.length + processedFiles.length
       setUploadArray([...uploadArray, ...processedFiles])
+      scrollToGalleryIndex(newLength - 1)
     }
   }
 
@@ -171,8 +181,12 @@ export default function MediaUploader(props: MediaUploaderProps) {
       if (processedFiles.length) {
         if (props.singleUpload) {
           setUploadArray(processedFiles)
+          scrollToGalleryIndex(0)
         } else {
-          setUploadArray((prev) => [...prev, ...processedFiles])
+          setUploadArray((prev) => {
+            scrollToGalleryIndex(prev.length + processedFiles.length - 1)
+            return [...prev, ...processedFiles]
+          })
         }
       }
     }
@@ -211,17 +225,21 @@ export default function MediaUploader(props: MediaUploaderProps) {
     if (props.singleUpload) {
       // In single upload mode, only use the first URL and replace the array
       setUploadArray([arr[0]])
+      scrollToGalleryIndex(0)
       return
     }
 
     if (arr.length > 1) {
+      const newLength = uploadArray.length + arr.length
       setUploadArray([...uploadArray, ...arr])
+      scrollToGalleryIndex(newLength - 1)
       return
     }
 
     const data = arr[0]
     if (index === uploadArray.length) {
       setUploadArray([...uploadArray, ...arr])
+      scrollToGalleryIndex(uploadArray.length)
       return
     }
 
@@ -363,6 +381,13 @@ export default function MediaUploader(props: MediaUploaderProps) {
     const newArray = [...uploadArray]
     newArray.splice(index, 1)
     setUploadArray(newArray)
+
+    // Adjust index if we deleted the last element
+    if (index >= newArray.length && newArray.length > 0) {
+      const newIndex = newArray.length - 1
+      setIndex(newIndex)
+      scrollToGalleryIndex(newIndex)
+    }
   }
 
   const galleryElements = uploadArray
@@ -435,6 +460,8 @@ export default function MediaUploader(props: MediaUploaderProps) {
           disableZoom
           disableDynamicHeight
           onChangeIndex={setIndex}
+          scrollToIndex={scrollToIndex?.index}
+          scrollToKey={scrollToIndex?.key}
         />
         {!props.singleUpload && (
           <>
