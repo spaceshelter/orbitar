@@ -25,7 +25,6 @@ import {
   getVideoVolume,
   setVideoVolume,
 } from './UserProfileSettings'
-import ZoomComponent from './ZoomComponent'
 
 import styles from './ContentComponent.module.scss'
 
@@ -868,7 +867,6 @@ export default function ContentComponent(props: ContentComponentProps) {
           </Button>
         </div>
       )}
-      <ZoomComponent />
       {mailboxKey && mailboxKey.type === 'mailbox' && (
         <SecretMailEncoderForm {...mailboxKey} onClose={() => setMailboxKey(null)} />
       )}
