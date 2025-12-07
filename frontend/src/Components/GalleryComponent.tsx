@@ -3,6 +3,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useAppState } from '@state/AppState'
 import Button from '@ui/Button'
 import classNames from 'classnames'
+import useEmblaCarousel from 'embla-carousel-react'
+import { WheelGesturesPlugin } from 'embla-carousel-wheel-gestures'
 import { observer } from 'mobx-react-lite'
 
 import { getLegacyZoom } from './UserProfileSettings'
@@ -47,25 +49,21 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
   className,
 }) => {
   const [currentIndex, setCurrentIndex] = useState<number>(0)
-  const [translateX, setTranslateX] = useState<number>(0)
-  const [touchStart, setTouchStart] = useState<number>(0)
-  const [touchEnd, setTouchEnd] = useState<number>(0)
-  const [isDragging, setIsDragging] = useState<boolean>(false)
-  const [isTransitioning, setIsTransitioning] = useState<boolean>(false)
   const [optimalHeight, setOptimalHeight] = useState<number>(500)
-
-  const [dragStartX, setDragStartX] = useState<number>(0)
-  const [isDragMouse, setIsDragMouse] = useState<boolean>(false)
-  const [dragActivated, setDragActivated] = useState<boolean>(false)
-
   const containerRef = useRef<HTMLDivElement>(null)
 
   const maxHeight = 500
   const fallbackElementHeight = 400
 
-  const dragThreshold = 10
-  const containerWidth = containerRef.current?.offsetWidth || 0
-  const minSwipeDistance = containerWidth > 0 ? containerWidth / 5 : 50
+  const [emblaRef, emblaApi] = useEmblaCarousel(
+    {
+      loop: false,
+      dragFree: false,
+      containScroll: 'trimSnaps',
+      skipSnaps: false,
+    },
+    [WheelGesturesPlugin({ forceWheelAxis: 'x' })],
+  )
 
   const calculateOptimalHeight = useCallback(async (): Promise<number> => {
     if (disableDynamicHeight) {
@@ -129,176 +127,61 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
     return () => window.removeEventListener('resize', handleResize)
   }, [calculateOptimalHeight, disableDynamicHeight])
 
-  const goToPrevious = (e: React.MouseEvent | undefined = undefined): void => {
-    if (isTransitioning) return
-    e?.stopPropagation()
-
-    goToSlide(currentIndex - 1)
-  }
-
-  const goToNext = (e: React.MouseEvent | undefined = undefined): void => {
-    if (isTransitioning) return
-    e?.stopPropagation()
-
-    goToSlide(currentIndex + 1)
-  }
-
-  const goToSlide = (index: number): void => {
-    if (isTransitioning || index === currentIndex || index < 0 || currentIndex >= elements.length) return
-
-    setIsTransitioning(true)
-    const direction = index > currentIndex ? -1 : 1
-    const targetTranslate = direction * containerWidth
-
-    setTranslateX(targetTranslate)
-
-    setTimeout(() => {
-      setCurrentIndex(index)
-      setTranslateX(0)
-      setIsTransitioning(false)
-      onChangeIndex?.(index)
-    }, 300)
-  }
-
-  const handleTouchStart = (e: React.TouchEvent): void => {
-    if (isTransitioning) return
-    const touch = e.targetTouches[0]
-    setTouchStart(touch.clientX)
-    setTouchEnd(0)
-    setIsDragging(true)
-    setDragActivated(false)
-  }
-
-  const handleTouchMove = (e: React.TouchEvent): void => {
-    if (!isDragging || isTransitioning) return
-    const touch = e.targetTouches[0]
-    setTouchEnd(touch.clientX)
-
-    const diff = Math.abs(touch.clientX - touchStart)
-
-    if (!dragActivated && diff > dragThreshold) {
-      setDragActivated(true)
-      e.cancelable && e.preventDefault()
-    }
-
-    if (dragActivated) {
-      const moveX = touch.clientX - touchStart
-      const newTranslateX = Math.max(Math.min(moveX, containerWidth * 0.8), -containerWidth * 0.8)
-      setTranslateX(newTranslateX)
-    }
-  }
-
-  const handleTouchEnd = (): void => {
-    if (!isDragging || isTransitioning) {
-      setIsDragging(false)
-      setDragActivated(false)
-      return
-    }
-
-    // tap
-    if (!dragActivated) {
-      setIsDragging(false)
-      setDragActivated(false)
-      return
-    }
-
-    const distance = touchStart - touchEnd
-    const isLeftSwipe = distance > minSwipeDistance
-    const isRightSwipe = distance < -minSwipeDistance
-
-    if (isLeftSwipe && currentIndex < elements.length - 1) {
-      goToNext()
-    } else if (isRightSwipe && currentIndex > 0) {
-      goToPrevious()
-    } else {
-      setTranslateX(0)
-    }
-
-    setIsDragging(false)
-    setDragActivated(false)
-  }
-
-  const handleMouseDown = (e: React.MouseEvent): void => {
-    if (isTransitioning) return
-    setDragStartX(e.clientX)
-    setIsDragMouse(true)
-    setDragActivated(false)
-  }
-
-  const handleMouseMove = (e: React.MouseEvent): void => {
-    if (!isDragMouse || isTransitioning) return
-
-    const diff = Math.abs(e.clientX - dragStartX)
-
-    if (!dragActivated && diff > dragThreshold) {
-      setDragActivated(true)
-      e.preventDefault()
-    }
-
-    if (dragActivated) {
-      const moveX = e.clientX - dragStartX
-      const newTranslateX = Math.max(Math.min(moveX, containerWidth * 0.8), -containerWidth * 0.8)
-      setTranslateX(newTranslateX)
-    }
-  }
-
-  const handleMouseUp = (e: React.MouseEvent): void => {
-    if (!isDragMouse || isTransitioning) {
-      setIsDragMouse(false)
-      setDragActivated(false)
-      return
-    }
-
-    // click
-    if (!dragActivated) {
-      setIsDragMouse(false)
-      setDragActivated(false)
-      return
-    }
-
-    const distance = dragStartX - e.clientX
-    const isLeftSwipe = distance > minSwipeDistance
-    const isRightSwipe = distance < -minSwipeDistance
-
-    if (isLeftSwipe && currentIndex < elements.length - 1) {
-      goToNext()
-    } else if (isRightSwipe && currentIndex > 0) {
-      goToPrevious()
-    } else {
-      setTranslateX(0)
-    }
-
-    setIsDragMouse(false)
-    setDragActivated(false)
-  }
-
-  const handleMouseLeave = (): void => {
-    if (isDragMouse) {
-      if (dragActivated) {
-        setTranslateX(0)
-      }
-      setIsDragMouse(false)
-      setDragActivated(false)
-    }
-  }
-
-  const getPrevIndex = () => {
-    return currentIndex === 0 ? elements.length - 1 : currentIndex - 1
-  }
-
-  const getNextIndex = () => {
-    return currentIndex === elements.length - 1 ? 0 : currentIndex + 1
-  }
-
+  // Embla select event handler
   useEffect(() => {
-    if (!autoPlayInterval || autoPlayInterval <= 0 || isTransitioning || dragActivated) return
+    if (!emblaApi) return
+
+    const onSelect = () => {
+      const index = emblaApi.selectedScrollSnap()
+      setCurrentIndex(index)
+      onChangeIndex?.(index)
+    }
+
+    emblaApi.on('select', onSelect)
+    onSelect() // Set initial index
+
+    return () => {
+      emblaApi.off('select', onSelect)
+    }
+  }, [emblaApi, onChangeIndex])
+
+  // Autoplay
+  useEffect(() => {
+    if (!autoPlayInterval || autoPlayInterval <= 0 || !emblaApi) return
 
     const interval = setInterval(() => {
-      goToNext()
+      if (emblaApi.canScrollNext()) {
+        emblaApi.scrollNext()
+      } else {
+        emblaApi.scrollTo(0)
+      }
     }, autoPlayInterval)
 
     return () => clearInterval(interval)
-  }, [goToNext, autoPlayInterval, currentIndex, isTransitioning, dragActivated])
+  }, [emblaApi, autoPlayInterval])
+
+  const goToPrevious = useCallback(
+    (e: React.MouseEvent | undefined = undefined): void => {
+      e?.stopPropagation()
+      emblaApi?.scrollPrev()
+    },
+    [emblaApi],
+  )
+
+  const goToNext = useCallback(
+    (e: React.MouseEvent | undefined = undefined): void => {
+      e?.stopPropagation()
+      emblaApi?.scrollNext()
+    },
+    [emblaApi],
+  )
+
+  const goToSlide = useCallback(
+    (index: number): void => {
+      emblaApi?.scrollTo(index)
+    },
+    [emblaApi],
+  )
 
   if (!elements || elements.length === 0) {
     return (
@@ -312,41 +195,18 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
     <div className={classNames(styles.gallery, 'gallery', className)}>
       <div
         ref={containerRef}
-        className={classNames(styles.main, {
-          [styles.dragging]: dragActivated,
-          [styles.transitioning]: isTransitioning,
-        })}
+        className={styles.main}
         style={{
           height: disableDynamicHeight ? undefined : `${optimalHeight}px`,
         }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
       >
-        <div
-          className={styles.slidesContainer}
-          style={{
-            transform: `translateX(calc(-33.333% + ${translateX}px))`,
-            transition:
-              isTransitioning && !isDragging ? 'transform 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none',
-          }}
-        >
-          <div className={styles.slide}>
-            {currentIndex > 0 ? <GalleryElement {...elements[getPrevIndex()]} disableZoom={disableZoom} /> : null}
-          </div>
-
-          <div className={styles.slide}>
-            <GalleryElement {...elements[currentIndex]} disableZoom={disableZoom} />
-          </div>
-
-          <div className={styles.slide}>
-            {currentIndex < elements.length - 1 ? (
-              <GalleryElement {...elements[getNextIndex()]} disableZoom={disableZoom} />
-            ) : null}
+        <div className={styles.embla} ref={emblaRef}>
+          <div className={styles.emblaContainer}>
+            {elements.map((el, index) => (
+              <div className={styles.emblaSlide} key={index}>
+                <GalleryElementComponent {...el} disableZoom={disableZoom} />
+              </div>
+            ))}
           </div>
         </div>
 
@@ -355,7 +215,6 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
             onClick={goToPrevious}
             className={classNames(styles.arrow, styles.arrowPrev)}
             aria-label='Предыдущее изображение'
-            disabled={isTransitioning}
           >
             <ChevronLeft />
           </Button>
@@ -366,7 +225,6 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
             onClick={goToNext}
             className={classNames(styles.arrow, styles.arrowNext)}
             aria-label='Следующее изображение'
-            disabled={isTransitioning}
           >
             <ChevronRight />
           </Button>
@@ -380,7 +238,6 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
                 onClick={() => goToSlide(index)}
                 className={classNames(styles.indicator, { [styles.indicatorActive]: index === currentIndex })}
                 aria-label={`Перейти к изображению ${index + 1}`}
-                disabled={isTransitioning}
               >
                 <span className={styles.indicatorDot}></span>
               </Button>
@@ -402,7 +259,6 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
                 [styles.thumbnailVideo]: el.isVideo,
               })}
               aria-label={`Миниатюра ${index + 1}`}
-              disabled={isTransitioning}
             >
               <img src={el.image?.src} alt={el.image?.alt} className={styles.thumbnailImage} />
             </Button>
@@ -421,7 +277,7 @@ interface GalleryElementProps {
   disableZoom?: boolean
 }
 
-function GalleryElement({ isVideo, image, htmlElement, element, disableZoom }: GalleryElementProps) {
+function GalleryElementComponent({ isVideo, image, htmlElement, element, disableZoom }: GalleryElementProps) {
   const ref = useRef<HTMLSpanElement>(null)
   const appState = useAppState()
 
