@@ -1,11 +1,13 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { useAppState } from '@state/AppState'
+import useOnBack from '@api/use/useOnBack'
 import Button from '@ui/Button'
 import classNames from 'classnames'
 import useEmblaCarousel from 'embla-carousel-react'
 import { WheelGesturesPlugin } from 'embla-carousel-wheel-gestures'
 import { observer } from 'mobx-react-lite'
+import { useHotkeys } from 'react-hotkeys-hook'
+import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch'
 
 import { getLegacyZoom } from './UserProfileSettings'
 
@@ -37,6 +39,9 @@ interface GalleryComponentProps {
   scrollToIndex?: number
   scrollToKey?: number
   className?: string
+  expanded?: boolean
+  onExpand?: (index: number) => void
+  onCollapse?: () => void
 }
 
 const GalleryComponent: React.FC<GalleryComponentProps> = ({
@@ -51,13 +56,43 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
   scrollToIndex,
   scrollToKey,
   className,
+  expanded: expandedProp,
+  onExpand: onExpandProp,
+  onCollapse: onCollapseProp,
 }) => {
   const [currentIndex, setCurrentIndex] = useState<number>(0)
   const [optimalHeight, setOptimalHeight] = useState<number>(500)
+  const [internalExpanded, setInternalExpanded] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  // Use external control if provided, otherwise use internal state
+  const isControlled = expandedProp !== undefined
+  const expanded = isControlled ? expandedProp : internalExpanded
+
+  const handleExpand = useCallback(
+    (index: number) => {
+      if (isControlled) {
+        onExpandProp?.(index)
+      } else {
+        setInternalExpanded(true)
+      }
+    },
+    [isControlled, onExpandProp],
+  )
+
+  const handleCollapse = useCallback(() => {
+    if (isControlled) {
+      onCollapseProp?.()
+    } else {
+      setInternalExpanded(false)
+    }
+  }, [isControlled, onCollapseProp])
 
   const maxHeight = 500
   const fallbackElementHeight = 400
+
+  // Disable drag in expanded mode to allow zoom-pan-pinch to work
+  const emblaPlugins = useMemo(() => (expanded ? [] : [WheelGesturesPlugin({ forceWheelAxis: 'x' })]), [expanded])
 
   const [emblaRef, emblaApi] = useEmblaCarousel(
     {
@@ -65,9 +100,38 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
       dragFree: false,
       containScroll: 'trimSnaps',
       skipSnaps: false,
+      watchDrag: !expanded, // Disable drag in expanded mode
     },
-    [WheelGesturesPlugin({ forceWheelAxis: 'x' })],
+    emblaPlugins,
   )
+
+  // Keyboard navigation in expanded mode
+  useHotkeys(
+    'left',
+    () => {
+      if (expanded) emblaApi?.scrollPrev()
+    },
+    { enabled: expanded },
+    [expanded, emblaApi],
+  )
+
+  useHotkeys(
+    'right',
+    () => {
+      if (expanded) emblaApi?.scrollNext()
+    },
+    { enabled: expanded },
+    [expanded, emblaApi],
+  )
+
+  useHotkeys('esc', () => handleCollapse(), { enabled: expanded }, [expanded, handleCollapse])
+
+  // Handle back button in expanded mode
+  useOnBack(() => {
+    if (expanded) {
+      handleCollapse()
+    }
+  })
 
   const calculateOptimalHeight = useCallback(async (): Promise<number> => {
     if (disableDynamicHeight) {
@@ -205,26 +269,43 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
     )
   }
 
+  // Handle click on overlay to collapse
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    // Only collapse if clicking directly on the overlay, not on content
+    if (e.target === e.currentTarget) {
+      handleCollapse()
+    }
+  }
+
+  // Show arrows in expanded mode regardless of showArrows prop
+  const shouldShowArrows = expanded || showArrows
+
   return (
-    <div className={classNames(styles.gallery, 'gallery', className)}>
+    <div className={classNames(styles.gallery, 'gallery', className, expanded && styles.galleryExpanded)}>
+      {expanded && <div className={styles.overlay} onClick={handleOverlayClick} />}
       <div
         ref={containerRef}
         className={styles.main}
         style={{
-          height: disableDynamicHeight ? undefined : `${optimalHeight}px`,
+          height: expanded ? undefined : disableDynamicHeight ? undefined : `${optimalHeight}px`,
         }}
       >
         <div className={styles.embla} ref={emblaRef}>
           <div className={styles.emblaContainer}>
             {elements.map((el, index) => (
-              <div className={styles.emblaSlide} key={index}>
-                <GalleryElementComponent {...el} disableZoom={disableZoom} />
+              <div className={styles.emblaSlide} key={index} onClick={handleOverlayClick}>
+                <GalleryElementComponent
+                  {...el}
+                  disableZoom={disableZoom}
+                  expanded={expanded}
+                  onExpand={() => handleExpand(index)}
+                />
               </div>
             ))}
           </div>
         </div>
 
-        {showArrows && currentIndex !== 0 && (
+        {shouldShowArrows && currentIndex !== 0 && (
           <Button
             onClick={goToPrevious}
             className={classNames(styles.arrow, styles.arrowPrev)}
@@ -234,7 +315,7 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
           </Button>
         )}
 
-        {showArrows && currentIndex !== elements.length - 1 && (
+        {shouldShowArrows && currentIndex !== elements.length - 1 && (
           <Button
             onClick={goToNext}
             className={classNames(styles.arrow, styles.arrowNext)}
@@ -257,6 +338,12 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
               </Button>
             ))}
           </div>
+        )}
+
+        {expanded && (
+          <Button onClick={() => handleCollapse()} className={styles.closeButton} aria-label='Закрыть'>
+            <span className='i i-close' />
+          </Button>
         )}
       </div>
 
@@ -289,29 +376,37 @@ interface GalleryElementProps {
   isVideo?: boolean
   element?: React.ReactNode
   disableZoom?: boolean
+  expanded?: boolean
+  onExpand?: () => void
 }
 
-function GalleryElementComponent({ isVideo, image, htmlElement, element, disableZoom }: GalleryElementProps) {
+function GalleryElementComponent({
+  isVideo,
+  image,
+  htmlElement,
+  element,
+  disableZoom,
+  expanded,
+  onExpand,
+}: GalleryElementProps) {
   const ref = useRef<HTMLSpanElement>(null)
-  const appState = useAppState()
-
+  const imgRef = useRef<HTMLImageElement>(null)
   const [imageLarge, setImageLarge] = useState<boolean>(false)
 
   const handleImageClick = (e: React.MouseEvent<HTMLImageElement, MouseEvent>): void => {
+    e.stopPropagation() // Prevent overlay click handler
     if (disableZoom) return
 
-    const img = e.currentTarget
+    if (expanded) {
+      // In expanded mode, zoom is handled by TransformWrapper
+      return
+    }
 
     if (getLegacyZoom()) {
       setImageLarge(!imageLarge)
     } else {
-      if (!getLegacyZoom() && !appState.zoomedImg) {
-        appState.setZoomedImg({
-          src: img.src,
-          width: img.naturalWidth,
-          height: img.naturalHeight,
-        })
-      }
+      // Trigger gallery expansion instead of separate zoom component
+      onExpand?.()
     }
   }
 
@@ -331,12 +426,55 @@ function GalleryElementComponent({ isVideo, image, htmlElement, element, disable
   }, [ref, isVideo, htmlElement])
 
   if (isVideo && htmlElement) {
-    return <span ref={ref} className={styles.noDragging}></span>
+    return (
+      <span
+        ref={ref}
+        className={styles.noDragging}
+        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking video
+      />
+    )
   }
 
   if (image) {
+    // In expanded mode, wrap image with zoom-pan-pinch
+    if (expanded) {
+      return (
+        <TransformWrapper
+          initialScale={1}
+          minScale={0.5}
+          maxScale={4}
+          centerOnInit={true}
+          wheel={{ step: 0.1 }}
+          doubleClick={{ mode: 'reset' }}
+        >
+          <TransformComponent
+            wrapperStyle={{
+              width: '100%',
+              height: '100%',
+            }}
+            contentStyle={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <img
+              ref={imgRef}
+              src={image.src}
+              alt={image.alt}
+              className={classNames(styles.image, styles.noDragging, styles.imageExpanded)}
+              onClick={handleImageClick}
+            />
+          </TransformComponent>
+        </TransformWrapper>
+      )
+    }
+
     return (
       <img
+        ref={imgRef}
         src={image.src}
         alt={image.alt}
         className={classNames(
