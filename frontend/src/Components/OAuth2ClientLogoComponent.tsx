@@ -32,6 +32,7 @@ export default function OAuth2ClientLogoComponent(props: OAuth2ClientLogoCompone
   const handleMediaUpload = (result: MediaResult[]) => {
     if (!result.length) {
       toast('Не загружен файл')
+      return
     }
 
     const { type, url } = result[0]
