@@ -425,7 +425,9 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         } else if (data.type === 'video') {
           return `<video src="${data.url}"/>`
         }
+        return ''
       })
+      .filter(Boolean)
       .join('\n')
 
     // If inside/at-border of gallery, insert directly without wrapping
