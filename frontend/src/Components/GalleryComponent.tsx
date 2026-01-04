@@ -71,8 +71,10 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
 
   const handleExpand = useCallback(
     (index: number) => {
+      // Always notify parent when expanding (used to remove autoCut)
+      onExpandProp?.(index)
       if (isControlled) {
-        onExpandProp?.(index)
+        // Controlled mode: parent manages expanded state
       } else {
         setInternalExpanded(true)
       }
@@ -128,10 +130,8 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
 
   // Handle back button in expanded mode
   useOnBack(() => {
-    if (expanded) {
-      handleCollapse()
-    }
-  })
+    handleCollapse()
+  }, expanded)
 
   const calculateOptimalHeight = useCallback(async (): Promise<number> => {
     if (disableDynamicHeight) {

@@ -98,7 +98,7 @@ function updateContent(
   currentUsername?: string,
 ): void {
   div.querySelectorAll('div.gallery').forEach((gallery) => {
-    updateGallery(gallery as HTMLDivElement, appState, cleanupRegistry)
+    updateGallery(gallery as HTMLDivElement, appState, cleanupRegistry, setCut)
   })
 
   div.querySelectorAll('img').forEach((img) => {
@@ -722,7 +722,12 @@ function updatePoll(pollEl: HTMLDivElement, appState: AppState, cleanupRegistry:
   cleanupRegistry.register(renderWithTheme(pollEl, <PollComponent pollId={Number(pollId)} />, appState))
 }
 
-function updateGallery(galleryEl: HTMLDivElement, appState: AppState, cleanupRegistry: CleanupRegistry) {
+function updateGallery(
+  galleryEl: HTMLDivElement,
+  appState: AppState,
+  cleanupRegistry: CleanupRegistry,
+  setCut: (cut: boolean) => void,
+) {
   const elements: GalleryElement[] = []
   galleryEl.querySelectorAll(':scope > img, :scope > a[class$="-embed"]').forEach((el) => {
     if (el.tagName.toLowerCase() === 'img') {
@@ -748,6 +753,11 @@ function updateGallery(galleryEl: HTMLDivElement, appState: AppState, cleanupReg
   const showIndicators = !galleryEl.hasAttribute('data-no-indicators')
   const showThumbnails = !galleryEl.hasAttribute('data-no-thumbnails')
 
+  // When gallery expands, remove the autoCut to allow fullscreen overlay
+  const handleExpand = () => {
+    setCut(false)
+  }
+
   const component = (
     <GalleryComponent
       elements={elements}
@@ -755,6 +765,7 @@ function updateGallery(galleryEl: HTMLDivElement, appState: AppState, cleanupReg
       autoPlayInterval={autoPlayInterval}
       showIndicators={showIndicators}
       showThumbnails={showThumbnails}
+      onExpand={handleExpand}
     />
   )
 

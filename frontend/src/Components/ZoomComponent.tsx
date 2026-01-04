@@ -13,8 +13,10 @@ const ZoomComponent = observer(function ZoomComponent() {
     appState.setZoomedImg(null)
   }
 
-  useHotkeys('esc', onExit)
-  useOnBack(onExit)
+  const isZoomed = !!appState.zoomedImg
+
+  useHotkeys('esc', onExit, { enabled: isZoomed })
+  useOnBack(onExit, isZoomed)
 
   if (!appState.zoomedImg) return null
 
