@@ -626,7 +626,8 @@ function updateImg(img: HTMLImageElement, setZoomedImg: (img: ZoomedImg | null) 
   while (el) {
     if (
       el.tagName.toUpperCase() === 'A' ||
-      (el.tagName.toUpperCase() === 'SPAN' && el.className.indexOf('secret-mail') !== -1)
+      (el.tagName.toUpperCase() === 'SPAN' && el.className.indexOf('secret-mail') !== -1) ||
+      el.classList.contains('gallery')
     ) {
       return
     }
