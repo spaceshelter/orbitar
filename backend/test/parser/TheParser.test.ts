@@ -423,6 +423,43 @@ describe('gallery edge cases', () => {
     expect(result.text).toContain('alt="My description"')
   })
 
+  test('img tag alt attribute escapes HTML', () => {
+    const result = p.parse(
+      '<gallery><img src="https://example.com/img.jpg" alt="<script>alert(1)</script>"/></gallery>',
+    )
+    expect(result.text).toContain('alt="&lt;script&gt;alert(1)&lt;/script&gt;"')
+    expect(result.text).not.toContain('<script>')
+  })
+
+  test('img tag alt attribute escapes quotes', () => {
+    const result = p.parse('<gallery><img src="https://example.com/img.jpg" alt=\'"><b>XSS</b>\'/></gallery>')
+    expect(result.text).toContain('alt="&quot;&gt;&lt;b&gt;XSS&lt;/b&gt;"')
+    expect(result.text).not.toContain('<b>XSS</b>')
+  })
+
+  test('img tag alt with entity quote gets double-escaped', () => {
+    // Input: alt="&quot;" (entity-encoded quote as the value)
+    // With decodeEntities: false, the literal &quot; is passed to htmlEscape
+    // which escapes the & to &amp;
+    const result = p.parse('<img src="https://example.com/img.jpg" alt="&quot;"/>')
+    expect(result.text).toContain('alt="&amp;quot;"')
+  })
+
+  test('img tag alt with malformed double quote HTML', () => {
+    // This is malformed HTML: alt="" followed by "/>
+    // htmlparser2 parses this as alt="" (empty)
+    const result = p.parse('<img src="https://example.com/img.jpg" alt="""/>')
+    expect(result.text).toContain('alt=""')
+    expect(result.text).not.toContain('alt="""')
+  })
+
+  test('img tag alt with actual quote character via single-quote delimiter', () => {
+    // Use single quotes to delimit the attribute, allowing " inside
+    const result = p.parse("<img src='https://example.com/img.jpg' alt='\"'/>")
+    // The " should be escaped to &quot;
+    expect(result.text).toContain('alt="&quot;"')
+  })
+
   test('img tag without src is silently ignored', () => {
     const result = p.parse('<gallery><img alt="no source"/></gallery>')
     // parseImg validates URL, empty URL fails validation -> silently ignored in gallery
