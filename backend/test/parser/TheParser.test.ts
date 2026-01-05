@@ -300,14 +300,440 @@ test('parse gallery with nested tags', () => {
   )
 })
 
-test('parse gallery with text content', () => {
+test('parse gallery with text content drops non-media text', () => {
   const result = p.parse('<gallery>Some text</gallery>')
-  expect(result.text).toEqual('<div class="gallery" >Some text</div>')
+  expect(result.text).toEqual('<div class="gallery" ></div>')
 })
 
 test('parse gallery with invalid child tag', () => {
   const result = p.parse('<gallery><invalid>test</invalid></gallery>')
   expect(result.text).toEqual('<div class="gallery" ></div>')
+})
+
+test('parse gallery ignores mentions in text', () => {
+  const result = p.parse('<gallery>Hello @username</gallery>')
+  expect(result.text).toEqual('<div class="gallery" ></div>')
+  expect(result.mentions).toEqual([])
+})
+
+test('parse gallery excludes telegram URLs', () => {
+  const result = p.parse('<gallery>https://t.me/channel/123</gallery>')
+  expect(result.text).toEqual('<div class="gallery" ></div>')
+})
+
+test('parse gallery excludes twitter URLs', () => {
+  const result = p.parse('<gallery>https://twitter.com/user/status/123456</gallery>')
+  expect(result.text).toEqual('<div class="gallery" ></div>')
+})
+
+test('parse gallery excludes internal URLs', () => {
+  const result = p.parse('<gallery>https://orbitar.space/p123</gallery>')
+  expect(result.text).toEqual('<div class="gallery" ></div>')
+})
+
+test('parse gallery keeps image URLs', () => {
+  const result = p.parse('<gallery>https://example.com/image.jpg</gallery>')
+  expect(result.text).toEqual('<div class="gallery" ><img src="https://example.com/image.jpg" alt=""/></div>')
+})
+
+test('parse gallery keeps youtube URLs', () => {
+  const result = p.parse('<gallery>https://www.youtube.com/watch?v=dQw4w9WgXcQ</gallery>')
+  expect(result.text).toContain('class="youtube-embed"')
+  expect(result.text).toContain('data-youtube=')
+})
+
+test('parse gallery keeps vimeo URLs', () => {
+  const result = p.parse('<gallery>https://vimeo.com/123456</gallery>')
+  expect(result.text).toContain('class="vimeo-embed"')
+  expect(result.text).toContain('data-vimeo=')
+})
+
+test('parse gallery keeps coub URLs', () => {
+  const result = p.parse('<gallery>https://coub.com/view/abc123</gallery>')
+  expect(result.text).toContain('class="coub-embed"')
+  expect(result.text).toContain('data-coub=')
+})
+
+test('parse gallery keeps video URLs', () => {
+  const result = p.parse('<gallery>https://idiod.video/test.mp4</gallery>')
+  expect(result.text).toContain('class="video-embed"')
+  expect(result.text).toContain('data-video=')
+})
+
+test('parse gallery with mixed content keeps only media', () => {
+  const result = p.parse('<gallery>Some text https://example.com/image.png @mention https://t.me/channel/123</gallery>')
+  expect(result.text).toEqual('<div class="gallery" ><img src="https://example.com/image.png" alt=""/></div>')
+  expect(result.mentions).toEqual([])
+})
+
+// Edge case tests for gallery parsing
+describe('gallery edge cases', () => {
+  test('multiple media URLs in one text node', () => {
+    const result = p.parse(
+      '<gallery>https://example.com/a.jpg https://example.com/b.png https://example.com/c.gif</gallery>',
+    )
+    expect(result.text).toContain('<img src="https://example.com/a.jpg"')
+    expect(result.text).toContain('<img src="https://example.com/b.png"')
+    expect(result.text).toContain('<img src="https://example.com/c.gif"')
+  })
+
+  test('multiple media URLs with non-media URLs interspersed', () => {
+    const result = p.parse('<gallery>https://example.com/a.jpg https://google.com https://example.com/b.png</gallery>')
+    expect(result.text).toContain('<img src="https://example.com/a.jpg"')
+    expect(result.text).toContain('<img src="https://example.com/b.png"')
+    expect(result.text).not.toContain('google.com')
+  })
+
+  test('URLs with query parameters', () => {
+    const result = p.parse('<gallery>https://example.com/image.jpg?width=100&height=200</gallery>')
+    expect(result.text).toContain('<img src="https://example.com/image.jpg?width=100&height=200"')
+  })
+
+  test('URLs with fragments', () => {
+    const result = p.parse('<gallery>https://example.com/image.png#section</gallery>')
+    expect(result.text).toContain('<img src="https://example.com/image.png#section"')
+  })
+
+  test('empty gallery', () => {
+    const result = p.parse('<gallery></gallery>')
+    expect(result.text).toEqual('<div class="gallery" ></div>')
+  })
+
+  test('gallery with only whitespace', () => {
+    const result = p.parse('<gallery>   \n\t  </gallery>')
+    expect(result.text).toEqual('<div class="gallery" ></div>')
+  })
+
+  test('gallery with newlines between URLs', () => {
+    const result = p.parse('<gallery>https://example.com/a.jpg\nhttps://example.com/b.jpg</gallery>')
+    expect(result.text).toContain('<img src="https://example.com/a.jpg"')
+    expect(result.text).toContain('<img src="https://example.com/b.jpg"')
+  })
+
+  test('nested anchor tag with img is ignored', () => {
+    // <a> is not in allowedTags, so the whole subtree is ignored
+    const result = p.parse(
+      '<gallery><a href="https://example.com"><img src="https://example.com/img.jpg"/></a></gallery>',
+    )
+    expect(result.text).toEqual('<div class="gallery" ></div>')
+  })
+
+  test('img tag preserves alt attribute', () => {
+    const result = p.parse('<gallery><img src="https://example.com/img.jpg" alt="My description"/></gallery>')
+    expect(result.text).toContain('alt="My description"')
+  })
+
+  test('img tag without src is silently ignored', () => {
+    const result = p.parse('<gallery><img alt="no source"/></gallery>')
+    // parseImg validates URL, empty URL fails validation -> silently ignored in gallery
+    expect(result.text).toEqual('<div class="gallery" ></div>')
+  })
+
+  test('video tag without src is silently ignored', () => {
+    const result = p.parse('<gallery><video></video></gallery>')
+    // parseVideo validates URL, empty URL fails validation -> silently ignored in gallery
+    expect(result.text).toEqual('<div class="gallery" ></div>')
+  })
+
+  test('video tag with valid src', () => {
+    const result = p.parse('<gallery><video src="https://example.com/video.mp4"/></gallery>')
+    expect(result.text).toContain('video')
+    expect(result.text).toContain('example.com/video.mp4')
+  })
+
+  test('data URLs are rejected', () => {
+    const result = p.parse('<gallery>data:image/png;base64,iVBORw0KGgo=</gallery>')
+    expect(result.text).toEqual('<div class="gallery" ></div>')
+  })
+
+  test('blob URLs are rejected', () => {
+    const result = p.parse('<gallery>blob:https://example.com/12345</gallery>')
+    expect(result.text).toEqual('<div class="gallery" ></div>')
+  })
+
+  test('file URLs are rejected', () => {
+    const result = p.parse('<gallery>file:///etc/passwd.jpg</gallery>')
+    expect(result.text).toEqual('<div class="gallery" ></div>')
+  })
+
+  test('relative URLs are not recognized as URLs', () => {
+    const result = p.parse('<gallery>/images/photo.jpg</gallery>')
+    expect(result.text).toEqual('<div class="gallery" ></div>')
+  })
+
+  test('URLs without protocol are not matched', () => {
+    const result = p.parse('<gallery>example.com/image.jpg</gallery>')
+    // urlRegex requires protocol
+    expect(result.text).toEqual('<div class="gallery" ></div>')
+  })
+
+  test('case sensitivity in extensions - uppercase not matched', () => {
+    // processImage regex is case-sensitive, uppercase extensions are not matched
+    const result = p.parse('<gallery>https://example.com/IMAGE.JPG</gallery>')
+    expect(result.text).toEqual('<div class="gallery" ></div>')
+  })
+
+  test('case sensitivity in extensions - mixed case not matched', () => {
+    // processImage regex is case-sensitive, mixed case extensions are not matched
+    const result = p.parse('<gallery>https://example.com/image.JpG</gallery>')
+    expect(result.text).toEqual('<div class="gallery" ></div>')
+  })
+
+  test('youtube shorts URL', () => {
+    const result = p.parse('<gallery>https://www.youtube.com/shorts/abc123</gallery>')
+    expect(result.text).toContain('youtube-embed')
+  })
+
+  test('youtube youtu.be short URL', () => {
+    const result = p.parse('<gallery>https://youtu.be/dQw4w9WgXcQ</gallery>')
+    expect(result.text).toContain('youtube-embed')
+  })
+
+  test('youtube URL with timestamp', () => {
+    const result = p.parse('<gallery>https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=1m30s</gallery>')
+    expect(result.text).toContain('youtube-embed')
+    expect(result.text).toContain('start=90')
+  })
+
+  test('vimeo URL with timestamp', () => {
+    const result = p.parse('<gallery>https://vimeo.com/123456#t=1m30s</gallery>')
+    expect(result.text).toContain('vimeo-embed')
+  })
+
+  test('orbitar media URL gets CDN rewrite', () => {
+    const result = p.parse('<gallery>https://orbitar.media/image.jpg</gallery>')
+    expect(result.text).toContain('https://b.orbitar.media/image.jpg')
+  })
+
+  test('HTML comment inside gallery is ignored', () => {
+    const result = p.parse('<gallery><!-- comment --><img src="https://example.com/img.jpg"/></gallery>')
+    expect(result.text).toContain('<img src="https://example.com/img.jpg"')
+    expect(result.text).not.toContain('comment')
+  })
+
+  test('HTML directive inside gallery is ignored', () => {
+    const result = p.parse('<gallery><!DOCTYPE html><img src="https://example.com/img.jpg"/></gallery>')
+    expect(result.text).toContain('<img src="https://example.com/img.jpg"')
+    expect(result.text).not.toContain('DOCTYPE')
+  })
+
+  test('script tag inside gallery is ignored', () => {
+    const result = p.parse('<gallery><script>alert("xss")</script><img src="https://example.com/img.jpg"/></gallery>')
+    expect(result.text).toContain('<img src="https://example.com/img.jpg"')
+    expect(result.text).not.toContain('script')
+    expect(result.text).not.toContain('alert')
+  })
+
+  test('deeply nested tags are all ignored', () => {
+    const result = p.parse('<gallery><div><span><b><img src="https://example.com/img.jpg"/></b></span></div></gallery>')
+    expect(result.text).toEqual('<div class="gallery" ></div>')
+  })
+
+  test('style tag inside gallery is ignored', () => {
+    const result = p.parse('<gallery><style>.x{color:red}</style><img src="https://example.com/img.jpg"/></gallery>')
+    expect(result.text).not.toContain('style')
+    expect(result.text).not.toContain('color')
+  })
+
+  test('text mixed with img tags', () => {
+    const result = p.parse(
+      '<gallery>prefix text <img src="https://example.com/a.jpg"/> middle text <img src="https://example.com/b.jpg"/> suffix text</gallery>',
+    )
+    expect(result.text).toContain('<img src="https://example.com/a.jpg"')
+    expect(result.text).toContain('<img src="https://example.com/b.jpg"')
+    expect(result.text).not.toContain('prefix')
+    expect(result.text).not.toContain('middle')
+    expect(result.text).not.toContain('suffix')
+  })
+
+  test('URL that looks like image but is not (.jpg in path)', () => {
+    const result = p.parse('<gallery>https://example.com/jpg/page</gallery>')
+    expect(result.text).toEqual('<div class="gallery" ></div>')
+  })
+
+  test('URL with image extension in query string only', () => {
+    const result = p.parse('<gallery>https://example.com/api?file=image.jpg</gallery>')
+    // processImage checks pathname, not query
+    expect(result.text).toEqual('<div class="gallery" ></div>')
+  })
+
+  test('multiple youtube videos', () => {
+    const result = p.parse('<gallery>https://youtube.com/watch?v=abc123 https://youtube.com/watch?v=def456</gallery>')
+    const matches = result.text.match(/youtube-embed/g)
+    expect(matches).toHaveLength(2)
+  })
+
+  test('mix of different media types', () => {
+    const result = p.parse(
+      '<gallery>https://example.com/img.jpg https://youtube.com/watch?v=abc https://vimeo.com/123 https://coub.com/view/xyz</gallery>',
+    )
+    expect(result.text).toContain('<img src="https://example.com/img.jpg"')
+    expect(result.text).toContain('youtube-embed')
+    expect(result.text).toContain('vimeo-embed')
+    expect(result.text).toContain('coub-embed')
+  })
+
+  test('img tag with extra attributes are sanitized', () => {
+    const result = p.parse(
+      '<gallery><img src="https://example.com/img.jpg" onclick="alert(1)" onerror="alert(2)" class="foo"/></gallery>',
+    )
+    expect(result.text).toContain('<img src="https://example.com/img.jpg"')
+    expect(result.text).not.toContain('onclick')
+    expect(result.text).not.toContain('onerror')
+    expect(result.text).not.toContain('class="foo"')
+  })
+
+  test('webp image format', () => {
+    const result = p.parse('<gallery>https://example.com/image.webp</gallery>')
+    expect(result.text).toContain('<img src="https://example.com/image.webp"')
+  })
+
+  test('svg image format', () => {
+    const result = p.parse('<gallery>https://example.com/image.svg</gallery>')
+    expect(result.text).toContain('<img src="https://example.com/image.svg"')
+  })
+
+  test('webm video format', () => {
+    const result = p.parse('<gallery>https://example.com/video.webm</gallery>')
+    expect(result.text).toContain('video')
+  })
+
+  test('x.com (twitter) URL excluded', () => {
+    const result = p.parse('<gallery>https://x.com/user/status/123456</gallery>')
+    expect(result.text).toEqual('<div class="gallery" ></div>')
+  })
+
+  test('telegram.me URL excluded', () => {
+    const result = p.parse('<gallery>https://telegram.me/channel/123</gallery>')
+    expect(result.text).toEqual('<div class="gallery" ></div>')
+  })
+
+  test('mention at start of text', () => {
+    const result = p.parse('<gallery>@user https://example.com/img.jpg</gallery>')
+    expect(result.mentions).toEqual([])
+    expect(result.text).toContain('<img src="https://example.com/img.jpg"')
+  })
+
+  test('mention at end of text', () => {
+    const result = p.parse('<gallery>https://example.com/img.jpg @user</gallery>')
+    expect(result.mentions).toEqual([])
+    expect(result.text).toContain('<img src="https://example.com/img.jpg"')
+  })
+
+  test('multiple mentions are all ignored', () => {
+    const result = p.parse('<gallery>@user1 @user2 @user3 https://example.com/img.jpg</gallery>')
+    expect(result.mentions).toEqual([])
+  })
+
+  test('mention outside gallery is still captured', () => {
+    const result = p.parse('@user <gallery>https://example.com/img.jpg</gallery>')
+    expect(result.mentions).toEqual(['user'])
+  })
+
+  test('URL with spaces is not matched by URL regex', () => {
+    const result = p.parse('<gallery>https://example.com/image with spaces.jpg</gallery>')
+    // URL regex doesn't match URLs with spaces - the URL stops at the space
+    expect(result.text).toEqual('<div class="gallery" ></div>')
+  })
+
+  test('unicode in URL', () => {
+    const result = p.parse('<gallery>https://example.com/图片.jpg</gallery>')
+    expect(result.text).toContain('example.com')
+  })
+
+  test('very long URL', () => {
+    const longPath = 'a'.repeat(500)
+    const result = p.parse(`<gallery>https://example.com/${longPath}.jpg</gallery>`)
+    expect(result.text).toContain('<img src=')
+  })
+
+  test('gallery attributes are preserved with filtered content', () => {
+    const result = p.parse(
+      '<gallery no-arrows no-indicators auto-play-interval="5">non-media text https://example.com/img.jpg</gallery>',
+    )
+    expect(result.text).toContain('data-no-arrows')
+    expect(result.text).toContain('data-no-indicators')
+    expect(result.text).toContain('auto-play-interval="5000"')
+    expect(result.text).toContain('<img src="https://example.com/img.jpg"')
+  })
+
+  test('plain links are excluded', () => {
+    const result = p.parse('<gallery>https://google.com https://github.com/user/repo</gallery>')
+    expect(result.text).toEqual('<div class="gallery" ></div>')
+  })
+
+  test('idiod.video URL', () => {
+    const result = p.parse('<gallery>https://idiod.video/abc123.mp4</gallery>')
+    expect(result.text).toContain('video-embed')
+    expect(result.text).toContain('data-video')
+  })
+
+  test('dump.video URL', () => {
+    const result = p.parse('<gallery>https://dump.video/i/abc123.mp4</gallery>')
+    expect(result.text).toContain('video-embed')
+  })
+
+  test('mp4 URL without poster service', () => {
+    const result = p.parse('<gallery>https://random-site.com/video.mp4</gallery>')
+    // Should still be recognized as video
+    expect(result.text).toContain('video')
+  })
+
+  test('br tags inside gallery are ignored', () => {
+    const result = p.parse('<gallery><br/><img src="https://example.com/img.jpg"/><br/></gallery>')
+    expect(result.text).not.toContain('<br')
+    expect(result.text).toContain('<img src="https://example.com/img.jpg"')
+  })
+
+  test('p tags inside gallery are ignored', () => {
+    const result = p.parse('<gallery><p><img src="https://example.com/img.jpg"/></p></gallery>')
+    // p is not in allowedTags, so the whole p subtree is ignored
+    expect(result.text).toEqual('<div class="gallery" ></div>')
+  })
+
+  test('URL followed immediately by punctuation', () => {
+    const result = p.parse('<gallery>https://example.com/img.jpg.</gallery>')
+    // The trailing dot might affect URL parsing
+    expect(result.text).toContain('example.com/img.jpg')
+  })
+
+  test('URL in parentheses', () => {
+    const result = p.parse('<gallery>(https://example.com/img.jpg)</gallery>')
+    expect(result.text).toContain('example.com/img.jpg')
+  })
+
+  test('multiple img tags in sequence', () => {
+    const result = p.parse(
+      '<gallery><img src="https://example.com/1.jpg"/><img src="https://example.com/2.jpg"/><img src="https://example.com/3.jpg"/></gallery>',
+    )
+    expect(result.text).toContain('https://example.com/1.jpg')
+    expect(result.text).toContain('https://example.com/2.jpg')
+    expect(result.text).toContain('https://example.com/3.jpg')
+  })
+
+  // Uppercase tag tests - htmlparser2 normalizes tag names to lowercase
+  test('uppercase GALLERY tag works', () => {
+    const result = p.parse('<GALLERY><img src="https://example.com/img.jpg"/></GALLERY>')
+    expect(result.text).toContain('<div class="gallery"')
+    expect(result.text).toContain('<img src="https://example.com/img.jpg"')
+  })
+
+  test('uppercase IMG tag inside gallery works', () => {
+    const result = p.parse('<gallery><IMG src="https://example.com/img.jpg"/></gallery>')
+    expect(result.text).toContain('<img src="https://example.com/img.jpg"')
+  })
+
+  test('uppercase VIDEO tag inside gallery works', () => {
+    const result = p.parse('<gallery><VIDEO src="https://example.com/video.mp4"/></gallery>')
+    expect(result.text).toContain('video')
+    expect(result.text).toContain('example.com/video.mp4')
+  })
+
+  test('mixed case Gallery tag works', () => {
+    const result = p.parse('<Gallery><img src="https://example.com/img.jpg"/></Gallery>')
+    expect(result.text).toContain('<div class="gallery"')
+    expect(result.text).toContain('<img src="https://example.com/img.jpg"')
+  })
 })
 
 test('parse img alt attribute for double escape', () => {

@@ -701,22 +701,54 @@ export default class TheParser {
     const result: ParseResult = { text: '', mentions: [], urls: [], images: [] }
     const appendResult = (res: ParseResult) => {
       result.text += res.text
-      result.mentions.push(...res.mentions)
+      // Never accumulate mentions from gallery content
       result.urls.push(...res.urls)
       result.images.push(...res.images)
+    }
+
+    // Gallery-supported output patterns:
+    // - <img src="..." alt="..."/>
+    // - <a class="youtube-embed" ...><img .../></a>
+    // - <a class="vimeo-embed" ...><img .../></a>
+    // - <a class="coub-embed" ...><img .../></a>
+    // - <a class="video-embed" ...><img .../></a>
+    // - <video ...>...</video>
+    const isGalleryMediaOutput = (html: string): boolean => {
+      // Check if output is a supported media element
+      return /^<img\s/.test(html) || /^<a class="(youtube|vimeo|coub|video)-embed"/.test(html) || /^<video\s/.test(html)
     }
 
     const allowedTags = ['img', 'video']
     for (const child of node.children) {
       if (child.type === 'tag') {
         if (allowedTags.includes(child.name)) {
-          appendResult(this.parseNode(child))
+          // Parse the tag and only include if it produces valid media output
+          // (e.g., img without src fails validation and returns escaped HTML)
+          const parsed = this.parseNode(child)
+          if (isGalleryMediaOutput(parsed.text)) {
+            appendResult(parsed)
+          }
         }
-      } else {
-        appendResult(this.parseNode(child))
+        // Ignore all other tags and their subtrees
+      } else if (child.type === 'text') {
+        // Extract URLs from text and only keep media outputs
+        let remainingText = child.data
+        urlRegex.lastIndex = 0
+        let match = urlRegex.exec(remainingText)
+        while (match) {
+          const url = match[0]
+          const processed = this.processUrl(url)
+          if (isGalleryMediaOutput(processed)) {
+            result.text += processed
+            result.urls.push(url)
+          }
+          remainingText = remainingText.substring(match.index + url.length)
+          urlRegex.lastIndex = 0
+          match = urlRegex.exec(remainingText)
+        }
       }
+      // Ignore comment/directive nodes entirely
     }
-    //const result = this.parseChildNodes(node.children)
     const text = `<div class="gallery" ${propsText}>${result.text}</div>`
 
     return { ...result, text }
