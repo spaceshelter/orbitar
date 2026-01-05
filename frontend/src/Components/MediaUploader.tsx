@@ -33,6 +33,7 @@ export type MediaUploaderProps = {
   onSuccess: (result: MediaResult[], gallery?: CreateGalletyOption | undefined) => void
   mediaData?: File
   singleUpload?: boolean
+  initialGalleryCreate?: boolean
 }
 
 export type CreateGalletyOption = {
@@ -61,8 +62,15 @@ export default function MediaUploader(props: MediaUploaderProps) {
   const scrollKeyRef = useRef(0)
 
   const [galleryOption, setGalleryOption] = useState<CreateGalletyOption>({
-    create: false,
+    create: props.initialGalleryCreate ?? false,
   })
+
+  // Auto-enable gallery checkbox when more than one image is added
+  useEffect(() => {
+    if (uploadArray.length > 1 && !galleryOption.create) {
+      setGalleryOption({ create: true })
+    }
+  }, [uploadArray.length])
 
   const scrollToGalleryIndex = (idx: number) => {
     scrollKeyRef.current++

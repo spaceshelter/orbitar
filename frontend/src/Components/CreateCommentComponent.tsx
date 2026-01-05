@@ -133,6 +133,39 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
   const [previewing, setPreviewing] = useState<string | null>(null)
   const [mediaUploaderOpen, setMediaUploaderOpen] = useState(false)
   const [mediaUploaderData, setMediaUploaderData] = useState<File | undefined>()
+  const [mediaUploaderInGallery, setMediaUploaderInGallery] = useState(false)
+
+  /**
+   * Detects if cursor is inside or at the border of a <gallery> tag.
+   * Returns insert position at the end of the gallery (before </gallery>), or null if not in gallery.
+   */
+  const getGalleryInsertPosition = (text: string, cursorPos: number): number | null => {
+    const galleryRegex = /<gallery[^>]*>([\s\S]*?)<\/gallery>/gi
+    let match
+
+    while ((match = galleryRegex.exec(text)) !== null) {
+      const start = match.index
+      const end = start + match[0].length
+      const contentStart = start + match[0].indexOf('>') + 1
+      const contentEnd = end - '</gallery>'.length
+
+      // Cursor inside gallery content or right after </gallery>
+      // Always insert at the end of gallery content (before </gallery>)
+      if ((cursorPos >= contentStart && cursorPos <= contentEnd) || cursorPos === end) {
+        return contentEnd
+      }
+    }
+
+    return null
+  }
+
+  const openMediaUploader = (file?: File) => {
+    const answer = answerRef.current
+    const inGallery = answer ? getGalleryInsertPosition(answer.value, answer.selectionStart) !== null : false
+    setMediaUploaderInGallery(inGallery)
+    setMediaUploaderData(file)
+    setMediaUploaderOpen(true)
+  }
   const [pollWizardOpen, setPollWizardOpen] = useState(false)
   const containerRef = useHotkeys<HTMLDivElement>(allowedKeys.join(','), (e) => handleHotKey(e), {
     enableOnFormTags: ['TEXTAREA'],
@@ -256,7 +289,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
           newValue = `<img src="${oldValue}" alt=""/>`
           newPos = newValue.length
         } else {
-          setMediaUploaderOpen(true)
+          openMediaUploader()
           return
         }
 
@@ -314,14 +347,13 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
   })
 
   const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    setMediaUploaderData(undefined)
     const items = e.clipboardData.items
     for (let i = 0; i < items.length; i++) {
       const file = items[i].getAsFile()
       if (file) {
-        setMediaUploaderData(file)
-        setMediaUploaderOpen(true)
+        openMediaUploader(file)
         e.preventDefault()
+        return
       }
     }
   }
@@ -379,34 +411,6 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
       })
   }
 
-  /**
-   * Detects if cursor is inside or at the border of a <gallery> tag.
-   * Returns insert position inside the gallery if found, or null otherwise.
-   */
-  const getGalleryInsertPosition = (text: string, cursorPos: number): number | null => {
-    const galleryRegex = /<gallery[^>]*>([\s\S]*?)<\/gallery>/gi
-    let match
-
-    while ((match = galleryRegex.exec(text)) !== null) {
-      const start = match.index
-      const end = start + match[0].length
-      const contentStart = start + match[0].indexOf('>') + 1
-      const contentEnd = end - '</gallery>'.length
-
-      // Cursor inside gallery content: <gallery>...|...</gallery>
-      if (cursorPos >= contentStart && cursorPos <= contentEnd) {
-        return cursorPos
-      }
-
-      // Cursor right after </gallery>: <gallery>...</gallery>|
-      if (cursorPos === end) {
-        return contentEnd
-      }
-    }
-
-    return null
-  }
-
   const handleMediaUpload = (result: MediaResult[], gallery?: CreateGalletyOption | undefined) => {
     setMediaUploaderData(undefined)
     setMediaUploaderOpen(false)
@@ -447,9 +451,11 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
       const newValue = text1 + mediaText + text2
       answer.value = newValue
       setAnswerText(newValue)
+      setStorageValueDebounced(newValue)
 
       const newCursorPos = galleryInsertPos + mediaText.length - (needsNewlineAfter ? 1 : 0)
       setTimeout(() => {
+        answer.focus()
         answer.selectionStart = newCursorPos
         answer.selectionEnd = newCursorPos
       })
@@ -483,7 +489,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
       e.dataTransfer.items[0].kind === 'file' &&
       (e.dataTransfer.items[0].type.startsWith('image/') || e.dataTransfer.items[0].type.startsWith('video/'))
     ) {
-      setMediaUploaderOpen(true)
+      openMediaUploader()
     }
   }
 
@@ -755,6 +761,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             onSuccess={handleMediaUpload}
             onCancel={handleMediaUploadCancel}
             mediaData={mediaUploaderData}
+            initialGalleryCreate={mediaUploaderInGallery}
           />
         )}
         {mailForm && parentPublicKey && (
