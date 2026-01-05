@@ -17,7 +17,7 @@ import { useDebouncedCallback } from 'use-debounce'
 import { CommentInfo, PostLinkInfo } from '../Types/PostInfo'
 import { UserGender } from '../Types/UserInfo'
 import ContentComponent from './ContentComponent'
-import MediaUploader, { CreateGalletyOption, MediaResult } from './MediaUploader'
+import MediaUploader, { CreateGalleryOption, MediaResult } from './MediaUploader'
 import { PollCreationWizard, PollCreationWizardSubmitData } from './PollCreationWizard'
 import { SecretMailEncoderForm } from './SecretMailbox'
 import SlowMode from './SlowMode'
@@ -411,7 +411,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
       })
   }
 
-  const handleMediaUpload = (result: MediaResult[], gallery?: CreateGalletyOption | undefined) => {
+  const handleMediaUpload = (result: MediaResult[], gallery?: CreateGalleryOption | undefined) => {
     setMediaUploaderData(undefined)
     setMediaUploaderOpen(false)
 

@@ -30,13 +30,13 @@ export type UploadData = UploadDataUri | UploadDataFile
 export type MediaUploaderProps = {
   onCancel: () => void
   onError?: (error: string) => void
-  onSuccess: (result: MediaResult[], gallery?: CreateGalletyOption | undefined) => void
+  onSuccess: (result: MediaResult[], gallery?: CreateGalleryOption | undefined) => void
   mediaData?: File
   singleUpload?: boolean
   initialGalleryCreate?: boolean
 }
 
-export type CreateGalletyOption = {
+export type CreateGalleryOption = {
   create: boolean
 }
 
@@ -61,7 +61,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
   const [scrollToIndex, setScrollToIndex] = useState<{ index: number; key: number } | undefined>(undefined)
   const scrollKeyRef = useRef(0)
 
-  const [galleryOption, setGalleryOption] = useState<CreateGalletyOption>({
+  const [galleryOption, setGalleryOption] = useState<CreateGalleryOption>({
     create: props.initialGalleryCreate ?? false,
   })
 
