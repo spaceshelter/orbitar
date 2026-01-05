@@ -444,9 +444,6 @@ function processYtEmbed(img: HTMLImageElement) {
 
   if (ytUrl && !img.classList.contains('youtube-embed-processed')) {
     img.classList.add('youtube-embed-processed')
-    if (window.screen.width > 1024) {
-      img.src = img.src.replace('0.jpg', 'maxresdefault.jpg')
-    }
     img.addEventListener('click', (e) => {
       e.preventDefault()
       const iframe = document.createElement('iframe')
