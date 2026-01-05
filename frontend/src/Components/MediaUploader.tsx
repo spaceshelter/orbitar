@@ -79,7 +79,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
 
   const currentMedia = uploadArray[index] || ({} as MediaData)
 
-  const readFile = (file: File): Promise<MediaData> => {
+  const readFile = (file: File): Promise<MediaData | null> => {
     return new Promise((resolve) => {
       if (file.type.startsWith('image/')) {
         const reader = new FileReader()
@@ -99,6 +99,8 @@ export default function MediaUploader(props: MediaUploaderProps) {
           })
         }
         reader.readAsDataURL(file)
+      } else {
+        resolve(null)
       }
     })
   }
@@ -147,7 +149,9 @@ export default function MediaUploader(props: MediaUploaderProps) {
 
     for (const file of filesToProcess) {
       const mediaData = await readFile(file)
-      processedFiles.push(mediaData)
+      if (mediaData) {
+        processedFiles.push(mediaData)
+      }
     }
 
     if (!processedFiles.length) return
@@ -182,8 +186,10 @@ export default function MediaUploader(props: MediaUploaderProps) {
         const file = items[i].getAsFile()
         if (file) {
           const mediaData = await readFile(file)
-          processedFiles.push(mediaData)
-          if (props.singleUpload) break
+          if (mediaData) {
+            processedFiles.push(mediaData)
+            if (props.singleUpload) break
+          }
         }
       }
       if (processedFiles.length) {
@@ -362,7 +368,11 @@ export default function MediaUploader(props: MediaUploaderProps) {
 
   useEffect(() => {
     if (props.mediaData) {
-      readFile(props.mediaData).then((data) => setUploadArray((prev) => [...prev, data]))
+      readFile(props.mediaData).then((data) => {
+        if (data) {
+          setUploadArray((prev) => [...prev, data])
+        }
+      })
     }
 
     document.addEventListener('paste', handlePaste)
