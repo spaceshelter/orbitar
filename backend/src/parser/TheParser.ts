@@ -719,6 +719,7 @@ export default class TheParser {
     }
 
     const allowedTags = ['img', 'video']
+    let mediaCount = 0
     for (const child of node.children) {
       if (child.type === 'tag') {
         if (allowedTags.includes(child.name)) {
@@ -727,6 +728,7 @@ export default class TheParser {
           const parsed = this.parseNode(child)
           if (isGalleryMediaOutput(parsed.text)) {
             appendResult(parsed)
+            mediaCount++
           }
         }
         // Ignore all other tags and their subtrees
@@ -741,6 +743,7 @@ export default class TheParser {
           if (isGalleryMediaOutput(processed)) {
             result.text += processed
             result.urls.push(url)
+            mediaCount++
           }
           remainingText = remainingText.substring(match.index + url.length)
           urlRegex.lastIndex = 0
@@ -749,6 +752,12 @@ export default class TheParser {
       }
       // Ignore comment/directive nodes entirely
     }
+
+    // If gallery has 0 or 1 valid items, parse content as regular content (no gallery wrapper)
+    if (mediaCount <= 1) {
+      return this.parseChildNodes(node.children)
+    }
+
     const text = `<div class="gallery" ${propsText}>${result.text}</div>`
 
     return { ...result, text }
