@@ -7,7 +7,7 @@ import useEmblaCarousel from 'embla-carousel-react'
 import { WheelGesturesPlugin } from 'embla-carousel-wheel-gestures'
 import { observer } from 'mobx-react-lite'
 import { useHotkeys } from 'react-hotkeys-hook'
-import { TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch'
+import { ReactZoomPanPinchRef, TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch'
 
 import { getLegacyZoom } from './UserProfileSettings'
 
@@ -313,6 +313,8 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
                   disableZoom={disableZoom}
                   expanded={expanded}
                   onExpand={() => handleExpand(index)}
+                  onNavigatePrev={index > 0 ? goToPrevious : undefined}
+                  onNavigateNext={index < elements.length - 1 ? goToNext : undefined}
                 />
               </div>
             ))}
@@ -392,7 +394,11 @@ interface GalleryElementProps {
   disableZoom?: boolean
   expanded?: boolean
   onExpand?: () => void
+  onNavigatePrev?: () => void
+  onNavigateNext?: () => void
 }
+
+const SWIPE_THRESHOLD = 80 // pixels to drag to trigger navigation
 
 function GalleryElementComponent({
   isVideo,
@@ -402,6 +408,8 @@ function GalleryElementComponent({
   disableZoom,
   expanded,
   onExpand,
+  onNavigatePrev,
+  onNavigateNext,
 }: GalleryElementProps) {
   const ref = useRef<HTMLSpanElement>(null)
   const imgRef = useRef<HTMLImageElement>(null)
@@ -452,14 +460,57 @@ function GalleryElementComponent({
   if (image) {
     // In expanded mode, wrap image with zoom-pan-pinch
     if (expanded) {
+      const handlePanningStop = (ref: ReactZoomPanPinchRef) => {
+        const { scale, positionX } = ref.state
+        const wrapperEl = ref.instance.wrapperComponent
+        const contentEl = ref.instance.contentComponent
+
+        if (!wrapperEl || !contentEl) {
+          ref.resetTransform()
+          return
+        }
+
+        const wrapperWidth = wrapperEl.offsetWidth
+        const contentWidth = contentEl.offsetWidth * scale
+
+        if (scale <= 1) {
+          // Not zoomed - treat any horizontal drag as swipe gesture
+          if (positionX > SWIPE_THRESHOLD && onNavigatePrev) {
+            onNavigatePrev()
+          } else if (positionX < -SWIPE_THRESHOLD && onNavigateNext) {
+            onNavigateNext()
+          }
+          ref.resetTransform()
+        } else {
+          // Zoomed in - check if at edge and overdragged
+          // Calculate bounds: image can pan from 0 to -(contentWidth - wrapperWidth)
+          const minX = wrapperWidth - contentWidth // left edge (negative value)
+          const maxX = 0 // right edge
+
+          if (positionX > maxX + SWIPE_THRESHOLD && onNavigatePrev) {
+            // Overdragged past right edge (trying to go to previous)
+            onNavigatePrev()
+            ref.resetTransform()
+          } else if (positionX < minX - SWIPE_THRESHOLD && onNavigateNext) {
+            // Overdragged past left edge (trying to go to next)
+            onNavigateNext()
+            ref.resetTransform()
+          }
+          // Otherwise let the library handle snapping back to valid bounds
+        }
+      }
+
       return (
         <TransformWrapper
           initialScale={1}
           minScale={0.5}
           maxScale={4}
           centerOnInit={true}
+          centerZoomedOut={true}
+          limitToBounds={false}
           wheel={{ step: 0.1 }}
           doubleClick={{ mode: 'reset' }}
+          onPanningStop={handlePanningStop}
         >
           <TransformComponent
             wrapperStyle={{
