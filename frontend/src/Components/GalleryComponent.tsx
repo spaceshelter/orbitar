@@ -112,13 +112,15 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
       const isExpanded = expandedRef.current
       if (!isExpanded) return true // Always enable drag when not expanded
 
-      // Check if drag started inside TransformWrapper (images use this for pan/zoom)
+      // Check if drag started inside TransformWrapper (images) or VideoSwipeWrapper (videos)
+      // These components handle their own swipe detection
       const target = evt.target as HTMLElement
       const isInTransformWrapper = target.closest('.react-transform-wrapper') !== null
+      const isInVideoSwipeWrapper = target.closest('.video-swipe-wrapper') !== null
 
-      // If inside TransformWrapper → don't handle (let TransformWrapper do it)
-      // If outside (video/iframe) → handle with Embla
-      return !isInTransformWrapper
+      // If inside a swipe handler → don't handle (let the wrapper do it)
+      // If outside → handle with Embla
+      return !isInTransformWrapper && !isInVideoSwipeWrapper
     },
     [], // No dependencies - we read from ref
   )
@@ -474,6 +476,81 @@ interface GalleryElementProps {
 
 const SWIPE_THRESHOLD = 80 // pixels to drag to trigger navigation
 
+// Custom swipe wrapper for videos that doesn't block clicks (unlike TransformWrapper)
+interface VideoSwipeWrapperProps {
+  expanded?: boolean
+  onNavigatePrev?: () => void
+  onNavigateNext?: () => void
+  children: React.ReactNode
+}
+
+function VideoSwipeWrapper({ expanded, onNavigatePrev, onNavigateNext, children }: VideoSwipeWrapperProps) {
+  const startXRef = useRef<number | null>(null)
+  const swipeOccurredRef = useRef(false)
+  const wrapperRef = useRef<HTMLDivElement>(null)
+
+  // Capture-phase click handler to block video playback when swiping
+  useEffect(() => {
+    if (!expanded) return
+    const el = wrapperRef.current
+    if (!el) return
+
+    const captureClick = (e: Event) => {
+      if (swipeOccurredRef.current) {
+        e.preventDefault()
+        e.stopPropagation()
+        swipeOccurredRef.current = false
+      }
+    }
+
+    el.addEventListener('click', captureClick, { capture: true })
+    return () => el.removeEventListener('click', captureClick, { capture: true })
+  }, [expanded])
+
+  if (!expanded) {
+    // Not expanded - no swipe handling needed
+    return <>{children}</>
+  }
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    startXRef.current = e.clientX
+  }
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (startXRef.current === null) return
+
+    const deltaX = e.clientX - startXRef.current
+    startXRef.current = null
+
+    if (Math.abs(deltaX) > SWIPE_THRESHOLD) {
+      // Mark that a swipe occurred - this will block the click event
+      swipeOccurredRef.current = true
+      // Clear the flag after click events have been processed
+      setTimeout(() => {
+        swipeOccurredRef.current = false
+      }, 100)
+
+      if (deltaX > 0 && onNavigatePrev) {
+        onNavigatePrev()
+      } else if (deltaX < 0 && onNavigateNext) {
+        onNavigateNext()
+      }
+    }
+  }
+
+  return (
+    <div
+      ref={wrapperRef}
+      className='video-swipe-wrapper'
+      style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+    >
+      {children}
+    </div>
+  )
+}
+
 function GalleryElementComponent({
   isVideo,
   image,
@@ -506,6 +583,43 @@ function GalleryElementComponent({
     }
   }
 
+  // Swipe detection handler for TransformWrapper (used for both images and videos)
+  const handlePanningStop = (transformRef: ReactZoomPanPinchRef) => {
+    const { scale, positionX } = transformRef.state
+    const wrapperEl = transformRef.instance.wrapperComponent
+    const contentEl = transformRef.instance.contentComponent
+
+    if (!wrapperEl || !contentEl) {
+      transformRef.resetTransform()
+      return
+    }
+
+    const wrapperWidth = wrapperEl.offsetWidth
+    const contentWidth = contentEl.offsetWidth * scale
+
+    if (scale <= 1) {
+      // Not zoomed - treat any horizontal drag as swipe gesture
+      if (positionX > SWIPE_THRESHOLD && onNavigatePrev) {
+        onNavigatePrev()
+      } else if (positionX < -SWIPE_THRESHOLD && onNavigateNext) {
+        onNavigateNext()
+      }
+      transformRef.resetTransform()
+    } else {
+      // Zoomed in - check if at edge and overdragged
+      const minX = wrapperWidth - contentWidth
+      const maxX = 0
+
+      if (positionX > maxX + SWIPE_THRESHOLD && onNavigatePrev) {
+        onNavigatePrev()
+        transformRef.resetTransform()
+      } else if (positionX < minX - SWIPE_THRESHOLD && onNavigateNext) {
+        onNavigateNext()
+        transformRef.resetTransform()
+      }
+    }
+  }
+
   useEffect(() => {
     if (isVideo && htmlElement && ref?.current && !ref.current.contains(htmlElement)) {
       ref.current.innerHTML = ''
@@ -519,61 +633,19 @@ function GalleryElementComponent({
         return false
       }
     })
-  }, [ref, isVideo, htmlElement])
+  }, [ref, isVideo, htmlElement, expanded])
 
   if (isVideo && htmlElement) {
     return (
-      <span
-        ref={ref}
-        className={styles.noDragging}
-        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking video
-      />
+      <VideoSwipeWrapper expanded={expanded} onNavigatePrev={onNavigatePrev} onNavigateNext={onNavigateNext}>
+        <span ref={ref} className={styles.noDragging} onClick={(e) => e.stopPropagation()} />
+      </VideoSwipeWrapper>
     )
   }
 
   if (image) {
     // In expanded mode, wrap image with zoom-pan-pinch
     if (expanded) {
-      const handlePanningStop = (ref: ReactZoomPanPinchRef) => {
-        const { scale, positionX } = ref.state
-        const wrapperEl = ref.instance.wrapperComponent
-        const contentEl = ref.instance.contentComponent
-
-        if (!wrapperEl || !contentEl) {
-          ref.resetTransform()
-          return
-        }
-
-        const wrapperWidth = wrapperEl.offsetWidth
-        const contentWidth = contentEl.offsetWidth * scale
-
-        if (scale <= 1) {
-          // Not zoomed - treat any horizontal drag as swipe gesture
-          if (positionX > SWIPE_THRESHOLD && onNavigatePrev) {
-            onNavigatePrev()
-          } else if (positionX < -SWIPE_THRESHOLD && onNavigateNext) {
-            onNavigateNext()
-          }
-          ref.resetTransform()
-        } else {
-          // Zoomed in - check if at edge and overdragged
-          // Calculate bounds: image can pan from 0 to -(contentWidth - wrapperWidth)
-          const minX = wrapperWidth - contentWidth // left edge (negative value)
-          const maxX = 0 // right edge
-
-          if (positionX > maxX + SWIPE_THRESHOLD && onNavigatePrev) {
-            // Overdragged past right edge (trying to go to previous)
-            onNavigatePrev()
-            ref.resetTransform()
-          } else if (positionX < minX - SWIPE_THRESHOLD && onNavigateNext) {
-            // Overdragged past left edge (trying to go to next)
-            onNavigateNext()
-            ref.resetTransform()
-          }
-          // Otherwise let the library handle snapping back to valid bounds
-        }
-      }
-
       return (
         <TransformWrapper
           initialScale={1}
