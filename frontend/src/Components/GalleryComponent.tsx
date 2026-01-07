@@ -67,10 +67,14 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
   const [internalExpanded, setInternalExpanded] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const currentIndexRef = useRef<number>(0)
+  const expandedRef = useRef(false)
 
   // Use external control if provided, otherwise use internal state
   const isControlled = expandedProp !== undefined
   const expanded = isControlled ? expandedProp : internalExpanded
+
+  // Keep ref in sync for use in callbacks that might have stale closures
+  expandedRef.current = expanded
 
   const handleExpand = useCallback(
     (index: number) => {
@@ -96,8 +100,26 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
   const maxHeight = 450
   const fallbackElementHeight = 400
 
-  // Disable drag in expanded mode to allow zoom-pan-pinch to work
+  // Disable drag in expanded mode to allow zoom-pan-pinch to work (except for videos)
   const emblaPlugins = useMemo(() => (expanded ? [] : [WheelGesturesPlugin({ forceWheelAxis: 'x' })]), [expanded])
+
+  // Use callback for watchDrag to conditionally enable drag for video slides in expanded mode
+  // Note: Using expandedRef instead of expanded to avoid stale closure issues with Embla
+  const watchDragHandler = useCallback(
+    (_emblaApi: unknown, evt: MouseEvent | TouchEvent) => {
+      const isExpanded = expandedRef.current
+      if (!isExpanded) return true // Always enable drag when not expanded
+
+      // Check if drag started inside TransformWrapper (images use this for pan/zoom)
+      const target = evt.target as HTMLElement
+      const isInTransformWrapper = target.closest('.react-transform-wrapper') !== null
+
+      // If inside TransformWrapper → don't handle (let TransformWrapper do it)
+      // If outside (video/iframe) → handle with Embla
+      return !isInTransformWrapper
+    },
+    [], // No dependencies - we read from ref
+  )
 
   const [emblaRef, emblaApi] = useEmblaCarousel(
     {
@@ -105,7 +127,7 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
       dragFree: false,
       containScroll: 'trimSnaps',
       skipSnaps: false,
-      watchDrag: !expanded, // Disable drag in expanded mode
+      watchDrag: watchDragHandler,
     },
     emblaPlugins,
   )
