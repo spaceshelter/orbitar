@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import useNoScroll from '@api/use/useNoScroll'
 import useOnBack from '@api/use/useOnBack'
 import Button from '@ui/Button'
 import classNames from 'classnames'
@@ -68,6 +69,7 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
   const containerRef = useRef<HTMLDivElement>(null)
   const currentIndexRef = useRef<number>(0)
   const expandedRef = useRef(false)
+  const pointerDownPosRef = useRef<{ x: number; y: number } | null>(null)
 
   // Use external control if provided, otherwise use internal state
   const isControlled = expandedProp !== undefined
@@ -157,6 +159,9 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
   useOnBack(() => {
     handleCollapse()
   }, expanded)
+
+  // Lock scroll when expanded
+  useNoScroll(expanded)
 
   const calculateOptimalHeight = useCallback(async (): Promise<number> => {
     if (disableDynamicHeight) {
@@ -305,10 +310,50 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
     )
   }
 
-  // Handle click on overlay to collapse
+  const CLICK_THRESHOLD = 5 // pixels - if moved more than this, it's a drag not a click
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    pointerDownPosRef.current = { x: e.clientX, y: e.clientY }
+  }
+
+  // Handle click on overlay/background to collapse
   const handleOverlayClick = (e: React.MouseEvent) => {
-    // Only collapse if clicking directly on the overlay, not on content
-    if (e.target === e.currentTarget) {
+    // Check if this was a drag (not a click) by comparing to pointer down position
+    if (pointerDownPosRef.current) {
+      const dx = Math.abs(e.clientX - pointerDownPosRef.current.x)
+      const dy = Math.abs(e.clientY - pointerDownPosRef.current.y)
+      pointerDownPosRef.current = null
+      if (dx > CLICK_THRESHOLD || dy > CLICK_THRESHOLD) {
+        return // This was a drag, not a click
+      }
+    }
+
+    const target = e.target as HTMLElement
+    // Don't close if clicking on actual content (images, videos, etc.)
+    if (target.tagName === 'IMG' || target.tagName === 'VIDEO' || target.tagName === 'IFRAME') {
+      return
+    }
+
+    // For transform-component, check if click is on empty space (not on the image inside)
+    if (target.classList.contains('react-transform-component')) {
+      const img = target.querySelector('img')
+      if (img) {
+        const rect = img.getBoundingClientRect()
+        const clickX = e.clientX
+        const clickY = e.clientY
+        // If click is within image bounds, don't close
+        if (clickX >= rect.left && clickX <= rect.right && clickY >= rect.top && clickY <= rect.bottom) {
+          return
+        }
+      }
+      handleCollapse()
+      return
+    }
+
+    // Collapse if clicking on:
+    // 1. The overlay/slide directly (not children)
+    // 2. The TransformWrapper background
+    if (e.target === e.currentTarget || target.classList.contains('react-transform-wrapper')) {
       handleCollapse()
     }
   }
@@ -318,7 +363,7 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
 
   return (
     <div className={classNames(styles.gallery, 'gallery', className, expanded && styles.galleryExpanded)}>
-      {expanded && <div className={styles.overlay} onClick={handleOverlayClick} />}
+      {expanded && <div className={styles.overlay} onPointerDown={handlePointerDown} onClick={handleOverlayClick} />}
       <div
         ref={containerRef}
         className={styles.main}
@@ -329,7 +374,12 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
         <div className={styles.embla} ref={emblaRef}>
           <div className={styles.emblaContainer}>
             {elements.map((el, index) => (
-              <div className={styles.emblaSlide} key={index} onClick={handleOverlayClick}>
+              <div
+                className={styles.emblaSlide}
+                key={index}
+                onPointerDown={handlePointerDown}
+                onClick={handleOverlayClick}
+              >
                 <GalleryElementComponent
                   {...el}
                   disableZoom={disableZoom}

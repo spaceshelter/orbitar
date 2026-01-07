@@ -439,29 +439,29 @@ $transition-easing: ease-in-out;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.9);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
   z-index: -1;
 }
 
 .closeButton {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: rgba(0, 0, 0, 0.5);
+  top: 35px;
+  right: 30px;
+  background: none;
   border: none;
-  border-radius: 50%;
-  width: 2.5rem;
-  height: 2.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   cursor: pointer;
   z-index: 200;
   color: white;
-  font-size: 1.5rem;
+  font-size: 40px;
+  text-shadow:
+    -1px 1px 2px #000,
+    1px 1px 2px #000,
+    1px -1px 2px #000,
+    -1px -1px 2px #000;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.8);
+    opacity: 0.8;
   }
 }
 
