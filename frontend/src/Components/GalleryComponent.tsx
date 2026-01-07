@@ -93,7 +93,7 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
     }
   }, [isControlled, onCollapseProp])
 
-  const maxHeight = 500
+  const maxHeight = 450
   const fallbackElementHeight = 400
 
   // Disable drag in expanded mode to allow zoom-pan-pinch to work
