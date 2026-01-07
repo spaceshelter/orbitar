@@ -431,7 +431,9 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
         )}
 
         {elements[currentIndex]?.image?.alt && (
-          <div className={styles.caption}>{elements[currentIndex]?.image?.alt}</div>
+          <div key={currentIndex} className={styles.caption}>
+            {elements[currentIndex]?.image?.alt}
+          </div>
         )}
 
         {expanded && (

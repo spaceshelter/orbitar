@@ -96,6 +96,8 @@ $transition-easing: ease-in-out;
   font-size: 0.9rem;
   line-height: 1.4;
   max-height: 2.3rem;
+  // Fade in animation for smoother appearance during slide transitions
+  animation: fadeIn 0.4s ease-out;
 }
 
 .arrow {
