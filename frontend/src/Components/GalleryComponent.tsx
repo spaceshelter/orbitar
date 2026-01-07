@@ -378,14 +378,16 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
           </div>
         )}
 
+        {elements[currentIndex]?.image?.alt && (
+          <div className={styles.caption}>{elements[currentIndex]?.image?.alt}</div>
+        )}
+
         {expanded && (
           <Button onClick={() => handleCollapse()} className={styles.closeButton} aria-label='Закрыть'>
             <span className='i i-close' />
           </Button>
         )}
       </div>
-
-      {elements[currentIndex]?.image?.alt && <div className={styles.caption}>{elements[currentIndex]?.image?.alt}</div>}
 
       {showThumbnails && (
         <div className={styles.thumbnails}>
