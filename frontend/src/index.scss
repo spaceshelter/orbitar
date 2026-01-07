@@ -224,6 +224,14 @@ video {
   max-width: 100%;
 }
 
+/* Hide raw gallery content before React GalleryComponent mounts.
+   This prevents images from displaying vertically and triggering autocut
+   before the carousel is rendered. React replaces this content on mount. */
+div.gallery > img,
+div.gallery > a[class$='-embed'] {
+  display: none;
+}
+
 img.image-large {
   display: block;
 }
