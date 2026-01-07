@@ -756,6 +756,11 @@ function updateGallery(
     setCut(false)
   }
 
+  // Stop media in slide when navigating away
+  const handleSlideLeave = (slideEl: HTMLElement) => {
+    stopInnerVideos(slideEl)
+  }
+
   const component = (
     <GalleryComponent
       elements={elements}
@@ -764,6 +769,7 @@ function updateGallery(
       showIndicators={showIndicators}
       showThumbnails={showThumbnails}
       onExpand={handleExpand}
+      onSlideLeave={handleSlideLeave}
     />
   )
 

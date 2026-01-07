@@ -36,6 +36,7 @@ interface GalleryComponentProps {
   disableZoom?: boolean
   disableDynamicHeight?: boolean
   onChangeIndex?: (index: number) => void
+  onSlideLeave?: (slideElement: HTMLElement) => void
   scrollToIndex?: number
   scrollToKey?: number
   className?: string
@@ -53,6 +54,7 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
   disableZoom = false,
   disableDynamicHeight = false,
   onChangeIndex,
+  onSlideLeave,
   scrollToIndex,
   scrollToKey,
   className,
@@ -64,6 +66,7 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
   const [optimalHeight, setOptimalHeight] = useState<number>(500)
   const [internalExpanded, setInternalExpanded] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const currentIndexRef = useRef<number>(0)
 
   // Use external control if provided, otherwise use internal state
   const isControlled = expandedProp !== undefined
@@ -200,9 +203,20 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
     if (!emblaApi) return
 
     const onSelect = () => {
-      const index = emblaApi.selectedScrollSnap()
-      setCurrentIndex(index)
-      onChangeIndex?.(index)
+      const newIndex = emblaApi.selectedScrollSnap()
+      const prevIndex = currentIndexRef.current
+
+      // Stop media in the previous slide when navigating away
+      if (onSlideLeave && newIndex !== prevIndex) {
+        const slides = emblaApi.slideNodes()
+        if (slides[prevIndex]) {
+          onSlideLeave(slides[prevIndex])
+        }
+      }
+
+      currentIndexRef.current = newIndex
+      setCurrentIndex(newIndex)
+      onChangeIndex?.(newIndex)
     }
 
     emblaApi.on('select', onSelect)
@@ -211,7 +225,7 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
     return () => {
       emblaApi.off('select', onSelect)
     }
-  }, [emblaApi, onChangeIndex])
+  }, [emblaApi, onChangeIndex, onSlideLeave])
 
   // Scroll to index when prop changes
   useEffect(() => {
