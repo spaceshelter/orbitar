@@ -50,11 +50,11 @@ export default function MediaUploader(props: MediaUploaderProps) {
   const uriRef = useFocus()
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const skipNextUriChange = useRef(false)
   const dragCounter = useRef(0)
 
   const [dragActive, setDragActive] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [inputValue, setInputValue] = useState('')
 
   const [uploadArray, setUploadArray] = useState<MediaData[]>([])
   const [index, setIndex] = useState(0)
@@ -76,8 +76,6 @@ export default function MediaUploader(props: MediaUploaderProps) {
     scrollKeyRef.current++
     setScrollToIndex({ index: idx, key: scrollKeyRef.current })
   }
-
-  const currentMedia = uploadArray[index] || ({} as MediaData)
 
   const readFile = (file: File): Promise<MediaData | null> => {
     return new Promise((resolve) => {
@@ -176,9 +174,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
     const hasFiles = Array.from(items).some((item) => item.getAsFile())
     if (!hasFiles) return
 
-    // Prevent default and skip onChange before async processing
     e.preventDefault()
-    skipNextUriChange.current = true
 
     const processFiles = async () => {
       const processedFiles: MediaData[] = []
@@ -207,59 +203,94 @@ export default function MediaUploader(props: MediaUploaderProps) {
     processFiles()
   }
 
-  const handleUriChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Skip if this change was triggered by a file paste
-    if (skipNextUriChange.current) {
-      skipNextUriChange.current = false
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value)
+  }
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      addUrlsFromInput()
+    }
+  }
+
+  const handleInputPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    // If there are files, let document handler process them
+    const items = e.clipboardData?.items
+    if (items && Array.from(items).some((item) => item.getAsFile())) {
       return
     }
 
-    const text = e.target.value
+    const text = e.clipboardData?.getData('text')
+    if (!text) return
+
     const lines = text
       .trim()
-      .split(text.includes('\n') ? '\n' : ' ')
+      .split(/[\n\s]+/)
       .filter((u) => u.trim())
+    if (lines.length === 0) return
 
-    const arr: MediaData[] = []
+    // Parse and collect valid media URLs
+    const newItems: MediaData[] = []
     for (const url of lines) {
       const type = parseUrl(url)
-      if (!type) {
-        arr.push({ url })
-      } else {
-        arr.push({
-          uploadData: { type: type, uri: url },
+      if (type) {
+        newItems.push({
+          uploadData: { type, uri: url },
           preview: url,
           url,
         })
       }
     }
 
-    if (!arr.length) return
+    if (newItems.length > 0) {
+      e.preventDefault() // Prevent paste into input
 
-    if (props.singleUpload) {
-      // In single upload mode, only use the first URL and replace the array
-      setUploadArray([arr[0]])
-      scrollToGalleryIndex(0)
-      return
+      if (props.singleUpload) {
+        setUploadArray([newItems[0]])
+        scrollToGalleryIndex(0)
+      } else {
+        setUploadArray((prev) => {
+          scrollToGalleryIndex(prev.length + newItems.length - 1)
+          return [...prev, ...newItems]
+        })
+      }
+      setInputValue('') // Clear input after adding
+    }
+    // If no valid URLs, let paste happen normally (user can edit and press Enter)
+  }
+
+  const addUrlsFromInput = () => {
+    const text = inputValue.trim()
+    if (!text) return
+
+    const lines = text.split(/[\n\s]+/).filter((u) => u.trim())
+
+    const newItems: MediaData[] = []
+    for (const url of lines) {
+      const type = parseUrl(url)
+      if (type) {
+        newItems.push({
+          uploadData: { type, uri: url },
+          preview: url,
+          url,
+        })
+      }
     }
 
-    if (arr.length > 1) {
-      const newLength = uploadArray.length + arr.length
-      setUploadArray([...uploadArray, ...arr])
-      scrollToGalleryIndex(newLength - 1)
-      return
+    if (newItems.length > 0) {
+      if (props.singleUpload) {
+        setUploadArray([newItems[0]])
+        scrollToGalleryIndex(0)
+      } else {
+        setUploadArray((prev) => {
+          scrollToGalleryIndex(prev.length + newItems.length - 1)
+          return [...prev, ...newItems]
+        })
+      }
     }
 
-    const data = arr[0]
-    if (index === uploadArray.length) {
-      setUploadArray([...uploadArray, ...arr])
-      scrollToGalleryIndex(uploadArray.length)
-      return
-    }
-
-    const newArr = [...uploadArray]
-    newArr[index] = data
-    setUploadArray(newArr)
+    setInputValue('') // Clear input after attempt
   }
 
   const parseUrl = (text: string): 'image-uri' | 'video-uri' | undefined => {
@@ -452,8 +483,10 @@ export default function MediaUploader(props: MediaUploaderProps) {
               type='text'
               placeholder='https://'
               title='Вставьте ссылку или картинку'
-              value={currentMedia.url || ''}
-              onChange={handleUriChange}
+              value={inputValue}
+              onChange={handleInputChange}
+              onKeyDown={handleInputKeyDown}
+              onPaste={handleInputPaste}
             />
             <label className={styles.selector}>
               <input
