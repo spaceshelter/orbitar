@@ -66,6 +66,7 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
   const [currentIndex, setCurrentIndex] = useState<number>(0)
   const [optimalHeight, setOptimalHeight] = useState<number>(500)
   const [internalExpanded, setInternalExpanded] = useState(false)
+  const [captionExpanded, setCaptionExpanded] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const currentIndexRef = useRef<number>(0)
   const expandedRef = useRef(false)
@@ -245,6 +246,7 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
 
       currentIndexRef.current = newIndex
       setCurrentIndex(newIndex)
+      setCaptionExpanded(false) // Reset caption expanded state on slide change
       onChangeIndex?.(newIndex)
     }
 
@@ -431,7 +433,11 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
         )}
 
         {elements[currentIndex]?.image?.alt && (
-          <div key={currentIndex} className={styles.caption}>
+          <div
+            key={currentIndex}
+            className={classNames(styles.caption, captionExpanded && styles.captionExpanded)}
+            onClick={() => setCaptionExpanded(!captionExpanded)}
+          >
             {elements[currentIndex]?.image?.alt}
           </div>
         )}

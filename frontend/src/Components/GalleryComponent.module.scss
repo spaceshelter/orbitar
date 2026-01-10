@@ -397,11 +397,17 @@ $transition-easing: ease-in-out;
   }
 
   .embla {
-    height: 100%;
+    height: 100vh;
+  }
+
+  .emblaContainer {
+    height: 100vh;
   }
 
   .emblaSlide {
     padding: 2rem;
+    height: 100vh;
+    box-sizing: border-box;
   }
 
   .arrow {
@@ -432,6 +438,37 @@ $transition-easing: ease-in-out;
     max-height: none;
     -webkit-line-clamp: unset;
     font-size: 1rem;
+  }
+
+  // Mobile caption in expanded mode - limit height and make expandable
+  // Trigger on narrow width OR short height (landscape mobile)
+  @media (max-width: 768px), (max-height: 500px) {
+    .caption {
+      max-height: 2.3rem;
+      cursor: pointer;
+      -webkit-line-clamp: 2;
+
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 1.5rem;
+        background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+        pointer-events: none;
+      }
+    }
+
+    .captionExpanded {
+      max-height: 50vh;
+      -webkit-line-clamp: unset;
+      overflow-y: auto;
+
+      &::after {
+        display: none;
+      }
+    }
   }
 }
 
@@ -468,7 +505,7 @@ $transition-easing: ease-in-out;
 }
 
 .imageExpanded {
-  max-width: 100%;
-  max-height: 100%;
+  max-width: calc(100vw - 4rem); // Account for slide padding
+  max-height: calc(100vh - 4rem);
   object-fit: contain;
 }
