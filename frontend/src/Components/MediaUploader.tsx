@@ -440,6 +440,11 @@ export default function MediaUploader(props: MediaUploaderProps) {
       >
         <form className={styles.controls} onSubmit={handleUpload}>
           <div className={styles.upload}>
+            {uploadArray.length > 0 && (
+              <div className={styles.remove} onClick={removeMedia}>
+                <RemoveIcon />
+              </div>
+            )}
             <input
               disabled={uploading}
               className={styles.url}
@@ -458,11 +463,6 @@ export default function MediaUploader(props: MediaUploaderProps) {
                 onChange={handleFileChoose}
                 multiple={!props.singleUpload}
               />
-              {uploadArray.length > 0 && (
-                <div className={styles.remove} onClick={removeMedia}>
-                  <RemoveIcon />
-                </div>
-              )}
               <div className={styles.choose}>Выбрать</div>
             </label>
           </div>

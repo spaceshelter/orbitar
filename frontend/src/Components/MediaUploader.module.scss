@@ -76,7 +76,7 @@
 
 .remove {
   border: none;
-  background: var(--inactive-fg);
+  background: var(--danger);
   color: var(--button-fg);
   padding: 8px;
   cursor: pointer;
@@ -84,7 +84,7 @@
   display: flex;
 
   &:hover {
-    background: var(--danger);
+    background: var(--dangerHover);
   }
 }
 
