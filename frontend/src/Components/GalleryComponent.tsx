@@ -354,6 +354,20 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
       return
     }
 
+    // For video-swipe-wrapper, check if click is on empty space (not on the video inside)
+    if (target.classList.contains('video-swipe-wrapper')) {
+      const mediaElement = target.querySelector('video, iframe')
+      if (mediaElement) {
+        const rect = mediaElement.getBoundingClientRect()
+        // If click is within media bounds, don't close
+        if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+          return
+        }
+      }
+      handleCollapse()
+      return
+    }
+
     // Collapse if clicking on:
     // 1. The overlay/slide directly (not children)
     // 2. The TransformWrapper background
