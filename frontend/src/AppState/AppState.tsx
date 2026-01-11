@@ -294,18 +294,29 @@ export const AppStateProvider = (props: {children: ReactNode}) => {
     }, []);
 
     useEffect(() => {
-        return autorun(() => {
+        // Helper to set favicon with cache-busting timestamp
+        const updateFavicon = () => {
             const link = document.querySelector('link[rel~="icon"]') as HTMLLinkElement;
             if (!link) {
                 return;
             }
-            if (appState.unreadNotificationsCount > 0) {
-                link.href = '//' + process.env.REACT_APP_ROOT_DOMAIN + '/favicon-badge.png';
-            }
-            else {
-                link.href = '//' + process.env.REACT_APP_ROOT_DOMAIN + '/favicon.ico';
-            }
-        });
+            const baseUrl = appState.unreadNotificationsCount > 0
+                ? '//' + process.env.REACT_APP_ROOT_DOMAIN + '/favicon-badge.png'
+                : '//' + process.env.REACT_APP_ROOT_DOMAIN + '/favicon.ico';
+            // Cache-busting fragment prevents Chrome from restoring stale favicon on history navigation
+            link.href = baseUrl + '#' + Date.now();
+        };
+
+        const disposeAutorun = autorun(updateFavicon);
+
+        // Re-apply favicon after history.back() - Chrome caches favicon per history entry
+        const handlePopState = () => setTimeout(updateFavicon, 0);
+        window.addEventListener('popstate', handlePopState);
+
+        return () => {
+            disposeAutorun();
+            window.removeEventListener('popstate', handlePopState);
+        };
     }, [appState]);
 
     return <AppStateContext.Provider value={{ appState }}>
