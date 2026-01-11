@@ -19,6 +19,7 @@ import 'react-toastify/dist/ReactToastify.css'
 
 import { ForcedReload } from '@components/ForcedReload'
 import { SiteSidebar } from '@components/SiteSidebar'
+import ZoomComponent from '@components/ZoomComponent'
 import KarmaCalculatorPage from '@pages/KarmaCalculatorPage'
 import { OAuthClientPage } from '@pages/OAuthClientPage'
 import ReactComponentsShowcase from '@pages/ReactComponentsShowcase'
@@ -135,6 +136,7 @@ const ReadyContainer = observer(() => {
         </div>
       )}
       <ModalContainer />
+      <ZoomComponent />
       <ToastContainer theme={theme as Theme} />
       <SpoilerMask />
     </>

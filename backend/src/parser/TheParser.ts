@@ -68,6 +68,7 @@ export default class TheParser {
       mail: (node) => this.parseSecretMail(node),
       pre: (node) => this.parsePre(node),
       poll: (node) => this.parsePoll(node),
+      gallery: (node) => this.parseGallery(node),
       blockquote: true,
       b: true,
       i: true,
@@ -76,7 +77,7 @@ export default class TheParser {
     }
 
     /* Tags that render as blocks, have special behavior for removing extra line breaks below them */
-    this.blockTags = ['blockquote', 'expand', 'pre']
+    this.blockTags = ['blockquote', 'expand', 'pre', 'gallery']
 
     /* Child tag -> list of disallowed parent tags */
     this.disallowedTagNesting = {
@@ -87,6 +88,7 @@ export default class TheParser {
       app: ['a', 'mailbox', 'mail'],
       expand: ['a', 'mailbox', 'mail'],
       poll: ['a', 'mailbox', 'mail', 'b', 'i', 'u', 'strike', 'irony', 'spoiler'],
+      gallery: ['a', 'blockquote', 'pre', 'mailbox', 'mail', 'b', 'i', 'u', 'strike', 'irony'],
     }
 
     this.parseChildNodesStack = []
@@ -543,7 +545,9 @@ export default class TheParser {
       )
     }
 
-    return { text: `<img src="${encodeURI(url)}" alt=""/>`, mentions: [], urls: [], images: [url] }
+    const alt = node.attribs['alt'] ? htmlEscape(node.attribs['alt']) : ''
+
+    return { text: `<img src="${encodeURI(url)}" alt="${alt}"/>`, mentions: [], urls: [], images: [url] }
   }
 
   parsePre(node: Element): ParseResult {
@@ -679,6 +683,82 @@ export default class TheParser {
 
     const result = this.parseChildNodes(node.children)
     const text = `<details class="expand"><summary>${htmlEscape(title)}</summary>${result.text}<div role="button"></div></details>`
+
+    return { ...result, text }
+  }
+
+  parseGallery(node: Element): ParseResult {
+    const props = [
+      node.attribs['no-arrows'] != undefined ? 'data-no-arrows' : '',
+      node.attribs['no-indicators'] != undefined ? 'data-no-indicators' : '',
+      node.attribs['no-thumbnails'] != undefined ? 'data-no-thumbnails' : '',
+    ]
+    const autoPlayInterval = parseInt(node.attribs['auto-play-interval'] || '0', 10)
+    if (autoPlayInterval > 0) {
+      props.push(`auto-play-interval="${autoPlayInterval * 1000}"`)
+    }
+    const propsText = props.join(' ').trim()
+    const result: ParseResult = { text: '', mentions: [], urls: [], images: [] }
+    const appendResult = (res: ParseResult) => {
+      result.text += res.text
+      // Never accumulate mentions from gallery content
+      result.urls.push(...res.urls)
+      result.images.push(...res.images)
+    }
+
+    // Gallery-supported output patterns:
+    // - <img src="..." alt="..."/>
+    // - <a class="youtube-embed" ...><img .../></a>
+    // - <a class="vimeo-embed" ...><img .../></a>
+    // - <a class="coub-embed" ...><img .../></a>
+    // - <a class="video-embed" ...><img .../></a>
+    // - <video ...>...</video>
+    const isGalleryMediaOutput = (html: string): boolean => {
+      // Check if output is a supported media element
+      return /^<img\s/.test(html) || /^<a class="(youtube|vimeo|coub|video)-embed"/.test(html) || /^<video\s/.test(html)
+    }
+
+    const allowedTags = ['img', 'video']
+    let mediaCount = 0
+    for (const child of node.children) {
+      if (child.type === 'tag') {
+        if (allowedTags.includes(child.name)) {
+          // Parse the tag and only include if it produces valid media output
+          // (e.g., img without src fails validation and returns escaped HTML)
+          const parsed = this.parseNode(child)
+          if (isGalleryMediaOutput(parsed.text)) {
+            appendResult(parsed)
+            mediaCount++
+          }
+        }
+        // Ignore all other tags and their subtrees
+      } else if (child.type === 'text') {
+        // Extract URLs from text and only keep media outputs
+        let remainingText = child.data
+        urlRegex.lastIndex = 0
+        let match = urlRegex.exec(remainingText)
+        while (match) {
+          const url = match[0]
+          const processed = this.processUrl(url)
+          if (isGalleryMediaOutput(processed)) {
+            result.text += processed
+            result.urls.push(url)
+            mediaCount++
+          }
+          remainingText = remainingText.substring(match.index + url.length)
+          urlRegex.lastIndex = 0
+          match = urlRegex.exec(remainingText)
+        }
+      }
+      // Ignore comment/directive nodes entirely
+    }
+
+    // If gallery has 0 or 1 valid items, parse content as regular content (no gallery wrapper)
+    if (mediaCount <= 1) {
+      return this.parseChildNodes(node.children)
+    }
+
+    const text = `<div class="gallery" ${propsText}>${result.text}</div>`
 
     return { ...result, text }
   }

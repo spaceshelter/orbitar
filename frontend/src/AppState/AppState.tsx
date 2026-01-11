@@ -1,16 +1,16 @@
-import {createContext, ReactElement, ReactNode, useContext, useEffect, useMemo} from 'react';
+import { UserRestrictionsResponse } from '@api/UserAPI';
+import { RouterStore } from '@superwf/mobx-react-router';
+import { createBrowserHistory } from 'history';
+import { action, autorun, computed, makeAutoObservable, makeObservable, observable } from 'mobx';
+import { createContext, ReactElement, ReactNode, useContext, useEffect, useMemo } from 'react';
 import APIBase from '../API/APIBase';
-import APIHelper from '../API/APIHelper';
-import {UserInfo} from '../Types/UserInfo';
-import {SiteWithUserInfo} from '../Types/SiteInfo';
-import {observable, makeObservable, autorun, action, computed, makeAutoObservable} from 'mobx';
 import APICache from '../API/APICache';
-import {createBrowserHistory} from 'history';
-import {RouterStore} from '@superwf/mobx-react-router';
-import {UserRestrictionsResponse} from '@api/UserAPI';
-import MediaUploader, {MediaUploaderProps} from '../Components/MediaUploader';
-import ConfirmDialog, {ConfirmDialogProps} from '../Components/ConfirmDialog';
-import { themes } from '../theme'
+import APIHelper from '../API/APIHelper';
+import ConfirmDialog, { ConfirmDialogProps } from '../Components/ConfirmDialog';
+import MediaUploader, { MediaUploaderProps } from '../Components/MediaUploader';
+import { themes } from '../theme';
+import { SiteWithUserInfo } from '../Types/SiteInfo';
+import { UserInfo } from '../Types/UserInfo';
 
 export enum AppLoadingState {
     loading,
@@ -25,6 +25,12 @@ export type UserStatus = {
     };
     notifications: number;
     subscriptions: SiteWithUserInfo[];
+};
+
+export type ZoomedImg = {
+    src: string;
+    width: number;
+    height: number;
 };
 
 type AppStateContextState = {
@@ -82,6 +88,9 @@ export class AppState {
 
     @observable
     confirmDialogModal: ReactElement<ConfirmDialogProps> | undefined = undefined;
+    
+    @observable
+    zoomedImg: ZoomedImg | null = null;
 
     browserHistory = createBrowserHistory();
     router = new RouterStore(this.browserHistory);
@@ -185,6 +194,11 @@ export class AppState {
     @action
     forceReload() {
         this.reloadCounter++;
+    }
+    
+    @action
+    setZoomedImg(value: ZoomedImg | null) {
+        this.zoomedImg = value;
     }
 
     @action

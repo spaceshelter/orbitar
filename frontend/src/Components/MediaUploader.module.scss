@@ -15,6 +15,10 @@
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
+
+  &.dragActive {
+    border: 2px dashed var(--primary);
+  }
 }
 
 @media screen and (max-width: 600px) {
@@ -70,34 +74,49 @@
   background: var(--button-hover-bg);
 }
 
-.done {
+.remove {
+  border: none;
+  background: var(--danger);
+  color: var(--button-fg);
+  padding: 8px;
+  cursor: pointer;
+  align-items: center;
+  display: flex;
+
+  &:hover {
+    background: var(--dangerHover);
+  }
 }
 
 .dropbox {
   /*flex: 1;*/
-  border: 1px dashed var(--inactive-fg);
+  border: 2px dashed var(--inactive-fg);
   border-radius: 3px;
   display: flex;
   flex-flow: row wrap;
   justify-content: center;
-  width: 380px;
-  height: 280px;
+  align-items: center;
+  width: 375px;
+  height: 255px;
   padding: 10px;
+  z-index: 100;
 }
 
 .dropbox.active {
   border: 1px dashed var(--active-fg);
 }
 
-.preview {
-  display: flex;
+.video {
+  max-width: 100%;
+  max-height: 100%;
 }
 
-.preview img,
-.preview video {
-  max-width: 380px;
-  max-height: 280px;
+.gallery {
+  display: flex;
+  padding: 0 !important;
   object-fit: contain;
+  height: 280px;
+  width: 100%;
 }
 
 .disclaimer {

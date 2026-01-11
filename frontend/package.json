@@ -21,6 +21,8 @@
     "color-normalize": "^1.5.2",
     "color-space": "^2.0.0",
     "debounce-promise": "^3.1.2",
+    "embla-carousel-react": "^8.6.0",
+    "embla-carousel-wheel-gestures": "^8.1.0",
     "eslint": "^8.14.0",
     "eslint-config-react-app": "^7.0.1",
     "js-cookie": "^3.0.1",
