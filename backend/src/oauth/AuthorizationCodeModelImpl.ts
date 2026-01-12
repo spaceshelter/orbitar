@@ -52,12 +52,27 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
 
   async getClient(clientId: string, clientSecret?: string): Promise<Falsey | Client> {
     const clientFromDB = await this.repo.getClientByClientId(clientId)
-    if (
-      !clientFromDB ||
-      (clientSecret && clientFromDB.client_secret_hash !== AuthorizationCodeModelImpl.hashString(clientSecret))
-    ) {
+    if (!clientFromDB) {
       return null
     }
+
+    // Handle authentication based on client type
+    if (clientFromDB.client_type === 'confidential') {
+      // Validate client_secret if provided (during token exchange)
+      // If not provided, allow through (authorization phase or PKCE-based token exchange)
+      if (clientSecret && clientFromDB.client_secret_hash !== AuthorizationCodeModelImpl.hashString(clientSecret)) {
+        this.logger.warn('Confidential client authentication failed: invalid client_secret', { clientId })
+        return null
+      }
+    } else if (clientFromDB.client_type === 'public') {
+      // Public clients MUST NOT use client_secret
+      if (clientSecret) {
+        this.logger.warn('Public client attempted authentication with client_secret (not allowed)', { clientId })
+        return null
+      }
+      // Note: PKCE validation happens automatically in the library at token endpoint
+    }
+
     return {
       id: clientId,
       redirectUris: clientFromDB.redirect_uris.split(',').map((uri) => uri.trim()),
@@ -161,13 +176,19 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
         return null
       }
 
-      const authCode = {
+      const authCode: AuthorizationCode = {
         authorizationCode: code.authorizationCode,
         expiresAt,
         redirectUri,
         scope,
         client,
         user,
+      }
+
+      // Only include PKCE properties if they exist (JSON.stringify omits undefined values)
+      if (code.codeChallenge) {
+        authCode.codeChallenge = code.codeChallenge
+        authCode.codeChallengeMethod = code.codeChallengeMethod
       }
 
       await this.redis.set(`oauth2code:${code.authorizationCode}`, JSON.stringify(authCode))
@@ -187,12 +208,22 @@ export default class AuthorizationCodeModelImpl implements AuthorizationCodeMode
       }
 
       const authCode: AuthorizationCode = JSON.parse(authCodeStr)
+
       // Convert expiresAt back to a Date object.
       authCode.expiresAt = new Date(authCode.expiresAt)
       if (authCode.expiresAt < new Date()) {
         await this.revokeAuthorizationCode(authCode)
         return null
       }
+
+      // Ensure client.grants is an array (required by oauth2-server for PKCE validation)
+      if (authCode.client && !Array.isArray(authCode.client.grants)) {
+        const clientFromDB = await this.repo.getClientByClientId(authCode.client.id)
+        if (clientFromDB) {
+          authCode.client.grants = clientFromDB.grants.split(',').map((grant) => grant.trim())
+        }
+      }
+
       return authCode
     } catch (error) {
       return null

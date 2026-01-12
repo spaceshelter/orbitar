@@ -20,6 +20,8 @@ export const OAuthClientPage = observer(() => {
   const responseType = urlParams.get('response_type') || 'code'
   const redirectUri = urlParams.get('redirect_uri') || ''
   const state = urlParams.get('state') || ''
+  const codeChallenge = urlParams.get('code_challenge') || ''
+  const codeChallengeMethod = urlParams.get('code_challenge_method') || ''
 
   const sessionId = Cookies.get('session') || ''
 
@@ -127,6 +129,8 @@ export const OAuthClientPage = observer(() => {
           redirectUri={redirectUri}
           state={state}
           sessionId={sessionId}
+          codeChallenge={codeChallenge}
+          codeChallengeMethod={codeChallengeMethod}
           onAuthorizeDeny={onDecline}
         />
       </OAuth2AppCardModalComponent>

@@ -11,6 +11,7 @@ export type OAuth2ClientEntity = {
   initialAuthorizationUrl: string
   redirectUris: string
   grants: string[]
+  clientType: 'public' | 'confidential'
   author: UserBaseInfo
   scopes?: string
   installationsCount?: number

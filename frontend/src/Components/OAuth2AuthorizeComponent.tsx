@@ -14,6 +14,8 @@ interface OAuth2AuthorizeComponentProps {
   redirectUri?: string
   state?: string
   sessionId?: string
+  codeChallenge?: string
+  codeChallengeMethod?: string
   onAuthorizeDeny?: () => void
 }
 
@@ -34,6 +36,10 @@ export function OAuth2AuthorizeComponent(props: OAuth2AuthorizeComponentProps) {
             <input type='hidden' name='redirect_uri' value={props.redirectUri} />
             <input type='hidden' name='X-Session-Id' value={props.sessionId} />
             <input type='hidden' name='response_type' value='code' />
+            {props.codeChallenge && <input type='hidden' name='code_challenge' value={props.codeChallenge} />}
+            {props.codeChallengeMethod && (
+              <input type='hidden' name='code_challenge_method' value={props.codeChallengeMethod} />
+            )}
 
             <div className={styles.buttonsContainer}>
               <Button variant='primary' size='big' type='submit'>

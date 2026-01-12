@@ -17,6 +17,7 @@ type AppSubmitFormValues = {
   grants: string
   logoUrl?: string
   initialAuthorizationUrl: string
+  clientType: 'public' | 'confidential'
 }
 
 type UserProfileClientAppsCreateFormProps = {
@@ -31,9 +32,10 @@ export default function UserProfileClientAppsCreateForm(props: UserProfileClient
 
   const onSubmit: SubmitHandler<AppSubmitFormValues> = (data) => {
     setSubmitting(true)
-    const { name, description, redirectUris, logoUrl, initialAuthorizationUrl } = data
+    const { name, description, redirectUris, logoUrl, initialAuthorizationUrl, clientType } = data
 
     if (editingClient) {
+      // Client type cannot be changed after creation
       api.oauth2Api
         .editClient(editingClient.clientId, description, redirectUris, initialAuthorizationUrl)
         .then((newClient) => {
@@ -51,7 +53,7 @@ export default function UserProfileClientAppsCreateForm(props: UserProfileClient
     }
 
     api.oauth2Api
-      .registerClient(name, description, redirectUris, logoUrl, initialAuthorizationUrl)
+      .registerClient(name, description, redirectUris, logoUrl, initialAuthorizationUrl, clientType)
       .then((data) => {
         if (onClientRegisterSuccess) {
           onClientRegisterSuccess(data.client)
@@ -79,17 +81,38 @@ export default function UserProfileClientAppsCreateForm(props: UserProfileClient
 
   const validateUrls = (value: string) => {
     const urls = value.split(',').map((url) => url.trim())
-    return (
-      urls.every((url) =>
-        isURL(url, {
-          require_tld: process.env.NODE_ENV !== 'development',
-          require_protocol: true,
-          allow_fragments:
-            false /*RFC 6749 Section 3.1.2: The redirection endpoint URI MUST NOT include a fragment component.*/,
-          protocols: ['https', ...(process.env.NODE_ENV === 'development' ? ['https', 'http'] : [])],
-        }),
-      ) || 'Введите URL-адреса, разделенные запятыми'
-    )
+    for (const url of urls) {
+      try {
+        const urlObj = new URL(url)
+
+        // RFC 6749 Section 3.1.2: no fragments
+        if (urlObj.hash && urlObj.hash !== '#') {
+          return 'Redirect URIs must not include fragment components'
+        }
+
+        // Strict validation for http/https
+        if (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') {
+          if (
+            !isURL(url, {
+              require_tld: process.env.NODE_ENV !== 'development',
+              require_protocol: true,
+              allow_fragments: false,
+              protocols: ['https', ...(process.env.NODE_ENV === 'development' ? ['http'] : [])],
+            })
+          ) {
+            return 'Invalid HTTP/HTTPS URL'
+          }
+        } else {
+          // Custom protocols: minimal validation
+          if (!urlObj.protocol || urlObj.protocol === ':') {
+            return 'Custom protocol URIs must have a valid protocol scheme'
+          }
+        }
+      } catch (err) {
+        return 'Invalid URI format'
+      }
+    }
+    return true
   }
 
   const validateOptionalUrl = (value: string) => {
@@ -153,12 +176,39 @@ export default function UserProfileClientAppsCreateForm(props: UserProfileClient
           </label>
 
           <label>
+            <b>Тип клиента:</b>
+            <select
+              {...(!editingClient
+                ? register('clientType', {
+                    required: 'Выберите тип клиента',
+                  })
+                : {})}
+              disabled={Boolean(editingClient)}
+              defaultValue={editingClient ? editingClient.clientType : 'confidential'}
+            >
+              <option value='confidential'>Confidential (серверное приложение с client_secret)</option>
+              <option value='public'>Public (мобильное/десктопное приложение с PKCE)</option>
+            </select>
+            <p>
+              <span className={classNames('i', 'i-info')}></span> Confidential клиенты используют client_secret для
+              аутентификации (веб-приложения, серверные приложения). Public клиенты используют PKCE и не имеют
+              client_secret (мобильные и десктопные приложения).
+            </p>
+            {errors.clientType && <p className={styles.error}>{errors.clientType.message}</p>}
+          </label>
+
+          <label>
             <b>Разрешённые URL для редиректов (через запятую):</b>
             <input
               type='text'
               {...register('redirectUris', { validate: validateUrls })}
               defaultValue={editingClient ? editingClient.redirectUris : ''}
+              placeholder='https://example.com/callback, myapp://callback'
             />
+            <p>
+              <span className={classNames('i', 'i-info')}></span> Поддерживаются HTTPS URLs и custom protocol URIs
+              (например, myapp://callback для мобильных приложений). В development режиме также разрешены HTTP URLs.
+            </p>
             {errors.redirectUris && <p className={styles.error}>{errors.redirectUris.message}</p>}
           </label>
 

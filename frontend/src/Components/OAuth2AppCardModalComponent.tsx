@@ -252,10 +252,12 @@ export function OAuth2AppCardModalComponent(props: OAuth2AppCardModalProps) {
               <FaEdit />
               редактировать
             </Button>
-            <Button onClick={handleClientSecretUpdate}>
-              <FaKey />
-              сбросить секрет
-            </Button>
+            {client.clientType === 'confidential' && (
+              <Button onClick={handleClientSecretUpdate}>
+                <FaKey />
+                сбросить секрет
+              </Button>
+            )}
             {!client.installationsCount && (
               <Button variant='danger' onClick={handleClientDelete}>
                 <FaTrash />

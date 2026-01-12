@@ -10,6 +10,7 @@ export type OAuth2ClientEntity = {
   logoUrl?: string
   redirectUris: string
   grants: string
+  clientType: 'public' | 'confidential'
   userId: number
   author: UserBaseEntity
   scopes?: string

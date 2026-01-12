@@ -6,6 +6,7 @@ export type OAuth2RegisterRequest = {
   logoUrl?: string
   initialAuthorizationUrl?: string
   redirectUris: string
+  clientType: 'public' | 'confidential'
 }
 
 export type OAuth2RegisterResponse = {
