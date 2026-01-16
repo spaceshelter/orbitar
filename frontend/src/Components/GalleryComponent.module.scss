@@ -60,8 +60,8 @@ $transition-easing: ease-in-out;
 
 .image {
   object-fit: contain;
-  max-height: 100%;
-  max-width: 100%;
+  max-height: 100% !important;
+  max-width: 100% !important;
   width: auto;
   height: auto;
   user-select: none;
@@ -90,6 +90,7 @@ $transition-easing: ease-in-out;
   text-align: center;
   z-index: 10;
   // Truncate long text
+  cursor: pointer;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -448,7 +449,7 @@ $transition-easing: ease-in-out;
   .caption {
     bottom: 3rem;
     max-width: 90%;
-    max-height: none;
+    max-height: 5rem;
     -webkit-line-clamp: unset;
     font-size: 1rem;
   }
@@ -472,16 +473,16 @@ $transition-easing: ease-in-out;
         pointer-events: none;
       }
     }
+  }
+}
 
-    .captionExpanded {
-      max-height: 50vh;
-      -webkit-line-clamp: unset;
-      overflow-y: auto;
+.captionExpanded {
+  max-height: 50vh !important;
+  -webkit-line-clamp: unset !important;
+  overflow-y: auto;
 
-      &::after {
-        display: none;
-      }
-    }
+  &::after {
+    display: none;
   }
 }
 
