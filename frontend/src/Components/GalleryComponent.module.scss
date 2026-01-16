@@ -77,7 +77,7 @@ $transition-easing: ease-in-out;
 
 .caption {
   position: absolute;
-  bottom: 2rem;
+  bottom: 1rem;
   left: 50%;
   transform: translateX(-50%);
   max-width: calc(100% - 6rem); // Leave room for arrows

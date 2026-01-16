@@ -100,7 +100,7 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
     }
   }, [isControlled, onCollapseProp])
 
-  const maxHeight = 450
+  const maxHeight = 500
   const fallbackElementHeight = 400
 
   // Disable drag in expanded mode to allow zoom-pan-pinch to work (except for videos)
@@ -431,7 +431,7 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
           </Button>
         )}
 
-        {showIndicators && (
+        {showIndicators && expanded && (
           <div className={styles.indicators}>
             {elements.map((_, index) => (
               <Button
