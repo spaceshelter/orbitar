@@ -516,10 +516,12 @@ function SlidingIndicators({ total, currentIndex, onSelect }: SlidingIndicatorsP
 
     calculateMaxVisible()
 
-    const resizeObserver = new ResizeObserver(calculateMaxVisible)
-    resizeObserver.observe(container.parentElement!)
+    if (container.parentElement) {
+      const resizeObserver = new ResizeObserver(calculateMaxVisible)
+      resizeObserver.observe(container.parentElement)
 
-    return () => resizeObserver.disconnect()
+      return () => resizeObserver.disconnect()
+    }
   }, [])
 
   const { visibleStart, visibleEnd, showStartPlaceholder, showEndPlaceholder } = useMemo(() => {
