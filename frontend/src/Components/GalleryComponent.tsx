@@ -424,8 +424,9 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
           </div>
         </div>
 
-        {shouldShowArrows && currentIndex !== 0 && (
+        {shouldShowArrows && (
           <Button
+            disabled={currentIndex === 0}
             onClick={goToPrevious}
             className={classNames(styles.arrow, styles.arrowPrev)}
             aria-label='Предыдущее изображение'
@@ -434,8 +435,9 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
           </Button>
         )}
 
-        {shouldShowArrows && currentIndex !== elements.length - 1 && (
+        {shouldShowArrows && (
           <Button
+            disabled={currentIndex === elements.length - 1}
             onClick={goToNext}
             className={classNames(styles.arrow, styles.arrowNext)}
             aria-label='Следующее изображение'

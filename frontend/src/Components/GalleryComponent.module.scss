@@ -136,6 +136,8 @@ $transition-easing: ease-in-out;
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+    pointer-events: unset;
+    cursor: default;
   }
 
   svg {
