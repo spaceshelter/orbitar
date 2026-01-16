@@ -392,18 +392,7 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
         )}
 
         {showIndicators && expanded && (
-          <div className={styles.indicators}>
-            {elements.map((_, index) => (
-              <Button
-                key={index}
-                onClick={() => goToSlide(index)}
-                className={classNames(styles.indicator, { [styles.indicatorActive]: index === currentIndex })}
-                aria-label={`Перейти к изображению ${index + 1}`}
-              >
-                <span className={styles.indicatorDot}></span>
-              </Button>
-            ))}
-          </div>
+          <SlidingIndicators total={elements.length} currentIndex={currentIndex} onSelect={goToSlide} />
         )}
 
         {elements[currentIndex]?.image?.alt && (
@@ -439,6 +428,107 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
             </Button>
           ))}
         </div>
+      )}
+    </div>
+  )
+}
+
+interface SlidingIndicatorsProps {
+  total: number
+  currentIndex: number
+  onSelect: (index: number) => void
+}
+
+const INDICATOR_SIZE = 12
+const INDICATOR_GAP = 8
+const CONTAINER_PADDING = 12
+
+function SlidingIndicators({ total, currentIndex, onSelect }: SlidingIndicatorsProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [maxVisible, setMaxVisible] = useState(total)
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const calculateMaxVisible = () => {
+      const parent = container.parentElement
+      if (!parent) return
+
+      const availableWidth = parent.offsetWidth * 0.8 - CONTAINER_PADDING * 2
+      const dotWidth = INDICATOR_SIZE + INDICATOR_GAP
+      const max = Math.floor((availableWidth + INDICATOR_GAP) / dotWidth)
+      setMaxVisible(Math.max(3, max))
+    }
+
+    calculateMaxVisible()
+
+    const resizeObserver = new ResizeObserver(calculateMaxVisible)
+    resizeObserver.observe(container.parentElement!)
+
+    return () => resizeObserver.disconnect()
+  }, [])
+
+  const { visibleStart, visibleEnd, showStartPlaceholder, showEndPlaceholder } = useMemo(() => {
+    if (total <= maxVisible) {
+      return {
+        visibleStart: 0,
+        visibleEnd: total - 1,
+        showStartPlaceholder: false,
+        showEndPlaceholder: false,
+      }
+    }
+
+    const slotsForDots = maxVisible - 2
+    const halfWindow = Math.floor(slotsForDots / 2)
+
+    let start = currentIndex - halfWindow
+    let end = currentIndex + halfWindow + (slotsForDots % 2 === 0 ? -1 : 0)
+
+    if (start <= 0) {
+      start = 0
+      end = slotsForDots - 1
+    } else if (end >= total - 1) {
+      end = total - 1
+      start = total - slotsForDots
+    }
+
+    return {
+      visibleStart: start,
+      visibleEnd: end,
+      showStartPlaceholder: start > 0,
+      showEndPlaceholder: end < total - 1,
+    }
+  }, [total, currentIndex, maxVisible])
+
+  const visibleIndices: number[] = []
+  for (let i = visibleStart; i <= visibleEnd; i++) {
+    visibleIndices.push(i)
+  }
+
+  return (
+    <div ref={containerRef} className={styles.indicators}>
+      {showStartPlaceholder && (
+        <span className={classNames(styles.indicator, styles.indicatorPlaceholder)}>
+          <span className={styles.indicatorDot} />
+        </span>
+      )}
+
+      {visibleIndices.map((index) => (
+        <Button
+          key={index}
+          onClick={() => onSelect(index)}
+          className={classNames(styles.indicator, { [styles.indicatorActive]: index === currentIndex })}
+          aria-label={`Перейти к изображению ${index + 1}`}
+        >
+          <span className={styles.indicatorDot} />
+        </Button>
+      ))}
+
+      {showEndPlaceholder && (
+        <span className={classNames(styles.indicator, styles.indicatorPlaceholder)}>
+          <span className={styles.indicatorDot} />
+        </span>
       )}
     </div>
   )

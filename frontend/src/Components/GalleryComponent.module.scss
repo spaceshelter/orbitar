@@ -158,8 +158,9 @@ $transition-easing: ease-in-out;
   display: flex;
   gap: $indicator-spacing;
   z-index: 10;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: center;
+  width: fit-content;
   max-width: 80%;
   padding: 0.2rem 0.4rem;
   border-radius: 4px;
@@ -174,10 +175,20 @@ $transition-easing: ease-in-out;
   cursor: pointer;
   padding: 0;
   transition: all $transition-duration $transition-easing;
+  flex-shrink: 0;
 
   &:disabled {
     cursor: not-allowed;
   }
+}
+
+.indicatorPlaceholder {
+  width: calc($indicator-size * 0.6);
+  height: calc($indicator-size * 0.6);
+  cursor: default;
+  pointer-events: none;
+  opacity: 0.5;
+  align-self: center;
 }
 
 .indicatorDot {
