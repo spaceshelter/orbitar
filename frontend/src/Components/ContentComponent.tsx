@@ -18,13 +18,7 @@ import { OAuthEmbeddedAppComponent } from './OAuth2AppCardModalComponent'
 import { SecretMailDecoderForm, SecretMailEncoderForm } from './SecretMailbox'
 import TelegramEmbed from './TelegramEmbed'
 import TwitterEmbed from './TwitterEmbed'
-import {
-  getAutoMuteVideos,
-  getLegacyZoom,
-  getVideoAutopause,
-  getVideoVolume,
-  setVideoVolume,
-} from './UserProfileSettings'
+import { getAutoMuteVideos, getVideoAutopause, getVideoVolume, setVideoVolume } from './UserProfileSettings'
 
 import styles from './ContentComponent.module.scss'
 
@@ -631,25 +625,14 @@ function updateImg(img: HTMLImageElement, setZoomedImg: (img: ZoomedImg | null) 
     el = el.parentElement
   }
 
-  let imageLarge = false
   if (img.naturalWidth > 500 || img.naturalHeight > 500) {
     img.classList.add('image-scalable')
     img.onclick = () => {
-      if (getLegacyZoom()) {
-        if (imageLarge) {
-          imageLarge = false
-          img.classList.remove('image-preview')
-          return
-        }
-        imageLarge = true
-        img.classList.add('image-preview')
-      } else {
-        setZoomedImg({
-          src: img.src,
-          width: img.naturalWidth,
-          height: img.naturalHeight,
-        })
-      }
+      setZoomedImg({
+        src: img.src,
+        width: img.naturalWidth,
+        height: img.naturalHeight,
+      })
     }
   }
 }

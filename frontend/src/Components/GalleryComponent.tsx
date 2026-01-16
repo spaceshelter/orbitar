@@ -10,8 +10,6 @@ import { observer } from 'mobx-react-lite'
 import { useHotkeys } from 'react-hotkeys-hook'
 import { ReactZoomPanPinchRef, TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch'
 
-import { getLegacyZoom } from './UserProfileSettings'
-
 import { ReactComponent as ChevronLeft } from '../Assets/chevron-left.svg'
 import { ReactComponent as ChevronRight } from '../Assets/chevron-right.svg'
 import styles from './GalleryComponent.module.scss'
@@ -586,7 +584,6 @@ function GalleryElementComponent({
 }: GalleryElementProps) {
   const ref = useRef<HTMLSpanElement>(null)
   const imgRef = useRef<HTMLImageElement>(null)
-  const [imageLarge, setImageLarge] = useState<boolean>(false)
 
   const handleImageClick = (e: React.MouseEvent<HTMLImageElement, MouseEvent>): void => {
     e.stopPropagation() // Prevent overlay click handler
@@ -597,12 +594,8 @@ function GalleryElementComponent({
       return
     }
 
-    if (getLegacyZoom()) {
-      setImageLarge(!imageLarge)
-    } else {
-      // Trigger gallery expansion instead of separate zoom component
-      onExpand?.()
-    }
+    // Trigger gallery expansion instead of separate zoom component
+    onExpand?.()
   }
 
   // Swipe detection handler for TransformWrapper (used for both images and videos)
@@ -710,12 +703,7 @@ function GalleryElementComponent({
         ref={imgRef}
         src={image.src}
         alt={image.alt}
-        className={classNames(
-          styles.image,
-          styles.noDragging,
-          !disableZoom && 'image-scalable',
-          imageLarge && 'image-preview',
-        )}
+        className={classNames(styles.image, styles.noDragging, !disableZoom && 'image-scalable')}
         onClick={handleImageClick}
       />
     )

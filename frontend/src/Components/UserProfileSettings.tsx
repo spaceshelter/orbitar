@@ -67,10 +67,6 @@ export function setVideoVolume(volume: number): void {
   localStorage.setItem('videoVolume', volume.toString())
 }
 
-export function getLegacyZoom(): boolean {
-  return localStorage.getItem('legacyZoom') === 'true'
-}
-
 export function getPreferredLang(): string {
   return localStorage.getItem('preferredLang') || 'ru'
 }
@@ -94,7 +90,6 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
 
   const [autoStop, setAutoStop] = useState<boolean>(getVideoAutopause())
   const [autoMute, setAutoMute] = useState<boolean>(getAutoMuteVideos())
-  const [legacyZoom, setLegacyZoom] = useState<boolean>(getLegacyZoom())
   const [preferredLang, setPreferredLang] = useState<string>(getPreferredLang())
   const [showInlineTranslateButton, setShowInlineTranslateButton] = useState<boolean>(getShowInlineTranslateButton())
 
@@ -152,10 +147,6 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
     setAutoMute(!autoMute)
   }
 
-  const toggleLegacyZoom = () => {
-    setLegacyZoom(!legacyZoom)
-  }
-
   const toggleShowInlineTranslateButton = () => {
     setShowInlineTranslateButton(!showInlineTranslateButton)
   }
@@ -197,10 +188,6 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
   }, [autoMute])
 
   useEffect(() => {
-    localStorage.setItem('legacyZoom', JSON.stringify(legacyZoom))
-  }, [legacyZoom])
-
-  useEffect(() => {
     localStorage.setItem('showInlineTranslateButton', JSON.stringify(showInlineTranslateButton))
   }, [showInlineTranslateButton])
 
@@ -219,7 +206,6 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
         )}
         <Button onClick={toggleAutoStop}>Видео автопауза: {autoStop ? 'Вкл' : 'Выкл'}</Button>
         <Button onClick={toggleAutoMute}>Видео без звука: {autoMute ? 'Вкл' : 'Выкл'}</Button>
-        <Button onClick={toggleLegacyZoom}>Легаси зум: {legacyZoom ? 'Вкл' : 'Выкл'}</Button>
         {<ThemeToggleComponent dynamic={true} buttonLabel='Сменить тему' />}
       </div>
       <div className={styles.select}>
