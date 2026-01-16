@@ -60,6 +60,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
   const [index, setIndex] = useState(0)
   const [scrollToIndex, setScrollToIndex] = useState<{ index: number; key: number } | undefined>(undefined)
   const scrollKeyRef = useRef(0)
+  const formRef = useRef<HTMLFormElement>(null)
 
   const [galleryOption, setGalleryOption] = useState<CreateGalleryOption>({
     create: props.initialGalleryCreate ?? false,
@@ -71,6 +72,23 @@ export default function MediaUploader(props: MediaUploaderProps) {
       setGalleryOption({ create: true })
     }
   }, [uploadArray.length])
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && uploadArray.length > 0) {
+        const target = e.target as HTMLElement
+        const tag = target.tagName.toLowerCase()
+
+        if (tag === 'textarea' || target.isContentEditable) return
+
+        e.preventDefault()
+        formRef.current?.requestSubmit()
+      }
+    }
+
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [])
 
   const scrollToGalleryIndex = (idx: number) => {
     scrollKeyRef.current++
@@ -207,13 +225,6 @@ export default function MediaUploader(props: MediaUploaderProps) {
     setInputValue(e.target.value)
   }
 
-  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      addUrlsFromInput()
-    }
-  }
-
   const handleInputPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     // If there are files, let document handler process them
     const items = e.clipboardData?.items
@@ -258,39 +269,6 @@ export default function MediaUploader(props: MediaUploaderProps) {
       setInputValue('') // Clear input after adding
     }
     // If no valid URLs, let paste happen normally (user can edit and press Enter)
-  }
-
-  const addUrlsFromInput = () => {
-    const text = inputValue.trim()
-    if (!text) return
-
-    const lines = text.split(/[\n\s]+/).filter((u) => u.trim())
-
-    const newItems: MediaData[] = []
-    for (const url of lines) {
-      const type = parseUrl(url)
-      if (type) {
-        newItems.push({
-          uploadData: { type, uri: url },
-          preview: url,
-          url,
-        })
-      }
-    }
-
-    if (newItems.length > 0) {
-      if (props.singleUpload) {
-        setUploadArray([newItems[0]])
-        scrollToGalleryIndex(0)
-      } else {
-        setUploadArray((prev) => {
-          scrollToGalleryIndex(prev.length + newItems.length - 1)
-          return [...prev, ...newItems]
-        })
-      }
-    }
-
-    setInputValue('') // Clear input after attempt
   }
 
   const parseUrl = (text: string): 'image-uri' | 'video-uri' | undefined => {
@@ -469,7 +447,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <form className={styles.controls} onSubmit={handleUpload}>
+        <form ref={formRef} className={styles.controls} onSubmit={handleUpload}>
           <div className={styles.upload}>
             {uploadArray.length > 0 && (
               <div className={styles.remove} onClick={removeMedia}>
@@ -485,7 +463,6 @@ export default function MediaUploader(props: MediaUploaderProps) {
               title='Вставьте ссылку или картинку'
               value={inputValue}
               onChange={handleInputChange}
-              onKeyDown={handleInputKeyDown}
               onPaste={handleInputPaste}
             />
             <label className={styles.selector}>
