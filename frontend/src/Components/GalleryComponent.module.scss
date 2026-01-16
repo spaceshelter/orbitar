@@ -60,8 +60,10 @@ $transition-easing: ease-in-out;
 
 .image {
   object-fit: contain;
-  height: 100%;
+  max-height: 100%;
   max-width: 100%;
+  width: auto;
+  height: auto;
   user-select: none;
   -webkit-user-drag: none;
 }

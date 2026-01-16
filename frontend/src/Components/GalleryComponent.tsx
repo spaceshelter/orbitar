@@ -791,13 +791,6 @@ function GalleryElementComponent({
               alt={image.alt}
               className={classNames(styles.image, styles.noDragging, styles.imageExpanded)}
               onClick={handleImageClick}
-              style={{
-                maxWidth: '100%',
-                maxHeight: '100%',
-                width: 'auto',
-                height: 'auto',
-                objectFit: 'contain',
-              }}
             />
           </TransformComponent>
         </TransformWrapper>
