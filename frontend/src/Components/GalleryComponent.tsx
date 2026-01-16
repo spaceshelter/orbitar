@@ -44,7 +44,7 @@ interface GalleryComponentProps {
   onCollapse?: () => void
 }
 
-const SWIPE_THRESHOLD = 80
+const SWIPE_THRESHOLD = 80 // pixels to drag to trigger navigation
 const CLICK_THRESHOLD = 5
 
 const GalleryComponent: React.FC<GalleryComponentProps> = ({
@@ -74,14 +74,19 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
   const expandedRef = useRef(false)
   const pointerDownPosRef = useRef<{ x: number; y: number } | null>(null)
 
+  // Use external control if provided, otherwise use internal state
   const isControlled = expandedProp !== undefined
   const expanded = isControlled ? expandedProp : internalExpanded
+
+  // Keep ref in sync for use in callbacks that might have stale closures
   expandedRef.current = expanded
 
   const handleExpand = useCallback(
     (index: number) => {
+      // Always notify parent when expanding (used to remove autoCut)
       onExpandProp?.(index)
       if (!isControlled) {
+        // Controlled mode: parent manages expanded state
         setInternalExpanded(true)
       }
     },
@@ -99,18 +104,25 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
   const maxHeight = 500
   const fallbackElementHeight = 400
 
+  // Disable drag in expanded mode to allow zoom-pan-pinch to work (except for videos)
   const emblaPlugins = useMemo(() => (expanded ? [] : [WheelGesturesPlugin({ forceWheelAxis: 'x' })]), [expanded])
 
+  // Use callback for watchDrag to conditionally enable drag for video slides in expanded mode
+  // Note: Using expandedRef instead of expanded to avoid stale closure issues with Embla
   const watchDragHandler = useCallback((_emblaApi: unknown, evt: MouseEvent | TouchEvent) => {
     const isExpanded = expandedRef.current
-    if (!isExpanded) return true
+    if (!isExpanded) return true // Always enable drag when not expanded
 
+    // Check if drag started inside TransformWrapper (images) or VideoSwipeWrapper (videos)
+    // These components handle their own swipe detection
     const target = evt.target as HTMLElement
     const isInTransformWrapper = target.closest('.react-transform-wrapper') !== null
     const isInVideoSwipeWrapper = target.closest('.video-swipe-wrapper') !== null
 
+    // If inside a swipe handler → don't handle (let the wrapper do it)
+    // If outside → handle with Embla
     return !isInTransformWrapper && !isInVideoSwipeWrapper
-  }, [])
+  }, []) // No dependencies - we read from ref
 
   const [emblaRef, emblaApi] = useEmblaCarousel(
     {
@@ -123,6 +135,7 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
     emblaPlugins,
   )
 
+  // Keyboard navigation in expanded mode
   useHotkeys(
     'left',
     () => {
@@ -143,10 +156,12 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
 
   useHotkeys('esc', () => handleCollapse(), { enabled: expanded }, [expanded, handleCollapse])
 
+  // Handle back button in expanded mode
   useOnBack(() => {
     handleCollapse()
   }, expanded)
 
+  // Lock scroll when expanded
   useNoScroll(expanded)
 
   const calculateOptimalHeight = useCallback(async (): Promise<number> => {
@@ -192,6 +207,7 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
       setOptimalHeight(height)
     }
 
+    // delay for the container to be rendered
     const timeoutId = setTimeout(updateHeight, 100)
     return () => clearTimeout(timeoutId)
   }, [elements, calculateOptimalHeight, disableDynamicHeight])
@@ -208,6 +224,7 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
     return () => window.removeEventListener('resize', handleResize)
   }, [calculateOptimalHeight, disableDynamicHeight])
 
+  // Embla select event handler
   useEffect(() => {
     if (!emblaApi) return
 
@@ -215,6 +232,7 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
       const newIndex = emblaApi.selectedScrollSnap()
       const prevIndex = currentIndexRef.current
 
+      // Stop media in the previous slide when navigating away
       if (onSlideLeave && newIndex !== prevIndex) {
         const slides = emblaApi.slideNodes()
         if (slides[prevIndex]) {
@@ -224,18 +242,19 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
 
       currentIndexRef.current = newIndex
       setCurrentIndex(newIndex)
-      setCaptionExpanded(false)
+      setCaptionExpanded(false) // Reset caption expanded state on slide change
       onChangeIndex?.(newIndex)
     }
 
     emblaApi.on('select', onSelect)
-    onSelect()
+    onSelect() // Set initial index
 
     return () => {
       emblaApi.off('select', onSelect)
     }
   }, [emblaApi, onChangeIndex, onSlideLeave])
 
+  // Scroll to index when prop changes
   useEffect(() => {
     if (scrollToIndex !== undefined && emblaApi) {
       setTimeout(() => {
@@ -580,6 +599,7 @@ interface GalleryElementProps {
   onNavigateNext?: () => void
 }
 
+// Custom swipe wrapper for videos that doesn't block clicks (unlike TransformWrapper)
 interface VideoSwipeWrapperProps {
   expanded?: boolean
   onNavigatePrev?: () => void
@@ -592,6 +612,7 @@ function VideoSwipeWrapper({ expanded, onNavigatePrev, onNavigateNext, children 
   const swipeOccurredRef = useRef(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
 
+  // Capture-phase click handler to block video playback when swiping
   useEffect(() => {
     if (!expanded) return
     const el = wrapperRef.current
@@ -610,6 +631,7 @@ function VideoSwipeWrapper({ expanded, onNavigatePrev, onNavigateNext, children 
   }, [expanded])
 
   if (!expanded) {
+    // Not expanded - no swipe handling needed
     return <>{children}</>
   }
 
@@ -624,7 +646,9 @@ function VideoSwipeWrapper({ expanded, onNavigatePrev, onNavigateNext, children 
     startXRef.current = null
 
     if (Math.abs(deltaX) > SWIPE_THRESHOLD) {
+      // Mark that a swipe occurred - this will block the click event
       swipeOccurredRef.current = true
+      // Clear the flag after click events have been processed
       setTimeout(() => {
         swipeOccurredRef.current = false
       }, 100)
@@ -665,12 +689,13 @@ function GalleryElementComponent({
   const imgRef = useRef<HTMLImageElement>(null)
 
   const handleImageClick = (e: React.MouseEvent<HTMLImageElement, MouseEvent>): void => {
-    e.stopPropagation()
+    e.stopPropagation() // Prevent overlay click handler
     if (disableZoom) return
     if (expanded) return
     onExpand?.()
   }
 
+  // Swipe detection handler for TransformWrapper (used for both images and videos)
   const handlePanningStop = (transformRef: ReactZoomPanPinchRef) => {
     const { scale, positionX } = transformRef.state
     const wrapperEl = transformRef.instance.wrapperComponent
@@ -685,6 +710,7 @@ function GalleryElementComponent({
     const contentWidth = contentEl.offsetWidth * scale
 
     if (scale <= 1) {
+      // Not zoomed - treat any horizontal drag as swipe gesture
       if (positionX > SWIPE_THRESHOLD && onNavigatePrev) {
         onNavigatePrev()
       } else if (positionX < -SWIPE_THRESHOLD && onNavigateNext) {
@@ -692,6 +718,7 @@ function GalleryElementComponent({
       }
       transformRef.resetTransform()
     } else {
+      // Zoomed in - check if at edge and overdragged
       const minX = wrapperWidth - contentWidth
       const maxX = 0
 
@@ -729,6 +756,7 @@ function GalleryElementComponent({
   }
 
   if (image) {
+    // In expanded mode, wrap image with zoom-pan-pinch
     if (expanded) {
       return (
         <TransformWrapper
