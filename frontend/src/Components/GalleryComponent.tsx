@@ -69,6 +69,7 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
   const [internalExpanded, setInternalExpanded] = useState(false)
   const [captionExpanded, setCaptionExpanded] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const thumbnailsRef = useRef<HTMLDivElement>(null)
   const currentIndexRef = useRef<number>(0)
   const expandedRef = useRef(false)
   const pointerDownPosRef = useRef<{ x: number; y: number } | null>(null)
@@ -244,6 +245,39 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
     }
   }, [emblaApi, scrollToIndex, scrollToKey])
 
+  // Auto-scroll thumbnails to keep current ± 2 visible
+  useEffect(() => {
+    if (!showThumbnails || !thumbnailsRef.current) return
+
+    const container = thumbnailsRef.current
+    const thumbnails = container.children
+    const targetAhead = Math.min(currentIndex + 2, elements.length - 1)
+    const targetBehind = Math.max(currentIndex - 2, 0)
+    const aheadThumbnail = thumbnails[targetAhead] as HTMLElement
+    const behindThumbnail = thumbnails[targetBehind] as HTMLElement
+
+    if (!aheadThumbnail || !behindThumbnail) return
+
+    const containerRect = container.getBoundingClientRect()
+    const aheadRect = aheadThumbnail.getBoundingClientRect()
+    const behindRect = behindThumbnail.getBoundingClientRect()
+
+    // Scroll right if ahead thumbnail is out of view
+    if (aheadRect.right > containerRect.right) {
+      container.scrollTo({
+        left: container.scrollLeft + (aheadRect.right - containerRect.right) + 8,
+        behavior: 'smooth',
+      })
+    }
+    // Scroll left if behind thumbnail is out of view
+    else if (behindRect.left < containerRect.left) {
+      container.scrollTo({
+        left: container.scrollLeft - (containerRect.left - behindRect.left) - 8,
+        behavior: 'smooth',
+      })
+    }
+  }, [currentIndex, showThumbnails, elements.length])
+
   useEffect(() => {
     if (!autoPlayInterval || autoPlayInterval <= 0 || !emblaApi) return
 
@@ -413,7 +447,7 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
       </div>
 
       {showThumbnails && (
-        <div className={styles.thumbnails}>
+        <div ref={thumbnailsRef} className={styles.thumbnails}>
           {elements.map((el, index) => (
             <Button
               key={index}
