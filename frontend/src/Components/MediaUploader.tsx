@@ -73,22 +73,22 @@ export default function MediaUploader(props: MediaUploaderProps) {
     }
   }, [uploadArray.length])
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && uploadArray.length > 0) {
-        const target = e.target as HTMLElement
-        const tag = target.tagName.toLowerCase()
+  const handlePressEnter = (e: React.KeyboardEvent<HTMLFormElement> | KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      const target = e.target as HTMLElement
+      const tag = target.tagName.toLowerCase()
 
-        if (tag === 'textarea' || target.isContentEditable) return
+      if (tag === 'textarea' || target.isContentEditable) return
 
-        e.preventDefault()
-        formRef.current?.requestSubmit()
-      }
+      e.preventDefault()
+      if (uploadArray.length > 0) formRef.current?.requestSubmit()
     }
+  }
 
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [])
+  useEffect(() => {
+    document.addEventListener('keydown', handlePressEnter)
+    return () => document.removeEventListener('keydown', handlePressEnter)
+  }, [handlePressEnter])
 
   const scrollToGalleryIndex = (idx: number) => {
     scrollKeyRef.current++
@@ -223,6 +223,23 @@ export default function MediaUploader(props: MediaUploaderProps) {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value)
+
+    const url = e.target.value
+    const type = parseUrl(url)
+    if (type) {
+      setUploadArray((prev) => {
+        scrollToGalleryIndex(prev.length + 1)
+        return [
+          ...prev,
+          {
+            uploadData: { type, uri: url },
+            preview: url,
+            url,
+          },
+        ]
+      })
+      setInputValue('') // Clear input after adding
+    }
   }
 
   const handleInputPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
@@ -268,7 +285,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
       }
       setInputValue('') // Clear input after adding
     }
-    // If no valid URLs, let paste happen normally (user can edit and press Enter)
+    // If no valid URLs, let paste happen normally
   }
 
   const parseUrl = (text: string): 'image-uri' | 'video-uri' | undefined => {
@@ -447,7 +464,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <form ref={formRef} className={styles.controls} onSubmit={handleUpload}>
+        <form ref={formRef} className={styles.controls} onSubmit={handleUpload} onKeyDown={handlePressEnter}>
           <div className={styles.upload}>
             {uploadArray.length > 0 && (
               <div className={styles.remove} onClick={removeMedia}>
@@ -464,6 +481,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
               value={inputValue}
               onChange={handleInputChange}
               onPaste={handleInputPaste}
+              autoFocus
             />
             <label className={styles.selector}>
               <input
