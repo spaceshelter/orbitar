@@ -8,8 +8,12 @@ import useFocus from '../API/use/useFocus'
 import GalleryComponent, { GalleryElement } from './GalleryComponent'
 import Overlay from './Overlay'
 
+import { ReactComponent as RotateLeftIcon } from '../Assets/rotate_left.svg'
+import { ReactComponent as RotateRightIcon } from '../Assets/rotate_right.svg'
 import { ReactComponent as RemoveIcon } from '../Assets/trash.svg'
 import styles from './MediaUploader.module.scss'
+
+const GALLERY_HEIGHT = 280
 
 export type MediaResult = {
   type: 'video' | 'image'
@@ -40,10 +44,48 @@ export type CreateGalleryOption = {
   create: boolean
 }
 
+// Rotation angle in degrees (0, 90, 180, 270)
+type RotationAngle = 0 | 90 | 180 | 270
+
 type MediaData = {
   preview?: string
   url?: string
   uploadData?: UploadData
+  rotation?: RotationAngle
+}
+
+function getRotationPathSegment(rotation: RotationAngle): string | null {
+  switch (rotation) {
+    case 90:
+      return 'right'
+    case 180:
+      return 'upside'
+    case 270:
+      return 'left'
+    default:
+      return null
+  }
+}
+
+function applyRotationToUrl(url: string, rotation: RotationAngle): string {
+  const segment = getRotationPathSegment(rotation)
+  if (!segment) return url
+
+  try {
+    const parsedUrl = new URL(url)
+    const pathParts = parsedUrl.pathname.split('/').filter(Boolean)
+
+    if (pathParts.length === 0) return url
+
+    // Insert rotation segment before the filename
+    // e.g., /filename.png => /right/filename.png
+    pathParts.splice(pathParts.length - 1, 0, segment)
+    parsedUrl.pathname = '/' + pathParts.join('/')
+
+    return parsedUrl.toString()
+  } catch {
+    return url
+  }
 }
 
 export default function MediaUploader(props: MediaUploaderProps) {
@@ -106,6 +148,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
           resolve({
             uploadData: { type: 'image', file },
             preview: reader.result as string,
+            rotation: 0,
           })
         }
         reader.readAsDataURL(file)
@@ -354,11 +397,11 @@ export default function MediaUploader(props: MediaUploaderProps) {
     }
 
     if (uploadData.type === 'video' || uploadData.type === 'image') {
-      return await uploadFile(uploadData.file, uploadData.type)
+      return await uploadFile(uploadData.file, uploadData.type, mediaData.rotation)
     }
   }
 
-  const uploadFile = async (file: File, type: string) => {
+  const uploadFile = async (file: File, type: string, rotation?: RotationAngle) => {
     try {
       setUploading(true)
 
@@ -382,9 +425,16 @@ export default function MediaUploader(props: MediaUploaderProps) {
 
       if (data.status === 'ok') {
         console.debug('UPLOAD COMPLETE', data)
+        let url = process.env.REACT_APP_MEDIA_HOSTING_URL + '/' + data.url
+
+        // Apply rotation to URL if needed (only for images)
+        if (type === 'image' && rotation) {
+          url = applyRotationToUrl(url, rotation)
+        }
+
         return {
           type,
-          url: process.env.REACT_APP_MEDIA_HOSTING_URL + '/' + data.url,
+          url,
         } as MediaResult
       } else {
         console.error('UPLOAD FAILED: no link', data, file.type)
@@ -437,12 +487,47 @@ export default function MediaUploader(props: MediaUploaderProps) {
     }
   }
 
+  const handleRotateLeft = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    const currentMedia = uploadArray[index]
+    if (!currentMedia || currentMedia.uploadData?.type !== 'image') return
+
+    const currentRotation = currentMedia.rotation || 0
+    const newRotation = ((currentRotation - 90 + 360) % 360) as RotationAngle
+
+    const newArray = [...uploadArray]
+    newArray[index] = { ...currentMedia, rotation: newRotation }
+    setUploadArray(newArray)
+  }
+
+  const handleRotateRight = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    const currentMedia = uploadArray[index]
+    if (!currentMedia || currentMedia.uploadData?.type !== 'image') return
+
+    const currentRotation = currentMedia.rotation || 0
+    const newRotation = ((currentRotation + 90) % 360) as RotationAngle
+
+    const newArray = [...uploadArray]
+    newArray[index] = { ...currentMedia, rotation: newRotation }
+    setUploadArray(newArray)
+  }
+
+  // Check if current media is a file-based image (not URL)
+  const currentMedia = uploadArray[index]
+  const canRotate = currentMedia?.uploadData?.type === 'image'
+
   const galleryElements = uploadArray
     .filter((u) => u.preview)
     .map((data, i) => {
       if (data.uploadData?.type === 'image' || data.uploadData?.type === 'image-uri') {
         return {
           image: { src: data.preview || '', alt: '' },
+          rotation: data.rotation,
         } as GalleryElement
       }
 
@@ -501,17 +586,40 @@ export default function MediaUploader(props: MediaUploaderProps) {
             {uploading ? 'Загрузка' : 'Фьють'}
           </Button>
         </form>
-        <GalleryComponent
-          className={styles.gallery}
-          elements={galleryElements}
-          showArrows={galleryElements.length > 1}
-          showIndicators={galleryElements.length > 1}
-          disableZoom
-          disableDynamicHeight
-          onChangeIndex={setIndex}
-          scrollToIndex={scrollToIndex?.index}
-          scrollToKey={scrollToIndex?.key}
-        />
+        <div className={styles.galleryWrapper}>
+          <GalleryComponent
+            className={styles.gallery}
+            elements={galleryElements}
+            height={GALLERY_HEIGHT}
+            showArrows={galleryElements.length > 1}
+            showIndicators={galleryElements.length > 1}
+            showThumbnails={false}
+            disableZoom
+            onChangeIndex={setIndex}
+            scrollToIndex={scrollToIndex?.index}
+            scrollToKey={scrollToIndex?.key}
+          />
+          {canRotate && (
+            <div className={styles.rotateButtons}>
+              <Button
+                className={styles.rotateButton}
+                onClick={handleRotateLeft}
+                title='Повернуть влево'
+                disabled={uploading}
+              >
+                <RotateLeftIcon />
+              </Button>
+              <Button
+                className={styles.rotateButton}
+                onClick={handleRotateRight}
+                title='Повернуть вправо'
+                disabled={uploading}
+              >
+                <RotateRightIcon />
+              </Button>
+            </div>
+          )}
+        </div>
         {!props.singleUpload && (
           <>
             <Checkbox

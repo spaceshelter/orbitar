@@ -710,10 +710,13 @@ function updateGallery(
   setCut: (cut: boolean) => void,
 ) {
   const elements: GalleryElement[] = []
+  const imagesToClear: HTMLImageElement[] = []
+
   galleryEl.querySelectorAll(':scope > img, :scope > a[class$="-embed"]').forEach((el) => {
     if (el.tagName.toLowerCase() === 'img') {
       const img = el as HTMLImageElement
       elements.push({ image: { src: img.src, alt: img.alt || undefined } })
+      imagesToClear.push(img)
     } else if (el.tagName.toLowerCase() === 'a') {
       const img = el.querySelector('img')
       if (!img) return
@@ -725,14 +728,15 @@ function updateGallery(
     }
   })
 
+  // Remove src from the original img so that the browser does not load them.
+  // (they will be replaced by a React component with lazy loading)
+  imagesToClear.forEach((img) => {
+    img.removeAttribute('src')
+  })
+
   if (elements.length === 0) {
     return
   }
-
-  const autoPlayInterval = Number(galleryEl.getAttribute('auto-play-interval') || 0)
-  const showArrows = !galleryEl.hasAttribute('data-no-arrows')
-  const showIndicators = !galleryEl.hasAttribute('data-no-indicators')
-  const showThumbnails = !galleryEl.hasAttribute('data-no-thumbnails')
 
   // When gallery expands, remove the autoCut to allow fullscreen overlay
   const handleExpand = () => {
@@ -744,17 +748,7 @@ function updateGallery(
     stopInnerVideos(slideEl)
   }
 
-  const component = (
-    <GalleryComponent
-      elements={elements}
-      showArrows={showArrows}
-      autoPlayInterval={autoPlayInterval}
-      showIndicators={showIndicators}
-      showThumbnails={showThumbnails}
-      onExpand={handleExpand}
-      onSlideLeave={handleSlideLeave}
-    />
-  )
+  const component = <GalleryComponent elements={elements} onExpand={handleExpand} onSlideLeave={handleSlideLeave} />
 
   cleanupRegistry.register(renderWithTheme(galleryEl, component, appState))
 }
