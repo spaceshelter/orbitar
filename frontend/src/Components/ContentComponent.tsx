@@ -65,7 +65,7 @@ declare global {
   }
 }
 
-export const LARGE_AUTO_CUT = 650
+export const LARGE_AUTO_CUT = 675
 export const SMALL_AUTO_CUT = 100
 
 const iframeToOriginalEl = new WeakMap<HTMLIFrameElement, HTMLElement>()
