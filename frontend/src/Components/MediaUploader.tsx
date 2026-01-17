@@ -467,7 +467,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <form ref={formRef} className={styles.controls} onSubmit={handleUpload} onKeyDown={handlePressEnter}>
+        <form ref={formRef} className={styles.controls} onSubmit={handleUpload}>
           <div className={styles.upload}>
             {uploadArray.length > 0 && (
               <div className={styles.remove} onClick={removeMedia}>
