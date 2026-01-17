@@ -688,16 +688,6 @@ export default class TheParser {
   }
 
   parseGallery(node: Element): ParseResult {
-    const props = [
-      node.attribs['no-arrows'] != undefined ? 'data-no-arrows' : '',
-      node.attribs['no-indicators'] != undefined ? 'data-no-indicators' : '',
-      node.attribs['no-thumbnails'] != undefined ? 'data-no-thumbnails' : '',
-    ]
-    const autoPlayInterval = parseInt(node.attribs['auto-play-interval'] || '0', 10)
-    if (autoPlayInterval > 0) {
-      props.push(`auto-play-interval="${autoPlayInterval * 1000}"`)
-    }
-    const propsText = props.join(' ').trim()
     const result: ParseResult = { text: '', mentions: [], urls: [], images: [] }
     const appendResult = (res: ParseResult) => {
       result.text += res.text
@@ -758,7 +748,7 @@ export default class TheParser {
       return this.parseChildNodes(node.children)
     }
 
-    const text = `<div class="gallery" ${propsText}>${result.text}</div>`
+    const text = `<div class="gallery">${result.text}</div>`
 
     return { ...result, text }
   }

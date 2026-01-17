@@ -738,11 +738,6 @@ function updateGallery(
     return
   }
 
-  const autoPlayInterval = Number(galleryEl.getAttribute('auto-play-interval') || 0)
-  const showArrows = !galleryEl.hasAttribute('data-no-arrows')
-  const showIndicators = !galleryEl.hasAttribute('data-no-indicators')
-  const showThumbnails = !galleryEl.hasAttribute('data-no-thumbnails')
-
   // When gallery expands, remove the autoCut to allow fullscreen overlay
   const handleExpand = () => {
     setCut(false)
@@ -753,17 +748,7 @@ function updateGallery(
     stopInnerVideos(slideEl)
   }
 
-  const component = (
-    <GalleryComponent
-      elements={elements}
-      showArrows={showArrows}
-      autoPlayInterval={autoPlayInterval}
-      showIndicators={showIndicators}
-      showThumbnails={showThumbnails}
-      onExpand={handleExpand}
-      onSlideLeave={handleSlideLeave}
-    />
-  )
+  const component = <GalleryComponent elements={elements} onExpand={handleExpand} onSlideLeave={handleSlideLeave} />
 
   cleanupRegistry.register(renderWithTheme(galleryEl, component, appState))
 }

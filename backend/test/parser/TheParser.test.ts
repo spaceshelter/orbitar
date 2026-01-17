@@ -276,35 +276,6 @@ test('parse gallery with single image returns just the image (no wrapper)', () =
   expect(result.text).toEqual('<img src="https://b.orbitar.media/img1.jpg" alt="img1"/>')
 })
 
-test('parse gallery with all attributes (single image - no wrapper)', () => {
-  const result = p.parse(
-    '<gallery no-arrows no-indicators no-thumbnails auto-play-interval="5"><img src="https://orbitar.media/img1.jpg" alt="img1"/></gallery>',
-  )
-  // Single item gallery returns content without wrapper (attributes ignored)
-  expect(result.text).toEqual('<img src="https://b.orbitar.media/img1.jpg" alt="img1"/>')
-})
-
-test('parse gallery with two images preserves wrapper and attributes', () => {
-  const result = p.parse(
-    '<gallery no-arrows no-indicators auto-play-interval="5"><img src="https://orbitar.media/img1.jpg" alt="img1"/><img src="https://orbitar.media/img2.jpg" alt="img2"/></gallery>',
-  )
-  // Check for presence of attributes and content (don't check exact spacing)
-  expect(result.text).toContain('<div class="gallery"')
-  expect(result.text).toContain('data-no-arrows')
-  expect(result.text).toContain('data-no-indicators')
-  expect(result.text).toContain('auto-play-interval="5000"')
-  expect(result.text).toContain('<img src="https://b.orbitar.media/img1.jpg" alt="img1"/>')
-  expect(result.text).toContain('<img src="https://b.orbitar.media/img2.jpg" alt="img2"/>')
-})
-
-test('parse gallery with invalid auto-play-interval (single image)', () => {
-  const result = p.parse(
-    '<gallery auto-play-interval="abc"><img src="https://orbitar.media/img1.jpg" alt="img1"/></gallery>',
-  )
-  // Single item returns without wrapper
-  expect(result.text).toEqual('<img src="https://b.orbitar.media/img1.jpg" alt="img1"/>')
-})
-
 test('parse gallery with nested tags', () => {
   const result = p.parse(
     '<gallery><img src="https://orbitar.media/img1.jpg" alt="img1"/><img src="https://orbitar.media/img2.jpg" alt="img2"/></gallery>',
@@ -887,26 +858,6 @@ describe('gallery edge cases', () => {
     const longPath = 'a'.repeat(500)
     const result = p.parse(`<gallery>https://example.com/${longPath}.jpg</gallery>`)
     expect(result.text).toContain('<img src=')
-  })
-
-  test('gallery attributes ignored with single media item', () => {
-    const result = p.parse(
-      '<gallery no-arrows no-indicators auto-play-interval="5">non-media text https://example.com/img.jpg</gallery>',
-    )
-    // 1 media item -> parsed as regular content (no wrapper, attributes ignored)
-    expect(result.text).not.toContain('data-no-arrows')
-    expect(result.text).toContain('<img src="https://example.com/img.jpg"')
-    expect(result.text).toContain('non-media text')
-  })
-
-  test('gallery attributes preserved with multiple media items', () => {
-    const result = p.parse(
-      '<gallery no-arrows no-indicators auto-play-interval="5">https://example.com/a.jpg https://example.com/b.jpg</gallery>',
-    )
-    // 2 media items -> gallery wrapper with attributes
-    expect(result.text).toContain('data-no-arrows')
-    expect(result.text).toContain('data-no-indicators')
-    expect(result.text).toContain('auto-play-interval="5000"')
   })
 
   test('plain links become regular links', () => {

@@ -509,6 +509,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
           height={GALLERY_HEIGHT}
           showArrows={galleryElements.length > 1}
           showIndicators={galleryElements.length > 1}
+          showThumbnails={false}
           disableZoom
           onChangeIndex={setIndex}
           scrollToIndex={scrollToIndex?.index}
