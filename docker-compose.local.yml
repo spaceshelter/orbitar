@@ -11,9 +11,6 @@ services:
       API_DOMAIN: ${API_DOMAIN}
       MEDIA_HOSTING_URL: ${MEDIA_HOSTING_URL}
       MEDIA_HOSTING_CLIENT_ID: ${MEDIA_HOSTING_CLIENT_ID}
-      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
-      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
-      VAPID_CONTACT: ${VAPID_CONTACT}
       FINGERPRINT: ${FINGERPRINT}
     volumes:
       - $PWD/caddy/Caddyfile.local:/etc/caddy/Caddyfile:ro
