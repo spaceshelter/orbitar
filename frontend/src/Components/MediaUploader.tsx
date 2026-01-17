@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 import Button from '@ui/Button'
 import Checkbox from '@ui/Checkbox'
@@ -60,6 +60,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
   const [index, setIndex] = useState(0)
   const [scrollToIndex, setScrollToIndex] = useState<{ index: number; key: number } | undefined>(undefined)
   const scrollKeyRef = useRef(0)
+  const formRef = useRef<HTMLFormElement>(null)
 
   const [galleryOption, setGalleryOption] = useState<CreateGalleryOption>({
     create: props.initialGalleryCreate ?? false,
@@ -71,6 +72,26 @@ export default function MediaUploader(props: MediaUploaderProps) {
       setGalleryOption({ create: true })
     }
   }, [uploadArray.length])
+
+  const handlePressEnter = useCallback(
+    (e: React.KeyboardEvent<HTMLFormElement> | KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        const target = e.target as HTMLElement
+        const tag = target.tagName.toLowerCase()
+
+        if (tag === 'textarea' || target.isContentEditable) return
+
+        e.preventDefault()
+        if (uploadArray.length > 0) formRef.current?.requestSubmit()
+      }
+    },
+    [uploadArray.length],
+  )
+
+  useEffect(() => {
+    document.addEventListener('keydown', handlePressEnter)
+    return () => document.removeEventListener('keydown', handlePressEnter)
+  }, [handlePressEnter])
 
   const scrollToGalleryIndex = (idx: number) => {
     scrollKeyRef.current++
@@ -205,12 +226,22 @@ export default function MediaUploader(props: MediaUploaderProps) {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value)
-  }
 
-  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      addUrlsFromInput()
+    const url = e.target.value
+    const type = parseUrl(url)
+    if (type) {
+      setUploadArray((prev) => {
+        scrollToGalleryIndex(prev.length + 1)
+        return [
+          ...prev,
+          {
+            uploadData: { type, uri: url },
+            preview: url,
+            url,
+          },
+        ]
+      })
+      setInputValue('') // Clear input after adding
     }
   }
 
@@ -257,40 +288,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
       }
       setInputValue('') // Clear input after adding
     }
-    // If no valid URLs, let paste happen normally (user can edit and press Enter)
-  }
-
-  const addUrlsFromInput = () => {
-    const text = inputValue.trim()
-    if (!text) return
-
-    const lines = text.split(/[\n\s]+/).filter((u) => u.trim())
-
-    const newItems: MediaData[] = []
-    for (const url of lines) {
-      const type = parseUrl(url)
-      if (type) {
-        newItems.push({
-          uploadData: { type, uri: url },
-          preview: url,
-          url,
-        })
-      }
-    }
-
-    if (newItems.length > 0) {
-      if (props.singleUpload) {
-        setUploadArray([newItems[0]])
-        scrollToGalleryIndex(0)
-      } else {
-        setUploadArray((prev) => {
-          scrollToGalleryIndex(prev.length + newItems.length - 1)
-          return [...prev, ...newItems]
-        })
-      }
-    }
-
-    setInputValue('') // Clear input after attempt
+    // If no valid URLs, let paste happen normally
   }
 
   const parseUrl = (text: string): 'image-uri' | 'video-uri' | undefined => {
@@ -469,7 +467,7 @@ export default function MediaUploader(props: MediaUploaderProps) {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <form className={styles.controls} onSubmit={handleUpload}>
+        <form ref={formRef} className={styles.controls} onSubmit={handleUpload}>
           <div className={styles.upload}>
             {uploadArray.length > 0 && (
               <div className={styles.remove} onClick={removeMedia}>
@@ -485,8 +483,8 @@ export default function MediaUploader(props: MediaUploaderProps) {
               title='Вставьте ссылку или картинку'
               value={inputValue}
               onChange={handleInputChange}
-              onKeyDown={handleInputKeyDown}
               onPaste={handleInputPaste}
+              autoFocus
             />
             <label className={styles.selector}>
               <input

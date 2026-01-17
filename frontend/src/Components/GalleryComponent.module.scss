@@ -60,8 +60,10 @@ $transition-easing: ease-in-out;
 
 .image {
   object-fit: contain;
-  height: 100%;
-  max-width: 100%;
+  max-height: 100% !important;
+  max-width: 100% !important;
+  width: auto;
+  height: auto;
   user-select: none;
   -webkit-user-drag: none;
 }
@@ -77,7 +79,7 @@ $transition-easing: ease-in-out;
 
 .caption {
   position: absolute;
-  bottom: 2rem;
+  bottom: 1rem;
   left: 50%;
   transform: translateX(-50%);
   max-width: calc(100% - 6rem); // Leave room for arrows
@@ -88,6 +90,7 @@ $transition-easing: ease-in-out;
   text-align: center;
   z-index: 10;
   // Truncate long text
+  cursor: pointer;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -133,6 +136,8 @@ $transition-easing: ease-in-out;
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+    pointer-events: unset;
+    cursor: default;
   }
 
   svg {
@@ -158,8 +163,9 @@ $transition-easing: ease-in-out;
   display: flex;
   gap: $indicator-spacing;
   z-index: 10;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: center;
+  width: fit-content;
   max-width: 80%;
   padding: 0.2rem 0.4rem;
   border-radius: 4px;
@@ -174,10 +180,20 @@ $transition-easing: ease-in-out;
   cursor: pointer;
   padding: 0;
   transition: all $transition-duration $transition-easing;
+  flex-shrink: 0;
 
   &:disabled {
     cursor: not-allowed;
   }
+}
+
+.indicatorPlaceholder {
+  width: calc($indicator-size * 0.6);
+  height: calc($indicator-size * 0.6);
+  cursor: default;
+  pointer-events: none;
+  opacity: 0.5;
+  align-self: center;
 }
 
 .indicatorDot {
@@ -236,9 +252,9 @@ $transition-easing: ease-in-out;
   flex-shrink: 0;
   width: $thumbnail-width;
   height: $thumbnail-height;
-  border-radius: 4px;
+  border-radius: 2px;
   overflow: hidden;
-  border: 2px solid var(--fgSoftest);
+  border: 1px solid var(--fgSoftest);
   cursor: pointer;
   transition: all $transition-duration $transition-easing;
   opacity: 0.6;
@@ -405,7 +421,6 @@ $transition-easing: ease-in-out;
   }
 
   .emblaSlide {
-    padding: 2rem;
     height: 100vh;
     box-sizing: border-box;
   }
@@ -435,7 +450,7 @@ $transition-easing: ease-in-out;
   .caption {
     bottom: 3rem;
     max-width: 90%;
-    max-height: none;
+    max-height: 5.4rem;
     -webkit-line-clamp: unset;
     font-size: 1rem;
   }
@@ -459,16 +474,16 @@ $transition-easing: ease-in-out;
         pointer-events: none;
       }
     }
+  }
+}
 
-    .captionExpanded {
-      max-height: 50vh;
-      -webkit-line-clamp: unset;
-      overflow-y: auto;
+.captionExpanded {
+  max-height: 50vh !important;
+  -webkit-line-clamp: unset !important;
+  overflow-y: auto;
 
-      &::after {
-        display: none;
-      }
-    }
+  &::after {
+    display: none;
   }
 }
 
@@ -505,7 +520,9 @@ $transition-easing: ease-in-out;
 }
 
 .imageExpanded {
-  max-width: calc(100vw - 4rem); // Account for slide padding
-  max-height: calc(100vh - 4rem);
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
   object-fit: contain;
 }
