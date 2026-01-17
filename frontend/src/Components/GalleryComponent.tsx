@@ -29,7 +29,6 @@ export interface GalleryElement {
 interface GalleryComponentProps {
   elements: GalleryElement[]
   height?: number
-  autoPlayInterval?: number
   showThumbnails?: boolean
   showIndicators?: boolean
   showArrows?: boolean
@@ -119,11 +118,10 @@ function LazyThumbnail({ src, alt, className }: { src?: string; alt?: string; cl
 const GalleryComponent: React.FC<GalleryComponentProps> = ({
   elements,
   height = MAX_HEIGHT,
-  autoPlayInterval = 0,
   showThumbnails = true,
   showIndicators = true,
   showArrows = true,
-  disableZoom = true,
+  disableZoom = false,
   onChangeIndex,
   onSlideLeave,
   scrollToIndex,
@@ -303,20 +301,6 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
       })
     }
   }, [currentIndex, showThumbnails, elements.length])
-
-  useEffect(() => {
-    if (!autoPlayInterval || autoPlayInterval <= 0 || !emblaApi) return
-
-    const interval = setInterval(() => {
-      if (emblaApi.canScrollNext()) {
-        emblaApi.scrollNext()
-      } else {
-        emblaApi.scrollTo(0)
-      }
-    }, autoPlayInterval)
-
-    return () => clearInterval(interval)
-  }, [emblaApi, autoPlayInterval])
 
   const goToPrevious = useCallback(
     (e: React.MouseEvent | undefined = undefined): void => {
