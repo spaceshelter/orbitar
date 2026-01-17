@@ -57,6 +57,13 @@ export default class NotificationManager {
     if (vapidConfig.publicKey && vapidConfig.privateKey && vapidConfig.contact) {
       webpush.setVapidDetails(vapidConfig.contact, vapidConfig.publicKey, vapidConfig.privateKey)
       this.couldSendWebPush = true
+      this.logger.info('Web push notifications enabled')
+    } else {
+      this.logger.warn('Web push notifications disabled - missing VAPID configuration', {
+        hasPublicKey: !!vapidConfig.publicKey,
+        hasPrivateKey: !!vapidConfig.privateKey,
+        hasContact: !!vapidConfig.contact,
+      })
     }
   }
 
@@ -282,6 +289,7 @@ export default class NotificationManager {
 
   private async sendWebPush(forUserId: number, notification: UserNotification) {
     if (!this.couldSendWebPush) {
+      this.logger.debug('Skipping web push - VAPID not configured')
       return
     }
 
