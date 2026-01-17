@@ -710,10 +710,13 @@ function updateGallery(
   setCut: (cut: boolean) => void,
 ) {
   const elements: GalleryElement[] = []
+  const imagesToClear: HTMLImageElement[] = []
+
   galleryEl.querySelectorAll(':scope > img, :scope > a[class$="-embed"]').forEach((el) => {
     if (el.tagName.toLowerCase() === 'img') {
       const img = el as HTMLImageElement
       elements.push({ image: { src: img.src, alt: img.alt || undefined } })
+      imagesToClear.push(img)
     } else if (el.tagName.toLowerCase() === 'a') {
       const img = el.querySelector('img')
       if (!img) return
@@ -723,6 +726,12 @@ function updateGallery(
         image: { src: img.src, alt: img.alt || undefined },
       })
     }
+  })
+
+  // Remove src from the original img so that the browser does not load them.
+  // (they will be replaced by a React component with lazy loading)
+  imagesToClear.forEach((img) => {
+    img.removeAttribute('src')
   })
 
   if (elements.length === 0) {

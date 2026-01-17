@@ -28,12 +28,12 @@ export interface GalleryElement {
 
 interface GalleryComponentProps {
   elements: GalleryElement[]
+  height?: number
   autoPlayInterval?: number
   showThumbnails?: boolean
   showIndicators?: boolean
   showArrows?: boolean
   disableZoom?: boolean
-  disableDynamicHeight?: boolean
   onChangeIndex?: (index: number) => void
   onSlideLeave?: (slideElement: HTMLElement) => void
   scrollToIndex?: number
@@ -46,15 +46,84 @@ interface GalleryComponentProps {
 
 const SWIPE_THRESHOLD = 80 // pixels to drag to trigger navigation
 const CLICK_THRESHOLD = 5
+const MAX_HEIGHT = 450
+
+/**
+ * Adds size to the URL for images from the orbitar.media domain
+ * https://b.orbitar.media/image.jpg => https://b.orbitar.media/100/image.jpg
+ * https://b.orbitar.media/preview/image.mp4 => https://b.orbitar.media/preview/100/image.mp4
+ */
+function getThumbnailUrl(url: string | undefined, size = 100): string | undefined {
+  if (!url) return url
+
+  if (url.includes('/vimeo/') || url.includes('/coub/')) {
+    return url
+  }
+
+  try {
+    const parsedUrl = new URL(url)
+
+    if (!parsedUrl.hostname.endsWith('.orbitar.media')) {
+      return url
+    }
+
+    const pathSegments = parsedUrl.pathname.split('/').filter(Boolean)
+
+    if (pathSegments.length === 0) {
+      return url
+    }
+
+    // Insert size before the last segment (filename)
+    pathSegments.splice(pathSegments.length - 1, 0, String(size))
+    parsedUrl.pathname = '/' + pathSegments.join('/')
+
+    return parsedUrl.toString()
+  } catch {
+    return url
+  }
+}
+
+/**
+ * Lazy-loaded thumbnail image component using IntersectionObserver
+ */
+function LazyThumbnail({ src, alt, className }: { src?: string; alt?: string; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [isVisible, setIsVisible] = useState(false)
+
+  useEffect(() => {
+    const currentRef = ref.current
+    if (!currentRef) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '50px' },
+    )
+
+    observer.observe(currentRef)
+
+    return () => observer.disconnect()
+  }, [])
+
+  return (
+    <div ref={ref} style={{ width: '100%', height: '100%' }}>
+      {isVisible && src && <img src={src} alt={alt} className={className} />}
+    </div>
+  )
+}
 
 const GalleryComponent: React.FC<GalleryComponentProps> = ({
   elements,
+  height = MAX_HEIGHT,
   autoPlayInterval = 0,
   showThumbnails = false,
   showIndicators = false,
   showArrows = false,
   disableZoom = false,
-  disableDynamicHeight = false,
   onChangeIndex,
   onSlideLeave,
   scrollToIndex,
@@ -64,11 +133,7 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
   onExpand: onExpandProp,
   onCollapse: onCollapseProp,
 }) => {
-  const maxHeight = 450
-  const fallbackElementHeight = 400
-
   const [currentIndex, setCurrentIndex] = useState<number>(0)
-  const [optimalHeight, setOptimalHeight] = useState<number>(maxHeight)
   const [internalExpanded, setInternalExpanded] = useState(false)
   const [captionExpanded, setCaptionExpanded] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -76,6 +141,8 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
   const currentIndexRef = useRef<number>(0)
   const expandedRef = useRef(false)
   const pointerDownPosRef = useRef<{ x: number; y: number } | null>(null)
+  // Track which slides have been loaded to avoid unloading them
+  const loadedSlidesRef = useRef<Set<number>>(new Set())
 
   // Use external control if provided, otherwise use internal state
   const isControlled = expandedProp !== undefined
@@ -163,66 +230,6 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
 
   // Lock scroll when expanded
   useNoScroll(expanded)
-
-  const calculateOptimalHeight = useCallback(async (): Promise<number> => {
-    if (disableDynamicHeight) {
-      return maxHeight
-    }
-
-    const containerWidth = containerRef.current?.offsetWidth || 0
-    if (!containerWidth || !elements.length) {
-      return maxHeight
-    }
-
-    const calculateElementHeight = async (element: GalleryElement) => {
-      if (element.image?.src) {
-        return new Promise<number>((resolve) => {
-          const img = new Image()
-          img.onload = () => {
-            const aspectRatio = img.naturalHeight / img.naturalWidth
-            const calculatedHeight = Math.min(containerWidth * aspectRatio, maxHeight)
-            resolve(calculatedHeight)
-          }
-          img.onerror = () => resolve(fallbackElementHeight)
-          img.src = element.image!.src
-        })
-      } else if (element.htmlElement) {
-        const elementHeight = element.htmlElement.offsetHeight || fallbackElementHeight
-        return Math.min(elementHeight, maxHeight)
-      } else {
-        return fallbackElementHeight
-      }
-    }
-
-    const calculatedHeights = await Promise.all(elements.map((element) => calculateElementHeight(element)))
-    const maxCalculatedHeight = Math.max(...calculatedHeights)
-    return Math.min(maxCalculatedHeight, maxHeight)
-  }, [elements, disableDynamicHeight])
-
-  useEffect(() => {
-    if (disableDynamicHeight) return
-
-    const updateHeight = async () => {
-      const height = await calculateOptimalHeight()
-      setOptimalHeight(height)
-    }
-
-    // delay for the container to be rendered
-    const timeoutId = setTimeout(updateHeight, 100)
-    return () => clearTimeout(timeoutId)
-  }, [elements, calculateOptimalHeight, disableDynamicHeight])
-
-  useEffect(() => {
-    if (disableDynamicHeight) return
-
-    const handleResize = async () => {
-      const height = await calculateOptimalHeight()
-      setOptimalHeight(height)
-    }
-
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [calculateOptimalHeight, disableDynamicHeight])
 
   // Embla select event handler
   useEffect(() => {
@@ -399,28 +406,40 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
         ref={containerRef}
         className={styles.main}
         style={{
-          height: expanded ? undefined : disableDynamicHeight ? undefined : `${optimalHeight}px`,
+          height: expanded ? undefined : `${height}px`,
         }}
       >
         <div className={styles.embla} ref={emblaRef}>
           <div className={styles.emblaContainer}>
-            {elements.map((el, index) => (
-              <div
-                className={styles.emblaSlide}
-                key={index}
-                onPointerDown={handlePointerDown}
-                onClick={handleOverlayClick}
-              >
-                <GalleryElementComponent
-                  {...el}
-                  disableZoom={disableZoom}
-                  expanded={expanded}
-                  onExpand={() => handleExpand(index)}
-                  onNavigatePrev={() => emblaApi?.scrollPrev()}
-                  onNavigateNext={() => emblaApi?.scrollNext()}
-                />
-              </div>
-            ))}
+            {elements.map((el, index) => {
+              // Load slide if: first 3 or within ±2 of current slide
+              const shouldLoad = index < 3 || Math.abs(currentIndex - index) <= 2
+              // Mark as loaded once it should be loaded
+              if (shouldLoad) {
+                loadedSlidesRef.current.add(index)
+              }
+              // Render if currently should load OR was previously loaded
+              const shouldRender = loadedSlidesRef.current.has(index)
+              return (
+                <div
+                  className={styles.emblaSlide}
+                  key={index}
+                  onPointerDown={handlePointerDown}
+                  onClick={handleOverlayClick}
+                >
+                  {shouldRender ? (
+                    <GalleryElementComponent
+                      {...el}
+                      disableZoom={disableZoom}
+                      expanded={expanded}
+                      onExpand={() => handleExpand(index)}
+                      onNavigatePrev={() => emblaApi?.scrollPrev()}
+                      onNavigateNext={() => emblaApi?.scrollNext()}
+                    />
+                  ) : null}
+                </div>
+              )
+            })}
           </div>
         </div>
 
@@ -479,7 +498,11 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
               })}
               aria-label={`Миниатюра ${index + 1}`}
             >
-              <img src={el.image?.src} alt={el.image?.alt} className={styles.thumbnailImage} />
+              <LazyThumbnail
+                src={getThumbnailUrl(el.image?.src)}
+                alt={el.image?.alt}
+                className={styles.thumbnailImage}
+              />
             </Button>
           ))}
         </div>

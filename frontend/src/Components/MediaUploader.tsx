@@ -11,6 +11,8 @@ import Overlay from './Overlay'
 import { ReactComponent as RemoveIcon } from '../Assets/trash.svg'
 import styles from './MediaUploader.module.scss'
 
+const GALLERY_HEIGHT = 280
+
 export type MediaResult = {
   type: 'video' | 'image'
   url: string
@@ -504,10 +506,10 @@ export default function MediaUploader(props: MediaUploaderProps) {
         <GalleryComponent
           className={styles.gallery}
           elements={galleryElements}
+          height={GALLERY_HEIGHT}
           showArrows={galleryElements.length > 1}
           showIndicators={galleryElements.length > 1}
           disableZoom
-          disableDynamicHeight
           onChangeIndex={setIndex}
           scrollToIndex={scrollToIndex?.index}
           scrollToKey={scrollToIndex?.key}
