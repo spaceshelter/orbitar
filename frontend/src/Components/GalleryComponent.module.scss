@@ -68,8 +68,18 @@ $transition-easing: ease-in-out;
   -webkit-user-drag: none;
 }
 
+.videoContainer {
+  height: -webkit-fill-available;
+  height: -moz-available;
+  height: fill-available;
+  height: stretch;
+}
+
+.videoSwipeWrapper {
+  height: unset !important;
+}
+
 .noDragging {
-  height: 100%;
   user-drag: none;
   -webkit-user-drag: none;
   user-select: none;

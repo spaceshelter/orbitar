@@ -668,7 +668,7 @@ function VideoSwipeWrapper({ expanded, onNavigatePrev, onNavigateNext, children 
   return (
     <div
       ref={wrapperRef}
-      className='video-swipe-wrapper'
+      className={classNames('video-swipe-wrapper', styles.videoSwipeWrapper)}
       style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
@@ -754,7 +754,11 @@ function GalleryElementComponent({
   if (isVideo && htmlElement) {
     return (
       <VideoSwipeWrapper expanded={expanded} onNavigatePrev={onNavigatePrev} onNavigateNext={onNavigateNext}>
-        <span ref={ref} className={styles.noDragging} onClick={(e) => e.stopPropagation()} />
+        <span
+          ref={ref}
+          className={classNames(styles.noDragging, styles.videoContainer)}
+          onClick={(e) => e.stopPropagation()}
+        />
       </VideoSwipeWrapper>
     )
   }
