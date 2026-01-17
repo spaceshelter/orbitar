@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import useNoScroll from '@api/use/useNoScroll'
 import useOnBack from '@api/use/useOnBack'
 import Button from '@ui/Button'
+import { isMediaHostingUrl } from '@utils/mediaUtils'
 import classNames from 'classnames'
 import useEmblaCarousel from 'embla-carousel-react'
 import { WheelGesturesPlugin } from 'embla-carousel-wheel-gestures'
@@ -49,9 +50,9 @@ const CLICK_THRESHOLD = 5
 const MAX_HEIGHT = 450
 
 /**
- * Adds size to the URL for images from the orbitar.media domain
- * https://b.orbitar.media/image.jpg => https://b.orbitar.media/100/image.jpg
- * https://b.orbitar.media/preview/image.mp4 => https://b.orbitar.media/preview/100/image.mp4
+ * Adds size to the URL for images from the media hosting domain.
+ * Uses REACT_APP_MEDIA_HOSTING_URL to determine which URLs to transform.
+ * Example: https://b.orbitar.media/image.jpg => https://b.orbitar.media/100/image.jpg
  */
 function getThumbnailUrl(url: string | undefined, size = 100): string | undefined {
   if (!url) return url
@@ -63,7 +64,7 @@ function getThumbnailUrl(url: string | undefined, size = 100): string | undefine
   try {
     const parsedUrl = new URL(url)
 
-    if (!parsedUrl.hostname.endsWith('.orbitar.media')) {
+    if (!isMediaHostingUrl(parsedUrl)) {
       return url
     }
 
