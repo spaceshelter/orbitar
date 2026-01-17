@@ -421,7 +421,6 @@ $transition-easing: ease-in-out;
   }
 
   .emblaSlide {
-    padding: 2rem;
     height: 100vh;
     box-sizing: border-box;
   }
@@ -451,7 +450,7 @@ $transition-easing: ease-in-out;
   .caption {
     bottom: 3rem;
     max-width: 90%;
-    max-height: 5rem;
+    max-height: 5.4rem;
     -webkit-line-clamp: unset;
     font-size: 1rem;
   }
