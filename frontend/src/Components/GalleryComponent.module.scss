@@ -63,20 +63,27 @@ $transition-easing: ease-in-out;
   max-height: 100% !important;
   max-width: 100% !important;
   width: auto;
-  height: auto;
+  height: 100%;
   user-select: none;
   -webkit-user-drag: none;
 }
 
 .videoContainer {
-  height: -webkit-fill-available;
-  height: -moz-available;
-  height: fill-available;
-  height: stretch;
+  & > a,
+  & img,
+  & video {
+    max-height: 450px !important;
+    max-width: 100% !important;
+  }
 }
 
 .videoSwipeWrapper {
-  height: unset !important;
+  & > .videoContainer > a,
+  & img,
+  & video {
+    max-height: 100% !important;
+    max-width: 100% !important;
+  }
 }
 
 .noDragging {
@@ -534,6 +541,6 @@ $transition-easing: ease-in-out;
   max-width: 100%;
   max-height: 100%;
   width: auto;
-  height: auto;
+  height: 100%;
   object-fit: contain;
 }

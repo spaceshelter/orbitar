@@ -33,7 +33,6 @@
   :global(a.vimeo-embed) img {
     max-width: 100%;
     max-height: 500px;
-    height: 100%;
 
     -webkit-user-drag: none;
     user-select: none;
@@ -48,7 +47,6 @@
   :global(a.vimeo-embed) {
     position: relative;
     display: inline-block;
-    height: 100%;
 
     &:after {
       display: block;
