@@ -64,8 +64,11 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
   onExpand: onExpandProp,
   onCollapse: onCollapseProp,
 }) => {
+  const maxHeight = 450
+  const fallbackElementHeight = 400
+
   const [currentIndex, setCurrentIndex] = useState<number>(0)
-  const [optimalHeight, setOptimalHeight] = useState<number>(450)
+  const [optimalHeight, setOptimalHeight] = useState<number>(maxHeight)
   const [internalExpanded, setInternalExpanded] = useState(false)
   const [captionExpanded, setCaptionExpanded] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -100,9 +103,6 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
       setInternalExpanded(false)
     }
   }, [isControlled, onCollapseProp])
-
-  const maxHeight = 450
-  const fallbackElementHeight = 400
 
   // Disable drag in expanded mode to allow zoom-pan-pinch to work (except for videos)
   const emblaPlugins = useMemo(() => (expanded ? [] : [WheelGesturesPlugin({ forceWheelAxis: 'x' })]), [expanded])
