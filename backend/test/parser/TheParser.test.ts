@@ -281,7 +281,7 @@ test('parse gallery with nested tags', () => {
     '<gallery><img src="https://orbitar.media/img1.jpg" alt="img1"/><img src="https://orbitar.media/img2.jpg" alt="img2"/></gallery>',
   )
   expect(result.text).toEqual(
-    '<div class="gallery" ><img src="https://b.orbitar.media/img1.jpg" alt="img1"/><img src="https://b.orbitar.media/img2.jpg" alt="img2"/></div>',
+    '<div class="gallery"><img src="https://b.orbitar.media/img1.jpg" alt="img1"/><img src="https://b.orbitar.media/img2.jpg" alt="img2"/></div>',
   )
 })
 
