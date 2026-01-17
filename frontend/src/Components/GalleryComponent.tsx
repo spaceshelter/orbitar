@@ -24,6 +24,7 @@ export interface GalleryElement {
   htmlElement?: HTMLElement
   isVideo?: boolean
   element?: React.ReactNode
+  rotation?: number // Rotation angle in degrees (0, 90, 180, 270)
 }
 
 interface GalleryComponentProps {
@@ -605,6 +606,7 @@ interface GalleryElementProps {
   element?: React.ReactNode
   disableZoom?: boolean
   expanded?: boolean
+  rotation?: number // Rotation angle in degrees (0, 90, 180, 270)
   onExpand?: () => void
   onNavigatePrev?: () => void
   onNavigateNext?: () => void
@@ -692,12 +694,17 @@ function GalleryElementComponent({
   element,
   disableZoom,
   expanded,
+  rotation,
   onExpand,
   onNavigatePrev,
   onNavigateNext,
 }: GalleryElementProps) {
   const ref = useRef<HTMLSpanElement>(null)
   const imgRef = useRef<HTMLImageElement>(null)
+
+  // Generate rotation style for preview
+  const isRotated = typeof rotation === 'number'
+  const rotationStyle: React.CSSProperties | undefined = isRotated ? { transform: `rotate(${rotation}deg)` } : undefined
 
   const handleImageClick = (e: React.MouseEvent<HTMLImageElement, MouseEvent>): void => {
     e.stopPropagation() // Prevent overlay click handler
@@ -818,6 +825,7 @@ function GalleryElementComponent({
         src={image.src}
         alt={image.alt}
         className={classNames(styles.image, styles.noDragging, !disableZoom && 'image-scalable')}
+        style={rotationStyle}
         onClick={handleImageClick}
       />
     )
