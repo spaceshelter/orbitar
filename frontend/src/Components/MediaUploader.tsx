@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 import Button from '@ui/Button'
 import Checkbox from '@ui/Checkbox'
@@ -73,17 +73,20 @@ export default function MediaUploader(props: MediaUploaderProps) {
     }
   }, [uploadArray.length])
 
-  const handlePressEnter = (e: React.KeyboardEvent<HTMLFormElement> | KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      const target = e.target as HTMLElement
-      const tag = target.tagName.toLowerCase()
+  const handlePressEnter = useCallback(
+    (e: React.KeyboardEvent<HTMLFormElement> | KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        const target = e.target as HTMLElement
+        const tag = target.tagName.toLowerCase()
 
-      if (tag === 'textarea' || target.isContentEditable) return
+        if (tag === 'textarea' || target.isContentEditable) return
 
-      e.preventDefault()
-      if (uploadArray.length > 0) formRef.current?.requestSubmit()
-    }
-  }
+        e.preventDefault()
+        if (uploadArray.length > 0) formRef.current?.requestSubmit()
+      }
+    },
+    [uploadArray.length],
+  )
 
   useEffect(() => {
     document.addEventListener('keydown', handlePressEnter)
