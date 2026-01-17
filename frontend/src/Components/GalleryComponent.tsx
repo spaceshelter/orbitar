@@ -65,7 +65,7 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
   onCollapse: onCollapseProp,
 }) => {
   const [currentIndex, setCurrentIndex] = useState<number>(0)
-  const [optimalHeight, setOptimalHeight] = useState<number>(500)
+  const [optimalHeight, setOptimalHeight] = useState<number>(450)
   const [internalExpanded, setInternalExpanded] = useState(false)
   const [captionExpanded, setCaptionExpanded] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -101,7 +101,7 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
     }
   }, [isControlled, onCollapseProp])
 
-  const maxHeight = 500
+  const maxHeight = 450
   const fallbackElementHeight = 400
 
   // Disable drag in expanded mode to allow zoom-pan-pinch to work (except for videos)

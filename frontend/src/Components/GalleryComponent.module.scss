@@ -69,6 +69,7 @@ $transition-easing: ease-in-out;
 }
 
 .noDragging {
+  height: 100%;
   user-drag: none;
   -webkit-user-drag: none;
   user-select: none;
