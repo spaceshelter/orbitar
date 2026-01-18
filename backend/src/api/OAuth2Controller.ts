@@ -200,6 +200,11 @@ export default class OAuth2Controller {
           }
         } catch (err) {
           this.logger.error('Error checking client type for PKCE enforcement', { error: err })
+          // Fail closed: if we can't determine client type, reject the request
+          return res.status(500).json({
+            error: 'server_error',
+            error_description: 'Unable to verify client configuration.',
+          })
         }
       }
 
