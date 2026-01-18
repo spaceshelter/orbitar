@@ -141,16 +141,38 @@ export const urisListValidator = Joi.string().custom((value, helpers) => {
   // remove optional trailing slash with star to support urls like https://example.com/*
   const urls = value.split(',').map((url) => url.trim().replace(/\/*$/, ''))
   for (const url of urls) {
-    if (
-      !isURL(url, {
-        require_tld: process.env.NODE_ENV !== 'development',
-        require_protocol: true,
-        allow_fragments:
-          false /*RFC 6749 Section 3.1.2: The redirection endpoint URI MUST NOT include a fragment component.*/,
-        protocols: ['https', ...(process.env.NODE_ENV === 'development' ? ['https', 'http'] : [])],
-      })
-    ) {
-      return helpers.error('any.invalid')
+    try {
+      const urlObj = new URL(url)
+
+      // RFC 6749 Section 3.1.2: no fragments
+      if (urlObj.hash && urlObj.hash !== '#') {
+        return helpers.error('any.invalid', {
+          message: 'Redirect URIs must not include fragment components (RFC 6749)',
+        })
+      }
+
+      // Strict validation for http/https
+      if (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') {
+        if (
+          !isURL(url, {
+            require_tld: process.env.NODE_ENV !== 'development',
+            require_protocol: true,
+            allow_fragments: false,
+            protocols: ['https', ...(process.env.NODE_ENV === 'development' ? ['http'] : [])],
+          })
+        ) {
+          return helpers.error('any.invalid')
+        }
+      } else {
+        // Custom protocols: minimal validation
+        if (!urlObj.protocol || urlObj.protocol === ':') {
+          return helpers.error('any.invalid', {
+            message: 'Custom protocol URIs must have a valid protocol scheme',
+          })
+        }
+      }
+    } catch (err) {
+      return helpers.error('any.invalid', { message: 'Invalid URI format' })
     }
   }
   return value

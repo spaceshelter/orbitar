@@ -63,6 +63,10 @@ const clientRegisterSchema = Joi.object<OAuth2RegisterRequest>({
     'any.required': 'Redirect URIs are required.',
     'any.invalid': 'Please enter valid comma-separated URIs.',
   }),
+  clientType: Joi.string().valid('public', 'confidential').required().messages({
+    'any.required': 'Client type is required.',
+    'any.only': 'Client type must be either "public" or "confidential".',
+  }),
 })
 
 const clientEditSchema = Joi.object<OAuth2EditRequest>({
@@ -178,8 +182,34 @@ export default class OAuth2Controller {
     this.router.post('/oauth2/verify-scopes', commonLimiter, validate(verifyScopesSchema), (req, res) =>
       this.verifyScopes(req, res),
     )
-    this.router.post('/oauth2/authorize', commonLimiter, (req, res) =>
-      this.oauthExpressServer.authorize({
+    this.router.post('/oauth2/authorize', commonLimiter, async (req, res, next) => {
+      // PKCE enforcement for public clients (OAuth 2.0 best practice - RFC 7636)
+      const clientId = req.body.client_id || req.query.client_id
+      if (clientId) {
+        try {
+          const clientType = await this.oauth2Manager.getClientType(clientId)
+          if (clientType === 'public') {
+            const codeChallenge = req.body.code_challenge || req.query.code_challenge
+            if (!codeChallenge) {
+              this.logger.warn('Public client attempted authorization without PKCE', { clientId })
+              return res.status(400).json({
+                error: 'invalid_request',
+                error_description: 'Public clients MUST use PKCE. Missing code_challenge parameter.',
+              })
+            }
+          }
+        } catch (err) {
+          this.logger.error('Error checking client type for PKCE enforcement', { error: err })
+          // Fail closed: if we can't determine client type, reject the request
+          return res.status(500).json({
+            error: 'server_error',
+            error_description: 'Unable to verify client configuration.',
+          })
+        }
+      }
+
+      // Continue with OAuth authorization
+      await this.oauthExpressServer.authorize({
         authenticateHandler: {
           handle: async (req) => {
             await req.session.restore(req.body['X-Session-Id'])
@@ -201,8 +231,8 @@ export default class OAuth2Controller {
             }
           },
         },
-      })(req, res, () => {}),
-    )
+      })(req, res, () => {})
+    })
     this.router.post('/oauth2/unauthorize', commonLimiter, validate(clientManageSchema), (req, res) =>
       this.unAuthorizeClient(req, res),
     )
@@ -220,7 +250,7 @@ export default class OAuth2Controller {
     }
 
     try {
-      const { name, description, logoUrl, initialAuthorizationUrl, redirectUris } = request.body
+      const { name, description, logoUrl, initialAuthorizationUrl, redirectUris, clientType } = request.body
       const userId = request.session.data.userId
       const author = await this.userManager.getById(userId)
 
@@ -231,6 +261,7 @@ export default class OAuth2Controller {
         initialAuthorizationUrl,
         redirectUris,
         userId,
+        clientType,
       )
       const responseData: OAuth2RegisterResponse = {
         client: {
@@ -242,6 +273,7 @@ export default class OAuth2Controller {
           initialAuthorizationUrl: client.initial_authorization_url,
           redirectUris: client.redirect_uris,
           grants: client.grants,
+          clientType: client.client_type,
           userId: client.user_id,
           author,
         },

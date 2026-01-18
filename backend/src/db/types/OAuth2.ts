@@ -9,6 +9,7 @@ export interface OAuth2ClientRaw {
   initial_authorization_url: string
   redirect_uris: string
   grants: string
+  client_type: 'public' | 'confidential'
   user_id: number
   scopes?: string
   last_revoked_ts?: Date

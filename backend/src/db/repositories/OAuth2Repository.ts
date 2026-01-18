@@ -74,13 +74,14 @@ export default class OAuth2Repository {
     clientSecretHash: string,
     redirectUris: string,
     userId: number,
+    clientType: 'public' | 'confidential',
   ): Promise<OAuth2ClientRaw> {
     await this.db.query(
       `
-      INSERT INTO oauth_clients 
-        (name, description, logo_url, client_id, client_secret_hash, initial_authorization_url, redirect_uris, user_id, grants)
-      VALUES 
-        (:name, :description, :logo_url, :client_id, :client_secret_hash, :initial_authorization_url, :redirect_uris, :user_id, :grants)
+      INSERT INTO oauth_clients
+        (name, description, logo_url, client_id, client_secret_hash, initial_authorization_url, redirect_uris, user_id, grants, client_type)
+      VALUES
+        (:name, :description, :logo_url, :client_id, :client_secret_hash, :initial_authorization_url, :redirect_uris, :user_id, :grants, :client_type)
       `,
       {
         name,
@@ -92,6 +93,7 @@ export default class OAuth2Repository {
         redirect_uris: redirectUris,
         user_id: userId,
         grants: 'authorization_code,refresh_token',
+        client_type: clientType,
       },
     )
 
@@ -105,6 +107,7 @@ export default class OAuth2Repository {
       redirect_uris: redirectUris,
       user_id: userId,
       grants: 'authorization_code,refresh_token',
+      client_type: clientType,
     } as OAuth2ClientRaw
   }
 

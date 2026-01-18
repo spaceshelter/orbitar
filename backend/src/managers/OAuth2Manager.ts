@@ -25,6 +25,7 @@ export default class OAuth2Manager {
     initialAuthorizationUrl: string,
     redirectUris: string,
     userId: number,
+    clientType: 'public' | 'confidential',
   ): Promise<OAuth2ClientRaw> {
     try {
       const currentNumberOfClientsByUser = await this.oauthRepository.getNumberOfClientsCreatedByUser(userId)
@@ -33,8 +34,20 @@ export default class OAuth2Manager {
       }
 
       const clientId = AuthorizationCodeModelImpl.generateClientId()
-      const clientSecret = AuthorizationCodeModelImpl.generateClientSecret()
-      const clientSecretHash = AuthorizationCodeModelImpl.hashString(clientSecret)
+
+      // Only generate client_secret for confidential clients
+      let clientSecret: string
+      let clientSecretHash: string
+
+      if (clientType === 'confidential') {
+        clientSecret = AuthorizationCodeModelImpl.generateClientSecret()
+        clientSecretHash = AuthorizationCodeModelImpl.hashString(clientSecret)
+      } else {
+        // For public clients, store empty hash (never used)
+        clientSecret = ''
+        clientSecretHash = ''
+      }
+
       const result: OAuth2ClientRaw = await this.oauthRepository.createClient(
         name,
         description,
@@ -44,8 +57,14 @@ export default class OAuth2Manager {
         clientSecretHash,
         redirectUris,
         userId,
+        clientType,
       )
-      result.client_secret_original = clientSecret
+
+      // Only return client_secret for confidential clients
+      if (clientType === 'confidential') {
+        result.client_secret_original = clientSecret
+      }
+
       return result
     } catch (error) {
       this.logger.error('Error registering OAuth client', { error })
@@ -77,6 +96,16 @@ export default class OAuth2Manager {
     } catch (error) {
       this.logger.error('Error getting OAuth client by client ID', { error })
       throw error
+    }
+  }
+
+  async getClientType(clientId: string): Promise<'public' | 'confidential' | undefined> {
+    try {
+      const client = await this.oauthRepository.getClientByClientId(clientId)
+      return client?.client_type
+    } catch (error) {
+      this.logger.error('Error getting OAuth client type', { error })
+      return undefined
     }
   }
 
@@ -161,6 +190,7 @@ export default class OAuth2Manager {
       initialAuthorizationUrl: client.initial_authorization_url,
       redirectUris: client.redirect_uris,
       grants: client.grants,
+      clientType: client.client_type,
       userId: client.user_id,
       logoUrl: client.logo_url,
       author: { id: author.id, username: author.username, gender: author.gender },

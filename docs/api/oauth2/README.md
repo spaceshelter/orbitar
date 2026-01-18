@@ -21,13 +21,14 @@ To create a client application, follow these steps:
 4. Fill in the required information:
     - **Name**: Your application name (2-32 characters)
     - **Description**: What your app does (up to 255 characters)
+    - **Client Type**: Choose between "public" or "confidential" (see Client Types section below)
     - **Redirect URIs**: Where users will be sent after authorization (comma-separated list)
     - **App connection URL** (optional): The URL where users will go when clicking the "Connect"
       button on your application card. This URL is usually the landing page of your application.
 
 5. After creating your application, you will receive:
     - **Client ID**: Public identifier for your application
-    - **Client Secret**: Private key that must be kept secure
+    - **Client Secret**: Private key that must be kept secure (confidential clients only)
 
 **Important**:
 
@@ -59,6 +60,86 @@ The embedded card will show:
 - Logo (if you uploaded one)
 - "Connect" button (if you provided an App connection URL)
 
+## Client Types
+
+Orbitar supports two types of OAuth2 clients:
+
+### Confidential Clients
+
+Confidential clients are applications that can securely store a client secret. These are typically:
+
+- Server-side web applications
+- Backend services
+- Applications where the source code is not exposed to users
+
+Confidential clients receive a **Client Secret** upon registration that must be kept secure and used during token exchange.
+
+### Public Clients
+
+Public clients are applications that cannot securely store a client secret. These include:
+
+- Single-page applications (SPAs)
+- Mobile applications
+- Desktop applications
+- Any application where the code is distributed to users
+
+Public clients:
+
+- Do **not** receive a Client Secret
+- **Must** use PKCE (Proof Key for Code Exchange) for authorization
+- Cannot use Basic Authentication for token requests
+
+## PKCE (Proof Key for Code Exchange)
+
+PKCE is a security extension to OAuth2 that protects the authorization code flow, especially for public clients. It prevents authorization code interception attacks.
+
+**PKCE is required for public clients and optional (but recommended) for confidential clients.**
+
+### How PKCE Works
+
+1. Your application generates a random `code_verifier` (43-128 characters, URL-safe)
+2. Your application creates a `code_challenge` by hashing the verifier with SHA-256 and base64url-encoding it
+3. The `code_challenge` is sent with the authorization request
+4. The `code_verifier` is sent with the token exchange request
+5. The server verifies that the challenge matches the verifier
+
+### Generating PKCE Parameters
+
+**Step 1: Generate a Code Verifier**
+
+The code verifier is a cryptographically random string using the characters A-Z, a-z, 0-9, and the punctuation characters `-._~`, between 43 and 128 characters long.
+
+Example (JavaScript):
+
+```javascript
+function generateCodeVerifier() {
+  const array = new Uint8Array(32)
+  crypto.getRandomValues(array)
+  return btoa(String.fromCharCode(...array))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '')
+}
+```
+
+**Step 2: Create a Code Challenge**
+
+The code challenge is created by taking the SHA-256 hash of the code verifier and base64url-encoding it.
+
+Example (JavaScript):
+
+```javascript
+async function generateCodeChallenge(verifier) {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(verifier)
+  const digest = await crypto.subtle.digest('SHA-256', data)
+  return btoa(String.fromCharCode(...new Uint8Array(digest)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '')
+}
+```
+
 ## Understanding OAuth2 Flow
 
 OAuth2 in Orbitar uses
@@ -75,8 +156,16 @@ which is [defined in RFC 6749, section 4.1](https://datatracker.ietf.org/doc/htm
 
 Redirect the user to Orbitar's authorization endpoint:
 
+**For confidential clients (without PKCE):**
+
 ```
 https://orbitar.space/oauth2/authorize?client_id=YOUR_CLIENT_ID&scope=REQUESTED_SCOPES&redirect_uri=YOUR_REDIRECT_URI&state=RANDOM_STATE_STRING
+```
+
+**For public clients or confidential clients using PKCE:**
+
+```
+https://orbitar.space/oauth2/authorize?client_id=YOUR_CLIENT_ID&scope=REQUESTED_SCOPES&redirect_uri=YOUR_REDIRECT_URI&state=RANDOM_STATE_STRING&code_challenge=CODE_CHALLENGE&code_challenge_method=S256
 ```
 
 Parameters:
@@ -85,6 +174,8 @@ Parameters:
 - `scope`: Space-separated list of permissions your app needs
 - `redirect_uri`: Must match one of the URIs you registered
 - `state`: Random string for security validation (see security note below)
+- `code_challenge`: The PKCE code challenge (required for public clients)
+- `code_challenge_method`: Must be `S256` (required when using PKCE)
 
 **Note**: If you provided an App connection URL, you have two options for this URL:
 
@@ -130,8 +221,11 @@ The state parameter should match the one you sent in the authorization request.
 
 ### Step 4: Token Exchange
 
-Your application must exchange this code for access and refresh tokens. You can authenticate using either Basic
-Authentication in the header or by including client credentials in the request body.
+Your application must exchange this code for access and refresh tokens. The authentication method depends on your client type.
+
+#### For Confidential Clients
+
+You can authenticate using either Basic Authentication in the header or by including client credentials in the request body.
 
 **Method 1: Using Basic Authentication (recommended)**
 
@@ -152,14 +246,32 @@ Content-Type: application/x-www-form-urlencoded
 grant_type=authorization_code&code=AUTHORIZATION_CODE&nonce=RANDOM_STRING&redirect_uri=YOUR_REDIRECT_URI&client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET
 ```
 
-Parameters:
+If you used PKCE during authorization, include the `code_verifier` parameter:
+
+```
+grant_type=authorization_code&code=AUTHORIZATION_CODE&nonce=RANDOM_STRING&redirect_uri=YOUR_REDIRECT_URI&code_verifier=YOUR_CODE_VERIFIER
+```
+
+#### For Public Clients (PKCE Required)
+
+Public clients must include the `code_verifier` and cannot use client secret authentication:
+
+```
+POST https://api.orbitar.space/api/v1/oauth2/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code&code=AUTHORIZATION_CODE&redirect_uri=YOUR_REDIRECT_URI&client_id=YOUR_CLIENT_ID&code_verifier=YOUR_CODE_VERIFIER
+```
+
+#### Parameters
 
 - `grant_type`: Must be "authorization_code"
 - `code`: The authorization code received from the previous step
 - `nonce`: Optional random string for additional security
 - `redirect_uri`: Must match the URI used in the authorization request
-- `client_id`: Your application's Client ID (if using Method 2)
-- `client_secret`: Your application's Client Secret (if using Method 2)
+- `client_id`: Your application's Client ID (required for public clients, optional for confidential clients using Method 2)
+- `client_secret`: Your application's Client Secret (confidential clients only)
+- `code_verifier`: The original PKCE code verifier (required for public clients, optional for confidential clients that used PKCE)
 
 The response contains:
 
@@ -187,8 +299,11 @@ example, to access the `/api/v1/status` endpoint, your authorized scopes must in
 
 ### Step 6: Refreshing Tokens
 
-Access tokens expire after a period of time (usually 30 minutes). Use the refresh token to get a new access token. You
-can authenticate using either Basic Authentication in the header or by including client credentials in the request body.
+Access tokens expire after a period of time (usually 30 minutes). Use the refresh token to get a new access token.
+
+#### For Confidential Clients
+
+You can authenticate using either Basic Authentication in the header or by including client credentials in the request body.
 
 **Method 1: Using Basic Authentication (recommended)**
 
@@ -207,6 +322,17 @@ POST https://api.orbitar.space/api/v1/oauth2/token
 Content-Type: application/x-www-form-urlencoded
 
 grant_type=refresh_token&refresh_token=REFRESH_TOKEN&client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET
+```
+
+#### For Public Clients
+
+Public clients include only the client_id (no secret):
+
+```
+POST https://api.orbitar.space/api/v1/oauth2/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=refresh_token&refresh_token=REFRESH_TOKEN&client_id=YOUR_CLIENT_ID
 ```
 
 If the refresh token has expired, you'll need to initiate a new authorization flow for the user starting from Step 1.
@@ -273,22 +399,26 @@ automatically remove redundant scopes. For example, if you request both `user` a
 
 ## Security Best Practices
 
-1. **Keep Client Secret secure**: Never expose it in client-side code
+1. **Keep Client Secret secure**: Never expose it in client-side code (confidential clients only)
 2. **Use HTTPS**: Always use secure connections
 3. **Validate redirect URIs**: Prevent open redirector attacks
 4. **Request minimum scopes**: Only ask for permissions you need
 5. **Handle token expiration**: Properly refresh tokens when needed
-6. Make sure to pass and validate the `state` parameter during the authorization process
+6. **Validate the state parameter**: Always verify the `state` parameter matches during the authorization callback
+7. **Use PKCE**: Even for confidential clients, PKCE adds an extra layer of security
+8. **Choose the right client type**: Use public clients for SPAs, mobile, and desktop apps; use confidential clients for server-side applications
 
 ## Troubleshooting
 
 Common issues and solutions:
 
 - **Invalid redirect URI**: Make sure the URI matches exactly what you registered
-- **Invalid client credentials**: Check your client ID and secret
+- **Invalid client credentials**: Check your client ID and secret (confidential clients only)
 - **Invalid scopes**: Make sure requested scopes are valid
 - **Expired authorization code**: Codes expire quickly, exchange them immediately
 - **Expired access token**: Use refresh token to get a new access token
+- **Missing code_challenge**: Public clients must include PKCE parameters in the authorization request
+- **Invalid code_verifier**: The code_verifier must match the code_challenge sent during authorization
 
 ## Sample Applications
 

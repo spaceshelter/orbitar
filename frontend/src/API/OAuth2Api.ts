@@ -15,6 +15,7 @@ export type OAuth2RegisterRequest = {
   logoUrl?: string
   redirectUris: string
   initialAuthorizationUrl?: string
+  clientType: 'public' | 'confidential'
 }
 
 export type OAuth2EditRequest = {
@@ -99,6 +100,7 @@ export default class OAuth2Api {
     redirectUris: string,
     logoUrl = '',
     initialAuthorizationUrl = '',
+    clientType: 'public' | 'confidential' = 'confidential',
   ): Promise<OAuth2RegisterResponse> {
     return await this.api.request<OAuth2RegisterRequest, OAuth2RegisterResponse>('/oauth2/client/register', {
       name,
@@ -106,6 +108,7 @@ export default class OAuth2Api {
       logoUrl,
       redirectUris: redirectUris,
       initialAuthorizationUrl,
+      clientType,
     })
   }
 

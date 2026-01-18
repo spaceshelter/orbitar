@@ -92,25 +92,27 @@ export default function UserProfileClientsApps() {
               <h4>ID вашего приложения (client_id)</h4>
               <CopyableEmbedCodeComponent text={generatedSecret.clientId} />
             </div>
-            <div>
-              <h4>Секретный код приложения (client_secret)</h4>
-              <CopyableEmbedCodeComponent text={generatedSecret.secret} />
+            {generatedSecret.secret && (
+              <div>
+                <h4>Секретный код приложения (client_secret)</h4>
+                <CopyableEmbedCodeComponent text={generatedSecret.secret} />
 
-              <span className={styles.codeInfo}>
-                Скопируйте ID приложения (client_id) и секретный код и сохраните эти данные в надёжном месте.
-                <br />
-                Мы храним секретные коды в зашифрованном виде и не можем их восстановить.
-                <br />
-                <br />
-                {generatedSecret.type !== 'new' && (
-                  <>
-                    Правда, вы сможете перегенерировать его в любое время, но тогда вам также придётся обновить код в
-                    своём приложении.
-                  </>
-                )}
-              </span>
-              <span className={styles.clientSecret}>{}</span>
-            </div>
+                <span className={styles.codeInfo}>
+                  Скопируйте ID приложения (client_id) и секретный код и сохраните эти данные в надёжном месте.
+                  <br />
+                  Мы храним секретные коды в зашифрованном виде и не можем их восстановить.
+                  <br />
+                  <br />
+                  {generatedSecret.type !== 'new' && (
+                    <>
+                      Правда, вы сможете перегенерировать его в любое время, но тогда вам также придётся обновить код в
+                      своём приложении.
+                    </>
+                  )}
+                </span>
+                <span className={styles.clientSecret}>{}</span>
+              </div>
+            )}
           </div>
         </div>
       )}
