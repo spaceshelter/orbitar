@@ -1,19 +1,31 @@
-.paginator {
-}
-
 .ellipsis,
 .page {
   border-radius: 4px;
-  padding: 6px;
-  @media only screen and (max-width: 600px) {
-    padding: 2px;
-  }
-
-  min-width: 20px;
+  padding: 6px 8px;
+  min-width: 32px;
   display: inline-block;
   text-align: center;
-  margin: 0 5px;
   text-decoration: none;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+
+  @media only screen and (max-width: 768px) {
+    padding: 5px 7px;
+    min-width: 28px;
+    font-size: 15px;
+  }
+
+  @media only screen and (max-width: 600px) {
+    padding: 4px 6px;
+    min-width: 24px;
+    font-size: 14px;
+  }
+
+  @media only screen and (max-width: 400px) {
+    padding: 3px 5px;
+    min-width: 20px;
+    font-size: 13px;
+  }
 }
 
 .page {
@@ -37,4 +49,23 @@
 .ellipsis {
   color: var(--fgSoftest);
   cursor: default;
+}
+
+.paginator {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 5px;
+  width: 80%;
+  justify-content: space-between;
+  margin: 0 auto;
+
+  @media only screen and (max-width: 600px) {
+    width: 100%;
+    gap: 4px;
+  }
+
+  @media only screen and (max-width: 400px) {
+    gap: 3px;
+  }
 }

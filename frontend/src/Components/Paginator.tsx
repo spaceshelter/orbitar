@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import classNames from 'classnames'
@@ -12,75 +12,125 @@ interface PaginatorProps {
   queryStringParams?: Record<string, string>
 }
 
+const NAV_BUTTONS_COUNT = 4
+const MAX_ELLIPSES = 2
+
+function getGapWidth(): number {
+  const width = window.innerWidth
+  if (width <= 400) return 3
+  if (width <= 600) return 4
+  return 5
+}
+
+function getDefaultButtonWidth(): number {
+  const width = window.innerWidth
+  if (width <= 400) return 20
+  if (width <= 600) return 24
+  if (width <= 768) return 28
+  return 32
+}
+
+function calculateMaxPageRange(
+  containerWidth: number,
+  buttonWidth: number,
+  ellipsisWidth: number,
+  gapWidth: number,
+): number {
+  const navButtonsWidth = buttonWidth * NAV_BUTTONS_COUNT + gapWidth * (NAV_BUTTONS_COUNT - 1)
+  const ellipsisSpace = (ellipsisWidth + gapWidth) * MAX_ELLIPSES
+  const widthForPages = containerWidth - navButtonsWidth - ellipsisSpace
+  const maxButtons = Math.floor(widthForPages / (buttonWidth + gapWidth))
+
+  return Math.max(1, maxButtons)
+}
+
 export default function Paginator(props: PaginatorProps) {
   const { page, base, queryStringParams, pages } = props
 
-  const range = 7
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [range, setRange] = useState(7)
 
-  if (pages <= 1) {
-    return null
-  }
+  useEffect(() => {
+    const updateRange = () => {
+      if (!containerRef.current) return
 
-  let pageMin = Math.max(1, page - Math.floor(range / 2))
-  let pageMax = Math.min(page + Math.floor(range / 2 - ((range + 1) % 2)), pages)
+      const containerWidth = containerRef.current.offsetWidth
+      const pageButton = containerRef.current.querySelector(`.${styles.page}`) as HTMLElement
+      const ellipsis = containerRef.current.querySelector(`.${styles.ellipsis}`) as HTMLElement
+
+      const defaultWidth = getDefaultButtonWidth()
+      const buttonWidth = pageButton?.offsetWidth ?? defaultWidth
+      const ellipsisWidth = ellipsis?.offsetWidth ?? defaultWidth
+      const gapWidth = getGapWidth()
+
+      const maxRange = calculateMaxPageRange(containerWidth, buttonWidth, ellipsisWidth, gapWidth)
+      const calculatedRange = Math.min(maxRange, pages)
+
+      setRange(calculatedRange)
+    }
+
+    const timeoutId = setTimeout(updateRange, 0)
+    const resizeObserver = new ResizeObserver(updateRange)
+
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current)
+    }
+
+    return () => {
+      clearTimeout(timeoutId)
+      resizeObserver.disconnect()
+    }
+  }, [pages])
+
+  if (pages <= 1) return null
+
+  const { pageMin, pageMax } = calculatePageRange(page, pages, range)
+  const pageProps = { base, params: queryStringParams || {}, currentPage: page }
+
+  return (
+    <div ref={containerRef} className={styles.paginator}>
+      <Page page={1} disabled={page === 1} {...pageProps}>
+        ⇤
+      </Page>
+      <Page page={page - 1} disabled={page === 1} {...pageProps}>
+        ←
+      </Page>
+
+      {pageMin > 1 && <span className={styles.ellipsis}>…</span>}
+
+      {Array.from({ length: pageMax - pageMin + 1 }, (_, i) => pageMin + i).map((i) => (
+        <Page key={i} page={i} current={i === page} disabled={i === page} {...pageProps}>
+          {i}
+        </Page>
+      ))}
+
+      {pageMax < pages && <span className={styles.ellipsis}>…</span>}
+
+      <Page page={page + 1} disabled={page === pages} {...pageProps}>
+        →
+      </Page>
+      <Page page={pages} disabled={page === pages} {...pageProps}>
+        ⇥
+      </Page>
+    </div>
+  )
+}
+
+function calculatePageRange(currentPage: number, totalPages: number, range: number) {
+  const halfRange = Math.floor(range / 2)
+
+  let pageMin = Math.max(1, currentPage - halfRange)
+  let pageMax = Math.min(currentPage + halfRange - ((range + 1) % 2), totalPages)
+
   if (pageMax - pageMin + 1 < range) {
     if (pageMin === 1) {
-      pageMax = Math.min(range, pages)
+      pageMax = Math.min(range, totalPages)
     } else {
       pageMin = Math.max(pageMax - range + 1, 1)
     }
   }
 
-  const commonProps = { base, params: queryStringParams || {}, currentPage: page }
-
-  const links = []
-  links.push(
-    <Page key={-2} disabled={page === 1} page={1} {...commonProps}>
-      ⇤
-    </Page>,
-  )
-  links.push(
-    <Page key={-1} disabled={page === 1} page={page - 1} {...commonProps}>
-      ←
-    </Page>,
-  )
-
-  if (pageMin > 1) {
-    links.push(
-      <span key='el1' className={styles.ellipsis}>
-        …
-      </span>,
-    )
-  }
-
-  for (let i = pageMin; i <= pageMax; i++) {
-    links.push(
-      <Page key={i} disabled={i === page} current={i === page} page={i} {...commonProps}>
-        {i}
-      </Page>,
-    )
-  }
-
-  if (pageMax < pages) {
-    links.push(
-      <span key='el2' className={styles.ellipsis}>
-        …
-      </span>,
-    )
-  }
-
-  links.push(
-    <Page key={pages + 1} disabled={page === pages} page={page + 1} {...commonProps}>
-      →
-    </Page>,
-  )
-  links.push(
-    <Page key={pages + 2} disabled={page === pages} page={pages} {...commonProps}>
-      ⇥
-    </Page>,
-  )
-
-  return <div className={styles.paginator}>{links}</div>
+  return { pageMin, pageMax }
 }
 
 interface PageProps {
