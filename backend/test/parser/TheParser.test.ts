@@ -140,19 +140,19 @@ test('remove extra line break after blockquote tag', () => {
 
 test('remove extra line break after expand tag', () => {
   expect(p.parse('<expand title="Brave">New</expand>\nWorld').text).toEqual(
-    '<details class="expand"><summary>Brave</summary>New<div role="button"></div></details>World',
+    '<details class="expand"><summary>Brave</summary>New</details>World',
   )
 
   expect(p.parse('<expand title="Brave">New</expand>\n\nWorld').text).toEqual(
-    '<details class="expand"><summary>Brave</summary>New<div role="button"></div></details><br />\nWorld',
+    '<details class="expand"><summary>Brave</summary>New</details><br />\nWorld',
   )
 
   expect(p.parse('<expand title="Brave">New</expand>\n\n\nWorld').text).toEqual(
-    '<details class="expand"><summary>Brave</summary>New<div role="button"></div></details><br />\nWorld',
+    '<details class="expand"><summary>Brave</summary>New</details><br />\nWorld',
   )
 
   expect(p.parse('<expand title="Hello">World\n<expand title="Brave">New</expand>\n</expand>World').text).toEqual(
-    '<details class="expand"><summary>Hello</summary>World<br />\n<details class="expand"><summary>Brave</summary>New<div role="button"></div></details><div role="button"></div></details>World',
+    '<details class="expand"><summary>Hello</summary>World<br />\n<details class="expand"><summary>Brave</summary>New</details></details>World',
   )
 })
 
@@ -262,11 +262,11 @@ test('parse spoiler tag', () => {
 test('parse expand tag', () => {
   // title
   expect(p.parse('<expand title="Hello">world</expand>').text).toEqual(
-    '<details class="expand"><summary>Hello</summary>world<div role="button"></div></details>',
+    '<details class="expand"><summary>Hello</summary>world</details>',
   )
   // empty title
   expect(p.parse('<expand>Hello world</expand>').text).toEqual(
-    '<details class="expand"><summary>Открой меня</summary>Hello world<div role="button"></div></details>',
+    '<details class="expand"><summary>Открой меня</summary>Hello world</details>',
   )
 })
 
@@ -1066,7 +1066,7 @@ test('disallowed tags nesting', () => {
 
   // expand can be nested in expand
   expect(p.parse('<expand title="outer"><expand title="inner">test</expand></expand>').text).toEqual(
-    '<details class="expand"><summary>outer</summary><details class="expand"><summary>inner</summary>test<div role="button"></div></details><div role="button"></div></details>',
+    '<details class="expand"><summary>outer</summary><details class="expand"><summary>inner</summary>test</details></details>',
   )
 
   // expand cannot be inside a
