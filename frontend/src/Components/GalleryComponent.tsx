@@ -503,13 +503,10 @@ interface SlidingIndicatorsProps {
   onSelect: (index: number) => void
 }
 
-const INDICATOR_SIZE = 12
-const INDICATOR_GAP = 8
-const CONTAINER_PADDING = 12
-
 function SlidingIndicators({ total, currentIndex, onSelect }: SlidingIndicatorsProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [maxVisible, setMaxVisible] = useState(total)
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
   useEffect(() => {
     const container = containerRef.current
@@ -519,20 +516,40 @@ function SlidingIndicators({ total, currentIndex, onSelect }: SlidingIndicatorsP
       const parent = container.parentElement
       if (!parent) return
 
-      const availableWidth = parent.offsetWidth * 0.8 - CONTAINER_PADDING * 2
-      const dotWidth = INDICATOR_SIZE + INDICATOR_GAP
-      const max = Math.floor((availableWidth + INDICATOR_GAP) / dotWidth)
+      // Get computed styles from actual DOM elements
+      const containerStyles = window.getComputedStyle(container)
+      const containerPadding = parseFloat(containerStyles.paddingLeft) + parseFloat(containerStyles.paddingRight)
+      const gap = parseFloat(containerStyles.gap) || 0
+
+      // Try to get indicator size from first indicator element
+      const firstIndicator = container.querySelector(`.${styles.indicator}`) as HTMLElement
+      let indicatorSize = 12 // fallback
+      if (firstIndicator) {
+        const indicatorStyles = window.getComputedStyle(firstIndicator)
+        indicatorSize = parseFloat(indicatorStyles.width)
+      }
+
+      const availableWidth = parent.offsetWidth * 0.8 - containerPadding
+      const dotWidth = indicatorSize + gap
+      const max = Math.floor((availableWidth + gap) / dotWidth)
       setMaxVisible(Math.max(3, max))
     }
 
+    // Initial calculation might not have indicators yet, so calculate twice
     calculateMaxVisible()
+    const timer = setTimeout(calculateMaxVisible, 0)
 
     if (container.parentElement) {
       const resizeObserver = new ResizeObserver(calculateMaxVisible)
       resizeObserver.observe(container.parentElement)
 
-      return () => resizeObserver.disconnect()
+      return () => {
+        resizeObserver.disconnect()
+        clearTimeout(timer)
+      }
     }
+
+    return () => clearTimeout(timer)
   }, [])
 
   const { visibleStart, visibleEnd, showStartPlaceholder, showEndPlaceholder } = useMemo(() => {
@@ -572,8 +589,48 @@ function SlidingIndicators({ total, currentIndex, onSelect }: SlidingIndicatorsP
     visibleIndices.push(i)
   }
 
+  const handleTouchAction = useCallback(
+    (e: React.PointerEvent) => {
+      if (e.pointerType === 'mouse') return
+
+      const { clientX: x, clientY: y } = e
+      const target = document.elementFromPoint(x, y)
+      const button = target?.closest<HTMLElement>('[data-indicator-index]')
+
+      if (!button) {
+        setHoveredIndex(null)
+        return
+      }
+
+      const index = Number(button.dataset.indicatorIndex)
+      if (Number.isNaN(index)) return
+
+      setHoveredIndex(index)
+
+      if (index !== currentIndex) {
+        onSelect(index)
+      }
+    },
+    [currentIndex, onSelect],
+  )
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.target instanceof Element) {
+      e.target.releasePointerCapture(e.pointerId)
+    }
+
+    handleTouchAction(e)
+  }
+
   return (
-    <div ref={containerRef} className={styles.indicators}>
+    <div
+      ref={containerRef}
+      className={styles.indicators}
+      onPointerMove={handleTouchAction}
+      onPointerDown={handlePointerDown}
+      onPointerUp={() => setHoveredIndex(null)}
+      onPointerLeave={() => setHoveredIndex(null)}
+    >
       {showStartPlaceholder && (
         <span className={classNames(styles.indicator, styles.indicatorPlaceholder)}>
           <span className={styles.indicatorDot} />
@@ -584,6 +641,9 @@ function SlidingIndicators({ total, currentIndex, onSelect }: SlidingIndicatorsP
         <Button
           key={index}
           onClick={() => onSelect(index)}
+          data-indicator-index={index}
+          data-active={index === currentIndex || undefined}
+          data-hovered={index === hoveredIndex || undefined}
           className={classNames(styles.indicator, { [styles.indicatorActive]: index === currentIndex })}
           aria-label={`Перейти к изображению ${index + 1}`}
         >
