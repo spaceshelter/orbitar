@@ -119,7 +119,7 @@ function LazyThumbnail({ src, alt, className }: { src?: string; alt?: string; cl
 
 const GalleryComponent: React.FC<GalleryComponentProps> = ({
   elements,
-  height = 'auto',
+  height = 0,
   showThumbnails = true,
   showIndicators = true,
   showArrows = true,
@@ -173,6 +173,16 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
     }
   }, [isControlled, onCollapseProp])
 
+  // Calculate the display height for an image maintaining aspect ratio, capped at MAX_HEIGHT
+  const calculateDisplayHeight = useCallback(
+    (naturalWidth: number, naturalHeight: number, containerWidth: number): number => {
+      if (!naturalWidth || !naturalHeight || !containerWidth) return 0
+      const aspectRatio = naturalHeight / naturalWidth
+      return Math.min(containerWidth * aspectRatio, MAX_HEIGHT)
+    },
+    [],
+  )
+
   // Calculate and update gallery height based on image dimensions
   const handleImageLoad = useCallback(
     (index: number, naturalWidth: number, naturalHeight: number) => {
@@ -181,16 +191,18 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
       // Only update height for the current image
       if (index !== currentIndexRef.current) return
 
-      const containerWidth = containerRef.current.offsetWidth
-      // Calculate the height the image will be displayed at (maintaining aspect ratio)
-      const aspectRatio = naturalHeight / naturalWidth
-      const displayHeight = Math.min(containerWidth * aspectRatio, MAX_HEIGHT)
+      const displayHeight = calculateDisplayHeight(naturalWidth, naturalHeight, containerRef.current.offsetWidth)
 
       // Update gallery height if this image is taller (only increase, never decrease)
       setGalleryHeight((prevHeight) => Math.max(prevHeight, displayHeight))
     },
-    [expanded],
+    [expanded, calculateDisplayHeight],
   )
+
+  // Reset gallery height when elements change
+  useEffect(() => {
+    setGalleryHeight(0)
+  }, [elements])
 
   // Disable drag in expanded mode to allow zoom-pan-pinch to work (except for videos)
   const emblaPlugins = useMemo(() => (expanded ? [] : [WheelGesturesPlugin({ forceWheelAxis: 'x' })]), [expanded])
@@ -279,11 +291,15 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
         const currentSlide = slides[newIndex]
         const img = currentSlide?.querySelector('img')
 
-        if (img && img.naturalWidth && img.naturalHeight) {
-          const containerWidth = containerRef.current.offsetWidth
-          const aspectRatio = img.naturalHeight / img.naturalWidth
-          const displayHeight = Math.min(containerWidth * aspectRatio, MAX_HEIGHT)
-          setGalleryHeight((prevHeight) => Math.max(prevHeight, displayHeight))
+        if (img) {
+          const displayHeight = calculateDisplayHeight(
+            img.naturalWidth,
+            img.naturalHeight,
+            containerRef.current.offsetWidth,
+          )
+          if (displayHeight > 0) {
+            setGalleryHeight((prevHeight) => Math.max(prevHeight, displayHeight))
+          }
         }
       }
     }
@@ -294,7 +310,29 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
     return () => {
       emblaApi.off('select', onSelect)
     }
-  }, [emblaApi, onChangeIndex, onSlideLeave, expanded])
+  }, [emblaApi, onChangeIndex, onSlideLeave, expanded, calculateDisplayHeight])
+
+  // Recalculate gallery height on container resize
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container || expanded) return
+
+    const observer = new ResizeObserver(() => {
+      const slides = emblaApi?.slideNodes()
+      if (!slides) return
+      const currentSlide = slides[currentIndexRef.current]
+      const img = currentSlide?.querySelector('img')
+      if (img) {
+        const displayHeight = calculateDisplayHeight(img.naturalWidth, img.naturalHeight, container.offsetWidth)
+        if (displayHeight > 0) {
+          setGalleryHeight(displayHeight)
+        }
+      }
+    })
+
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [emblaApi, expanded, calculateDisplayHeight])
 
   // Scroll to index when prop changes
   useEffect(() => {
@@ -425,9 +463,15 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
       {expanded && <div className={styles.overlay} onPointerDown={handlePointerDown} onClick={handleOverlayClick} />}
       <div
         ref={containerRef}
-        className={classNames(styles.main)}
+        className={styles.main}
         style={{
-          height: expanded ? undefined : galleryHeight > 0 ? `${galleryHeight}px` : `${height}px`,
+          height: expanded
+            ? undefined
+            : galleryHeight > 0
+              ? `${galleryHeight}px`
+              : height > 0
+                ? `${height}px`
+                : undefined,
         }}
       >
         <div className={styles.embla} ref={emblaRef}>
