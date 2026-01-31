@@ -119,7 +119,7 @@ function LazyThumbnail({ src, alt, className }: { src?: string; alt?: string; cl
 
 const GalleryComponent: React.FC<GalleryComponentProps> = ({
   elements,
-  height = MAX_HEIGHT,
+  height = 0,
   showThumbnails = true,
   showIndicators = true,
   showArrows = true,
@@ -136,6 +136,8 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
   const [currentIndex, setCurrentIndex] = useState<number>(0)
   const [internalExpanded, setInternalExpanded] = useState(false)
   const [captionExpanded, setCaptionExpanded] = useState(false)
+  // Dynamic gallery height - grows to fit taller images, never shrinks
+  const [galleryHeight, setGalleryHeight] = useState<number>(0)
   const containerRef = useRef<HTMLDivElement>(null)
   const thumbnailsRef = useRef<HTMLDivElement>(null)
   const currentIndexRef = useRef<number>(0)
@@ -170,6 +172,37 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
       setInternalExpanded(false)
     }
   }, [isControlled, onCollapseProp])
+
+  // Calculate the display height for an image maintaining aspect ratio, capped at MAX_HEIGHT
+  const calculateDisplayHeight = useCallback(
+    (naturalWidth: number, naturalHeight: number, containerWidth: number): number => {
+      if (!naturalWidth || !naturalHeight || !containerWidth) return 0
+      const aspectRatio = naturalHeight / naturalWidth
+      return Math.min(containerWidth * aspectRatio, MAX_HEIGHT)
+    },
+    [],
+  )
+
+  // Calculate and update gallery height based on image dimensions
+  const handleImageLoad = useCallback(
+    (index: number, naturalWidth: number, naturalHeight: number) => {
+      if (!containerRef.current || expanded) return
+
+      // Only update height for the current image
+      if (index !== currentIndexRef.current) return
+
+      const displayHeight = calculateDisplayHeight(naturalWidth, naturalHeight, containerRef.current.offsetWidth)
+
+      // Update gallery height if this image is taller (only increase, never decrease)
+      setGalleryHeight((prevHeight) => Math.max(prevHeight, displayHeight))
+    },
+    [expanded, calculateDisplayHeight],
+  )
+
+  // Reset gallery height when elements change
+  useEffect(() => {
+    setGalleryHeight(0)
+  }, [elements])
 
   // Disable drag in expanded mode to allow zoom-pan-pinch to work (except for videos)
   const emblaPlugins = useMemo(() => (expanded ? [] : [WheelGesturesPlugin({ forceWheelAxis: 'x' })]), [expanded])
@@ -251,6 +284,24 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
       setCurrentIndex(newIndex)
       setCaptionExpanded(false) // Reset caption expanded state on slide change
       onChangeIndex?.(newIndex)
+
+      // Update gallery height if the new slide's image is taller (only increase, never decrease)
+      if (!expanded && containerRef.current) {
+        const slides = emblaApi.slideNodes()
+        const currentSlide = slides[newIndex]
+        const img = currentSlide?.querySelector('img')
+
+        if (img) {
+          const displayHeight = calculateDisplayHeight(
+            img.naturalWidth,
+            img.naturalHeight,
+            containerRef.current.offsetWidth,
+          )
+          if (displayHeight > 0) {
+            setGalleryHeight((prevHeight) => Math.max(prevHeight, displayHeight))
+          }
+        }
+      }
     }
 
     emblaApi.on('select', onSelect)
@@ -259,7 +310,29 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
     return () => {
       emblaApi.off('select', onSelect)
     }
-  }, [emblaApi, onChangeIndex, onSlideLeave])
+  }, [emblaApi, onChangeIndex, onSlideLeave, expanded, calculateDisplayHeight])
+
+  // Recalculate gallery height on container resize
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container || expanded) return
+
+    const observer = new ResizeObserver(() => {
+      const slides = emblaApi?.slideNodes()
+      if (!slides) return
+      const currentSlide = slides[currentIndexRef.current]
+      const img = currentSlide?.querySelector('img')
+      if (img) {
+        const displayHeight = calculateDisplayHeight(img.naturalWidth, img.naturalHeight, container.offsetWidth)
+        if (displayHeight > 0) {
+          setGalleryHeight(displayHeight)
+        }
+      }
+    })
+
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [emblaApi, expanded, calculateDisplayHeight])
 
   // Scroll to index when prop changes
   useEffect(() => {
@@ -392,7 +465,13 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
         ref={containerRef}
         className={styles.main}
         style={{
-          height: expanded ? undefined : `${height}px`,
+          height: expanded
+            ? undefined
+            : galleryHeight > 0
+              ? `${galleryHeight}px`
+              : height > 0
+                ? `${height}px`
+                : undefined,
         }}
       >
         <div className={styles.embla} ref={emblaRef}>
@@ -416,11 +495,13 @@ const GalleryComponent: React.FC<GalleryComponentProps> = ({
                   {shouldRender ? (
                     <GalleryElementComponent
                       {...el}
+                      index={index}
                       disableZoom={disableZoom}
                       expanded={expanded}
                       onExpand={() => handleExpand(index)}
                       onNavigatePrev={() => emblaApi?.scrollPrev()}
                       onNavigateNext={() => emblaApi?.scrollNext()}
+                      onImageLoad={handleImageLoad}
                     />
                   ) : null}
                 </div>
@@ -605,12 +686,14 @@ interface GalleryElementProps {
   htmlElement?: HTMLElement
   isVideo?: boolean
   element?: React.ReactNode
+  index?: number
   disableZoom?: boolean
   expanded?: boolean
   rotation?: number // Rotation angle in degrees (0, 90, 180, 270)
   onExpand?: () => void
   onNavigatePrev?: () => void
   onNavigateNext?: () => void
+  onImageLoad?: (index: number, naturalWidth: number, naturalHeight: number) => void
 }
 
 // Custom swipe wrapper for videos that doesn't block clicks (unlike TransformWrapper)
@@ -693,15 +776,28 @@ function GalleryElementComponent({
   image,
   htmlElement,
   element,
+  index,
   disableZoom,
   expanded,
   rotation,
   onExpand,
   onNavigatePrev,
   onNavigateNext,
+  onImageLoad,
 }: GalleryElementProps) {
   const ref = useRef<HTMLSpanElement>(null)
   const imgRef = useRef<HTMLImageElement>(null)
+
+  // Handle image load to report dimensions for dynamic height calculation
+  const handleImageLoadEvent = useCallback(
+    (e: React.SyntheticEvent<HTMLImageElement>) => {
+      const img = e.currentTarget
+      if (index !== undefined && onImageLoad) {
+        onImageLoad(index, img.naturalWidth, img.naturalHeight)
+      }
+    },
+    [index, onImageLoad],
+  )
 
   // Generate rotation style for preview
   const isRotated = typeof rotation === 'number'
@@ -814,6 +910,7 @@ function GalleryElementComponent({
               alt={image.alt}
               className={classNames(styles.image, styles.noDragging, styles.imageExpanded)}
               onClick={handleImageClick}
+              onLoad={handleImageLoadEvent}
             />
           </TransformComponent>
         </TransformWrapper>
@@ -828,6 +925,7 @@ function GalleryElementComponent({
         className={classNames(styles.image, styles.noDragging, !disableZoom && 'image-scalable')}
         style={rotationStyle}
         onClick={handleImageClick}
+        onLoad={handleImageLoadEvent}
       />
     )
   }

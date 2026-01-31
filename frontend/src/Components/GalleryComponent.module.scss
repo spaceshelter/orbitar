@@ -36,6 +36,10 @@ $transition-easing: ease-in-out;
   width: 100%;
 }
 
+.main {
+  transition: height $transition-duration $transition-easing;
+}
+
 // Embla styles
 .embla {
   overflow: hidden;
