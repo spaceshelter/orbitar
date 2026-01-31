@@ -652,14 +652,6 @@ function updateExpand(expand: HTMLDetailsElement, setCut: (cut: boolean) => void
     }
     setCut(false)
   })
-
-  const expandClose = expand.querySelector('div[role="button"]')
-
-  if (expandClose) {
-    expandClose.addEventListener('click', () => {
-      expand.open = false
-    })
-  }
 }
 
 function stopVideo(el: HTMLVideoElement | HTMLIFrameElement) {

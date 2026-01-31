@@ -682,7 +682,7 @@ export default class TheParser {
     const title = node.attribs['title'] || 'Открой меня'
 
     const result = this.parseChildNodes(node.children)
-    const text = `<details class="expand"><summary>${htmlEscape(title)}</summary>${result.text}<div role="button"></div></details>`
+    const text = `<details class="expand"><summary>${htmlEscape(title)}</summary>${result.text}</details>`
 
     return { ...result, text }
   }

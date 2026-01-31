@@ -169,13 +169,6 @@ details.expand {
   &[open] > summary::before {
     transform: rotateZ(90deg);
   }
-
-  & > div[role='button'] {
-    display: block;
-    background-color: var(--dim1);
-    height: 0.5em;
-    cursor: pointer;
-  }
 }
 
 blockquote {
