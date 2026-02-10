@@ -1,0 +1,121 @@
+name: Review Check
+
+# Uses pull_request_target instead of pull_request so that:
+# 1. The workflow runs in the context of the base repo, not the fork
+# 2. GITHUB_TOKEN has write permissions (can comment on the PR)
+# 3. Works for PRs from forks as well as internal branches
+#
+# Safety: This workflow only reads PR metadata (reviews, authors) and posts
+# a comment. It never checks out, builds, or executes code from the PR branch,
+# so pull_request_target is safe here — no untrusted code path.
+#
+# Alternative considered: Using the standard `pull_request` trigger with a
+# stored PAT for the comment step. This would work for internal branches but
+# fork PRs would get a read-only GITHUB_TOKEN, requiring the PAT workaround.
+# pull_request_target is the cleaner, purpose-built solution for this case.
+
+on:
+  pull_request_target:
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to check (for testing)'
+        required: true
+        type: number
+
+jobs:
+  review-check:
+    # Only run on merged PRs (skip closed-without-merge), or on manual dispatch
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Check reviews
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Determine PR number — from event (merge trigger) or input (manual dispatch)
+            const prNumber = context.payload.pull_request?.number
+              || parseInt('${{ github.event.inputs.pr_number }}', 10);
+
+            if (!prNumber || isNaN(prNumber)) {
+              core.setFailed('Could not determine PR number');
+              return;
+            }
+
+            // Fetch PR details
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+
+            const prAuthor = pr.user.login;
+
+            // Fetch all reviews
+            const { data: reviews } = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+
+            // Only count APPROVED reviews (not comments, changes_requested, etc.)
+            const approvals = reviews.filter(r => r.state === 'APPROVED');
+            const approverLogins = [...new Set(approvals.map(r => r.user.login))];
+
+            // Associated accounts map — flag when ALL approvers are "associated"
+            // with the PR author (e.g., same person's alt, or tight creator-agent pair).
+            // Add entries here as needed. Format: author → set of associated reviewers.
+            const associatedAccounts = {
+              'Aivean2': new Set(['Aivean']),
+              'Aivean':  new Set(['Aivean2']),
+            };
+
+            let shouldFlag = false;
+            let reason = '';
+
+            if (approverLogins.length === 0) {
+              // Case 1: Merged with zero approved reviews
+              shouldFlag = true;
+              reason = 'no approved reviews';
+            } else {
+              // Case 2: All approvers are associated accounts of the author
+              const associated = associatedAccounts[prAuthor];
+              if (associated) {
+                const allAssociated = approverLogins.every(
+                  login => associated.has(login)
+                );
+                if (allAssociated) {
+                  shouldFlag = true;
+                  const reviewerList = approverLogins.join(', ');
+                  reason = `only reviewed by associated account(s): ${reviewerList}`;
+                }
+              }
+            }
+
+            if (shouldFlag) {
+              const body = [
+                `> [!WARNING]`,
+                `> **This PR was merged with ${reason}.**`,
+                `> Post-merge review may be required.`,
+                `>`,
+                `> cc @spaceshelter/reviewers`,
+              ].join('\n');
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: body,
+              });
+
+              core.info(`Flagged PR #${prNumber}: ${reason}`);
+            } else {
+              core.info(
+                `PR #${prNumber} has independent review from: ${approverLogins.join(', ')}`
+              );
+            }
