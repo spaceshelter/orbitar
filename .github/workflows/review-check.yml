@@ -67,12 +67,17 @@ jobs:
             const approvals = reviews.filter(r => r.state === 'APPROVED');
             const approverLogins = [...new Set(approvals.map(r => r.user.login))];
 
+            // Automated/bot accounts whose reviews alone don't count as
+            // independent review. If ALL approvers are in this set, the PR
+            // is flagged regardless of who authored it.
+            const automatedAccounts = new Set(['Aivean2']);
+
             // Associated accounts map — flag when ALL approvers are "associated"
             // with the PR author (e.g., same person's alt, or tight creator-agent pair).
             // Add entries here as needed. Format: author → set of associated reviewers.
             const associatedAccounts = {
-              'Aivean2': new Set(['Aivean']),
               'Aivean':  new Set(['Aivean2']),
+              'Aivean2': new Set(['Aivean']),
             };
 
             let shouldFlag = false;
@@ -82,8 +87,13 @@ jobs:
               // Case 1: Merged with zero approved reviews
               shouldFlag = true;
               reason = 'no approved reviews';
+            } else if (approverLogins.every(login => automatedAccounts.has(login))) {
+              // Case 2: All approvers are automated accounts
+              shouldFlag = true;
+              const reviewerList = approverLogins.join(', ');
+              reason = `only reviewed by automated account(s): ${reviewerList}`;
             } else {
-              // Case 2: All approvers are associated accounts of the author
+              // Case 3: All approvers are associated accounts of the author
               const associated = associatedAccounts[prAuthor];
               if (associated) {
                 const allAssociated = approverLogins.every(
