@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react'
-import { Link, useLocation, useMatch } from 'react-router-dom'
+import React, { useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 
 import Button from '@ui/Button'
 import classNames from 'classnames'
 import { observer } from 'mobx-react-lite'
-import useLocalStorage from 'use-local-storage'
 
 import { useAppState } from '../AppState/AppState'
 import { Hamburger } from './Hamburger'
@@ -76,26 +75,14 @@ export const Topbar = observer((props: TopbarProps) => {
   )
 })
 
+/**
+ * Home button — always links to /.
+ * The feed preference (subscriptions/posts/all) is managed by FeedPage
+ * via the shared useFeedPreference hook, so / always shows the right feed.
+ */
 const HomeButton = () => {
-  const [savedRoute, setSavedRoute] = useLocalStorage('homeButtonRoute', '/')
-
-  const routes: [string, boolean][] = []
-  for (const route of ['/', '/posts', '/all']) {
-    // Fine to disable, we're calling this hook a fixed number of times
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    routes.push([route, !!useMatch(route)])
-  }
-
-  useEffect(() => {
-    routes.forEach(([route, match]) => {
-      if (match && savedRoute !== route) {
-        setSavedRoute(route)
-      }
-    })
-  }, [savedRoute, routes.map((_) => _[1]).join(':')])
-
   return (
-    <ReloadingLink className={styles.kote} to={savedRoute}>
+    <ReloadingLink className={styles.kote} to='/'>
       <MonsterIcon />
     </ReloadingLink>
   )

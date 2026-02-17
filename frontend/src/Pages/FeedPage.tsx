@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react'
-import { Link, useMatch, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useMatch, useSearchParams } from 'react-router-dom'
 
 import classNames from 'classnames'
 import { observer } from 'mobx-react-lite'
 
 import { APIError } from '../API/APIBase'
 import { FeedType, useFeed } from '../API/use/useFeed'
+import { FeedRoute, useFeedPreference } from '../API/use/useFeedPreference'
 import { useAPI, useAppState } from '../AppState/AppState'
 import { LARGE_AUTO_CUT, SMALL_AUTO_CUT } from '../Components/ContentComponent'
 import Paginator from '../Components/Paginator'
@@ -15,31 +16,75 @@ import { FeedSorting } from '../Types/FeedSortingSettings'
 
 import styles from './FeedPage.module.scss'
 
-const FeedPage = observer(() => {
+/**
+ * Map a feed route to the API feed type.
+ */
+function feedRouteToType(route: FeedRoute): FeedType {
+  switch (route) {
+    case '/posts':
+      return 'site'
+    case '/all':
+      return 'all'
+    case '/subscriptions':
+    case '/':
+    default:
+      return 'subscriptions'
+  }
+}
+
+/**
+ * Wrapper component that handles the redirect-and-save logic.
+ *
+ * When the user navigates to /subscriptions, /posts, or /all on the main site:
+ *   1. Saves the route as their feed preference
+ *   2. Redirects to / (which renders the preferred feed)
+ *
+ * This keeps the URL canonical (always /) while letting tab links
+ * go through explicit routes to trigger the preference save.
+ */
+const FeedPageRouter = observer(() => {
+  const { site } = useAppState()
+  const [search] = useSearchParams()
+  const { feedRoute, setFeedRoute } = useFeedPreference()
+
+  const matchSubscriptions = !!useMatch('/subscriptions')
+  const matchPosts = !!useMatch('/posts')
+  const matchAll = !!useMatch('/all')
+
+  // Determine which explicit route we're on (if any)
+  const explicitRoute: FeedRoute | null = matchSubscriptions
+    ? '/subscriptions'
+    : matchPosts
+      ? '/posts'
+      : matchAll
+        ? '/all'
+        : null
+
+  // On explicit feed routes on main site: save preference and redirect to /
+  if (site === 'main' && explicitRoute) {
+    if (feedRoute !== explicitRoute) {
+      setFeedRoute(explicitRoute)
+    }
+    const query = search.toString()
+    return <Navigate to={'/' + (query ? '?' + query : '')} replace />
+  }
+
+  return <FeedPageContent />
+})
+
+/**
+ * The actual feed page content.
+ * On main site (/), reads the saved preference to determine which feed to show.
+ * On subsites (/s/:site), always shows the site feed.
+ */
+const FeedPageContent = observer(() => {
   const { site, siteInfo } = useAppState()
   const api = useAPI()
-
   const [search] = useSearchParams()
+  const { feedRoute } = useFeedPreference()
 
-  const matchRoutePosts = !!useMatch('/posts')
-  const matchRouteAll = !!useMatch('/all')
-
-  let feedType: FeedType = 'site'
-  let baseRoute = '/'
-  if (site === 'main') {
-    if (matchRoutePosts) {
-      feedType = 'site'
-      baseRoute = '/posts'
-    } else if (matchRouteAll) {
-      feedType = 'all'
-      baseRoute = '/all'
-    } else {
-      feedType = 'subscriptions'
-      baseRoute = '/'
-    }
-  } else {
-    baseRoute = '/s/' + site
-  }
+  const resolvedFeedType: FeedType = site === 'main' ? feedRouteToType(feedRoute) : 'site'
+  const baseRoute = site === 'main' ? '/' : '/s/' + site
 
   const perpage = 20
   const page = parseInt(search.get('page') || '1')
@@ -47,7 +92,7 @@ const FeedPage = observer(() => {
   const [sorting, setSorting] = useState<FeedSorting>()
   const { posts, loading, pages, error, updatePost, setLoading } = useFeed(
     site,
-    feedType,
+    resolvedFeedType,
     page,
     perpage,
     setSorting,
@@ -60,13 +105,13 @@ const FeedPage = observer(() => {
 
   useEffect(() => {
     let docTitle = siteInfo?.name || 'ЪУЪ'
-    if (feedType === 'subscriptions') {
+    if (resolvedFeedType === 'subscriptions') {
       docTitle += ' / Подписки'
-    } else if (feedType === 'all') {
+    } else if (resolvedFeedType === 'all') {
       docTitle += ' / Все посты'
     }
     document.title = docTitle
-  }, [siteInfo, feedType])
+  }, [siteInfo, resolvedFeedType])
 
   const handleFeedSortingChange = (newFeedSorting: FeedSorting) => async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -102,15 +147,19 @@ const FeedPage = observer(() => {
           )}
           {siteInfo?.site === 'main' && (
             <div className={styles.feedControls}>
-              <ReloadingLink to='/' className={feedType === 'subscriptions' ? styles.active : ''} replace={true}>
+              <ReloadingLink
+                to='/subscriptions'
+                className={resolvedFeedType === 'subscriptions' ? styles.active : ''}
+                replace={true}
+              >
                 подписки
               </ReloadingLink>
               •
-              <ReloadingLink to='/all' className={feedType === 'all' ? styles.active : ''} replace={true}>
+              <ReloadingLink to='/all' className={resolvedFeedType === 'all' ? styles.active : ''} replace={true}>
                 всё
               </ReloadingLink>
               •
-              <ReloadingLink to='/posts' className={feedType === 'site' ? styles.active : ''} replace={true}>
+              <ReloadingLink to='/posts' className={resolvedFeedType === 'site' ? styles.active : ''} replace={true}>
                 главная
               </ReloadingLink>
             </div>
@@ -150,4 +199,4 @@ const FeedPage = observer(() => {
   )
 })
 
-export default FeedPage
+export default FeedPageRouter
