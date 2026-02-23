@@ -27,6 +27,25 @@ const USER_RESTRICTIONS = {
   NEW_USER_AGE_DAYS: 3,
 }
 
+// --- Karma formula constants ---
+// These must match the frontend calculator in Karma.tsx
+
+// Content quality scoring
+const NEGATIVE_CONTENT_MULTIPLIER = 5 // negative content rating is N times more influential than positive
+const CONTENT_RATING_NORMALIZER = 500 // normalizes raw content vote sum to working range
+const CONTENT_SIGMOID_COMPRESSION = 3 // controls how quickly positive content rating saturates via sigmoid
+const CONTENT_NEGATIVE_AMPLIFIER = 7 // amplifies squared negative content values for steeper penalty curve
+const CONTENT_RATING_FLOOR = -1 // minimum possible content rating
+
+// User reputation scoring
+const REPUTATION_RATIO_NORMALIZER = 100 // scales vote ratio to comparable range
+const REPUTATION_RATIO_AMPLIFIER = 2 // amplifies ratio for lerp endpoint (steeper penalty for bad reputation)
+const MIN_VOTES_FOR_CONFIDENCE = 10 // minimum profile votes before reputation has weight
+const FULL_CONFIDENCE_VOTE_COUNT = 200 // profile vote count at which reputation signal is fully trusted
+
+// Karma scaling
+const KARMA_SCALE = 1000 // maps normalized [-1, 1] range to display karma range
+
 export default class UserManager {
   private userCache: UserCache
   private credentialsRepository: UserCredentials
@@ -300,17 +319,30 @@ export default class UserManager {
     const bipolarSigmoid = (n: number): number => n / Math.sqrt(1 + n * n)
 
     //content quality ratio
-    const negativeContentMultiplier = 5 // negative content rating is 5 times more influential than positive
-    const contentVal = (userContentRating * (userContentRating >= 0 ? 1 : negativeContentMultiplier)) / 500
-    const contentRating = contentVal > 0 ? bipolarSigmoid(contentVal / 3) : Math.max(-1, -Math.pow(contentVal, 2) * 7)
+    const contentVal =
+      (userContentRating * (userContentRating >= 0 ? 1 : NEGATIVE_CONTENT_MULTIPLIER)) / CONTENT_RATING_NORMALIZER
+    const contentRating =
+      contentVal > 0
+        ? bipolarSigmoid(contentVal / CONTENT_SIGMOID_COMPRESSION)
+        : Math.max(CONTENT_RATING_FLOOR, -Math.pow(contentVal, 2) * CONTENT_NEGATIVE_AMPLIFIER)
 
     //user reputation ratio
     const ratio = profileVotingResult / profileVotesCount
-    const s = fit01(profileVotesCount, 10, 200, 0, 1)
+    const s = fit01(profileVotesCount, MIN_VOTES_FOR_CONFIDENCE, FULL_CONFIDENCE_VOTE_COUNT, 0, 1)
     const userRating =
-      profileVotingResult >= 0 ? 1 : Math.max(0, 1 - lerp(Math.pow(ratio / 100, 2), Math.pow(ratio * 2, 2), s))
+      profileVotingResult >= 0
+        ? 1
+        : Math.max(
+            0,
+            1 -
+              lerp(
+                Math.pow(ratio / REPUTATION_RATIO_NORMALIZER, 2),
+                Math.pow(ratio * REPUTATION_RATIO_AMPLIFIER, 2),
+                s,
+              ),
+          )
 
-    let effectiveKarma = Math.max(USER_RESTRICTIONS.MIN_KARMA, ((contentRating + 1) * userRating - 1) * 1000)
+    let effectiveKarma = Math.max(USER_RESTRICTIONS.MIN_KARMA, ((contentRating + 1) * userRating - 1) * KARMA_SCALE)
     if (isBarmalini) {
       effectiveKarma = Math.min(USER_RESTRICTIONS.NEG_KARMA_THRESH - 1, effectiveKarma)
     }
