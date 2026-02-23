@@ -2,6 +2,27 @@ import React, { useEffect, useState } from 'react'
 
 import './KarmaCalculator.scss'
 
+// --- Karma formula constants ---
+// These must match the backend formula in UserManager.ts
+
+// Content quality scoring
+const NEGATIVE_CONTENT_MULTIPLIER = 5 // negative content rating is N times more influential than positive
+const CONTENT_RATING_NORMALIZER = 500 // normalizes raw content vote sum to working range
+const CONTENT_SIGMOID_COMPRESSION = 3 // controls how quickly positive content rating saturates via sigmoid
+const CONTENT_NEGATIVE_AMPLIFIER = 7 // amplifies squared negative content values for steeper penalty curve
+const CONTENT_RATING_FLOOR = -1 // minimum possible content rating
+
+// User reputation scoring
+const REPUTATION_RATIO_NORMALIZER = 100 // scales vote ratio to comparable range
+const REPUTATION_RATIO_AMPLIFIER = 2 // amplifies ratio for lerp endpoint (steeper penalty for bad reputation)
+const MIN_VOTES_FOR_CONFIDENCE = 10 // minimum profile votes before reputation has weight
+const FULL_CONFIDENCE_VOTE_COUNT = 200 // profile vote count at which reputation signal is fully trusted
+const MAX_PROFILE_VOTE_VALUE = 2 // maximum absolute value of a single profile vote
+
+// Karma scaling
+const KARMA_SCALE = 1000 // maps normalized [-1, 1] range to display karma range
+const MIN_KARMA = -1000 // absolute minimum karma (floor)
+
 type KarmaCalculatorProps = {
   senatePenalty?: number
   contentSumRating?: number
@@ -16,28 +37,27 @@ export function Karma(props: KarmaCalculatorProps) {
   const [punishment, setPunishment] = useState(props.senatePenalty || 0) // penalty set by moderator
 
   useEffect(() => {
-    setProfileVotesSum(clamp(profileVotesSum, -profileVotesCount * 2, profileVotesCount * 2))
+    setProfileVotesSum(clamp(profileVotesSum, -profileVotesCount * MAX_PROFILE_VOTE_VALUE, profileVotesCount * MAX_PROFILE_VOTE_VALUE))
   }, [profileVotesCount, profileVotesSum])
 
-  //TODO extract the rest of coefficients to constants and comment them
-
   //content quality ratio
-  const negativeContentMultiplier = 5 // negative content rating is 5 times more influential than positive
-  const contentVal = (allContentSum * (allContentSum >= 0 ? 1 : negativeContentMultiplier)) / 500
-  const contentRating = contentVal > 0 ? bipolarSigmoid(contentVal / 3) : Math.max(-1, -Math.pow(contentVal, 2) * 7)
+  const contentVal = (allContentSum * (allContentSum >= 0 ? 1 : NEGATIVE_CONTENT_MULTIPLIER)) / CONTENT_RATING_NORMALIZER
+  const contentRating = contentVal > 0
+    ? bipolarSigmoid(contentVal / CONTENT_SIGMOID_COMPRESSION)
+    : Math.max(CONTENT_RATING_FLOOR, -Math.pow(contentVal, 2) * CONTENT_NEGATIVE_AMPLIFIER)
 
   //user reputation ratio
   const ratio = profileVotesSum / profileVotesCount
-  const s = fit01(profileVotesCount, 10, 200, 0, 1)
+  const s = fit01(profileVotesCount, MIN_VOTES_FOR_CONFIDENCE, FULL_CONFIDENCE_VOTE_COUNT, 0, 1)
   const userRating =
-    profileVotesSum >= 0 ? 1 : Math.max(0, 1 - lerp(Math.pow(ratio / 100, 2), Math.pow(ratio * 2, 2), s))
+    profileVotesSum >= 0 ? 1 : Math.max(0, 1 - lerp(Math.pow(ratio / REPUTATION_RATIO_NORMALIZER, 2), Math.pow(ratio * REPUTATION_RATIO_AMPLIFIER, 2), s))
 
   console.log(contentRating, userRating, punishment)
   // karma without punishment
-  const rawKarma = Math.round(((contentRating + 1) * userRating - 1) * 1000 * 100) / 100
+  const rawKarma = Math.round(((contentRating + 1) * userRating - 1) * KARMA_SCALE * 100) / 100
 
   // karma with punishment
-  const karma = Math.max(-1000, rawKarma - punishment)
+  const karma = Math.max(MIN_KARMA, rawKarma - punishment)
 
   return (
     <div id='karmaCalculator'>
@@ -76,8 +96,8 @@ export function Karma(props: KarmaCalculatorProps) {
         <br />
         <input
           type='range'
-          min={-profileVotesCount * 2}
-          max={profileVotesCount * 2}
+          min={-profileVotesCount * MAX_PROFILE_VOTE_VALUE}
+          max={profileVotesCount * MAX_PROFILE_VOTE_VALUE}
           value={profileVotesSum}
           step='1'
           onChange={(e) => setProfileVotesSum(+e.target.value)}
