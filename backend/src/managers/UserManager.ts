@@ -319,16 +319,28 @@ export default class UserManager {
     const bipolarSigmoid = (n: number): number => n / Math.sqrt(1 + n * n)
 
     //content quality ratio
-    const contentVal = (userContentRating * (userContentRating >= 0 ? 1 : NEGATIVE_CONTENT_MULTIPLIER)) / CONTENT_RATING_NORMALIZER
-    const contentRating = contentVal > 0
-      ? bipolarSigmoid(contentVal / CONTENT_SIGMOID_COMPRESSION)
-      : Math.max(CONTENT_RATING_FLOOR, -Math.pow(contentVal, 2) * CONTENT_NEGATIVE_AMPLIFIER)
+    const contentVal =
+      (userContentRating * (userContentRating >= 0 ? 1 : NEGATIVE_CONTENT_MULTIPLIER)) / CONTENT_RATING_NORMALIZER
+    const contentRating =
+      contentVal > 0
+        ? bipolarSigmoid(contentVal / CONTENT_SIGMOID_COMPRESSION)
+        : Math.max(CONTENT_RATING_FLOOR, -Math.pow(contentVal, 2) * CONTENT_NEGATIVE_AMPLIFIER)
 
     //user reputation ratio
     const ratio = profileVotingResult / profileVotesCount
     const s = fit01(profileVotesCount, MIN_VOTES_FOR_CONFIDENCE, FULL_CONFIDENCE_VOTE_COUNT, 0, 1)
     const userRating =
-      profileVotingResult >= 0 ? 1 : Math.max(0, 1 - lerp(Math.pow(ratio / REPUTATION_RATIO_NORMALIZER, 2), Math.pow(ratio * REPUTATION_RATIO_AMPLIFIER, 2), s))
+      profileVotingResult >= 0
+        ? 1
+        : Math.max(
+            0,
+            1 -
+              lerp(
+                Math.pow(ratio / REPUTATION_RATIO_NORMALIZER, 2),
+                Math.pow(ratio * REPUTATION_RATIO_AMPLIFIER, 2),
+                s,
+              ),
+          )
 
     let effectiveKarma = Math.max(USER_RESTRICTIONS.MIN_KARMA, ((contentRating + 1) * userRating - 1) * KARMA_SCALE)
     if (isBarmalini) {
