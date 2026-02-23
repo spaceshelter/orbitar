@@ -13,6 +13,7 @@ export type UserProfileResponse = {
   trialProgress?: number
   numberOfPosts: number
   numberOfComments: number
+  numberOfBookmarks: string
   numberOfInvitesAvailable?: number
 
   invites: UserProfileEntity[]

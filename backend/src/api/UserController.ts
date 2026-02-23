@@ -15,6 +15,7 @@ import { UserProfileEntity } from './types/entities/UserEntity'
 import { UserCommentsRequest, UserCommentsResponse } from './types/requests/UserComments'
 import { SuggestUsernameRequest, SuggestUsernameResponse } from './types/requests/UsernameSuggest'
 import { UserPostsRequest, UserPostsResponse } from './types/requests/UserPosts'
+import { UserBookmarksRequest, UserBookmarksResponse } from './types/requests/UserBookmarks'
 import {
   BarmaliniPasswordRequest,
   BarmaliniPasswordResponse,
@@ -131,6 +132,13 @@ export default class UserController {
       oauth('читать комментарии пользователя'),
       (req, res) => this.comments(req, res),
     )
+    this.router.post(
+      '/user/bookmarks',
+      userCommentsAndPostsLimiter,
+      oauth('читать закладки пользователя'),
+      validate(postsOrCommentsSchema),
+      (req, res) => this.bookmarks(req, res),
+    )
     this.router.post('/user/karma', validate(profileSchema), oauth('читать инфо о карме пользователя'), (req, res) =>
       this.karma(req, res),
     )
@@ -207,6 +215,7 @@ export default class UserController {
       const trialProgress = await this.userManager.tryEndTrial(profileInfo.id, false)
       const numberOfPosts = (await this.postManager.getPostsByUserTotal(profileInfo.id, '')) || 0
       const numberOfComments = (await this.postManager.getUserCommentsTotal(profileInfo.id, '')) || 0
+      const numberOfBookmarks = (await this.postManager.getUserBookmarksTotal(profileInfo.id)) || 0
       const visitedDaysAgo = await this.userManager.getUserVisitedDaysAgo(profileInfo.id)
       const hasOwnApps = await this.oauthManager.hasOwnApps(profileInfo.id)
 
@@ -242,6 +251,7 @@ export default class UserController {
         trialProgress,
         numberOfPosts,
         numberOfComments,
+        numberOfBookmarks:numberOfBookmarks.toString(),
         numberOfInvitesAvailable,
         isBarmalini: this.userManager.isBarmaliniUser(profileInfo.id),
         publicKey,
@@ -356,6 +366,43 @@ export default class UserController {
     }
   }
 
+  async bookmarks(request: APIRequest<UserBookmarksRequest>, response: APIResponse<UserBookmarksResponse>) {
+    if (!request.session.data.userId) {
+      return response.authRequired()
+    }
+  
+    const userId = request.session.data.userId
+    const { username,page, perpage } = request.body
+  
+    try {
+      const profile = await this.userManager.getByUsername(username)
+  
+      if (!profile) {
+        return response.error('not-found', 'User not found')
+      }
+  
+      if (await this.userIsRestrictedToOwnContent(userId, profile.id)) {
+        return response.error('restricted', 'You are restricted to your own content')
+      }
+  
+      const { rawPosts, total } = await this.postManager.getUserBookmarks(profile.id, {
+        page: page || 1,
+        perpage: perpage || 20
+      })
+
+      const { posts, users } = await this.enricher.enrichRawPosts(rawPosts)
+
+      return response.success({
+        posts,
+        total: parseInt(total),
+        users
+      })
+    } catch (err) {
+      this.logger.error('Could not get user bookmarks', { username, error: err })
+      return response.error('error', 'Unknown error', 500)
+    }
+  }
+  
   async karma(request: APIRequest<UserProfileRequest>, response: APIResponse<UserKarmaResponse>) {
     if (!request.session.data.userId) {
       return response.authRequired()

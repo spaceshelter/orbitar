@@ -1,5 +1,6 @@
 import DB from '../DB'
 import { BookmarkRaw } from '../types/BookmarkRaw'
+import { PostBareBonesRaw, PostRaw, PostRawWithUserData } from '../types/PostRaw'
 
 export default class BookmarkRepository {
   private db: DB
@@ -90,6 +91,41 @@ export default class BookmarkRepository {
         post_id: postId,
         user_id: userId,
       },
+    )
+  }
+
+  async getBookmarkedPostsTotal(userId: number): Promise<string | undefined> {
+    const result = await this.db.fetchOne<{ cnt: string }>(
+      `select count(*) cnt from user_bookmarks where user_id=:user_id AND bookmark = 1`,
+      {        
+        user_id: userId,
+      },
+    )    
+    return result?.cnt
+  }
+
+  async getBookmarkedPosts(userId: number, page: number, perpage: number): Promise<PostRawWithUserData[]> {
+    if (!userId) {
+      return []
+    }
+    const limitFrom = (page - 1) * perpage    
+    
+    return this.db.fetchAll<PostRawWithUserData>(
+      `
+      SELECT p.*, v.vote, b.read_comments, b.bookmark, b.last_read_comment_id
+      FROM user_bookmarks b
+      JOIN posts p ON p.post_id = b.post_id
+      LEFT JOIN post_votes v ON (v.post_id = p.post_id AND v.voter_id = :user_id)
+      WHERE b.user_id = :user_id 
+      AND b.bookmark = 1     
+      ORDER BY p.created_at DESC
+      LIMIT :limit_from, :limit_count
+      `,
+      {
+        user_id: userId,
+        limit_from: limitFrom,
+        limit_count: perpage        
+      }
     )
   }
 

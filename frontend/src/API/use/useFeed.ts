@@ -7,7 +7,7 @@ import { useCache } from './useCache'
 import { useConditional } from './useConditional'
 import { usePrevious } from './usePrevious'
 
-export type FeedType = 'all' | 'subscriptions' | 'site' | 'watch' | 'watch-all' | 'user-profile'
+export type FeedType = 'all' | 'subscriptions' | 'site' | 'watch' | 'watch-all' | 'user-profile' | 'user-bookmarks'
 
 export function useFeed(
   id: string,
@@ -116,6 +116,22 @@ export function useFeed(
     } else if (feedType === 'user-profile') {
       api.userAPI
         .userPosts(id, filter, page, perpage)
+        .then((result) => {
+          setCachedPosts(result.posts)
+
+          setError(undefined)
+          setLoading(false)
+          setPosts(result.posts)
+          const pages = Math.floor((result.total - 1) / perpage) + 1
+          setPages(pages)
+        })
+        .catch((error) => {
+          console.log('USER PROFILE POSTS ERROR', error)
+          setError(['Не удалось загрузить ленту постов', error])
+        })
+    } else if (feedType === 'user-bookmarks') {
+      api.userAPI
+        .userBookmarks(id, filter, page, perpage)
         .then((result) => {
           setCachedPosts(result.posts)
 

@@ -137,3 +137,8 @@ input.title {
 .optionsList .label {
   margin-right: 4px;
 }
+.fade-out {
+  opacity: 0;
+  transform: translateX(-20px);
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+}
