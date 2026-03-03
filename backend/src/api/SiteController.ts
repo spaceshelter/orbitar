@@ -34,6 +34,16 @@ export default class SiteController {
     keyGenerator: (req) => String(req.session.data?.userId),
   })
 
+  /* 120/min — shared rate limiter for site read endpoints */
+  private readonly siteReadRateLimiter = rateLimit({
+    max: 120,
+    windowMs: 60 * 1000,
+    skipSuccessfulRequests: false,
+    standardHeaders: false,
+    legacyHeaders: false,
+    keyGenerator: (req) => String(req.session.data?.userId),
+  })
+
   constructor(
     enricher: Enricher,
     feedManager: FeedManager,
@@ -67,9 +77,13 @@ export default class SiteController {
     })
 
     // TODO: legacy, ideally we'd need to migrate all clients to use /site/get
-    this.router.post('/site', validate(siteSchema), (req, res) => this.site(req, res))
-    this.router.post('/site/get', validate(siteSchema), oauth('читать информацию о подсайте'), (req, res) =>
-      this.site(req, res),
+    this.router.post('/site', this.siteReadRateLimiter, validate(siteSchema), (req, res) => this.site(req, res))
+    this.router.post(
+      '/site/get',
+      this.siteReadRateLimiter,
+      validate(siteSchema),
+      oauth('читать информацию о подсайте'),
+      (req, res) => this.site(req, res),
     )
     this.router.post(
       '/site/subscribe',
@@ -78,14 +92,25 @@ export default class SiteController {
       oauth('подписываться на подсайты'),
       (req, res) => this.subscribe(req, res),
     )
-    this.router.post('/site/subscriptions', oauth('получать список подписок на подсайты'), (req, res) =>
-      this.subscriptions(req, res),
+    this.router.post(
+      '/site/subscriptions',
+      this.siteReadRateLimiter,
+      oauth('получать список подписок на подсайты'),
+      (req, res) => this.subscriptions(req, res),
     )
-    this.router.post('/site/list', validate(siteListSchema), oauth('получать список подсайтов'), (req, res) =>
-      this.list(req, res),
+    this.router.post(
+      '/site/list',
+      this.siteReadRateLimiter,
+      validate(siteListSchema),
+      oauth('получать список подсайтов'),
+      (req, res) => this.list(req, res),
     )
-    this.router.post('/site/create', validate(siteCreateSchema), oauth('создавать подсайты'), (req, res) =>
-      this.create(req, res),
+    this.router.post(
+      '/site/create',
+      this.subscribeRateLimiter,
+      validate(siteCreateSchema),
+      oauth('создавать подсайты'),
+      (req, res) => this.create(req, res),
     )
   }
 

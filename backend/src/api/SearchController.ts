@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import rateLimit from 'express-rate-limit'
 import Joi from 'joi'
 import { Logger } from 'winston'
 
@@ -93,7 +94,19 @@ export default class SearchController {
       search_direction: Joi.string().valid(SearchSortingDirection.Asc, SearchSortingDirection.Desc),
     })
 
-    this.router.post('/search', validate(searchSchema), oauth('поиск'), (req, res) => this.search(req, res))
+    /* 30/min — search is expensive (Elasticsearch) */
+    const searchRateLimiter = rateLimit({
+      windowMs: 60 * 1000,
+      max: 30,
+      skipSuccessfulRequests: false,
+      standardHeaders: false,
+      legacyHeaders: false,
+      keyGenerator: (req) => String(req.session.data?.userId),
+    })
+
+    this.router.post('/search', searchRateLimiter, validate(searchSchema), oauth('поиск'), (req, res) =>
+      this.search(req, res),
+    )
   }
 
   async search(request: APIRequest<SearchRequest>, response: APIResponse<SearchResponse>) {

@@ -28,6 +28,16 @@ export default class VoteController {
     keyGenerator: (req) => String(req.session.data?.userId),
   })
 
+  /* 120/min — rate limiter for vote list reads */
+  private readonly voteListRateLimiter = rateLimit({
+    max: 120,
+    windowMs: 60 * 1000,
+    skipSuccessfulRequests: false,
+    standardHeaders: false,
+    legacyHeaders: false,
+    keyGenerator: (req) => String(req.session.data?.userId),
+  })
+
   private readonly voteDailyRateLimiter = new RateLimiterMemory({
     points: 100,
     duration: 24 * 60 * 60, // Per day
@@ -56,8 +66,12 @@ export default class VoteController {
     this.router.post('/vote/set', this.voteRateLimiter, validate(voteSchema), oauth('голосовать'), (req, res) =>
       this.setVote(req, res),
     )
-    this.router.post('/vote/list', validate(listSchema), oauth('читать список голосов'), (req, res) =>
-      this.list(req, res),
+    this.router.post(
+      '/vote/list',
+      this.voteListRateLimiter,
+      validate(listSchema),
+      oauth('читать список голосов'),
+      (req, res) => this.list(req, res),
     )
   }
 

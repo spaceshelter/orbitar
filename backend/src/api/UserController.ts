@@ -77,8 +77,12 @@ export default class UserController {
     })
 
     const userCommentsAndPostsLimiter = rateLimit({
-      windowMs: 1000,
-      max: 1,
+      windowMs: 60 * 1000,
+      max: 120,
+      skipSuccessfulRequests: false,
+      standardHeaders: false,
+      legacyHeaders: false,
+      keyGenerator: (req) => String(req.session.data?.userId),
     })
 
     const bioSchema = Joi.object<UserSaveBioRequest>({
@@ -114,8 +118,12 @@ export default class UserController {
       keyGenerator: (req) => String(req.session.data?.userId),
     })
 
-    this.router.post('/user/profile', oauth('читать профиль пользователя'), validate(profileSchema), (req, res) =>
-      this.profile(req, res),
+    this.router.post(
+      '/user/profile',
+      userCommentsAndPostsLimiter,
+      oauth('читать профиль пользователя'),
+      validate(profileSchema),
+      (req, res) => this.profile(req, res),
     )
     this.router.post(
       '/user/posts',
@@ -131,12 +139,17 @@ export default class UserController {
       oauth('читать комментарии пользователя'),
       (req, res) => this.comments(req, res),
     )
-    this.router.post('/user/karma', validate(profileSchema), oauth('читать инфо о карме пользователя'), (req, res) =>
-      this.karma(req, res),
+    this.router.post(
+      '/user/karma',
+      userCommentsAndPostsLimiter,
+      validate(profileSchema),
+      oauth('читать инфо о карме пользователя'),
+      (req, res) => this.karma(req, res),
     )
     this.router.post('/user/clearCache', validate(profileSchema), (req, res) => this.clearCache(req, res))
     this.router.post(
       '/user/restrictions',
+      userCommentsAndPostsLimiter,
       validate(profileSchema),
       oauth('читать ограничения пользователя'),
       (req, res) => this.restrictions(req, res),

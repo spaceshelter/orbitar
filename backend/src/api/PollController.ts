@@ -48,6 +48,16 @@ export default class PollController {
     keyGenerator: (req) => String(req.session.data?.userId),
   })
 
+  /* 120/min — rate limiter for poll read endpoints */
+  private readonly pollReadRateLimiter = rateLimit({
+    max: 120,
+    windowMs: 60 * 1000,
+    skipSuccessfulRequests: false,
+    standardHeaders: false,
+    legacyHeaders: false,
+    keyGenerator: (req) => String(req.session.data?.userId),
+  })
+
   constructor(pollManager: PollManager, userManager: UserManager, oauth: OAuth2MiddlewareGenerator, logger: Logger) {
     this.pollManager = pollManager
     this.userManager = userManager
@@ -87,8 +97,12 @@ export default class PollController {
       (req, res) => this.createPoll(req, res),
     )
 
-    this.router.post('/poll/get', validate(batchSchema), oauth('получать cписок опросов'), (req, res) =>
-      this.getPolls(req, res),
+    this.router.post(
+      '/poll/get',
+      this.pollReadRateLimiter,
+      validate(batchSchema),
+      oauth('получать cписок опросов'),
+      (req, res) => this.getPolls(req, res),
     )
 
     this.router.post(
@@ -101,6 +115,7 @@ export default class PollController {
 
     this.router.post(
       '/poll/voters',
+      this.pollReadRateLimiter,
       validate(votersSchema),
       oauth('получать список пользователей, проголосовавших за определенный вариант опроса'),
       (req, res) => this.getVoters(req, res),

@@ -78,6 +78,13 @@ export default class PostController {
     ...commonRateLimitConfig,
   })
 
+  /* 20/min — translate calls external AI APIs */
+  private readonly translateRateLimiter = rateLimit({
+    max: 20,
+    windowMs: 60 * 1000,
+    ...commonRateLimitConfig,
+  })
+
   constructor(
     enricher: Enricher,
     postManager: PostManager,
@@ -187,8 +194,12 @@ export default class PostController {
       oauth('комментировать в постах'),
       (req, res) => this.comment(req, res),
     )
-    this.router.post('/post/preview', validate(previewSchema), oauth('превью контента (парсер)'), (req, res) =>
-      this.preview(req, res),
+    this.router.post(
+      '/post/preview',
+      this.readRateLimiter,
+      validate(previewSchema),
+      oauth('превью контента (парсер)'),
+      (req, res) => this.preview(req, res),
     )
     this.router.post(
       '/post/read',
@@ -211,8 +222,12 @@ export default class PostController {
       oauth('следить за постами'),
       (req, res) => this.watch(req, res),
     )
-    this.router.post('/post/translate', validate(translateSchema), oauth('AI-действия с контентом'), (req, res) =>
-      this.translate(req, res),
+    this.router.post(
+      '/post/translate',
+      this.translateRateLimiter,
+      validate(translateSchema),
+      oauth('AI-действия с контентом'),
+      (req, res) => this.translate(req, res),
     )
     this.router.post(
       '/post/get-comment',
@@ -237,6 +252,7 @@ export default class PostController {
     )
     this.router.post(
       '/post/get-public-key',
+      this.readRateLimiter,
       validate(getPostPublicKeySchema),
       oauth('получать публичный ключ автора поста'),
       (req, res) => this.getPublicKeyByUsername(req, res),
