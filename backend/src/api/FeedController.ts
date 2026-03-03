@@ -1,5 +1,4 @@
 import { Router } from 'express'
-import rateLimit from 'express-rate-limit'
 import Joi from 'joi'
 import { Logger } from 'winston'
 
@@ -9,6 +8,7 @@ import SiteManager from '../managers/SiteManager'
 import UserManager from '../managers/UserManager'
 import { APIRequest, APIResponse, joiFormat, joiSite, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
+import { sharedReadRateLimiter } from './RateLimiters'
 import { FeedSorting } from './types/entities/common'
 import { FeedPostsRequest, FeedPostsResponse } from './types/requests/FeedPosts'
 import { FeedSortingSaveRequest, FeedSortingSaveResponse } from './types/requests/FeedSortingSave'
@@ -41,16 +41,6 @@ export default class FeedController {
     this.postManager = postManager
     this.logger = logger
 
-    /* 120/min — shared rate limiter for feed read endpoints */
-    const feedReadRateLimiter = rateLimit({
-      windowMs: 60 * 1000,
-      max: 120,
-      skipSuccessfulRequests: false,
-      standardHeaders: false,
-      legacyHeaders: false,
-      keyGenerator: (req) => String(req.session.data?.userId),
-    })
-
     const feedSubscriptionsSchema = Joi.object<FeedSubscriptionsRequest>({
       page: Joi.number().default(1),
       perpage: Joi.number().min(1).max(50).default(10),
@@ -75,31 +65,31 @@ export default class FeedController {
 
     this.router.post(
       '/feed/subscriptions',
-      feedReadRateLimiter,
+      sharedReadRateLimiter,
       oauth('фид подписок'),
       validate(feedSubscriptionsSchema),
       (req, res) => this.feedSubscriptions(req, res),
     )
     this.router.post(
       '/feed/all',
-      feedReadRateLimiter,
+      sharedReadRateLimiter,
       oauth('фид /all'),
       validate(feedSubscriptionsSchema),
       (req, res) => this.feedAll(req, res),
     )
-    this.router.post('/feed/posts', feedReadRateLimiter, oauth('фид постов'), validate(feedPostsSchema), (req, res) =>
+    this.router.post('/feed/posts', sharedReadRateLimiter, oauth('фид постов'), validate(feedPostsSchema), (req, res) =>
       this.feedPosts(req, res),
     )
     this.router.post(
       '/feed/watch',
-      feedReadRateLimiter,
+      sharedReadRateLimiter,
       oauth('фид отслеживаемых'),
       validate(feedWatchSchema),
       (req, res) => this.feedWatch(req, res),
     )
     this.router.post(
       '/feed/sorting',
-      feedReadRateLimiter,
+      sharedReadRateLimiter,
       oauth('изменение сортировки фидов'),
       validate(feedSortingSchema),
       (req, res) => this.saveFeedSorting(req, res),

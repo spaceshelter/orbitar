@@ -7,6 +7,7 @@ import SearchManager from '../managers/SearchManager'
 import UserManager from '../managers/UserManager'
 import { APIRequest, APIResponse, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
+import { commonRateLimitConfig } from './RateLimiters'
 
 export enum SearchScope {
   Post = 'post',
@@ -98,10 +99,7 @@ export default class SearchController {
     const searchRateLimiter = rateLimit({
       windowMs: 60 * 1000,
       max: 30,
-      skipSuccessfulRequests: false,
-      standardHeaders: false,
-      legacyHeaders: false,
-      keyGenerator: (req) => String(req.session.data?.userId),
+      ...commonRateLimitConfig,
     })
 
     this.router.post('/search', searchRateLimiter, validate(searchSchema), oauth('поиск'), (req, res) =>

@@ -7,6 +7,7 @@ import PollManager, { IncludePollVotes, PollError } from '../managers/PollManage
 import UserManager from '../managers/UserManager'
 import { APIRequest, APIResponse, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
+import { commonRateLimitConfig, sharedReadRateLimiter } from './RateLimiters'
 import { PollSettingsEntity, ResultVisibility, VoteAccess } from './types/entities/PollEntity'
 import {
   PollBatchRequest,
@@ -32,30 +33,14 @@ export default class PollController {
   private readonly voteRateLimiter = rateLimit({
     max: MAX_VOTES_PER_MINUTE,
     windowMs: 60 * 1000,
-    skipSuccessfulRequests: false,
-    standardHeaders: false,
-    legacyHeaders: false,
-    keyGenerator: (req) => String(req.session.data?.userId),
+    ...commonRateLimitConfig,
   })
 
   // 10 requests per minute for creating polls
   private readonly createRateLimiter = rateLimit({
     max: MAX_POLLS_PER_MINUTE,
     windowMs: 60 * 1000,
-    skipSuccessfulRequests: false,
-    standardHeaders: false,
-    legacyHeaders: false,
-    keyGenerator: (req) => String(req.session.data?.userId),
-  })
-
-  /* 120/min — rate limiter for poll read endpoints */
-  private readonly pollReadRateLimiter = rateLimit({
-    max: 120,
-    windowMs: 60 * 1000,
-    skipSuccessfulRequests: false,
-    standardHeaders: false,
-    legacyHeaders: false,
-    keyGenerator: (req) => String(req.session.data?.userId),
+    ...commonRateLimitConfig,
   })
 
   constructor(pollManager: PollManager, userManager: UserManager, oauth: OAuth2MiddlewareGenerator, logger: Logger) {
@@ -99,7 +84,7 @@ export default class PollController {
 
     this.router.post(
       '/poll/get',
-      this.pollReadRateLimiter,
+      sharedReadRateLimiter,
       validate(batchSchema),
       oauth('получать cписок опросов'),
       (req, res) => this.getPolls(req, res),
@@ -115,7 +100,7 @@ export default class PollController {
 
     this.router.post(
       '/poll/voters',
-      this.pollReadRateLimiter,
+      sharedReadRateLimiter,
       validate(votersSchema),
       oauth('получать список пользователей, проголосовавших за определенный вариант опроса'),
       (req, res) => this.getVoters(req, res),

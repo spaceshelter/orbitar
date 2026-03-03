@@ -1,5 +1,4 @@
 import { Router } from 'express'
-import rateLimit from 'express-rate-limit'
 import Joi from 'joi'
 import { Logger } from 'winston'
 
@@ -7,6 +6,7 @@ import NotificationManager from '../managers/NotificationManager'
 import UserManager from '../managers/UserManager'
 import { APIRequest, APIResponse, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
+import { sharedReadRateLimiter } from './RateLimiters'
 import { NotificationEntity } from './types/entities/NotificationEntity'
 import { NotificationsListRequest, NotificationsListResponse } from './types/requests/NotificationsList'
 import {
@@ -44,46 +44,33 @@ export default class NotificationsController {
 
     this.logger = logger
 
-    /* 120/min — shared rate limiter for notification endpoints */
-    const notificationRateLimiter = rateLimit({
-      windowMs: 60 * 1000,
-      max: 120,
-      skipSuccessfulRequests: false,
-      standardHeaders: false,
-      legacyHeaders: false,
-      keyGenerator: (req) => String(req.session.data?.userId),
-    })
-
-    this.router.post('/notifications/list', notificationRateLimiter, oauth('список уведомлений'), (req, res) =>
+    this.router.post('/notifications/list', sharedReadRateLimiter, oauth('список уведомлений'), (req, res) =>
       this.list(req, res),
     )
     this.router.post(
       '/notifications/read',
-      notificationRateLimiter,
+      sharedReadRateLimiter,
       oauth('помечать уведомления как прочитанные'),
       (req, res) => this.read(req, res),
     )
-    this.router.post('/notifications/hide', notificationRateLimiter, oauth('прятать уведомления'), (req, res) =>
+    this.router.post('/notifications/hide', sharedReadRateLimiter, oauth('прятать уведомления'), (req, res) =>
       this.hide(req, res),
     )
     this.router.post(
       '/notifications/read/all',
-      notificationRateLimiter,
+      sharedReadRateLimiter,
       oauth('помечать все уведомления как прочитанные'),
       (req, res) => this.readAll(req, res),
     )
     this.router.post(
       '/notifications/hide/all',
-      notificationRateLimiter,
+      sharedReadRateLimiter,
       oauth('прятать все уведомления'),
       validate(hideAllSchema),
       (req, res) => this.hideAll(req, res),
     )
-    this.router.post(
-      '/notifications/subscribe',
-      notificationRateLimiter,
-      oauth('подписка на уведомления'),
-      (req, res) => this.subscribe(req, res),
+    this.router.post('/notifications/subscribe', sharedReadRateLimiter, oauth('подписка на уведомления'), (req, res) =>
+      this.subscribe(req, res),
     )
   }
 
