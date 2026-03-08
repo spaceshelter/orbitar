@@ -4,6 +4,8 @@ import { MailEntity } from '@api/types/Mail'
 import { useAPI } from '@state/AppState'
 import classNames from 'classnames'
 
+import { SecretMailDecoderForm } from '../SecretMailbox'
+
 type MailComponentProps = {
   mailId: number
   title?: string
@@ -43,6 +45,8 @@ export const MailComponent: React.FC<MailComponentProps> = ({ mailId, title = 'Ð
   const api = useAPI()
   const [mail, setMail] = useState<MailEntity | null>(null)
   const [error, setError] = useState(false)
+  const [decoded, setDecoded] = useState<string | null>(null)
+  const [decoding, setDecoding] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -69,14 +73,40 @@ export const MailComponent: React.FC<MailComponentProps> = ({ mailId, title = 'Ð
     }
   }, [api.mail, mailId])
 
+  if (decoded !== null) {
+    return <div className={classNames('i', 'i-mail-open', 'secret-mail', 'secret-mail-decoded')}>{decoded}</div>
+  }
+
   return (
     <div
       className={classNames('i', 'i-mail-secure', 'secret-mail', {
         'secret-mail-disabled': !!mail && !mail.canDecrypt,
         'secret-mail-error': error,
+        'secret-mail-decoding': decoding,
       })}
+      onClick={() => {
+        if (!mail?.canDecrypt || !mail.payload || decoding) {
+          return
+        }
+        setDecoding(true)
+      }}
     >
-      {mail ? <MailLabel mail={mail} title={title} /> : <span>{title}</span>}
+      {decoding && mail?.payload ? (
+        <SecretMailDecoderForm
+          payload={mail.payload}
+          title={title}
+          onClose={(result) => {
+            if (result) {
+              setDecoded(result)
+            }
+            setDecoding(false)
+          }}
+        />
+      ) : mail ? (
+        <MailLabel mail={mail} title={title} />
+      ) : (
+        <span>{title}</span>
+      )}
     </div>
   )
 }

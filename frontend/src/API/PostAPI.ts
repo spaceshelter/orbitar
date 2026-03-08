@@ -203,6 +203,7 @@ type GetPostPublicKeyRequest = {
 
 export type GetPostPublicKeyResponse = {
   publicKey?: string
+  publicKeyAlg?: string
 }
 
 export type TranslateModes = 'altTranslate' | 'annotate' | 'translate'

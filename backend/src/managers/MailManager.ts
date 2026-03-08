@@ -3,6 +3,8 @@ import { MailBatchRaw } from '../db/types/MailRaw'
 import { MailInfo } from './types/MailInfo'
 import UserManager from './UserManager'
 
+const MAILBOX_KEY_ALG = 'x25519-scrypt-v1'
+
 export default class MailManager {
   private mailRepository: MailRepository
   private userManager: UserManager
@@ -12,13 +14,23 @@ export default class MailManager {
     this.userManager = userManager
   }
 
-  async createMail(fromUserId: number, toUserId: number, v: number, toPayload: string, fromPayload?: string) {
-    const recipient = await this.userManager.getById(toUserId)
+  async createMail(
+    fromUserId: number,
+    toUserId: number | undefined,
+    toPublicKey: string | undefined,
+    v: number,
+    toPayload: string,
+    fromPayload?: string,
+  ) {
+    const recipientId =
+      toUserId || (toPublicKey ? await this.userManager.getUserIdByPublicKey(toPublicKey, MAILBOX_KEY_ALG) : undefined)
+
+    const recipient = recipientId ? await this.userManager.getById(recipientId) : undefined
     if (!recipient) {
       throw new Error('Recipient not found')
     }
 
-    return await this.mailRepository.createMail(fromUserId, toUserId, v, toPayload, fromPayload)
+    return await this.mailRepository.createMail(fromUserId, recipient.id, v, toPayload, fromPayload)
   }
 
   async getMailsByIds(ids: number[], currentUserId: number): Promise<MailInfo[]> {

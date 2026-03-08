@@ -40,11 +40,12 @@ export default class MailController {
     this.logger = logger
 
     const createSchema = Joi.object<MailCreateRequest>({
-      toUserId: Joi.number().integer().required(),
+      toUserId: Joi.number().integer(),
+      toPublicKey: Joi.string().max(128),
       v: Joi.number().integer().min(1).max(255).required(),
       toPayload: Joi.string().required().max(65535),
       fromPayload: Joi.string().allow('').max(65535),
-    })
+    }).or('toUserId', 'toPublicKey')
 
     const batchSchema = Joi.object<MailBatchRequest>({
       ids: Joi.array().items(Joi.number().integer()).min(1).max(256).required(),
@@ -76,12 +77,16 @@ export default class MailController {
       const id = await this.mailManager.createMail(
         request.session.data.userId,
         request.body.toUserId,
+        request.body.toPublicKey,
         request.body.v,
         request.body.toPayload,
         request.body.fromPayload || undefined,
       )
       return response.success({ id })
     } catch (error) {
+      if (error instanceof Error && error.message === 'Recipient not found') {
+        return response.error('recipient-not-found', 'Recipient mailbox not found', 404)
+      }
       this.logger.error('Could not create mail', { error, userId: request.session.data.userId })
       return response.error('error', 'Could not create mail', 500)
     }

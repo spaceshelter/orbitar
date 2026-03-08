@@ -1105,6 +1105,7 @@ test('base64 validation', () => {
   expect(TheParser.isValidBase64('SGVsbG8=')).toEqual(true)
   expect(TheParser.isValidBase64('SGVsbG8==')).toEqual(true)
   expect(TheParser.isValidBase64('SGVsbG8===')).toEqual(true)
+  expect(TheParser.isValidBase64('A-_bcdefghijklmnopqrstuvwxyz0123456789ABCDE')).toEqual(true)
 
   expect(TheParser.isValidBase64('=SGVsbG8')).toEqual(false)
   expect(TheParser.isValidBase64('"SGVsbG8=')).toEqual(false)

@@ -412,4 +412,16 @@ export default class UserRepository {
   getPublicKeyAlg(userId: number) {
     return this.getMailboxKey(userId).then((res) => res?.publicKeyAlg)
   }
+
+  async getUserIdByPublicKey(publicKey: string, publicKeyAlg: string) {
+    return this.db
+      .fetchOne<{ user_id: number }>(
+        `SELECT user_id
+         FROM users
+         WHERE public_key = :publicKey
+           AND public_key_alg = :publicKeyAlg`,
+        { publicKey, publicKeyAlg },
+      )
+      .then((res) => res?.user_id)
+  }
 }

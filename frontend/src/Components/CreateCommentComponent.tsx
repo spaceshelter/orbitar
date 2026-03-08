@@ -28,6 +28,7 @@ import { ReactComponent as ExpandIcon } from '../Assets/expand.svg'
 import { ReactComponent as ImageIcon } from '../Assets/image.svg'
 import { ReactComponent as IronyIcon } from '../Assets/irony.svg'
 import { ReactComponent as LinkIcon } from '../Assets/link.svg'
+import { ReactComponent as MailIcon } from '../Assets/mail-secure.svg'
 import { ReactComponent as OptionsIcon } from '../Assets/options.svg'
 import { ReactComponent as PollIcon } from '../Assets/poll.svg'
 import { ReactComponent as QuoteIcon } from '../Assets/quote.svg'
@@ -176,6 +177,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
   const [parentPublicKey, setParentPublicKey] = useState<
     | {
         publicKey: string
+        publicKeyAlg?: string
         username: string
       }
     | undefined
@@ -207,11 +209,12 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
       if (res.publicKey) {
         setParentPublicKey({
           publicKey: res.publicKey,
+          publicKeyAlg: res.publicKeyAlg,
           username: parentUserName,
         })
       }
     })
-  }, [props.parentAuthorUserName, props.comment])
+  }, [props.parentAuthorUserName, props.comment, api.postAPI, username])
 
   const setStorageValueDebounced = useDebouncedCallback((value) => {
     if (props.storageKey) {
@@ -695,10 +698,18 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
               <PollIcon />
             </Button>
           </div>
-          {/*{parentPublicKey &&*/}
-          {/*<div className={styles.control}>*/}
-          {/*    <Button variant='minimal' disabled={disabledButtons} onClick={() => setFormOpen(true)} title="Шифрованное послание"><MailIcon /></Button></div>*/}
-          {/*}*/}
+          {parentPublicKey && (
+            <div className={styles.control}>
+              <Button
+                variant='minimal'
+                disabled={disabledButtons}
+                onClick={() => setFormOpen(true)}
+                title='Шифрованное послание'
+              >
+                <MailIcon />
+              </Button>
+            </div>
+          )}
         </SpilloverWrapper>
       </div>
       {previewing === null ? (
@@ -767,6 +778,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         {mailForm && parentPublicKey && (
           <SecretMailEncoderForm
             openKey={parentPublicKey.publicKey}
+            keyAlg={parentPublicKey.publicKeyAlg}
             forUsername={parentPublicKey.username}
             mailboxTitle={`Шифровка`}
             onClose={handleMailClose}

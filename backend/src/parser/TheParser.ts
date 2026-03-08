@@ -584,7 +584,7 @@ export default class TheParser {
   }
 
   static isValidBase64(str: string) {
-    const regex = /^[A-Za-z0-9+/]*={0,3}$/
+    const regex = /^[A-Za-z0-9+/_-]*={0,3}$/
     return regex.test(str)
   }
 

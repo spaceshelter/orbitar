@@ -37,6 +37,9 @@ import { Enricher } from './utils/Enricher'
 // constant variables
 import { ERROR_CODES } from './utils/error-codes'
 
+const MAILBOX_KEY_ALG = 'x25519-scrypt-v1'
+const X25519_PUBLIC_KEY_REGEX = /^[A-Za-z0-9_-]{43}$/
+
 export default class UserController {
   public readonly router = Router()
   private readonly userManager: UserManager
@@ -562,6 +565,15 @@ export default class UserController {
       return res.authRequired()
     }
     const { publicKey, publicKeyAlg = '' } = req.body
+
+    if (!publicKey) {
+      if (publicKeyAlg) {
+        return res.error('invalid-public-key', 'Public key algorithm must be empty when clearing mailbox key', 400)
+      }
+    } else if (publicKeyAlg !== MAILBOX_KEY_ALG || !X25519_PUBLIC_KEY_REGEX.test(publicKey)) {
+      return res.error('invalid-public-key', 'Invalid mailbox public key format', 400)
+    }
+
     try {
       this.userManager.savePublicKey(publicKey, publicKeyAlg, req.session.data.userId)
       return res.success({ publicKey, publicKeyAlg })

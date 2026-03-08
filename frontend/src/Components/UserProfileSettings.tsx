@@ -10,6 +10,7 @@ import { observer } from 'mobx-react-lite'
 import { toast } from 'react-toastify'
 
 import { BarmaliniAccessResult, UserGender } from '../Types/UserInfo'
+import { clearCachedMailboxKeyPair, MAILBOX_KEY_ALG } from '../Utils/mailCrypto'
 import AnonymizeAccountDialog from './AnonymizeAccountDialog'
 import { SecretMailKeyGeneratorForm } from './SecretMailbox'
 import ThemeToggleComponent from './ThemeToggleComponent'
@@ -222,7 +223,7 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
         </Button>
       </div>
 
-      {/* <MailboxSettings /> */}
+      <MailboxSettings />
       {props.barmaliniAccess && <BarmaliniAccess />}
 
       {!props.hasApps && (
@@ -372,8 +373,9 @@ export const MailboxSettings = observer(() => {
         'но вы сможете читать старые шифровки, адресованные вам.',
       onConfirm: () => {
         api.userAPI
-          .savePublicKey('')
+          .savePublicKey('', '')
           .then(() => {
+            clearCachedMailboxKeyPair(userInfo?.id)
             refreshProfile()
           })
           .catch((error) => {
@@ -396,8 +398,9 @@ export const MailboxSettings = observer(() => {
 
   const handleCreatePublicKey = (key: string) => {
     api.userAPI
-      .savePublicKey(key)
+      .savePublicKey(key, MAILBOX_KEY_ALG)
       .then(() => {
+        clearCachedMailboxKeyPair(userInfo?.id)
         refreshProfile()
       })
       .catch((error) => {

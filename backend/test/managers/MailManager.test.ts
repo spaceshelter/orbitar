@@ -11,6 +11,7 @@ const createMockMailRepository = () => ({
 
 const createMockUserManager = () => ({
   getById: jest.fn(),
+  getUserIdByPublicKey: jest.fn(),
 })
 
 describe('MailManager', () => {
@@ -35,8 +36,20 @@ describe('MailManager', () => {
   it('requires an existing recipient before creating mail', async () => {
     userManager.getById.mockResolvedValue(undefined)
 
-    await expect(manager.createMail(1, 2, 2, '{"to":true}', '{"from":true}')).rejects.toThrow('Recipient not found')
+    await expect(manager.createMail(1, 2, undefined, 2, '{"to":true}', '{"from":true}')).rejects.toThrow(
+      'Recipient not found',
+    )
     expect(mailRepository.createMail).not.toHaveBeenCalled()
+  })
+
+  it('resolves recipient by public key when user id is not provided', async () => {
+    userManager.getUserIdByPublicKey.mockResolvedValue(2)
+    userManager.getById.mockResolvedValue({ id: 2 })
+
+    await expect(manager.createMail(1, undefined, 'recipient-public-key', 2, '{"to":true}')).resolves.toBe(101)
+
+    expect(userManager.getUserIdByPublicKey).toHaveBeenCalledWith('recipient-public-key', 'x25519-scrypt-v1')
+    expect(mailRepository.createMail).toHaveBeenCalledWith(1, 2, 2, '{"to":true}', undefined)
   })
 
   it('returns recipient payload to the addressee', async () => {

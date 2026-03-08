@@ -1,7 +1,8 @@
 import { MailBatchEntity } from '../entities/MailEntity'
 
 export type MailCreateRequest = {
-  toUserId: number
+  toUserId?: number
+  toPublicKey?: string
   v: number
   toPayload: string
   fromPayload?: string

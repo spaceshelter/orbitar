@@ -183,4 +183,8 @@ export class UserCache {
   async getPublicKeyAlg(userId: number): Promise<string | undefined> {
     return (await this.getMailboxKey(userId))?.publicKeyAlg
   }
+
+  async getUserIdByPublicKey(publicKey: string, publicKeyAlg: string): Promise<number | undefined> {
+    return await this.userRepository.getUserIdByPublicKey(publicKey, publicKeyAlg)
+  }
 }

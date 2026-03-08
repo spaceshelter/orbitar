@@ -10,6 +10,18 @@ export type MailEntity = {
   payload?: string
 }
 
+export type CreateMailRequest = {
+  toUserId?: number
+  toPublicKey?: string
+  v: number
+  toPayload: string
+  fromPayload?: string
+}
+
+export type CreateMailResponse = {
+  id: number
+}
+
 export type GetMailsBatchRequest = {
   ids: number[]
 }
