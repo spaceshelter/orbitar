@@ -5,8 +5,6 @@ type MailManagerDependencies = ConstructorParameters<typeof MailManager>
 const createMockMailRepository = () => ({
   createMail: jest.fn().mockResolvedValue(101),
   getMailsByIds: jest.fn(),
-  syncPostBindings: jest.fn().mockResolvedValue(undefined),
-  syncCommentBindings: jest.fn().mockResolvedValue(undefined),
 })
 
 const createMockUserManager = () => ({

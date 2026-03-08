@@ -41,14 +41,6 @@ export default class MailManager {
     return mails.map((mail) => this.mapMail(mail, currentUserId))
   }
 
-  async syncPostBindings(mailIds: number[], fromUserId: number, postId: number) {
-    await this.mailRepository.syncPostBindings([...new Set(mailIds)], fromUserId, postId)
-  }
-
-  async syncCommentBindings(mailIds: number[], fromUserId: number, postId: number, commentId: number) {
-    await this.mailRepository.syncCommentBindings([...new Set(mailIds)], fromUserId, postId, commentId)
-  }
-
   private mapMail(mail: MailBatchRaw, currentUserId: number): MailInfo {
     if (!mail.to_user_id) {
       const senderPayload = mail.from_user_id === currentUserId ? mail.from_payload : undefined

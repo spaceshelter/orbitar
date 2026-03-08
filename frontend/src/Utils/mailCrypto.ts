@@ -8,7 +8,7 @@ export const MAIL_PAYLOAD_ALG = 'X25519-HKDF-SHA256-A256GCM'
 const MAILBOX_SALT_PREFIX = 'orbitar-mailbox-v2'
 const MAIL_HKDF_INFO = 'orbitar-shifrovki-v2'
 const SCRYPT_PARAMS = {
-  N: 16384,
+  N: 32768,
   r: 8,
   p: 1,
   dkLen: 32,

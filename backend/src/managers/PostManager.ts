@@ -110,7 +110,6 @@ export default class PostManager {
     const parseResult = this.parser.parse(content)
     const language = await this.translationManager.detectLanguage(title, parseResult.text)
     const postRaw = await this.postRepository.createPost(site.id, userId, title, content, language, parseResult.text)
-    await this.mailManager.syncPostBindings(this.parser.extractMailIds(content), userId, postRaw.post_id)
     this.userManager.clearUserRestrictionsCache(userId)
 
     await this.bookmarkRepository.setWatch(postRaw.post_id, userId, true)
@@ -171,7 +170,6 @@ export default class PostManager {
     if (!updated) {
       throw new CodeError('unknown', 'Could not edit comment')
     }
-    await this.mailManager.syncPostBindings(this.parser.extractMailIds(content), forUserId, postId)
     ;[rawPost] = await this.postRepository.getPostsWithUserData([postId], forUserId)
     const [post] = await this.feedManager.convertRawPosts(forUserId, [rawPost], format)
 
@@ -318,12 +316,6 @@ export default class PostManager {
       parseResult.text,
       bumpFeed,
     )
-    await this.mailManager.syncCommentBindings(
-      this.parser.extractMailIds(content),
-      userId,
-      postId,
-      commentRaw.comment_id,
-    )
     this.userManager.clearUserRestrictionsCache(userId)
 
     if (sendNotifications) {
@@ -406,12 +398,6 @@ export default class PostManager {
     if (!updated) {
       throw new CodeError('unknown', 'Could not edit comment')
     }
-    await this.mailManager.syncCommentBindings(
-      this.parser.extractMailIds(content),
-      forUserId,
-      rawComment.post_id,
-      commentId,
-    )
 
     rawComment = await this.commentRepository.getCommentWithUserData(forUserId, commentId)
     const [comment] = await this.convertRawCommentsWithPostData(forUserId, [rawComment], format)
