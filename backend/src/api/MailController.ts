@@ -45,7 +45,7 @@ export default class MailController {
       v: Joi.number().integer().min(1).max(255).required(),
       toPayload: Joi.string().required().max(65535),
       fromPayload: Joi.string().allow('').max(65535),
-    }).or('toUserId', 'toPublicKey')
+    }).xor('toUserId', 'toPublicKey')
 
     const batchSchema = Joi.object<MailBatchRequest>({
       ids: Joi.array().items(Joi.number().integer()).min(1).max(256).required(),

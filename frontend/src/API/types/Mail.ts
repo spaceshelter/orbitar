@@ -1,12 +1,12 @@
 export type MailEntity = {
   id: number
   v: number
-  fromUserId: number
-  toUserId: number
-  fromUsername: string
-  toUsername: string
+  fromUserId?: number
+  toUserId?: number
+  fromUsername?: string
+  toUsername?: string
   canDecrypt: boolean
-  role: 'to' | 'from' | null
+  role: 'to' | 'from' | 'public' | null
   payload?: string
 }
 

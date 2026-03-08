@@ -7,6 +7,7 @@ import type * as Vimeo from '@vimeo/player'
 import classNames from 'classnames'
 import { reaction } from 'mobx'
 import { createRoot } from 'react-dom/client'
+import { toast } from 'react-toastify'
 
 import { AppState, useAppState, ZoomedImg } from '../AppState/AppState'
 import { FakeRoot } from '../index'
@@ -764,7 +765,21 @@ export default function ContentComponent(props: ContentComponentProps) {
         </div>
       )}
       {mailboxKey && mailboxKey.type === 'mailbox' && (
-        <SecretMailEncoderForm {...mailboxKey} onClose={() => setMailboxKey(null)} />
+        <SecretMailEncoderForm
+          {...mailboxKey}
+          onClose={(result) => {
+            setMailboxKey(null)
+
+            if (!result) {
+              return
+            }
+
+            navigator.clipboard
+              ?.writeText(result)
+              ?.then(() => toast('Тег шифровки в буфере.'))
+              ?.catch(() => toast.error('Не удалось скопировать тег шифровки.'))
+          }}
+        />
       )}
     </>
   )

@@ -3,8 +3,6 @@ import { MailBatchRaw } from '../db/types/MailRaw'
 import { MailInfo } from './types/MailInfo'
 import UserManager from './UserManager'
 
-const MAILBOX_KEY_ALG = 'x25519-scrypt-v1'
-
 export default class MailManager {
   private mailRepository: MailRepository
   private userManager: UserManager
@@ -22,15 +20,20 @@ export default class MailManager {
     toPayload: string,
     fromPayload?: string,
   ) {
-    const recipientId =
-      toUserId || (toPublicKey ? await this.userManager.getUserIdByPublicKey(toPublicKey, MAILBOX_KEY_ALG) : undefined)
+    if (toUserId) {
+      const recipient = await this.userManager.getById(toUserId)
+      if (!recipient) {
+        throw new Error('Recipient not found')
+      }
 
-    const recipient = recipientId ? await this.userManager.getById(recipientId) : undefined
-    if (!recipient) {
-      throw new Error('Recipient not found')
+      return await this.mailRepository.createMail(fromUserId, recipient.id, v, toPayload, fromPayload)
     }
 
-    return await this.mailRepository.createMail(fromUserId, recipient.id, v, toPayload, fromPayload)
+    if (!toPublicKey) {
+      throw new Error('Public key is required for public mail')
+    }
+
+    return await this.mailRepository.createMail(fromUserId, null, v, toPayload, fromPayload)
   }
 
   async getMailsByIds(ids: number[], currentUserId: number): Promise<MailInfo[]> {
@@ -47,10 +50,34 @@ export default class MailManager {
   }
 
   private mapMail(mail: MailBatchRaw, currentUserId: number): MailInfo {
+    if (!mail.to_user_id) {
+      const senderPayload = mail.from_user_id === currentUserId ? mail.from_payload : undefined
+      const payload = senderPayload || mail.to_payload
+
+      return {
+        id: mail.mail_id,
+        v: mail.v,
+        fromUserId: mail.from_user_id,
+        fromUsername: mail.from_username,
+        canDecrypt: !!payload,
+        role: senderPayload ? 'from' : 'public',
+        payload: payload || undefined,
+      }
+    }
+
     const amRecipient = mail.to_user_id === currentUserId
     const amSender = mail.from_user_id === currentUserId
     const role = (amRecipient && 'to') || (amSender && 'from') || null
     const payload = role === 'to' ? mail.to_payload : role === 'from' ? mail.from_payload : undefined
+
+    if (!role) {
+      return {
+        id: mail.mail_id,
+        v: mail.v,
+        canDecrypt: false,
+        role: null,
+      }
+    }
 
     return {
       id: mail.mail_id,

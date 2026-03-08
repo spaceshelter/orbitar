@@ -8,7 +8,7 @@ export default class MailRepository {
     this.db = db
   }
 
-  async createMail(fromUserId: number, toUserId: number, v: number, toPayload: string, fromPayload?: string) {
+  async createMail(fromUserId: number, toUserId: number | null, v: number, toPayload: string, fromPayload?: string) {
     return await this.db.insert('mails', {
       from_user_id: fromUserId,
       to_user_id: toUserId,
@@ -30,7 +30,7 @@ export default class MailRepository {
          tu.username AS to_username
        FROM mails m
        JOIN users fu ON fu.user_id = m.from_user_id
-       JOIN users tu ON tu.user_id = m.to_user_id
+       LEFT JOIN users tu ON tu.user_id = m.to_user_id
        WHERE m.mail_id IN (:ids)
          AND (m.post_id IS NOT NULL OR m.comment_id IS NOT NULL)`,
       { ids },

@@ -12,7 +12,7 @@ type MailComponentProps = {
 }
 
 function MailLabel(props: { mail: MailEntity; title: string }) {
-  if (props.mail.role === 'from') {
+  if (props.mail.role === 'from' && props.mail.toUsername) {
     return (
       <>
         <span>{props.title}</span>
@@ -22,7 +22,7 @@ function MailLabel(props: { mail: MailEntity; title: string }) {
     )
   }
 
-  if (props.mail.role === 'to') {
+  if (props.mail.role === 'to' && props.mail.fromUsername) {
     return (
       <>
         <span>{props.title}</span>
@@ -35,8 +35,6 @@ function MailLabel(props: { mail: MailEntity; title: string }) {
   return (
     <>
       <span>{props.title}</span>
-      <span>{' для '}</span>
-      <span className='mention'>{props.mail.toUsername}</span>
     </>
   )
 }

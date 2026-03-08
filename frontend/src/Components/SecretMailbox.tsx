@@ -25,6 +25,7 @@ import mediaFormStyles from './MediaUploader.module.scss'
 import styles from './SecretMailbox.module.scss'
 
 export function SecretMailEncoderForm(props: {
+  toUserId?: number
   openKey: string
   keyAlg?: string
   forUsername?: string
@@ -90,7 +91,7 @@ export function SecretMailEncoderForm(props: {
           : undefined
 
       const result = await api.mailAPI.createMail({
-        toPublicKey: props.openKey,
+        ...(props.toUserId ? { toUserId: props.toUserId } : { toPublicKey: props.openKey }),
         v: MAIL_VERSION,
         toPayload,
         fromPayload,

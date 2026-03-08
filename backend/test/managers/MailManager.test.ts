@@ -11,7 +11,6 @@ const createMockMailRepository = () => ({
 
 const createMockUserManager = () => ({
   getById: jest.fn(),
-  getUserIdByPublicKey: jest.fn(),
 })
 
 describe('MailManager', () => {
@@ -42,14 +41,10 @@ describe('MailManager', () => {
     expect(mailRepository.createMail).not.toHaveBeenCalled()
   })
 
-  it('resolves recipient by public key when user id is not provided', async () => {
-    userManager.getUserIdByPublicKey.mockResolvedValue(2)
-    userManager.getById.mockResolvedValue({ id: 2 })
-
+  it('creates public mail when recipient user id is not provided', async () => {
     await expect(manager.createMail(1, undefined, 'recipient-public-key', 2, '{"to":true}')).resolves.toBe(101)
 
-    expect(userManager.getUserIdByPublicKey).toHaveBeenCalledWith('recipient-public-key', 'x25519-scrypt-v1')
-    expect(mailRepository.createMail).toHaveBeenCalledWith(1, 2, 2, '{"to":true}', undefined)
+    expect(mailRepository.createMail).toHaveBeenCalledWith(1, null, 2, '{"to":true}', undefined)
   })
 
   it('returns recipient payload to the addressee', async () => {
@@ -131,13 +126,36 @@ describe('MailManager', () => {
       {
         id: 12,
         v: 2,
-        fromUserId: 1,
-        toUserId: 2,
-        fromUsername: 'alice',
-        toUsername: 'bob',
         canDecrypt: false,
         role: null,
-        payload: undefined,
+      },
+    ])
+  })
+
+  it('returns public payload to any viewer when mail has no recipient', async () => {
+    mailRepository.getMailsByIds.mockResolvedValue([
+      {
+        mail_id: 14,
+        created_at: new Date(),
+        from_user_id: 1,
+        to_user_id: null,
+        v: 2,
+        to_payload: '{"for":"public"}',
+        from_payload: '{"for":"sender"}',
+        from_username: 'alice',
+        to_username: undefined,
+      },
+    ])
+
+    await expect(manager.getMailsByIds([14], 3)).resolves.toEqual([
+      {
+        id: 14,
+        v: 2,
+        fromUserId: 1,
+        fromUsername: 'alice',
+        canDecrypt: true,
+        role: 'public',
+        payload: '{"for":"public"}',
       },
     ])
   })

@@ -160,6 +160,7 @@ export default function PostPage() {
               )}
             </div>
             <CreateCommentComponentRestricted
+              parentAuthorUserId={post.author.id}
               parentAuthorUserName={post.author.username}
               open={true}
               post={post}

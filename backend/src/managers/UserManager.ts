@@ -792,10 +792,6 @@ export default class UserManager {
     return this.userCache.getPublicKeyAlg(userId)
   }
 
-  async getUserIdByPublicKey(publicKey: string, publicKeyAlg: string) {
-    return await this.userCache.getUserIdByPublicKey(publicKey, publicKeyAlg)
-  }
-
   async getUserVisitedDaysAgo(userId: number): Promise<number | null> {
     const lastVisited = await this.userRepository.getUserLastVisited(userId)
 

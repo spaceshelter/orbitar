@@ -46,6 +46,7 @@ interface CreateCommentProps {
   text?: string
   storageKey?: string
   parentAuthorUserName?: string
+  parentAuthorUserId?: number
 
   /**
    * Optional tab index for the textarea. When provided, formatting buttons
@@ -176,6 +177,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
 
   const [parentPublicKey, setParentPublicKey] = useState<
     | {
+        userId?: number
         publicKey: string
         publicKeyAlg?: string
         username: string
@@ -201,6 +203,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
   // retrieve parent public key
   useEffect(() => {
     const parentUserName = props.parentAuthorUserName || props.comment?.author?.username
+    const parentUserId = props.parentAuthorUserId || props.comment?.author?.id
 
     if (!parentUserName || parentUserName === username) {
       return
@@ -208,13 +211,14 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     api.postAPI.getPublicKeyByUsername(parentUserName).then((res) => {
       if (res.publicKey) {
         setParentPublicKey({
+          userId: parentUserId,
           publicKey: res.publicKey,
           publicKeyAlg: res.publicKeyAlg,
           username: parentUserName,
         })
       }
     })
-  }, [props.parentAuthorUserName, props.comment, api.postAPI, username])
+  }, [props.parentAuthorUserId, props.parentAuthorUserName, props.comment, api.postAPI, username])
 
   const setStorageValueDebounced = useDebouncedCallback((value) => {
     if (props.storageKey) {
@@ -777,6 +781,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         )}
         {mailForm && parentPublicKey && (
           <SecretMailEncoderForm
+            toUserId={parentPublicKey.userId}
             openKey={parentPublicKey.publicKey}
             keyAlg={parentPublicKey.publicKeyAlg}
             forUsername={parentPublicKey.username}
