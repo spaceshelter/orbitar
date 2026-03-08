@@ -4,6 +4,7 @@ import { useAppState } from '../../AppState/AppState'
 import { CommentInfo, PostInfo } from '../../Types/PostInfo'
 import { SiteInfo } from '../../Types/SiteInfo'
 import { UserInfo } from '../../Types/UserInfo'
+import { EncryptedPayloadDraft } from '../../Utils/mailCrypto'
 import { useCache } from './useCache'
 
 type UsePost = {
@@ -13,9 +14,13 @@ type UsePost = {
   error?: string
   anonymousUser?: UserInfo
 
-  postComment(comment: string, answerToCommentId?: number): Promise<CommentInfo>
-  editComment(comment: string, commentId: number): Promise<CommentInfo>
-  editPost(title: string, content: string): Promise<PostInfo>
+  postComment(
+    comment: string,
+    answerToCommentId?: number,
+    encryptedPayload?: EncryptedPayloadDraft,
+  ): Promise<CommentInfo>
+  editComment(comment: string, commentId: number, encryptedPayload?: EncryptedPayloadDraft): Promise<CommentInfo>
+  editPost(title: string, content: string, encryptedPayload?: EncryptedPayloadDraft): Promise<PostInfo>
   setVote(value: number): void
   setCommentVote(commentId: number, vote: number): void
   reload(showUnreadOnly?: boolean): void
@@ -58,8 +63,8 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
   }, [post])
 
   const { postComment, editComment, editPost, setVote, setCommentVote, reload } = useMemo(() => {
-    const postComment = async (text: string, answerToCommentId?: number) => {
-      const { comment } = await api.post.comment(text, postId, answerToCommentId)
+    const postComment = async (text: string, answerToCommentId?: number, encryptedPayload?: EncryptedPayloadDraft) => {
+      const { comment } = await api.post.comment(text, postId, answerToCommentId, encryptedPayload)
 
       if (rawComments) {
         const totalComments = countComments(rawComments) + 1
@@ -107,8 +112,8 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
       return comment
     }
 
-    const editComment = async (text: string, commentId: number) => {
-      const { comment } = await api.post.editComment(text, commentId)
+    const editComment = async (text: string, commentId: number, encryptedPayload?: EncryptedPayloadDraft) => {
+      const { comment } = await api.post.editComment(text, commentId, encryptedPayload)
 
       if (!comments) {
         // no comments loaded!
@@ -134,8 +139,8 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
       return comment
     }
 
-    const editPost = async (title: string, text: string) => {
-      const { post } = await api.post.editPost(postId, title, text)
+    const editPost = async (title: string, text: string, encryptedPayload?: EncryptedPayloadDraft) => {
+      const { post } = await api.post.editPost(postId, title, text, encryptedPayload)
       setPost(post)
       return post
     }

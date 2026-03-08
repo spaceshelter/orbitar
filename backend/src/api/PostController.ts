@@ -9,10 +9,12 @@ import FeedManager from '../managers/FeedManager'
 import PostManager from '../managers/PostManager'
 import SiteManager from '../managers/SiteManager'
 import TranslationManager, { TRANSLATION_LANGUAGES, TRANSLATION_MODES } from '../managers/TranslationManager'
+import { MAILBOX_PUBLIC_KEY_ALG } from '../managers/types/MailboxPublicKey'
 import UserManager from '../managers/UserManager'
 import { APIRequest, APIResponse, joiFormat, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
 import { CommentEntity } from './types/entities/CommentEntity'
+import { EncryptedPayloadWrapDraftEntity } from './types/entities/EncryptedPayloadEntity'
 import { HistoryEntity } from './types/entities/HistoryEntity'
 import { UserEntity } from './types/entities/UserEntity'
 import {
@@ -38,6 +40,38 @@ const commonRateLimitConfig = {
   standardHeaders: false,
   legacyHeaders: false,
   keyGenerator: (req) => String(req.session.data?.userId),
+}
+
+const encryptedPayloadWrapSchema = Joi.object<EncryptedPayloadWrapDraftEntity>({
+  userId: Joi.number().integer().required(),
+  role: Joi.string().valid('sender', 'recipient').required(),
+  publicKey: Joi.string().max(128).required(),
+  publicKeyAlg: Joi.string().valid(MAILBOX_PUBLIC_KEY_ALG).required(),
+  ephemeralPublicKey: Joi.string().max(128).required(),
+  iv: Joi.string().max(32).required(),
+  encryptedKey: Joi.string().max(128).required(),
+})
+
+const encryptedPayloadSchema = Joi.object({
+  v: Joi.number().integer().valid(1).required(),
+  parserProfile: Joi.string().valid('lite-v1').required(),
+  ciphertext: Joi.string().max(100000).required(),
+  iv: Joi.string().max(32).required(),
+  wraps: Joi.array().items(encryptedPayloadWrapSchema).min(1).max(64).required(),
+})
+
+const requirePlaintextOrEncrypted = <T extends { content: string; encryptedPayload?: unknown }>(
+  value: T,
+  helpers: Joi.CustomHelpers,
+) => {
+  const hasContent = value.content.trim().length > 0
+  const hasEncryptedPayload = !!value.encryptedPayload
+
+  if (hasContent === hasEncryptedPayload) {
+    return helpers.error('any.invalid')
+  }
+
+  return value
 }
 
 export default class PostController {
@@ -102,15 +136,17 @@ export default class PostController {
     const postCreateSchema = Joi.object<PostCreateRequest>({
       site: Joi.string().required(),
       title: Joi.alternatives(Joi.string().max(64), Joi.valid('').optional()),
-      content: Joi.string().min(1).max(50000).required(),
+      content: Joi.string().max(50000).allow('').required(),
+      encryptedPayload: encryptedPayloadSchema.optional(),
       format: joiFormat,
-    })
+    }).custom(requirePlaintextOrEncrypted)
     const commentSchema = Joi.object<PostCommentRequest>({
       comment_id: Joi.number().optional(),
       post_id: Joi.number().required(),
-      content: Joi.string().min(1).max(50000).required(),
+      content: Joi.string().max(50000).allow('').required(),
+      encryptedPayload: encryptedPayloadSchema.optional(),
       format: joiFormat,
-    })
+    }).custom(requirePlaintextOrEncrypted)
     const previewSchema = Joi.object<PostPreviewRequest>({
       content: Joi.string().min(1).max(50000).required(),
     })
@@ -128,15 +164,17 @@ export default class PostController {
     })
     const editCommentSchema = Joi.object<PostCommentEditRequest>({
       id: Joi.number().required(),
-      content: Joi.string().min(1).max(50000).required(),
+      content: Joi.string().max(50000).allow('').required(),
+      encryptedPayload: encryptedPayloadSchema.optional(),
       format: joiFormat,
-    })
+    }).custom(requirePlaintextOrEncrypted)
     const editSchema = Joi.object<PostEditRequest>({
       id: Joi.number().required(),
       title: Joi.alternatives(Joi.string().max(64), Joi.valid('').optional()),
-      content: Joi.string().min(1).max(50000).required(),
+      content: Joi.string().max(50000).allow('').required(),
+      encryptedPayload: encryptedPayloadSchema.optional(),
       format: joiFormat,
-    })
+    }).custom(requirePlaintextOrEncrypted)
     const translateSchema = Joi.object<TranslateRequest>({
       id: Joi.number().required(),
       type: Joi.string().valid('post', 'comment').required(),
@@ -286,7 +324,7 @@ export default class PostController {
     }
 
     const userId = request.session.data.userId
-    const { id, title, format, content } = request.body
+    const { id, title, format, content, encryptedPayload } = request.body
 
     try {
       const restrictions = await this.userManager.getUserRestrictions(userId)
@@ -294,7 +332,7 @@ export default class PostController {
         return response.error('access-denied', 'Access-denied', 403)
       }
 
-      const postInfo = await this.postManager.editPost(userId, id, title, content, format)
+      const postInfo = await this.postManager.editPost(userId, id, title, content, format, encryptedPayload)
       if (!postInfo) {
         return response.error('no-comment', 'Post not found')
       }
@@ -304,10 +342,23 @@ export default class PostController {
         users,
       } = await this.enricher.enrichRawPosts([postInfo])
 
-      this.logger.info(`Post edited by #${userId}`, { user_id: userId, post_id: id, format, content, title })
+      this.logger.info(`Post edited by #${userId}`, {
+        user_id: userId,
+        post_id: id,
+        format,
+        content: encryptedPayload ? '<encrypted>' : content,
+        title,
+      })
       response.success({ post, users })
     } catch (err) {
-      this.logger.error('Post edit error', { error: err, user_id: userId, post_id: id, format, content, title })
+      this.logger.error('Post edit error', {
+        error: err,
+        user_id: userId,
+        post_id: id,
+        format,
+        content: encryptedPayload ? '<encrypted>' : content,
+        title,
+      })
       this.logger.error(err)
 
       if (err instanceof CodeError && err.code === 'access-denied') {
@@ -328,7 +379,7 @@ export default class PostController {
     }
 
     const userId = request.session.data.userId
-    const { site, format, content, title } = request.body
+    const { site, format, content, title, encryptedPayload } = request.body
 
     try {
       const userRestrictions = await this.userManager.getUserRestrictions(userId)
@@ -343,15 +394,28 @@ export default class PostController {
         return response.error('post-creation-restricted', 'You cannot create any more posts due to low karma.', 403)
       }
 
-      const postInfo = await this.postManager.createPost(site, userId, title, content, format)
+      const postInfo = await this.postManager.createPost(site, userId, title, content, format, encryptedPayload)
       const {
         posts: [post],
       } = await this.enricher.enrichRawPosts([postInfo])
 
-      this.logger.info(`Post created by #${userId}`, { user_id: userId, site, format, content, title })
+      this.logger.info(`Post created by #${userId}`, {
+        user_id: userId,
+        site,
+        format,
+        content: encryptedPayload ? '<encrypted>' : content,
+        title,
+      })
       response.success({ post })
     } catch (err) {
-      this.logger.error('Post create failed', { error: err, user_id: userId, site, format, content, title })
+      this.logger.error('Post create failed', {
+        error: err,
+        user_id: userId,
+        site,
+        format,
+        content: encryptedPayload ? '<encrypted>' : content,
+        title,
+      })
       this.logger.error(err)
       return response.error('error', 'Unknown error', 500)
     }
@@ -379,7 +443,7 @@ export default class PostController {
     }
 
     const userId = request.session.data.userId
-    const { post_id: postId, comment_id: parentCommentId, format, content } = request.body
+    const { post_id: postId, comment_id: parentCommentId, format, content, encryptedPayload } = request.body
 
     try {
       const userRestrictions = await this.userManager.getUserRestrictions(userId)
@@ -416,6 +480,7 @@ export default class PostController {
         parentCommentId,
         content,
         format,
+        encryptedPayload,
         {
           bumpFeed,
           sendNotifications,
@@ -424,12 +489,12 @@ export default class PostController {
       const {
         allComments: [comment],
       } = await this.enricher.enrichRawComments([commentInfo], {}, format, () => true)
-      comment.canEdit = overrideUserId === userId
+      comment.canEdit = overrideUserId === userId && !comment.encryptedPayloadId
 
       const users: Record<number, UserEntity> = { [overrideUserId]: await this.userManager.getById(overrideUserId) }
 
       this.logger.info(`Comment created by #${overrideUserId} @${users[overrideUserId].username}`, {
-        comment: content,
+        comment: encryptedPayload ? '<encrypted>' : content,
         username: users[overrideUserId].username,
         user_id: overrideUserId,
       })
@@ -439,7 +504,13 @@ export default class PostController {
         users,
       })
     } catch (err) {
-      this.logger.error('Comment create failed', { error: err, user_id: userId, format, content, post_id: postId })
+      this.logger.error('Comment create failed', {
+        error: err,
+        user_id: userId,
+        format,
+        content: encryptedPayload ? '<encrypted>' : content,
+        post_id: postId,
+      })
       this.logger.error(err)
       return response.error('error', 'Unknown error', 500)
     }
@@ -546,7 +617,7 @@ export default class PostController {
     }
 
     const userId = request.session.data.userId
-    const { id: commentId, content, format } = request.body
+    const { id: commentId, content, format, encryptedPayload } = request.body
 
     try {
       const userRestrictions = await this.userManager.getUserRestrictions(userId)
@@ -554,7 +625,7 @@ export default class PostController {
         return response.error('restricted', 'Editing restricted', 403)
       }
 
-      const commentInfo = await this.postManager.editComment(userId, commentId, content, format)
+      const commentInfo = await this.postManager.editComment(userId, commentId, content, format, encryptedPayload)
       if (!commentInfo) {
         return response.error('no-comment', 'Comment not found')
       }
@@ -569,7 +640,11 @@ export default class PostController {
         users: users,
       })
     } catch (err) {
-      this.logger.error('Comment edit error', { error: err, comment_id: commentId })
+      this.logger.error('Comment edit error', {
+        error: err,
+        comment_id: commentId,
+        content: encryptedPayload ? '<encrypted>' : content,
+      })
       this.logger.error(err)
 
       if (err instanceof CodeError && err.code === 'access-denied') {

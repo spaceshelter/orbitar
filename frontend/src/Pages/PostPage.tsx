@@ -10,6 +10,7 @@ import { CreateCommentComponentRestricted } from '../Components/CreateCommentCom
 import PostComponent from '../Components/PostComponent'
 import Username from '../Components/Username'
 import { CommentInfo, PostInfo, PostLinkInfo } from '../Types/PostInfo'
+import { EncryptedPayloadDraft } from '../Utils/mailCrypto'
 import { scrollUnderTopbar } from '../Utils/utils'
 
 import styles from './PostPage.module.css'
@@ -40,16 +41,21 @@ export default function PostPage() {
     document.title = docTitle
   }, [post, postId])
 
-  const handleCommentEdit = async (text: string, comment: CommentInfo) => {
-    return await editComment(text, comment.id)
+  const handleCommentEdit = async (text: string, comment: CommentInfo, encryptedPayload?: EncryptedPayloadDraft) => {
+    return await editComment(text, comment.id, encryptedPayload)
   }
 
-  const handleAnswer = async (text: string, post?: PostLinkInfo, comment?: CommentInfo) => {
+  const handleAnswer = async (
+    text: string,
+    post?: PostLinkInfo,
+    comment?: CommentInfo,
+    encryptedPayload?: EncryptedPayloadDraft,
+  ) => {
     if (!post) {
       return
     }
 
-    const newComment = await postComment(text, comment?.id)
+    const newComment = await postComment(text, comment?.id, encryptedPayload)
     setTimeout(() => {
       const el = document.querySelector(`div[data-comment-id="${newComment.id}"]`)
       el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
@@ -102,8 +108,13 @@ export default function PostPage() {
     }
   }, [location.hash, comments, unreadOnly, postId])
 
-  const handlePostEdit = async (post: PostInfo, text: string, title?: string): Promise<PostInfo | undefined> => {
-    return await editPost(title || '', text)
+  const handlePostEdit = async (
+    post: PostInfo,
+    text: string,
+    title?: string,
+    encryptedPayload?: EncryptedPayloadDraft,
+  ): Promise<PostInfo | undefined> => {
+    return await editPost(title || '', text, encryptedPayload)
   }
 
   const baseRoute = site === 'main' ? '/' : `/s/${site}/`
@@ -161,6 +172,7 @@ export default function PostPage() {
             </div>
             <CreateCommentComponentRestricted
               parentAuthorUserName={post.author.username}
+              parentAuthorUserId={post.author.id}
               open={true}
               post={post}
               onAnswer={handleAnswer}

@@ -8,6 +8,7 @@ export type CommentBaseInfo = {
 export type CommentInfo = CommentBaseInfo & {
   author: number
   created: Date
+  encryptedPayloadId?: number
   deleted?: boolean
   rating: number
   parentComment?: number

@@ -1,0 +1,31 @@
+.locked {
+  border: 1px solid var(--dim3);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--dim1);
+  color: var(--fgSoft);
+
+  &.canDecrypt {
+    cursor: pointer;
+  }
+
+  &.disabled {
+    opacity: 0.85;
+  }
+
+  &.error {
+    border-color: var(--danger);
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.body {
+  margin-top: 8px;
+  font-size: 14px;
+}

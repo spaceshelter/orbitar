@@ -3,6 +3,7 @@ import React, { ReactNode, useEffect, useRef, useState } from 'react'
 import { useAPI, useAppState } from '@state/AppState'
 import Button from '@ui/Button'
 import ButtonGroup, { ButtonGroupSpacing } from '@ui/ButtonGroup'
+import { encryptContentForUsers, EncryptedPayloadDraft, MAILBOX_PUBLIC_KEY_ALG } from '@utils/mailCrypto'
 import ReactTextareaAutocomplete from '@webscopeio/react-textarea-autocomplete'
 import classNames from 'classnames'
 import debouncePromise from 'debounce-promise'
@@ -16,6 +17,7 @@ import { useDebouncedCallback } from 'use-debounce'
 
 import { CommentInfo, PostLinkInfo } from '../Types/PostInfo'
 import { UserGender } from '../Types/UserInfo'
+import { renderEncryptedContentHtml } from '../Utils/encryptedContentParser'
 import ContentComponent from './ContentComponent'
 import MediaUploader, { CreateGalleryOption, MediaResult } from './MediaUploader'
 import { PollCreationWizard, PollCreationWizardSubmitData } from './PollCreationWizard'
@@ -44,6 +46,7 @@ interface CreateCommentProps {
   text?: string
   storageKey?: string
   parentAuthorUserName?: string
+  parentAuthorUserId?: number
 
   /**
    * Optional tab index for the textarea. When provided, formatting buttons
@@ -51,7 +54,12 @@ interface CreateCommentProps {
    */
   textareaTabIndex?: number
 
-  onAnswer: (text: string, post?: PostLinkInfo, comment?: CommentInfo) => Promise<CommentInfo | string | undefined>
+  onAnswer: (
+    text: string,
+    post?: PostLinkInfo,
+    comment?: CommentInfo,
+    encryptedPayload?: EncryptedPayloadDraft,
+  ) => Promise<CommentInfo | string | undefined>
 }
 
 // same as CreateCommentComponent, but with slow mode and other restrictions
@@ -91,8 +99,8 @@ export const CreateCommentComponentRestricted = observer((props: CreateCommentPr
   return (
     <CreateCommentComponent
       {...props}
-      onAnswer={(text, post, comment) => {
-        return props.onAnswer(text, post, comment).finally(() => {
+      onAnswer={(text, post, comment, encryptedPayload) => {
+        return props.onAnswer(text, post, comment, encryptedPayload).finally(() => {
           api.user.refreshUserRestrictions()
         })
       }}
@@ -160,7 +168,11 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
 
   const openMediaUploader = (file?: File) => {
     const answer = answerRef.current
-    const inGallery = answer ? getGalleryInsertPosition(answer.value, answer.selectionStart) !== null : false
+    const inGallery = isEncrypted
+      ? false
+      : answer
+        ? getGalleryInsertPosition(answer.value, answer.selectionStart) !== null
+        : false
     setMediaUploaderInGallery(inGallery)
     setMediaUploaderData(file)
     setMediaUploaderOpen(true)
@@ -173,6 +185,15 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
   const controlsRef = useRef<HTMLDivElement>(null)
 
   const api = useAPI()
+  const appState = useAppState()
+  const [isEncrypted, setIsEncrypted] = useState(false)
+  const [encryptionKeys, setEncryptionKeys] = useState<
+    | {
+        sender: { userId: number; username: string; publicKey: string; publicKeyAlg: string }
+        recipient: { userId: number; username: string; publicKey: string; publicKeyAlg: string }
+      }
+    | undefined
+  >(undefined)
 
   const pronoun =
     props?.comment?.author?.gender === UserGender.he
@@ -180,8 +201,22 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
       : props?.comment?.author?.gender === UserGender.she
         ? 'ей'
         : ''
-  const placeholderText = props.comment ? `Ваш ответ ${pronoun}` : ''
+  const placeholderText = `${props.comment ? `Ваш ответ ${pronoun}` : ''}${isEncrypted ? ' (будет зашифрован)' : ''}`
   const disabledButtons = isPosting || previewing !== null
+  const currentUser = appState.userInfo
+  const currentUsername = currentUser?.username
+  const encryptionTarget =
+    props.comment && props.comment.author.id !== currentUser?.id
+      ? {
+          userId: props.comment.author.id,
+          username: props.comment.author.username,
+        }
+      : props.parentAuthorUserId && props.parentAuthorUserName && props.parentAuthorUserId !== currentUser?.id
+        ? {
+            userId: props.parentAuthorUserId,
+            username: props.parentAuthorUserName,
+          }
+        : undefined
 
   const setStorageValueDebounced = useDebouncedCallback((value) => {
     if (props.storageKey) {
@@ -196,6 +231,58 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
   const handleAnswerChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setStorageValueDebounced(e.target.value)
     setAnswerText(e.target.value)
+  }
+
+  const resolveEncryptionKeys = async () => {
+    if (!currentUser || !currentUsername || !encryptionTarget) {
+      throw new Error('Не удалось определить адресата шифрования.')
+    }
+
+    const [senderKey, recipientKey] = await Promise.all([
+      api.postAPI.getPublicKeyByUsername(currentUsername),
+      api.postAPI.getPublicKeyByUsername(encryptionTarget.username),
+    ])
+
+    if (!senderKey.publicKey || senderKey.publicKeyAlg !== MAILBOX_PUBLIC_KEY_ALG) {
+      throw new Error('Сначала создайте собственный шифрованный почтовый ящик в настройках профиля.')
+    }
+
+    if (!recipientKey.publicKey || recipientKey.publicKeyAlg !== MAILBOX_PUBLIC_KEY_ALG) {
+      throw new Error(`У @${encryptionTarget.username} нет совместимого почтового ящика.`)
+    }
+
+    return {
+      sender: {
+        userId: currentUser.id,
+        username: currentUsername,
+        publicKey: senderKey.publicKey,
+        publicKeyAlg: senderKey.publicKeyAlg,
+      },
+      recipient: {
+        userId: encryptionTarget.userId,
+        username: encryptionTarget.username,
+        publicKey: recipientKey.publicKey,
+        publicKeyAlg: recipientKey.publicKeyAlg,
+      },
+    }
+  }
+
+  const toggleEncrypted = async () => {
+    if (isEncrypted) {
+      setIsEncrypted(false)
+      setEncryptionKeys(undefined)
+      return
+    }
+
+    try {
+      setPosting(true)
+      setEncryptionKeys(await resolveEncryptionKeys())
+      setIsEncrypted(true)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Не удалось включить шифрование.')
+    } finally {
+      setPosting(false)
+    }
   }
 
   const handleHotKey = (e: KeyboardEvent) => {
@@ -304,6 +391,13 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
   }, [props.open, props.comment])
 
   useEffect(() => {
+    if (!encryptionTarget) {
+      setIsEncrypted(false)
+      setEncryptionKeys(undefined)
+    }
+  }, [encryptionTarget?.userId])
+
+  useEffect(() => {
     if (!answerRef.current || !containerRef.current) {
       return
     }
@@ -338,8 +432,12 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     }
     setPosting(true)
     try {
-      const response = await api.postAPI.preview(answerText)
-      setPreviewing(response.content)
+      if (isEncrypted) {
+        setPreviewing(renderEncryptedContentHtml(answerText))
+      } else {
+        const response = await api.postAPI.preview(answerText)
+        setPreviewing(response.content)
+      }
     } catch (e) {
       console.error(e)
       setPreviewing(null)
@@ -363,22 +461,38 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     setPreviewing(null)
   }
 
-  const handleAnswer = () => {
+  const handleAnswer = async () => {
     setPosting(true)
-    props
-      .onAnswer(answerText, props.post, props.comment)
-      .then(() => {
-        setStorageValueDebounced('')
-        setStorageValueDebounced.flush()
-        setAnswerText('')
-      })
-      .catch((error) => {
-        console.log('onAnswer ERR', error)
-      })
-      .finally(() => {
-        setPreviewing(null)
-        setPosting(false)
-      })
+    try {
+      const resolvedEncryptionKeys = isEncrypted ? encryptionKeys || (await resolveEncryptionKeys()) : undefined
+      const encryptedPayload =
+        isEncrypted &&
+        resolvedEncryptionKeys &&
+        (await encryptContentForUsers(answerText, [
+          {
+            ...resolvedEncryptionKeys.sender,
+            role: 'sender',
+          },
+          {
+            ...resolvedEncryptionKeys.recipient,
+            role: 'recipient',
+          },
+        ]))
+
+      await props.onAnswer(isEncrypted ? '' : answerText, props.post, props.comment, encryptedPayload || undefined)
+
+      setStorageValueDebounced('')
+      setStorageValueDebounced.flush()
+      setAnswerText('')
+      setIsEncrypted(false)
+      setEncryptionKeys(undefined)
+    } catch (error) {
+      console.log('onAnswer ERR', error)
+      toast.error(error instanceof Error ? error.message : 'Не удалось отправить сообщение.')
+    } finally {
+      setPreviewing(null)
+      setPosting(false)
+    }
   }
 
   const handleMediaUpload = (result: MediaResult[], gallery?: CreateGalleryOption | undefined) => {
@@ -431,7 +545,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
       })
     } else {
       // Not inside gallery - wrap if checkbox is checked
-      if (gallery?.create) {
+      if (gallery?.create && !isEncrypted) {
         mediaText = `<gallery>\n${mediaText}\n</gallery>`
       }
       replaceText(mediaText, mediaText.length)
@@ -468,7 +582,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
       const result = await api.userAPI.getUsernameSuggestions(startsWith)
       return result.usernames
     } catch (e) {
-      debounceSuggestError((e as any).message)
+      debounceSuggestError(e instanceof Error ? e.message : 'Не удалось загрузить подсказки.')
       return []
     }
   }
@@ -477,7 +591,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     try {
       const result = await api.pollAPI.createPoll({
         question: pollData.question,
-        options: pollData.options.map((opt: any) => opt.text),
+        options: pollData.options.map((opt) => opt.text),
         settings: {
           allowMultipleChoice: pollData.settings.isMultipleChoice,
           resultVisibility: pollData.settings.resultVisibility,
@@ -571,7 +685,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         <div className={styles.control}>
           <Button
             variant='minimal'
-            disabled={disabledButtons}
+            disabled={disabledButtons || isEncrypted}
             onClick={() => applyTag('irony')}
             title='Ирония'
             tabIndex={toolbarTabIndex}
@@ -616,7 +730,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
           <div className={styles.control}>
             <Button
               variant='minimal'
-              disabled={disabledButtons}
+              disabled={disabledButtons || isEncrypted}
               onClick={() => applyTag('expand', { title: '' })}
               title='Свернуть/Развернуть'
               tabIndex={toolbarTabIndex}
@@ -639,7 +753,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
           <div className={styles.control}>
             <Button
               variant='minimal'
-              disabled={disabledButtons}
+              disabled={disabledButtons || isEncrypted}
               onClick={() => applyTag('spoiler')}
               title='Спойлер'
               tabIndex={toolbarTabIndex}
@@ -650,7 +764,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
           <div className={styles.control}>
             <Button
               variant='minimal'
-              disabled={disabledButtons}
+              disabled={disabledButtons || isEncrypted}
               onClick={() => setPollWizardOpen(true)}
               title='Создать опрос'
               tabIndex={toolbarTabIndex}
@@ -696,6 +810,16 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
           <div className={styles.buttonThemeToggle}>
             {previewing && <ThemeToggleComponent buttonLabel='Превью с другой темой' resetOnOnmount={true} />}
           </div>
+          {encryptionTarget && (
+            <Button
+              variant='minimal'
+              active={isEncrypted}
+              disabled={isPosting}
+              onClick={() => toggleEncrypted().catch()}
+            >
+              <span className='i i-mail-secure' />
+            </Button>
+          )}
           <Button
             variant='minimal'
             disabled={isPosting || !answerText}

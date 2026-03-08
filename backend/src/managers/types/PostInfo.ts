@@ -10,6 +10,7 @@ export type PostBaseInfo = {
 export type PostInfo = PostBaseInfo & {
   author: number
   created: Date
+  encryptedPayloadId?: number
   editFlag?: EditFlag
   rating: number
   comments: number

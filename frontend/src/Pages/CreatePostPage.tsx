@@ -8,7 +8,8 @@ import { toast } from 'react-toastify'
 import { useAPI, useAppState } from '../AppState/AppState'
 import CreateCommentComponent from '../Components/CreateCommentComponent'
 import SlowMode from '../Components/SlowMode'
-import { CommentInfo } from '../Types/PostInfo'
+import { CommentInfo, PostLinkInfo } from '../Types/PostInfo'
+import { EncryptedPayloadDraft } from '../Utils/mailCrypto'
 
 import createCommentStyles from '../Components/CommentComponent.module.scss'
 import styles from './CreatePostPage.module.css'
@@ -19,11 +20,16 @@ export const CreatePostPage = observer(() => {
   const [title, setTitle] = useState('')
   const navigate = useNavigate()
 
-  const handleAnswer = async (text: string): Promise<CommentInfo | undefined> => {
+  const handleAnswer = async (
+    text: string,
+    _post?: PostLinkInfo,
+    _comment?: CommentInfo,
+    encryptedPayload?: EncryptedPayloadDraft,
+  ): Promise<CommentInfo | undefined> => {
     console.log('post', title, text)
 
     try {
-      const result = await api.postAPI.create(site, title, text)
+      const result = await api.postAPI.create(site, title, text, encryptedPayload)
       console.log('CREATE', result)
       navigate((site !== 'main' ? `/s/${site}` : '') + `/p${result.post.id}`)
     } catch (error) {
@@ -39,8 +45,11 @@ export const CreatePostPage = observer(() => {
     api.user.refreshUserRestrictions()
   }, [api])
 
-  if (Number.isInteger(userRestrictions?.restrictedToPostId)) {
-    return <RestrictedToPostIdMessage postId={userRestrictions!.restrictedToPostId as number} />
+  const restrictedPostId =
+    typeof userRestrictions?.restrictedToPostId === 'number' ? userRestrictions.restrictedToPostId : undefined
+
+  if (restrictedPostId !== undefined) {
+    return <RestrictedToPostIdMessage postId={restrictedPostId} />
   }
 
   if (userRestrictions?.postSlowModeWaitSecRemain) {

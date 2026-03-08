@@ -1,6 +1,7 @@
 import { FeedSorting } from '../Types/FeedSortingSettings'
 import { SiteInfo, SiteWithUserInfo } from '../Types/SiteInfo'
 import { UserInfo } from '../Types/UserInfo'
+import { EncryptedPayloadDraft } from '../Utils/mailCrypto'
 import APIBase from './APIBase'
 
 export type ContentFormat = 'html' | 'source'
@@ -17,6 +18,7 @@ export type PostEntity = {
   created: string
   title?: string
   content: string
+  encryptedPayloadId?: number
   rating: number
   comments: number
   newComments: number
@@ -31,6 +33,7 @@ export type CommentEntity = {
   author: number
   deleted?: boolean
   content: string
+  encryptedPayloadId?: number
   rating: number
   vote?: number
   isNew?: boolean
@@ -47,6 +50,7 @@ type PostCreateRequest = {
   site: string
   title?: string
   content: string
+  encryptedPayload?: EncryptedPayloadDraft
   format?: ContentFormat
 }
 type PostCreateResponse = {
@@ -117,6 +121,7 @@ type CommentCreateRequest = {
   comment_id?: number
   post_id: number
   content: string
+  encryptedPayload?: EncryptedPayloadDraft
   format?: ContentFormat
 }
 type CommentCreateResponse = {
@@ -127,6 +132,7 @@ type CommentCreateResponse = {
 type CommentEditRequest = {
   id: number
   content: string
+  encryptedPayload?: EncryptedPayloadDraft
   format?: ContentFormat
 }
 type CommentEditResponse = {
@@ -138,6 +144,7 @@ type PostEditRequest = {
   id: number
   title: string
   content: string
+  encryptedPayload?: EncryptedPayloadDraft
   format?: ContentFormat
 }
 type PostEditResponse = {
@@ -228,11 +235,17 @@ export default class PostAPI {
     this.api = api
   }
 
-  create(site: string, title: string | undefined, content: string): Promise<PostCreateResponse> {
+  create(
+    site: string,
+    title: string | undefined,
+    content: string,
+    encryptedPayload?: EncryptedPayloadDraft,
+  ): Promise<PostCreateResponse> {
     return this.api.request<PostCreateRequest, PostCreateResponse>('/post/create', {
       site,
       title,
       content,
+      encryptedPayload,
     })
   }
 
@@ -278,11 +291,17 @@ export default class PostAPI {
     })
   }
 
-  comment(content: string, postId: number, commentId?: number): Promise<CommentCreateResponse> {
+  comment(
+    content: string,
+    postId: number,
+    commentId?: number,
+    encryptedPayload?: EncryptedPayloadDraft,
+  ): Promise<CommentCreateResponse> {
     return this.api.request<CommentCreateRequest, CommentCreateResponse>('/post/comment', {
       post_id: postId,
       comment_id: commentId,
       content,
+      encryptedPayload,
     })
   }
 
@@ -293,18 +312,29 @@ export default class PostAPI {
     })
   }
 
-  editComment(content: string, commentId: number): Promise<CommentEditResponse> {
+  editComment(
+    content: string,
+    commentId: number,
+    encryptedPayload?: EncryptedPayloadDraft,
+  ): Promise<CommentEditResponse> {
     return this.api.request<CommentEditRequest, CommentEditResponse>('/post/edit-comment', {
       id: commentId,
       content,
+      encryptedPayload,
     })
   }
 
-  editPost(postId: number, title: string, content: string): Promise<PostEditResponse> {
+  editPost(
+    postId: number,
+    title: string,
+    content: string,
+    encryptedPayload?: EncryptedPayloadDraft,
+  ): Promise<PostEditResponse> {
     return this.api.request<PostEditRequest, PostEditResponse>('/post/edit', {
       id: postId,
       title,
       content,
+      encryptedPayload,
     })
   }
 

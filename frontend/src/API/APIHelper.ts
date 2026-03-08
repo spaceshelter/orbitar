@@ -2,6 +2,8 @@ import { AppLoadingState, AppState } from '../AppState/AppState'
 import APIBase, { APIError } from './APIBase'
 import AuthAPI from './AuthAPI'
 import AuthAPIHelper from './AuthAPIHelper'
+import EncryptedPayloadAPI from './EncryptedPayloadAPI'
+import EncryptedPayloadAPIHelper from './EncryptedPayloadAPIHelper'
 import FeedAPI from './FeedAPI'
 import FeedAPIHelper from './FeedAPIHelper'
 import InviteAPI from './InviteAPI'
@@ -22,6 +24,8 @@ import VoteAPI from './VoteAPI'
 export default class APIHelper {
   auth: AuthAPIHelper
   authAPI: AuthAPI
+  encryptedPayloadAPI: EncryptedPayloadAPI
+  encryptedPayload: EncryptedPayloadAPIHelper
   inviteAPI: InviteAPI
   postAPI: PostAPI
   post: PostAPIHelper
@@ -47,6 +51,7 @@ export default class APIHelper {
     this.baseAPI = api
     this.appState = appState
     this.authAPI = new AuthAPI(api)
+    this.encryptedPayloadAPI = new EncryptedPayloadAPI(api)
     this.inviteAPI = new InviteAPI(api)
     this.postAPI = new PostAPI(api)
     this.voteAPI = new VoteAPI(api)
@@ -55,6 +60,7 @@ export default class APIHelper {
     this.post = new PostAPIHelper(this.postAPI, appState)
     this.userAPI = new UserAPI(api, this.post)
     this.auth = new AuthAPIHelper(this.authAPI, appState)
+    this.encryptedPayload = new EncryptedPayloadAPIHelper(this.encryptedPayloadAPI)
     this.user = new UserAPIHelper(this.userAPI, appState)
     this.site = new SiteAPIHelper(this.siteAPI, appState)
     this.notifications = new NotificationsAPIHelper(this.notificationsAPI, appState)

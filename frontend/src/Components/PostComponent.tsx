@@ -8,10 +8,12 @@ import OutsideClickHandler from 'react-outside-click-handler'
 import { toast } from 'react-toastify'
 
 import Conf from '../Conf'
-import { PostInfo } from '../Types/PostInfo'
+import { CommentInfo, PostInfo, PostLinkInfo } from '../Types/PostInfo'
+import { EncryptedPayloadDraft } from '../Utils/mailCrypto'
 import { AltTranslateButton, AnnotateButton, TranslateButton, UnwatchButton, WatchButton } from './ContentButtons'
 import ContentComponent from './ContentComponent'
 import CreateCommentComponent from './CreateCommentComponent'
+import EncryptedContentComponent from './EncryptedContentComponent'
 import { HistoryComponent } from './HistoryComponent'
 import PostLink from './PostLink'
 import RatingSwitch from './RatingSwitch'
@@ -29,7 +31,12 @@ interface PostComponentProps {
   buttons?: React.ReactNode
   onChange?: (id: number, post: Partial<PostInfo>) => void
   autoCut?: number
-  onEdit?: (post: PostInfo, text: string, title?: string) => Promise<PostInfo | undefined>
+  onEdit?: (
+    post: PostInfo,
+    text: string,
+    title?: string,
+    encryptedPayload?: EncryptedPayloadDraft,
+  ) => Promise<PostInfo | undefined>
   dangerousHtmlTitle?: boolean
   hideRating?: boolean
 }
@@ -71,6 +78,7 @@ export default function PostComponent(props: PostComponentProps) {
   const { id, created, site, author, vote, rating, watch } = props.post
   const title = altTitle || props.post.title
   const content = altContent || props.post.content
+  const isEncrypted = !!props.post.encryptedPayloadId
 
   const toggleOptions = () => {
     setShowOptions(!showOptions)
@@ -114,15 +122,20 @@ export default function PostComponent(props: PostComponentProps) {
       })
   }
 
-  const handleEditComplete = async (text: string) => {
+  const handleEditComplete = async (
+    text: string,
+    _post?: PostLinkInfo,
+    _comment?: CommentInfo,
+    encryptedPayload?: EncryptedPayloadDraft,
+  ) => {
     try {
-      await props.onEdit?.(props.post, text, editingTitle)
+      await props.onEdit?.(props.post, text, editingTitle, encryptedPayload)
       setEditingText(false)
       // return res;
       return undefined
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.log('Could not edit post', err)
-      toast.error(err.message || 'Не удалось отредактировать пост')
+      toast.error(err instanceof Error ? err.message : 'Не удалось отредактировать пост')
       throw err
     }
   }
@@ -181,11 +194,21 @@ export default function PostComponent(props: PostComponentProps) {
                   </div>
                 )}
                 <div className={styles.content}>
-                  <ContentComponent
-                    className={styles.content}
-                    {...{ autoCut, content, currentUsername }}
-                    lowRating={rating <= Conf.POST_LOW_RATING_THRESHOLD || props.post.vote === -1}
-                  />
+                  {props.post.encryptedPayloadId ? (
+                    <EncryptedContentComponent
+                      className={styles.content}
+                      encryptedPayloadId={props.post.encryptedPayloadId}
+                      kind='post'
+                      autoCut={autoCut}
+                      lowRating={rating <= Conf.POST_LOW_RATING_THRESHOLD || props.post.vote === -1}
+                    />
+                  ) : (
+                    <ContentComponent
+                      className={styles.content}
+                      {...{ autoCut, content, currentUsername }}
+                      lowRating={rating <= Conf.POST_LOW_RATING_THRESHOLD || props.post.vote === -1}
+                    />
+                  )}
                 </div>
               </>
             )
@@ -222,7 +245,7 @@ export default function PostComponent(props: PostComponentProps) {
           </div>
         )}
         <div className={styles.control + ' ' + styles.options}>
-          {(showTranslateButtonInline || currentMode === 'translate') && (
+          {!isEncrypted && (showTranslateButtonInline || currentMode === 'translate') && (
             <div className={styles.control}>
               <TranslateButton
                 iconOnly={true}
@@ -232,12 +255,12 @@ export default function PostComponent(props: PostComponentProps) {
               />
             </div>
           )}
-          {currentMode === 'altTranslate' && (
+          {!isEncrypted && currentMode === 'altTranslate' && (
             <div className={styles.control}>
               <AltTranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={altTranslate} />
             </div>
           )}
-          {currentMode === 'annotate' && (
+          {!isEncrypted && currentMode === 'annotate' && (
             <div className={styles.control}>
               <AnnotateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={annotate} />
             </div>

@@ -1,3 +1,4 @@
+import { EncryptedPayloadDraftEntity } from '../api/types/entities/EncryptedPayloadEntity'
 import CodeError from '../CodeError'
 import BookmarkRepository from '../db/repositories/BookmarkRepository'
 import CommentRepository from '../db/repositories/CommentRepository'
@@ -97,15 +98,24 @@ export default class PostManager {
     title: string,
     content: string,
     format: ContentFormat,
+    encryptedPayload?: EncryptedPayloadDraftEntity,
   ): Promise<PostInfo> {
     const site = await this.siteManager.getSiteByName(siteName)
     if (!site) {
       throw new CodeError('no-site', 'Site not found')
     }
 
-    const parseResult = this.parser.parse(content)
-    const language = await this.translationManager.detectLanguage(title, parseResult.text)
-    const postRaw = await this.postRepository.createPost(site.id, userId, title, content, language, parseResult.text)
+    const parseResult = encryptedPayload ? { text: '', mentions: [] } : this.parser.parse(content)
+    const language = encryptedPayload ? '' : await this.translationManager.detectLanguage(title, parseResult.text)
+    const postRaw = await this.postRepository.createPost(
+      site.id,
+      userId,
+      title,
+      encryptedPayload ? '' : content,
+      language,
+      encryptedPayload ? '' : parseResult.text,
+      encryptedPayload,
+    )
     this.userManager.clearUserRestrictionsCache(userId)
 
     await this.bookmarkRepository.setWatch(postRaw.post_id, userId, true)
@@ -126,6 +136,7 @@ export default class PostManager {
       created: postRaw.created_at,
       title: postRaw.title,
       content: format === 'html' ? postRaw.html : postRaw.source,
+      encryptedPayloadId: postRaw.encrypted_payload_id || undefined,
       rating: 0,
       comments: 0,
       newComments: 0,
@@ -141,6 +152,7 @@ export default class PostManager {
     title: string | undefined,
     content: string,
     format: ContentFormat,
+    encryptedPayload?: EncryptedPayloadDraftEntity,
   ): Promise<PostInfo> {
     let [rawPost] = await this.postRepository.getPostsWithUserData([postId], forUserId)
     if (rawPost.author_id !== forUserId) {
@@ -153,16 +165,24 @@ export default class PostManager {
       throw new CodeError('rate-limit', 'Edit rate limit exceeded', 429, { waitSeconds: Math.ceil(waitTimeToEditSec) })
     }
 
-    if (rawPost.source === content && rawPost.title === title) {
+    if (!encryptedPayload && rawPost.source === content && rawPost.title === title) {
       // nothing changed
       const [post] = await this.feedManager.convertRawPosts(forUserId, [rawPost], format)
       return post
     }
 
-    const html = (await this.parser.parse(content)).text
-    const language = await this.translationManager.detectLanguage(title, html)
+    const html = encryptedPayload ? '' : (await this.parser.parse(content)).text
+    const language = encryptedPayload ? '' : await this.translationManager.detectLanguage(title, html)
 
-    const updated = await this.postRepository.updatePostText(forUserId, postId, title, content, language, html)
+    const updated = await this.postRepository.updatePostText(
+      forUserId,
+      postId,
+      title,
+      encryptedPayload ? '' : content,
+      language,
+      html,
+      encryptedPayload,
+    )
     if (!updated) {
       throw new CodeError('unknown', 'Could not edit comment')
     }
@@ -236,7 +256,7 @@ export default class PostManager {
         siteById[raw.site_id] = site
       }
 
-      if (raw.parser_version !== TheParser.VERSION) {
+      if (!raw.encrypted_payload_id && raw.parser_version !== TheParser.VERSION) {
         const html = this.parser.parse(raw.source).text
         raw.parser_version = TheParser.VERSION
         postsToUpdateHtmlAndParserVersion.push({
@@ -251,6 +271,7 @@ export default class PostManager {
         post: raw.post_id,
         site: site ? site.site : '',
         content: format === 'html' ? raw.html : raw.source,
+        encryptedPayloadId: raw.encrypted_payload_id || undefined,
         author: raw.author_id,
         created: raw.created_at,
         rating: raw.rating,
@@ -262,7 +283,7 @@ export default class PostManager {
       if (raw.deleted) {
         comment.deleted = true
       }
-      if (raw.author_id === forUserId) {
+      if (raw.author_id === forUserId && !raw.encrypted_payload_id) {
         comment.canEdit = true
       }
       if (raw.edit_flag) {
@@ -295,27 +316,29 @@ export default class PostManager {
     parentCommentId: number | undefined,
     content: string,
     format: ContentFormat,
+    encryptedPayload: EncryptedPayloadDraftEntity | undefined,
     notificationOptions: {
       bumpFeed: boolean
       sendNotifications: boolean
     },
   ): Promise<CommentInfoWithPostData> {
-    const parseResult = this.parser.parse(content)
-    const language = await this.translationManager.detectLanguage('', parseResult.text)
+    const parseResult = encryptedPayload ? { text: '', mentions: [] } : this.parser.parse(content)
+    const language = encryptedPayload ? '' : await this.translationManager.detectLanguage('', parseResult.text)
     const { bumpFeed, sendNotifications } = notificationOptions
 
     const commentRaw = await this.commentRepository.createComment(
       userId,
       postId,
       parentCommentId,
-      content,
+      encryptedPayload ? '' : content,
       language,
-      parseResult.text,
+      encryptedPayload ? '' : parseResult.text,
+      encryptedPayload,
       bumpFeed,
     )
     this.userManager.clearUserRestrictionsCache(userId)
 
-    if (sendNotifications) {
+    if (sendNotifications && !encryptedPayload) {
       let parentAuthor: UserInfo | undefined
       if (parentCommentId) {
         const parentComment = await this.commentRepository.getComment(parentCommentId)
@@ -370,6 +393,7 @@ export default class PostManager {
     commentId: number,
     content: string,
     format: ContentFormat,
+    encryptedPayload?: EncryptedPayloadDraftEntity,
   ): Promise<CommentInfoWithPostData> {
     let rawComment = await this.commentRepository.getCommentWithUserData(forUserId, commentId)
     if (rawComment.author_id !== forUserId) {
@@ -382,16 +406,23 @@ export default class PostManager {
       throw new CodeError('rate-limit', 'Edit rate limit exceeded', 429, { waitSeconds: Math.ceil(waitTimeToEditSec) })
     }
 
-    if (rawComment.source === content) {
+    if (!encryptedPayload && rawComment.source === content) {
       // nothing changed
       const [comment] = await this.convertRawCommentsWithPostData(forUserId, [rawComment], format)
       return comment
     }
 
-    const html = (await this.parser.parse(content)).text
-    const language = await this.translationManager.detectLanguage('', html)
+    const html = encryptedPayload ? '' : (await this.parser.parse(content)).text
+    const language = encryptedPayload ? '' : await this.translationManager.detectLanguage('', html)
 
-    const updated = await this.commentRepository.updateCommentText(forUserId, commentId, content, language, html)
+    const updated = await this.commentRepository.updateCommentText(
+      forUserId,
+      commentId,
+      encryptedPayload ? '' : content,
+      language,
+      html,
+      encryptedPayload,
+    )
     if (!updated) {
       throw new CodeError('unknown', 'Could not edit comment')
     }

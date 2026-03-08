@@ -16,6 +16,7 @@ export type PostRaw = {
   gold: number
   language: string
   content_source_id: number
+  encrypted_payload_id: number | null
   parser_version: number
 } & PostBareBonesRaw
 
@@ -41,6 +42,7 @@ export type CommentRaw = {
   edit_flag?: number
   language: string
   content_source_id: number
+  encrypted_payload_id: number | null
   parser_version: number
 }
 

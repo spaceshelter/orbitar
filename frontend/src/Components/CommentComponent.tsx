@@ -8,9 +8,11 @@ import { toast } from 'react-toastify'
 
 import Conf from '../Conf'
 import { CommentInfo, PostLinkInfo } from '../Types/PostInfo'
+import { EncryptedPayloadDraft } from '../Utils/mailCrypto'
 import { AltTranslateButton, AnnotateButton, TranslateButton } from './ContentButtons'
 import ContentComponent, { LARGE_AUTO_CUT } from './ContentComponent'
 import { CreateCommentComponentRestricted } from './CreateCommentComponent'
+import EncryptedContentComponent from './EncryptedContentComponent'
 import { HistoryComponent } from './HistoryComponent'
 import RatingSwitch from './RatingSwitch'
 import { SignatureComponent } from './SignatureComponent'
@@ -24,8 +26,17 @@ interface CommentProps {
   comment: CommentInfo
   showSite?: boolean
   parent?: CommentInfo
-  onAnswer?: (text: string, post?: PostLinkInfo, comment?: CommentInfo) => Promise<CommentInfo | undefined>
-  onEdit?: (text: string, comment: CommentInfo) => Promise<CommentInfo | undefined>
+  onAnswer?: (
+    text: string,
+    post?: PostLinkInfo,
+    comment?: CommentInfo,
+    encryptedPayload?: EncryptedPayloadDraft,
+  ) => Promise<CommentInfo | undefined>
+  onEdit?: (
+    text: string,
+    comment: CommentInfo,
+    encryptedPayload?: EncryptedPayloadDraft,
+  ) => Promise<CommentInfo | undefined>
   depth?: number
   maxTreeDepth?: number
   idx?: number
@@ -62,23 +73,33 @@ export default function CommentComponent(props: CommentProps) {
     setShowOptions(!showOptions)
   }
 
-  const handleAnswer = async (text: string, post?: PostLinkInfo, comment?: CommentInfo) => {
+  const handleAnswer = async (
+    text: string,
+    post?: PostLinkInfo,
+    comment?: CommentInfo,
+    encryptedPayload?: EncryptedPayloadDraft,
+  ) => {
     if (!post) {
       return undefined
     }
-    const res = await props.onAnswer?.(text, post, comment)
+    const res = await props.onAnswer?.(text, post, comment, encryptedPayload)
     setAnswerOpen(false)
     return res
   }
 
-  const handleEditComplete = async (text: string) => {
+  const handleEditComplete = async (
+    text: string,
+    _post?: PostLinkInfo,
+    _comment?: CommentInfo,
+    encryptedPayload?: EncryptedPayloadDraft,
+  ) => {
     try {
-      const res = await props.onEdit?.(text, props.comment)
+      const res = await props.onEdit?.(text, props.comment, encryptedPayload)
       setEditingText(false)
       return res
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.log('Could not edit comment', err)
-      toast.error(err.message || 'Не удалось отредактировать комментарий')
+      toast.error(err instanceof Error ? err.message : 'Не удалось отредактировать комментарий')
       throw err
     }
   }
@@ -106,6 +127,7 @@ export default function CommentComponent(props: CommentProps) {
 
   const { author, created, site, postLink, editFlag } = props.comment
   const content = altContent || props.comment.content
+  const isEncrypted = !!props.comment.encryptedPayloadId
 
   const depth = props.depth || 0
   const maxDepth = props.maxTreeDepth || 0
@@ -143,18 +165,32 @@ export default function CommentComponent(props: CommentProps) {
             />
           ) : (
             <div className={styles.content}>
-              <ContentComponent
-                className={styles.commentContent}
-                content={content}
-                currentUsername={props.currentUsername}
-                lowRating={props.comment.rating <= Conf.COMMENT_LOW_RATING_THRESHOLD || props.comment.vote === -1}
-                autoCut={
-                  !altContent &&
-                  (props.comment.rating <= Conf.COMMENT_LOW_RATING_THRESHOLD || props.comment.vote === -1)
-                    ? LARGE_AUTO_CUT
-                    : undefined
-                }
-              />
+              {props.comment.encryptedPayloadId ? (
+                <EncryptedContentComponent
+                  className={styles.commentContent}
+                  encryptedPayloadId={props.comment.encryptedPayloadId}
+                  kind='comment'
+                  lowRating={props.comment.rating <= Conf.COMMENT_LOW_RATING_THRESHOLD || props.comment.vote === -1}
+                  autoCut={
+                    props.comment.rating <= Conf.COMMENT_LOW_RATING_THRESHOLD || props.comment.vote === -1
+                      ? LARGE_AUTO_CUT
+                      : undefined
+                  }
+                />
+              ) : (
+                <ContentComponent
+                  className={styles.commentContent}
+                  content={content}
+                  currentUsername={props.currentUsername}
+                  lowRating={props.comment.rating <= Conf.COMMENT_LOW_RATING_THRESHOLD || props.comment.vote === -1}
+                  autoCut={
+                    !altContent &&
+                    (props.comment.rating <= Conf.COMMENT_LOW_RATING_THRESHOLD || props.comment.vote === -1)
+                      ? LARGE_AUTO_CUT
+                      : undefined
+                  }
+                />
+              )}
             </div>
           )
         ) : (
@@ -187,7 +223,7 @@ export default function CommentComponent(props: CommentProps) {
           )}
 
           <div className={styles.control + ' ' + postStyles.options}>
-            {(showTranslateButtonInline || currentMode === 'translate') && (
+            {!isEncrypted && (showTranslateButtonInline || currentMode === 'translate') && (
               <div className={styles.control}>
                 <TranslateButton
                   iconOnly={true}
@@ -197,12 +233,12 @@ export default function CommentComponent(props: CommentProps) {
                 />
               </div>
             )}
-            {currentMode === 'altTranslate' && (
+            {!isEncrypted && currentMode === 'altTranslate' && (
               <div className={styles.control}>
                 <AltTranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={altTranslate} />
               </div>
             )}
-            {currentMode === 'annotate' && (
+            {!isEncrypted && currentMode === 'annotate' && (
               <div className={styles.control}>
                 <AnnotateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={annotate} />
               </div>
