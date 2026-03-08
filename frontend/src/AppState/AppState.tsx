@@ -6,6 +6,7 @@ import { createContext, ReactElement, ReactNode, useContext, useEffect, useMemo 
 import APIBase from '../API/APIBase';
 import APICache from '../API/APICache';
 import APIHelper from '../API/APIHelper';
+import { CryptoSessionStore } from './CryptoSessionStore';
 import ConfirmDialog, { ConfirmDialogProps } from '../Components/ConfirmDialog';
 import MediaUploader, { MediaUploaderProps } from '../Components/MediaUploader';
 import { themes } from '../theme';
@@ -97,6 +98,7 @@ export class AppState {
 
     readonly api: APIHelper;
     readonly cache: APICache;
+    readonly cryptoSession: CryptoSessionStore;
 
     constructor() {
         makeObservable(this);
@@ -107,6 +109,7 @@ export class AppState {
 
         const apiBase = new APIBase();
         this.cache = makeAutoObservable(new APICache());
+        this.cryptoSession = new CryptoSessionStore();
         this.api = new APIHelper(apiBase, this);
         this.api.init().then().catch();
 
@@ -155,11 +158,13 @@ export class AppState {
 
     @action
     setUserInfo(value: UserInfo | undefined) {
+        this.cryptoSession.syncCurrentUser(value?.id);
         this.userInfo = value;
     }
 
     clearCachesOnLogout() {
         this.api.oauth2Api.clearClientCache()
+        this.cryptoSession.clear()
     }
 
     @action

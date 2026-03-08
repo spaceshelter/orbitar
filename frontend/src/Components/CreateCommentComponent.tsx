@@ -19,7 +19,6 @@ import { UserGender } from '../Types/UserInfo'
 import ContentComponent from './ContentComponent'
 import MediaUploader, { CreateGalleryOption, MediaResult } from './MediaUploader'
 import { PollCreationWizard, PollCreationWizardSubmitData } from './PollCreationWizard'
-import { SecretMailEncoderForm } from './SecretMailbox'
 import SlowMode from './SlowMode'
 import ThemeToggleComponent from './ThemeToggleComponent'
 
@@ -173,15 +172,6 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
   })
   const controlsRef = useRef<HTMLDivElement>(null)
 
-  const [parentPublicKey, setParentPublicKey] = useState<
-    | {
-        publicKey: string
-        username: string
-      }
-    | undefined
-  >(undefined)
-  const [mailForm, setFormOpen] = useState(false)
-
   const api = useAPI()
 
   const pronoun =
@@ -191,27 +181,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         ? 'ей'
         : ''
   const placeholderText = props.comment ? `Ваш ответ ${pronoun}` : ''
-  const disabledButtons = isPosting || previewing !== null || mailForm
-
-  const state = useAppState()
-  const username = state.userInfo?.username
-
-  // retrieve parent public key
-  useEffect(() => {
-    const parentUserName = props.parentAuthorUserName || props.comment?.author?.username
-
-    if (!parentUserName || parentUserName === username) {
-      return
-    }
-    api.postAPI.getPublicKeyByUsername(parentUserName).then((res) => {
-      if (res.publicKey) {
-        setParentPublicKey({
-          publicKey: res.publicKey,
-          username: parentUserName,
-        })
-      }
-    })
-  }, [props.parentAuthorUserName, props.comment])
+  const disabledButtons = isPosting || previewing !== null
 
   const setStorageValueDebounced = useDebouncedCallback((value) => {
     if (props.storageKey) {
@@ -503,13 +473,6 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
     }
   }
 
-  const handleMailClose = (result?: string) => {
-    setFormOpen(false)
-    if (result) {
-      replaceText(result, result.length)
-    }
-  }
-
   const handlePollCreate = async (pollData: PollCreationWizardSubmitData) => {
     try {
       const result = await api.pollAPI.createPoll({
@@ -695,10 +658,6 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
               <PollIcon />
             </Button>
           </div>
-          {/*{parentPublicKey &&*/}
-          {/*<div className={styles.control}>*/}
-          {/*    <Button variant='minimal' disabled={disabledButtons} onClick={() => setFormOpen(true)} title="Шифрованное послание"><MailIcon /></Button></div>*/}
-          {/*}*/}
         </SpilloverWrapper>
       </div>
       {previewing === null ? (
@@ -762,14 +721,6 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             onCancel={handleMediaUploadCancel}
             mediaData={mediaUploaderData}
             initialGalleryCreate={mediaUploaderInGallery}
-          />
-        )}
-        {mailForm && parentPublicKey && (
-          <SecretMailEncoderForm
-            openKey={parentPublicKey.publicKey}
-            forUsername={parentPublicKey.username}
-            mailboxTitle={`Шифровка`}
-            onClose={handleMailClose}
           />
         )}
         {pollWizardOpen &&

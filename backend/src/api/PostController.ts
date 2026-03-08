@@ -678,9 +678,12 @@ export default class PostController {
     const targetUser = await this.userManager.getByUsername(username)
 
     if (!targetUser) {
-      return res.success({ publicKey: undefined })
+      return res.success({ publicKey: undefined, publicKeyAlg: undefined })
     }
     const publicKey = await this.userManager.getPublicKey(targetUser.id)
-    return res.success({ publicKey })
+    return res.success({
+      publicKey: publicKey?.publicKey,
+      publicKeyAlg: publicKey?.publicKeyAlg,
+    })
   }
 }

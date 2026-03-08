@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useUserProfile } from '@api/use/useUserProfile'
 import { useAPI, useAppState } from '@state/AppState'
 import Button from '@ui/Button'
+import { MAILBOX_PUBLIC_KEY_ALG, MailboxKeyPair } from '@utils/mailCrypto'
 import { selectElementText } from '@utils/utils'
 import classNames from 'classnames'
 import { observer } from 'mobx-react-lite'
@@ -11,7 +12,7 @@ import { toast } from 'react-toastify'
 
 import { BarmaliniAccessResult, UserGender } from '../Types/UserInfo'
 import AnonymizeAccountDialog from './AnonymizeAccountDialog'
-import { SecretMailKeyGeneratorForm } from './SecretMailbox'
+import { MailboxUnlockForm, SecretMailKeyGeneratorForm } from './SecretMailbox'
 import ThemeToggleComponent from './ThemeToggleComponent'
 
 import styles from './UserProfileSettings.module.scss'
@@ -222,7 +223,7 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
         </Button>
       </div>
 
-      {/* <MailboxSettings /> */}
+      <MailboxSettings />
       {props.barmaliniAccess && <BarmaliniAccess />}
 
       {!props.hasApps && (
@@ -358,22 +359,28 @@ const BarmaliniAccess = observer(() => {
  */
 export const MailboxSettings = observer(() => {
   const api = useAPI()
-  const { userInfo, confirmAlert } = useAppState()
+  const appState = useAppState()
+  const { userInfo, confirmAlert } = appState
   const [state, refreshProfile] = useUserProfile(userInfo?.username || '')
   const publicKey = state.status === 'ready' && state.profile.publicKey
+  const publicKeyAlg = state.status === 'ready' ? state.profile.publicKeyAlg : ''
   const [creatingMailbox, setCreatingMailbox] = React.useState(false)
+  const [unlockingMailbox, setUnlockingMailbox] = React.useState(false)
   const [revealPublicKey, setRevealPublicKey] = React.useState(false)
+  const mailboxCreated = !!publicKey && !!publicKeyAlg
+  const mailboxUnlocked = !!publicKey && !!publicKeyAlg && appState.cryptoSession.hasMailboxKey(publicKey, publicKeyAlg)
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.preventDefault()
     await confirmAlert({
       message:
-        'Вы действительно хотите удалить почтовый ящик? Вы больше не сможете получать новые шифровки, ' +
-        'но вы сможете читать старые шифровки, адресованные вам.',
+        'Вы действительно хотите удалить почтовый ящик? Вы больше не сможете получать новый закрытый контент, ' +
+        'зашифрованный для вас.',
       onConfirm: () => {
         api.userAPI
-          .savePublicKey('')
+          .savePublicKey('', '')
           .then(() => {
+            appState.cryptoSession.clear()
             refreshProfile()
           })
           .catch((error) => {
@@ -394,10 +401,15 @@ export const MailboxSettings = observer(() => {
     }
   }
 
-  const handleCreatePublicKey = (key: string) => {
+  const handleCreatePublicKey = (keyPair: MailboxKeyPair) => {
+    if (!userInfo) {
+      return
+    }
+
     api.userAPI
-      .savePublicKey(key)
+      .savePublicKey(keyPair.publicKey, keyPair.publicKeyAlg)
       .then(() => {
+        appState.cryptoSession.cacheMailboxKeyPair(userInfo.id, keyPair)
         refreshProfile()
       })
       .catch((error) => {
@@ -412,14 +424,17 @@ export const MailboxSettings = observer(() => {
     <>
       {(state.status === 'ready' && (
         <div className={styles.mailbox}>
-          {(publicKey && (
+          {(mailboxCreated && (
             <>
-              {/*mailbox exists*/}
               <div className={styles.mailboxHeader}>
-                <span className={classNames('i i-mailbox-secure', { [styles.mailboxCreated]: !!publicKey })} />
-                Почтовый ящик готов!
+                <span className={classNames('i i-mailbox-secure', { [styles.mailboxCreated]: mailboxCreated })} />
+                {mailboxUnlocked ? 'Почтовый ящик разблокирован' : 'Почтовый ящик готов'}
               </div>
               <div className={styles.mailboxActions}>
+                {!mailboxUnlocked && publicKey && publicKeyAlg && (
+                  <Button onClick={() => setUnlockingMailbox(true)}>Разблокировать</Button>
+                )}
+                {mailboxUnlocked && <Button onClick={() => appState.cryptoSession.clear()}>Заблокировать</Button>}
                 <Button variant='danger' onClick={handleDelete}>
                   Удалить
                 </Button>
@@ -435,13 +450,14 @@ export const MailboxSettings = observer(() => {
                     <span className={styles.publicKey} onClick={handleShowPublicKey}>
                       {publicKey}
                     </span>
+                    <br />
+                    <span className={styles.label}>Алгоритм: {publicKeyAlg || MAILBOX_PUBLIC_KEY_ALG}</span>
                   </div>
                 )}
               </div>
             </>
           )) || (
             <div>
-              {/*Mailbox doesn't exist*/}
               <Button
                 onClick={() => {
                   setCreatingMailbox(true)
@@ -457,6 +473,16 @@ export const MailboxSettings = observer(() => {
       {creatingMailbox && (
         <div className={styles.modalWrapper}>
           <SecretMailKeyGeneratorForm onSuccess={handleCreatePublicKey} onCancel={() => setCreatingMailbox(false)} />
+        </div>
+      )}
+      {unlockingMailbox && publicKey && publicKeyAlg && (
+        <div className={styles.modalWrapper}>
+          <MailboxUnlockForm
+            publicKey={publicKey}
+            publicKeyAlg={publicKeyAlg}
+            onSuccess={() => setUnlockingMailbox(false)}
+            onCancel={() => setUnlockingMailbox(false)}
+          />
         </div>
       )}
     </>

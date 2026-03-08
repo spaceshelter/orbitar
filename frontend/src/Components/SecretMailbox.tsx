@@ -1,258 +1,18 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useRef, useState } from 'react'
 
-import { cryptico, RSAKey } from '@daotl/cryptico'
+import Button from '@ui/Button'
 import classNames from 'classnames'
 import { useHotkeys } from 'react-hotkeys-hook'
-import OutsideClickHandler from 'react-outside-click-handler'
-import TextareaAutosize from 'react-textarea-autosize'
-import { scrypt } from 'scrypt-js'
-import { useDebouncedCallback } from 'use-debounce'
 
-import useFocus from '../API/use/useFocus'
-import { useAPI, useAppState } from '../AppState/AppState'
-import { b64EncodeUnicode } from '../Utils/utils'
+import { useAppState } from '../AppState/AppState'
+import { deriveMailboxKeyPair, MailboxKeyPair } from '../Utils/mailCrypto'
 import Overlay from './Overlay'
 
-import createCommentStyles from './CreateCommentComponent.module.scss'
 import mediaFormStyles from './MediaUploader.module.scss'
 import styles from './SecretMailbox.module.scss'
 
-let rsaKeyCache: RSAKey | null = null
-
-async function getRSAKey(password: string): Promise<RSAKey> {
-  const salt = 'f8psK3rQ58K#J#j95@UXFt94RTyH!q9R'
-
-  const N = 16384,
-    r = 8,
-    p = 1
-  const dkLen = 32
-
-  const encoder = new TextEncoder()
-  const derivedKey = await scrypt(encoder.encode(password), encoder.encode(salt), N, r, p, dkLen)
-
-  return cryptico.generateRSAKey(new TextDecoder('utf-8').decode(derivedKey), 512)
-}
-
-export function SecretMailEncoderForm(props: {
-  openKey: string
-  forUsername?: string
-  mailboxTitle?: string
-  onClose: (result?: string) => void
-}) {
-  const [encoded, setEncoded] = useState<string>('')
-  const testAreaRef = useFocus<HTMLTextAreaElement>()
-  const resultRef = useRef<HTMLDivElement>(null)
-  const currentUsername = useAppState().userInfo?.username
-  const [ownPublicKey, setOwnPublicKey] = useState<false | string | undefined>(false)
-
-  const api = useAPI()
-
-  // fetch own public key
-  useEffect(() => {
-    if (currentUsername) {
-      api.postAPI.getPublicKeyByUsername(currentUsername).then((key) => {
-        setOwnPublicKey(key?.publicKey)
-      })
-    }
-  }, [currentUsername, api])
-
-  const encode = () => {
-    const sourceText = (testAreaRef.current?.value || '').trim()
-    if (!sourceText) {
-      return ''
-    }
-
-    const randomAESKey = cryptico.generateAESKey()
-    const aesKeyString = cryptico.bytes2string(randomAESKey)
-    const msgCypher = cryptico.encryptAESCBC(sourceText, randomAESKey)
-
-    const cipherTo: string = (cryptico.encrypt(aesKeyString, props.openKey, undefined as any) as any).cipher
-
-    const cipherFrom: string | undefined =
-      ownPublicKey && (cryptico.encrypt(aesKeyString, ownPublicKey, undefined as any) as any).cipher
-
-    const json = {
-      to: props.forUsername,
-      from: currentUsername,
-      toKey: cipherTo,
-      fromKey: cipherFrom,
-      c: msgCypher,
-      v: 1,
-    }
-    return b64EncodeUnicode(JSON.stringify(json))
-  }
-
-  const handleTextChange = useDebouncedCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setEncoded(encode())
-  }, 300)
-
-  const getResult = (encoded: string) =>
-    encoded && `<mail secret="${encoded}">${props.mailboxTitle || 'Шифровка'}</mail>`
-
-  // select all text in result div
-  const handleResultClick = () => {
-    if (resultRef.current) {
-      const range = document.createRange()
-      range.selectNodeContents(resultRef.current)
-      const selection = window.getSelection()
-      if (selection) {
-        selection.removeAllRanges()
-        selection.addRange(range)
-      }
-    }
-  }
-
-  const handleSubmit = () => {
-    props.onClose(getResult(encode()))
-  }
-
-  useHotkeys(
-    ['ctrl+enter', 'meta+enter'],
-    () => {
-      handleSubmit()
-    },
-    {
-      enableOnFormTags: true,
-    },
-  )
-
-  return (
-    <>
-      <Overlay
-        onClick={() => {
-          props.onClose()
-        }}
-      />
-      <div className={classNames(mediaFormStyles.container, styles.container, styles.modal)}>
-        <h3 className={classNames(styles.shortTitle)}>
-          <span className='i i-mail-secure' />
-          <span>{`${(props.mailboxTitle && props.mailboxTitle) || 'Написать шифровку'}`}</span>
-        </h3>
-        {!ownPublicKey && ownPublicKey !== false && (
-          <div className={styles.info}>
-            <p>
-              ⚠️ Вы не сможете прочитать это свое сообщение после отправки, так как не создали свой шифрованный почтовый
-              ящик.
-            </p>
-          </div>
-        )}
-        <div className={classNames(createCommentStyles.editor, createCommentStyles.answer)}>
-          <TextareaAutosize
-            placeholder={'Текст шифровки'}
-            ref={testAreaRef}
-            minRows={3}
-            maxRows={25}
-            maxLength={20000}
-            onChange={handleTextChange}
-          />
-        </div>
-        {encoded && (
-          <>
-            <span>Результат шифрования:</span>
-            <div className={styles.encodingResult} ref={resultRef} onClick={handleResultClick}>
-              {getResult(encoded)}
-            </div>
-          </>
-        )}
-        <div className={createCommentStyles.final}>
-          {/* FIXME replace with <Button */}
-          {/* eslint-disable-next-line react/forbid-elements */}
-          <button className={classNames(styles.copyButton, mediaFormStyles.choose)} onClick={handleSubmit}>
-            Готово
-          </button>
-        </div>
-      </div>
-    </>
-  )
-}
-
-export function SecretMailDecoderForm(props: {
-  encodedKey: string
-  cipher: string
-  title: string
-  onClose: (result: boolean) => void
-}) {
-  const tryDecode = (rsaKey: RSAKey | null) => {
-    if (!rsaKey) {
-      return null
-    }
-
-    const decoded = cryptico.decrypt(props.encodedKey, rsaKey)
-    if (decoded.status === 'success') {
-      rsaKeyCache = rsaKey
-
-      const aesKey = cryptico.string2bytes(decoded.plaintext)
-      const decrypted = cryptico.decryptAESCBC(props.cipher, aesKey)
-
-      props.onClose(true)
-      return decrypted
-    }
-    return null
-  }
-
-  const [decoded, setDecoded] = useState<string>((rsaKeyCache && tryDecode(rsaKeyCache)) || '')
-
-  const passwordRef = useFocus()
-  const [wrongPassword, setWrongPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
-
-  const handleDecode = useDebouncedCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLoading(true)
-    try {
-      const password = e.target.value
-      const res = tryDecode(await getRSAKey(password))
-      if (res) {
-        setDecoded(res)
-      }
-      setWrongPassword(!!password.length && !res)
-    } finally {
-      setLoading(false)
-    }
-  }, 300)
-
-  return decoded ? (
-    <>{decoded}</>
-  ) : (
-    <>
-      <OutsideClickHandler
-        onOutsideClick={() => {
-          if (!decoded) {
-            props.onClose(false)
-          }
-        }}
-      >
-        <div className={classNames(styles.container)}>
-          <h3>
-            <span className={classNames('i', decoded ? 'i-mail-open' : 'i-mail-secure')} />
-            <span>{props.title}</span>
-          </h3>
-          <div className={styles.decoded}>{decoded}</div>
-          <>
-            <input
-              autoFocus={true}
-              ref={passwordRef}
-              className={styles.decodeInput}
-              type='password'
-              placeholder='Пароль от почтового ящика'
-              onChange={handleDecode}
-            />
-            {(loading || wrongPassword) && (
-              <div className={styles.hint}>
-                {loading && <span className={classNames(mediaFormStyles.warning, 'i i-slow')}>Проверяем...</span>}
-                {!loading && (
-                  <span className={classNames(mediaFormStyles.error, 'i i-close')}>Пароль не подходит.</span>
-                )}
-              </div>
-            )}
-          </>
-        </div>
-      </OutsideClickHandler>
-    </>
-  )
-}
-
 type SecretMailKeyGeneratorFormProps = {
-  onSuccess: (key: string) => void
+  onSuccess: (keyPair: MailboxKeyPair) => void
   onCancel: () => void
 }
 
@@ -265,32 +25,32 @@ export function SecretMailKeyGeneratorForm(props: SecretMailKeyGeneratorFormProp
   const [loading, setLoading] = useState(false)
 
   const handlePasswordChange = () => {
-    if (!password1Ref?.current?.value || !password2Ref?.current?.value) {
+    if (!password1Ref.current?.value || !password2Ref.current?.value) {
       setPasswordsMatch(null)
       return
     }
+
     setPasswordsMatch(password1Ref.current.value === password2Ref.current.value)
   }
 
   const handleSubmit = async () => {
-    if (passwordsMatch === true) {
-      try {
-        setLoading(true)
-        const passwd = password1Ref?.current?.value || ''
-        const privateKey = await getRSAKey(passwd)
-        const publicKey = cryptico.publicKeyString(privateKey)
-        props.onSuccess(publicKey)
-      } finally {
-        setLoading(false)
-      }
+    if (passwordsMatch !== true) {
+      return
+    }
+
+    try {
+      setLoading(true)
+      const keyPair = await deriveMailboxKeyPair(password1Ref.current?.value || '')
+      props.onSuccess(keyPair)
+    } finally {
+      setLoading(false)
     }
   }
 
-  // handle keypresses
   useHotkeys(
     ['ctrl+enter', 'meta+enter'],
     () => {
-      handleSubmit()
+      handleSubmit().catch()
     },
     {
       enableOnFormTags: true,
@@ -314,13 +74,13 @@ export function SecretMailKeyGeneratorForm(props: SecretMailKeyGeneratorFormProp
         <form
           onSubmit={(e) => {
             e.preventDefault()
-            handleSubmit()
+            handleSubmit().catch()
           }}
         >
           <div className={styles.info}>
             <p>
-              Создайте ваш новый пароль для расшифровки адресованных вам секретных соообщений (также для чтения вами
-              ваших исходящих). Этот пароль не обязан совпадать с паролем от аккаунта.
+              Создайте пароль почтового ящика. Из него на этом устройстве детерминированно выводится ваш приватный ключ
+              для расшифровки адресованных вам зашифрованных сообщений и будущего закрытого контента.
             </p>
           </div>
           <label>Пароль</label>
@@ -328,7 +88,7 @@ export function SecretMailKeyGeneratorForm(props: SecretMailKeyGeneratorFormProp
             autoFocus={true}
             type={inputType}
             placeholder='Пароль'
-            id={'pwd1'}
+            id='pwd1'
             ref={password1Ref}
             onChange={handlePasswordChange}
           />
@@ -341,7 +101,7 @@ export function SecretMailKeyGeneratorForm(props: SecretMailKeyGeneratorFormProp
           <input
             type={inputType}
             placeholder='Пароль еще раз'
-            id={'pwd2'}
+            id='pwd2'
             ref={password2Ref}
             onChange={handlePasswordChange}
           />
@@ -362,18 +122,15 @@ export function SecretMailKeyGeneratorForm(props: SecretMailKeyGeneratorFormProp
 
           <div className={classNames(styles.columns, styles.submit)}>
             <div className={styles.cutCover}>
-              {/* FIXME replace with <Button */}
-              {/* eslint-disable-next-line react/forbid-elements */}
-              <button
-                className={classNames('button', styles.cutButton)}
-                type='button'
+              <Button
+                className={styles.cutButton}
                 onClick={(e) => {
                   e.preventDefault()
                   setCut(!cut)
                 }}
               >
                 <span className={classNames('i', 'i-info')}></span>Инфо
-              </button>
+              </Button>
             </div>
             <div>
               <input
@@ -387,20 +144,89 @@ export function SecretMailKeyGeneratorForm(props: SecretMailKeyGeneratorFormProp
 
           <div className={classNames(styles.hint, { [styles.collapsed]: cut })}>
             <p>
-              Когда вы вводите пароль, на его основе генерируются пара ключей (публичный и приватный) для шифрования
-              секретных сообщений, <b>адресованных вам</b>. Публичный ключ не является секретом, он хранится на сервере
-              и виден другим пользователям, а приватный ключ нигде не сохраняется, и используется только на вашем
-              компьютере для расшифровки сообщений, зашифрованных с помощью публичного ключа.
+              На сервер отправляется только публичный ключ. Приватный ключ не сохраняется и каждый раз выводится из
+              вашего пароля локально в браузере.
             </p>
             <p>
-              Обратите внимание, что если вы решите сменить пароль "почтового ящика", то вместе с ним изменятся и ключи
-              шифрования. Новые сообщения <b>адресованные вам</b> (а также ваши копии исходящих сообщений) будут
-              шифроваться с помощью нового ключа, а старые сообщения, зашифрованные с помощью старого ключа, можно будет
-              прочитать только с помощью старого пароля. Поэтому очень важно хорошо запоминать свои пароли или сохранять
-              их в надежном месте.
+              Если вы смените пароль почтового ящика, изменится и пара ключей. Новый закрытый контент для вас будет
+              шифроваться уже под новый ключ, а старый останется привязан к старому паролю.
             </p>
           </div>
         </form>
+      </div>
+    </>
+  )
+}
+
+type MailboxUnlockFormProps = {
+  publicKey: string
+  publicKeyAlg: string
+  onSuccess?: () => void
+  onCancel: () => void
+}
+
+export function MailboxUnlockForm(props: MailboxUnlockFormProps) {
+  const appState = useAppState()
+  const passwordRef = useRef<HTMLInputElement>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleSubmit = async () => {
+    const userId = appState.userInfo?.id
+    const password = passwordRef.current?.value || ''
+
+    if (!userId || !password) {
+      return
+    }
+
+    try {
+      setError(null)
+      await appState.cryptoSession.unlockMailbox(userId, password, props.publicKey, props.publicKeyAlg)
+      props.onSuccess?.()
+    } catch (unlockError) {
+      setError(unlockError instanceof Error ? unlockError.message : 'Не удалось разблокировать почтовый ящик.')
+    }
+  }
+
+  useHotkeys(
+    ['ctrl+enter', 'meta+enter'],
+    () => {
+      handleSubmit().catch()
+    },
+    {
+      enableOnFormTags: true,
+    },
+  )
+
+  return (
+    <>
+      <Overlay onClick={props.onCancel} />
+      <div className={classNames(mediaFormStyles.container, styles.container, styles.modal)}>
+        <h3>
+          <span className='i i-mailbox-secure'></span>
+          Разблокировать почтовый ящик
+        </h3>
+        <div className={styles.info}>
+          <p>Введите пароль от вашего почтового ящика. После успешной разблокировки ключ останется в памяти сессии.</p>
+        </div>
+        <label>Пароль</label>
+        <input
+          autoFocus={true}
+          ref={passwordRef}
+          className={styles.decodeInput}
+          type='password'
+          placeholder='Пароль от почтового ящика'
+          onChange={() => setError(null)}
+        />
+        {error && (
+          <div className={styles.hint}>
+            <span className={classNames(mediaFormStyles.error, 'i i-close')}>{error}</span>
+          </div>
+        )}
+        <div className={styles.submit}>
+          <Button onClick={() => handleSubmit().catch()} disabled={appState.cryptoSession.mailboxUnlocking}>
+            {appState.cryptoSession.mailboxUnlocking ? 'Разблокируем...' : 'Разблокировать'}
+          </Button>
+        </div>
       </div>
     </>
   )

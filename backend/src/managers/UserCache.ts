@@ -2,6 +2,7 @@ import TrieSearch from 'trie-search'
 
 import UserRepository from '../db/repositories/UserRepository'
 import { UserRaw } from '../db/types/UserRaw'
+import { MailboxPublicKey } from './types/MailboxPublicKey'
 import { UserInfo, UserStats } from './types/UserInfo'
 
 export class UserCache {
@@ -16,7 +17,7 @@ export class UserCache {
   private cacheId: Record<number, UserInfo> = {}
   private cacheUsername: Record<string, UserInfo> = {}
   private cachedUserParents: Record<number, number | undefined | false> = {}
-  private cachedPublicKeys: Record<number, string | undefined> = {}
+  private cachedPublicKeys: Record<number, MailboxPublicKey | undefined> = {}
   private usernamesSuggestionsCache = new TrieSearch('k', { min: 1 })
   private userStatsCache = new Map<number, UserStats>()
 
@@ -161,8 +162,8 @@ export class UserCache {
     delete this.cachedPublicKeys[userId]
   }
 
-  async getPublicKey(userId: number): Promise<string | undefined> {
-    if (this.cachedPublicKeys[userId]) {
+  async getPublicKey(userId: number): Promise<MailboxPublicKey | undefined> {
+    if (userId in this.cachedPublicKeys) {
       return this.cachedPublicKeys[userId]
     }
 
