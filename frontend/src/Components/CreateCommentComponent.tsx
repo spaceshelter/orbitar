@@ -238,10 +238,14 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
       throw new Error('Не удалось определить адресата шифрования.')
     }
 
-    const [senderKey, recipientKey] = await Promise.all([
-      api.postAPI.getPublicKeyByUsername(currentUsername),
-      api.postAPI.getPublicKeyByUsername(encryptionTarget.username),
-    ])
+    const recipientKey = await api.postAPI.getPublicKeyByUsername(encryptionTarget.username)
+    const senderKey =
+      currentUser.publicKey && currentUser.publicKeyAlg
+        ? {
+            publicKey: currentUser.publicKey,
+            publicKeyAlg: currentUser.publicKeyAlg,
+          }
+        : await api.postAPI.getPublicKeyByUsername(currentUsername)
 
     if (!senderKey.publicKey || senderKey.publicKeyAlg !== MAILBOX_PUBLIC_KEY_ALG) {
       throw new Error('Сначала создайте собственный шифрованный почтовый ящик в настройках профиля.')
@@ -775,7 +779,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         </SpilloverWrapper>
       </div>
       {previewing === null ? (
-        <div className={styles.editor} ref={containerRef}>
+        <div className={classNames(styles.editor, { [styles.editorEncrypted]: isEncrypted })} ref={containerRef}>
           <ReactTextareaAutocomplete<string>
             tabIndex={textareaTabIndex}
             placeholder={placeholderText}
@@ -799,7 +803,9 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
         </div>
       ) : (
         <div
-          className={classNames(commentStyles.content, styles.preview, postStyles.preview)}
+          className={classNames(commentStyles.content, styles.preview, postStyles.preview, {
+            [styles.previewEncrypted]: isEncrypted,
+          })}
           onClick={handleClosePreview}
         >
           <ContentComponent content={previewing} />
@@ -807,19 +813,22 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
       )}
       <div className={styles.final}>
         <ButtonGroup spacing={ButtonGroupSpacing.MEDIUM} className={styles.commentButtonGroup}>
-          <div className={styles.buttonThemeToggle}>
-            {previewing && <ThemeToggleComponent buttonLabel='Превью с другой темой' resetOnOnmount={true} />}
-          </div>
           {encryptionTarget && (
             <Button
-              variant='minimal'
+              variant={isEncrypted ? 'primaryAccent' : 'ghostAccent'}
+              size='normal'
               active={isEncrypted}
-              disabled={isPosting}
+              disabled={disabledButtons}
               onClick={() => toggleEncrypted().catch()}
+              className={styles.buttonEncrypt}
+              title='Шифровка'
             >
               <span className='i i-mail-secure' />
             </Button>
           )}
+          <div className={styles.buttonThemeToggle}>
+            {previewing && <ThemeToggleComponent buttonLabel='Превью темы' resetOnOnmount={true} />}
+          </div>
           <Button
             variant='minimal'
             disabled={isPosting || !answerText}

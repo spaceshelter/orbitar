@@ -489,7 +489,7 @@ export default class PostController {
       const {
         allComments: [comment],
       } = await this.enricher.enrichRawComments([commentInfo], {}, format, () => true)
-      comment.canEdit = overrideUserId === userId && !comment.encryptedPayloadId
+      comment.canEdit = overrideUserId === userId
 
       const users: Record<number, UserEntity> = { [overrideUserId]: await this.userManager.getById(overrideUserId) }
 

@@ -38,6 +38,7 @@ export default class StatusController {
       const userId = request.session.data.userId
       const user = await this.userManager.getById(userId)
       const stats = await this.userManager.getUserStats(userId)
+      const mailboxPublicKey = await this.userManager.getPublicKey(userId)
 
       if (!user) {
         // Something wrong, user should exist!
@@ -45,7 +46,11 @@ export default class StatusController {
       }
 
       return response.success({
-        user,
+        user: {
+          ...user,
+          publicKey: mailboxPublicKey?.publicKey || '',
+          publicKeyAlg: mailboxPublicKey?.publicKeyAlg || '',
+        },
         ...stats,
       })
     } catch (err) {

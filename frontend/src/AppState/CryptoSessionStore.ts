@@ -68,6 +68,14 @@ export class CryptoSessionStore {
 
       return keyPair
     } catch (error) {
+      if (this.mailboxUserId === userId && this.hasMailboxKey(publicKey, publicKeyAlg) && this.mailboxKeyPair) {
+        runInAction(() => {
+          this.mailboxUnlocking = false
+          this.mailboxError = undefined
+        })
+        return this.mailboxKeyPair
+      }
+
       runInAction(() => {
         this.mailboxUnlocking = false
         this.mailboxError = error instanceof Error ? error.message : 'Не удалось разблокировать почтовый ящик.'

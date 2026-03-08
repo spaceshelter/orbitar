@@ -372,6 +372,11 @@ export const MailboxSettings = observer(() => {
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.preventDefault()
+    if (!userInfo) {
+      return
+    }
+
+    const currentUserInfo = userInfo
     await confirmAlert({
       message:
         'Вы действительно хотите удалить почтовый ящик? Вы больше не сможете получать новый закрытый контент, ' +
@@ -381,6 +386,11 @@ export const MailboxSettings = observer(() => {
           .savePublicKey('', '')
           .then(() => {
             appState.cryptoSession.clear()
+            appState.setUserInfo({
+              ...currentUserInfo,
+              publicKey: '',
+              publicKeyAlg: '',
+            })
             refreshProfile()
           })
           .catch((error) => {
@@ -406,10 +416,17 @@ export const MailboxSettings = observer(() => {
       return
     }
 
+    const currentUserInfo = userInfo
+
     api.userAPI
       .savePublicKey(keyPair.publicKey, keyPair.publicKeyAlg)
       .then(() => {
-        appState.cryptoSession.cacheMailboxKeyPair(userInfo.id, keyPair)
+        appState.cryptoSession.cacheMailboxKeyPair(currentUserInfo.id, keyPair)
+        appState.setUserInfo({
+          ...currentUserInfo,
+          publicKey: keyPair.publicKey,
+          publicKeyAlg: keyPair.publicKeyAlg,
+        })
         refreshProfile()
       })
       .catch((error) => {

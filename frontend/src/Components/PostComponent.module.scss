@@ -52,6 +52,24 @@ input.title {
   // TODO video sizing
 }
 
+.encryptedContent {
+  position: relative;
+  padding: 16px 18px;
+  border-radius: 4px;
+  background: var(--dim1);
+  border: 1px solid var(--dim2);
+
+  &::after {
+    content: '🔒';
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    opacity: 0.2;
+    font-size: 20px;
+    pointer-events: none;
+  }
+}
+
 .controls {
   display: flex;
   margin-top: 8px;

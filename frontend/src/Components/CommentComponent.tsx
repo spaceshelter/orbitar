@@ -3,6 +3,7 @@ import React, { useMemo, useState } from 'react'
 import { TranslateType } from '@api/PostAPI'
 import { useInterpreter } from '@api/use/useInterpreter'
 import { useAPI } from '@state/AppState'
+import classNames from 'classnames'
 import OutsideClickHandler from 'react-outside-click-handler'
 import { toast } from 'react-toastify'
 
@@ -167,7 +168,7 @@ export default function CommentComponent(props: CommentProps) {
             <div className={styles.content}>
               {props.comment.encryptedPayloadId ? (
                 <EncryptedContentComponent
-                  className={styles.commentContent}
+                  className={classNames(styles.commentContent, styles.encryptedContent)}
                   encryptedPayloadId={props.comment.encryptedPayloadId}
                   kind='comment'
                   lowRating={props.comment.rating <= Conf.COMMENT_LOW_RATING_THRESHOLD || props.comment.vote === -1}

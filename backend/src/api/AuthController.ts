@@ -145,6 +145,7 @@ export default class AuthController {
         return response.error('wrong-credentials', 'Wrong username or password')
       }
 
+      const mailboxPublicKey = await this.userManager.getPublicKey(userInfo.id)
       const sessionId = await request.session.init()
 
       const user: UserEntity = {
@@ -153,6 +154,8 @@ export default class AuthController {
         username: userInfo.username,
         name: userInfo.name,
         karma: userInfo.karma,
+        publicKey: mailboxPublicKey?.publicKey || '',
+        publicKeyAlg: mailboxPublicKey?.publicKeyAlg || '',
       }
 
       request.session.data.userId = userInfo.id

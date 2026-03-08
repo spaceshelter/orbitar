@@ -26,7 +26,8 @@ const EncryptedContentComponent = observer((props: EncryptedContentComponentProp
   const [decryptedHtml, setDecryptedHtml] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const title = props.kind === 'post' ? 'Зашифрованный пост' : 'Зашифрованный комментарий'
+  const titleText = payload !== null && !payload.canDecrypt ? 'Шифровка (не для вас)' : 'Шифровка'
+  const bodyText = payload === null ? error || 'Загрузка...' : payload.canDecrypt ? error || '' : ''
 
   useEffect(() => {
     setDecryptedHtml(null)
@@ -113,16 +114,9 @@ const EncryptedContentComponent = observer((props: EncryptedContentComponentProp
     >
       <div className={styles.header}>
         <span className='i i-mail-secure' />
-        <span>{title}</span>
+        <span>{titleText}</span>
       </div>
-      <div className={styles.body}>
-        {error ||
-          (payload === null
-            ? 'Загрузка...'
-            : payload.canDecrypt
-              ? 'Нажмите, чтобы разблокировать содержимое.'
-              : 'Это сообщение зашифровано для другого пользователя.')}
-      </div>
+      {bodyText && <div className={styles.body}>{bodyText}</div>}
     </div>
   )
 })

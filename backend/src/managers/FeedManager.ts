@@ -340,7 +340,7 @@ export default class FeedManager {
         lastReadCommentId: rawPost.last_read_comment_id,
         language: rawPost.language,
       }
-      if (rawPost.author_id === forUserId && !rawPost.encrypted_payload_id) {
+      if (rawPost.author_id === forUserId) {
         post.canEdit = true
       }
       if (rawPost.edit_flag) {

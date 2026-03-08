@@ -14,6 +14,8 @@ export type UserInfo = UserBaseInfo & {
   name: string
   karma: number
   vote?: number
+  publicKey?: string
+  publicKeyAlg?: string
 }
 
 export type UserProfileInfo = UserInfo & {

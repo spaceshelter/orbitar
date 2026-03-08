@@ -3,6 +3,7 @@ import React, { useRef, useState } from 'react'
 import Button from '@ui/Button'
 import classNames from 'classnames'
 import { useHotkeys } from 'react-hotkeys-hook'
+import { useDebouncedCallback } from 'use-debounce'
 
 import { useAppState } from '../AppState/AppState'
 import { deriveMailboxKeyPair, MailboxKeyPair } from '../Utils/mailCrypto'
@@ -165,38 +166,124 @@ type MailboxUnlockFormProps = {
   onCancel: () => void
 }
 
-export function MailboxUnlockForm(props: MailboxUnlockFormProps) {
+type MailboxUnlockFieldsProps = {
+  publicKey: string
+  publicKeyAlg: string
+  onSuccess?: () => void
+}
+
+function MailboxUnlockFields(props: MailboxUnlockFieldsProps) {
   const appState = useAppState()
   const passwordRef = useRef<HTMLInputElement>(null)
+  const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [checking, setChecking] = useState(false)
+  const unlockAttemptRef = useRef(0)
+  const completedRef = useRef(false)
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (value: string, attemptId: number) => {
     const userId = appState.userInfo?.id
-    const password = passwordRef.current?.value || ''
 
-    if (!userId || !password) {
+    if (!userId || !value || completedRef.current) {
       return
     }
 
     try {
       setError(null)
-      await appState.cryptoSession.unlockMailbox(userId, password, props.publicKey, props.publicKeyAlg)
+      await appState.cryptoSession.unlockMailbox(userId, value, props.publicKey, props.publicKeyAlg)
+
+      if (completedRef.current) {
+        return
+      }
+
+      completedRef.current = true
+      setChecking(false)
+      handleSubmitDebounced.cancel()
       props.onSuccess?.()
     } catch (unlockError) {
+      if (
+        completedRef.current ||
+        appState.cryptoSession.hasMailboxKey(props.publicKey, props.publicKeyAlg) ||
+        unlockAttemptRef.current !== attemptId
+      ) {
+        return
+      }
+
+      setChecking(false)
       setError(unlockError instanceof Error ? unlockError.message : 'Не удалось разблокировать почтовый ящик.')
     }
   }
 
-  useHotkeys(
-    ['ctrl+enter', 'meta+enter'],
-    () => {
-      handleSubmit().catch()
-    },
-    {
-      enableOnFormTags: true,
-    },
-  )
+  const handleSubmitDebounced = useDebouncedCallback((value: string, attemptId: number) => {
+    handleSubmit(value, attemptId).catch()
+  }, 300)
 
+  useHotkeys(['ctrl+enter', 'meta+enter'], () => {
+    const value = passwordRef.current?.value || ''
+    if (!value) {
+      return
+    }
+
+    handleSubmitDebounced.cancel()
+    setChecking(true)
+    const attemptId = unlockAttemptRef.current + 1
+    unlockAttemptRef.current = attemptId
+    handleSubmit(value, attemptId).catch()
+  })
+
+  React.useEffect(() => {
+    if (!password || completedRef.current) {
+      handleSubmitDebounced.cancel()
+      setChecking(false)
+      setError(null)
+      return
+    }
+
+    setChecking(true)
+    const attemptId = unlockAttemptRef.current + 1
+    unlockAttemptRef.current = attemptId
+    handleSubmitDebounced(password, attemptId)
+
+    return () => {
+      handleSubmitDebounced.cancel()
+    }
+  }, [handleSubmitDebounced, password])
+
+  return (
+    <>
+      <input
+        autoFocus={true}
+        ref={passwordRef}
+        className={styles.decodeInput}
+        type='password'
+        placeholder='Пароль от вашего почтового ящика'
+        value={password}
+        onChange={(e) => {
+          setPassword(e.target.value)
+          setError(null)
+        }}
+      />
+      {(checking || appState.cryptoSession.mailboxUnlocking || error) && (
+        <div className={styles.hint}>
+          {(checking || appState.cryptoSession.mailboxUnlocking) && (
+            <span className={classNames(styles.hintMessage, styles.hintWarning)}>
+              <span className='i i-slow' />
+              <span>Проверяем...</span>
+            </span>
+          )}
+          {!checking && !appState.cryptoSession.mailboxUnlocking && error && (
+            <span className={classNames(styles.hintMessage, styles.hintError)}>
+              <span className='i i-close' />
+              <span>{error}</span>
+            </span>
+          )}
+        </div>
+      )}
+    </>
+  )
+}
+
+export function MailboxUnlockForm(props: MailboxUnlockFormProps) {
   return (
     <>
       <Overlay onClick={props.onCancel} />
@@ -205,28 +292,11 @@ export function MailboxUnlockForm(props: MailboxUnlockFormProps) {
           <span className='i i-mailbox-secure'></span>
           Разблокировать почтовый ящик
         </h3>
-        <div className={styles.info}>
-          <p>Введите пароль от вашего почтового ящика. После успешной разблокировки ключ останется в памяти сессии.</p>
-        </div>
-        <label>Пароль</label>
-        <input
-          autoFocus={true}
-          ref={passwordRef}
-          className={styles.decodeInput}
-          type='password'
-          placeholder='Пароль от почтового ящика'
-          onChange={() => setError(null)}
+        <MailboxUnlockFields
+          publicKey={props.publicKey}
+          publicKeyAlg={props.publicKeyAlg}
+          onSuccess={props.onSuccess}
         />
-        {error && (
-          <div className={styles.hint}>
-            <span className={classNames(mediaFormStyles.error, 'i i-close')}>{error}</span>
-          </div>
-        )}
-        <div className={styles.submit}>
-          <Button onClick={() => handleSubmit().catch()} disabled={appState.cryptoSession.mailboxUnlocking}>
-            {appState.cryptoSession.mailboxUnlocking ? 'Разблокируем...' : 'Разблокировать'}
-          </Button>
-        </div>
       </div>
     </>
   )

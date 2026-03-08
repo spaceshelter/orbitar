@@ -4,6 +4,7 @@ import { TranslateType } from '@api/PostAPI'
 import { useInterpreter } from '@api/use/useInterpreter'
 import { useAPI, useAppState } from '@state/AppState'
 import Button from '@ui/Button'
+import classNames from 'classnames'
 import OutsideClickHandler from 'react-outside-click-handler'
 import { toast } from 'react-toastify'
 
@@ -196,7 +197,7 @@ export default function PostComponent(props: PostComponentProps) {
                 <div className={styles.content}>
                   {props.post.encryptedPayloadId ? (
                     <EncryptedContentComponent
-                      className={styles.content}
+                      className={classNames(styles.content, styles.encryptedContent)}
                       encryptedPayloadId={props.post.encryptedPayloadId}
                       kind='post'
                       autoCut={autoCut}

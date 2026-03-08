@@ -283,7 +283,7 @@ export default class PostManager {
       if (raw.deleted) {
         comment.deleted = true
       }
-      if (raw.author_id === forUserId && !raw.encrypted_payload_id) {
+      if (raw.author_id === forUserId) {
         comment.canEdit = true
       }
       if (raw.edit_flag) {

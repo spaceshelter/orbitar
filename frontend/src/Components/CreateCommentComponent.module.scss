@@ -89,6 +89,7 @@ button.editorButton {
 
 .editor {
   display: flex;
+  position: relative;
 
   :global(.rta) {
     width: 100%;
@@ -126,6 +127,40 @@ button.editorButton {
   }
 }
 
+.editorEncrypted {
+  &::after {
+    content: '🔒';
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    font-size: 20px;
+    opacity: 0.18;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  :global(textarea) {
+    padding-right: 48px;
+  }
+}
+
+.previewEncrypted {
+  position: relative;
+  background: var(--dim1);
+  border: 1px solid var(--dim2);
+  border-radius: 4px;
+
+  &::after {
+    content: '🔒';
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    font-size: 20px;
+    opacity: 0.18;
+    pointer-events: none;
+  }
+}
+
 .final {
   margin: 4px 0;
   display: flex;
@@ -160,7 +195,23 @@ button.editorButton {
   }
 }
 
+.buttonEncrypt {
+  margin-right: auto;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0;
+  justify-content: center;
+
+  :global(.i):before {
+    font-size: 20px;
+  }
+}
+
 .commentButtonGroup {
+  width: 100%;
+  align-items: center;
+
   @media (max-width: 420px) {
     justify-content: flex-end;
     button {

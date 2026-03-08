@@ -14,6 +14,8 @@ export type UserEntity = UserBaseEntity & {
   karma: number
   name?: string
   vote?: number
+  publicKey?: string
+  publicKeyAlg?: string
 }
 
 export type UserProfileEntity = UserEntity & {
