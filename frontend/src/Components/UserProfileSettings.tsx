@@ -10,7 +10,7 @@ import { observer } from 'mobx-react-lite'
 import { toast } from 'react-toastify'
 
 import { BarmaliniAccessResult, UserGender } from '../Types/UserInfo'
-import { clearCachedMailboxKeyPair, MAILBOX_KEY_ALG } from '../Utils/mailCrypto'
+import { cacheMailboxKeyPair, clearCachedMailboxKeyPair, MAILBOX_KEY_ALG, MailboxKeyPair } from '../Utils/mailCrypto'
 import AnonymizeAccountDialog from './AnonymizeAccountDialog'
 import { SecretMailKeyGeneratorForm } from './SecretMailbox'
 import ThemeToggleComponent from './ThemeToggleComponent'
@@ -396,11 +396,13 @@ export const MailboxSettings = observer(() => {
     }
   }
 
-  const handleCreatePublicKey = (key: string) => {
+  const handleCreatePublicKey = (keyPair: MailboxKeyPair) => {
     api.userAPI
-      .savePublicKey(key, MAILBOX_KEY_ALG)
+      .savePublicKey(keyPair.publicKey, MAILBOX_KEY_ALG)
       .then(() => {
-        clearCachedMailboxKeyPair(userInfo?.id)
+        if (userInfo?.id) {
+          cacheMailboxKeyPair(userInfo.id, keyPair)
+        }
         refreshProfile()
       })
       .catch((error) => {

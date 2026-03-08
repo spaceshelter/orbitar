@@ -11,10 +11,12 @@ import useFocus from '../API/use/useFocus'
 import { useAPI, useAppState } from '../AppState/AppState'
 import {
   decryptMailEnvelope,
+  decryptMailEnvelopeWithCachedKey,
   deriveMailboxKeyPair,
   encryptMailEnvelope,
   MAIL_VERSION,
   MAILBOX_KEY_ALG,
+  MailboxKeyPair,
 } from '../Utils/mailCrypto'
 import Overlay from './Overlay'
 
@@ -159,10 +161,38 @@ export function SecretMailEncoderForm(props: {
 }
 
 export function SecretMailDecoderForm(props: { payload: string; title: string; onClose: (result?: string) => void }) {
+  const { onClose, payload, title } = props
   const currentUser = useAppState().userInfo
   const passwordRef = useFocus<HTMLInputElement>()
   const [wrongPassword, setWrongPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!currentUser?.id) {
+      return
+    }
+
+    let active = true
+    setLoading(true)
+
+    decryptMailEnvelopeWithCachedKey(payload, currentUser.id)
+      .then((decoded) => {
+        if (!active || !decoded) {
+          return
+        }
+        onClose(decoded)
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) {
+          setLoading(false)
+        }
+      })
+
+    return () => {
+      active = false
+    }
+  }, [currentUser?.id, onClose, payload])
 
   const handleDecode = useDebouncedCallback(async (password: string) => {
     if (!currentUser?.id) {
@@ -171,8 +201,8 @@ export function SecretMailDecoderForm(props: { payload: string; title: string; o
 
     setLoading(true)
     try {
-      const decoded = await decryptMailEnvelope(props.payload, password, currentUser.id)
-      props.onClose(decoded)
+      const decoded = await decryptMailEnvelope(payload, password, currentUser.id)
+      onClose(decoded)
       setWrongPassword(false)
     } catch (error) {
       setWrongPassword(!!password.length)
@@ -190,7 +220,7 @@ export function SecretMailDecoderForm(props: { payload: string; title: string; o
       <div className={classNames(styles.container)}>
         <h3>
           <span className={classNames('i', 'i-mail-secure')} />
-          <span>{props.title}</span>
+          <span>{title}</span>
         </h3>
         <input
           autoFocus={true}
@@ -214,7 +244,7 @@ export function SecretMailDecoderForm(props: { payload: string; title: string; o
 }
 
 type SecretMailKeyGeneratorFormProps = {
-  onSuccess: (key: string) => void
+  onSuccess: (keyPair: MailboxKeyPair) => void
   onCancel: () => void
 }
 
@@ -244,7 +274,7 @@ export function SecretMailKeyGeneratorForm(props: SecretMailKeyGeneratorFormProp
       setLoading(true)
       const passwd = password1Ref?.current?.value || ''
       const keyPair = await deriveMailboxKeyPair(passwd, currentUser.id)
-      props.onSuccess(keyPair.publicKey)
+      props.onSuccess(keyPair)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Не удалось создать почтовый ящик.')
     } finally {

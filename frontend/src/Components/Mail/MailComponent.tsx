@@ -79,7 +79,9 @@ export const MailComponent: React.FC<MailComponentProps> = ({ mailId, title = 'Ð
 
   return (
     <div
-      className={classNames('i', 'i-mail-secure', 'secret-mail', {
+      className={classNames('secret-mail', {
+        i: !decoding,
+        'i-mail-secure': !decoding,
         'secret-mail-disabled': !!mail && !mail.canDecrypt,
         'secret-mail-error': error,
         'secret-mail-decoding': decoding,

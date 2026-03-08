@@ -14,7 +14,7 @@ const SCRYPT_PARAMS = {
   dkLen: 32,
 }
 
-type MailboxKeyPair = {
+export type MailboxKeyPair = {
   publicKey: string
   secretKey: Uint8Array
 }
@@ -155,6 +155,19 @@ export function clearCachedMailboxKeyPair(userId?: number) {
   }
 }
 
+export function getCachedMailboxKeyPair(userId: number): MailboxKeyPair | undefined {
+  return cachedMailboxKeyPair?.userId === userId ? cachedMailboxKeyPair.keyPair : undefined
+}
+
+export function cacheMailboxKeyPair(userId: number, keyPair: MailboxKeyPair): MailboxKeyPair {
+  cachedMailboxKeyPair = {
+    userId,
+    keyPair,
+  }
+
+  return keyPair
+}
+
 export async function deriveMailboxKeyPair(password: string, userId: number): Promise<MailboxKeyPair> {
   const secretKey = await deriveMailboxSecretKey(password, userId)
   const keyPair = nacl.box.keyPair.fromSecretKey(secretKey)
@@ -162,6 +175,10 @@ export async function deriveMailboxKeyPair(password: string, userId: number): Pr
     publicKey: encodeBase64Url(keyPair.publicKey),
     secretKey: keyPair.secretKey,
   }
+}
+
+export async function getOrDeriveMailboxKeyPair(password: string, userId: number): Promise<MailboxKeyPair> {
+  return getCachedMailboxKeyPair(userId) || cacheMailboxKeyPair(userId, await deriveMailboxKeyPair(password, userId))
 }
 
 export async function encryptMailEnvelope(plaintext: string, recipientPublicKey: string) {
@@ -190,9 +207,10 @@ export async function encryptMailEnvelope(plaintext: string, recipientPublicKey:
 }
 
 export async function decryptMailEnvelope(payload: string, password: string, userId: number) {
-  if (cachedMailboxKeyPair?.userId === userId) {
+  const cachedKeyPair = getCachedMailboxKeyPair(userId)
+  if (cachedKeyPair) {
     try {
-      return await decryptEnvelopeWithKeyPair(payload, cachedMailboxKeyPair.keyPair)
+      return await decryptEnvelopeWithKeyPair(payload, cachedKeyPair)
     } catch (error) {
       // fall through and derive from password again in case the cached key is stale
     }
@@ -200,10 +218,16 @@ export async function decryptMailEnvelope(payload: string, password: string, use
 
   const keyPair = await deriveMailboxKeyPair(password, userId)
   const decoded = await decryptEnvelopeWithKeyPair(payload, keyPair)
-  cachedMailboxKeyPair = {
-    userId,
-    keyPair,
-  }
+  cacheMailboxKeyPair(userId, keyPair)
 
   return decoded
+}
+
+export async function decryptMailEnvelopeWithCachedKey(payload: string, userId: number) {
+  const cachedKeyPair = getCachedMailboxKeyPair(userId)
+  if (!cachedKeyPair) {
+    return undefined
+  }
+
+  return await decryptEnvelopeWithKeyPair(payload, cachedKeyPair)
 }
