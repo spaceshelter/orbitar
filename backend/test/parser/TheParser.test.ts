@@ -1030,6 +1030,16 @@ test('parse secret mailbox with nested mailbox', () => {
   )
 })
 
+test('parse mail with valid id attribute', () => {
+  const result = p.parse('<mail id="42">Шифровка</mail>')
+  expect(result.text).toEqual('<div class="mail" data-mail-id="42">Шифровка</div>')
+})
+
+test('parse mail without valid id attribute', () => {
+  expect(p.parse('<mail>Шифровка</mail>').text).toEqual('&lt;mail&gt;Шифровка&lt;/mail&gt;')
+  expect(p.parse('<mail id="0">Шифровка</mail>').text).toEqual('&lt;mail id=&quot;0&quot;&gt;Шифровка&lt;/mail&gt;')
+})
+
 test('extract mail ids from valid mail tags', () => {
   expect(
     p.extractMailIds('<mail id="42">One</mail><div><mail id="7">Two</mail></div><mail id="42">Three</mail>'),
@@ -1064,13 +1074,13 @@ test('disallowed tags nesting', () => {
     '<span class="i i-mailbox-secure secret-mailbox" data-secret="12345" data-raw-text="dGVzdA==">test</span>',
   )
 
-  expect(p.parse('<mail secret="12345"><mailbox secret="67890">test</mailbox></mail>').text).toEqual(
-    '<span class="i i-mail-secure secret-mail" data-secret="12345">test</span>',
+  expect(p.parse('<mail id="123"><mailbox secret="67890">test</mailbox></mail>').text).toEqual(
+    '<div class="mail" data-mail-id="123">test</div>',
   )
 
   // mail cannot be inside a, mailbox, or mail
-  expect(p.parse('<mail secret="12345"><mail secret="67890">test</mail></mail>').text).toEqual(
-    '<span class="i i-mail-secure secret-mail" data-secret="12345">test</span>',
+  expect(p.parse('<mail id="123"><mail id="67890">test</mail></mail>').text).toEqual(
+    '<div class="mail" data-mail-id="123">test</div>',
   )
 
   // app cannot be inside a, mailbox, or mail

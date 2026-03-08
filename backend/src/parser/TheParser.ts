@@ -37,7 +37,7 @@ export default class TheParser {
 
   // Bump this version when introducing breaking changes to the parser.
   // Content will be re-parsed and saved on access when this version changes.
-  static readonly VERSION = 2
+  static readonly VERSION = 3
 
   private readonly mediaHostingConfig: MediaHostingConfig
   private readonly parserConfig: ParserConfig
@@ -65,7 +65,7 @@ export default class TheParser {
       video: (node) => this.parseVideo(node),
       mailbox: (node) => this.parseSecretMailbox(node),
       app: (node) => this.parseOauthApp(node),
-      mail: (node) => this.parseSecretMail(node),
+      mail: (node) => this.parseMail(node),
       pre: (node) => this.parsePre(node),
       poll: (node) => this.parsePoll(node),
       gallery: (node) => this.parseGallery(node),
@@ -623,15 +623,14 @@ export default class TheParser {
     return { ...result, text }
   }
 
-  parseSecretMail(node: Element): ParseResult {
-    // retain secret attribute and content
-    const secret = node.attribs['secret']
-    if (!secret || !TheParser.isValidBase64(secret)) {
+  parseMail(node: Element): ParseResult {
+    const mailId = Number(node.attribs['id'])
+    if (!Number.isInteger(mailId) || mailId <= 0) {
       return this.parseDisallowedTag(node)
     }
     const result = this.parseChildNodes(node.children)
 
-    const text = `<span class="i i-mail-secure secret-mail" data-secret="${secret}">${result.text}</span>`
+    const text = `<div class="mail" data-mail-id="${mailId}">${result.text}</div>`
     return { ...result, text }
   }
 

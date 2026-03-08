@@ -5,6 +5,8 @@ import AuthAPIHelper from './AuthAPIHelper'
 import FeedAPI from './FeedAPI'
 import FeedAPIHelper from './FeedAPIHelper'
 import InviteAPI from './InviteAPI'
+import MailAPI from './MailAPI'
+import MailAPIHelper from './MailAPIHelper'
 import NotificationsAPI from './NotificationsAPI'
 import NotificationsAPIHelper from './NotificationsAPIHelper'
 import OAuth2Api from './OAuth2Api'
@@ -23,6 +25,8 @@ export default class APIHelper {
   auth: AuthAPIHelper
   authAPI: AuthAPI
   inviteAPI: InviteAPI
+  mailAPI: MailAPI
+  mail: MailAPIHelper
   postAPI: PostAPI
   post: PostAPIHelper
   voteAPI: VoteAPI
@@ -48,6 +52,7 @@ export default class APIHelper {
     this.appState = appState
     this.authAPI = new AuthAPI(api)
     this.inviteAPI = new InviteAPI(api)
+    this.mailAPI = new MailAPI(api)
     this.postAPI = new PostAPI(api)
     this.voteAPI = new VoteAPI(api)
     this.siteAPI = new SiteAPI(api)
@@ -55,6 +60,7 @@ export default class APIHelper {
     this.post = new PostAPIHelper(this.postAPI, appState)
     this.userAPI = new UserAPI(api, this.post)
     this.auth = new AuthAPIHelper(this.authAPI, appState)
+    this.mail = new MailAPIHelper(this.mailAPI)
     this.user = new UserAPIHelper(this.userAPI, appState)
     this.site = new SiteAPIHelper(this.siteAPI, appState)
     this.notifications = new NotificationsAPIHelper(this.notificationsAPI, appState)
