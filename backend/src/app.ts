@@ -13,6 +13,7 @@ import { apiMiddleware } from './api/ApiMiddleware'
 import AuthController from './api/AuthController'
 import FeedController from './api/FeedController'
 import InviteController from './api/InviteController'
+import MailController from './api/MailController'
 import NotificationsController from './api/NotificationsController'
 import OAuth2Controller from './api/OAuth2Controller'
 import createOauth2MiddlewareGenerator, { ExpressOauth2ScopesFilter } from './api/OAuth2Middleware'
@@ -30,6 +31,7 @@ import Redis from './db/Redis'
 import BookmarkRepository from './db/repositories/BookmarkRepository'
 import CommentRepository from './db/repositories/CommentRepository'
 import InviteRepository from './db/repositories/InviteRepository'
+import MailRepository from './db/repositories/MailRepository'
 import NotificationsRepository from './db/repositories/NotificationsRepository'
 import OAuth2Repository from './db/repositories/OAuth2Repository'
 import PollRepository from './db/repositories/PollRepository'
@@ -42,6 +44,7 @@ import VoteRepository from './db/repositories/VoteRepository'
 import WebPushRepository from './db/repositories/WebPushRepository'
 import FeedManager from './managers/FeedManager'
 import InviteManager from './managers/InviteManager'
+import MailManager from './managers/MailManager'
 import NotificationManager from './managers/NotificationManager'
 import OAuth2Manager from './managers/OAuth2Manager'
 import PollManager from './managers/PollManager'
@@ -111,6 +114,7 @@ const bookmarkRepository = new BookmarkRepository(db)
 const commentRepository = new CommentRepository(db)
 const credentialsRepository = new UserCredentials(db)
 const inviteRepository = new InviteRepository(db)
+const mailRepository = new MailRepository(db)
 const notificationsRepository = new NotificationsRepository(db)
 const postRepository = new PostRepository(db)
 const siteRepository = new SiteRepository(db)
@@ -168,6 +172,7 @@ const userManager = new UserManager(
   logger.child({ service: 'USER' }),
 )
 const inviteManager = new InviteManager(inviteRepository, theParser, userManager)
+const mailManager = new MailManager(mailRepository, userManager)
 siteManager = new SiteManager(siteRepository, userManager)
 const feedManager = new FeedManager(
   bookmarkRepository,
@@ -188,6 +193,7 @@ const postManager = new PostManager(
   commentRepository,
   postRepository,
   feedManager,
+  mailManager,
   notificationManager,
   siteManager,
   userManager,
@@ -263,6 +269,7 @@ const requests = [
     oauthMiddlewareGenerator,
     logger.child({ service: 'NOTIFY' }),
   ),
+  new MailController(mailManager, oauthMiddlewareGenerator, logger.child({ service: 'MAIL' })),
   new SearchController(userManager, searchManager, oauthMiddlewareGenerator, logger.child({ service: 'SEARCH' })),
   new OAuth2Controller(oauth2Manager, userManager, oauthScopesFilter, app.oauth, logger.child({ service: 'OAUTH2' })),
   new PollController(pollManager, userManager, oauthMiddlewareGenerator, logger.child({ service: 'POLL' })),

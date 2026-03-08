@@ -774,14 +774,22 @@ export default class UserManager {
     this.clearUserRestrictionsCache(userId)
   }
 
-  savePublicKey(publicKey: string, userId: number) {
-    const res = this.userRepository.savePublicKey(publicKey, userId)
+  savePublicKey(publicKey: string, publicKeyAlg: string, userId: number) {
+    const res = this.userRepository.savePublicKey(publicKey, publicKeyAlg, userId)
     this.userCache.clearPublicKeysCache(userId)
     return res
   }
 
+  async getMailboxKey(userId: number) {
+    return await this.userCache.getMailboxKey(userId)
+  }
+
   async getPublicKey(userId: number) {
     return this.userCache.getPublicKey(userId)
+  }
+
+  async getPublicKeyAlg(userId: number) {
+    return this.userCache.getPublicKeyAlg(userId)
   }
 
   async getUserVisitedDaysAgo(userId: number): Promise<number | null> {

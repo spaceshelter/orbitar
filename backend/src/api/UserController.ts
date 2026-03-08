@@ -97,6 +97,7 @@ export default class UserController {
 
     const publicKeySchema = Joi.object<UserSavePublicKeyRequest>({
       publicKey: Joi.string().max(128).allow(''),
+      publicKeyAlg: Joi.string().max(32).allow(''),
     })
 
     const settingsSaveLimiter = rateLimit({
@@ -201,7 +202,7 @@ export default class UserController {
       const invites = await this.userManager.getInvites(profileInfo.id)
       const invitedBy = await this.userManager.getInvitedBy(profileInfo.id)
       const active = await this.userManager.isUserActive(profileInfo.id)
-      const publicKey = await this.userManager.getPublicKey(profileInfo.id)
+      const mailboxKey = await this.userManager.getMailboxKey(profileInfo.id)
       const trialApprovers = await this.userManager.getTrialApprovers(profileInfo.id)
       const invitedReason = await this.inviteManager.getInviteReason(profileInfo.id)
       const trialProgress = await this.userManager.tryEndTrial(profileInfo.id, false)
@@ -244,7 +245,8 @@ export default class UserController {
         numberOfComments,
         numberOfInvitesAvailable,
         isBarmalini: this.userManager.isBarmaliniUser(profileInfo.id),
-        publicKey,
+        publicKey: mailboxKey?.publicKey || '',
+        publicKeyAlg: mailboxKey?.publicKeyAlg || '',
         visitedDaysAgo,
         hasOwnApps,
       })
@@ -559,10 +561,10 @@ export default class UserController {
     if (!req.session.data.userId) {
       return res.authRequired()
     }
-    const { publicKey } = req.body
+    const { publicKey, publicKeyAlg = '' } = req.body
     try {
-      this.userManager.savePublicKey(publicKey, req.session.data.userId)
-      return res.success({ publicKey })
+      this.userManager.savePublicKey(publicKey, publicKeyAlg, req.session.data.userId)
+      return res.success({ publicKey, publicKeyAlg })
     } catch (error) {
       this.logger.error('Could not update user public key', { error })
       return res.error('error', `Could not update public key`, 500)

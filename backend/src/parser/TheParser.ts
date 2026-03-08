@@ -116,6 +116,30 @@ export default class TheParser {
     return parseResult
   }
 
+  extractMailIds(text: string): number[] {
+    const doc = this.parseDocument(text, {
+      decodeEntities: false,
+    })
+    const mailIds = new Set<number>()
+
+    const visit = (nodes: ChildNode[]) => {
+      for (const node of nodes) {
+        if (node.type === 'tag') {
+          if (node.name === 'mail') {
+            const mailId = Number(node.attribs['id'])
+            if (Number.isInteger(mailId) && mailId > 0) {
+              mailIds.add(mailId)
+            }
+          }
+          visit(node.childNodes || [])
+        }
+      }
+    }
+
+    visit(doc.childNodes)
+    return [...mailIds]
+  }
+
   private isDisallowedTagNesting(child: string): boolean {
     const disallowed = this.disallowedTagNesting[child]
     if (!disallowed) {

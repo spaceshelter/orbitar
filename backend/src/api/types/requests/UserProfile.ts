@@ -19,6 +19,7 @@ export type UserProfileResponse = {
   isBarmalini?: boolean
 
   publicKey: string
+  publicKeyAlg: string
   hasOwnApps: boolean
 
   visitedDaysAgo: number
@@ -86,10 +87,12 @@ export type UserSaveGenderResponse = {
 
 export type UserSavePublicKeyRequest = {
   publicKey: string
+  publicKeyAlg?: string
 }
 
 export type UserSavePublicKeyResponse = {
   publicKey: string
+  publicKeyAlg: string
 }
 
 export type BarmaliniPasswordRequest = Record<string, unknown>

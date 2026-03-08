@@ -4,6 +4,11 @@ import UserRepository from '../db/repositories/UserRepository'
 import { UserRaw } from '../db/types/UserRaw'
 import { UserInfo, UserStats } from './types/UserInfo'
 
+type MailboxKeyCacheEntry = {
+  publicKey: string
+  publicKeyAlg: string
+}
+
 export class UserCache {
   private userRepository: UserRepository
   /**
@@ -16,7 +21,7 @@ export class UserCache {
   private cacheId: Record<number, UserInfo> = {}
   private cacheUsername: Record<string, UserInfo> = {}
   private cachedUserParents: Record<number, number | undefined | false> = {}
-  private cachedPublicKeys: Record<number, string | undefined> = {}
+  private cachedMailboxKeys: Record<number, MailboxKeyCacheEntry | undefined> = {}
   private usernamesSuggestionsCache = new TrieSearch('k', { min: 1 })
   private userStatsCache = new Map<number, UserStats>()
 
@@ -82,7 +87,7 @@ export class UserCache {
     }
     delete this.cacheId[userId]
     delete this.cacheUsername[cacheEntry.username]
-    delete this.cachedPublicKeys[userId]
+    delete this.cachedMailboxKeys[userId]
   }
 
   private cache(user: UserInfo) {
@@ -158,16 +163,24 @@ export class UserCache {
   }
 
   clearPublicKeysCache(userId: number) {
-    delete this.cachedPublicKeys[userId]
+    delete this.cachedMailboxKeys[userId]
+  }
+
+  async getMailboxKey(userId: number): Promise<MailboxKeyCacheEntry | undefined> {
+    if (this.cachedMailboxKeys[userId] !== undefined) {
+      return this.cachedMailboxKeys[userId]
+    }
+
+    const mailboxKey = await this.userRepository.getMailboxKey(userId)
+    this.cachedMailboxKeys[userId] = mailboxKey
+    return mailboxKey
   }
 
   async getPublicKey(userId: number): Promise<string | undefined> {
-    if (this.cachedPublicKeys[userId]) {
-      return this.cachedPublicKeys[userId]
-    }
+    return (await this.getMailboxKey(userId))?.publicKey
+  }
 
-    const publicKey = await this.userRepository.getPublicKey(userId)
-    this.cachedPublicKeys[userId] = publicKey
-    return publicKey
+  async getPublicKeyAlg(userId: number): Promise<string | undefined> {
+    return (await this.getMailboxKey(userId))?.publicKeyAlg
   }
 }

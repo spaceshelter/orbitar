@@ -4,4 +4,5 @@ export type GetPublicKeyByUsernameRequest = {
 
 export type GetPublicKeyByUsernameResponse = {
   publicKey?: string
+  publicKeyAlg?: string
 }

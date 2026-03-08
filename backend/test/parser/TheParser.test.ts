@@ -1030,6 +1030,20 @@ test('parse secret mailbox with nested mailbox', () => {
   )
 })
 
+test('extract mail ids from valid mail tags', () => {
+  expect(
+    p.extractMailIds('<mail id="42">One</mail><div><mail id="7">Two</mail></div><mail id="42">Three</mail>'),
+  ).toEqual([42, 7])
+})
+
+test('extract mail ids ignores invalid mail tags', () => {
+  expect(
+    p.extractMailIds(
+      '<mail>Missing</mail><mail id="0">Zero</mail><mail id="-1">Negative</mail><mail id="1.5">Decimal</mail>',
+    ),
+  ).toEqual([])
+})
+
 test('disallowed tags nesting', () => {
   // pre cannot be inside a
   expect(p.parse('<a href="https://test.com"><pre>test</pre></a>').text).toEqual(

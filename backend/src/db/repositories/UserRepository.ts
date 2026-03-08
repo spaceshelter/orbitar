@@ -375,21 +375,41 @@ export default class UserRepository {
     })
   }
 
-  async savePublicKey(publicKey: string, userId: number) {
+  async savePublicKey(publicKey: string, publicKeyAlg: string, userId: number) {
     return this.db.query(
       `UPDATE users
-                              SET public_key = :publicKey
+                              SET public_key = :publicKey,
+                                  public_key_alg = :publicKeyAlg
                               WHERE user_id = :userId`,
       {
         publicKey,
+        publicKeyAlg,
         userId,
       },
     )
   }
 
-  getPublicKey(userId: number) {
+  getMailboxKey(userId: number) {
     return this.db
-      .fetchOne<{ public_key: string }>(`SELECT public_key FROM users WHERE user_id = :userId`, { userId })
-      .then((res) => res?.public_key)
+      .fetchOne<{
+        public_key: string
+        public_key_alg: string
+      }>(`SELECT public_key, public_key_alg FROM users WHERE user_id = :userId`, { userId })
+      .then((res) =>
+        res
+          ? {
+              publicKey: res.public_key || '',
+              publicKeyAlg: res.public_key_alg || '',
+            }
+          : undefined,
+      )
+  }
+
+  getPublicKey(userId: number) {
+    return this.getMailboxKey(userId).then((res) => res?.publicKey)
+  }
+
+  getPublicKeyAlg(userId: number) {
+    return this.getMailboxKey(userId).then((res) => res?.publicKeyAlg)
   }
 }
