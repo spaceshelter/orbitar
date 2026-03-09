@@ -338,12 +338,13 @@ export default class PostManager {
     )
     this.userManager.clearUserRestrictionsCache(userId)
 
+    let parentAuthor: UserInfo | undefined
+    if (sendNotifications && parentCommentId) {
+      const parentComment = await this.commentRepository.getComment(parentCommentId)
+      parentAuthor = await this.userManager.getById(parentComment.author_id)
+    }
+
     if (sendNotifications && !encryptedPayload) {
-      let parentAuthor: UserInfo | undefined
-      if (parentCommentId) {
-        const parentComment = await this.commentRepository.getComment(parentCommentId)
-        parentAuthor = await this.userManager.getById(parentComment.author_id)
-      }
       for (const mention of parseResult.mentions) {
         // if author of parent comment/post was mentioned - do not send notifications:
         // they are already notified about answer to their comment
@@ -352,10 +353,10 @@ export default class PostManager {
         }
         await this.notificationManager.sendMentionNotify(mention, userId, postId, commentRaw.comment_id)
       }
+    }
 
-      if (parentAuthor) {
-        await this.notificationManager.sendAnswerNotify(parentAuthor.id, userId, postId, commentRaw.comment_id)
-      }
+    if (sendNotifications && parentAuthor) {
+      await this.notificationManager.sendAnswerNotify(parentAuthor.id, userId, postId, commentRaw.comment_id)
     }
 
     await this.bookmarkRepository.setWatch(postId, userId, true)
