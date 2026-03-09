@@ -482,13 +482,14 @@ export default class PostManager {
 
     for (const rawSource of rawSources) {
       let content = rawSource.source
-      if (format === 'html') {
+      if (!rawSource.encrypted_payload_id && format === 'html') {
         content = (await this.parser.parse(content)).text
       }
 
       const source: HistoryInfo = {
         id: rawSource.content_source_id,
         content,
+        encryptedPayloadId: rawSource.encrypted_payload_id || undefined,
         title: rawSource.title,
         comment: rawSource.comment,
         date: rawSource.created_at,

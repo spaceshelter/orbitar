@@ -5,7 +5,7 @@ import classNames from 'classnames'
 import { useHotkeys } from 'react-hotkeys-hook'
 import { useDebouncedCallback } from 'use-debounce'
 
-import { useAppState } from '../AppState/AppState'
+import { AppState, useAppState } from '../AppState/AppState'
 import { deriveMailboxKeyPair, MailboxKeyPair } from '../Utils/mailCrypto'
 import Overlay from './Overlay'
 
@@ -300,4 +300,25 @@ export function MailboxUnlockForm(props: MailboxUnlockFormProps) {
       </div>
     </>
   )
+}
+
+export function requestMailboxUnlock(appState: AppState, publicKey: string, publicKeyAlg: string) {
+  return new Promise<boolean>((resolve) => {
+    const close = () => appState.setModal(undefined)
+
+    appState.setModal(
+      <MailboxUnlockForm
+        publicKey={publicKey}
+        publicKeyAlg={publicKeyAlg}
+        onSuccess={() => {
+          close()
+          resolve(true)
+        }}
+        onCancel={() => {
+          close()
+          resolve(false)
+        }}
+      />,
+    )
+  })
 }

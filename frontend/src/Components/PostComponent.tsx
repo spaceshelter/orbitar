@@ -10,6 +10,7 @@ import { toast } from 'react-toastify'
 
 import Conf from '../Conf'
 import { CommentInfo, PostInfo, PostLinkInfo } from '../Types/PostInfo'
+import { getEncryptedPayloadSource } from '../Utils/encryptedPayloadSource'
 import { EncryptedPayloadDraft } from '../Utils/mailCrypto'
 import { AltTranslateButton, AnnotateButton, TranslateButton, UnwatchButton, WatchButton } from './ContentButtons'
 import ContentComponent from './ContentComponent'
@@ -44,7 +45,8 @@ interface PostComponentProps {
 
 export default function PostComponent(props: PostComponentProps) {
   const api = useAPI()
-  const currentUsername = useAppState().userInfo?.username
+  const appState = useAppState()
+  const currentUsername = appState.userInfo?.username
   const [showOptions, setShowOptions] = useState(false)
   const [editingText, setEditingText] = useState<false | string>(false)
   const [editingTitle, setEditingTitle] = useState<string>(props.post.title || '')
@@ -144,6 +146,19 @@ export default function PostComponent(props: PostComponentProps) {
   const handleEdit = async () => {
     try {
       const post = await api.postAPI.get(props.post.id, 'source', true)
+
+      if (post.post.encryptedPayloadId) {
+        const payload = await api.encryptedPayload.getEncryptedPayloadCached(post.post.encryptedPayloadId)
+        const source = await getEncryptedPayloadSource(appState, payload)
+
+        if (source === undefined) {
+          return
+        }
+
+        setEditingText(source)
+        return
+      }
+
       setEditingText(post.post.content)
     } catch (e) {
       console.log('Get comment error:', e)
@@ -181,7 +196,7 @@ export default function PostComponent(props: PostComponentProps) {
           {editingText === false ? (
             showHistory ? (
               <HistoryComponent
-                initial={{ title, content, date: created }}
+                initial={{ title, content, date: created, encryptedPayloadId: props.post.encryptedPayloadId }}
                 history={{ id: props.post.id, type: 'post' }}
                 onClose={toggleHistory}
               />
@@ -223,7 +238,12 @@ export default function PostComponent(props: PostComponentProps) {
                 value={editingTitle}
                 onChange={handleEditingTitle}
               />
-              <CreateCommentComponent open={true} text={editingText} onAnswer={handleEditComplete} />
+              <CreateCommentComponent
+                open={true}
+                text={editingText}
+                initialEncrypted={!!props.post.encryptedPayloadId}
+                onAnswer={handleEditComplete}
+              />
             </>
           )}
         </div>

@@ -5,9 +5,9 @@ import classNames from 'classnames'
 import { observer } from 'mobx-react-lite'
 
 import { renderEncryptedContentHtml } from '../Utils/encryptedContentParser'
-import { decryptEncryptedPayload, EncryptedPayloadEntity } from '../Utils/mailCrypto'
+import { getEncryptedPayloadSource } from '../Utils/encryptedPayloadSource'
+import { EncryptedPayloadEntity } from '../Utils/mailCrypto'
 import ContentComponent from './ContentComponent'
-import { MailboxUnlockForm } from './SecretMailbox'
 
 import styles from './EncryptedContentComponent.module.scss'
 
@@ -25,9 +25,21 @@ const EncryptedContentComponent = observer((props: EncryptedContentComponentProp
   const [payload, setPayload] = useState<EncryptedPayloadEntity | null>(null)
   const [decryptedHtml, setDecryptedHtml] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const mailboxKeyPair = appState.cryptoSession.mailboxKeyPair
+  const mailboxMatchesPayload =
+    !!payload?.payload &&
+    !!mailboxKeyPair &&
+    appState.cryptoSession.hasMailboxKey(payload.payload.wrap.publicKey, payload.payload.wrap.publicKeyAlg)
 
-  const titleText = payload !== null && !payload.canDecrypt ? 'Шифровка (не для вас)' : 'Шифровка'
-  const bodyText = payload === null ? error || 'Загрузка...' : payload.canDecrypt ? error || '' : ''
+  const titleText =
+    payload === null
+      ? error
+        ? 'Шифровка'
+        : 'Шифровка (загрузка)'
+      : !payload.canDecrypt
+        ? 'Шифровка (не для вас)'
+        : 'Шифровка'
+  const bodyText = payload === null ? error || '' : payload.canDecrypt ? error || '' : ''
 
   useEffect(() => {
     setDecryptedHtml(null)
@@ -44,52 +56,36 @@ const EncryptedContentComponent = observer((props: EncryptedContentComponentProp
   }, [api.encryptedPayload, props.encryptedPayloadId])
 
   const tryDecrypt = useCallback(async () => {
-    if (!payload?.payload || !appState.cryptoSession.mailboxKeyPair) {
+    if (!payload?.payload) {
       return
     }
 
-    const source = await decryptEncryptedPayload(payload, appState.cryptoSession.mailboxKeyPair)
+    const source = await getEncryptedPayloadSource(appState, payload)
+
+    if (source === undefined) {
+      return
+    }
+
     setDecryptedHtml(renderEncryptedContentHtml(source))
     setError(null)
-  }, [appState.cryptoSession.mailboxKeyPair, payload])
+  }, [appState, payload])
 
   useEffect(() => {
-    if (
-      payload?.payload &&
-      appState.cryptoSession.mailboxKeyPair &&
-      appState.cryptoSession.hasMailboxKey(payload.payload.wrap.publicKey, payload.payload.wrap.publicKeyAlg)
-    ) {
+    if (decryptedHtml === null && mailboxMatchesPayload) {
       tryDecrypt().catch((decryptError) => {
         setError(decryptError instanceof Error ? decryptError.message : 'Не удалось расшифровать содержимое.')
       })
     }
-  }, [appState.cryptoSession, payload, tryDecrypt])
+  }, [decryptedHtml, mailboxMatchesPayload, tryDecrypt])
 
   const handleUnlock = () => {
     if (!payload?.canDecrypt || !payload.payload) {
       return
     }
 
-    if (appState.cryptoSession.hasMailboxKey(payload.payload.wrap.publicKey, payload.payload.wrap.publicKeyAlg)) {
-      tryDecrypt().catch((decryptError) => {
-        setError(decryptError instanceof Error ? decryptError.message : 'Не удалось расшифровать содержимое.')
-      })
-      return
-    }
-
-    appState.setModal(
-      <MailboxUnlockForm
-        publicKey={payload.payload.wrap.publicKey}
-        publicKeyAlg={payload.payload.wrap.publicKeyAlg}
-        onSuccess={() => {
-          appState.setModal(undefined)
-          tryDecrypt().catch((decryptError) => {
-            setError(decryptError instanceof Error ? decryptError.message : 'Не удалось расшифровать содержимое.')
-          })
-        }}
-        onCancel={() => appState.setModal(undefined)}
-      />,
-    )
+    tryDecrypt().catch((decryptError) => {
+      setError(decryptError instanceof Error ? decryptError.message : 'Не удалось расшифровать содержимое.')
+    })
   }
 
   if (decryptedHtml !== null) {
@@ -107,7 +103,7 @@ const EncryptedContentComponent = observer((props: EncryptedContentComponentProp
     <div
       className={classNames(styles.locked, props.className, {
         [styles.canDecrypt]: !!payload?.canDecrypt,
-        [styles.disabled]: payload !== null && !payload.canDecrypt,
+        [styles.disabled]: payload === null || (payload !== null && !payload.canDecrypt),
         [styles.error]: !!error,
       })}
       onClick={payload?.canDecrypt ? handleUnlock : undefined}

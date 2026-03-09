@@ -2,13 +2,14 @@ import React, { useMemo, useState } from 'react'
 
 import { TranslateType } from '@api/PostAPI'
 import { useInterpreter } from '@api/use/useInterpreter'
-import { useAPI } from '@state/AppState'
+import { useAPI, useAppState } from '@state/AppState'
 import classNames from 'classnames'
 import OutsideClickHandler from 'react-outside-click-handler'
 import { toast } from 'react-toastify'
 
 import Conf from '../Conf'
 import { CommentInfo, PostLinkInfo } from '../Types/PostInfo'
+import { getEncryptedPayloadSource } from '../Utils/encryptedPayloadSource'
 import { EncryptedPayloadDraft } from '../Utils/mailCrypto'
 import { AltTranslateButton, AnnotateButton, TranslateButton } from './ContentButtons'
 import ContentComponent, { LARGE_AUTO_CUT } from './ContentComponent'
@@ -44,6 +45,8 @@ interface CommentProps {
   unreadOnly?: boolean
   hideRating?: boolean
   currentUsername?: string
+  parentAuthorUserName?: string
+  parentAuthorUserId?: number
 }
 
 export default function CommentComponent(props: CommentProps) {
@@ -53,6 +56,7 @@ export default function CommentComponent(props: CommentProps) {
   const [showOptions, setShowOptions] = useState(false)
 
   const api = useAPI()
+  const appState = useAppState()
   const {
     currentMode,
     inProgress,
@@ -115,6 +119,19 @@ export default function CommentComponent(props: CommentProps) {
   const handleEdit = async () => {
     try {
       const comment = await api.postAPI.getComment(props.comment.id, 'source')
+
+      if (comment.comment.encryptedPayloadId) {
+        const payload = await api.encryptedPayload.getEncryptedPayloadCached(comment.comment.encryptedPayloadId)
+        const source = await getEncryptedPayloadSource(appState, payload)
+
+        if (source === undefined) {
+          return
+        }
+
+        setEditingText(source)
+        return
+      }
+
       setEditingText(comment.comment.content)
     } catch (e) {
       console.log('Get comment error:', e)
@@ -160,7 +177,7 @@ export default function CommentComponent(props: CommentProps) {
         {editingText === false ? (
           showHistory ? (
             <HistoryComponent
-              initial={{ content, date: created }}
+              initial={{ content, date: created, encryptedPayloadId: props.comment.encryptedPayloadId }}
               history={{ id: props.comment.id, type: 'comment' }}
               onClose={toggleHistory}
             />
@@ -198,8 +215,11 @@ export default function CommentComponent(props: CommentProps) {
           <CreateCommentComponentRestricted
             post={props.comment.postLink}
             comment={props.comment}
+            parentAuthorUserName={props.parent?.author.username || props.parentAuthorUserName}
+            parentAuthorUserId={props.parent?.author.id || props.parentAuthorUserId}
             open={true}
             text={editingText}
+            initialEncrypted={!!props.comment.encryptedPayloadId}
             onAnswer={handleEditComplete}
           />
         )}
@@ -300,6 +320,8 @@ export default function CommentComponent(props: CommentProps) {
               open={answerOpen}
               post={props.comment.postLink}
               comment={props.comment}
+              parentAuthorUserName={props.parent?.author.username || props.parentAuthorUserName}
+              parentAuthorUserId={props.parent?.author.id || props.parentAuthorUserId}
               onAnswer={handleAnswer}
               storageKey={`cp:${props.comment.id}`}
             />
@@ -317,6 +339,8 @@ export default function CommentComponent(props: CommentProps) {
                 unreadOnly={props.unreadOnly}
                 idx={idx}
                 currentUsername={props.currentUsername}
+                parentAuthorUserName={props.comment.author.username}
+                parentAuthorUserId={props.comment.author.id}
               />
             ))
           ) : (

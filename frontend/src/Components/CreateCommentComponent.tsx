@@ -44,6 +44,7 @@ interface CreateCommentProps {
   comment?: CommentInfo
   post?: PostLinkInfo
   text?: string
+  initialEncrypted?: boolean
   storageKey?: string
   parentAuthorUserName?: string
   parentAuthorUserId?: number
@@ -186,7 +187,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
 
   const api = useAPI()
   const appState = useAppState()
-  const [isEncrypted, setIsEncrypted] = useState(false)
+  const [isEncrypted, setIsEncrypted] = useState(!!props.initialEncrypted)
   const [encryptionKeys, setEncryptionKeys] = useState<
     | {
         sender: { userId: number; username: string; publicKey: string; publicKeyAlg: string }
@@ -217,6 +218,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
             username: props.parentAuthorUserName,
           }
         : undefined
+  const showEncryptionToggle = !!encryptionTarget || isEncrypted
 
   const setStorageValueDebounced = useDebouncedCallback((value) => {
     if (props.storageKey) {
@@ -395,11 +397,11 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
   }, [props.open, props.comment])
 
   useEffect(() => {
-    if (!encryptionTarget) {
+    if (!encryptionTarget && !props.initialEncrypted) {
       setIsEncrypted(false)
       setEncryptionKeys(undefined)
     }
-  }, [encryptionTarget?.userId])
+  }, [encryptionTarget?.userId, props.initialEncrypted])
 
   useEffect(() => {
     if (!answerRef.current || !containerRef.current) {
@@ -813,7 +815,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
       )}
       <div className={styles.final}>
         <ButtonGroup spacing={ButtonGroupSpacing.MEDIUM} className={styles.commentButtonGroup}>
-          {encryptionTarget && (
+          {showEncryptionToggle && (
             <Button
               variant={isEncrypted ? 'primaryAccent' : 'ghostAccent'}
               size='normal'

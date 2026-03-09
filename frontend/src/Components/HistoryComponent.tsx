@@ -9,6 +9,7 @@ import { useTheme } from '../Theme/ThemeProvider'
 import { HistoryInfo } from '../Types/HistoryInfo'
 import ContentComponent from './ContentComponent'
 import DateComponent from './DateComponent'
+import EncryptedContentComponent from './EncryptedContentComponent'
 
 import { ReactComponent as CloseIcon } from '../Assets/close.svg'
 import styles from './HistoryComponent.module.scss'
@@ -16,12 +17,13 @@ import styles from './HistoryComponent.module.scss'
 interface HistoryComponentProps {
   history: {
     id: number
-    type: string
+    type: 'post' | 'comment'
   }
   onClose?: () => void
   initial?: {
     title?: string
     content: string
+    encryptedPayloadId?: number
     date: Date
   }
 }
@@ -29,8 +31,6 @@ interface HistoryComponentProps {
 export const HistoryComponent = (props: HistoryComponentProps) => {
   const api = useAPI()
   const currentUsername = useAppState().userInfo?.username
-  const [title, setTitle] = useState(props.initial?.title)
-  const [content, setContent] = useState(props.initial?.content || '')
   const [selectedId, setSelectedId] = useState(0)
   const [showDiff, setShowDiff] = useState(false)
   const [historyEntries, setHistoryEntries] = useState<HistoryInfo[]>(
@@ -39,6 +39,7 @@ export const HistoryComponent = (props: HistoryComponentProps) => {
           {
             id: 0,
             content: props.initial.content,
+            encryptedPayloadId: props.initial.encryptedPayloadId,
             title: props.initial.title,
             date: props.initial.date,
             changed: 0,
@@ -57,8 +58,6 @@ export const HistoryComponent = (props: HistoryComponentProps) => {
     }
 
     setSelectedId(id)
-    setContent(entry.content)
-    setTitle(entry.title)
   }
 
   useEffect(() => {
@@ -69,8 +68,6 @@ export const HistoryComponent = (props: HistoryComponentProps) => {
         if (result.length > 0) {
           const last = result[0]
           setSelectedId(last.id)
-          setTitle(last.title)
-          setContent(last.content)
         }
       })
       .catch((err) => {
@@ -81,33 +78,43 @@ export const HistoryComponent = (props: HistoryComponentProps) => {
   }, [api, history, onClose])
 
   const selectedIndex = historyEntries.findIndex((h) => h.id === selectedId)
+  const selectedEntry = selectedIndex >= 0 ? historyEntries[selectedIndex] : undefined
   const prevEntry =
     selectedIndex >= 0 && selectedIndex < historyEntries.length - 1 ? historyEntries[selectedIndex + 1] : undefined
+  const canShowDiff = !!prevEntry && !selectedEntry?.encryptedPayloadId && !prevEntry.encryptedPayloadId
 
   const { theme } = useTheme()
+
+  useEffect(() => {
+    if (showDiff && !canShowDiff) {
+      setShowDiff(false)
+    }
+  }, [canShowDiff, showDiff])
 
   return (
     <div className={styles.history}>
       <div className='content'>
-        {title && <div className='title'>{title}</div>}
-        {showDiff && prevEntry ? (
+        {selectedEntry?.title && <div className='title'>{selectedEntry.title}</div>}
+        {showDiff && prevEntry && selectedEntry ? (
           <DiffViewer
             oldValue={prevEntry.content}
-            newValue={content}
+            newValue={selectedEntry.content}
             splitView={false}
             hideLineNumbers={true}
             useDarkTheme={theme === 'dark'}
             compareMethod={DiffMethod.WORDS}
             codeFoldMessageRenderer={(n) => <pre>{`Развернуть ${n} строк ...`}</pre>}
           />
+        ) : selectedEntry?.encryptedPayloadId ? (
+          <EncryptedContentComponent encryptedPayloadId={selectedEntry.encryptedPayloadId} kind={props.history.type} />
         ) : (
-          <ContentComponent {...{ currentUsername, content }} />
+          <ContentComponent currentUsername={currentUsername} content={selectedEntry?.content || ''} />
         )}
       </div>
       <div className='sideNav'>
         <div className='top'>
           <span>История</span>
-          {prevEntry && (
+          {canShowDiff && (
             <div className={classNames('diffToggle', showDiff ? 'active' : '')} onClick={() => setShowDiff(!showDiff)}>
               &plusmn;
             </div>

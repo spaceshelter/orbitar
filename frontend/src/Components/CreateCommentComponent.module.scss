@@ -211,6 +211,7 @@ button.editorButton {
 .commentButtonGroup {
   width: 100%;
   align-items: center;
+  justify-content: flex-end;
 
   @media (max-width: 420px) {
     justify-content: flex-end;

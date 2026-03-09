@@ -725,6 +725,7 @@ export default class PostController {
         title: h.title,
         comment: h.comment,
         content: h.content,
+        encryptedPayloadId: h.encryptedPayloadId,
         date: h.date.toISOString(),
         editor: h.editor,
         changed: h.changed,
