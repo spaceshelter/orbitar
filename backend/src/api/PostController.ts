@@ -468,8 +468,8 @@ export default class PostController {
 
       const overrideUserId = (await this.postManager.getUserIdOverride(postId)) || userId
 
-      // feed bump when post author is not fully karmadead
-      const bumpFeed = postAuthorRestrictions.restrictedToPostId === false
+      // encrypted replies/comments should not bump public feeds
+      const bumpFeed = postAuthorRestrictions.restrictedToPostId === false && !encryptedPayload
 
       // send notifications when commenter is not fully karmadead
       const sendNotifications = userRestrictions.restrictedToPostId === false
