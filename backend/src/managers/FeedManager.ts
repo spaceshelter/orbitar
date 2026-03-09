@@ -313,7 +313,7 @@ export default class FeedManager {
         siteById[rawPost.site_id] = site
       }
 
-      if (rawPost.parser_version !== TheParser.VERSION) {
+      if (!rawPost.encrypted_payload_id && rawPost.parser_version !== TheParser.VERSION) {
         const parseResult = this.parser.parse(rawPost.source)
         commentsToUpdateHtmlAndParserVersion.push({
           id: rawPost.post_id,
@@ -330,6 +330,7 @@ export default class FeedManager {
         created: rawPost.created_at,
         title: rawPost.title,
         content: format === 'html' ? rawPost.html : rawPost.source,
+        encryptedPayloadId: rawPost.encrypted_payload_id || undefined,
         rating: rawPost.rating,
         comments: rawPost.comments,
         newComments: rawPost.read_comments ? Math.max(0, rawPost.comments - rawPost.read_comments) : rawPost.comments,

@@ -1,8 +1,9 @@
 import { CommentEntity } from '../entities/CommentEntity'
 import { ContentFormat } from '../entities/common'
 import { UserEntity } from '../entities/UserEntity'
+import { EncryptedPayloadRequestMixin } from './EncryptedPayload'
 
-export type PostCommentEditRequest = {
+export type PostCommentEditRequest = EncryptedPayloadRequestMixin & {
   id: number
   content: string
   format?: ContentFormat

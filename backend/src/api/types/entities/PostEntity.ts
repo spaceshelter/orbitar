@@ -10,6 +10,7 @@ export type PostEntity = PostBaseEntity & {
   author: number
   created: string
   content?: string
+  encryptedPayloadId?: number
   rating: number
   comments: number
   newComments: number

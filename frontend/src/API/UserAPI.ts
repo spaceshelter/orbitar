@@ -27,6 +27,7 @@ type UserProfileResponse = {
   numberOfInvitesAvailable?: number
   isBarmalini?: boolean
   publicKey: string
+  publicKeyAlg: string
   hasOwnApps: boolean
   visitedDaysAgo: number
 }
@@ -179,8 +180,11 @@ export default class UserAPI {
     return this.api.request<{ gender: UserGender }, { gender: UserGender }>('/user/savegender', { gender })
   }
 
-  async savePublicKey(publicKey: string): Promise<{ publicKey: string }> {
-    return this.api.request<{ publicKey: string }, { publicKey: string }>('/user/save-public-key', { publicKey })
+  async savePublicKey(publicKey: string, publicKeyAlg: string): Promise<{ publicKey: string; publicKeyAlg: string }> {
+    return this.api.request<{ publicKey: string; publicKeyAlg: string }, { publicKey: string; publicKeyAlg: string }>(
+      '/user/save-public-key',
+      { publicKey, publicKeyAlg },
+    )
   }
 
   async getBarmaliniAccess(): Promise<BarmaliniAccessResult> {

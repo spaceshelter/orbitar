@@ -11,6 +11,7 @@ import winston from 'winston'
 
 import { apiMiddleware } from './api/ApiMiddleware'
 import AuthController from './api/AuthController'
+import EncryptedPayloadController from './api/EncryptedPayloadController'
 import FeedController from './api/FeedController'
 import InviteController from './api/InviteController'
 import NotificationsController from './api/NotificationsController'
@@ -29,6 +30,7 @@ import DB from './db/DB'
 import Redis from './db/Redis'
 import BookmarkRepository from './db/repositories/BookmarkRepository'
 import CommentRepository from './db/repositories/CommentRepository'
+import EncryptedPayloadRepository from './db/repositories/EncryptedPayloadRepository'
 import InviteRepository from './db/repositories/InviteRepository'
 import NotificationsRepository from './db/repositories/NotificationsRepository'
 import OAuth2Repository from './db/repositories/OAuth2Repository'
@@ -40,6 +42,7 @@ import UserCredentials from './db/repositories/UserCredentials'
 import UserRepository from './db/repositories/UserRepository'
 import VoteRepository from './db/repositories/VoteRepository'
 import WebPushRepository from './db/repositories/WebPushRepository'
+import EncryptedPayloadManager from './managers/EncryptedPayloadManager'
 import FeedManager from './managers/FeedManager'
 import InviteManager from './managers/InviteManager'
 import NotificationManager from './managers/NotificationManager'
@@ -108,11 +111,12 @@ const theParser = new TheParser({
 })
 
 const bookmarkRepository = new BookmarkRepository(db)
-const commentRepository = new CommentRepository(db)
+const encryptedPayloadRepository = new EncryptedPayloadRepository(db)
+const commentRepository = new CommentRepository(db, encryptedPayloadRepository)
 const credentialsRepository = new UserCredentials(db)
 const inviteRepository = new InviteRepository(db)
 const notificationsRepository = new NotificationsRepository(db)
-const postRepository = new PostRepository(db)
+const postRepository = new PostRepository(db, encryptedPayloadRepository)
 const siteRepository = new SiteRepository(db)
 const voteRepository = new VoteRepository(db)
 const userRepository = new UserRepository(db)
@@ -198,6 +202,7 @@ const voteManager = new VoteManager(voteRepository, postManager, userManager, re
 const searchManager = new SearchManager(userManager, siteManager, logger.child({ service: 'SEARCH' }))
 const oauth2Manager = new OAuth2Manager(oauthRepository, userManager, logger.child({ service: 'OAUTH2' }))
 const pollManager = new PollManager(pollRepository, userManager)
+const encryptedPayloadManager = new EncryptedPayloadManager(encryptedPayloadRepository)
 
 const apiEnricher = new Enricher(siteManager, userManager)
 
@@ -230,6 +235,7 @@ const requests = [
     logger.child({ service: 'STATUS' }),
   ),
   new VoteController(voteManager, userManager, oauthMiddlewareGenerator, logger.child({ service: 'VOTE' })),
+  new EncryptedPayloadController(encryptedPayloadManager, oauthMiddlewareGenerator, logger.child({ service: 'ENC' })),
   new UserController(
     apiEnricher,
     userManager,

@@ -8,6 +8,7 @@ export type CommentBaseEntity = {
 
 export type CommentEntity = CommentBaseEntity & {
   created: string
+  encryptedPayloadId?: number
   deleted?: boolean
   rating: number
   parentComment?: number

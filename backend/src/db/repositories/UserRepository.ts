@@ -4,6 +4,7 @@ import { OkPacket } from 'mysql2'
 
 import { FeedSorting } from '../../api/types/entities/common'
 import CodeError from '../../CodeError'
+import { MailboxPublicKey } from '../../managers/types/MailboxPublicKey'
 import { UserGender } from '../../managers/types/UserInfo'
 import DB from '../DB'
 import { InviteRaw } from '../types/InviteRaw'
@@ -375,21 +376,33 @@ export default class UserRepository {
     })
   }
 
-  async savePublicKey(publicKey: string, userId: number) {
+  async savePublicKey(publicKey: string, publicKeyAlg: string, userId: number) {
     return this.db.query(
       `UPDATE users
-                              SET public_key = :publicKey
+                              SET public_key = :publicKey,
+                                  public_key_alg = :publicKeyAlg
                               WHERE user_id = :userId`,
       {
         publicKey,
+        publicKeyAlg,
         userId,
       },
     )
   }
 
-  getPublicKey(userId: number) {
+  getPublicKey(userId: number): Promise<MailboxPublicKey | undefined> {
     return this.db
-      .fetchOne<{ public_key: string }>(`SELECT public_key FROM users WHERE user_id = :userId`, { userId })
-      .then((res) => res?.public_key)
+      .fetchOne<{
+        public_key: string
+        public_key_alg: string
+      }>(`SELECT public_key, public_key_alg FROM users WHERE user_id = :userId`, { userId })
+      .then((res) =>
+        res && res.public_key
+          ? {
+              publicKey: res.public_key,
+              publicKeyAlg: res.public_key_alg || '',
+            }
+          : undefined,
+      )
   }
 }

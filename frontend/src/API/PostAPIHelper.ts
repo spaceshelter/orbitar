@@ -4,6 +4,7 @@ import { HistoryInfo } from '../Types/HistoryInfo'
 import { CommentInfo, PostInfo } from '../Types/PostInfo'
 import { SiteInfo } from '../Types/SiteInfo'
 import { UserInfo } from '../Types/UserInfo'
+import { EncryptedPayloadDraft } from '../Utils/mailCrypto'
 import PostAPI, { CommentEntity, PostEntity } from './PostAPI'
 
 type FeedPostsResult = {
@@ -170,8 +171,13 @@ export default class PostAPIHelper {
     )
   }
 
-  async comment(content: string, postId: number, commentId?: number): Promise<PostCommentResult> {
-    const response = await this.postAPI.comment(content, postId, commentId)
+  async comment(
+    content: string,
+    postId: number,
+    commentId?: number,
+    encryptedPayload?: EncryptedPayloadDraft,
+  ): Promise<PostCommentResult> {
+    const response = await this.postAPI.comment(content, postId, commentId, encryptedPayload)
 
     const [comment] = this.fixComments([response.comment], response.users)
 
@@ -180,8 +186,12 @@ export default class PostAPIHelper {
     }
   }
 
-  async editComment(content: string, commentId: number): Promise<PostCommentEditResult> {
-    const response = await this.postAPI.editComment(content, commentId)
+  async editComment(
+    content: string,
+    commentId: number,
+    encryptedPayload?: EncryptedPayloadDraft,
+  ): Promise<PostCommentEditResult> {
+    const response = await this.postAPI.editComment(content, commentId, encryptedPayload)
 
     const [comment] = this.fixComments([response.comment], response.users)
 
@@ -190,8 +200,13 @@ export default class PostAPIHelper {
     }
   }
 
-  async editPost(postId: number, title: string, content: string): Promise<PostEditResult> {
-    const response = await this.postAPI.editPost(postId, title, content)
+  async editPost(
+    postId: number,
+    title: string,
+    content: string,
+    encryptedPayload?: EncryptedPayloadDraft,
+  ): Promise<PostEditResult> {
+    const response = await this.postAPI.editPost(postId, title, content, encryptedPayload)
 
     const [post] = this.fixPosts([response.post], response.users)
 

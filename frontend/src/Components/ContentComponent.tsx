@@ -11,11 +11,9 @@ import { AppState, useAppState, ZoomedImg } from '../AppState/AppState'
 import { FakeRoot } from '../index'
 import { observeOnHidden } from '../Services/ObserverService'
 import { useTheme } from '../Theme/ThemeProvider'
-import { b64DecodeUnicode } from '../Utils/utils'
 import GalleryComponent, { GalleryElement } from './GalleryComponent'
 import InternalLinkExpandComponent from './InternalLinkExpandComponent'
 import { OAuthEmbeddedAppComponent } from './OAuth2AppCardModalComponent'
-import { SecretMailDecoderForm, SecretMailEncoderForm } from './SecretMailbox'
 import TelegramEmbed from './TelegramEmbed'
 import TwitterEmbed from './TwitterEmbed'
 import { getAutoMuteVideos, getVideoAutopause, getVideoVolume, setVideoVolume } from './UserProfileSettings'
@@ -70,26 +68,11 @@ export const SMALL_AUTO_CUT = 100
 
 const iframeToOriginalEl = new WeakMap<HTMLIFrameElement, HTMLElement>()
 
-type MailboxKey = {
-  type: 'mailbox'
-  mailboxTitle?: string
-  openKey: string
-  forUsername?: string
-}
-
-type MailKey = {
-  type: 'mail'
-  secret: string
-  title: string
-}
-
 function updateContent(
   appState: AppState,
   div: HTMLDivElement,
-  setMailboxKey: (key: MailboxKey | MailKey | null) => void,
   setCut: (cut: boolean) => void,
   cleanupRegistry: CleanupRegistry,
-  currentUsername?: string,
 ): void {
   div.querySelectorAll('div.gallery').forEach((gallery) => {
     updateGallery(gallery as HTMLDivElement, appState, cleanupRegistry, setCut)
@@ -118,14 +101,6 @@ function updateContent(
     updateExpand(expand as HTMLDetailsElement, setCut)
   })
 
-  div.querySelectorAll('span.secret-mailbox').forEach((mailbox) => {
-    updateMailbox(mailbox as HTMLSpanElement, setMailboxKey)
-  })
-
-  div.querySelectorAll('span.secret-mail').forEach((mail) => {
-    updateMail(mail as HTMLSpanElement, setMailboxKey, currentUsername, appState, cleanupRegistry)
-  })
-
   div.querySelectorAll('span.expand-button').forEach((expandButton) => {
     updateInternalExpandButton(expandButton as HTMLElement, appState, cleanupRegistry)
   })
@@ -136,27 +111,6 @@ function updateContent(
 
   div.querySelectorAll('div.poll').forEach((pollEl) => {
     updatePoll(pollEl as HTMLDivElement, appState, cleanupRegistry)
-  })
-}
-
-function updateMailbox(mailbox: HTMLSpanElement, setMailboxKey: (key: MailboxKey | null) => void) {
-  const secret = mailbox.dataset.secret
-  if (!secret) {
-    return
-  }
-  let mailboxTitle = mailbox.dataset.rawText
-  try {
-    mailboxTitle = mailboxTitle && b64DecodeUnicode(mailboxTitle)
-  } catch (e) {
-    mailboxTitle = undefined
-  }
-
-  mailbox.addEventListener('click', () => {
-    setMailboxKey({
-      type: 'mailbox',
-      openKey: secret,
-      mailboxTitle,
-    })
   })
 }
 
@@ -189,102 +143,6 @@ function renderWithTheme(container: HTMLElement, content: React.ReactNode, appSt
       containerToRootMap.delete(container)
     })
   }
-}
-
-function updateMail(
-  mail: HTMLSpanElement,
-  setMailboxKey: (key: MailKey | null) => void,
-  currentUsername: string | undefined,
-  appState: AppState,
-  cleanupRegistry: CleanupRegistry,
-) {
-  // check processed
-  if (mail.dataset.processed) {
-    return
-  }
-  mail.dataset.processed = '1'
-
-  const secret = mail.dataset.secret
-  if (!secret) {
-    mail.classList.add('secret-mail-error')
-    return
-  }
-  let cipher: string | undefined
-  let encodedKey: string
-
-  // try decode secret as json
-  try {
-    const j = JSON.parse(b64DecodeUnicode(secret))
-    // add mention "для @username"
-    if (j.to && !mail.querySelector('span.mention')) {
-      const mention = document.createElement('span')
-      mention.classList.add('mention')
-      mention.innerText = j.to
-      mail.appendChild(document.createTextNode(' для '))
-      mail.appendChild(mention)
-    }
-
-    // check v, to, c
-    if (!j.v || !j.c || !Number.isInteger(j.v) || !j.toKey) {
-      throw new Error('Invalid secret')
-    } else if (j.to && j.to === currentUsername && j.toKey) {
-      encodedKey = j.toKey
-      cipher = j.c
-    } else if (j.from && j.from === currentUsername && j.fromKey) {
-      encodedKey = j.fromKey
-      cipher = j.c
-    } else if (!j.to) {
-      encodedKey = j.toKey
-      cipher = j.c
-    }
-
-    if (!cipher) {
-      mail.classList.add('secret-mail-disabled')
-      return
-    }
-  } catch (e) {
-    // add error class
-    mail.classList.add('secret-mail-error')
-    return
-  }
-
-  // just the text
-  const title = mail.innerText.trim()
-
-  const mailInnerHtml = mail.innerHTML
-  let decoded = false
-  let cleanup: CleanupHandler | undefined
-
-  mail.addEventListener('click', () => {
-    if (decoded || !cipher || !appState) {
-      return
-    }
-    mail.classList.remove('i', 'i-mail-secure')
-    mail.classList.add('secret-mail-decoding')
-
-    const mailContent = (
-      <SecretMailDecoderForm
-        cipher={cipher}
-        title={title}
-        encodedKey={encodedKey}
-        onClose={(result) => {
-          if (result) {
-            decoded = true
-            mail.classList.add('i-mail-open', 'secret-mail-decoded', 'i')
-            mail.classList.remove('secret-mail-decoding')
-          } else {
-            mail.classList.add('i', 'i-mail-secure')
-            mail.classList.remove('secret-mail-decoding')
-            cleanup?.cleanup()
-            cleanup = undefined
-            mail.innerHTML = mailInnerHtml
-          }
-        }}
-      />
-    )
-
-    cleanup = cleanupRegistry.register(renderWithTheme(mail, mailContent, appState))
-  })
 }
 
 function processExpandLink(
@@ -748,7 +606,6 @@ function updateGallery(
 export default function ContentComponent(props: ContentComponentProps) {
   const contentDiv = useRef<HTMLDivElement>(null)
   const [cut, setCut] = useState(false)
-  const [mailboxKey, setMailboxKey] = useState<MailboxKey | MailKey | null>(null)
   const cleanupRegistryRef = useRef<CleanupRegistry>(new CleanupRegistry())
   const appState = useAppState()
 
@@ -776,7 +633,7 @@ export default function ContentComponent(props: ContentComponentProps) {
     cleanupRegistry.cleanup()
 
     // Update content using the registry
-    updateContent(appState, content, setMailboxKey, setCut, cleanupRegistry, props.currentUsername)
+    updateContent(appState, content, setCut, cleanupRegistry)
 
     let resizeObserver: ResizeObserver | null = null
 
@@ -850,9 +707,6 @@ export default function ContentComponent(props: ContentComponentProps) {
             Читать дальше
           </Button>
         </div>
-      )}
-      {mailboxKey && mailboxKey.type === 'mailbox' && (
-        <SecretMailEncoderForm {...mailboxKey} onClose={() => setMailboxKey(null)} />
       )}
     </>
   )

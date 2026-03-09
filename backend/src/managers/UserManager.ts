@@ -17,6 +17,7 @@ import { aesDecryptFromBase64, aesEncryptToBase64 } from '../parser/CryptoUtils'
 import TheParser from '../parser/TheParser'
 import { sendResetPasswordEmail } from '../utils/Mailer'
 import NotificationManager from './NotificationManager'
+import { isValidMailboxPublicKey, MAILBOX_PUBLIC_KEY_ALG } from './types/MailboxPublicKey'
 import { UserGender, UserInfo, UserRatingBySubsite, UserRestrictions, UserStats } from './types/UserInfo'
 import { UserCache } from './UserCache'
 
@@ -769,13 +770,30 @@ export default class UserManager {
     if (!this.barmaliniUserConfigured()) {
       throw new Error('Barmalini user not configured')
     }
-    await this.userRepository.anonymizeAccount(userId, config.barmalini.userId!)
+    const anonymousUserId = config.barmalini.userId
+    if (!anonymousUserId) {
+      throw new Error('Barmalini user not configured')
+    }
+
+    await this.userRepository.anonymizeAccount(userId, anonymousUserId)
     this.clearCache(userId)
     this.clearUserRestrictionsCache(userId)
   }
 
-  savePublicKey(publicKey: string, userId: number) {
-    const res = this.userRepository.savePublicKey(publicKey, userId)
+  savePublicKey(publicKey: string, publicKeyAlg: string, userId: number) {
+    if (!publicKey && !publicKeyAlg) {
+      const res = this.userRepository.savePublicKey('', '', userId)
+      this.userCache.clearPublicKeysCache(userId)
+      return res
+    }
+
+    if (!isValidMailboxPublicKey(publicKey, publicKeyAlg)) {
+      throw new Error(
+        `Invalid mailbox public key. Expected ${MAILBOX_PUBLIC_KEY_ALG} and a base64url-encoded 32-byte key.`,
+      )
+    }
+
+    const res = this.userRepository.savePublicKey(publicKey, publicKeyAlg, userId)
     this.userCache.clearPublicKeysCache(userId)
     return res
   }

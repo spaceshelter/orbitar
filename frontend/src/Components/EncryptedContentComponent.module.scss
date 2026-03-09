@@ -1,0 +1,46 @@
+.locked {
+  border: 1px solid var(--dim3);
+  border-radius: 4px;
+  padding: 12px;
+  background: var(--dim1);
+  color: var(--fgSoft);
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+
+  &.canDecrypt {
+    cursor: pointer;
+
+    &:hover {
+      border-color: var(--primary);
+      background: var(--dim2);
+    }
+  }
+
+  &.disabled {
+    background: var(--dim1);
+    border-color: var(--dim2);
+    color: var(--fgGhost);
+  }
+
+  &.error {
+    border-color: var(--danger);
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.body {
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.disabled .header,
+.disabled .body {
+  opacity: 0.5;
+}

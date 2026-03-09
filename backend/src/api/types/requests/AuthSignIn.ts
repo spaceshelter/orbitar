@@ -1,4 +1,4 @@
-import { UserBaseEntity } from '../entities/UserEntity'
+import { UserEntity } from '../entities/UserEntity'
 
 export type AuthSignInRequest = {
   username: string
@@ -6,6 +6,6 @@ export type AuthSignInRequest = {
 }
 
 export type AuthSignInResponse = {
-  user: UserBaseEntity
+  user: UserEntity
   session: string
 }

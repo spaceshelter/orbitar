@@ -1,17 +1,21 @@
 import { ResultSetHeader } from 'mysql2'
 
 import { FeedSorting } from '../../api/types/entities/common'
+import { EncryptedPayloadDraftEntity } from '../../api/types/entities/EncryptedPayloadEntity'
 import CodeError from '../../CodeError'
 import { escapePercent } from '../../utils/MySqlUtils'
 import DB from '../DB'
 import { ContentSourceRaw } from '../types/ContentSourceRaw'
 import { PostBareBonesRaw, PostRaw, PostRawWithUserData } from '../types/PostRaw'
+import EncryptedPayloadRepository from './EncryptedPayloadRepository'
 
 export default class PostRepository {
   private db: DB
+  private encryptedPayloadRepository: EncryptedPayloadRepository
 
-  constructor(db: DB) {
+  constructor(db: DB, encryptedPayloadRepository: EncryptedPayloadRepository) {
     this.db = db
+    this.encryptedPayloadRepository = encryptedPayloadRepository
   }
 
   /**
@@ -266,8 +270,10 @@ export default class PostRepository {
     source: string,
     language: string,
     html: string,
+    encryptedPayload?: EncryptedPayloadDraftEntity,
   ): Promise<PostRaw> {
     return await this.db.inTransaction(async (db) => {
+      const encryptedPayloadId = await this.encryptedPayloadRepository.createEncryptedPayload(db, encryptedPayload)
       const postId = await db.insert('posts', {
         site_id: siteId,
         author_id: userId,
@@ -275,6 +281,7 @@ export default class PostRepository {
         source,
         language,
         html,
+        encrypted_payload_id: encryptedPayloadId,
       })
 
       const contentSourceId = await db.insert('content_source', {
@@ -283,12 +290,17 @@ export default class PostRepository {
         author_id: userId,
         title,
         source,
+        encrypted_payload_id: encryptedPayloadId,
       })
 
-      await db.query('update posts set content_source_id=:contentSourceId where post_id=:postId', {
-        postId,
-        contentSourceId,
-      })
+      await db.query(
+        'update posts set content_source_id=:contentSourceId, encrypted_payload_id=:encryptedPayloadId where post_id=:postId',
+        {
+          postId,
+          contentSourceId,
+          encryptedPayloadId,
+        },
+      )
 
       const post = await db.fetchOne<PostRaw>('select * from posts where post_id=:postId', {
         postId,
@@ -337,6 +349,7 @@ export default class PostRepository {
     source: string,
     language: string,
     html: string,
+    encryptedPayload?: EncryptedPayloadDraftEntity,
     comment?: string,
   ): Promise<boolean> {
     return await this.db.inTransaction(async (conn) => {
@@ -348,12 +361,14 @@ export default class PostRepository {
         throw new CodeError('unknown', 'Could not select post')
       }
 
+      const encryptedPayloadId = await this.encryptedPayloadRepository.createEncryptedPayload(conn, encryptedPayload)
       const contentSourceId = await conn.insert('content_source', {
         ref_type: 'post',
         ref_id: postId,
         author_id: updateByUserId,
         title,
         source,
+        encrypted_payload_id: encryptedPayloadId,
         comment,
       })
 
@@ -365,6 +380,7 @@ export default class PostRepository {
                      source=:source,
                      html=:html,
                      content_source_id=:contentSourceId,
+                     encrypted_payload_id=:encryptedPayloadId,
                      edit_flag=:editFlag,
                      language=:language
                  where post_id = :postId`,
@@ -374,6 +390,7 @@ export default class PostRepository {
           source,
           html,
           contentSourceId,
+          encryptedPayloadId,
           editFlag,
           language,
         },

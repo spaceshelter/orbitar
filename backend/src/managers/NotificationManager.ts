@@ -128,7 +128,7 @@ export default class NotificationManager {
                 : await this.commentRepository.getComment(data.source.commentId)
             comment = {
               id: commentRaw.comment_id,
-              content: commentRaw.source,
+              content: commentRaw.encrypted_payload_id ? '🔒 Шифровка' : commentRaw.source,
             }
           }
 
@@ -312,7 +312,7 @@ export default class NotificationManager {
 
     const baseUrl = (this.siteConfig.http ? 'http://' : 'https://') + this.siteConfig.domain
 
-    let commentText = comment.source
+    let commentText = comment.encrypted_payload_id ? '🔒 Шифровка' : comment.source
     if (commentText.length > 30) {
       commentText = commentText.substring(0, 30) + '...'
     }

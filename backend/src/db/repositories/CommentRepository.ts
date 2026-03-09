@@ -1,15 +1,19 @@
 import { ResultSetHeader } from 'mysql2'
 
+import { EncryptedPayloadDraftEntity } from '../../api/types/entities/EncryptedPayloadEntity'
 import CodeError from '../../CodeError'
 import { escapePercent } from '../../utils/MySqlUtils'
 import DB from '../DB'
 import { CommentRaw, CommentRawWithUserData } from '../types/PostRaw'
+import EncryptedPayloadRepository from './EncryptedPayloadRepository'
 
 export default class CommentRepository {
   private db: DB
+  private encryptedPayloadRepository: EncryptedPayloadRepository
 
-  constructor(db: DB) {
+  constructor(db: DB, encryptedPayloadRepository: EncryptedPayloadRepository) {
     this.db = db
+    this.encryptedPayloadRepository = encryptedPayloadRepository
   }
 
   async getComment(commentId: number): Promise<CommentRaw | undefined> {
@@ -114,6 +118,7 @@ export default class CommentRepository {
     source: string,
     language: string,
     html: string,
+    encryptedPayload?: EncryptedPayloadDraftEntity,
     updateCommentedAt = true,
   ): Promise<CommentRaw> {
     return await this.db.inTransaction(async (conn) => {
@@ -125,6 +130,7 @@ export default class CommentRepository {
         throw new CodeError('no-post', 'Post not found')
       }
 
+      const encryptedPayloadId = await this.encryptedPayloadRepository.createEncryptedPayload(conn, encryptedPayload)
       const commentId = await conn.insert('comments', {
         site_id: siteResult.site_id,
         post_id: postId,
@@ -133,6 +139,7 @@ export default class CommentRepository {
         source: source,
         language: language,
         html: html,
+        encrypted_payload_id: encryptedPayloadId,
       })
 
       const contentSourceId = await conn.insert('content_source', {
@@ -140,12 +147,17 @@ export default class CommentRepository {
         ref_id: commentId,
         author_id: userId,
         source,
+        encrypted_payload_id: encryptedPayloadId,
       })
 
-      await conn.query('update comments set content_source_id=:contentSourceId where comment_id=:commentId', {
-        commentId,
-        contentSourceId,
-      })
+      await conn.query(
+        'update comments set content_source_id=:contentSourceId, encrypted_payload_id=:encryptedPayloadId where comment_id=:commentId',
+        {
+          commentId,
+          contentSourceId,
+          encryptedPayloadId,
+        },
+      )
 
       await conn.query(
         `update posts p set comments=(select count(*) from comments c where c.post_id = p.post_id), 
@@ -176,6 +188,7 @@ export default class CommentRepository {
     source: string,
     language: string,
     html: string,
+    encryptedPayload?: EncryptedPayloadDraftEntity,
     comment?: string,
   ): Promise<boolean> {
     return await this.db.inTransaction(async (conn) => {
@@ -187,11 +200,13 @@ export default class CommentRepository {
         throw new CodeError('unknown', 'Could not select comment')
       }
 
+      const encryptedPayloadId = await this.encryptedPayloadRepository.createEncryptedPayload(conn, encryptedPayload)
       const contentSourceId = await conn.insert('content_source', {
         ref_type: 'comment',
         ref_id: commentId,
         author_id: updateByUserId,
         source,
+        encrypted_payload_id: encryptedPayloadId,
         comment,
       })
 
@@ -202,6 +217,7 @@ export default class CommentRepository {
                  set source=:source,
                      html=:html,
                      content_source_id=:contentSourceId,
+                     encrypted_payload_id=:encryptedPayloadId,
                      edit_flag=:editFlag,
                      language=:language
                  where comment_id = :commentId`,
@@ -210,6 +226,7 @@ export default class CommentRepository {
           source,
           html,
           contentSourceId,
+          encryptedPayloadId,
           editFlag,
           language,
         },

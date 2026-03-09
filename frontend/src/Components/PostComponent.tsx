@@ -4,14 +4,18 @@ import { TranslateType } from '@api/PostAPI'
 import { useInterpreter } from '@api/use/useInterpreter'
 import { useAPI, useAppState } from '@state/AppState'
 import Button from '@ui/Button'
+import classNames from 'classnames'
 import OutsideClickHandler from 'react-outside-click-handler'
 import { toast } from 'react-toastify'
 
 import Conf from '../Conf'
-import { PostInfo } from '../Types/PostInfo'
+import { CommentInfo, PostInfo, PostLinkInfo } from '../Types/PostInfo'
+import { getEncryptedPayloadSource } from '../Utils/encryptedPayloadSource'
+import { EncryptedPayloadDraft } from '../Utils/mailCrypto'
 import { AltTranslateButton, AnnotateButton, TranslateButton, UnwatchButton, WatchButton } from './ContentButtons'
 import ContentComponent from './ContentComponent'
 import CreateCommentComponent from './CreateCommentComponent'
+import EncryptedContentComponent from './EncryptedContentComponent'
 import { HistoryComponent } from './HistoryComponent'
 import PostLink from './PostLink'
 import RatingSwitch from './RatingSwitch'
@@ -29,14 +33,20 @@ interface PostComponentProps {
   buttons?: React.ReactNode
   onChange?: (id: number, post: Partial<PostInfo>) => void
   autoCut?: number
-  onEdit?: (post: PostInfo, text: string, title?: string) => Promise<PostInfo | undefined>
+  onEdit?: (
+    post: PostInfo,
+    text: string,
+    title?: string,
+    encryptedPayload?: EncryptedPayloadDraft,
+  ) => Promise<PostInfo | undefined>
   dangerousHtmlTitle?: boolean
   hideRating?: boolean
 }
 
 export default function PostComponent(props: PostComponentProps) {
   const api = useAPI()
-  const currentUsername = useAppState().userInfo?.username
+  const appState = useAppState()
+  const currentUsername = appState.userInfo?.username
   const [showOptions, setShowOptions] = useState(false)
   const [editingText, setEditingText] = useState<false | string>(false)
   const [editingTitle, setEditingTitle] = useState<string>(props.post.title || '')
@@ -71,6 +81,7 @@ export default function PostComponent(props: PostComponentProps) {
   const { id, created, site, author, vote, rating, watch } = props.post
   const title = altTitle || props.post.title
   const content = altContent || props.post.content
+  const isEncrypted = !!props.post.encryptedPayloadId
 
   const toggleOptions = () => {
     setShowOptions(!showOptions)
@@ -114,15 +125,20 @@ export default function PostComponent(props: PostComponentProps) {
       })
   }
 
-  const handleEditComplete = async (text: string) => {
+  const handleEditComplete = async (
+    text: string,
+    _post?: PostLinkInfo,
+    _comment?: CommentInfo,
+    encryptedPayload?: EncryptedPayloadDraft,
+  ) => {
     try {
-      await props.onEdit?.(props.post, text, editingTitle)
+      await props.onEdit?.(props.post, text, editingTitle, encryptedPayload)
       setEditingText(false)
       // return res;
       return undefined
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.log('Could not edit post', err)
-      toast.error(err.message || 'Не удалось отредактировать пост')
+      toast.error(err instanceof Error ? err.message : 'Не удалось отредактировать пост')
       throw err
     }
   }
@@ -130,6 +146,19 @@ export default function PostComponent(props: PostComponentProps) {
   const handleEdit = async () => {
     try {
       const post = await api.postAPI.get(props.post.id, 'source', true)
+
+      if (post.post.encryptedPayloadId) {
+        const payload = await api.encryptedPayload.getEncryptedPayloadCached(post.post.encryptedPayloadId)
+        const source = await getEncryptedPayloadSource(appState, payload)
+
+        if (source === undefined) {
+          return
+        }
+
+        setEditingText(source)
+        return
+      }
+
       setEditingText(post.post.content)
     } catch (e) {
       console.log('Get comment error:', e)
@@ -167,7 +196,7 @@ export default function PostComponent(props: PostComponentProps) {
           {editingText === false ? (
             showHistory ? (
               <HistoryComponent
-                initial={{ title, content, date: created }}
+                initial={{ title, content, date: created, encryptedPayloadId: props.post.encryptedPayloadId }}
                 history={{ id: props.post.id, type: 'post' }}
                 onClose={toggleHistory}
               />
@@ -181,11 +210,21 @@ export default function PostComponent(props: PostComponentProps) {
                   </div>
                 )}
                 <div className={styles.content}>
-                  <ContentComponent
-                    className={styles.content}
-                    {...{ autoCut, content, currentUsername }}
-                    lowRating={rating <= Conf.POST_LOW_RATING_THRESHOLD || props.post.vote === -1}
-                  />
+                  {props.post.encryptedPayloadId ? (
+                    <EncryptedContentComponent
+                      className={classNames(styles.content, styles.encryptedContent)}
+                      encryptedPayloadId={props.post.encryptedPayloadId}
+                      kind='post'
+                      autoCut={autoCut}
+                      lowRating={rating <= Conf.POST_LOW_RATING_THRESHOLD || props.post.vote === -1}
+                    />
+                  ) : (
+                    <ContentComponent
+                      className={styles.content}
+                      {...{ autoCut, content, currentUsername }}
+                      lowRating={rating <= Conf.POST_LOW_RATING_THRESHOLD || props.post.vote === -1}
+                    />
+                  )}
                 </div>
               </>
             )
@@ -199,7 +238,12 @@ export default function PostComponent(props: PostComponentProps) {
                 value={editingTitle}
                 onChange={handleEditingTitle}
               />
-              <CreateCommentComponent open={true} text={editingText} onAnswer={handleEditComplete} />
+              <CreateCommentComponent
+                open={true}
+                text={editingText}
+                initialEncrypted={!!props.post.encryptedPayloadId}
+                onAnswer={handleEditComplete}
+              />
             </>
           )}
         </div>
@@ -222,7 +266,7 @@ export default function PostComponent(props: PostComponentProps) {
           </div>
         )}
         <div className={styles.control + ' ' + styles.options}>
-          {(showTranslateButtonInline || currentMode === 'translate') && (
+          {!isEncrypted && (showTranslateButtonInline || currentMode === 'translate') && (
             <div className={styles.control}>
               <TranslateButton
                 iconOnly={true}
@@ -232,12 +276,12 @@ export default function PostComponent(props: PostComponentProps) {
               />
             </div>
           )}
-          {currentMode === 'altTranslate' && (
+          {!isEncrypted && currentMode === 'altTranslate' && (
             <div className={styles.control}>
               <AltTranslateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={altTranslate} />
             </div>
           )}
-          {currentMode === 'annotate' && (
+          {!isEncrypted && currentMode === 'annotate' && (
             <div className={styles.control}>
               <AnnotateButton iconOnly={true} isActive={true} inProgress={inProgress} onClick={annotate} />
             </div>

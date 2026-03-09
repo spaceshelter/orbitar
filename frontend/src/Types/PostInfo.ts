@@ -13,6 +13,7 @@ export interface PostInfo extends PostLinkInfo {
   created: Date
   title?: string
   content: string
+  encryptedPayloadId?: number
   rating: number
   comments: number
   newComments: number
@@ -30,6 +31,7 @@ export interface CommentInfo {
   author: UserBaseInfo
   deleted?: boolean
   content: string
+  encryptedPayloadId?: number
   rating: number
   vote?: number
   isNew?: boolean

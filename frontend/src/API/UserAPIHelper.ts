@@ -15,6 +15,7 @@ export type UserProfileResult = {
   numberOfInvitesAvailable?: number
   isBarmalini?: boolean
   publicKey: string
+  publicKeyAlg: string
   visitedDaysAgo: number
   hasOwnApps: boolean
 }
