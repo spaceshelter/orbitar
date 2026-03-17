@@ -228,6 +228,7 @@ const requests = [
     userManager,
     oauthMiddlewareGenerator,
     logger.child({ service: 'STATUS' }),
+    redis.client,
   ),
   new VoteController(voteManager, userManager, oauthMiddlewareGenerator, logger.child({ service: 'VOTE' })),
   new UserController(

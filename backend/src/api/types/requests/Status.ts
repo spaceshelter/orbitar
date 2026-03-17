@@ -12,4 +12,5 @@ export type StatusResponse = {
     unread: number
     visible: number
   }
+  onlineCount: number
 }

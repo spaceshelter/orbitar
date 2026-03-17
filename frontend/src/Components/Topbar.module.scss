@@ -25,6 +25,22 @@
   .right {
     padding-right: 28px;
   }
+  .onlineCount {
+  display: flex;
+  align-items: center;  
+  color: var(--fg);
+  gap: 5px;
+  cursor: default;
+
+  &::before {
+    content: '';
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: #4caf50;
+    }
+  }
 
   //:global{ }
 
@@ -107,3 +123,5 @@ button.notificationButton {
   font-weight: normal;
   gap: 0;
 }
+
+
