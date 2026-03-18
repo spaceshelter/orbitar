@@ -227,7 +227,7 @@ const requests = [
     siteManager,
     userManager,
     oauthMiddlewareGenerator,
-    logger.child({ service: 'STATUS' }),    
+    logger.child({ service: 'STATUS' }),
   ),
   new VoteController(voteManager, userManager, oauthMiddlewareGenerator, logger.child({ service: 'VOTE' })),
   new UserController(
