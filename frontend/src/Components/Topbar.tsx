@@ -136,8 +136,10 @@ const WatchButton = observer(() => {
 
 const OnlineCount = observer(() => {
   const { onlineCount } = useAppState()
+  if (!onlineCount) return null
   return (
     <div className={styles.onlineCount} title='Пользователей онлайн'>
+      <span className='i i-user' />
       {onlineCount}
     </div>
   )

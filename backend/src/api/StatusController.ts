@@ -1,5 +1,4 @@
 import { Router } from 'express'
-import { RedisClientType } from 'redis'
 import { Logger } from 'winston'
 
 import SiteManager from '../managers/SiteManager'
@@ -9,16 +8,12 @@ import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
 import { StatusRequest, StatusResponse } from './types/requests/Status'
 import { Enricher } from './utils/Enricher'
 
-const ONLINE_USERS_KEY = 'online_users'
-const ONLINE_WINDOW_SECONDS = 90 // 3 × 30s polling interval
-
 export default class StatusController {
   public readonly router = Router()
   private readonly siteManager: SiteManager
   private readonly userManager: UserManager
   private readonly logger: Logger
   private readonly enricher: Enricher
-  private readonly redis: RedisClientType
 
   constructor(
     enricher: Enricher,
@@ -26,13 +21,11 @@ export default class StatusController {
     userManager: UserManager,
     oauth: OAuth2MiddlewareGenerator,
     logger: Logger,
-    redis: RedisClientType,
   ) {
     this.siteManager = siteManager
     this.userManager = userManager
     this.enricher = enricher
     this.logger = logger
-    this.redis = redis
     this.router.post('/status', oauth('читать статус'), (req, res) => this.status(req, res))
   }
 
@@ -51,10 +44,12 @@ export default class StatusController {
         return response.error('error', 'Unknown error', 500)
       }
 
-      // track online users via Redis sorted set (score = unix timestamp)
-      const now = Math.floor(Date.now() / 1000)
-      await this.redis.zAdd(ONLINE_USERS_KEY, { score: now, value: String(userId) })
-      const onlineCount = await this.redis.zCount(ONLINE_USERS_KEY, now - ONLINE_WINDOW_SECONDS, '+inf')
+      let onlineCount = 0
+      try {
+        onlineCount = await this.userManager.trackOnline(userId)
+      } catch (err) {
+        this.logger.warn('Failed to track online users', { error: err })
+      }
 
       return response.success({
         user,

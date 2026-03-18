@@ -26,19 +26,16 @@
     padding-right: 28px;
   }
   .onlineCount {
-  display: flex;
-  align-items: center;  
-  color: var(--fg);
-  gap: 5px;
-  cursor: default;
+    display: flex;
+    align-items: center;
+    color: var(--fg);
+    gap: 4px;
+    cursor: default;
+    font-size: 16px;
 
-  &::before {
-    content: '';
-    display: inline-block;
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background-color: #4caf50;
+    span {
+      font-size: 20px;
+      color: var(--primary);
     }
   }
 

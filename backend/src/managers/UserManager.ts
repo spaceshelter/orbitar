@@ -267,6 +267,19 @@ export default class UserManager {
     return isActive === 'true'
   }
 
+  private static readonly ONLINE_USERS_KEY = 'online_users'
+  private static readonly ONLINE_WINDOW_SECONDS = 90 // 3 × 30s polling interval
+
+  async trackOnline(userId: number): Promise<number> {
+    const now = Math.floor(Date.now() / 1000)
+    const pipeline = this.redis.multi()
+    pipeline.zRemRangeByScore(UserManager.ONLINE_USERS_KEY, '-inf', now - UserManager.ONLINE_WINDOW_SECONDS)
+    pipeline.zAdd(UserManager.ONLINE_USERS_KEY, { score: now, value: String(userId) })
+    pipeline.zCard(UserManager.ONLINE_USERS_KEY)
+    const results = await pipeline.exec()
+    return results[2] as number
+  }
+
   async getUserRatingBySubsite(userId: number): Promise<UserRatingBySubsite> {
     const ratingBySubsite: UserRatingOnSubsite[] = await this.voteRepository.getUserRatingOnSubsites(userId)
     const postRatingBySubsite: Record<string, number> = {}
