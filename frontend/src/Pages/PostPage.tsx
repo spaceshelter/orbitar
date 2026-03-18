@@ -146,6 +146,7 @@ export default function PostPage() {
                     unreadOnly={unreadOnly}
                     onEdit={handleCommentEdit}
                     currentUsername={userInfo?.username}
+                    postAuthorUsername={post.author.username}
                   />
                 ))
               ) : error ? (

@@ -32,6 +32,16 @@
     }
   }
 
+  .postAuthor {
+    color: var(--primary);
+    &:before {
+      color: var(--primary);
+    }
+    &:hover {
+      color: var(--primaryHover);
+    }
+  }
+
   .toggleHistory {
     border: none;
     background: none;

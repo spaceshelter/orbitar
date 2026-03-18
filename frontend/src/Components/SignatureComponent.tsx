@@ -23,6 +23,7 @@ interface SignatureComponentProps {
   parentCommentAuthor?: string
   date: Date
   commentId?: number
+  isPostAuthor?: boolean
 }
 
 export const SignatureComponent = (props: SignatureComponentProps) => {
@@ -35,7 +36,7 @@ export const SignatureComponent = (props: SignatureComponentProps) => {
       ) : (
         ''
       )}
-      <Username className={styles.username} user={props.author} /> •{' '}
+      <Username className={props.isPostAuthor ? styles.postAuthor : styles.username} user={props.author} /> •{' '}
       <PostLink post={props.postLink} commentId={props.commentId}>
         <DateComponent date={props.date} />
       </PostLink>
