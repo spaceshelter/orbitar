@@ -33,7 +33,7 @@
   }
 
   .postAuthor {
-    color: var(--primary);
+    &,
     &:before {
       color: var(--primary);
     }
