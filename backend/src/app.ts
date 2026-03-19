@@ -166,6 +166,7 @@ const userManager = new UserManager(
   redis.client,
   config.site,
   logger.child({ service: 'USER' }),
+  pollRepository,
 )
 const inviteManager = new InviteManager(inviteRepository, theParser, userManager)
 siteManager = new SiteManager(siteRepository, userManager)

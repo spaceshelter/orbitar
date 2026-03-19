@@ -64,6 +64,14 @@
 
 .username {
   font-size: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.awardBadge {
+  font-size: 24px;
+  cursor: pointer;
 }
 
 .name {

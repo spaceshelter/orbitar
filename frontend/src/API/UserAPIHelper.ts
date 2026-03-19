@@ -17,6 +17,7 @@ export type UserProfileResult = {
   publicKey: string
   visitedDaysAgo: number
   hasOwnApps: boolean
+  orbitorAwardWins?: { awardNum: number; postId?: number }[]
 }
 
 export default class UserAPIHelper {
