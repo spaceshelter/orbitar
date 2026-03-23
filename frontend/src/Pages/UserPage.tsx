@@ -111,7 +111,7 @@ export const UserPage = observer(() => {
             <div>
               <div className={styles.username}>
                 {user.username}
-                {profile.orbitorAwardWins?.map(({ awardNum, postId }) =>
+                {profile.orbitarAwardWins?.map(({ awardNum, postId }) =>
                   postId ? (
                     <Link
                       key={awardNum}

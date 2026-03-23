@@ -22,7 +22,7 @@ export type UserProfileResponse = {
   hasOwnApps: boolean
 
   visitedDaysAgo: number
-  orbitorAwardWins?: { awardNum: number; postId?: number }[]
+  orbitarAwardWins?: { awardNum: number; postId?: number }[]
 }
 
 export type TrialProgressDebugInfo = {

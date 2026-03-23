@@ -80,7 +80,7 @@ export default class PostRepository {
     return await this.db.fetchOne<PostRaw>('select * from posts where post_id=:post_id', { post_id: postId })
   }
 
-  async getOrbitorAwardPosts(authorId: number): Promise<{ post_id: number; title: string }[]> {
+  async getOrbitarAwardPosts(authorId: number): Promise<{ post_id: number; title: string }[]> {
     return this.db.fetchAll<{ post_id: number; title: string }>(
       `SELECT post_id, title FROM posts WHERE author_id = :authorId AND title LIKE 'Премия Орбитара #%'`,
       { authorId },

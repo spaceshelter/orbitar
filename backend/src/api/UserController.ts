@@ -209,7 +209,7 @@ export default class UserController {
       const numberOfComments = (await this.postManager.getUserCommentsTotal(profileInfo.id, '')) || 0
       const visitedDaysAgo = await this.userManager.getUserVisitedDaysAgo(profileInfo.id)
       const hasOwnApps = await this.oauthManager.hasOwnApps(profileInfo.id)
-      const orbitorAwardWins = await this.userManager.getOrbitorAwardWins(profileInfo.username)
+      const orbitarAwardWins = await this.userManager.getOrbitarAwardWins(profileInfo.username)
 
       // if viewing own profile, get available invites number
       let numberOfInvitesAvailable = 0
@@ -248,7 +248,7 @@ export default class UserController {
         publicKey,
         visitedDaysAgo,
         hasOwnApps,
-        orbitorAwardWins: orbitorAwardWins.length ? orbitorAwardWins : undefined,
+        orbitarAwardWins: orbitarAwardWins.length ? orbitarAwardWins : undefined,
       })
     } catch (error) {
       this.logger.error('Could not get user profile', { username })

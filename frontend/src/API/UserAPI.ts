@@ -29,7 +29,7 @@ type UserProfileResponse = {
   publicKey: string
   hasOwnApps: boolean
   visitedDaysAgo: number
-  orbitorAwardWins?: { awardNum: number; postId?: number }[]
+  orbitarAwardWins?: { awardNum: number; postId?: number }[]
 }
 type UserProfilePostsRequest = {
   username: string

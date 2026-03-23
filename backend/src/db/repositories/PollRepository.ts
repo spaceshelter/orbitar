@@ -136,9 +136,9 @@ export default class PollRepository {
 
   /**
    * Returns the latest completed poll for each unique question matching 'Премия Орбитара #%'.
-   * Used to compute Orbitor Award winners.
+   * Used to compute Orbitar Award winners.
    */
-  async getOrbitorAwardPolls(awardAuthorId: number): Promise<PollRaw[]> {
+  async getOrbitarAwardPolls(awardAuthorId: number): Promise<PollRaw[]> {
     return this.db.fetchAll<PollRaw>(
       `SELECT p.*
        FROM polls p
