@@ -8,6 +8,7 @@ import UserManager from '../managers/UserManager'
 import VoteManager from '../managers/VoteManager'
 import { APIRequest, APIResponse, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
+import { commonRateLimitConfig, sharedReadRateLimiter } from './RateLimiters'
 import { VoteListItemEntity } from './types/entities/VoteEntity'
 import { VoteListRequest, VoteListResponse } from './types/requests/VoteList'
 import { VoteSetRequest, VoteSetResponse } from './types/requests/VoteSet'
@@ -22,10 +23,7 @@ export default class VoteController {
   private readonly voteRateLimiter = rateLimit({
     max: 60,
     windowMs: 2 * 60 * 1000,
-    skipSuccessfulRequests: false,
-    standardHeaders: false,
-    legacyHeaders: false,
-    keyGenerator: (req) => String(req.session.data?.userId),
+    ...commonRateLimitConfig,
   })
 
   private readonly voteDailyRateLimiter = new RateLimiterMemory({
@@ -56,8 +54,12 @@ export default class VoteController {
     this.router.post('/vote/set', this.voteRateLimiter, validate(voteSchema), oauth('голосовать'), (req, res) =>
       this.setVote(req, res),
     )
-    this.router.post('/vote/list', validate(listSchema), oauth('читать список голосов'), (req, res) =>
-      this.list(req, res),
+    this.router.post(
+      '/vote/list',
+      sharedReadRateLimiter,
+      validate(listSchema),
+      oauth('читать список голосов'),
+      (req, res) => this.list(req, res),
     )
   }
 

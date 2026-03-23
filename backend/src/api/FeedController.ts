@@ -8,6 +8,7 @@ import SiteManager from '../managers/SiteManager'
 import UserManager from '../managers/UserManager'
 import { APIRequest, APIResponse, joiFormat, joiSite, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
+import { sharedReadRateLimiter } from './RateLimiters'
 import { FeedSorting } from './types/entities/common'
 import { FeedPostsRequest, FeedPostsResponse } from './types/requests/FeedPosts'
 import { FeedSortingSaveRequest, FeedSortingSaveResponse } from './types/requests/FeedSortingSave'
@@ -62,20 +63,36 @@ export default class FeedController {
       feedSorting: Joi.number().valid(FeedSorting.postCreatedAt, FeedSorting.postCommentedAt),
     })
 
-    this.router.post('/feed/subscriptions', oauth('фид подписок'), validate(feedSubscriptionsSchema), (req, res) =>
-      this.feedSubscriptions(req, res),
+    this.router.post(
+      '/feed/subscriptions',
+      sharedReadRateLimiter,
+      oauth('фид подписок'),
+      validate(feedSubscriptionsSchema),
+      (req, res) => this.feedSubscriptions(req, res),
     )
-    this.router.post('/feed/all', oauth('фид /all'), validate(feedSubscriptionsSchema), (req, res) =>
-      this.feedAll(req, res),
+    this.router.post(
+      '/feed/all',
+      sharedReadRateLimiter,
+      oauth('фид /all'),
+      validate(feedSubscriptionsSchema),
+      (req, res) => this.feedAll(req, res),
     )
-    this.router.post('/feed/posts', oauth('фид постов'), validate(feedPostsSchema), (req, res) =>
+    this.router.post('/feed/posts', sharedReadRateLimiter, oauth('фид постов'), validate(feedPostsSchema), (req, res) =>
       this.feedPosts(req, res),
     )
-    this.router.post('/feed/watch', oauth('фид отслеживаемых'), validate(feedWatchSchema), (req, res) =>
-      this.feedWatch(req, res),
+    this.router.post(
+      '/feed/watch',
+      sharedReadRateLimiter,
+      oauth('фид отслеживаемых'),
+      validate(feedWatchSchema),
+      (req, res) => this.feedWatch(req, res),
     )
-    this.router.post('/feed/sorting', oauth('изменение сортировки фидов'), validate(feedSortingSchema), (req, res) =>
-      this.saveFeedSorting(req, res),
+    this.router.post(
+      '/feed/sorting',
+      sharedReadRateLimiter,
+      oauth('изменение сортировки фидов'),
+      validate(feedSortingSchema),
+      (req, res) => this.saveFeedSorting(req, res),
     )
   }
 

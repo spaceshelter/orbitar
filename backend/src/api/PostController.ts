@@ -12,6 +12,7 @@ import TranslationManager, { TRANSLATION_LANGUAGES, TRANSLATION_MODES } from '..
 import UserManager from '../managers/UserManager'
 import { APIRequest, APIResponse, joiFormat, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
+import { commonRateLimitConfig, sharedReadRateLimiter } from './RateLimiters'
 import { CommentEntity } from './types/entities/CommentEntity'
 import { HistoryEntity } from './types/entities/HistoryEntity'
 import { UserEntity } from './types/entities/UserEntity'
@@ -32,13 +33,6 @@ import { PostWatchRequest, PostWatchResponse } from './types/requests/PostWatch'
 import { PostPreviewRequest, PostPreviewResponse } from './types/requests/Preview'
 import { TranslateRequest, TranslateResponse } from './types/requests/Translate'
 import { Enricher } from './utils/Enricher'
-
-const commonRateLimitConfig = {
-  skipSuccessfulRequests: false,
-  standardHeaders: false,
-  legacyHeaders: false,
-  keyGenerator: (req) => String(req.session.data?.userId),
-}
 
 export default class PostController {
   public readonly router = Router()
@@ -68,6 +62,13 @@ export default class PostController {
   private readonly commentRateLimiter = rateLimit({
     max: 40,
     windowMs: 30 * 60 * 1000,
+    ...commonRateLimitConfig,
+  })
+
+  /* 20/min — translate calls external AI APIs */
+  private readonly translateRateLimiter = rateLimit({
+    max: 20,
+    windowMs: 60 * 1000,
     ...commonRateLimitConfig,
   })
 
@@ -156,7 +157,9 @@ export default class PostController {
       username: Joi.string().required(),
     })
 
-    this.router.post('/post/get', validate(getSchema), oauth('читать посты'), (req, res) => this.postGet(req, res))
+    this.router.post('/post/get', sharedReadRateLimiter, validate(getSchema), oauth('читать посты'), (req, res) =>
+      this.postGet(req, res),
+    )
     this.router.post(
       '/post/create',
       this.postCreateRateLimiter,
@@ -178,23 +181,47 @@ export default class PostController {
       oauth('комментировать в постах'),
       (req, res) => this.comment(req, res),
     )
-    this.router.post('/post/preview', validate(previewSchema), oauth('превью контента (парсер)'), (req, res) =>
-      this.preview(req, res),
+    this.router.post(
+      '/post/preview',
+      sharedReadRateLimiter,
+      validate(previewSchema),
+      oauth('превью контента (парсер)'),
+      (req, res) => this.preview(req, res),
     )
-    this.router.post('/post/read', validate(readSchema), oauth('помечать посты как прочитанные'), (req, res) =>
-      this.read(req, res),
+    this.router.post(
+      '/post/read',
+      sharedReadRateLimiter,
+      validate(readSchema),
+      oauth('помечать посты как прочитанные'),
+      (req, res) => this.read(req, res),
     )
-    this.router.post('/post/bookmark', validate(bookmarkSchema), oauth('отслеживать посты'), (req, res) =>
-      this.bookmark(req, res),
+    this.router.post(
+      '/post/bookmark',
+      sharedReadRateLimiter,
+      validate(bookmarkSchema),
+      oauth('отслеживать посты'),
+      (req, res) => this.bookmark(req, res),
     )
-    this.router.post('/post/watch', validate(watchingSchema), oauth('следить за постами'), (req, res) =>
-      this.watch(req, res),
+    this.router.post(
+      '/post/watch',
+      sharedReadRateLimiter,
+      validate(watchingSchema),
+      oauth('следить за постами'),
+      (req, res) => this.watch(req, res),
     )
-    this.router.post('/post/translate', validate(translateSchema), oauth('AI-действия с контентом'), (req, res) =>
-      this.translate(req, res),
+    this.router.post(
+      '/post/translate',
+      this.translateRateLimiter,
+      validate(translateSchema),
+      oauth('AI-действия с контентом'),
+      (req, res) => this.translate(req, res),
     )
-    this.router.post('/post/get-comment', validate(getCommentSchema), oauth('читать комментарии поста'), (req, res) =>
-      this.getComment(req, res),
+    this.router.post(
+      '/post/get-comment',
+      sharedReadRateLimiter,
+      validate(getCommentSchema),
+      oauth('читать комментарии поста'),
+      (req, res) => this.getComment(req, res),
     )
     this.router.post(
       '/post/edit-comment',
@@ -203,11 +230,16 @@ export default class PostController {
       validate(editCommentSchema),
       (req, res) => this.editComment(req, res),
     )
-    this.router.post('/post/history', validate(historySchema), oauth('смотреть историю редактирования'), (req, res) =>
-      this.history(req, res),
+    this.router.post(
+      '/post/history',
+      sharedReadRateLimiter,
+      validate(historySchema),
+      oauth('смотреть историю редактирования'),
+      (req, res) => this.history(req, res),
     )
     this.router.post(
       '/post/get-public-key',
+      sharedReadRateLimiter,
       validate(getPostPublicKeySchema),
       oauth('получать публичный ключ автора поста'),
       (req, res) => this.getPublicKeyByUsername(req, res),

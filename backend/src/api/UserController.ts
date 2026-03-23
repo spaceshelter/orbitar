@@ -11,6 +11,7 @@ import UserManager from '../managers/UserManager'
 import VoteManager from '../managers/VoteManager'
 import { APIRequest, APIResponse, joiFormat, joiUsername, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
+import { commonRateLimitConfig, sharedReadRateLimiter } from './RateLimiters'
 import { UserProfileEntity } from './types/entities/UserEntity'
 import { UserCommentsRequest, UserCommentsResponse } from './types/requests/UserComments'
 import { SuggestUsernameRequest, SuggestUsernameResponse } from './types/requests/UsernameSuggest'
@@ -76,11 +77,6 @@ export default class UserController {
       perpage: Joi.number().min(1).max(50).default(10),
     })
 
-    const userCommentsAndPostsLimiter = rateLimit({
-      windowMs: 1000,
-      max: 1,
-    })
-
     const bioSchema = Joi.object<UserSaveBioRequest>({
       bio: Joi.string()
         .required()
@@ -102,41 +98,47 @@ export default class UserController {
     const settingsSaveLimiter = rateLimit({
       windowMs: 1000 * 60,
       max: 20,
-      skipSuccessfulRequests: false,
-      standardHeaders: false,
-      legacyHeaders: false,
-      keyGenerator: (req) => String(req.session.data?.userId),
+      ...commonRateLimitConfig,
     })
 
     const suggestUsernameLimiter = rateLimit({
       windowMs: 1000 * 60 * 5,
       max: 100,
-      keyGenerator: (req) => String(req.session.data?.userId),
+      ...commonRateLimitConfig,
     })
 
-    this.router.post('/user/profile', oauth('читать профиль пользователя'), validate(profileSchema), (req, res) =>
-      this.profile(req, res),
+    this.router.post(
+      '/user/profile',
+      sharedReadRateLimiter,
+      oauth('читать профиль пользователя'),
+      validate(profileSchema),
+      (req, res) => this.profile(req, res),
     )
     this.router.post(
       '/user/posts',
-      userCommentsAndPostsLimiter,
+      sharedReadRateLimiter,
       oauth('читать посты пользователя'),
       validate(postsOrCommentsSchema),
       (req, res) => this.posts(req, res),
     )
     this.router.post(
       '/user/comments',
-      userCommentsAndPostsLimiter,
+      sharedReadRateLimiter,
       validate(postsOrCommentsSchema),
       oauth('читать комментарии пользователя'),
       (req, res) => this.comments(req, res),
     )
-    this.router.post('/user/karma', validate(profileSchema), oauth('читать инфо о карме пользователя'), (req, res) =>
-      this.karma(req, res),
+    this.router.post(
+      '/user/karma',
+      sharedReadRateLimiter,
+      validate(profileSchema),
+      oauth('читать инфо о карме пользователя'),
+      (req, res) => this.karma(req, res),
     )
     this.router.post('/user/clearCache', validate(profileSchema), (req, res) => this.clearCache(req, res))
     this.router.post(
       '/user/restrictions',
+      sharedReadRateLimiter,
       validate(profileSchema),
       oauth('читать ограничения пользователя'),
       (req, res) => this.restrictions(req, res),

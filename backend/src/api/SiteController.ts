@@ -9,6 +9,7 @@ import SiteManager from '../managers/SiteManager'
 import UserManager from '../managers/UserManager'
 import { APIRequest, APIResponse, joiSite, joiSiteName, siteDomainMinLengthChars, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
+import { commonRateLimitConfig, sharedReadRateLimiter } from './RateLimiters'
 import { SiteRequest, SiteResponse } from './types/requests/Site'
 import { SiteCreateRequest, SiteCreateResponse } from './types/requests/SiteCreate'
 import { SiteListRequest, SiteListResponse } from './types/requests/SiteList'
@@ -28,10 +29,7 @@ export default class SiteController {
   private readonly subscribeRateLimiter = rateLimit({
     max: 60,
     windowMs: 3600 * 1000,
-    skipSuccessfulRequests: false,
-    standardHeaders: false,
-    legacyHeaders: false,
-    keyGenerator: (req) => String(req.session.data?.userId),
+    ...commonRateLimitConfig,
   })
 
   constructor(
@@ -67,9 +65,13 @@ export default class SiteController {
     })
 
     // TODO: legacy, ideally we'd need to migrate all clients to use /site/get
-    this.router.post('/site', validate(siteSchema), (req, res) => this.site(req, res))
-    this.router.post('/site/get', validate(siteSchema), oauth('читать информацию о подсайте'), (req, res) =>
-      this.site(req, res),
+    this.router.post('/site', sharedReadRateLimiter, validate(siteSchema), (req, res) => this.site(req, res))
+    this.router.post(
+      '/site/get',
+      sharedReadRateLimiter,
+      validate(siteSchema),
+      oauth('читать информацию о подсайте'),
+      (req, res) => this.site(req, res),
     )
     this.router.post(
       '/site/subscribe',
@@ -78,14 +80,25 @@ export default class SiteController {
       oauth('подписываться на подсайты'),
       (req, res) => this.subscribe(req, res),
     )
-    this.router.post('/site/subscriptions', oauth('получать список подписок на подсайты'), (req, res) =>
-      this.subscriptions(req, res),
+    this.router.post(
+      '/site/subscriptions',
+      sharedReadRateLimiter,
+      oauth('получать список подписок на подсайты'),
+      (req, res) => this.subscriptions(req, res),
     )
-    this.router.post('/site/list', validate(siteListSchema), oauth('получать список подсайтов'), (req, res) =>
-      this.list(req, res),
+    this.router.post(
+      '/site/list',
+      sharedReadRateLimiter,
+      validate(siteListSchema),
+      oauth('получать список подсайтов'),
+      (req, res) => this.list(req, res),
     )
-    this.router.post('/site/create', validate(siteCreateSchema), oauth('создавать подсайты'), (req, res) =>
-      this.create(req, res),
+    this.router.post(
+      '/site/create',
+      this.subscribeRateLimiter,
+      validate(siteCreateSchema),
+      oauth('создавать подсайты'),
+      (req, res) => this.create(req, res),
     )
   }
 
