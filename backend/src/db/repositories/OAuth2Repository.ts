@@ -218,6 +218,7 @@ export default class OAuth2Repository {
 
   async editClient(
     clientId: string,
+    userId: number,
     description: string,
     redirectUris: string,
     initialAuthorizationUrl: string,
@@ -229,12 +230,13 @@ export default class OAuth2Repository {
         description = :description,
         redirect_uris = :redirect_uris,
         initial_authorization_url = :initial_authorization_url
-      where client_id = :client_id`,
+      where client_id = :client_id and user_id = :user_id`,
         {
           description: description,
           redirect_uris: redirectUris,
           initial_authorization_url: initialAuthorizationUrl,
           client_id: clientId,
+          user_id: userId,
         },
       )
       .then((result) => result.affectedRows > 0)

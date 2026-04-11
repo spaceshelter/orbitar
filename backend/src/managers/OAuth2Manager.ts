@@ -162,11 +162,27 @@ export default class OAuth2Manager {
 
   async editClient(
     clientId: string,
+    byUserId: number,
     description: string,
     redirectUris: string,
     initialAuthorizationUrl: string,
   ): Promise<boolean> {
-    return await this.oauthRepository.editClient(clientId, description, redirectUris, initialAuthorizationUrl)
+    const client = await this.oauthRepository.getClientByClientId(clientId)
+    if (!client) {
+      this.logger.error('Error editing OAuth client, no such client', { clientId })
+      return false
+    }
+
+    if (client.user_id !== byUserId) {
+      this.logger.error('Error editing OAuth client, not client owner initiated', {
+        clientId,
+        byUserId,
+        authorId: client.user_id,
+      })
+      return false
+    }
+
+    return await this.oauthRepository.editClient(clientId, byUserId, description, redirectUris, initialAuthorizationUrl)
   }
 
   async getClientsByClientIds(clientIds: string[], userId: number) {

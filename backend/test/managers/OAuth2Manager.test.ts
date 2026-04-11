@@ -355,6 +355,50 @@ describe('OAuth2Manager', () => {
     })
   })
 
+  describe('editClient', () => {
+    it('edits client when owner initiates', async () => {
+      mockRepo.getClientByClientId.mockResolvedValue(createMockConfidentialClient({ user_id: 1 }))
+      mockRepo.editClient.mockResolvedValue(true)
+
+      const result = await manager.editClient('test-client-id', 1, 'new desc', 'https://new.uri', 'https://auth.url')
+
+      expect(result).toBe(true)
+      expect(mockRepo.editClient).toHaveBeenCalledWith(
+        'test-client-id',
+        1,
+        'new desc',
+        'https://new.uri',
+        'https://auth.url',
+      )
+    })
+
+    it('returns false for non-existent client', async () => {
+      mockRepo.getClientByClientId.mockResolvedValue(undefined)
+
+      const result = await manager.editClient('non-existent', 1, 'desc', 'https://uri', '')
+
+      expect(result).toBe(false)
+      expect(mockLogger.error).toHaveBeenCalledWith('Error editing OAuth client, no such client', {
+        clientId: 'non-existent',
+      })
+      expect(mockRepo.editClient).not.toHaveBeenCalled()
+    })
+
+    it('returns false when non-owner tries to edit', async () => {
+      mockRepo.getClientByClientId.mockResolvedValue(createMockConfidentialClient({ user_id: 1 }))
+
+      const result = await manager.editClient('test-client-id', 999, 'hacked', 'https://evil.uri', '')
+
+      expect(result).toBe(false)
+      expect(mockLogger.error).toHaveBeenCalledWith('Error editing OAuth client, not client owner initiated', {
+        clientId: 'test-client-id',
+        byUserId: 999,
+        authorId: 1,
+      })
+      expect(mockRepo.editClient).not.toHaveBeenCalled()
+    })
+  })
+
   describe('unAuthorizeClient', () => {
     it('resets consent scope and updates revoke date', async () => {
       mockRepo.resetConsentScope.mockResolvedValue(true)

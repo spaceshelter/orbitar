@@ -303,7 +303,13 @@ export default class OAuth2Controller {
       if (!client) {
         return response.error('error', 'Client not found', 404)
       }
-      const result = await this.oauth2Manager.editClient(clientId, description, redirectUris, initialAuthorizationUrl)
+      const result = await this.oauth2Manager.editClient(
+        clientId,
+        userId,
+        description,
+        redirectUris,
+        initialAuthorizationUrl,
+      )
       if (!result) {
         return response.error('error', 'Failed to update client', 500)
       }
