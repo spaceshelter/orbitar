@@ -153,12 +153,16 @@ export const urisListValidator = Joi.string().custom((value, helpers) => {
 
       // Strict validation for http/https
       if (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') {
+        const hostname = urlObj.hostname
+        const isLocalhost =
+          hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]' || hostname === '::1'
+        const allowHttp = isLocalhost || process.env.NODE_ENV === 'development'
         if (
           !isURL(url, {
-            require_tld: process.env.NODE_ENV !== 'development',
+            require_tld: !isLocalhost && process.env.NODE_ENV !== 'development',
             require_protocol: true,
             allow_fragments: false,
-            protocols: ['https', ...(process.env.NODE_ENV === 'development' ? ['http'] : [])],
+            protocols: ['https', ...(allowHttp ? ['http'] : [])],
           })
         ) {
           return helpers.error('any.invalid')

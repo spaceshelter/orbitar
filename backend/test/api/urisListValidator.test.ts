@@ -71,6 +71,69 @@ describe('urisListValidator', () => {
     })
   })
 
+  describe('HTTP URLs for local development hosts (any environment)', () => {
+    const originalNodeEnv = process.env.NODE_ENV
+
+    afterEach(() => {
+      process.env.NODE_ENV = originalNodeEnv
+    })
+
+    it('accepts http://localhost in production', () => {
+      process.env.NODE_ENV = 'production'
+      expect(validate('http://localhost/callback').isValid).toBe(true)
+    })
+
+    it('accepts http://localhost with port in production', () => {
+      process.env.NODE_ENV = 'production'
+      expect(validate('http://localhost:3000/callback').isValid).toBe(true)
+    })
+
+    it('accepts http://127.0.0.1 in production', () => {
+      process.env.NODE_ENV = 'production'
+      expect(validate('http://127.0.0.1/callback').isValid).toBe(true)
+    })
+
+    it('accepts http://127.0.0.1 with port in production', () => {
+      process.env.NODE_ENV = 'production'
+      expect(validate('http://127.0.0.1:5000/callback').isValid).toBe(true)
+    })
+
+    it('accepts http://[::1] in production', () => {
+      process.env.NODE_ENV = 'production'
+      expect(validate('http://[::1]/callback').isValid).toBe(true)
+    })
+
+    it('accepts http://[::1] with port in production', () => {
+      process.env.NODE_ENV = 'production'
+      expect(validate('http://[::1]:3000/callback').isValid).toBe(true)
+    })
+
+    it('still rejects http:// for non-local hosts in production', () => {
+      process.env.NODE_ENV = 'production'
+      expect(validate('http://example.com/callback').isValid).toBe(false)
+    })
+
+    it('rejects http://localhost.localdomain in production', () => {
+      process.env.NODE_ENV = 'production'
+      expect(validate('http://localhost.localdomain/callback').isValid).toBe(false)
+    })
+
+    it('rejects http://*.local in production', () => {
+      process.env.NODE_ENV = 'production'
+      expect(validate('http://mydevbox.local/callback').isValid).toBe(false)
+    })
+
+    it('accepts https://localhost in production', () => {
+      process.env.NODE_ENV = 'production'
+      expect(validate('https://localhost/callback').isValid).toBe(true)
+    })
+
+    it('accepts local http mixed with https in comma-separated list', () => {
+      process.env.NODE_ENV = 'production'
+      expect(validate('http://localhost:3000/callback,https://example.com/callback').isValid).toBe(true)
+    })
+  })
+
   describe('Custom protocol URIs (for mobile/desktop apps)', () => {
     it('accepts myapp:// scheme', () => {
       const result = validate('myapp://callback')
