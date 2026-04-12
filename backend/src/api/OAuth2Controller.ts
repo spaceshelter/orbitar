@@ -49,16 +49,9 @@ const clientRegisterSchema = Joi.object<OAuth2RegisterRequest>({
     .messages({
       'string.uri': 'The field must be a valid URL.',
     }),
-  initialAuthorizationUrl: Joi.string()
-    .uri({
-      scheme: ['http', 'https'],
-    })
-    .max(255)
-    .allow(null)
-    .allow('')
-    .messages({
-      'string.uri': 'The field must be a valid URL.',
-    }),
+  initialAuthorizationUrl: urisListValidator.max(255).allow(null).allow('').messages({
+    'any.invalid': 'The field must be a valid URL.',
+  }),
   redirectUris: urisListValidator.max(255).required().messages({
     'any.required': 'Redirect URIs are required.',
     'any.invalid': 'Please enter valid comma-separated URIs.',
@@ -72,16 +65,9 @@ const clientRegisterSchema = Joi.object<OAuth2RegisterRequest>({
 const clientEditSchema = Joi.object<OAuth2EditRequest>({
   clientId: Joi.string().min(36).max(36).required(),
   description: Joi.string().max(255).required().allow(''),
-  initialAuthorizationUrl: Joi.string()
-    .uri({
-      scheme: ['http', 'https'],
-    })
-    .max(255)
-    .allow(null)
-    .allow('')
-    .messages({
-      'string.uri': 'The field must be a valid URL.',
-    }),
+  initialAuthorizationUrl: urisListValidator.max(255).allow(null).allow('').messages({
+    'any.invalid': 'The field must be a valid URL.',
+  }),
   redirectUris: urisListValidator.max(255).required().messages({
     'any.required': 'Redirect URIs are required.',
     'any.invalid': 'Please enter valid comma-separated URIs.',

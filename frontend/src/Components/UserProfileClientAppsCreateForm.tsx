@@ -79,40 +79,34 @@ export default function UserProfileClientAppsCreateForm(props: UserProfileClient
     return isValid
   }
 
+  const isValidRedirectUri = (url: string): boolean => {
+    try {
+      const urlObj = new URL(url)
+      if (urlObj.hash && urlObj.hash !== '#') {
+        return false
+      }
+      if (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') {
+        const hostname = urlObj.hostname
+        const isLocalhost =
+          hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]' || hostname === '::1'
+        const allowHttp = isLocalhost || process.env.NODE_ENV === 'development'
+        return isURL(url, {
+          require_tld: !isLocalhost && process.env.NODE_ENV !== 'development',
+          require_protocol: true,
+          allow_fragments: false,
+          protocols: ['https', ...(allowHttp ? ['http'] : [])],
+        })
+      }
+      return Boolean(urlObj.protocol) && urlObj.protocol !== ':'
+    } catch (err) {
+      return false
+    }
+  }
+
   const validateUrls = (value: string) => {
     const urls = value.split(',').map((url) => url.trim())
     for (const url of urls) {
-      try {
-        const urlObj = new URL(url)
-
-        // RFC 6749 Section 3.1.2: no fragments
-        if (urlObj.hash && urlObj.hash !== '#') {
-          return 'Redirect URIs must not include fragment components'
-        }
-
-        // Strict validation for http/https
-        if (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') {
-          const hostname = urlObj.hostname
-          const isLocalhost =
-            hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]' || hostname === '::1'
-          const allowHttp = isLocalhost || process.env.NODE_ENV === 'development'
-          if (
-            !isURL(url, {
-              require_tld: !isLocalhost && process.env.NODE_ENV !== 'development',
-              require_protocol: true,
-              allow_fragments: false,
-              protocols: ['https', ...(allowHttp ? ['http'] : [])],
-            })
-          ) {
-            return 'Invalid HTTP/HTTPS URL'
-          }
-        } else {
-          // Custom protocols: minimal validation
-          if (!urlObj.protocol || urlObj.protocol === ':') {
-            return 'Custom protocol URIs must have a valid protocol scheme'
-          }
-        }
-      } catch (err) {
+      if (!isValidRedirectUri(url)) {
         return 'Invalid URI format'
       }
     }
@@ -120,15 +114,11 @@ export default function UserProfileClientAppsCreateForm(props: UserProfileClient
   }
 
   const validateOptionalUrl = (value: string) => {
-    return (
-      value.trim() === '' ||
-      isURL(value, {
-        require_tld: process.env.NODE_ENV !== 'development',
-        require_protocol: true,
-        protocols: ['https', ...(process.env.NODE_ENV === 'development' ? ['http', 'https'] : [])],
-      }) ||
-      'Введите валидный URL-адрес или оставьте поле пустым'
-    )
+    const trimmed = value.trim()
+    if (trimmed === '') {
+      return true
+    }
+    return isValidRedirectUri(trimmed) || 'Введите валидный URL-адрес или оставьте поле пустым'
   }
 
   const [submitting, setSubmitting] = useState(false)
