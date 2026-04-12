@@ -176,3 +176,11 @@ export const urisListValidator = Joi.string().custom((value, helpers) => {
   }
   return value
 }, 'URLs Validation')
+
+export const singleUriValidator = Joi.string().custom((value, helpers) => {
+  const url = value.trim().replace(/\/*$/, '')
+  if (!validateSingleRedirectUri(url)) {
+    return helpers.error('any.invalid')
+  }
+  return value
+}, 'URL Validation')

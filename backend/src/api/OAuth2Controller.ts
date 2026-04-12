@@ -9,7 +9,7 @@ import { OAuth2ClientRaw } from '../db/types/OAuth2'
 import OAuth2Manager from '../managers/OAuth2Manager'
 import UserManager from '../managers/UserManager'
 import { escapeRegExp } from '../parser/regexprs'
-import { APIRequest, APIResponse, joiClientId, urisListValidator, validate } from './ApiMiddleware'
+import { APIRequest, APIResponse, joiClientId, singleUriValidator, urisListValidator, validate } from './ApiMiddleware'
 import { ExpressOauth2ScopesFilter } from './OAuth2Middleware'
 import { OAuth2ClientEntity } from './types/entities/OAuth2ClientEntity'
 import {
@@ -49,7 +49,7 @@ const clientRegisterSchema = Joi.object<OAuth2RegisterRequest>({
     .messages({
       'string.uri': 'The field must be a valid URL.',
     }),
-  initialAuthorizationUrl: urisListValidator.max(255).allow(null).allow('').messages({
+  initialAuthorizationUrl: singleUriValidator.max(255).allow(null).allow('').messages({
     'any.invalid': 'The field must be a valid URL.',
   }),
   redirectUris: urisListValidator.max(255).required().messages({
@@ -65,7 +65,7 @@ const clientRegisterSchema = Joi.object<OAuth2RegisterRequest>({
 const clientEditSchema = Joi.object<OAuth2EditRequest>({
   clientId: Joi.string().min(36).max(36).required(),
   description: Joi.string().max(255).required().allow(''),
-  initialAuthorizationUrl: urisListValidator.max(255).allow(null).allow('').messages({
+  initialAuthorizationUrl: singleUriValidator.max(255).allow(null).allow('').messages({
     'any.invalid': 'The field must be a valid URL.',
   }),
   redirectUris: urisListValidator.max(255).required().messages({
