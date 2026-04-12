@@ -109,7 +109,25 @@ export const UserPage = observer(() => {
         <div className={styles.header}>
           <div className={styles.row}>
             <div>
-              <div className={styles.username}>{user.username}</div>
+              <div className={styles.username}>
+                {user.username}
+                {profile.orbitarAwardWins?.map(({ awardNum, postId }) =>
+                  postId ? (
+                    <Link
+                      key={awardNum}
+                      className={styles.awardBadge}
+                      to={`/p${postId}`}
+                      title={`Лауреат Премии Орбитара #${awardNum}`}
+                    >
+                      🏆
+                    </Link>
+                  ) : (
+                    <span key={awardNum} className={styles.awardBadge} title={`Лауреат Премии Орбитара #${awardNum}`}>
+                      🏆
+                    </span>
+                  ),
+                )}
+              </div>
             </div>
 
             <div className={styles.karma}>

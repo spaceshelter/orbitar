@@ -7,6 +7,7 @@ import { FeedSorting } from '../api/types/entities/common'
 import { TrialProgressDebugInfo } from '../api/types/requests/UserProfile'
 import { config, SiteConfig } from '../config'
 import CommentRepository from '../db/repositories/CommentRepository'
+import PollRepository from '../db/repositories/PollRepository'
 import PostRepository from '../db/repositories/PostRepository'
 import UserCredentials from '../db/repositories/UserCredentials'
 import UserRepository from '../db/repositories/UserRepository'
@@ -53,6 +54,7 @@ export default class UserManager {
   private voteRepository: VoteRepository
   private commentRepository: CommentRepository
   private postRepository: PostRepository
+  private pollRepository: PollRepository
   private notificationManager: NotificationManager
   private webPushRepository: WebPushRepository
   private readonly redis: RedisClientType
@@ -61,6 +63,16 @@ export default class UserManager {
   private readonly logger: Logger
   private readonly mailLogger: Logger
   private readonly parser: TheParser
+
+  
+  private static readonly ORBITAR_AWARD_AUTHOR_ID = 2154 // OrbitarPremium bot user ID
+  private static readonly ORBITAR_AWARD_CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24h
+
+  private orbitarAwardWinnersCache: {
+    wins: Map<string, { awardNum: number; postId?: number }[]>
+    lastUpdatedTs: number
+  } = { wins: new Map(), lastUpdatedTs: 0 }
+  private orbitarAwardRefreshing = false
 
   private cachedNumActiveUsersThatCanVote = {
     expirationMs: 1000 * 60 * 60 /* 1 hour */,
@@ -91,12 +103,14 @@ export default class UserManager {
     redis: RedisClientType,
     siteConfig: SiteConfig,
     logger: Logger,
+    pollRepository: PollRepository,
   ) {
     this.credentialsRepository = credentialsRepository
     this.userRepository = userRepository
     this.voteRepository = voteRepository
     this.commentRepository = commentRepository
     this.postRepository = postRepository
+    this.pollRepository = pollRepository
     this.notificationManager = notificationManager
     this.webPushRepository = webPushRepository
     this.userCache = userCache
@@ -105,6 +119,72 @@ export default class UserManager {
     this.logger = logger
     this.mailLogger = logger.child({ service: 'MAIL' })
     this.parser = parser
+  }
+
+  private async refreshOrbitarAwardWinners(): Promise<void> {
+    if (this.orbitarAwardRefreshing) {
+      return
+    }
+    this.orbitarAwardRefreshing = true
+    try {
+      const [polls, awardPosts] = await Promise.all([
+        this.pollRepository.getOrbitarAwardPolls(UserManager.ORBITAR_AWARD_AUTHOR_ID),
+        this.postRepository.getOrbitarAwardPosts(UserManager.ORBITAR_AWARD_AUTHOR_ID),
+      ])
+
+      // Build map: awardNum → postId
+      const postIdByAwardNum = new Map<number, number>()
+      for (const post of awardPosts) {
+        const num = parseInt(post.title.match(/#(\d+)/)?.[1] ?? '', 10)
+        if (!isNaN(num)) {
+          postIdByAwardNum.set(num, post.post_id)
+        }
+      }
+
+      const wins = new Map<string, { awardNum: number; postId?: number }[]>()
+      for (const poll of polls) {
+        const options: string[] = Array.isArray(poll.options)
+          ? poll.options
+          : (JSON.parse(poll.options as unknown as string) as string[])
+        let maxVotes = -1
+        let winnerIdx = -1
+        for (let i = 0; i < options.length; i++) {
+          const votes = (poll[`opt${i}`] as number) || 0
+          if (votes > maxVotes) {
+            maxVotes = votes
+            winnerIdx = i
+          }
+        }
+        if (winnerIdx >= 0 && maxVotes > 0) {
+          const winner = options[winnerIdx]
+          const awardNum = parseInt(poll.question.match(/#(\d+)/)?.[1] ?? '', 10)
+          const entry: { awardNum: number; postId?: number } = { awardNum: isNaN(awardNum) ? 0 : awardNum }
+          const postId = postIdByAwardNum.get(entry.awardNum)
+          if (postId) {
+            entry.postId = postId
+          }
+          const arr = wins.get(winner) || []
+          arr.push(entry)
+          wins.set(winner, arr)
+        }
+      }
+      this.orbitarAwardWinnersCache = { wins, lastUpdatedTs: Date.now() }
+      this.logger.info(`Orbitar Award winners cache refreshed: ${wins.size} winner(s)`)
+    } finally {
+      this.orbitarAwardRefreshing = false
+    }
+  }
+
+  async getOrbitarAwardWins(username: string): Promise<{ awardNum: number; postId?: number }[]> {
+    const isStale = Date.now() - this.orbitarAwardWinnersCache.lastUpdatedTs > UserManager.ORBITAR_AWARD_CACHE_TTL_MS
+    if (isStale && !this.orbitarAwardRefreshing) {
+      try {
+        await this.refreshOrbitarAwardWinners()
+      } catch (e) {
+        this.logger.error('Failed to refresh Orbitar Award winners cache', { error: e })
+      }
+    }
+    return this.orbitarAwardWinnersCache.wins.get(username) || []
   }
 
   // TODO migrate all usage to direct calls to userCache

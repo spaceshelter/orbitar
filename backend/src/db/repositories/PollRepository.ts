@@ -134,6 +134,27 @@ export default class PollRepository {
     await connection.query(`UPDATE polls SET ${setClauses.join(', ')} WHERE poll_id = ?`, params)
   }
 
+  /**
+   * Returns the latest completed poll for each unique question matching 'Премия Орбитара #%'.
+   * Used to compute Orbitar Award winners.
+   */
+  async getOrbitarAwardPolls(awardAuthorId: number): Promise<PollRaw[]> {
+    return this.db.fetchAll<PollRaw>(
+      `SELECT p.*
+       FROM polls p
+       INNER JOIN (
+         SELECT question, MAX(created_at) AS latest_created_at
+         FROM polls
+         WHERE author_id = :awardAuthorId
+           AND question LIKE 'Премия Орбитара #%'
+           AND expires_at IS NOT NULL
+           AND expires_at < NOW()
+         GROUP BY question
+       ) AS latest ON p.question = latest.question AND p.created_at = latest.latest_created_at`,
+      { awardAuthorId },
+    )
+  }
+
   async getVoters(pollId: number, optionId: number): Promise<UserBaseEntity[]> {
     const voters = await this.db.fetchAll<UserBaseEntity>(
       `SELECT u.user_id as id, u.username, u.gender 
