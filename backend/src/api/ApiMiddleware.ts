@@ -137,47 +137,50 @@ export const joiSiteName = Joi.string().min(siteNameMinLengthChars).max(siteName
 
 export const joiClientId = Joi.string().max(36).min(36)
 
+export const validateSingleRedirectUri = (url: string): boolean => {
+  try {
+    const urlObj = new URL(url)
+
+    // RFC 6749 Section 3.1.2: no fragments
+    if (urlObj.hash && urlObj.hash !== '#') {
+      return false
+    }
+
+    if (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') {
+      const hostname = urlObj.hostname
+      const isLocalhost =
+        hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]' || hostname === '::1'
+      const allowHttp = isLocalhost || process.env.NODE_ENV === 'development'
+      return isURL(url, {
+        require_tld: !isLocalhost && process.env.NODE_ENV !== 'development',
+        require_protocol: true,
+        allow_fragments: false,
+        protocols: ['https', ...(allowHttp ? ['http'] : [])],
+      })
+    }
+
+    // Custom protocols: minimal validation
+    return Boolean(urlObj.protocol) && urlObj.protocol !== ':'
+  } catch (err) {
+    return false
+  }
+}
+
 export const urisListValidator = Joi.string().custom((value, helpers) => {
   // remove optional trailing slash with star to support urls like https://example.com/*
   const urls = value.split(',').map((url) => url.trim().replace(/\/*$/, ''))
   for (const url of urls) {
-    try {
-      const urlObj = new URL(url)
-
-      // RFC 6749 Section 3.1.2: no fragments
-      if (urlObj.hash && urlObj.hash !== '#') {
-        return helpers.error('any.invalid', {
-          message: 'Redirect URIs must not include fragment components (RFC 6749)',
-        })
-      }
-
-      // Strict validation for http/https
-      if (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') {
-        const hostname = urlObj.hostname
-        const isLocalhost =
-          hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]' || hostname === '::1'
-        const allowHttp = isLocalhost || process.env.NODE_ENV === 'development'
-        if (
-          !isURL(url, {
-            require_tld: !isLocalhost && process.env.NODE_ENV !== 'development',
-            require_protocol: true,
-            allow_fragments: false,
-            protocols: ['https', ...(allowHttp ? ['http'] : [])],
-          })
-        ) {
-          return helpers.error('any.invalid')
-        }
-      } else {
-        // Custom protocols: minimal validation
-        if (!urlObj.protocol || urlObj.protocol === ':') {
-          return helpers.error('any.invalid', {
-            message: 'Custom protocol URIs must have a valid protocol scheme',
-          })
-        }
-      }
-    } catch (err) {
-      return helpers.error('any.invalid', { message: 'Invalid URI format' })
+    if (!validateSingleRedirectUri(url)) {
+      return helpers.error('any.invalid')
     }
   }
   return value
 }, 'URLs Validation')
+
+export const singleUriValidator = Joi.string().custom((value, helpers) => {
+  const url = value.trim().replace(/\/*$/, '')
+  if (!validateSingleRedirectUri(url)) {
+    return helpers.error('any.invalid')
+  }
+  return value
+}, 'URL Validation')
