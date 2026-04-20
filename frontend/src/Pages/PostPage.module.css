@@ -63,3 +63,123 @@
 .anon > * {
   display: inline !important; /* FIXME it's a hack to override flex in UserName component styles. */
 }
+
+/* Unread comment navigation buttons */
+.unreadNavContainer {
+  position: fixed;
+  right: 0.5rem;
+  top: 40%;
+
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  z-index: 200;
+}
+
+.unreadNav {
+  background-color: color-mix(in srgb, var(--primary) 60%, transparent);
+  color: var(--button-fg);
+  border: none;
+  border-radius: 10%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 200;
+  opacity: 0.5;
+}
+
+.unreadNav:hover:not(:disabled) {
+  background-color: var(--primary);
+  transform: scale(1.1);
+}
+
+.unreadNav:focus:not(:disabled) {
+  background-color: var(--primary);
+}
+
+.unreadNav:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.unreadNav:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: unset;
+  cursor: default;
+}
+
+.unreadNav svg {
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+}
+
+.unreadNav:hover:not(:disabled) {
+  transform: scale(1.1);
+}
+
+.unreadNav:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+/* Scroll to top/bottom buttons */
+.scrollButtons {
+  position: fixed;
+  right: 0.5rem;
+  bottom: 1rem;
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  z-index: 199;
+}
+
+.scrollButton {
+  background-color: color-mix(in srgb, var(--primary) 60%, transparent);
+  color: var(--button-fg);
+  border: none;
+  border-radius: 10%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  opacity: 0.5;
+}
+
+.scrollButton:hover:not(:disabled) {
+  background-color: var(--primary);
+  transform: scale(1.1);
+}
+
+.scrollButton:focus:not(:disabled) {
+  background-color: var(--primary);
+}
+
+.scrollButton:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.scrollButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: unset;
+  cursor: default;
+}
+
+.scrollButton svg {
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+}
+
+/* Active unread comment indicator */
+:global(.commentBody.activeUnread) {
+  outline: 1px dashed var(--primary);
+  outline-offset: 0.25rem;
+}

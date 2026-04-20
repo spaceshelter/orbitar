@@ -75,6 +75,10 @@ export function getShowInlineTranslateButton(): boolean {
   return localStorage.getItem('showInlineTranslateButton') === 'true'
 }
 
+export function getEnableCommentNavigation(): boolean {
+  return localStorage.getItem('enableCommentNavigation') !== 'false'
+}
+
 export default function UserProfileSettings(props: UserProfileSettingsProps) {
   useEffect(() => {
     window.scrollTo({ top: 0 })
@@ -92,6 +96,7 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
   const [autoMute, setAutoMute] = useState<boolean>(getAutoMuteVideos())
   const [preferredLang, setPreferredLang] = useState<string>(getPreferredLang())
   const [showInlineTranslateButton, setShowInlineTranslateButton] = useState<boolean>(getShowInlineTranslateButton())
+  const [enableCommentNavigation, setEnableCommentNavigation] = useState<boolean>(getEnableCommentNavigation())
 
   const confirmWrapper = (message: string, callback: () => void) => async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -151,6 +156,10 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
     setShowInlineTranslateButton(!showInlineTranslateButton)
   }
 
+  const toggleEnableCommentNavigation = () => {
+    setEnableCommentNavigation(!enableCommentNavigation)
+  }
+
   const changeLang = (ev: React.FormEvent<HTMLSelectElement>) => {
     const lang = ev.currentTarget.value
     setPreferredLang(lang)
@@ -192,6 +201,10 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
   }, [showInlineTranslateButton])
 
   useEffect(() => {
+    localStorage.setItem('enableCommentNavigation', JSON.stringify(enableCommentNavigation))
+  }, [enableCommentNavigation])
+
+  useEffect(() => {
     localStorage.setItem('preferredLang', preferredLang)
   }, [preferredLang])
 
@@ -206,6 +219,9 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
         )}
         <Button onClick={toggleAutoStop}>Видео автопауза: {autoStop ? 'Вкл' : 'Выкл'}</Button>
         <Button onClick={toggleAutoMute}>Видео без звука: {autoMute ? 'Вкл' : 'Выкл'}</Button>
+        <Button onClick={toggleEnableCommentNavigation}>
+          Навигация по комментариям: {enableCommentNavigation ? 'Вкл' : 'Выкл'}
+        </Button>
         {<ThemeToggleComponent dynamic={true} buttonLabel='Сменить тему' />}
       </div>
       <div className={styles.select}>
