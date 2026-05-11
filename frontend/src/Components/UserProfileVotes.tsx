@@ -35,6 +35,9 @@ const getEventKey = (event: UserVoteFeedEvent) => {
   return `user:${event.user.id}:${event.voterId}`
 }
 
+const getGroupKey = (group: UserVoteFeedGroup) =>
+  `${group.kind}:${group.latestAt.toISOString()}:${group.events.map(getEventKey).join('|')}`
+
 const getUser = (users: Record<number, UserInfo>, userId?: number) => (userId ? users[userId] : undefined)
 
 const receivedVotingDisabledTitle = 'Здесь показана эта оценка; число посередине — общий рейтинг.'
@@ -411,7 +414,7 @@ export default function UserProfileVotes(_props: UserProfileVotesProps) {
       !!firstEvent && group.events.every((event) => getEventEntityKey(event) === getEventEntityKey(firstEvent))
 
     return (
-      <section key={`${group.kind}:${group.latestAt.toISOString()}`} className={styles.group}>
+      <section key={getGroupKey(group)} className={styles.group}>
         <div className={styles.groupHeader}>
           {header}
           <span className={styles.groupCount}>{pluralize(group.events.length, ['оценка', 'оценки', 'оценок'])}</span>
@@ -585,7 +588,7 @@ export default function UserProfileVotes(_props: UserProfileVotesProps) {
 
                   const header = renderGroupHeader(group)
                   return (
-                    <section key={`${group.kind}:${group.latestAt.toISOString()}`} className={styles.group}>
+                    <section key={getGroupKey(group)} className={styles.group}>
                       {header && (
                         <div className={styles.groupHeader}>
                           {header}
