@@ -222,13 +222,20 @@ $groupBigShift: 16px;
 }
 
 .voteUsername {
-  align-items: baseline;
-  display: inline-flex;
+  display: inline;
   line-height: inherit;
   vertical-align: baseline;
 
-  &:global(.i):before {
+  &:global(.i) {
     line-height: inherit;
+  }
+
+  &:global(.i):before {
+    display: inline-block;
+    line-height: 1;
+    position: relative;
+    top: 0.18em;
+    vertical-align: baseline;
   }
 }
 
