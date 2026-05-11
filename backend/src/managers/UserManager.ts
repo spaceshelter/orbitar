@@ -770,10 +770,11 @@ export default class UserManager {
   }
 
   async anonymizeAccount(userId: number) {
-    if (!this.barmaliniUserConfigured()) {
+    const barmaliniUserId = config.barmalini.userId
+    if (!barmaliniUserId) {
       throw new Error('Barmalini user not configured')
     }
-    await this.userRepository.anonymizeAccount(userId, config.barmalini.userId!)
+    await this.userRepository.anonymizeAccount(userId, barmaliniUserId)
     this.clearCache(userId)
     this.clearUserRestrictionsCache(userId)
   }
