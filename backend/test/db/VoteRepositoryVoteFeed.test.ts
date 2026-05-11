@@ -37,10 +37,13 @@ describe('VoteRepository vote feed', () => {
     expect(query).toContain('pv.vote != 0')
     expect(query).toContain('cv.vote != 0')
     expect(query).toContain('uk.vote != 0')
+    expect(query).toContain('join users target')
+    expect(query).toContain('limit :branch_limit')
     expect(query).toContain('order by votedAt desc')
     expect(params).toEqual({
       user_id: 123,
       filter: '%orbitar%',
+      branch_limit: 40,
       limit_from: 20,
       limit_count: 20,
     })
@@ -58,11 +61,13 @@ describe('VoteRepository vote feed', () => {
     expect(query).toContain('p.author_id = :user_id')
     expect(query).toContain('c.author_id = :user_id')
     expect(query).toContain('uk.user_id = :user_id')
+    expect(query).not.toContain('join users voter')
     expect(query).not.toContain('pv.voter_id != :user_id')
     expect(query).not.toContain('cv.voter_id != :user_id')
     expect(query).not.toContain('uk.voter_id != :user_id')
     expect(params).toEqual({
       user_id: 123,
+      branch_limit: 20,
       limit_from: 0,
       limit_count: 20,
     })

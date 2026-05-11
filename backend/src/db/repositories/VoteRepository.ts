@@ -242,7 +242,7 @@ export default class VoteRepository {
     })
   }
 
-  private getVoteFeedParams(userId: number, filter: string): Record<string, string | number> {
+  private getVoteFeedParams(userId: number, filter: string, branchLimit?: number): Record<string, string | number> {
     const params: Record<string, string | number> = {
       user_id: userId,
     }
@@ -251,10 +251,30 @@ export default class VoteRepository {
       params.filter = `%${escapePercent(filter)}%`
     }
 
+    if (branchLimit) {
+      params.branch_limit = branchLimit
+    }
+
     return params
   }
 
-  private getOutgoingVoteFeedUnion(filter: string): string {
+  private limitVoteFeedBranch(branch: string, branchLimit?: number): string {
+    if (!branchLimit) {
+      return branch
+    }
+
+    return `
+      (select *
+         from (${branch}) voteBranch
+        order by votedAt desc
+        limit :branch_limit)
+    `
+  }
+
+  private getOutgoingVoteFeedUnion(filter: string, branchLimit?: number): string {
+    const postTargetJoin = filter ? 'join users target on (target.user_id = p.author_id)' : ''
+    const commentTargetJoin = filter ? 'join users target on (target.user_id = c.author_id)' : ''
+    const userTargetJoin = filter ? 'join users target on (target.user_id = uk.user_id)' : ''
     const postFilter = filter
       ? 'and (p.source like :filter or p.title like :filter or target.username like :filter or target.name like :filter)'
       : ''
@@ -263,7 +283,7 @@ export default class VoteRepository {
       : ''
     const userFilter = filter ? 'and (target.username like :filter or target.name like :filter)' : ''
 
-    return `
+    const postBranch = `
       select 'post' type,
              pv.post_id entityId,
              pv.post_id postId,
@@ -273,11 +293,12 @@ export default class VoteRepository {
              pv.voted_at votedAt
         from post_votes pv
                join posts p on (p.post_id = pv.post_id)
-               join users target on (target.user_id = p.author_id)
+               ${postTargetJoin}
        where pv.voter_id = :user_id
          and pv.vote != 0
          ${postFilter}
-      union all
+    `
+    const commentBranch = `
       select 'comment' type,
              cv.comment_id entityId,
              c.post_id postId,
@@ -287,11 +308,12 @@ export default class VoteRepository {
              cv.voted_at votedAt
         from comment_votes cv
                join comments c on (c.comment_id = cv.comment_id)
-               join users target on (target.user_id = c.author_id)
+               ${commentTargetJoin}
        where cv.voter_id = :user_id
          and cv.vote != 0
          ${commentFilter}
-      union all
+    `
+    const userBranch = `
       select 'user' type,
              uk.user_id entityId,
              null postId,
@@ -300,14 +322,23 @@ export default class VoteRepository {
              uk.vote,
              uk.voted_at votedAt
         from user_karma uk
-               join users target on (target.user_id = uk.user_id)
+               ${userTargetJoin}
        where uk.voter_id = :user_id
          and uk.vote != 0
          ${userFilter}
     `
+
+    return [
+      this.limitVoteFeedBranch(postBranch, branchLimit),
+      this.limitVoteFeedBranch(commentBranch, branchLimit),
+      this.limitVoteFeedBranch(userBranch, branchLimit),
+    ].join('\nunion all\n')
   }
 
-  private getReceivedVoteFeedUnion(filter: string): string {
+  private getReceivedVoteFeedUnion(filter: string, branchLimit?: number): string {
+    const postVoterJoin = filter ? 'join users voter on (voter.user_id = pv.voter_id)' : ''
+    const commentVoterJoin = filter ? 'join users voter on (voter.user_id = cv.voter_id)' : ''
+    const userVoterJoin = filter ? 'join users voter on (voter.user_id = uk.voter_id)' : ''
     const postFilter = filter
       ? 'and (p.source like :filter or p.title like :filter or voter.username like :filter or voter.name like :filter)'
       : ''
@@ -316,7 +347,7 @@ export default class VoteRepository {
       : ''
     const userFilter = filter ? 'and (voter.username like :filter or voter.name like :filter)' : ''
 
-    return `
+    const postBranch = `
       select 'post' type,
              pv.post_id entityId,
              pv.post_id postId,
@@ -326,11 +357,12 @@ export default class VoteRepository {
              pv.voted_at votedAt
        from post_votes pv
                join posts p on (p.post_id = pv.post_id)
-               join users voter on (voter.user_id = pv.voter_id)
+               ${postVoterJoin}
        where p.author_id = :user_id
          and pv.vote != 0
          ${postFilter}
-      union all
+    `
+    const commentBranch = `
       select 'comment' type,
              cv.comment_id entityId,
              c.post_id postId,
@@ -340,11 +372,12 @@ export default class VoteRepository {
              cv.voted_at votedAt
        from comment_votes cv
                join comments c on (c.comment_id = cv.comment_id)
-               join users voter on (voter.user_id = cv.voter_id)
+               ${commentVoterJoin}
        where c.author_id = :user_id
          and cv.vote != 0
          ${commentFilter}
-      union all
+    `
+    const userBranch = `
       select 'user' type,
              uk.user_id entityId,
              null postId,
@@ -353,15 +386,23 @@ export default class VoteRepository {
              uk.vote,
              uk.voted_at votedAt
        from user_karma uk
-               join users voter on (voter.user_id = uk.voter_id)
+               ${userVoterJoin}
        where uk.user_id = :user_id
          and uk.vote != 0
          ${userFilter}
     `
+
+    return [
+      this.limitVoteFeedBranch(postBranch, branchLimit),
+      this.limitVoteFeedBranch(commentBranch, branchLimit),
+      this.limitVoteFeedBranch(userBranch, branchLimit),
+    ].join('\nunion all\n')
   }
 
-  private getVoteFeedUnion(direction: VoteFeedDirection, filter: string): string {
-    return direction === 'mine' ? this.getOutgoingVoteFeedUnion(filter) : this.getReceivedVoteFeedUnion(filter)
+  private getVoteFeedUnion(direction: VoteFeedDirection, filter: string, branchLimit?: number): string {
+    return direction === 'mine'
+      ? this.getOutgoingVoteFeedUnion(filter, branchLimit)
+      : this.getReceivedVoteFeedUnion(filter, branchLimit)
   }
 
   async getVoteFeedEvents(
@@ -371,9 +412,11 @@ export default class VoteRepository {
     page = 1,
     perpage = 20,
   ): Promise<VoteFeedReference[]> {
+    const limitFrom = (page - 1) * perpage
+    const branchLimit = limitFrom + perpage
     const query = `
       select type, entityId, postId, voterId, targetUserId, vote, votedAt
-        from (${this.getVoteFeedUnion(direction, filter)}) votes
+        from (${this.getVoteFeedUnion(direction, filter, branchLimit)}) votes
        order by votedAt desc
        limit :limit_from, :limit_count
     `
@@ -386,8 +429,8 @@ export default class VoteRepository {
       vote: number
       votedAt: Date | string
     }>(query, {
-      ...this.getVoteFeedParams(userId, filter),
-      limit_from: (page - 1) * perpage,
+      ...this.getVoteFeedParams(userId, filter, branchLimit),
+      limit_from: limitFrom,
       limit_count: perpage,
     })
 
