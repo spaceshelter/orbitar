@@ -112,6 +112,10 @@ export default class UserManager {
     return this.userCache.getById(userId)
   }
 
+  public async getByIds(userIds: number[]): Promise<Record<number, UserInfo>> {
+    return this.userCache.getByIds(userIds)
+  }
+
   public clearCache(userId: number) {
     this.userCache.clearCache(userId)
   }

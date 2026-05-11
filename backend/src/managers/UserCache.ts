@@ -75,6 +75,36 @@ export class UserCache {
     return user
   }
 
+  public async getByIds(userIds: number[]): Promise<Record<number, UserInfo>> {
+    const uniqueUserIds = [...new Set(userIds)]
+    if (!uniqueUserIds.length) {
+      return {}
+    }
+
+    if (this.initializedState !== true) {
+      await this.initialize()
+    }
+
+    const users: Record<number, UserInfo> = {}
+    const missingIds: number[] = []
+    for (const userId of uniqueUserIds) {
+      if (this.cacheId[userId]) {
+        users[userId] = this.cacheId[userId]
+      } else {
+        missingIds.push(userId)
+      }
+    }
+
+    const rawUsers = await this.userRepository.getUsersByIds(missingIds)
+    for (const rawUser of rawUsers) {
+      const user = this.mapUserRaw(rawUser)
+      this.cache(user)
+      users[user.id] = user
+    }
+
+    return users
+  }
+
   public clearCache(userId: number) {
     const cacheEntry = this.cacheId[userId]
     if (!cacheEntry) {

@@ -26,6 +26,14 @@ export default class UserRepository {
     return await this.db.fetchOne<UserRaw>('select * from users where user_id=:user_id', { user_id: userId })
   }
 
+  async getUsersByIds(userIds: number[]): Promise<UserRaw[]> {
+    if (!userIds.length) {
+      return []
+    }
+
+    return await this.db.fetchAll<UserRaw>('select * from users where user_id in (:user_ids)', { user_ids: userIds })
+  }
+
   async getUserByUsername(username: string): Promise<UserRaw | undefined> {
     return await this.db.fetchOne<UserRaw>(
       `select *

@@ -34,13 +34,9 @@ export class Enricher {
 
   async enrichRawPosts(rawPosts: PostInfo[]): Promise<EnrichedPosts> {
     const sites: Record<string, SiteBaseEntity> = {}
-    const users: Record<number, UserEntity> = {}
+    const users = await this.userManager.getByIds(rawPosts.map((post) => post.author))
     const posts: PostEntity[] = []
     for (const post of rawPosts) {
-      if (!users[post.author]) {
-        users[post.author] = await this.userManager.getById(post.author)
-      }
-
       if (!sites[post.site]) {
         const site = await this.siteManager.getSiteByName(post.site)
         sites[post.site] = {
@@ -83,6 +79,11 @@ export class Enricher {
     format: string,
     isNew: (c: CommentEntity) => boolean,
   ): Promise<EnrichedComments> {
+    const commentUsers = await this.userManager.getByIds(
+      rawComments.map((rawComment) => rawComment.author).filter((authorId) => !users[authorId]),
+    )
+    Object.assign(users, commentUsers)
+
     const commentsIndex: Record<number, CommentEntity> = {}
     const rootComments: CommentEntity[] = []
     const allComments: CommentEntity[] = []
@@ -107,7 +108,6 @@ export class Enricher {
         comment.editFlag = rawComment.editFlag
       }
 
-      users[rawComment.author] = users[rawComment.author] || (await this.userManager.getById(rawComment.author))
       commentsIndex[rawComment.id] = comment
 
       if (!rawComment.parentComment) {

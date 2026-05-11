@@ -23,11 +23,20 @@ describe('UserController votes', () => {
     }
     const userManager = {
       getById: jest.fn((id: number) => Promise.resolve(users[id])),
+      getByIds: jest.fn((ids: number[]) => {
+        const result: Record<number, any> = {}
+        for (const id of ids) {
+          if (users[id]) {
+            result[id] = users[id]
+          }
+        }
+        return Promise.resolve(result)
+      }),
       ...overrides.userManager,
     }
     const postManager = {
-      getPost: jest.fn().mockResolvedValue({ id: 10, author: 201 }),
-      getComment: jest.fn().mockResolvedValue(undefined),
+      getPostsByIds: jest.fn().mockResolvedValue([{ id: 10, author: 201 }]),
+      getCommentsByIds: jest.fn().mockResolvedValue([]),
       getParentCommentsForASetOfComments: jest.fn().mockResolvedValue([]),
       ...overrides.postManager,
     }
@@ -60,7 +69,7 @@ describe('UserController votes', () => {
       logger as any,
     )
 
-    return { controller, voteManager, userManager }
+    return { controller, voteManager, userManager, postManager }
   }
 
   test('requires authorization', async () => {
@@ -73,7 +82,7 @@ describe('UserController votes', () => {
   })
 
   test('uses session user id and ignores body identity fields', async () => {
-    const { controller, voteManager } = createController()
+    const { controller, voteManager, userManager, postManager } = createController()
     const response = { success: jest.fn(), error: jest.fn() }
 
     await controller['votes'](
@@ -94,6 +103,10 @@ describe('UserController votes', () => {
 
     expect(voteManager.getVoteFeedTotal).toHaveBeenCalledWith(123, 'received', 'orbitar')
     expect(voteManager.getVoteFeedEvents).toHaveBeenCalledWith(123, 'received', 'orbitar', 2, 20)
+    expect(postManager.getPostsByIds).toHaveBeenCalledWith([10], 123, 'html')
+    expect(postManager.getCommentsByIds).toHaveBeenCalledWith([], 123, 'html')
+    expect(userManager.getByIds).toHaveBeenCalledWith([301])
+    expect(userManager.getById).not.toHaveBeenCalled()
     expect(response.success).toHaveBeenCalledWith({
       total: 1,
       groups: [

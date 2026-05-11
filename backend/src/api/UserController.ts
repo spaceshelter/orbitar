@@ -6,8 +6,6 @@ import { Logger } from 'winston'
 import InviteManager from '../managers/InviteManager'
 import OAuth2Manager from '../managers/OAuth2Manager'
 import PostManager from '../managers/PostManager'
-import { CommentInfoWithPostData } from '../managers/types/CommentInfo'
-import { PostInfo } from '../managers/types/PostInfo'
 import { UserGender, UserRatingBySubsite } from '../managers/types/UserInfo'
 import UserManager from '../managers/UserManager'
 import { groupVoteFeedReferences } from '../managers/VoteFeedGrouper'
@@ -401,22 +399,10 @@ export default class UserController {
         ...new Set(voteRefs.filter((event) => event.type === 'user').map((event) => event.entityId)),
       ]
       const voterIds = [...new Set(voteRefs.map((event) => event.voterId))]
-      const rawPosts: PostInfo[] = []
-      const rawComments: CommentInfoWithPostData[] = []
-
-      for (const postId of postIds) {
-        const post = await this.postManager.getPost(postId, userId, format)
-        if (post) {
-          rawPosts.push(post)
-        }
-      }
-
-      for (const commentId of commentIds) {
-        const comment = await this.postManager.getComment(userId, commentId, format)
-        if (comment) {
-          rawComments.push(comment)
-        }
-      }
+      const [rawPosts, rawComments] = await Promise.all([
+        this.postManager.getPostsByIds(postIds, userId, format),
+        this.postManager.getCommentsByIds(commentIds, userId, format),
+      ])
 
       const { posts, users: postUsers } = await this.enricher.enrichRawPosts(rawPosts)
       const rawParentComments = await this.postManager.getParentCommentsForASetOfComments(rawComments, userId, format)
@@ -443,21 +429,15 @@ export default class UserController {
         parentCommentsById[comment.id] = comment
       })
 
+      const voteUsers = await this.userManager.getByIds(
+        [...profileUserIds, ...voterIds].filter((voteUserId) => !users[voteUserId]),
+      )
+      Object.assign(users, voteUsers)
+
       const profileUsersById: Record<number, UserEntity> = {}
       for (const profileUserId of profileUserIds) {
-        const user = await this.userManager.getById(profileUserId)
-        if (user) {
-          profileUsersById[user.id] = user
-          users[user.id] = users[user.id] || user
-        }
-      }
-
-      for (const voterId of voterIds) {
-        if (!users[voterId]) {
-          const voter = await this.userManager.getById(voterId)
-          if (voter) {
-            users[voter.id] = voter
-          }
+        if (users[profileUserId]) {
+          profileUsersById[profileUserId] = users[profileUserId]
         }
       }
 

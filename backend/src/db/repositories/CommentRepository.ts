@@ -35,6 +35,25 @@ export default class CommentRepository {
     )
   }
 
+  async getCommentsWithUserData(forUserId: number, commentIds: number[]): Promise<CommentRawWithUserData[]> {
+    if (!commentIds.length) {
+      return []
+    }
+
+    return await this.db.fetchAll<CommentRawWithUserData>(
+      `
+            select c.*, v.vote
+            from comments c
+                left join comment_votes v on (v.comment_id = c.comment_id and v.voter_id = :forUserId)
+            where c.comment_id in (:commentIds)
+        `,
+      {
+        commentIds,
+        forUserId,
+      },
+    )
+  }
+
   async getPostComments(postId: number, forUserId: number): Promise<CommentRawWithUserData[]> {
     return await this.db.query(
       `

@@ -58,6 +58,11 @@ export default class PostManager {
     return (await this.feedManager.convertRawPosts(forUserId, [rawPost], format))[0]
   }
 
+  async getPostsByIds(postIds: number[], forUserId: number, format: ContentFormat): Promise<PostInfo[]> {
+    const rawPosts = await this.postRepository.getPostsWithUserData(postIds, forUserId)
+    return await this.feedManager.convertRawPosts(forUserId, rawPosts, format)
+  }
+
   async getPostsByUser(
     userId: number,
     forUserId: number,
@@ -363,6 +368,15 @@ export default class PostManager {
     const rawComment = await this.commentRepository.getCommentWithUserData(forUserId, commentId)
     const [comment] = await this.convertRawCommentsWithPostData(forUserId, [rawComment], format)
     return comment
+  }
+
+  async getCommentsByIds(
+    commentIds: number[],
+    forUserId: number,
+    format: ContentFormat,
+  ): Promise<CommentInfoWithPostData[]> {
+    const rawComments = await this.commentRepository.getCommentsWithUserData(forUserId, commentIds)
+    return await this.convertRawCommentsWithPostData(forUserId, rawComments, format)
   }
 
   async editComment(
