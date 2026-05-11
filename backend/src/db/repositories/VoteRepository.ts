@@ -405,6 +405,94 @@ export default class VoteRepository {
       : this.getReceivedVoteFeedUnion(filter, branchLimit)
   }
 
+  private getOutgoingVoteFeedTotalQuery(filter: string): string {
+    const postTargetJoin = filter
+      ? 'join posts p on (p.post_id = pv.post_id) join users target on (target.user_id = p.author_id)'
+      : ''
+    const commentTargetJoin = filter
+      ? 'join comments c on (c.comment_id = cv.comment_id) join users target on (target.user_id = c.author_id)'
+      : ''
+    const userTargetJoin = filter ? 'join users target on (target.user_id = uk.user_id)' : ''
+    const postFilter = filter
+      ? 'and (p.source like :filter or p.title like :filter or target.username like :filter or target.name like :filter)'
+      : ''
+    const commentFilter = filter
+      ? 'and (c.source like :filter or target.username like :filter or target.name like :filter)'
+      : ''
+    const userFilter = filter ? 'and (target.username like :filter or target.name like :filter)' : ''
+
+    return `
+      select (
+        select count(*)
+          from post_votes pv
+               ${postTargetJoin}
+         where pv.voter_id = :user_id
+           and pv.vote != 0
+           ${postFilter}
+      ) + (
+        select count(*)
+          from comment_votes cv
+               ${commentTargetJoin}
+         where cv.voter_id = :user_id
+           and cv.vote != 0
+           ${commentFilter}
+      ) + (
+        select count(*)
+          from user_karma uk
+               ${userTargetJoin}
+         where uk.voter_id = :user_id
+           and uk.vote != 0
+           ${userFilter}
+      ) count
+    `
+  }
+
+  private getReceivedVoteFeedTotalQuery(filter: string): string {
+    const postVoterJoin = filter ? 'join users voter on (voter.user_id = pv.voter_id)' : ''
+    const commentVoterJoin = filter ? 'join users voter on (voter.user_id = cv.voter_id)' : ''
+    const userVoterJoin = filter ? 'join users voter on (voter.user_id = uk.voter_id)' : ''
+    const postFilter = filter
+      ? 'and (p.source like :filter or p.title like :filter or voter.username like :filter or voter.name like :filter)'
+      : ''
+    const commentFilter = filter
+      ? 'and (c.source like :filter or voter.username like :filter or voter.name like :filter)'
+      : ''
+    const userFilter = filter ? 'and (voter.username like :filter or voter.name like :filter)' : ''
+
+    return `
+      select (
+        select count(*)
+          from post_votes pv
+               join posts p on (p.post_id = pv.post_id)
+               ${postVoterJoin}
+         where p.author_id = :user_id
+           and pv.vote != 0
+           ${postFilter}
+      ) + (
+        select count(*)
+          from comment_votes cv
+               join comments c on (c.comment_id = cv.comment_id)
+               ${commentVoterJoin}
+         where c.author_id = :user_id
+           and cv.vote != 0
+           ${commentFilter}
+      ) + (
+        select count(*)
+          from user_karma uk
+               ${userVoterJoin}
+         where uk.user_id = :user_id
+           and uk.vote != 0
+           ${userFilter}
+      ) count
+    `
+  }
+
+  private getVoteFeedTotalQuery(direction: VoteFeedDirection, filter: string): string {
+    return direction === 'mine'
+      ? this.getOutgoingVoteFeedTotalQuery(filter)
+      : this.getReceivedVoteFeedTotalQuery(filter)
+  }
+
   async getVoteFeedEvents(
     userId: number,
     direction: VoteFeedDirection,
@@ -447,10 +535,7 @@ export default class VoteRepository {
 
   async getVoteFeedTotal(userId: number, direction: VoteFeedDirection, filter = ''): Promise<number> {
     const result = await this.db.fetchOne<{ count: number }>(
-      `
-        select count(*) count
-          from (${this.getVoteFeedUnion(direction, filter)}) votes
-      `,
+      this.getVoteFeedTotalQuery(direction, filter),
       this.getVoteFeedParams(userId, filter),
     )
 

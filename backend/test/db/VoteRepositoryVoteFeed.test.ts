@@ -82,8 +82,12 @@ describe('VoteRepository vote feed', () => {
     await expect(repository.getVoteFeedTotal(123, 'received', 'text')).resolves.toBe(7)
 
     const [query, params] = db.fetchOne.mock.calls[0]
-    expect(query).toContain('select count(*) count')
-    expect(query).toContain('union all')
+    expect(query).toContain(') + (')
+    expect(query).toContain('p.author_id = :user_id')
+    expect(query).toContain('c.author_id = :user_id')
+    expect(query).toContain('uk.user_id = :user_id')
+    expect(query).toContain('join users voter')
+    expect(query).not.toContain('union all')
     expect(params).toEqual({ user_id: 123, filter: '%text%' })
   })
 
