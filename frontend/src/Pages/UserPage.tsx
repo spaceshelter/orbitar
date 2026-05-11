@@ -17,6 +17,7 @@ import { UserProfileKarma } from '../Components/UserProfileKarma'
 import UserProfileName from '../Components/UserProfileName'
 import UserProfilePosts from '../Components/UserProfilePosts'
 import UserProfileSettings from '../Components/UserProfileSettings'
+import UserProfileVotes from '../Components/UserProfileVotes'
 import { UserGender, UserProfileInfo } from '../Types/UserInfo'
 
 import styles from './UserPage.module.scss'
@@ -39,8 +40,9 @@ export const UserPage = observer(() => {
   const isKarma = page === 'karma'
   const isSettings = page === 'settings'
   const isApps = page === 'apps'
+  const isVotes = page === 'votes'
 
-  const isProfile = !isPosts && !isComments && !isInvites && !isKarma && !isSettings && !isApps
+  const isProfile = !isPosts && !isComments && !isInvites && !isKarma && !isSettings && !isApps && !isVotes
 
   useEffect(() => {
     if (state.status === 'ready') {
@@ -145,6 +147,11 @@ export const UserPage = observer(() => {
           <Link className={`${styles.control} ${isComments ? styles.active : ''}`} to={base + '/comments'}>
             Комментарии ({profile.numberOfComments.toLocaleString()})
           </Link>
+          {isMyProfile && (
+            <Link className={`${styles.control} ${isVotes ? styles.active : ''}`} to={base + '/votes?tab=mine'}>
+              Оценки
+            </Link>
+          )}
           <Link className={`${styles.control} ${isKarma ? styles.active : ''}`} to={base + '/karma'}>
             Саморегуляция
           </Link>
@@ -202,6 +209,8 @@ export const UserPage = observer(() => {
           )}
           {isPosts && <UserProfilePosts username={user.username} />}
           {isComments && <UserProfileComments username={user.username} />}
+          {isVotes && isMyProfile && <UserProfileVotes />}
+          {isVotes && !isMyProfile && <div>Раздел доступен только в своём профиле.</div>}
           {isInvites && <UserProfileInvites username={user.username} onInvitesChange={handleInvitesChange} />}
           {isKarma && <UserProfileKarma username={user.username} profile={profile} />}
           {isApps && <UserProfileClientsApps />}

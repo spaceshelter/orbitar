@@ -18,6 +18,7 @@ type RatingSwitchProps = {
   double?: boolean
   onVote?: (value: number, vote?: number, postApiCall?: boolean) => void
   votingDisabled?: boolean
+  votingDisabledTitle?: string
 }
 
 type VoteType = { vote: number; username: string }
@@ -163,7 +164,7 @@ export default function RatingSwitch(props: RatingSwitchProps) {
 
   const buttonExtraProps = {
     title: props.votingDisabled
-      ? 'Голосование за карму невозможно. Загляните во вкладку "Саморегуляция" в профиле.'
+      ? props.votingDisabledTitle || 'Голосование за карму невозможно. Загляните во вкладку "Саморегуляция" в профиле.'
       : undefined,
     disabled: props.votingDisabled,
   }

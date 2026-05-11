@@ -1,6 +1,10 @@
 import { RedisClientType } from 'redis'
 
-import VoteRepository, { VoteWithUsername } from '../db/repositories/VoteRepository'
+import VoteRepository, {
+  VoteFeedDirection,
+  VoteFeedReference,
+  VoteWithUsername,
+} from '../db/repositories/VoteRepository'
 import PostManager from './PostManager'
 import UserManager from './UserManager'
 
@@ -49,6 +53,20 @@ export default class VoteManager {
 
   async getUserVotes(userId: number): Promise<VoteWithUsername[]> {
     return await this.voteRepository.getUserVotes(userId)
+  }
+
+  async getVoteFeedEvents(
+    userId: number,
+    direction: VoteFeedDirection,
+    filter: string,
+    page: number,
+    perpage: number,
+  ): Promise<VoteFeedReference[]> {
+    return await this.voteRepository.getVoteFeedEvents(userId, direction, filter, page, perpage)
+  }
+
+  async getVoteFeedTotal(userId: number, direction: VoteFeedDirection, filter: string): Promise<number> {
+    return await this.voteRepository.getVoteFeedTotal(userId, direction, filter)
   }
 
   getUserIdByVote(entityId: number, type: 'post' | 'comment' | 'user'): Promise<number | undefined> {

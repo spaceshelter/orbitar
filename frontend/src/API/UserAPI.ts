@@ -67,6 +67,104 @@ type UserProfileCommentsResult = {
   total: number
 }
 
+export type UserVotesDirection = 'mine' | 'received'
+export type UserVoteFeedGroupKind = 'entity' | 'voter' | 'target-author' | 'context-post' | 'single'
+
+type UserVotesRequest = {
+  direction: UserVotesDirection
+  format?: ContentFormat
+  filter?: string
+  page?: number
+  perpage?: number
+}
+
+type UserVoteFeedEventBaseEntity = {
+  vote: number
+  votedAt: string
+  voterId: number
+  targetUserId: number
+}
+
+type UserVoteFeedPostEventEntity = UserVoteFeedEventBaseEntity & {
+  type: 'post'
+  post: PostEntity
+}
+
+type UserVoteFeedCommentEventEntity = UserVoteFeedEventBaseEntity & {
+  type: 'comment'
+  comment: CommentEntity
+  parentComment?: CommentEntity
+}
+
+type UserVoteFeedUserEventEntity = UserVoteFeedEventBaseEntity & {
+  type: 'user'
+  user: UserInfo
+}
+
+type UserVoteFeedEventEntity =
+  | UserVoteFeedPostEventEntity
+  | UserVoteFeedCommentEventEntity
+  | UserVoteFeedUserEventEntity
+
+type UserVoteFeedGroupEntity = {
+  kind: UserVoteFeedGroupKind
+  latestAt: string
+  events: UserVoteFeedEventEntity[]
+  entityType?: 'post' | 'comment' | 'user'
+  entityId?: number
+  voterId?: number
+  targetUserId?: number
+  contextPostId?: number
+}
+
+type UserVotesResponse = {
+  total: number
+  groups: UserVoteFeedGroupEntity[]
+  users: Record<number, UserInfo>
+}
+
+type UserVoteFeedEventBase = {
+  vote: number
+  votedAt: Date
+  voterId: number
+  targetUserId: number
+}
+
+export type UserVoteFeedPostEvent = UserVoteFeedEventBase & {
+  type: 'post'
+  post: PostInfo
+}
+
+export type UserVoteFeedCommentEvent = UserVoteFeedEventBase & {
+  type: 'comment'
+  comment: CommentInfo
+  parentComment?: CommentInfo
+}
+
+export type UserVoteFeedUserEvent = UserVoteFeedEventBase & {
+  type: 'user'
+  user: UserInfo
+}
+
+export type UserVoteFeedEvent = UserVoteFeedPostEvent | UserVoteFeedCommentEvent | UserVoteFeedUserEvent
+
+export type UserVoteFeedGroup = {
+  kind: UserVoteFeedGroupKind
+  latestAt: Date
+  events: UserVoteFeedEvent[]
+  entityType?: 'post' | 'comment' | 'user'
+  entityId?: number
+  voterId?: number
+  targetUserId?: number
+  contextPostId?: number
+}
+
+export type UserVotesResult = {
+  total: number
+  groups: UserVoteFeedGroup[]
+  users: Record<number, UserInfo>
+}
+
 export type TrialProgressDebugInfo = {
   effectiveKarmaPart: number
   daysOnSitePart: number
@@ -161,6 +259,65 @@ export default class UserAPI {
 
   async userKarma(username: string): Promise<UserKarmaResponse> {
     return await this.api.request<{ username: string }, UserKarmaResponse>('/user/karma', { username })
+  }
+
+  async userVotes(
+    direction: UserVotesDirection,
+    filter: string,
+    page: number,
+    perpage: number,
+  ): Promise<UserVotesResult> {
+    const result = await this.api.request<UserVotesRequest, UserVotesResponse>('/user/votes', {
+      direction,
+      format: 'html',
+      page,
+      perpage,
+      filter,
+    })
+
+    return {
+      total: result.total,
+      users: result.users,
+      groups: result.groups.map((group) => ({
+        ...group,
+        latestAt: this.api.fixDate(new Date(group.latestAt)),
+        events: group.events.map((event) => this.fixVoteFeedEvent(event, result.users)),
+      })),
+    }
+  }
+
+  private fixVoteFeedEvent(event: UserVoteFeedEventEntity, users: Record<number, UserInfo>): UserVoteFeedEvent {
+    const base = {
+      vote: event.vote,
+      votedAt: this.api.fixDate(new Date(event.votedAt)),
+      voterId: event.voterId,
+      targetUserId: event.targetUserId,
+    }
+
+    if (event.type === 'post') {
+      return {
+        ...base,
+        type: 'post',
+        post: this.postAPIHelper.fixPosts([event.post], users)[0],
+      }
+    }
+
+    if (event.type === 'comment') {
+      return {
+        ...base,
+        type: 'comment',
+        comment: this.postAPIHelper.fixComments([event.comment], users)[0],
+        parentComment: event.parentComment
+          ? this.postAPIHelper.fixComments([event.parentComment], users)[0]
+          : undefined,
+      }
+    }
+
+    return {
+      ...base,
+      type: 'user',
+      user: event.user,
+    }
   }
 
   userRestrictions(username: string): Promise<UserRestrictionsResponse> {

@@ -27,11 +27,13 @@ interface PostComponentProps {
   post: PostInfo
   showSite?: boolean
   buttons?: React.ReactNode
-  onChange?: (id: number, post: Partial<PostInfo>) => void
+  onChange?: (id: number, post: Partial<PostInfo>, postApiCall?: boolean) => void
   autoCut?: number
   onEdit?: (post: PostInfo, text: string, title?: string) => Promise<PostInfo | undefined>
   dangerousHtmlTitle?: boolean
   hideRating?: boolean
+  votingDisabled?: boolean
+  votingDisabledTitle?: string
 }
 
 export default function PostComponent(props: PostComponentProps) {
@@ -55,15 +57,19 @@ export default function PostComponent(props: PostComponentProps) {
   } = useInterpreter(props.post.content, props.post.id, TranslateType.POST)
 
   const handleVote = useMemo(() => {
-    return (value: number, vote?: number) => {
+    return (value: number, vote?: number, postApiCall?: boolean) => {
       props.post.rating = value
       props.post.vote = vote
 
       if (props.onChange) {
-        props.onChange(props.post.id, {
-          rating: value,
-          vote,
-        })
+        props.onChange(
+          props.post.id,
+          {
+            rating: value,
+            vote,
+          },
+          postApiCall,
+        )
       }
     }
   }, [props])
@@ -207,7 +213,14 @@ export default function PostComponent(props: PostComponentProps) {
       <div className={styles.controls}>
         {!props.hideRating && (
           <div className={styles.control}>
-            <RatingSwitch type='post' id={id} rating={{ vote, value: rating }} onVote={handleVote} />
+            <RatingSwitch
+              type='post'
+              id={id}
+              rating={{ vote, value: rating }}
+              onVote={handleVote}
+              votingDisabled={props.votingDisabled}
+              votingDisabledTitle={props.votingDisabledTitle}
+            />
           </div>
         )}
         <div className={styles.control}>

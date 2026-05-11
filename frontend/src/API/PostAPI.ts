@@ -35,6 +35,7 @@ export type CommentEntity = {
   vote?: number
   isNew?: boolean
   editFlag?: EditFlag
+  parentComment?: number
 
   post: number
   site: string

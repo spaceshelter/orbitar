@@ -1,0 +1,263 @@
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+
+.tab {
+  border-bottom: 2px solid transparent;
+  color: var(--fg-color);
+  padding: 4px 0;
+  text-decoration: none;
+}
+
+.tabActive {
+  border-bottom-color: var(--link-color);
+  color: var(--link-color);
+}
+
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+$groupSmallShift: 8px;
+$groupBigShift: 12px;
+
+.group {
+  background: transparent;
+  border-left: 2px solid var(--primary);
+  margin-left: -$groupSmallShift - 2px;
+  padding-left: $groupSmallShift;
+
+  @media only screen and (min-width: 990px) {
+    margin-left: -$groupBigShift - 2px;
+    padding-left: $groupBigShift;
+  }
+}
+
+.group:first-child {
+  margin-top: 0;
+}
+
+.groupHeader {
+  align-items: baseline;
+  border-bottom: 1px solid var(--fgAlmostInvisible);
+  color: var(--fgSofter);
+  display: flex;
+  font-size: 14px;
+  gap: 12px;
+  justify-content: space-between;
+  line-height: 1.35;
+  margin: 0 0 2px;
+  padding-bottom: 9px;
+}
+
+.groupTitle {
+  align-items: baseline;
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+
+.groupActor {
+  align-items: baseline;
+  display: inline-flex;
+  gap: 4px;
+  line-height: inherit;
+  white-space: nowrap;
+}
+
+.groupUserLink {
+  color: var(--primary);
+  display: inline;
+  line-height: inherit;
+  vertical-align: baseline;
+  white-space: nowrap;
+
+  &:hover {
+    color: var(--primaryHover);
+  }
+}
+
+.groupCount {
+  color: var(--fgSoftest);
+  flex: 0 0 auto;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.events {
+  display: flex;
+  flex-direction: column;
+}
+
+.event {
+  padding: 12px 0 14px;
+}
+
+.event + .event {
+  border-top: 1px solid var(--fgAlmostInvisible);
+}
+
+.event :global(.postComponent),
+.event :global(.comment) {
+  margin-bottom: 0;
+}
+
+.eventMeta {
+  align-items: center;
+  color: var(--fgSoftest);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 13px;
+  gap: 6px;
+  line-height: 1.3;
+  margin-bottom: 4px;
+}
+
+.groupSubject {
+  align-items: baseline;
+  color: var(--fgSofter);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  line-height: 1.35;
+  padding: 8px 0 6px;
+}
+
+.subjectMain {
+  min-width: 0;
+}
+
+.subjectLink {
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+
+.subjectInline {
+  align-items: baseline;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.subjectRating,
+.voteRowMeta {
+  color: var(--fgSoftest);
+  font-size: 13px;
+}
+
+.subjectRating {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.subjectRatingValue {
+  font-weight: 700;
+}
+
+.voteRows {
+  display: flex;
+  flex-direction: column;
+}
+
+.voteRow {
+  align-items: baseline;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 42px minmax(0, 1fr);
+  padding: 9px 0 10px;
+}
+
+.voteRow + .voteRow {
+  border-top: 1px solid var(--fgAlmostInvisible);
+}
+
+.voteValue {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.voteValuePlus {
+  color: var(--primary);
+}
+
+.voteValueMinus {
+  color: var(--danger);
+}
+
+.voteValueZero {
+  color: var(--fgSoftest);
+}
+
+.voteRowBody {
+  min-width: 0;
+}
+
+.voteRowMain {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  line-height: 1.35;
+}
+
+.voteTarget {
+  min-width: 0;
+}
+
+.voteVoter {
+  align-items: baseline;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.voteRowMeta {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  line-height: 1.35;
+  margin-top: 2px;
+}
+
+.userEvent {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.userInfo {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.empty {
+  color: var(--fg-light-color);
+  padding: 24px 0;
+}
+
+@media only screen and (max-width: 600px) {
+  .groupHeader {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .groupSubject {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+}

@@ -1,4 +1,18 @@
+import { escapePercent } from '../../utils/MySqlUtils'
 import DB from '../DB'
+
+export type VoteFeedDirection = 'mine' | 'received'
+export type VoteFeedEntityType = 'post' | 'comment' | 'user'
+
+export type VoteFeedReference = {
+  type: VoteFeedEntityType
+  entityId: number
+  postId?: number
+  voterId: number
+  targetUserId: number
+  vote: number
+  votedAt: Date
+}
 
 export type VoteWithUsername = {
   vote: number
@@ -111,7 +125,8 @@ export default class VoteRepository {
 
       await conn.query(
         `update ${entityVotesTable}
-                 set vote=:vote
+                 set vote=:vote,
+                     voted_at=now()
                  where ${entityField} = :entity_id
                    and voter_id = :voter_id
                    and vote = :prev_vote`,
@@ -198,7 +213,11 @@ export default class VoteRepository {
   async userSetVote(toUserId: number, vote: number, voterId: number): Promise<number> {
     return await this.db.inTransaction(async (conn) => {
       await conn.query(
-        'insert into user_karma (user_id, voter_id, vote) values (:user_id, :voter_id, :vote) on duplicate key update vote=:vote',
+        `insert into user_karma (user_id, voter_id, vote)
+             values (:user_id, :voter_id, :vote)
+             on duplicate key update
+               voted_at = if(vote <> values(vote), now(), voted_at),
+               vote = values(vote)`,
         {
           user_id: toUserId,
           voter_id: voterId,
@@ -221,6 +240,178 @@ export default class VoteRepository {
 
       return rating
     })
+  }
+
+  private getVoteFeedParams(userId: number, filter: string): Record<string, string | number> {
+    const params: Record<string, string | number> = {
+      user_id: userId,
+    }
+
+    if (filter) {
+      params.filter = `%${escapePercent(filter)}%`
+    }
+
+    return params
+  }
+
+  private getOutgoingVoteFeedUnion(filter: string): string {
+    const postFilter = filter
+      ? 'and (p.source like :filter or p.title like :filter or target.username like :filter or target.name like :filter)'
+      : ''
+    const commentFilter = filter
+      ? 'and (c.source like :filter or target.username like :filter or target.name like :filter)'
+      : ''
+    const userFilter = filter ? 'and (target.username like :filter or target.name like :filter)' : ''
+
+    return `
+      select 'post' type,
+             pv.post_id entityId,
+             pv.post_id postId,
+             pv.voter_id voterId,
+             p.author_id targetUserId,
+             pv.vote,
+             pv.voted_at votedAt
+        from post_votes pv
+               join posts p on (p.post_id = pv.post_id)
+               join users target on (target.user_id = p.author_id)
+       where pv.voter_id = :user_id
+         and pv.vote != 0
+         ${postFilter}
+      union all
+      select 'comment' type,
+             cv.comment_id entityId,
+             c.post_id postId,
+             cv.voter_id voterId,
+             c.author_id targetUserId,
+             cv.vote,
+             cv.voted_at votedAt
+        from comment_votes cv
+               join comments c on (c.comment_id = cv.comment_id)
+               join users target on (target.user_id = c.author_id)
+       where cv.voter_id = :user_id
+         and cv.vote != 0
+         ${commentFilter}
+      union all
+      select 'user' type,
+             uk.user_id entityId,
+             null postId,
+             uk.voter_id voterId,
+             uk.user_id targetUserId,
+             uk.vote,
+             uk.voted_at votedAt
+        from user_karma uk
+               join users target on (target.user_id = uk.user_id)
+       where uk.voter_id = :user_id
+         and uk.vote != 0
+         ${userFilter}
+    `
+  }
+
+  private getReceivedVoteFeedUnion(filter: string): string {
+    const postFilter = filter
+      ? 'and (p.source like :filter or p.title like :filter or voter.username like :filter or voter.name like :filter)'
+      : ''
+    const commentFilter = filter
+      ? 'and (c.source like :filter or voter.username like :filter or voter.name like :filter)'
+      : ''
+    const userFilter = filter ? 'and (voter.username like :filter or voter.name like :filter)' : ''
+
+    return `
+      select 'post' type,
+             pv.post_id entityId,
+             pv.post_id postId,
+             pv.voter_id voterId,
+             p.author_id targetUserId,
+             pv.vote,
+             pv.voted_at votedAt
+       from post_votes pv
+               join posts p on (p.post_id = pv.post_id)
+               join users voter on (voter.user_id = pv.voter_id)
+       where p.author_id = :user_id
+         and pv.vote != 0
+         ${postFilter}
+      union all
+      select 'comment' type,
+             cv.comment_id entityId,
+             c.post_id postId,
+             cv.voter_id voterId,
+             c.author_id targetUserId,
+             cv.vote,
+             cv.voted_at votedAt
+       from comment_votes cv
+               join comments c on (c.comment_id = cv.comment_id)
+               join users voter on (voter.user_id = cv.voter_id)
+       where c.author_id = :user_id
+         and cv.vote != 0
+         ${commentFilter}
+      union all
+      select 'user' type,
+             uk.user_id entityId,
+             null postId,
+             uk.voter_id voterId,
+             uk.user_id targetUserId,
+             uk.vote,
+             uk.voted_at votedAt
+       from user_karma uk
+               join users voter on (voter.user_id = uk.voter_id)
+       where uk.user_id = :user_id
+         and uk.vote != 0
+         ${userFilter}
+    `
+  }
+
+  private getVoteFeedUnion(direction: VoteFeedDirection, filter: string): string {
+    return direction === 'mine' ? this.getOutgoingVoteFeedUnion(filter) : this.getReceivedVoteFeedUnion(filter)
+  }
+
+  async getVoteFeedEvents(
+    userId: number,
+    direction: VoteFeedDirection,
+    filter = '',
+    page = 1,
+    perpage = 20,
+  ): Promise<VoteFeedReference[]> {
+    const query = `
+      select type, entityId, postId, voterId, targetUserId, vote, votedAt
+        from (${this.getVoteFeedUnion(direction, filter)}) votes
+       order by votedAt desc
+       limit :limit_from, :limit_count
+    `
+    const result = await this.db.fetchAll<{
+      type: VoteFeedEntityType
+      entityId: number
+      postId?: number
+      voterId: number
+      targetUserId: number
+      vote: number
+      votedAt: Date | string
+    }>(query, {
+      ...this.getVoteFeedParams(userId, filter),
+      limit_from: (page - 1) * perpage,
+      limit_count: perpage,
+    })
+
+    return result.map((item) => ({
+      type: item.type,
+      entityId: Number(item.entityId),
+      postId: item.postId == null ? undefined : Number(item.postId),
+      voterId: Number(item.voterId),
+      targetUserId: Number(item.targetUserId),
+      vote: Number(item.vote),
+      votedAt: new Date(item.votedAt),
+    }))
+  }
+
+  async getVoteFeedTotal(userId: number, direction: VoteFeedDirection, filter = ''): Promise<number> {
+    const result = await this.db.fetchOne<{ count: number }>(
+      `
+        select count(*) count
+          from (${this.getVoteFeedUnion(direction, filter)}) votes
+      `,
+      this.getVoteFeedParams(userId, filter),
+    )
+
+    return Number(result?.count || 0)
   }
 
   async getPostVotes(postId: number): Promise<VoteWithUsername[]> {
