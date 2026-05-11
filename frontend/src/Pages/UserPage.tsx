@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 
 import { observer } from 'mobx-react-lite'
 import moment from 'moment'
@@ -26,6 +26,7 @@ export const UserPage = observer(() => {
   const { userInfo, userRestrictions: restrictions } = useAppState()
   const api = useAPI()
   const params = useParams<{ username?: string; page?: string }>()
+  const [searchParams] = useSearchParams()
   const username = params.username || userInfo?.username
   const page = params.page || 'profile'
   const cutInvitesListInvitesNumber = 10
@@ -66,6 +67,7 @@ export const UserPage = observer(() => {
     const rating = { value: user.karma, vote: user.vote }
     const isMyProfile = userInfo && userInfo.id === user.id
     const base = isMyProfile ? '/profile' : '/u/' + user.username
+    const selfRegulationSection = searchParams.get('section') === 'votes' ? 'votes' : 'progress'
     const invitesFullList = profile.invites.slice().sort((a: UserProfileInfo, b: UserProfileInfo) => {
       if (a.active === b.active) {
         return a.registered > b.registered ? 1 : -1
@@ -147,11 +149,6 @@ export const UserPage = observer(() => {
           <Link className={`${styles.control} ${isComments ? styles.active : ''}`} to={base + '/comments'}>
             Комментарии ({profile.numberOfComments.toLocaleString()})
           </Link>
-          {isMyProfile && (
-            <Link className={`${styles.control} ${isVotes ? styles.active : ''}`} to={base + '/votes?tab=mine'}>
-              Оценки
-            </Link>
-          )}
           <Link className={`${styles.control} ${isKarma ? styles.active : ''}`} to={base + '/karma'}>
             Саморегуляция
           </Link>
@@ -212,7 +209,39 @@ export const UserPage = observer(() => {
           {isVotes && isMyProfile && <UserProfileVotes />}
           {isVotes && !isMyProfile && <div>Раздел доступен только в своём профиле.</div>}
           {isInvites && <UserProfileInvites username={user.username} onInvitesChange={handleInvitesChange} />}
-          {isKarma && <UserProfileKarma username={user.username} profile={profile} />}
+          {isKarma && (
+            <>
+              <div className={styles.selfRegulationControls}>
+                <Link
+                  className={`${styles.selfRegulationControl} ${
+                    selfRegulationSection === 'progress' ? styles.selfRegulationControlActive : ''
+                  }`}
+                  to={base + '/karma'}
+                >
+                  Прогресс
+                </Link>
+                {isMyProfile && (
+                  <Link
+                    className={`${styles.selfRegulationControl} ${
+                      selfRegulationSection === 'votes' ? styles.selfRegulationControlActive : ''
+                    }`}
+                    to={base + '/karma?section=votes&tab=mine'}
+                  >
+                    Оценки
+                  </Link>
+                )}
+              </div>
+              {selfRegulationSection === 'votes' ? (
+                isMyProfile ? (
+                  <UserProfileVotes basePath={base + '/karma'} queryStringParams={{ section: 'votes' }} />
+                ) : (
+                  <div>Раздел доступен только в своём профиле.</div>
+                )
+              ) : (
+                <UserProfileKarma username={user.username} profile={profile} />
+              )}
+            </>
+          )}
           {isApps && <UserProfileClientsApps />}
           {isSettings && (
             <UserProfileSettings

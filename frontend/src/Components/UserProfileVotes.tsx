@@ -10,7 +10,7 @@ import { UserInfo } from '../Types/UserInfo'
 import { pluralize } from '../Utils/utils'
 import CommentComponent from './CommentComponent'
 import { LARGE_AUTO_CUT } from './ContentComponent'
-import DateComponent from './DateComponent'
+import { formatRelativeAgeBucket } from './DateComponent'
 import Paginator from './Paginator'
 import PostComponent from './PostComponent'
 import PostLink from './PostLink'
@@ -121,11 +121,31 @@ const renderGroupUserLink = (user?: UserInfo) => {
   )
 }
 
-type UserProfileVotesProps = Record<string, never>
+const getVoteTimeGroups = (events: UserVoteFeedEvent[]) =>
+  events.reduce<Array<{ bucket: string; events: UserVoteFeedEvent[] }>>((acc, event) => {
+    const bucket = formatRelativeAgeBucket(event.votedAt)
+    const lastGroup = acc[acc.length - 1]
 
-export default function UserProfileVotes(_props: UserProfileVotesProps) {
+    if (lastGroup?.bucket === bucket) {
+      lastGroup.events.push(event)
+    } else {
+      acc.push({ bucket, events: [event] })
+    }
+
+    return acc
+  }, [])
+
+type UserProfileVotesProps = {
+  basePath?: string
+  queryStringParams?: Record<string, string>
+}
+
+export default function UserProfileVotes({
+  basePath = '/profile/votes',
+  queryStringParams: persistentQueryStringParams = {},
+}: UserProfileVotesProps) {
   const api = useAPI()
-  const { userInfo, userRestrictions } = useAppState()
+  const { userInfo } = useAppState()
   const [searchParams, setSearchParams] = useSearchParams()
   const tab = getTab(searchParams)
   const page = parseInt(searchParams.get('page') || '1')
@@ -140,7 +160,7 @@ export default function UserProfileVotes(_props: UserProfileVotesProps) {
   const filterInputRef = useRef<HTMLInputElement>(null)
 
   const buildSearchParams = (nextTab: UserVotesDirection, nextFilter: string) => {
-    const params: Record<string, string> = { tab: nextTab }
+    const params: Record<string, string> = { ...persistentQueryStringParams, tab: nextTab }
     if (nextFilter) {
       params.filter = nextFilter
     }
@@ -149,7 +169,7 @@ export default function UserProfileVotes(_props: UserProfileVotesProps) {
 
   const tabUrl = (nextTab: UserVotesDirection) => {
     const params = new URLSearchParams(buildSearchParams(nextTab, filter))
-    return `/profile/votes?${params.toString()}`
+    return `${basePath}?${params.toString()}`
   }
 
   const setDebouncedFilter = useDebouncedCallback((value: string) => {
@@ -333,7 +353,7 @@ export default function UserProfileVotes(_props: UserProfileVotesProps) {
 
     return (
       <span className={styles.subjectInline}>
-        профиль <Username user={event.user} />
+        профиль <Username className={styles.voteUsername} user={event.user} />
       </span>
     )
   }
@@ -391,17 +411,31 @@ export default function UserProfileVotes(_props: UserProfileVotesProps) {
           <div className={styles.voteRowMain}>
             {!sameEntity && <span className={styles.voteTarget}>{renderReceivedEventSubject(event)}</span>}
             {group.kind !== 'voter' && (
-              <span className={styles.voteVoter}>от {voter ? <Username user={voter} /> : 'пользователя'}</span>
-            )}
-          </div>
-          <div className={styles.voteRowMeta}>
-            {!sameEntity && (
-              <span>
-                рейтинг <span className={getScoreClassName(rating)}>{rating}</span>
+              <span className={styles.voteVoter}>
+                от {voter ? <Username className={styles.voteUsername} user={voter} /> : 'пользователя'}
               </span>
             )}
-            <DateComponent date={event.votedAt} />
           </div>
+          {!sameEntity && (
+            <div className={styles.voteRowMeta}>
+              рейтинг <span className={getScoreClassName(rating)}>{rating}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  const renderReceivedTimeGroup = (
+    group: UserVoteFeedGroup,
+    timeGroup: { bucket: string; events: UserVoteFeedEvent[] },
+    sameEntity: boolean,
+  ) => {
+    return (
+      <div className={styles.voteTimeGroup} key={`${timeGroup.bucket}:${timeGroup.events.map(getEventKey).join('|')}`}>
+        <div className={styles.voteTimeHeader}>{timeGroup.bucket}</div>
+        <div className={styles.voteRows}>
+          {timeGroup.events.map((event) => renderReceivedVoteRow(event, group, sameEntity))}
         </div>
       </div>
     )
@@ -412,6 +446,7 @@ export default function UserProfileVotes(_props: UserProfileVotesProps) {
     const firstEvent = group.events[0]
     const sameEntity =
       !!firstEvent && group.events.every((event) => getEventEntityKey(event) === getEventEntityKey(firstEvent))
+    const timeGroups = getVoteTimeGroups(group.events)
 
     return (
       <section key={getGroupKey(group)} className={styles.group}>
@@ -420,26 +455,14 @@ export default function UserProfileVotes(_props: UserProfileVotesProps) {
           <span className={styles.groupCount}>{pluralize(group.events.length, ['оценка', 'оценки', 'оценок'])}</span>
         </div>
         {renderReceivedGroupSubject(group, sameEntity)}
-        <div className={styles.voteRows}>
-          {group.events.map((event) => renderReceivedVoteRow(event, group, sameEntity))}
+        <div className={styles.voteTimeGroups}>
+          {timeGroups.map((timeGroup) => renderReceivedTimeGroup(group, timeGroup, sameEntity))}
         </div>
       </section>
     )
   }
 
-  const renderEventMeta = (event: UserVoteFeedEvent, group: UserVoteFeedGroup) => {
-    const voter = tab === 'received' && group.kind !== 'voter' ? getUser(users, event.voterId) : undefined
-    return (
-      <div className={styles.eventMeta}>
-        {tab === 'received' && group.kind !== 'voter' && <>от {voter ? <Username user={voter} /> : 'пользователя'}</>}
-        <span>
-          <DateComponent date={event.votedAt} />
-        </span>
-      </div>
-    )
-  }
-
-  const renderPost = (event: Extract<UserVoteFeedEvent, { type: 'post' }>, group: UserVoteFeedGroup) => {
+  const renderPost = (event: Extract<UserVoteFeedEvent, { type: 'post' }>) => {
     const handleChange = (_id: number, post: Partial<PostInfo>, postApiCall?: boolean) => {
       if (postApiCall) {
         updateVoteEvent(event, post.rating ?? event.post.rating, post.vote)
@@ -456,7 +479,6 @@ export default function UserProfileVotes(_props: UserProfileVotesProps) {
 
     return (
       <>
-        {renderEventMeta(event, group)}
         <PostComponent
           post={post}
           showSite={true}
@@ -469,7 +491,7 @@ export default function UserProfileVotes(_props: UserProfileVotesProps) {
     )
   }
 
-  const renderComment = (event: Extract<UserVoteFeedEvent, { type: 'comment' }>, group: UserVoteFeedGroup) => {
+  const renderComment = (event: Extract<UserVoteFeedEvent, { type: 'comment' }>) => {
     const handleVote = (_id: number, comment: Partial<CommentInfo>, postApiCall?: boolean) => {
       if (postApiCall) {
         updateVoteEvent(event, comment.rating ?? event.comment.rating, comment.vote)
@@ -486,7 +508,6 @@ export default function UserProfileVotes(_props: UserProfileVotesProps) {
 
     return (
       <>
-        {renderEventMeta(event, group)}
         <CommentComponent
           idx={event.parentComment ? 1 : 0}
           parent={event.parentComment}
@@ -501,7 +522,7 @@ export default function UserProfileVotes(_props: UserProfileVotesProps) {
     )
   }
 
-  const renderUser = (event: Extract<UserVoteFeedEvent, { type: 'user' }>, group: UserVoteFeedGroup) => {
+  const renderUser = (event: Extract<UserVoteFeedEvent, { type: 'user' }>) => {
     const handleVote = (karma: number, vote?: number, postApiCall?: boolean) => {
       if (postApiCall) {
         updateUserEvent(event, karma, vote)
@@ -510,7 +531,6 @@ export default function UserProfileVotes(_props: UserProfileVotesProps) {
 
     return (
       <>
-        {renderEventMeta(event, group)}
         <div className={styles.userEvent}>
           <div className={styles.userInfo}>
             <Username user={event.user} />
@@ -522,7 +542,6 @@ export default function UserProfileVotes(_props: UserProfileVotesProps) {
               id={event.user.id}
               double={true}
               rating={{ vote: event.user.vote, value: event.user.karma }}
-              votingDisabled={!userRestrictions?.canVoteKarma}
               onVote={handleVote}
             />
           ) : (
@@ -540,17 +559,19 @@ export default function UserProfileVotes(_props: UserProfileVotesProps) {
     )
   }
 
-  const renderEvent = (event: UserVoteFeedEvent, group: UserVoteFeedGroup) => {
+  const renderEvent = (event: UserVoteFeedEvent) => {
     if (event.type === 'post') {
-      return renderPost(event, group)
+      return renderPost(event)
     }
     if (event.type === 'comment') {
-      return renderComment(event, group)
+      return renderComment(event)
     }
-    return renderUser(event, group)
+    return renderUser(event)
   }
 
-  const queryStringParams: Record<string, string> = filter ? { tab, filter } : { tab }
+  const queryStringParams: Record<string, string> = filter
+    ? { ...persistentQueryStringParams, tab, filter }
+    : { ...persistentQueryStringParams, tab }
 
   return (
     <div className={feedStyles.container}>
@@ -600,7 +621,7 @@ export default function UserProfileVotes(_props: UserProfileVotesProps) {
                       <div className={styles.events}>
                         {group.events.map((event) => (
                           <div className={styles.event} key={getEventKey(event)}>
-                            {renderEvent(event, group)}
+                            {renderEvent(event)}
                           </div>
                         ))}
                       </div>
@@ -610,7 +631,7 @@ export default function UserProfileVotes(_props: UserProfileVotesProps) {
               </div>
             )}
             <div className={feedStyles.paginatorContainer}>
-              <Paginator page={page} pages={pages} base='/profile/votes' queryStringParams={queryStringParams} />
+              <Paginator page={page} pages={pages} base={basePath} queryStringParams={queryStringParams} />
             </div>
           </>
         )}

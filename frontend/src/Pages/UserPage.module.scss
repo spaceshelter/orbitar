@@ -57,6 +57,25 @@
   }
 }
 
+.selfRegulationControls {
+  display: flex;
+  gap: 10px;
+  margin: -8px 0 12px;
+}
+
+.selfRegulationControl {
+  border-bottom: 2px solid transparent;
+  color: var(--fg-color);
+  padding: 4px 0;
+  text-decoration: none;
+}
+
+.selfRegulationControlActive {
+  border-bottom-color: var(--link-color);
+  color: var(--fg);
+  font-weight: bold;
+}
+
 .registered {
   color: var(--fgSoft);
   display: flex;

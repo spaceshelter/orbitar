@@ -19,20 +19,20 @@
 .groups {
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 33px;
 }
 
-$groupSmallShift: 8px;
-$groupBigShift: 12px;
+$groupSmallShift: 12px;
+$groupBigShift: 16px;
 
 .group {
   background: transparent;
-  border-left: 2px solid var(--primary);
-  margin-left: -$groupSmallShift - 2px;
+  border-left: 1px solid var(--fgAlmostInvisible);
+  margin-left: -$groupSmallShift - 1px;
   padding-left: $groupSmallShift;
 
   @media only screen and (min-width: 990px) {
-    margin-left: -$groupBigShift - 2px;
+    margin-left: -$groupBigShift - 1px;
     padding-left: $groupBigShift;
   }
 }
@@ -108,17 +108,6 @@ $groupBigShift: 12px;
   margin-bottom: 0;
 }
 
-.eventMeta {
-  align-items: center;
-  color: var(--fgSoftest);
-  display: flex;
-  flex-wrap: wrap;
-  font-size: 13px;
-  gap: 6px;
-  line-height: 1.3;
-  margin-bottom: 4px;
-}
-
 .groupSubject {
   align-items: baseline;
   color: var(--fgSofter);
@@ -165,16 +154,28 @@ $groupBigShift: 12px;
   flex-direction: column;
 }
 
+.voteTimeGroups {
+  display: flex;
+  flex-direction: column;
+}
+
+.voteTimeGroup + .voteTimeGroup {
+  margin-top: 10px;
+}
+
+.voteTimeHeader {
+  color: var(--fgSoftest);
+  font-size: 13px;
+  line-height: 1.35;
+  padding: 8px 0 2px;
+}
+
 .voteRow {
   align-items: baseline;
   display: grid;
-  gap: 10px;
-  grid-template-columns: 42px minmax(0, 1fr);
-  padding: 9px 0 10px;
-}
-
-.voteRow + .voteRow {
-  border-top: 1px solid var(--fgAlmostInvisible);
+  gap: 8px;
+  grid-template-columns: 22px minmax(0, 1fr);
+  padding: 4px 0 5px;
 }
 
 .voteValue {
@@ -218,6 +219,17 @@ $groupBigShift: 12px;
   display: inline-flex;
   flex-wrap: wrap;
   gap: 4px;
+}
+
+.voteUsername {
+  align-items: baseline;
+  display: inline-flex;
+  line-height: inherit;
+  vertical-align: baseline;
+
+  &:global(.i):before {
+    line-height: inherit;
+  }
 }
 
 .voteRowMeta {
