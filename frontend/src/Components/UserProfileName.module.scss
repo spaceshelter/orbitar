@@ -1,19 +1,15 @@
-.controls_align {
-  div {
-    margin-right: 12px;
-  }
-
-  input {
-    width: 100%;
-    margin: 0;
-    margin-bottom: 0;
-  }
+.controls {
+  display: flex;
+  align-items: center;
 }
 
-.profile_name {
-  padding: 5px;
+.name {
+  padding: 4px;
+  color: var(--fgSoft);
 }
 
-.edit_active {
+.editInput {
   flex-grow: 1;
+  padding: 4px 8px;
+  font-size: 18px;
 }

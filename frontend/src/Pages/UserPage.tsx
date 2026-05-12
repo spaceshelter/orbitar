@@ -19,6 +19,8 @@ import UserProfilePosts from '../Components/UserProfilePosts'
 import UserProfileSettings from '../Components/UserProfileSettings'
 import { UserGender, UserProfileInfo } from '../Types/UserInfo'
 
+import { ReactComponent as AliveIcon } from '../Assets/alive.svg'
+import { ReactComponent as GhostIcon } from '../Assets/ghost.svg'
 import styles from './UserPage.module.scss'
 
 export const UserPage = observer(() => {
@@ -79,7 +81,7 @@ export const UserPage = observer(() => {
       return (
         <>
           {listToShow.map((user, idx) => {
-            return <Username key={idx} user={user} inactive={!user.active} />
+            return <Username key={idx} user={user} />
           })}
           {invitesFullList.length > cutInvitesListInvitesNumber && inviteListTruncated && (
             <>
@@ -107,15 +109,14 @@ export const UserPage = observer(() => {
     return (
       <div className={styles.container}>
         <div className={styles.header}>
-          <div className={styles.row}>
-            <div>
-              <div className={styles.username}>{user.username}</div>
-            </div>
-
+          <div className={styles.usernameRow}>
+            <div className={styles.username}>{user.username}</div>
             <div className={styles.karma}>
               <span className={styles.active}>
-                <span className={user.active ? 'i i-alive' : 'i i-ghost'}></span>
-                &nbsp;{user.active ? (sheHer ? 'активна' : 'активен') : sheHer ? 'неактивна' : 'неактивен'}
+                <span className={styles.statusBadge}>
+                  {user.active ? <AliveIcon /> : <GhostIcon />}
+                  {user.active ? (sheHer ? 'активна' : 'активен') : sheHer ? 'неактивна' : 'неактивен'}
+                </span>
                 {profile.visitedDaysAgo != null && (
                   <span className={styles.tooltipText}>
                     {`Был${a} в сети ${profile.visitedDaysAgo ? moment.duration(-profile.visitedDaysAgo, 'days').humanize(true) : 'сегодня'}`}
@@ -132,18 +133,44 @@ export const UserPage = observer(() => {
               />
             </div>
           </div>
-          <div className={styles.name}>{isProfile && <UserProfileName name={user.name} mine={!!isMyProfile} />}</div>
+          <div className={styles.name}>
+            <UserProfileName name={user.name} mine={!!isMyProfile} />
+          </div>
+          <div className={styles.meta}>
+            <span className={styles.metaInfo}>
+              <span className={styles.metaItem}>#{user.id}</span>
+              {profile.invitedBy ? (
+                <span className={styles.metaItem}>
+                  <a
+                    href={`/u/${profile.invitedBy.username}/invites/#${user.username}`}
+                    title={'Детальный контекст приглашения'}
+                  >
+                    приглашен{a}
+                  </a>{' '}
+                  <Username user={profile.invitedBy} />
+                </span>
+              ) : (
+                <span className={styles.metaItem}>зарегистрирован{a}</span>
+              )}
+              <DateComponent date={user.registered} />
+            </span>
+            <span className={styles.metaCounts}>
+              <Link className={`${styles.metaCount} ${isPosts ? styles.metaCountActive : ''}`} to={base + '/posts'}>
+                {profile.numberOfPosts.toLocaleString()} постов
+              </Link>
+              <Link
+                className={`${styles.metaCount} ${isComments ? styles.metaCountActive : ''}`}
+                to={base + '/comments'}
+              >
+                {profile.numberOfComments.toLocaleString()} комментариев
+              </Link>
+            </span>
+          </div>
         </div>
 
         <div className={styles.controls}>
           <Link className={`${styles.control} ${isProfile ? styles.active : ''}`} to={base}>
             Профиль
-          </Link>
-          <Link className={`${styles.control} ${isPosts ? styles.active : ''}`} to={base + '/posts'}>
-            Посты ({profile.numberOfPosts.toLocaleString()})
-          </Link>
-          <Link className={`${styles.control} ${isComments ? styles.active : ''}`} to={base + '/comments'}>
-            Комментарии ({profile.numberOfComments.toLocaleString()})
           </Link>
           <Link className={`${styles.control} ${isKarma ? styles.active : ''}`} to={base + '/karma'}>
             Саморегуляция
@@ -167,30 +194,11 @@ export const UserPage = observer(() => {
         </div>
 
         <div className={styles.userinfo}>
-          {isProfile && (
-            <>
-              <div className={styles.registered}>
-                #{user.id},
-                {(profile.invitedBy && (
-                  <>
-                    <a
-                      href={`/u/${profile.invitedBy.username}/invites/#${user.username}`}
-                      title={'Детальный контекст приглашения'}
-                    >
-                      приглашен{a}
-                    </a>
-                    <Username user={profile.invitedBy} />
-                  </>
-                )) || <span>зарегистрирован{a}</span>}
-                <DateComponent date={user.registered} />
-              </div>
-              {profile.invites.length > 0 && (
-                <div>
-                  Пригласил{a}:{inviteListTruncated && showInvitesList(invitesCutList)}
-                  {!inviteListTruncated && showInvitesList(invitesFullList)}
-                </div>
-              )}
-            </>
+          {isProfile && profile.invites.length > 0 && (
+            <div className={styles.invitedUsers}>
+              Пригласил{a}:{inviteListTruncated && showInvitesList(invitesCutList)}
+              {!inviteListTruncated && showInvitesList(invitesFullList)}
+            </div>
           )}
           {isProfile && (
             <UserProfileBio
