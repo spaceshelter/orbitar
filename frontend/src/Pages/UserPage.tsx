@@ -141,12 +141,7 @@ export const UserPage = observer(() => {
               <span className={styles.metaItem}>#{user.id}</span>
               {profile.invitedBy ? (
                 <span className={styles.metaItem}>
-                  <a
-                    href={`/u/${profile.invitedBy.username}/invites/#${user.username}`}
-                    title={'Детальный контекст приглашения'}
-                  >
-                    приглашен{a}
-                  </a>{' '}
+                  <Link to={`/u/${profile.invitedBy.username}/invites/#${user.username}`}>приглашен{a}</Link>{' '}
                   <Username user={profile.invitedBy} />
                 </span>
               ) : (
