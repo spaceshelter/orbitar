@@ -1,19 +1,18 @@
 .tabs {
   display: flex;
-  gap: 8px;
-  margin: 0 0 16px;
+  gap: 0;
+  margin: 0 -10px 16px;
 }
 
 .tab {
-  border-bottom: 2px solid transparent;
-  color: var(--fg-color);
-  padding: 4px 0;
+  display: inline-block;
+  padding: 4px 10px;
   text-decoration: none;
 }
 
 .tabActive {
-  border-bottom-color: var(--link-color);
-  color: var(--link-color);
+  color: var(--fg);
+  font-weight: bold;
 }
 
 .groups {
@@ -22,19 +21,8 @@
   gap: 33px;
 }
 
-$groupSmallShift: 12px;
-$groupBigShift: 16px;
-
 .group {
   background: transparent;
-  border-left: 1px solid var(--fgAlmostInvisible);
-  margin-left: -$groupSmallShift - 1px;
-  padding-left: $groupSmallShift;
-
-  @media only screen and (min-width: 990px) {
-    margin-left: -$groupBigShift - 1px;
-    padding-left: $groupBigShift;
-  }
 }
 
 .group:first-child {

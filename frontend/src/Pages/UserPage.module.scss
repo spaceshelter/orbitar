@@ -59,19 +59,17 @@
 
 .selfRegulationControls {
   display: flex;
-  gap: 10px;
-  margin: -8px 0 12px;
+  gap: 0;
+  margin: -8px -10px 12px;
 }
 
 .selfRegulationControl {
-  border-bottom: 2px solid transparent;
-  color: var(--fg-color);
-  padding: 4px 0;
+  display: inline-block;
+  padding: 4px 10px;
   text-decoration: none;
 }
 
 .selfRegulationControlActive {
-  border-bottom-color: var(--link-color);
   color: var(--fg);
   font-weight: bold;
 }
