@@ -62,10 +62,6 @@
   gap: 4px;
 }
 
-.metaSeparator {
-  color: var(--fgSoftest);
-}
-
 .metaCount {
   color: var(--fgSoft);
   text-decoration: none;
@@ -85,10 +81,6 @@
 @media only screen and (max-width: 600px) {
   .metaCounts {
     width: 100%;
-  }
-
-  .metaSeparator {
-    display: none;
   }
 
   .active .tooltipText {
@@ -199,11 +191,6 @@
   gap: 2px 8px;
   color: var(--fgSoft);
   font-size: 14px;
-}
-
-.registered {
-  color: var(--fgSoft);
-  display: flex;
 }
 
 .userinfo .bio {
