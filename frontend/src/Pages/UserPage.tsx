@@ -81,7 +81,7 @@ export const UserPage = observer(() => {
       return (
         <>
           {listToShow.map((user, idx) => {
-            return <Username key={idx} user={user} />
+            return <Username key={idx} user={user} inactive={!user.active} />
           })}
           {invitesFullList.length > cutInvitesListInvitesNumber && inviteListTruncated && (
             <>
