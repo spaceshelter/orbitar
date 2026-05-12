@@ -67,7 +67,13 @@ export const UserPage = observer(() => {
     const rating = { value: user.karma, vote: user.vote }
     const isMyProfile = userInfo && userInfo.id === user.id
     const base = isMyProfile ? '/profile' : '/u/' + user.username
-    const selfRegulationSection = searchParams.get('section') === 'votes' ? 'votes' : 'progress'
+    const isSelfRegulation = isKarma || isVotes
+    const selfRegulationTab =
+      searchParams.get('tab') === 'received'
+        ? 'received'
+        : searchParams.get('tab') === 'mine' || searchParams.get('section') === 'votes' || isVotes
+          ? 'mine'
+          : 'status'
     const invitesFullList = profile.invites.slice().sort((a: UserProfileInfo, b: UserProfileInfo) => {
       if (a.active === b.active) {
         return a.registered > b.registered ? 1 : -1
@@ -149,7 +155,7 @@ export const UserPage = observer(() => {
           <Link className={`${styles.control} ${isComments ? styles.active : ''}`} to={base + '/comments'}>
             Комментарии ({profile.numberOfComments.toLocaleString()})
           </Link>
-          <Link className={`${styles.control} ${isKarma ? styles.active : ''}`} to={base + '/karma'}>
+          <Link className={`${styles.control} ${isSelfRegulation ? styles.active : ''}`} to={base + '/karma'}>
             Саморегуляция
           </Link>
           <Link className={`${styles.control} ${isInvites ? styles.active : ''}`} to={base + '/invites'}>
@@ -206,34 +212,42 @@ export const UserPage = observer(() => {
           )}
           {isPosts && <UserProfilePosts username={user.username} />}
           {isComments && <UserProfileComments username={user.username} />}
-          {isVotes && isMyProfile && <UserProfileVotes />}
-          {isVotes && !isMyProfile && <div>Раздел доступен только в своём профиле.</div>}
           {isInvites && <UserProfileInvites username={user.username} onInvitesChange={handleInvitesChange} />}
-          {isKarma && (
+          {isSelfRegulation && (
             <>
               <div className={styles.selfRegulationControls}>
                 <Link
                   className={`${styles.selfRegulationControl} ${
-                    selfRegulationSection === 'progress' ? styles.selfRegulationControlActive : ''
+                    selfRegulationTab === 'status' ? styles.selfRegulationControlActive : ''
                   }`}
                   to={base + '/karma'}
                 >
-                  Прогресс
+                  Статус
                 </Link>
                 {isMyProfile && (
-                  <Link
-                    className={`${styles.selfRegulationControl} ${
-                      selfRegulationSection === 'votes' ? styles.selfRegulationControlActive : ''
-                    }`}
-                    to={base + '/karma?section=votes&tab=mine'}
-                  >
-                    Оценки
-                  </Link>
+                  <>
+                    <Link
+                      className={`${styles.selfRegulationControl} ${
+                        selfRegulationTab === 'received' ? styles.selfRegulationControlActive : ''
+                      }`}
+                      to={base + '/karma?tab=received'}
+                    >
+                      Плюсы мне
+                    </Link>
+                    <Link
+                      className={`${styles.selfRegulationControl} ${
+                        selfRegulationTab === 'mine' ? styles.selfRegulationControlActive : ''
+                      }`}
+                      to={base + '/karma?tab=mine'}
+                    >
+                      Мои плюсы
+                    </Link>
+                  </>
                 )}
               </div>
-              {selfRegulationSection === 'votes' ? (
+              {selfRegulationTab === 'mine' || selfRegulationTab === 'received' ? (
                 isMyProfile ? (
-                  <UserProfileVotes basePath={base + '/karma'} queryStringParams={{ section: 'votes' }} />
+                  <UserProfileVotes basePath={base + '/karma'} showTabs={false} />
                 ) : (
                   <div>Раздел доступен только в своём профиле.</div>
                 )

@@ -138,11 +138,13 @@ const getVoteTimeGroups = (events: UserVoteFeedEvent[]) =>
 type UserProfileVotesProps = {
   basePath?: string
   queryStringParams?: Record<string, string>
+  showTabs?: boolean
 }
 
 export default function UserProfileVotes({
   basePath = '/profile/votes',
   queryStringParams: persistentQueryStringParams = {},
+  showTabs = true,
 }: UserProfileVotesProps) {
   const api = useAPI()
   const { userInfo } = useAppState()
@@ -575,14 +577,16 @@ export default function UserProfileVotes({
 
   return (
     <div className={feedStyles.container}>
-      <div className={styles.tabs}>
-        <Link className={`${styles.tab} ${tab === 'mine' ? styles.tabActive : ''}`} to={tabUrl('mine')}>
-          Мои
-        </Link>
-        <Link className={`${styles.tab} ${tab === 'received' ? styles.tabActive : ''}`} to={tabUrl('received')}>
-          Мне
-        </Link>
-      </div>
+      {showTabs && (
+        <div className={styles.tabs}>
+          <Link className={`${styles.tab} ${tab === 'received' ? styles.tabActive : ''}`} to={tabUrl('received')}>
+            Плюсы мне
+          </Link>
+          <Link className={`${styles.tab} ${tab === 'mine' ? styles.tabActive : ''}`} to={tabUrl('mine')}>
+            Мои плюсы
+          </Link>
+        </div>
+      )}
       <div className={feedStyles.filter}>
         <input
           ref={filterInputRef}
