@@ -136,20 +136,6 @@ export const UserPage = observer(() => {
           <div className={styles.name}>
             <UserProfileName name={user.name} mine={!!isMyProfile} />
           </div>
-          <div className={styles.meta}>
-            <span className={styles.metaInfo}>
-              <span className={styles.metaItem}>#{user.id}</span>
-              {profile.invitedBy ? (
-                <span className={styles.metaItem}>
-                  <Link to={`/u/${profile.invitedBy.username}/invites/#${user.username}`}>приглашен{a}</Link>{' '}
-                  <Username user={profile.invitedBy} />
-                </span>
-              ) : (
-                <span className={styles.metaItem}>зарегистрирован{a}</span>
-              )}
-              <DateComponent date={user.registered} />
-            </span>
-          </div>
         </div>
 
         <div className={styles.controls}>
@@ -184,6 +170,20 @@ export const UserPage = observer(() => {
         </div>
 
         <div className={styles.userinfo}>
+          {isProfile && (
+            <div className={styles.invitedBy}>
+              #{user.id},
+              {profile.invitedBy ? (
+                <>
+                  <Link to={`/u/${profile.invitedBy.username}/invites/#${user.username}`}>приглашен{a}</Link>{' '}
+                  <Username user={profile.invitedBy} />
+                </>
+              ) : (
+                <span>зарегистрирован{a}</span>
+              )}
+              <DateComponent date={user.registered} />
+            </div>
+          )}
           {isProfile && profile.invites.length > 0 && (
             <div className={styles.invitedUsers}>
               Пригласил{a}:{inviteListTruncated && showInvitesList(invitesCutList)}
