@@ -149,23 +149,18 @@ export const UserPage = observer(() => {
               )}
               <DateComponent date={user.registered} />
             </span>
-            <span className={styles.metaCounts}>
-              <Link className={`${styles.metaCount} ${isPosts ? styles.metaCountActive : ''}`} to={base + '/posts'}>
-                {profile.numberOfPosts.toLocaleString()} постов
-              </Link>
-              <Link
-                className={`${styles.metaCount} ${isComments ? styles.metaCountActive : ''}`}
-                to={base + '/comments'}
-              >
-                {profile.numberOfComments.toLocaleString()} комментариев
-              </Link>
-            </span>
           </div>
         </div>
 
         <div className={styles.controls}>
           <Link className={`${styles.control} ${isProfile ? styles.active : ''}`} to={base}>
             Профиль
+          </Link>
+          <Link className={`${styles.control} ${isPosts ? styles.active : ''}`} to={base + '/posts'}>
+            Посты ({profile.numberOfPosts.toLocaleString()})
+          </Link>
+          <Link className={`${styles.control} ${isComments ? styles.active : ''}`} to={base + '/comments'}>
+            Комментарии ({profile.numberOfComments.toLocaleString()})
           </Link>
           <Link className={`${styles.control} ${isKarma ? styles.active : ''}`} to={base + '/karma'}>
             Саморегуляция
