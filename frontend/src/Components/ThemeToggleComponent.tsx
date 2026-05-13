@@ -50,7 +50,8 @@ export default function ThemeToggleComponent({ buttonLabel, resetOnOnmount, dyna
 
   return (
     <Button variant={dynamic ? 'solid' : 'minimal'} onClick={toggleTheme}>
-      {theme === 'dark' ? <LightIcon /> : <DarkIcon />} {buttonLabel ? buttonLabel : ''}
+      {theme === 'dark' ? <LightIcon width={24} height={24} /> : <DarkIcon width={24} height={24} />}{' '}
+      {buttonLabel ? buttonLabel : ''}
     </Button>
   )
 }

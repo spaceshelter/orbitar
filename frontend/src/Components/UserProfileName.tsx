@@ -8,8 +8,7 @@ import { useAPI } from '../AppState/AppState'
 
 import { ReactComponent as EditIcon } from '../Assets/edit.svg'
 import { ReactComponent as SendIcon } from '../Assets/send.svg'
-import postStyles from './PostComponent.module.scss'
-import nameStyles from './UserProfileName.module.scss'
+import styles from './UserProfileName.module.scss'
 
 type UserProfileNameProps = {
   name: string
@@ -44,38 +43,29 @@ export default function UserProfileName(props: UserProfileNameProps) {
   }
 
   return (
-    <div className={nameStyles.controls_align}>
-      <div className={postStyles.controls}>
-        {!editing && <div className={`${postStyles.control} ${nameStyles.profile_name}`}>{name}</div>}
-        {editing && (
-          <div className={`${postStyles.control} ${nameStyles.edit_active}`}>
-            <input
-              ref={refEditName}
-              className={postStyles.title}
-              value={name}
-              onChange={handleEditName}
-              placeholder={name}
-              type='text'
-              autoFocus
-            />
-          </div>
-        )}
-
-        {props.mine && !editing && (
-          <div className={postStyles.control}>
-            <Button variant='minimal' onClick={() => setEditing(true)}>
-              <EditIcon />
-            </Button>
-          </div>
-        )}
-        {props.mine && editing && (
-          <div className={postStyles.control}>
-            <Button variant='minimal' onClick={handleEditNameComplete}>
-              <SendIcon />
-            </Button>
-          </div>
-        )}
-      </div>
+    <div className={styles.controls}>
+      {!editing && <span className={styles.name}>{name}</span>}
+      {editing && (
+        <input
+          ref={refEditName}
+          className={styles.editInput}
+          value={name}
+          onChange={handleEditName}
+          placeholder={name}
+          type='text'
+          autoFocus
+        />
+      )}
+      {props.mine && !editing && (
+        <Button variant='minimal' onClick={() => setEditing(true)}>
+          <EditIcon />
+        </Button>
+      )}
+      {props.mine && editing && (
+        <Button variant='minimal' onClick={handleEditNameComplete}>
+          <SendIcon />
+        </Button>
+      )}
     </div>
   )
 }

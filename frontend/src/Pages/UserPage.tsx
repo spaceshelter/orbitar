@@ -20,6 +20,8 @@ import UserProfileSettings from '../Components/UserProfileSettings'
 import UserProfileVotes from '../Components/UserProfileVotes'
 import { UserGender, UserProfileInfo } from '../Types/UserInfo'
 
+import { ReactComponent as AliveIcon } from '../Assets/alive.svg'
+import { ReactComponent as GhostIcon } from '../Assets/ghost.svg'
 import styles from './UserPage.module.scss'
 
 export const UserPage = observer(() => {
@@ -117,15 +119,14 @@ export const UserPage = observer(() => {
     return (
       <div className={styles.container}>
         <div className={styles.header}>
-          <div className={styles.row}>
-            <div>
-              <div className={styles.username}>{user.username}</div>
-            </div>
-
+          <div className={styles.usernameRow}>
+            <div className={styles.username}>{user.username}</div>
             <div className={styles.karma}>
               <span className={styles.active}>
-                <span className={user.active ? 'i i-alive' : 'i i-ghost'}></span>
-                &nbsp;{user.active ? (sheHer ? 'активна' : 'активен') : sheHer ? 'неактивна' : 'неактивен'}
+                <span className={styles.statusBadge}>
+                  {user.active ? <AliveIcon /> : <GhostIcon />}
+                  {user.active ? (sheHer ? 'активна' : 'активен') : sheHer ? 'неактивна' : 'неактивен'}
+                </span>
                 {profile.visitedDaysAgo != null && (
                   <span className={styles.tooltipText}>
                     {`Был${a} в сети ${profile.visitedDaysAgo ? moment.duration(-profile.visitedDaysAgo, 'days').humanize(true) : 'сегодня'}`}
@@ -142,7 +143,9 @@ export const UserPage = observer(() => {
               />
             </div>
           </div>
-          <div className={styles.name}>{isProfile && <UserProfileName name={user.name} mine={!!isMyProfile} />}</div>
+          <div className={styles.name}>
+            <UserProfileName name={user.name} mine={!!isMyProfile} />
+          </div>
         </div>
 
         <div className={styles.controls}>
@@ -178,29 +181,24 @@ export const UserPage = observer(() => {
 
         <div className={styles.userinfo}>
           {isProfile && (
-            <>
-              <div className={styles.registered}>
-                #{user.id},
-                {(profile.invitedBy && (
-                  <>
-                    <a
-                      href={`/u/${profile.invitedBy.username}/invites/#${user.username}`}
-                      title={'Детальный контекст приглашения'}
-                    >
-                      приглашен{a}
-                    </a>
-                    <Username user={profile.invitedBy} />
-                  </>
-                )) || <span>зарегистрирован{a}</span>}
-                <DateComponent date={user.registered} />
-              </div>
-              {profile.invites.length > 0 && (
-                <div>
-                  Пригласил{a}:{inviteListTruncated && showInvitesList(invitesCutList)}
-                  {!inviteListTruncated && showInvitesList(invitesFullList)}
-                </div>
+            <div className={styles.invitedBy}>
+              #{user.id},
+              {profile.invitedBy ? (
+                <>
+                  <Link to={`/u/${profile.invitedBy.username}/invites/#${user.username}`}>приглашен{a}</Link>{' '}
+                  <Username user={profile.invitedBy} />
+                </>
+              ) : (
+                <span>зарегистрирован{a}</span>
               )}
-            </>
+              <DateComponent date={user.registered} />
+            </div>
+          )}
+          {isProfile && profile.invites.length > 0 && (
+            <div className={styles.invitedUsers}>
+              Пригласил{a}:{inviteListTruncated && showInvitesList(invitesCutList)}
+              {!inviteListTruncated && showInvitesList(invitesFullList)}
+            </div>
           )}
           {isProfile && (
             <UserProfileBio

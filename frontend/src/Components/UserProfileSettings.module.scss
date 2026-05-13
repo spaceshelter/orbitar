@@ -1,3 +1,72 @@
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.buttonRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btnSpacer {
+  display: none;
+}
+
+@media only screen and (max-width: 600px) {
+  .buttonRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .appsLink {
+    text-align: center;
+    justify-content: center;
+  }
+
+  .btnSpacer {
+    display: block;
+    flex: 1;
+  }
+}
+
+.selectLabel {
+  color: var(--fgSoft);
+  white-space: nowrap;
+}
+
+.appsLink {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: var(--dim1);
+  border-radius: 4px;
+  color: var(--fgSoft);
+  font-size: 14px;
+  font-weight: bold;
+  text-decoration: none;
+
+  &:hover {
+    background: var(--dim3);
+    color: var(--fg);
+  }
+}
+
 .barmalini span.label {
   color: var(--fgSofter);
 }
@@ -15,15 +84,6 @@
 .barmalini .hint {
   color: var(--fgSoft);
   padding: 8px 0;
-}
-
-.select {
-  display: flex;
-  align-items: center; /* This will align items vertically */
-}
-
-.selectLabel {
-  margin-right: 8px;
 }
 
 select {
@@ -51,7 +111,7 @@ select:hover {
   flex-direction: column;
   align-items: flex-start;
   gap: 16px;
-  padding-top: 20px; /* Adjust as needed for your design */
+  padding-top: 20px;
 
   .mailbox-header {
     display: flex;
@@ -64,7 +124,7 @@ select:hover {
     display: flex;
     flex-direction: row;
     gap: 8px;
-    width: 100%; /* This makes sure the buttons are pushed to the edges */
+    width: 100%;
   }
 
   :global(.i):before {
