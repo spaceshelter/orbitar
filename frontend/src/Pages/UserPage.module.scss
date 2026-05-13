@@ -22,14 +22,13 @@
 }
 
 .username {
-  font-size: 2rem;
+  font-size: 40px;
   color: var(--fg);
   line-height: 1;
 }
 
 .name {
-  font-size: 1.125rem;
-  color: var(--fgSoft);
+  font-size: 25px;
   margin: 0 -4px;
 }
 
@@ -114,17 +113,10 @@
 
 .control {
   display: inline-block;
-  color: var(--fgSoft);
-  text-decoration: none;
-  transition: color 0.15s;
-
-  &:hover {
-    color: var(--fg);
-    text-decoration: none;
-  }
 
   &.active {
-    color: var(--primary);
+    color: var(--fg);
+    font-weight: bold;
   }
 }
 
@@ -142,7 +134,7 @@
   align-items: center;
   gap: 2px 8px;
   color: var(--fgSoft);
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .userinfo .bio {
