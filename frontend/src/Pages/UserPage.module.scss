@@ -33,56 +33,7 @@
   margin: 0 -4px;
 }
 
-.meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0 16px;
-  font-size: 0.875rem;
-  color: var(--fgSoft);
-}
-
-.metaInfo {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0 6px;
-}
-
-.metaCounts {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0 16px;
-}
-
-.metaItem {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.metaCount {
-  color: var(--fgSoft);
-  text-decoration: none;
-  transition: color 0.15s;
-
-  &:hover {
-    color: var(--fg);
-    text-decoration: none;
-  }
-
-  &.metaCountActive,
-  &.metaCountActive:hover {
-    color: var(--primary);
-  }
-}
-
 @media only screen and (max-width: 600px) {
-  .metaCounts {
-    width: 100%;
-  }
-
   .active .tooltipText {
     left: auto;
     right: 0;
