@@ -2,131 +2,145 @@
   width: 100%;
   max-width: 880px;
   margin: 56px auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
 }
 
 .header {
-  padding: 10px 0;
-
-  .row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-  }
-}
-
-.userinfo {
-  padding-top: 40px;
-  color: var(--fg);
-  > div {
-    width: 100%;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2px 8px;
-    padding-bottom: 16px;
-  }
-}
-.active {
-  position: relative;
-  padding-right: 20px;
-}
-
-.active > span {
-  font-size: 20px;
-}
-
-.karma {
-  padding: 16px 0;
-  //display: inline-block;
   display: flex;
-  //float: right;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.controls {
-  // padding: 10px 0;
-  margin: 20px -10px 0;
-}
-
-.control {
-  display: inline-block;
-  //margin-right: 20px;
-  padding: 4px 10px;
-  &.active {
-    color: var(--fg);
-    font-weight: bold;
-  }
-}
-
-.registered {
-  color: var(--fgSoft);
+.usernameRow {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .username {
   font-size: 40px;
+  color: var(--fg);
+  line-height: 1;
 }
 
 .name {
   font-size: 25px;
+  margin: 0 -4px;
 }
 
-.userinfo .bio {
-  margin-top: 80px;
-  display: block;
+@media only screen and (max-width: 600px) {
+  .active .tooltipText {
+    left: auto;
+    right: 0;
+    transform: none;
+  }
 
-  .controls {
-    margin-top: 20px;
+  .active .tooltipText::after {
+    left: auto;
+    right: 20px;
+    transform: none;
+  }
+}
+
+.karma {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 20px;
+}
+
+.active {
+  display: flex;
+  position: relative;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    fill: currentColor;
   }
 }
 
 .active .tooltipText {
-  visibility: hidden;
   position: absolute;
   z-index: 2;
+  bottom: 26px;
+  left: 0;
   width: 180px;
-  height: fit-content;
-  color: var(--fgSoftest);
-  text-align: center;
-  font-size: 14px;
+  padding: 10px 15px;
   background-color: var(--bg);
+  border: 1px solid var(--disabled-fg);
   border-radius: 4px;
-  border-color: var(--disabled-fg);
-  border-width: 1px;
-  border-style: solid;
-  padding: 10px 15px 10px 15px;
-
-  bottom: 35px;
-  left: -50%;
-
-  opacity: 0;
-  transition: opacity 0.5s;
-
+  color: var(--fgSoftest);
+  font-size: 14px;
   font-weight: bold;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s;
 }
 
 .active .tooltipText::after {
   content: '';
   position: absolute;
   top: 100%;
-  left: 50%;
-  margin-left: -5px;
-  margin-top: 1px;
-  border-width: 8px;
-  border-style: solid;
-  border-color: var(--disabled-fg) transparent transparent transparent;
+  left: 25%;
+  width: 0;
+  height: 0;
+  border: 8px solid transparent;
+  border-top-color: var(--disabled-fg);
 }
 
 .active:hover .tooltipText {
-  visibility: visible;
   opacity: 1;
 }
 
-@media only screen and (max-width: 1180px) {
-  .active .tooltipText {
-    margin-left: 50px;
-  }
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
 
-  .active .tooltipText::after {
-    margin-left: -45px;
+.control {
+  display: inline-block;
+
+  &.active {
+    color: var(--fg);
+    font-weight: bold;
+  }
+}
+
+.userinfo {
+  color: var(--fg);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.invitedBy,
+.invitedUsers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  color: var(--fgSoft);
+  font-size: 16px;
+}
+
+.userinfo .bio {
+  display: block;
+
+  .controls {
+    margin-top: 20px;
   }
 }

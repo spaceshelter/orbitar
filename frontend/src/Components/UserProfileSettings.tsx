@@ -20,8 +20,10 @@ import { ReactComponent as CopyIcon } from '@assets/copy.svg'
 import { ReactComponent as GhostIcon } from '@assets/ghost.svg'
 import { ReactComponent as LogoutIcon } from '@assets/logout.svg'
 import { ReactComponent as MailboxSecureIcon } from '@assets/mailbox-secure.svg'
+import { ReactComponent as PauseIcon } from '@assets/pause.svg'
 import { ReactComponent as TranslateIcon } from '@assets/translate.svg'
 import { ReactComponent as UserIcon } from '@assets/user.svg'
+import { ReactComponent as VolumeOffIcon } from '@assets/volume-off.svg'
 
 type UserProfileSettingsProps = {
   onChange: () => void
@@ -196,59 +198,82 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
   }, [preferredLang])
 
   return (
-    <>
-      <div>
-        {gender !== undefined && (
-          <Button onClick={handleGenderChange}>
-            <UserIcon /> Пол:{' '}
-            {gender === UserGender.fluid ? 'не указан' : gender === UserGender.she ? 'женщина' : 'мужчина'}{' '}
+    <div className={styles.settings}>
+      <section className={styles.section}>
+        <div className={styles.buttonRow}>
+          {gender !== undefined && (
+            <Button onClick={handleGenderChange}>
+              <UserIcon width={24} height={24} /> Пол:
+              <span className={styles.btnSpacer} />
+              {gender === UserGender.fluid ? 'не указан' : gender === UserGender.she ? 'женщина' : 'мужчина'}
+            </Button>
+          )}
+          <Button onClick={toggleAutoStop}>
+            <PauseIcon /> Видео автопауза:
+            <span className={styles.btnSpacer} />
+            {autoStop ? 'Вкл' : 'Выкл'}
           </Button>
-        )}
-        <Button onClick={toggleAutoStop}>Видео автопауза: {autoStop ? 'Вкл' : 'Выкл'}</Button>
-        <Button onClick={toggleAutoMute}>Видео без звука: {autoMute ? 'Вкл' : 'Выкл'}</Button>
-        {<ThemeToggleComponent dynamic={true} buttonLabel='Сменить тему' />}
-      </div>
-      <div className={styles.select}>
-        <span className={styles.selectLabel}>Язык перевода:</span>
-        <select onChange={changeLang} value={preferredLang}>
-          {Array.from(languages.entries()).map(([lang, name]) => (
-            <option key={lang} value={lang}>
-              {name}
-            </option>
-          ))}
-        </select>
-        <Button onClick={toggleShowInlineTranslateButton}>
-          Показывать <TranslateIcon />: {showInlineTranslateButton ? 'Авто' : 'Под ...'}
-        </Button>
-      </div>
+          <Button onClick={toggleAutoMute}>
+            <VolumeOffIcon /> Видео без звука:
+            <span className={styles.btnSpacer} />
+            {autoMute ? 'Вкл' : 'Выкл'}
+          </Button>
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <div className={styles.buttonRow}>
+          <ThemeToggleComponent dynamic={true} buttonLabel='Сменить тему' />
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <div className={styles.row}>
+          <span className={styles.selectLabel}>Язык перевода:</span>
+          <select onChange={changeLang} value={preferredLang}>
+            {Array.from(languages.entries()).map(([lang, name]) => (
+              <option key={lang} value={lang}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className={styles.buttonRow}>
+          <Button onClick={toggleShowInlineTranslateButton}>
+            Показывать <TranslateIcon />:<span className={styles.btnSpacer} />
+            {showInlineTranslateButton ? 'Авто' : 'Под ...'}
+          </Button>
+        </div>
+      </section>
 
       {/* <MailboxSettings /> */}
       {props.barmaliniAccess && <BarmaliniAccess />}
 
-      {!props.hasApps && (
-        <div>
-          <Link className={`${styles.control}`} to={'/profile/apps'}>
-            OAuth2 Приложения
-          </Link>
+      <section className={styles.section}>
+        {!props.hasApps && (
+          <div className={styles.buttonRow}>
+            <Link className={styles.appsLink} to={'/profile/apps'}>
+              OAuth2 Приложения
+            </Link>
+          </div>
+        )}
+        {!props.isBarmalini && (
+          <div className={styles.buttonRow}>
+            <Button variant='danger' onClick={handleResetSessions}>
+              <GhostIcon /> Сброс пароля и сессий
+            </Button>
+            <Button variant='danger' onClick={handleAnonymize}>
+              <AnonIcon width={24} height={24} /> Анонимизировать аккаунт
+            </Button>
+          </div>
+        )}
+        <div className={styles.buttonRow}>
+          <Button onClick={handleLogout}>
+            <LogoutIcon width={24} height={24} /> Выйти
+          </Button>
         </div>
-      )}
-
-      <div>
-        {!props.isBarmalini && (
-          <Button variant='danger' onClick={handleResetSessions}>
-            <GhostIcon /> Сброс пароля и сессий
-          </Button>
-        )}
-        {!props.isBarmalini && (
-          <Button variant='danger' onClick={handleAnonymize}>
-            <AnonIcon /> Анонимизировать аккаунт
-          </Button>
-        )}
-        <Button onClick={handleLogout}>
-          <LogoutIcon /> Выйти{' '}
-        </Button>
-      </div>
-    </>
+      </section>
+    </div>
   )
 }
 
