@@ -4,13 +4,12 @@ import { PostEntity } from '../entities/PostEntity'
 import { UserEntity } from '../entities/UserEntity'
 
 export type UserVotesDirection = 'mine' | 'received'
-export type UserVoteFeedGroupKind = 'entity' | 'voter' | 'target-author' | 'context-post' | 'single'
 
 export type UserVotesRequest = {
   direction: UserVotesDirection
   format: ContentFormat
   filter?: string
-  page?: number
+  cursor?: string
   perpage?: number
 }
 
@@ -30,6 +29,7 @@ export type UserVoteFeedCommentEvent = UserVoteFeedEventBase & {
   type: 'comment'
   comment: CommentEntity
   parentComment?: CommentEntity
+  postTitle?: string
 }
 
 export type UserVoteFeedUserEvent = UserVoteFeedEventBase & {
@@ -39,19 +39,9 @@ export type UserVoteFeedUserEvent = UserVoteFeedEventBase & {
 
 export type UserVoteFeedEvent = UserVoteFeedPostEvent | UserVoteFeedCommentEvent | UserVoteFeedUserEvent
 
-export type UserVoteFeedGroup = {
-  kind: UserVoteFeedGroupKind
-  latestAt: string
-  events: UserVoteFeedEvent[]
-  entityType?: 'post' | 'comment' | 'user'
-  entityId?: number
-  voterId?: number
-  targetUserId?: number
-  contextPostId?: number
-}
-
 export type UserVotesResponse = {
-  total: number
-  groups: UserVoteFeedGroup[]
+  events: UserVoteFeedEvent[]
   users: Record<number, UserEntity>
+  hasMore: boolean
+  nextCursor?: string
 }

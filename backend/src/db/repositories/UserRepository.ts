@@ -362,6 +362,15 @@ export default class UserRepository {
 
   async anonymizeAccount(userId: number, anonymousUserId: number) {
     await this.db.inTransaction(async (db) => {
+      // denormalized vote targets must follow the author change
+      await db.query('update post_votes set target_user_id = :anon where target_user_id = :user', {
+        anon: anonymousUserId,
+        user: userId,
+      })
+      await db.query('update comment_votes set target_user_id = :anon where target_user_id = :user', {
+        anon: anonymousUserId,
+        user: userId,
+      })
       await db.query('update content_source set author_id = :anon where author_id = :user', {
         anon: anonymousUserId,
         user: userId,

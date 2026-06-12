@@ -1,14 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react'
-import { useLocation, useSearchParams } from 'react-router-dom'
+import React, { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
 import Button from '@ui/Button'
-import { useDebouncedCallback } from 'use-debounce'
 
 import { useCache } from '../API/use/useCache'
 import { useAPI, useAppState } from '../AppState/AppState'
 import Paginator from '../Components/Paginator'
 import { CommentInfo } from '../Types/PostInfo'
 import CommentComponent from './CommentComponent'
+import { useProfileFeedFilter } from './useProfileFeedFilter'
 
 import styles from '../Pages/FeedPage.module.scss'
 
@@ -17,10 +17,12 @@ type UserProfileCommentsProps = {
 }
 
 export default function UserProfileComments(props: UserProfileCommentsProps) {
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
   const perpage = 20
   const page = parseInt(searchParams.get('page') || '1')
-  const defaultFilter = searchParams.get('filter') as string
+  const { filter, defaultFilter, filterInputRef, handleFilterChange } = useProfileFeedFilter((value) => ({
+    filter: value,
+  }))
 
   const api = useAPI()
   const [cachedComments, setCachedComments] = useCache<CommentInfo[]>('user-profile-comments', [
@@ -38,28 +40,10 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
   const [pages, setPages] = useState(0)
   const [error, setError] = useState<string>()
   const [reloadIdx, setReloadIdx] = useState(0)
-  const [filter, setFilter] = useState(defaultFilter || null)
-  const { search } = useLocation()
-  const filterInputRef = useRef<HTMLInputElement>(null)
   const currentUsername = useAppState().userInfo?.username
-
-  const setDebouncedFilter = useDebouncedCallback((value: string) => {
-    setFilter(value)
-    setSearchParams({ filter: value })
-  }, 1000)
 
   const reload = () => {
     setReloadIdx(reloadIdx + 1)
-  }
-
-  const handleFilterChange = (e: React.FormEvent<HTMLInputElement>) => {
-    if (e.nativeEvent instanceof KeyboardEvent && e.nativeEvent.key === 'Enter') {
-      const value = e.currentTarget.value
-      setFilter(value)
-      setSearchParams({ filter: value })
-    } else {
-      setDebouncedFilter(e.currentTarget.value)
-    }
   }
 
   const getParentComment = (commentId: number): CommentInfo | undefined => {
@@ -68,15 +52,6 @@ export default function UserProfileComments(props: UserProfileCommentsProps) {
     }
     return undefined
   }
-
-  useEffect(() => {
-    const newSearchParams = new URLSearchParams(search)
-    const newFilterValue = newSearchParams.get('filter') as string
-    setFilter(newFilterValue)
-    if (filterInputRef.current) {
-      filterInputRef.current.value = newFilterValue
-    }
-  }, [search])
 
   useEffect(() => {
     api.userAPI

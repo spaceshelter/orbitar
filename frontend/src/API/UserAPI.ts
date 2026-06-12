@@ -68,13 +68,12 @@ type UserProfileCommentsResult = {
 }
 
 export type UserVotesDirection = 'mine' | 'received'
-export type UserVoteFeedGroupKind = 'entity' | 'voter' | 'target-author' | 'context-post' | 'single'
 
 type UserVotesRequest = {
   direction: UserVotesDirection
   format?: ContentFormat
   filter?: string
-  page?: number
+  cursor?: string
   perpage?: number
 }
 
@@ -94,6 +93,7 @@ type UserVoteFeedCommentEventEntity = UserVoteFeedEventBaseEntity & {
   type: 'comment'
   comment: CommentEntity
   parentComment?: CommentEntity
+  postTitle?: string
 }
 
 type UserVoteFeedUserEventEntity = UserVoteFeedEventBaseEntity & {
@@ -106,21 +106,11 @@ type UserVoteFeedEventEntity =
   | UserVoteFeedCommentEventEntity
   | UserVoteFeedUserEventEntity
 
-type UserVoteFeedGroupEntity = {
-  kind: UserVoteFeedGroupKind
-  latestAt: string
-  events: UserVoteFeedEventEntity[]
-  entityType?: 'post' | 'comment' | 'user'
-  entityId?: number
-  voterId?: number
-  targetUserId?: number
-  contextPostId?: number
-}
-
 type UserVotesResponse = {
-  total: number
-  groups: UserVoteFeedGroupEntity[]
+  events: UserVoteFeedEventEntity[]
   users: Record<number, UserInfo>
+  hasMore: boolean
+  nextCursor?: string
 }
 
 type UserVoteFeedEventBase = {
@@ -139,6 +129,7 @@ export type UserVoteFeedCommentEvent = UserVoteFeedEventBase & {
   type: 'comment'
   comment: CommentInfo
   parentComment?: CommentInfo
+  postTitle?: string
 }
 
 export type UserVoteFeedUserEvent = UserVoteFeedEventBase & {
@@ -148,21 +139,11 @@ export type UserVoteFeedUserEvent = UserVoteFeedEventBase & {
 
 export type UserVoteFeedEvent = UserVoteFeedPostEvent | UserVoteFeedCommentEvent | UserVoteFeedUserEvent
 
-export type UserVoteFeedGroup = {
-  kind: UserVoteFeedGroupKind
-  latestAt: Date
-  events: UserVoteFeedEvent[]
-  entityType?: 'post' | 'comment' | 'user'
-  entityId?: number
-  voterId?: number
-  targetUserId?: number
-  contextPostId?: number
-}
-
 export type UserVotesResult = {
-  total: number
-  groups: UserVoteFeedGroup[]
+  events: UserVoteFeedEvent[]
   users: Record<number, UserInfo>
+  hasMore: boolean
+  nextCursor?: string
 }
 
 export type TrialProgressDebugInfo = {
@@ -264,25 +245,22 @@ export default class UserAPI {
   async userVotes(
     direction: UserVotesDirection,
     filter: string,
-    page: number,
+    cursor: string | undefined,
     perpage: number,
   ): Promise<UserVotesResult> {
     const result = await this.api.request<UserVotesRequest, UserVotesResponse>('/user/votes', {
       direction,
       format: 'html',
-      page,
+      cursor,
       perpage,
       filter,
     })
 
     return {
-      total: result.total,
+      events: result.events.map((event) => this.fixVoteFeedEvent(event, result.users)),
       users: result.users,
-      groups: result.groups.map((group) => ({
-        ...group,
-        latestAt: this.api.fixDate(new Date(group.latestAt)),
-        events: group.events.map((event) => this.fixVoteFeedEvent(event, result.users)),
-      })),
+      hasMore: result.hasMore,
+      nextCursor: result.nextCursor,
     }
   }
 
@@ -310,6 +288,7 @@ export default class UserAPI {
         parentComment: event.parentComment
           ? this.postAPIHelper.fixComments([event.parentComment], users)[0]
           : undefined,
+        postTitle: event.postTitle,
       }
     }
 

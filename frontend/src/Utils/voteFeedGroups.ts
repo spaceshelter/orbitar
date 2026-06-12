@@ -1,16 +1,36 @@
-import { VoteFeedDirection, VoteFeedEntityType, VoteFeedReference } from '../db/repositories/VoteRepository'
+import { UserVoteFeedEvent, UserVotesDirection } from '../API/UserAPI'
 
 export type VoteFeedGroupKind = 'entity' | 'voter' | 'target-author' | 'context-post' | 'single'
 
-export type VoteFeedReferenceGroup = {
+export type VoteFeedGroup = {
   kind: VoteFeedGroupKind
   latestAt: Date
-  events: VoteFeedReference[]
-  entityType?: VoteFeedEntityType
+  events: UserVoteFeedEvent[]
+  entityType?: 'post' | 'comment' | 'user'
   entityId?: number
   voterId?: number
   targetUserId?: number
   contextPostId?: number
+}
+
+export const getVoteFeedEventEntityId = (event: UserVoteFeedEvent): number => {
+  if (event.type === 'post') {
+    return event.post.id
+  }
+  if (event.type === 'comment') {
+    return event.comment.id
+  }
+  return event.user.id
+}
+
+export const getVoteFeedEventPostId = (event: UserVoteFeedEvent): number | undefined => {
+  if (event.type === 'post') {
+    return event.post.id
+  }
+  if (event.type === 'comment') {
+    return event.comment.postLink.id
+  }
+  return undefined
 }
 
 type Candidate = {
@@ -18,7 +38,7 @@ type Candidate = {
   length: number
 }
 
-const runLength = (events: VoteFeedReference[], start: number, sameGroup: (event: VoteFeedReference) => boolean) => {
+const runLength = (events: UserVoteFeedEvent[], start: number, sameGroup: (event: UserVoteFeedEvent) => boolean) => {
   let length = 0
   for (let i = start; i < events.length; i++) {
     if (!sameGroup(events[i])) {
@@ -29,15 +49,15 @@ const runLength = (events: VoteFeedReference[], start: number, sameGroup: (event
   return length
 }
 
-const contextPostRunLength = (events: VoteFeedReference[], start: number) => {
-  const postId = events[start].postId
+const contextPostRunLength = (events: UserVoteFeedEvent[], start: number) => {
+  const postId = getVoteFeedEventPostId(events[start])
   if (!postId) {
     return 1
   }
-  return runLength(events, start, (event) => event.postId === postId)
+  return runLength(events, start, (event) => getVoteFeedEventPostId(event) === postId)
 }
 
-const getCandidates = (events: VoteFeedReference[], start: number, direction: VoteFeedDirection): Candidate[] => {
+const getCandidates = (events: UserVoteFeedEvent[], start: number, direction: UserVotesDirection): Candidate[] => {
   const event = events[start]
 
   if (direction === 'received') {
@@ -47,7 +67,8 @@ const getCandidates = (events: VoteFeedReference[], start: number, direction: Vo
         length: runLength(
           events,
           start,
-          (candidate) => candidate.type === event.type && candidate.entityId === event.entityId,
+          (candidate) =>
+            candidate.type === event.type && getVoteFeedEventEntityId(candidate) === getVoteFeedEventEntityId(event),
         ),
       },
       {
@@ -69,11 +90,7 @@ const getCandidates = (events: VoteFeedReference[], start: number, direction: Vo
   ]
 }
 
-const pickGroup = (
-  events: VoteFeedReference[],
-  start: number,
-  direction: VoteFeedDirection,
-): VoteFeedReferenceGroup => {
+const pickGroup = (events: UserVoteFeedEvent[], start: number, direction: UserVotesDirection): VoteFeedGroup => {
   const event = events[start]
   const candidate = getCandidates(events, start, direction).reduce<Candidate>(
     (best, current) => {
@@ -99,7 +116,7 @@ const pickGroup = (
       return {
         ...base,
         entityType: event.type,
-        entityId: event.entityId,
+        entityId: getVoteFeedEventEntityId(event),
       }
     case 'voter':
       return {
@@ -114,18 +131,15 @@ const pickGroup = (
     case 'context-post':
       return {
         ...base,
-        contextPostId: event.postId,
+        contextPostId: getVoteFeedEventPostId(event),
       }
     default:
       return base
   }
 }
 
-export const groupVoteFeedReferences = (
-  events: VoteFeedReference[],
-  direction: VoteFeedDirection,
-): VoteFeedReferenceGroup[] => {
-  const groups: VoteFeedReferenceGroup[] = []
+export const groupVoteFeedEvents = (events: UserVoteFeedEvent[], direction: UserVotesDirection): VoteFeedGroup[] => {
+  const groups: VoteFeedGroup[] = []
   let index = 0
 
   while (index < events.length) {

@@ -86,12 +86,13 @@ export default function CommentComponent(props: CommentProps) {
     }
   }
 
+  const { comment: votedComment, onVote } = props
   const handleVote = useMemo(() => {
     return (value: number, vote?: number, postApiCall?: boolean) => {
-      props.comment.rating = value
-      props.comment.vote = vote
-      props.onVote?.(
-        props.comment.id,
+      votedComment.rating = value
+      votedComment.vote = vote
+      onVote?.(
+        votedComment.id,
         {
           rating: value,
           vote,
@@ -99,7 +100,7 @@ export default function CommentComponent(props: CommentProps) {
         postApiCall,
       )
     }
-  }, [props])
+  }, [votedComment, onVote])
 
   const handleEdit = async () => {
     try {

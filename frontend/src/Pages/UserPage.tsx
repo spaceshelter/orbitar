@@ -43,9 +43,8 @@ export const UserPage = observer(() => {
   const isKarma = page === 'karma'
   const isSettings = page === 'settings'
   const isApps = page === 'apps'
-  const isVotes = page === 'votes'
 
-  const isProfile = !isPosts && !isComments && !isInvites && !isKarma && !isSettings && !isApps && !isVotes
+  const isProfile = !isPosts && !isComments && !isInvites && !isKarma && !isSettings && !isApps
 
   useEffect(() => {
     if (state.status === 'ready') {
@@ -69,13 +68,9 @@ export const UserPage = observer(() => {
     const rating = { value: user.karma, vote: user.vote }
     const isMyProfile = userInfo && userInfo.id === user.id
     const base = isMyProfile ? '/profile' : '/u/' + user.username
-    const isSelfRegulation = isKarma || isVotes
+    const isSelfRegulation = isKarma
     const selfRegulationTab =
-      searchParams.get('tab') === 'received'
-        ? 'received'
-        : searchParams.get('tab') === 'mine' || searchParams.get('section') === 'votes' || isVotes
-          ? 'mine'
-          : 'status'
+      searchParams.get('tab') === 'received' ? 'received' : searchParams.get('tab') === 'mine' ? 'mine' : 'status'
     const invitesFullList = profile.invites.slice().sort((a: UserProfileInfo, b: UserProfileInfo) => {
       if (a.active === b.active) {
         return a.registered > b.registered ? 1 : -1
@@ -230,7 +225,7 @@ export const UserPage = observer(() => {
                       }`}
                       to={base + '/karma?tab=received'}
                     >
-                      Плюсы мне
+                      Оценки мне
                     </Link>
                     <Link
                       className={`${styles.selfRegulationControl} ${
@@ -238,7 +233,7 @@ export const UserPage = observer(() => {
                       }`}
                       to={base + '/karma?tab=mine'}
                     >
-                      Мои плюсы
+                      Мои оценки
                     </Link>
                   </>
                 )}

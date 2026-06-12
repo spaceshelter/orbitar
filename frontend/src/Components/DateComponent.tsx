@@ -1,5 +1,7 @@
 import moment from 'moment'
 
+import { pluralizeWord } from '../Utils/utils'
+
 import 'moment/locale/ru'
 
 moment.locale('ru')
@@ -53,22 +55,7 @@ export function formatDate(date: Date) {
   })
 }
 
-const plural = (count: number, one: string, few: string, many: string) => {
-  const lastDigit = count % 10
-  const lastTwoDigits = count % 100
-
-  if (lastDigit === 1 && lastTwoDigits !== 11) {
-    return one
-  }
-
-  if (lastDigit >= 2 && lastDigit <= 4 && (lastTwoDigits < 12 || lastTwoDigits > 14)) {
-    return few
-  }
-
-  return many
-}
-
-const exactMinutesAgo = (minutes: number) => `${minutes} ${plural(minutes, 'минуту', 'минуты', 'минут')} назад`
+const exactMinutesAgo = (minutes: number) => `${minutes} ${pluralizeWord(minutes, ['минуту', 'минуты', 'минут'])} назад`
 
 const moreThan = (count: number, singular: string, pluralName: string) =>
   count === 1 ? `более ${singular} назад` : `более ${count} ${pluralName} назад`

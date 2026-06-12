@@ -8,14 +8,11 @@ import OAuth2Manager from '../managers/OAuth2Manager'
 import PostManager from '../managers/PostManager'
 import { UserGender, UserRatingBySubsite } from '../managers/types/UserInfo'
 import UserManager from '../managers/UserManager'
-import { groupVoteFeedReferences } from '../managers/VoteFeedGrouper'
-import VoteManager from '../managers/VoteManager'
+import VoteFeedManager, { InvalidVoteFeedCursorError } from '../managers/VoteFeedManager'
 import { APIRequest, APIResponse, joiFormat, joiUsername, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
 import { commonRateLimitConfig, sharedReadRateLimiter } from './RateLimiters'
-import { CommentEntity } from './types/entities/CommentEntity'
-import { PostEntity } from './types/entities/PostEntity'
-import { UserEntity, UserProfileEntity } from './types/entities/UserEntity'
+import { UserProfileEntity } from './types/entities/UserEntity'
 import { UserCommentsRequest, UserCommentsResponse } from './types/requests/UserComments'
 import { SuggestUsernameRequest, SuggestUsernameResponse } from './types/requests/UsernameSuggest'
 import { UserPostsRequest, UserPostsResponse } from './types/requests/UserPosts'
@@ -37,7 +34,7 @@ import {
   UserSavePublicKeyRequest,
   UserSavePublicKeyResponse,
 } from './types/requests/UserProfile'
-import { UserVoteFeedEvent, UserVoteFeedGroup, UserVotesRequest, UserVotesResponse } from './types/requests/UserVotes'
+import { UserVotesRequest, UserVotesResponse } from './types/requests/UserVotes'
 import { Enricher } from './utils/Enricher'
 // constant variables
 import { ERROR_CODES } from './utils/error-codes'
@@ -46,7 +43,7 @@ export default class UserController {
   public readonly router = Router()
   private readonly userManager: UserManager
   private readonly postManager: PostManager
-  private readonly voteManager: VoteManager
+  private readonly voteFeedManager: VoteFeedManager
   private readonly inviteManager: InviteManager
   private readonly logger: Logger
   private readonly enricher: Enricher
@@ -56,7 +53,7 @@ export default class UserController {
     enricher: Enricher,
     userManager: UserManager,
     postManager: PostManager,
-    voteManager: VoteManager,
+    voteFeedManager: VoteFeedManager,
     inviteManager: InviteManager,
     oauth: OAuth2MiddlewareGenerator,
     oauthManager: OAuth2Manager,
@@ -65,7 +62,7 @@ export default class UserController {
     this.enricher = enricher
     this.userManager = userManager
     this.postManager = postManager
-    this.voteManager = voteManager
+    this.voteFeedManager = voteFeedManager
     this.inviteManager = inviteManager
     this.oauthManager = oauthManager
     this.logger = logger
@@ -84,8 +81,8 @@ export default class UserController {
       direction: Joi.valid('mine', 'received').required(),
       format: joiFormat,
       filter: Joi.string().max(120).allow(null, ''),
-      page: Joi.number().default(1),
-      perpage: Joi.number().min(1).max(50).default(10),
+      cursor: Joi.string().max(255).allow(null, ''),
+      perpage: Joi.number().min(1).max(50).default(20),
     })
 
     const bioSchema = Joi.object<UserSaveBioRequest>({
@@ -382,132 +379,22 @@ export default class UserController {
     }
 
     const userId = request.session.data.userId
-    const { direction, format, page, perpage, filter } = request.body
-    const normalizedFilter = filter || ''
+    const { direction, format, cursor, perpage, filter } = request.body
 
     try {
-      const [total, voteRefs] = await Promise.all([
-        this.voteManager.getVoteFeedTotal(userId, direction, normalizedFilter),
-        this.voteManager.getVoteFeedEvents(userId, direction, normalizedFilter, page || 1, perpage || 20),
-      ])
-
-      const postIds = [...new Set(voteRefs.filter((event) => event.type === 'post').map((event) => event.entityId))]
-      const commentIds = [
-        ...new Set(voteRefs.filter((event) => event.type === 'comment').map((event) => event.entityId)),
-      ]
-      const profileUserIds = [
-        ...new Set(voteRefs.filter((event) => event.type === 'user').map((event) => event.entityId)),
-      ]
-      const voterIds = [...new Set(voteRefs.map((event) => event.voterId))]
-      const [rawPosts, rawComments] = await Promise.all([
-        this.postManager.getPostsByIds(postIds, userId, format),
-        this.postManager.getCommentsByIds(commentIds, userId, format),
-      ])
-
-      const { posts, users: postUsers } = await this.enricher.enrichRawPosts(rawPosts)
-      const rawParentComments = await this.postManager.getParentCommentsForASetOfComments(rawComments, userId, format)
-      const { allComments, users } = await this.enricher.enrichRawComments(rawComments, postUsers, format, (_) => false)
-      const { allComments: parentComments } = await this.enricher.enrichRawComments(
-        rawParentComments,
-        users,
+      const result = await this.voteFeedManager.getVoteFeed(
+        userId,
+        direction,
+        filter || '',
+        cursor || undefined,
+        perpage || 20,
         format,
-        (_) => false,
       )
-
-      const postsById: Record<number, PostEntity> = {}
-      posts.forEach((post) => {
-        postsById[post.id] = post
-      })
-
-      const commentsById: Record<number, CommentEntity> = {}
-      allComments.forEach((comment) => {
-        commentsById[comment.id] = comment
-      })
-
-      const parentCommentsById: Record<number, CommentEntity> = {}
-      parentComments.forEach((comment) => {
-        parentCommentsById[comment.id] = comment
-      })
-
-      const voteUsers = await this.userManager.getByIds(
-        [...profileUserIds, ...voterIds].filter((voteUserId) => !users[voteUserId]),
-      )
-      Object.assign(users, voteUsers)
-
-      const profileUsersById: Record<number, UserEntity> = {}
-      for (const profileUserId of profileUserIds) {
-        if (users[profileUserId]) {
-          profileUsersById[profileUserId] = users[profileUserId]
-        }
-      }
-
-      const eventsByKey: Record<string, UserVoteFeedEvent> = {}
-      for (const voteRef of voteRefs) {
-        const base = {
-          vote: voteRef.vote,
-          votedAt: voteRef.votedAt.toISOString(),
-          voterId: voteRef.voterId,
-          targetUserId: voteRef.targetUserId,
-        }
-        const key = `${voteRef.type}:${voteRef.entityId}:${voteRef.voterId}`
-
-        if (voteRef.type === 'post' && postsById[voteRef.entityId]) {
-          eventsByKey[key] = {
-            ...base,
-            type: 'post',
-            post: {
-              ...postsById[voteRef.entityId],
-              vote: direction === 'received' ? voteRef.vote : postsById[voteRef.entityId].vote,
-            },
-          }
-        }
-
-        if (voteRef.type === 'comment' && commentsById[voteRef.entityId]) {
-          const comment = commentsById[voteRef.entityId]
-          eventsByKey[key] = {
-            ...base,
-            type: 'comment',
-            comment: {
-              ...comment,
-              vote: direction === 'received' ? voteRef.vote : comment.vote,
-            },
-            parentComment: comment.parentComment ? parentCommentsById[comment.parentComment] : undefined,
-          }
-        }
-
-        if (voteRef.type === 'user' && profileUsersById[voteRef.entityId]) {
-          eventsByKey[key] = {
-            ...base,
-            type: 'user',
-            user: {
-              ...profileUsersById[voteRef.entityId],
-              vote: direction === 'mine' ? voteRef.vote : profileUsersById[voteRef.entityId].vote,
-            },
-          }
-        }
-      }
-
-      const groups: UserVoteFeedGroup[] = groupVoteFeedReferences(voteRefs, direction)
-        .map((group) => ({
-          kind: group.kind,
-          latestAt: group.latestAt.toISOString(),
-          entityType: group.entityType,
-          entityId: group.entityId,
-          voterId: group.voterId,
-          targetUserId: group.targetUserId,
-          contextPostId: group.contextPostId,
-          events: group.events
-            .map((event) => eventsByKey[`${event.type}:${event.entityId}:${event.voterId}`])
-            .filter(Boolean),
-        }))
-        .filter((group) => group.events.length > 0)
-
-      return response.success({
-        total,
-        groups,
-        users,
-      })
+      return response.success(result)
     } catch (error) {
+      if (error instanceof InvalidVoteFeedCursorError) {
+        return response.error('invalid-payload', 'Invalid cursor', 400)
+      }
       this.logger.error('Could not get user votes feed', { userId, direction, error })
       return response.error('error', 'Could not get user votes feed', 500)
     }

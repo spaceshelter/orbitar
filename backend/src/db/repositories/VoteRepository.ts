@@ -14,6 +14,81 @@ export type VoteFeedReference = {
   votedAt: Date
 }
 
+// Keyset cursor: position of the last seen event in the
+// (votedAt, type, entityId, voterId) descending order.
+export type VoteFeedCursor = {
+  votedAt: Date
+  type: VoteFeedEntityType
+  entityId: number
+  voterId: number
+}
+
+type VoteFeedBranchSpec = {
+  type: VoteFeedEntityType
+  table: string
+  alias: string
+  entityIdColumn: string
+  selects: string
+  forceIndex: Record<VoteFeedDirection, string>
+  joins: string
+  filterJoins: string
+  filterEntityCondition: string
+  whereColumn: Record<VoteFeedDirection, string>
+  filterUserColumn: Record<VoteFeedDirection, string>
+  extraConditions: string
+}
+
+const VOTE_FEED_BRANCHES: VoteFeedBranchSpec[] = [
+  {
+    type: 'post',
+    table: 'post_votes',
+    alias: 'pv',
+    entityIdColumn: 'pv.post_id',
+    selects:
+      "'post' type, pv.post_id entityId, pv.post_id postId, pv.voter_id voterId," +
+      ' pv.target_user_id targetUserId, pv.vote, pv.voted_at votedAt',
+    forceIndex: { mine: 'idx_post_votes_voter_voted_at', received: 'idx_post_votes_target_voted_at' },
+    joins: '',
+    filterJoins: 'join posts p on (p.post_id = pv.post_id)',
+    filterEntityCondition: 'p.source like :filter or p.title like :filter',
+    whereColumn: { mine: 'pv.voter_id', received: 'pv.target_user_id' },
+    filterUserColumn: { mine: 'pv.target_user_id', received: 'pv.voter_id' },
+    extraConditions: '',
+  },
+  {
+    type: 'comment',
+    table: 'comment_votes',
+    alias: 'cv',
+    entityIdColumn: 'cv.comment_id',
+    selects:
+      "'comment' type, cv.comment_id entityId, c.post_id postId, cv.voter_id voterId," +
+      ' cv.target_user_id targetUserId, cv.vote, cv.voted_at votedAt',
+    forceIndex: { mine: 'idx_comment_votes_voter_voted_at', received: 'idx_comment_votes_target_voted_at' },
+    joins: 'join comments c on (c.comment_id = cv.comment_id)',
+    filterJoins: '',
+    filterEntityCondition: 'c.source like :filter',
+    whereColumn: { mine: 'cv.voter_id', received: 'cv.target_user_id' },
+    filterUserColumn: { mine: 'cv.target_user_id', received: 'cv.voter_id' },
+    extraConditions: 'and c.deleted = 0',
+  },
+  {
+    type: 'user',
+    table: 'user_karma',
+    alias: 'uk',
+    entityIdColumn: 'uk.user_id',
+    selects:
+      "'user' type, uk.user_id entityId, null postId, uk.voter_id voterId," +
+      ' uk.user_id targetUserId, uk.vote, uk.voted_at votedAt',
+    forceIndex: { mine: 'idx_user_karma_voter_voted_at', received: 'idx_user_karma_user_voted_at' },
+    joins: '',
+    filterJoins: '',
+    filterEntityCondition: '',
+    whereColumn: { mine: 'uk.voter_id', received: 'uk.user_id' },
+    filterUserColumn: { mine: 'uk.user_id', received: 'uk.voter_id' },
+    extraConditions: '',
+  },
+]
+
 export type VoteWithUsername = {
   vote: number
   username: string
@@ -69,10 +144,11 @@ export default class VoteRepository {
       .then((res) => [parseInt(res.site_id), parseInt(res.author_id)])
 
     await this.db.query(
-      `insert ignore into ${entityVotesTable} ( ${entityField}, voter_id, vote ) values ( :entity_id, :voter_id, 0 )`,
+      `insert ignore into ${entityVotesTable} ( ${entityField}, voter_id, vote, target_user_id ) values ( :entity_id, :voter_id, 0, :target_user_id )`,
       {
         entity_id: entityId,
         voter_id: userId,
+        target_user_id: authorId,
       },
     )
 
@@ -216,8 +292,8 @@ export default class VoteRepository {
         `insert into user_karma (user_id, voter_id, vote)
              values (:user_id, :voter_id, :vote)
              on duplicate key update
-               voted_at = if(vote <> values(vote), now(), voted_at),
-               vote = values(vote)`,
+               voted_at = if(vote <> :vote, now(), voted_at),
+               vote = :vote`,
         {
           user_id: toUserId,
           voter_id: voterId,
@@ -242,272 +318,92 @@ export default class VoteRepository {
     })
   }
 
-  private getVoteFeedParams(userId: number, filter: string, branchLimit?: number): Record<string, string | number> {
-    const params: Record<string, string | number> = {
-      user_id: userId,
+  private buildVoteFeedCursorCondition(spec: VoteFeedBranchSpec, cursor?: VoteFeedCursor): string {
+    if (!cursor) {
+      return ''
     }
 
-    if (filter) {
-      params.filter = `%${escapePercent(filter)}%`
+    // The feed is ordered by (votedAt, type, entityId, voterId), all descending.
+    // The branch type is a constant, so its place in the tuple comparison is resolved
+    // here instead of in SQL ('user' > 'post' > 'comment' both in JS and in MySQL).
+    const votedAt = `${spec.alias}.voted_at`
+    if (spec.type > cursor.type) {
+      return `and ${votedAt} < :cursor_voted_at`
     }
-
-    if (branchLimit) {
-      params.branch_limit = branchLimit
+    if (spec.type < cursor.type) {
+      return `and ${votedAt} <= :cursor_voted_at`
     }
-
-    return params
+    return (
+      `and (${votedAt} < :cursor_voted_at or (${votedAt} = :cursor_voted_at and ` +
+      `(${spec.entityIdColumn} < :cursor_entity_id or ` +
+      `(${spec.entityIdColumn} = :cursor_entity_id and ${spec.alias}.voter_id < :cursor_voter_id))))`
+    )
   }
 
-  private limitVoteFeedBranch(branch: string, branchLimit?: number): string {
-    if (!branchLimit) {
-      return branch
-    }
+  // straight_join + force index keep the branch driven by the votes table: without them
+  // the MySQL 5.7 optimizer may drive the join from posts/comments and filesort the
+  // user's whole vote history instead of walking the feed index backwards and stopping
+  // at the limit. The branch order by matches the outer sort restricted to one branch:
+  // InnoDB secondary indexes implicitly end with the PK columns, so (user, voted_at)
+  // indexes yield (voted_at, entityId, voterId) order with no filesort (that is also
+  // why those indexes must not include `vote`).
+  private buildVoteFeedBranch(
+    spec: VoteFeedBranchSpec,
+    direction: VoteFeedDirection,
+    filter: string,
+    cursor?: VoteFeedCursor,
+  ): string {
+    const filterJoins = filter
+      ? `${spec.filterJoins} join users fu on (fu.user_id = ${spec.filterUserColumn[direction]})`
+      : ''
+    const entityFilter = spec.filterEntityCondition ? `${spec.filterEntityCondition} or ` : ''
+    const filterCondition = filter ? `and (${entityFilter}fu.username like :filter or fu.name like :filter)` : ''
 
     return `
-      (select *
-         from (${branch}) voteBranch
-        order by votedAt desc
-        limit :branch_limit)
-    `
-  }
-
-  private getOutgoingVoteFeedUnion(filter: string, branchLimit?: number): string {
-    const postTargetJoin = filter ? 'join users target on (target.user_id = p.author_id)' : ''
-    const commentTargetJoin = filter ? 'join users target on (target.user_id = c.author_id)' : ''
-    const userTargetJoin = filter ? 'join users target on (target.user_id = uk.user_id)' : ''
-    const postFilter = filter
-      ? 'and (p.source like :filter or p.title like :filter or target.username like :filter or target.name like :filter)'
-      : ''
-    const commentFilter = filter
-      ? 'and (c.source like :filter or target.username like :filter or target.name like :filter)'
-      : ''
-    const userFilter = filter ? 'and (target.username like :filter or target.name like :filter)' : ''
-
-    const postBranch = `
-      select 'post' type,
-             pv.post_id entityId,
-             pv.post_id postId,
-             pv.voter_id voterId,
-             p.author_id targetUserId,
-             pv.vote,
-             pv.voted_at votedAt
-        from post_votes pv
-               join posts p on (p.post_id = pv.post_id)
-               ${postTargetJoin}
-       where pv.voter_id = :user_id
-         and pv.vote != 0
-         ${postFilter}
-    `
-    const commentBranch = `
-      select 'comment' type,
-             cv.comment_id entityId,
-             c.post_id postId,
-             cv.voter_id voterId,
-             c.author_id targetUserId,
-             cv.vote,
-             cv.voted_at votedAt
-        from comment_votes cv
-               join comments c on (c.comment_id = cv.comment_id)
-               ${commentTargetJoin}
-       where cv.voter_id = :user_id
-         and cv.vote != 0
-         ${commentFilter}
-    `
-    const userBranch = `
-      select 'user' type,
-             uk.user_id entityId,
-             null postId,
-             uk.voter_id voterId,
-             uk.user_id targetUserId,
-             uk.vote,
-             uk.voted_at votedAt
-        from user_karma uk
-               ${userTargetJoin}
-       where uk.voter_id = :user_id
-         and uk.vote != 0
-         ${userFilter}
-    `
-
-    return [
-      this.limitVoteFeedBranch(postBranch, branchLimit),
-      this.limitVoteFeedBranch(commentBranch, branchLimit),
-      this.limitVoteFeedBranch(userBranch, branchLimit),
-    ].join('\nunion all\n')
-  }
-
-  private getReceivedVoteFeedUnion(filter: string, branchLimit?: number): string {
-    const postVoterJoin = filter ? 'join users voter on (voter.user_id = pv.voter_id)' : ''
-    const commentVoterJoin = filter ? 'join users voter on (voter.user_id = cv.voter_id)' : ''
-    const userVoterJoin = filter ? 'join users voter on (voter.user_id = uk.voter_id)' : ''
-    const postFilter = filter
-      ? 'and (p.source like :filter or p.title like :filter or voter.username like :filter or voter.name like :filter)'
-      : ''
-    const commentFilter = filter
-      ? 'and (c.source like :filter or voter.username like :filter or voter.name like :filter)'
-      : ''
-    const userFilter = filter ? 'and (voter.username like :filter or voter.name like :filter)' : ''
-
-    const postBranch = `
-      select 'post' type,
-             pv.post_id entityId,
-             pv.post_id postId,
-             pv.voter_id voterId,
-             p.author_id targetUserId,
-             pv.vote,
-             pv.voted_at votedAt
-       from post_votes pv
-               join posts p on (p.post_id = pv.post_id)
-               ${postVoterJoin}
-       where p.author_id = :user_id
-         and pv.vote != 0
-         ${postFilter}
-    `
-    const commentBranch = `
-      select 'comment' type,
-             cv.comment_id entityId,
-             c.post_id postId,
-             cv.voter_id voterId,
-             c.author_id targetUserId,
-             cv.vote,
-             cv.voted_at votedAt
-       from comment_votes cv
-               join comments c on (c.comment_id = cv.comment_id)
-               ${commentVoterJoin}
-       where c.author_id = :user_id
-         and cv.vote != 0
-         ${commentFilter}
-    `
-    const userBranch = `
-      select 'user' type,
-             uk.user_id entityId,
-             null postId,
-             uk.voter_id voterId,
-             uk.user_id targetUserId,
-             uk.vote,
-             uk.voted_at votedAt
-       from user_karma uk
-               ${userVoterJoin}
-       where uk.user_id = :user_id
-         and uk.vote != 0
-         ${userFilter}
-    `
-
-    return [
-      this.limitVoteFeedBranch(postBranch, branchLimit),
-      this.limitVoteFeedBranch(commentBranch, branchLimit),
-      this.limitVoteFeedBranch(userBranch, branchLimit),
-    ].join('\nunion all\n')
-  }
-
-  private getVoteFeedUnion(direction: VoteFeedDirection, filter: string, branchLimit?: number): string {
-    return direction === 'mine'
-      ? this.getOutgoingVoteFeedUnion(filter, branchLimit)
-      : this.getReceivedVoteFeedUnion(filter, branchLimit)
-  }
-
-  private getOutgoingVoteFeedTotalQuery(filter: string): string {
-    const postTargetJoin = filter
-      ? 'join posts p on (p.post_id = pv.post_id) join users target on (target.user_id = p.author_id)'
-      : ''
-    const commentTargetJoin = filter
-      ? 'join comments c on (c.comment_id = cv.comment_id) join users target on (target.user_id = c.author_id)'
-      : ''
-    const userTargetJoin = filter ? 'join users target on (target.user_id = uk.user_id)' : ''
-    const postFilter = filter
-      ? 'and (p.source like :filter or p.title like :filter or target.username like :filter or target.name like :filter)'
-      : ''
-    const commentFilter = filter
-      ? 'and (c.source like :filter or target.username like :filter or target.name like :filter)'
-      : ''
-    const userFilter = filter ? 'and (target.username like :filter or target.name like :filter)' : ''
-
-    return `
-      select (
-        select count(*)
-          from post_votes pv
-               ${postTargetJoin}
-         where pv.voter_id = :user_id
-           and pv.vote != 0
-           ${postFilter}
-      ) + (
-        select count(*)
-          from comment_votes cv
-               ${commentTargetJoin}
-         where cv.voter_id = :user_id
-           and cv.vote != 0
-           ${commentFilter}
-      ) + (
-        select count(*)
-          from user_karma uk
-               ${userTargetJoin}
-         where uk.voter_id = :user_id
-           and uk.vote != 0
-           ${userFilter}
-      ) count
-    `
-  }
-
-  private getReceivedVoteFeedTotalQuery(filter: string): string {
-    const postVoterJoin = filter ? 'join users voter on (voter.user_id = pv.voter_id)' : ''
-    const commentVoterJoin = filter ? 'join users voter on (voter.user_id = cv.voter_id)' : ''
-    const userVoterJoin = filter ? 'join users voter on (voter.user_id = uk.voter_id)' : ''
-    const postFilter = filter
-      ? 'and (p.source like :filter or p.title like :filter or voter.username like :filter or voter.name like :filter)'
-      : ''
-    const commentFilter = filter
-      ? 'and (c.source like :filter or voter.username like :filter or voter.name like :filter)'
-      : ''
-    const userFilter = filter ? 'and (voter.username like :filter or voter.name like :filter)' : ''
-
-    return `
-      select (
-        select count(*)
-          from post_votes pv
-               join posts p on (p.post_id = pv.post_id)
-               ${postVoterJoin}
-         where p.author_id = :user_id
-           and pv.vote != 0
-           ${postFilter}
-      ) + (
-        select count(*)
-          from comment_votes cv
-               join comments c on (c.comment_id = cv.comment_id)
-               ${commentVoterJoin}
-         where c.author_id = :user_id
-           and cv.vote != 0
-           ${commentFilter}
-      ) + (
-        select count(*)
-          from user_karma uk
-               ${userVoterJoin}
-         where uk.user_id = :user_id
-           and uk.vote != 0
-           ${userFilter}
-      ) count
-    `
-  }
-
-  private getVoteFeedTotalQuery(direction: VoteFeedDirection, filter: string): string {
-    return direction === 'mine'
-      ? this.getOutgoingVoteFeedTotalQuery(filter)
-      : this.getReceivedVoteFeedTotalQuery(filter)
+      (select straight_join ${spec.selects}
+        from ${spec.table} ${spec.alias} force index (${spec.forceIndex[direction]})
+              ${spec.joins}
+              ${filterJoins}
+       where ${spec.whereColumn[direction]} = :user_id
+         and ${spec.alias}.vote != 0
+         ${spec.extraConditions}
+         ${filterCondition}
+         ${this.buildVoteFeedCursorCondition(spec, cursor)}
+       order by ${spec.alias}.voted_at desc, ${spec.entityIdColumn} desc, ${spec.alias}.voter_id desc
+       limit :branch_limit)`
   }
 
   async getVoteFeedEvents(
     userId: number,
     direction: VoteFeedDirection,
-    filter = '',
-    page = 1,
-    perpage = 20,
+    filter: string,
+    cursor: VoteFeedCursor | undefined,
+    limit: number,
   ): Promise<VoteFeedReference[]> {
-    const limitFrom = (page - 1) * perpage
-    const branchLimit = limitFrom + perpage
+    const union = VOTE_FEED_BRANCHES.map((spec) => this.buildVoteFeedBranch(spec, direction, filter, cursor)).join(
+      '\nunion all\n',
+    )
     const query = `
       select type, entityId, postId, voterId, targetUserId, vote, votedAt
-        from (${this.getVoteFeedUnion(direction, filter, branchLimit)}) votes
-       order by votedAt desc
-       limit :limit_from, :limit_count
+        from (${union}) votes
+       order by votedAt desc, type desc, entityId desc, voterId desc
+       limit :limit_count
     `
+
+    const params: Record<string, string | number | Date> = {
+      user_id: userId,
+      branch_limit: limit,
+      limit_count: limit,
+    }
+    if (filter) {
+      params.filter = `%${escapePercent(filter)}%`
+    }
+    if (cursor) {
+      params.cursor_voted_at = cursor.votedAt
+      params.cursor_entity_id = cursor.entityId
+      params.cursor_voter_id = cursor.voterId
+    }
+
     const result = await this.db.fetchAll<{
       type: VoteFeedEntityType
       entityId: number
@@ -516,11 +412,7 @@ export default class VoteRepository {
       targetUserId: number
       vote: number
       votedAt: Date | string
-    }>(query, {
-      ...this.getVoteFeedParams(userId, filter, branchLimit),
-      limit_from: limitFrom,
-      limit_count: perpage,
-    })
+    }>(query, params)
 
     return result.map((item) => ({
       type: item.type,
@@ -531,15 +423,6 @@ export default class VoteRepository {
       vote: Number(item.vote),
       votedAt: new Date(item.votedAt),
     }))
-  }
-
-  async getVoteFeedTotal(userId: number, direction: VoteFeedDirection, filter = ''): Promise<number> {
-    const result = await this.db.fetchOne<{ count: number }>(
-      this.getVoteFeedTotalQuery(direction, filter),
-      this.getVoteFeedParams(userId, filter),
-    )
-
-    return Number(result?.count || 0)
   }
 
   async getPostVotes(postId: number): Promise<VoteWithUsername[]> {

@@ -1,88 +1,54 @@
 import UserController from '../../src/api/UserController'
+import { InvalidVoteFeedCursorError } from '../../src/managers/VoteFeedManager'
 
 describe('UserController votes', () => {
-  const users = {
-    30: { id: 30, username: 'target', name: 'Target', gender: 0, karma: 7 },
-    201: { id: 201, username: 'post-author', gender: 0, karma: 0 },
-    301: { id: 301, username: 'voter', gender: 0, karma: 0 },
-  }
-
   const createController = (overrides: any = {}) => {
-    const enricher = {
-      enrichRawPosts: jest.fn().mockResolvedValue({
-        posts: [{ id: 10, author: 201, title: 'Post' }],
-        users: { 201: users[201] },
+    const voteFeedManager = {
+      getVoteFeed: jest.fn().mockResolvedValue({
+        events: [],
+        users: {},
+        hasMore: false,
+        nextCursor: undefined,
       }),
-      enrichRawComments: jest.fn((comments, currentUsers) =>
-        Promise.resolve({
-          allComments: comments.map((comment: any) => ({ ...comment, source: 'Comment' })),
-          users: currentUsers,
-        }),
-      ),
-      ...overrides.enricher,
-    }
-    const userManager = {
-      getById: jest.fn((id: number) => Promise.resolve(users[id])),
-      getByIds: jest.fn((ids: number[]) => {
-        const result: Record<number, any> = {}
-        for (const id of ids) {
-          if (users[id]) {
-            result[id] = users[id]
-          }
-        }
-        return Promise.resolve(result)
-      }),
-      ...overrides.userManager,
-    }
-    const postManager = {
-      getPostsByIds: jest.fn().mockResolvedValue([{ id: 10, author: 201 }]),
-      getCommentsByIds: jest.fn().mockResolvedValue([]),
-      getParentCommentsForASetOfComments: jest.fn().mockResolvedValue([]),
-      ...overrides.postManager,
-    }
-    const voteManager = {
-      getVoteFeedTotal: jest.fn().mockResolvedValue(1),
-      getVoteFeedEvents: jest.fn().mockResolvedValue([
-        {
-          type: 'post',
-          entityId: 10,
-          postId: 10,
-          voterId: 301,
-          targetUserId: 201,
-          vote: 1,
-          votedAt: new Date('2026-05-11T10:00:00.000Z'),
-        },
-      ]),
-      ...overrides.voteManager,
+      ...overrides.voteFeedManager,
     }
     const logger = {
       error: jest.fn(),
     }
     const controller = new UserController(
-      enricher as any,
-      userManager as any,
-      postManager as any,
-      voteManager as any,
+      {} as any,
+      {} as any,
+      {} as any,
+      voteFeedManager as any,
       {} as any,
       jest.fn(() => (_request: any, _response: any, next: any) => next()) as any,
       {} as any,
       logger as any,
     )
 
-    return { controller, voteManager, userManager, postManager }
+    return { controller, voteFeedManager, logger }
   }
 
   test('requires authorization', async () => {
-    const { controller } = createController()
+    const { controller, voteFeedManager } = createController()
     const response = { authRequired: jest.fn() }
 
     await controller['votes']({ session: { data: {} }, body: {} } as any, response as any)
 
     expect(response.authRequired).toHaveBeenCalledTimes(1)
+    expect(voteFeedManager.getVoteFeed).not.toHaveBeenCalled()
   })
 
   test('uses session user id and ignores body identity fields', async () => {
-    const { controller, voteManager, userManager, postManager } = createController()
+    const payload = {
+      events: [{ type: 'post' }],
+      users: { 1: { id: 1 } },
+      hasMore: true,
+      nextCursor: 'abc',
+    }
+    const { controller, voteFeedManager } = createController({
+      voteFeedManager: { getVoteFeed: jest.fn().mockResolvedValue(payload) },
+    })
     const response = { success: jest.fn(), error: jest.fn() }
 
     await controller['votes'](
@@ -92,7 +58,7 @@ describe('UserController votes', () => {
           direction: 'received',
           format: 'html',
           filter: 'orbitar',
-          page: 2,
+          cursor: 'cursor-token',
           perpage: 20,
           userId: 999,
           username: 'someone-else',
@@ -101,39 +67,59 @@ describe('UserController votes', () => {
       response as any,
     )
 
-    expect(voteManager.getVoteFeedTotal).toHaveBeenCalledWith(123, 'received', 'orbitar')
-    expect(voteManager.getVoteFeedEvents).toHaveBeenCalledWith(123, 'received', 'orbitar', 2, 20)
-    expect(postManager.getPostsByIds).toHaveBeenCalledWith([10], 123, 'html')
-    expect(postManager.getCommentsByIds).toHaveBeenCalledWith([], 123, 'html')
-    expect(userManager.getByIds).toHaveBeenCalledWith([301])
-    expect(userManager.getById).not.toHaveBeenCalled()
-    expect(response.success).toHaveBeenCalledWith({
-      total: 1,
-      groups: [
-        {
-          kind: 'single',
-          latestAt: '2026-05-11T10:00:00.000Z',
-          entityType: undefined,
-          entityId: undefined,
-          voterId: undefined,
-          targetUserId: undefined,
-          contextPostId: undefined,
-          events: [
-            {
-              type: 'post',
-              vote: 1,
-              votedAt: '2026-05-11T10:00:00.000Z',
-              voterId: 301,
-              targetUserId: 201,
-              post: { id: 10, author: 201, title: 'Post', vote: 1 },
-            },
-          ],
-        },
-      ],
-      users: {
-        201: users[201],
-        301: users[301],
-      },
+    expect(voteFeedManager.getVoteFeed).toHaveBeenCalledWith(123, 'received', 'orbitar', 'cursor-token', 20, 'html')
+    expect(response.success).toHaveBeenCalledWith(payload)
+    expect(response.error).not.toHaveBeenCalled()
+  })
+
+  test('defaults perpage to 20 and omits empty cursor and filter', async () => {
+    const { controller, voteFeedManager } = createController()
+    const response = { success: jest.fn(), error: jest.fn() }
+
+    await controller['votes'](
+      {
+        session: { data: { userId: 123 } },
+        body: { direction: 'mine', format: 'html', filter: '', cursor: '' },
+      } as any,
+      response as any,
+    )
+
+    expect(voteFeedManager.getVoteFeed).toHaveBeenCalledWith(123, 'mine', '', undefined, 20, 'html')
+  })
+
+  test('responds 400 on an invalid cursor', async () => {
+    const { controller, logger } = createController({
+      voteFeedManager: { getVoteFeed: jest.fn().mockRejectedValue(new InvalidVoteFeedCursorError()) },
     })
+    const response = { success: jest.fn(), error: jest.fn() }
+
+    await controller['votes'](
+      {
+        session: { data: { userId: 123 } },
+        body: { direction: 'mine', format: 'html', cursor: 'broken' },
+      } as any,
+      response as any,
+    )
+
+    expect(response.error).toHaveBeenCalledWith('invalid-payload', 'Invalid cursor', 400)
+    expect(logger.error).not.toHaveBeenCalled()
+  })
+
+  test('responds 500 on unexpected errors', async () => {
+    const { controller, logger } = createController({
+      voteFeedManager: { getVoteFeed: jest.fn().mockRejectedValue(new Error('db down')) },
+    })
+    const response = { success: jest.fn(), error: jest.fn() }
+
+    await controller['votes'](
+      {
+        session: { data: { userId: 123 } },
+        body: { direction: 'mine', format: 'html' },
+      } as any,
+      response as any,
+    )
+
+    expect(response.error).toHaveBeenCalledWith('error', 'Could not get user votes feed', 500)
+    expect(logger.error).toHaveBeenCalled()
   })
 })
