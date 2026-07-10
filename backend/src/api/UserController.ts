@@ -382,7 +382,7 @@ export default class UserController {
     const { direction, format, cursor, perpage, filter } = request.body
 
     try {
-      const restrictions = await this.userManager.getUserRestrictions(userId)
+      const restrictions = await this.userManager.getUserRestrictionsSnapshot(userId)
       if (restrictions.restrictedToPostId !== false) {
         return response.error(ERROR_CODES.NO_PERMISSION, 'You are not allowed to view your votes feed', 403)
       }

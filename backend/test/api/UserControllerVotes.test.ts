@@ -13,7 +13,8 @@ describe('UserController votes', () => {
       ...overrides.voteFeedManager,
     }
     const userManager = {
-      getUserRestrictions: jest.fn().mockResolvedValue({ restrictedToPostId: false }),
+      getUserRestrictionsSnapshot: jest.fn().mockResolvedValue({ restrictedToPostId: false }),
+      getUserRestrictions: jest.fn(),
       ...overrides.userManager,
     }
     const logger = {
@@ -93,7 +94,7 @@ describe('UserController votes', () => {
 
   test('rejects restricted users before loading the vote feed', async () => {
     const { controller, voteFeedManager, userManager } = createController({
-      userManager: { getUserRestrictions: jest.fn().mockResolvedValue({ restrictedToPostId: 42 }) },
+      userManager: { getUserRestrictionsSnapshot: jest.fn().mockResolvedValue({ restrictedToPostId: 42 }) },
     })
     const response = { success: jest.fn(), error: jest.fn() }
 
@@ -105,7 +106,8 @@ describe('UserController votes', () => {
       response as any,
     )
 
-    expect(userManager.getUserRestrictions).toHaveBeenCalledWith(123)
+    expect(userManager.getUserRestrictionsSnapshot).toHaveBeenCalledWith(123)
+    expect(userManager.getUserRestrictions).not.toHaveBeenCalled()
     expect(response.error).toHaveBeenCalledWith('no-permission', 'You are not allowed to view your votes feed', 403)
     expect(voteFeedManager.getVoteFeed).not.toHaveBeenCalled()
     expect(response.success).not.toHaveBeenCalled()
