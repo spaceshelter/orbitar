@@ -12,12 +12,16 @@ describe('UserController votes', () => {
       }),
       ...overrides.voteFeedManager,
     }
+    const userManager = {
+      getUserRestrictions: jest.fn().mockResolvedValue({ restrictedToPostId: false }),
+      ...overrides.userManager,
+    }
     const logger = {
       error: jest.fn(),
     }
     const controller = new UserController(
       {} as any,
-      {} as any,
+      userManager as any,
       {} as any,
       voteFeedManager as any,
       {} as any,
@@ -26,7 +30,7 @@ describe('UserController votes', () => {
       logger as any,
     )
 
-    return { controller, voteFeedManager, logger }
+    return { controller, voteFeedManager, userManager, logger }
   }
 
   test('requires authorization', async () => {
@@ -85,6 +89,51 @@ describe('UserController votes', () => {
     )
 
     expect(voteFeedManager.getVoteFeed).toHaveBeenCalledWith(123, 'mine', '', undefined, 20, 'html')
+  })
+
+  test('rejects restricted users before loading the vote feed', async () => {
+    const { controller, voteFeedManager, userManager } = createController({
+      userManager: { getUserRestrictions: jest.fn().mockResolvedValue({ restrictedToPostId: 42 }) },
+    })
+    const response = { success: jest.fn(), error: jest.fn() }
+
+    await controller['votes'](
+      {
+        session: { data: { userId: 123 } },
+        body: { direction: 'mine', format: 'html' },
+      } as any,
+      response as any,
+    )
+
+    expect(userManager.getUserRestrictions).toHaveBeenCalledWith(123)
+    expect(response.error).toHaveBeenCalledWith('no-permission', 'You are not allowed to view your votes feed', 403)
+    expect(voteFeedManager.getVoteFeed).not.toHaveBeenCalled()
+    expect(response.success).not.toHaveBeenCalled()
+  })
+
+  test('route validation rejects a fractional perpage', async () => {
+    const { controller } = createController()
+    const votesRoute = controller.router.stack.find((layer) => layer.route?.path === '/user/votes')
+    const validateVotes = votesRoute?.route.stack[2].handle
+    const response = { error: jest.fn() }
+    const next = jest.fn()
+
+    expect(validateVotes).toBeDefined()
+    await new Promise<void>((resolve) => {
+      response.error.mockImplementation(() => resolve())
+      validateVotes({ body: { direction: 'mine', format: 'html', perpage: 1.5 } } as any, response as any, () => {
+        next()
+        resolve()
+      })
+    })
+
+    expect(response.error).toHaveBeenCalledWith(
+      'invalid-payload',
+      expect.stringContaining('integer'),
+      400,
+      expect.any(Object),
+    )
+    expect(next).not.toHaveBeenCalled()
   })
 
   test('responds 400 on an invalid cursor', async () => {

@@ -147,42 +147,59 @@ describe('VoteRepository vote feed', () => {
     )
   })
 
-  test('content vote insert stores the denormalized target author', async () => {
-    const inserts: Array<[string, Record<string, unknown>]> = []
+  test('content vote locks the entity before synchronizing its denormalized target in the transaction', async () => {
+    const operations: Array<[string, Record<string, unknown> | undefined]> = []
     const connection = {
-      fetchOne: jest.fn().mockResolvedValueOnce({ rating: '5' }).mockResolvedValueOnce({ vote: '0' }),
-      query: jest.fn().mockResolvedValue(undefined),
-    }
-    const db = {
-      fetchOne: jest.fn().mockResolvedValue({ site_id: '1', author_id: '2' }),
-      query: jest.fn((query: string, params: Record<string, unknown>) => {
-        inserts.push([query, params])
+      fetchOne: jest.fn((query: string, params: Record<string, unknown>) => {
+        operations.push([query, params])
+        if (query.includes('from posts')) {
+          return Promise.resolve({ site_id: '1', author_id: '2', rating: '5' })
+        }
+        return Promise.resolve({ vote: '0' })
+      }),
+      query: jest.fn((query: string, params?: Record<string, unknown>) => {
+        operations.push([query, params])
         return Promise.resolve()
       }),
+    }
+    const db = {
       inTransaction: jest.fn((callback) => callback(connection)),
     }
     const repository = new VoteRepository(db as any)
 
-    await repository.postSetVote(10, 1, 123)
+    await expect(repository.postSetVote(10, 1, 123)).resolves.toBe(6)
 
-    const voteInsert = inserts.find(([query]) => query.includes('into post_votes'))
+    const entityLockIndex = operations.findIndex(([query]) => query.includes('from posts'))
+    const voteInsertIndex = operations.findIndex(([query]) => query.includes('into post_votes'))
+    const voteReadIndex = operations.findIndex(([query]) => query.includes('from post_votes'))
+    expect(entityLockIndex).toBe(0)
+    expect(voteInsertIndex).toBeGreaterThan(entityLockIndex)
+    expect(voteReadIndex).toBeGreaterThan(voteInsertIndex)
+    expect(normalize(operations[entityLockIndex][0])).toContain(
+      'select site_id, author_id, rating from posts where post_id = :entity_id FOR UPDATE',
+    )
+
+    const voteInsert = operations[voteInsertIndex]
     expect(voteInsert).toBeDefined()
     expect(voteInsert![0]).toContain('target_user_id')
+    expect(normalize(voteInsert![0])).toContain('on duplicate key update target_user_id = :target_user_id')
     expect(voteInsert![1]).toMatchObject({ entity_id: 10, voter_id: 123, target_user_id: 2 })
+    expect(db.inTransaction).toHaveBeenCalledTimes(1)
   })
 
   test('changing a content vote updates voted_at', async () => {
     const updates: string[] = []
     const connection = {
-      fetchOne: jest.fn().mockResolvedValueOnce({ rating: '5' }).mockResolvedValueOnce({ vote: '0' }),
+      fetchOne: jest
+        .fn()
+        .mockResolvedValueOnce({ site_id: '1', author_id: '2', rating: '5' })
+        .mockResolvedValueOnce({ vote: '0' }),
       query: jest.fn((query: string) => {
         updates.push(query)
         return Promise.resolve()
       }),
     }
     const db = {
-      fetchOne: jest.fn().mockResolvedValue({ site_id: '1', author_id: '2' }),
-      query: jest.fn().mockResolvedValue(undefined),
       inTransaction: jest.fn((callback) => callback(connection)),
     }
     const repository = new VoteRepository(db as any)
@@ -194,19 +211,24 @@ describe('VoteRepository vote feed', () => {
 
   test('repeating the same content vote does not update voted_at', async () => {
     const connection = {
-      fetchOne: jest.fn().mockResolvedValueOnce({ rating: '5' }).mockResolvedValueOnce({ vote: '1' }),
+      fetchOne: jest
+        .fn()
+        .mockResolvedValueOnce({ site_id: '1', author_id: '2', rating: '5' })
+        .mockResolvedValueOnce({ vote: '1' }),
       query: jest.fn().mockResolvedValue(undefined),
     }
     const db = {
-      fetchOne: jest.fn().mockResolvedValue({ site_id: '1', author_id: '2' }),
-      query: jest.fn().mockResolvedValue(undefined),
       inTransaction: jest.fn((callback) => callback(connection)),
     }
     const repository = new VoteRepository(db as any)
 
     await expect(repository.postSetVote(10, 1, 123)).resolves.toBe(5)
 
-    expect(connection.query).not.toHaveBeenCalled()
+    const queries = connection.query.mock.calls.map(([query]) => normalize(query))
+    expect(queries).toHaveLength(3)
+    expect(queries[0]).toContain('on duplicate key update target_user_id = :target_user_id')
+    expect(queries.join('\n')).not.toContain('set vote=:vote')
+    expect(queries.join('\n')).not.toContain('voted_at=now()')
   })
 
   test('user votes update voted_at only when the vote value changes', async () => {

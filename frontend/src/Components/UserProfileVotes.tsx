@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import Button from '@ui/Button'
@@ -141,6 +141,8 @@ export default function UserProfileVotes({
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string>()
+  const [loadMoreError, setLoadMoreError] = useState<string>()
+  const requestGenerationRef = useRef(0)
 
   const buildSearchParams = (nextTab: UserVotesDirection, nextFilter: string) => {
     const params: Record<string, string> = { ...persistentQueryStringParams, tab: nextTab }
@@ -159,14 +161,28 @@ export default function UserProfileVotes({
     return `${basePath}?${params.toString()}`
   }
 
+  useLayoutEffect(() => {
+    const requestGeneration = requestGenerationRef.current + 1
+    requestGenerationRef.current = requestGeneration
+    return () => {
+      requestGenerationRef.current = requestGeneration + 1
+    }
+  }, [api.userAPI, filter, tab])
+
   useEffect(() => {
-    let cancelled = false
+    const requestGeneration = requestGenerationRef.current
     setLoading(true)
+    setLoadingMore(false)
     setEvents(undefined)
+    setUsers({})
+    setHasMore(false)
+    setNextCursor(undefined)
+    setError(undefined)
+    setLoadMoreError(undefined)
     api.userAPI
       .userVotes(tab, filter || '', undefined, perpage)
       .then((result) => {
-        if (cancelled) {
+        if (requestGeneration !== requestGenerationRef.current) {
           return
         }
         setEvents(result.events)
@@ -177,24 +193,27 @@ export default function UserProfileVotes({
         setLoading(false)
       })
       .catch(() => {
-        if (!cancelled) {
-          setError('Не удалось загрузить ленту оценок')
-          setLoading(false)
+        if (requestGeneration !== requestGenerationRef.current) {
+          return
         }
+        setError('Не удалось загрузить ленту оценок')
+        setLoading(false)
       })
-    return () => {
-      cancelled = true
-    }
   }, [api.userAPI, filter, tab])
 
   const loadMore = () => {
     if (!nextCursor || loadingMore) {
       return
     }
+    const requestGeneration = requestGenerationRef.current
     setLoadingMore(true)
+    setLoadMoreError(undefined)
     api.userAPI
       .userVotes(tab, filter || '', nextCursor, perpage)
       .then((result) => {
+        if (requestGeneration !== requestGenerationRef.current) {
+          return
+        }
         setEvents((currentEvents) => {
           const known = new Set((currentEvents || []).map(getEventKey))
           return [...(currentEvents || []), ...result.events.filter((event) => !known.has(getEventKey(event)))]
@@ -205,7 +224,10 @@ export default function UserProfileVotes({
         setLoadingMore(false)
       })
       .catch(() => {
-        setError('Не удалось загрузить ленту оценок')
+        if (requestGeneration !== requestGenerationRef.current) {
+          return
+        }
+        setLoadMoreError('Не удалось загрузить ещё оценки')
         setLoadingMore(false)
       })
   }
@@ -214,8 +236,16 @@ export default function UserProfileVotes({
 
   const updateVoteEvent = (event: UserVoteFeedEvent, rating: number, vote?: number) => {
     const key = getEventKey(event)
-    setEvents((currentEvents) =>
-      currentEvents?.map((currentEvent) => {
+    setEvents((currentEvents) => {
+      if (!currentEvents) {
+        return currentEvents
+      }
+
+      if ((vote ?? 0) === 0) {
+        return currentEvents.filter((currentEvent) => getEventKey(currentEvent) !== key)
+      }
+
+      return currentEvents.map((currentEvent) => {
         if (getEventKey(currentEvent) !== key) {
           return currentEvent
         }
@@ -253,8 +283,8 @@ export default function UserProfileVotes({
             vote,
           },
         }
-      }),
-    )
+      })
+    })
   }
 
   const renderGroupHeader = (group: VoteFeedGroup) => {
@@ -590,10 +620,11 @@ export default function UserProfileVotes({
                 })}
               </div>
             )}
+            {!error && loadMoreError && <div className={feedStyles.error}>{loadMoreError}</div>}
             {!error && hasMore && (
               <div className={styles.loadMore}>
                 <Button variant='ghost' onClick={loadMore} disabled={loadingMore}>
-                  {loadingMore ? 'Загружается...' : 'Показать ещё'}
+                  {loadingMore ? 'Загружается...' : loadMoreError ? 'Повторить' : 'Показать ещё'}
                 </Button>
               </div>
             )}

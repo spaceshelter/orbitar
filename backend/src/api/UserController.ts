@@ -82,7 +82,7 @@ export default class UserController {
       format: joiFormat,
       filter: Joi.string().max(120).allow(null, ''),
       cursor: Joi.string().max(255).allow(null, ''),
-      perpage: Joi.number().min(1).max(50).default(20),
+      perpage: Joi.number().integer().min(1).max(50).default(20),
     })
 
     const bioSchema = Joi.object<UserSaveBioRequest>({
@@ -382,6 +382,11 @@ export default class UserController {
     const { direction, format, cursor, perpage, filter } = request.body
 
     try {
+      const restrictions = await this.userManager.getUserRestrictions(userId)
+      if (restrictions.restrictedToPostId !== false) {
+        return response.error(ERROR_CODES.NO_PERMISSION, 'You are not allowed to view your votes feed', 403)
+      }
+
       const result = await this.voteFeedManager.getVoteFeed(
         userId,
         direction,

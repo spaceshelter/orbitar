@@ -129,57 +129,52 @@ export default class VoteRepository {
     const entityTable = comments ? 'comments' : 'posts'
     const userSiteRatingField = comments ? 'comment_rating' : 'post_rating'
 
-    const [entitySite, authorId] = await this.db
-      .fetchOne<{
-        site_id: string
-        author_id: string
-      }>(
-        `select site_id, author_id
-                from ${entityTable}
-                where ${entityField} = :entity_id`,
-        {
-          entity_id: entityId,
-        },
-      )
-      .then((res) => [parseInt(res.site_id), parseInt(res.author_id)])
-
-    await this.db.query(
-      `insert ignore into ${entityVotesTable} ( ${entityField}, voter_id, vote, target_user_id ) values ( :entity_id, :voter_id, 0, :target_user_id )`,
-      {
-        entity_id: entityId,
-        voter_id: userId,
-        target_user_id: authorId,
-      },
-    )
-
-    await this.db.query(
-      `insert ignore into user_site_rating (user_id, site_id, ${userSiteRatingField} ) values ( :user_id, :site_id, 0 )`,
-      {
-        user_id: authorId,
-        site_id: entitySite,
-      },
-    )
-
-    await this.db.query(`insert ignore into user_user_rating (user_id, voter_id ) values ( :user_id, :voter_id )`, {
-      user_id: authorId,
-      voter_id: userId,
-    })
-
     return await this.db.inTransaction(async (conn) => {
       // Important! transaction must start with locking the most "coarse" table first (entity table)
       // to prevent deadlocks
       // tricky: related tables (entity_votes), are implicitly locking records in the entity table
-      const prevRating = await conn
-        .fetchOne<{ rating: string }>(
-          `select rating
+      const entity = await conn.fetchOne<{
+        site_id: string
+        author_id: string
+        rating: string
+      }>(
+        `select site_id, author_id, rating
                  from ${entityTable}
                  where ${entityField} = :entity_id
                      FOR UPDATE /* locks the row */`,
-          {
-            entity_id: entityId,
-          },
-        )
-        .then((res) => Number(res.rating || 0))
+        {
+          entity_id: entityId,
+        },
+      )
+      const entitySite = Number(entity.site_id)
+      const authorId = Number(entity.author_id)
+      const prevRating = Number(entity.rating || 0)
+
+      // The target author is read under the entity lock above. Updating it on a
+      // duplicate repairs any stale denormalized value without changing voted_at.
+      await conn.query(
+        `insert into ${entityVotesTable} ( ${entityField}, voter_id, vote, target_user_id )
+             values ( :entity_id, :voter_id, 0, :target_user_id )
+             on duplicate key update target_user_id = :target_user_id`,
+        {
+          entity_id: entityId,
+          voter_id: userId,
+          target_user_id: authorId,
+        },
+      )
+
+      await conn.query(
+        `insert ignore into user_site_rating (user_id, site_id, ${userSiteRatingField} ) values ( :user_id, :site_id, 0 )`,
+        {
+          user_id: authorId,
+          site_id: entitySite,
+        },
+      )
+
+      await conn.query(`insert ignore into user_user_rating (user_id, voter_id ) values ( :user_id, :voter_id )`, {
+        user_id: authorId,
+        voter_id: userId,
+      })
 
       const prevVote = await conn
         .fetchOne<{ vote: string }>(
