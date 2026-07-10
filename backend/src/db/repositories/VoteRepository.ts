@@ -150,64 +150,67 @@ export default class VoteRepository {
       const authorId = Number(entity.author_id)
       const prevRating = Number(entity.rating || 0)
 
-      // The target author is read under the entity lock above. Updating it on a
-      // duplicate repairs any stale denormalized value without changing voted_at.
-      await conn.query(
-        `insert into ${entityVotesTable} ( ${entityField}, voter_id, vote, target_user_id )
-             values ( :entity_id, :voter_id, 0, :target_user_id )
-             on duplicate key update target_user_id = :target_user_id`,
-        {
-          entity_id: entityId,
-          voter_id: userId,
-          target_user_id: authorId,
-        },
-      )
-
-      await conn.query(
-        `insert ignore into user_site_rating (user_id, site_id, ${userSiteRatingField} ) values ( :user_id, :site_id, 0 )`,
-        {
-          user_id: authorId,
-          site_id: entitySite,
-        },
-      )
-
-      await conn.query(`insert ignore into user_user_rating (user_id, voter_id ) values ( :user_id, :voter_id )`, {
-        user_id: authorId,
-        voter_id: userId,
-      })
-
-      const prevVote = await conn
-        .fetchOne<{ vote: string }>(
-          `select vote
+      const existingVote = await conn.fetchOne<{ vote: string; target_user_id: string | null }>(
+        `select vote, target_user_id
                  from ${entityVotesTable}
                  where ${entityField} = :entity_id
                    and voter_id = :voter_id
                      FOR UPDATE` /* Locks the row, or waits for the lock */,
-          {
-            entity_id: entityId,
-            voter_id: userId,
-          },
-        )
-        .then((res) => Number(res.vote || 0))
-
-      if (prevVote === vote) {
-        return prevRating
-      }
-
-      await conn.query(
-        `update ${entityVotesTable}
-                 set vote=:vote,
-                     voted_at=now()
-                 where ${entityField} = :entity_id
-                   and voter_id = :voter_id
-                   and vote = :prev_vote`,
         {
           entity_id: entityId,
           voter_id: userId,
-          vote: vote,
-          prev_vote: prevVote,
         },
       )
+      const prevVote = Number(existingVote?.vote || 0)
+      const targetChanged =
+        existingVote && (existingVote.target_user_id == null || Number(existingVote.target_user_id) !== authorId)
+
+      if (!existingVote) {
+        await conn.query(
+          `insert into ${entityVotesTable} ( ${entityField}, voter_id, vote, target_user_id )
+               values ( :entity_id, :voter_id, :vote, :target_user_id )`,
+          {
+            entity_id: entityId,
+            voter_id: userId,
+            vote,
+            target_user_id: authorId,
+          },
+        )
+      } else if (prevVote !== vote) {
+        await conn.query(
+          `update ${entityVotesTable}
+                   set vote = :vote,
+                       target_user_id = :target_user_id,
+                       voted_at = now()
+                   where ${entityField} = :entity_id
+                     and voter_id = :voter_id`,
+          {
+            entity_id: entityId,
+            voter_id: userId,
+            vote,
+            target_user_id: authorId,
+          },
+        )
+      } else if (targetChanged) {
+        await conn.query(
+          `update ${entityVotesTable}
+                   set target_user_id = :target_user_id
+                   where ${entityField} = :entity_id
+                     and voter_id = :voter_id`,
+          {
+            entity_id: entityId,
+            voter_id: userId,
+            target_user_id: authorId,
+          },
+        )
+      } else {
+        return prevRating
+      }
+
+      const delta = vote - prevVote
+      if (delta === 0) {
+        return prevRating
+      }
 
       await conn.query(
         `update ${entityTable}
@@ -215,61 +218,33 @@ export default class VoteRepository {
                  where ${entityField} = :entity_id`,
         {
           entity_id: entityId,
-          delta: vote - prevVote,
+          delta,
         },
       )
 
-      // lock the row to prevent concurrent updates
       await conn.query(
-        `select ${userSiteRatingField}
-                 from user_site_rating
-                 where user_id = :user_id
-                   and site_id = :site_id
-                     FOR UPDATE` /*locks the row*/,
+        `insert into user_site_rating (user_id, site_id, ${userSiteRatingField})
+             values (:user_id, :site_id, :delta)
+             on duplicate key update ${userSiteRatingField} = ${userSiteRatingField} + :delta`,
         {
           user_id: authorId,
           site_id: entitySite,
+          delta,
         },
       )
 
       await conn.query(
-        `update user_site_rating
-                    set ${userSiteRatingField}=${userSiteRatingField} + :delta
-                    where user_id = :user_id
-                        and site_id = :site_id`,
-        {
-          user_id: authorId,
-          site_id: entitySite,
-          delta: vote - prevVote,
-        },
-      )
-
-      // lock the row to prevent concurrent updates
-      await conn.query(
-        `select ${userSiteRatingField}
-                 from user_user_rating
-                 where user_id = :user_id
-                   and voter_id = :voter_id
-                     FOR UPDATE` /*locks the row*/,
+        `insert into user_user_rating (user_id, voter_id, ${userSiteRatingField})
+             values (:user_id, :voter_id, :delta)
+             on duplicate key update ${userSiteRatingField} = ${userSiteRatingField} + :delta`,
         {
           user_id: authorId,
           voter_id: userId,
+          delta,
         },
       )
 
-      await conn.query(
-        `update user_user_rating
-                    set ${userSiteRatingField}=${userSiteRatingField} + :delta
-                    where user_id = :user_id
-                      and voter_id = :voter_id`,
-        {
-          user_id: authorId,
-          voter_id: userId,
-          delta: vote - prevVote,
-        },
-      )
-
-      return prevRating + vote - prevVote
+      return prevRating + delta
     })
   }
 
@@ -283,33 +258,76 @@ export default class VoteRepository {
 
   async userSetVote(toUserId: number, vote: number, voterId: number): Promise<number> {
     return await this.db.inTransaction(async (conn) => {
-      await conn.query(
-        `insert into user_karma (user_id, voter_id, vote)
-             values (:user_id, :voter_id, :vote)
-             on duplicate key update
-               voted_at = if(vote <> :vote, now(), voted_at),
-               vote = :vote`,
+      // Lock both FK parents in a global order. Locking only the target deadlocks
+      // reciprocal new votes when each insert checks the other user as its voter.
+      const userIds = [...new Set([toUserId, voterId])].sort((a, b) => a - b)
+      const lockedUsers = await conn.fetchAll<{ user_id: string; karma: string }>(
+        `select user_id, karma
+           from users
+          where user_id in (:user_ids)
+          order by user_id
+          for update`,
+        {
+          user_ids: userIds,
+        },
+      )
+      if (lockedUsers.length !== userIds.length) {
+        throw new Error('Could not lock users for karma vote')
+      }
+
+      const targetUser = lockedUsers.find((user) => Number(user.user_id) === toUserId)
+      const prevRating = Number(targetUser?.karma || 0)
+      const existingVote = await conn.fetchOne<{ vote: string }>(
+        `select vote
+           from user_karma
+          where user_id = :user_id
+            and voter_id = :voter_id
+          for update`,
         {
           user_id: toUserId,
           voter_id: voterId,
-          vote: vote,
         },
       )
+      const prevVote = Number(existingVote?.vote || 0)
 
-      const ratingResult = await conn.fetchOne<{ rating: number }>(
-        'select sum(vote) rating from user_karma where user_id=:user_id',
-        {
+      if (existingVote && prevVote === vote) {
+        return prevRating
+      }
+
+      if (existingVote) {
+        await conn.query(
+          `update user_karma
+              set vote = :vote,
+                  voted_at = now()
+            where user_id = :user_id
+              and voter_id = :voter_id`,
+          {
+            user_id: toUserId,
+            voter_id: voterId,
+            vote,
+          },
+        )
+      } else {
+        await conn.query(
+          `insert into user_karma (user_id, voter_id, vote)
+               values (:user_id, :voter_id, :vote)`,
+          {
+            user_id: toUserId,
+            voter_id: voterId,
+            vote,
+          },
+        )
+      }
+
+      const delta = vote - prevVote
+      if (delta !== 0) {
+        await conn.query('update users set karma = karma + :delta where user_id = :user_id', {
+          delta,
           user_id: toUserId,
-        },
-      )
-      const rating = Number(ratingResult.rating || 0)
+        })
+      }
 
-      await conn.query('update users set karma=:karma where user_id=:user_id', {
-        karma: rating,
-        user_id: toUserId,
-      })
-
-      return rating
+      return prevRating + delta
     })
   }
 
