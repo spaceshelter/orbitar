@@ -26,9 +26,10 @@ exports.setup = function (options, seedLink) {
 // second parent check would only widen the deadlock surface in VoteRepository.setVotes.
 //
 // Ops note: the backfill touches every row of post_votes/comment_votes (millions of
-// rows on prod) in primary-key chunks; run off-peak.
+// rows on prod) in bounded primary-key batches; run off-peak.
 
-const CHUNK = 200000
+const BACKFILL_BATCH_SIZE = 10000
+const BACKFILL_BATCH_TABLE = 'tmp_my_votes_target_backfill'
 
 async function columnExists(db, table, column) {
   const rows = await db.runSql(`
@@ -42,74 +43,209 @@ async function columnExists(db, table, column) {
   return Boolean(rows && rows.length)
 }
 
-async function indexExists(db, table, index) {
+async function getIndexDefinition(db, table, index) {
   const rows = await db.runSql(`
-    select 1 present
+    select column_name columnName,
+           non_unique nonUnique,
+           sub_part subPart,
+           index_type indexType
       from information_schema.statistics
      where table_schema = database()
        and table_name = '${table}'
        and index_name = '${index}'
-     limit 1
+     order by seq_in_index
   `)
-  return Boolean(rows && rows.length)
+  return (rows || []).map((row) => ({
+    column: String(row.columnName),
+    nonUnique: Number(row.nonUnique),
+    subPart: row.subPart == null ? null : Number(row.subPart),
+    indexType: String(row.indexType).toUpperCase(),
+  }))
+}
+
+function assertIndexDefinition(table, index, columns, definition) {
+  if (!definition.length) {
+    return false
+  }
+
+  const actualColumns = definition.map((part) => part.column)
+  const exactColumns =
+    actualColumns.length === columns.length && actualColumns.every((column, i) => column === columns[i])
+  const exactShape = definition.every(
+    (part) => part.nonUnique === 1 && part.subPart === null && part.indexType === 'BTREE',
+  )
+  if (!exactColumns || !exactShape) {
+    throw new Error(
+      `Index ${table}.${index} has unexpected definition (${actualColumns.join(', ')}); expected (${columns.join(', ')})`,
+    )
+  }
+
+  return true
 }
 
 async function ensureTargetColumn(db, table) {
   if (!(await columnExists(db, table, 'target_user_id'))) {
-    await db.runSql(`alter table ${table} add column target_user_id int default null`)
+    await db.runSql(`alter table ${table} add column target_user_id int default null, algorithm=inplace, lock=none`)
   }
 }
 
 async function dropTargetColumn(db, table) {
   if (await columnExists(db, table, 'target_user_id')) {
-    await db.runSql(`alter table ${table} drop column target_user_id`)
+    await db.runSql(`alter table ${table} drop column target_user_id, algorithm=inplace, lock=none`)
   }
 }
 
 async function ensureIndexes(db, table, indexes) {
   const missing = []
   for (const index of indexes) {
-    if (!(await indexExists(db, table, index.name))) {
+    const definition = await getIndexDefinition(db, table, index.name)
+    if (!assertIndexDefinition(table, index.name, index.columns, definition)) {
       missing.push(index)
     }
   }
   if (missing.length) {
     const additions = missing.map((index) => `add index ${index.name} (${index.columns.join(', ')})`)
-    await db.runSql(`alter table ${table} ${additions.join(', ')}`)
+    await db.runSql(`alter table ${table} ${additions.join(', ')}, algorithm=inplace, lock=none`)
+  }
+
+  // FORCE INDEX in the runtime query makes the exact ordered shape part of the
+  // application contract. Re-read it after DDL instead of trusting only its name.
+  for (const index of indexes) {
+    const definition = await getIndexDefinition(db, table, index.name)
+    if (!assertIndexDefinition(table, index.name, index.columns, definition)) {
+      throw new Error(`Could not create index ${table}.${index.name}`)
+    }
   }
 }
 
 async function dropIndexes(db, table, indexes) {
   const present = []
   for (const index of indexes) {
-    if (await indexExists(db, table, index)) {
+    if ((await getIndexDefinition(db, table, index)).length) {
       present.push(index)
     }
   }
   if (present.length) {
-    await db.runSql(`alter table ${table} ${present.map((index) => `drop index ${index}`).join(', ')}`)
+    await db.runSql(
+      `alter table ${table} ${present.map((index) => `drop index ${index}`).join(', ')}, algorithm=inplace, lock=none`,
+    )
   }
 }
 
-async function backfillTargetUserId(db, votesTable, entityTable, entityField) {
-  const rows = await db.runSql(
-    `select min(${entityField}) lo, max(${entityField}) hi from ${votesTable} where target_user_id is null`,
-  )
-  const bounds = rows && rows[0]
-  if (!bounds || bounds.lo == null) {
-    return
+function getAffectedRows(result, operation) {
+  if (!result || result.affectedRows == null) {
+    throw new Error(`Could not read affected row count for ${operation}`)
   }
+  const affectedRows = Number(result.affectedRows)
+  if (!Number.isSafeInteger(affectedRows) || affectedRows < 0) {
+    throw new Error(`Could not read affected row count for ${operation}`)
+  }
+  return affectedRows
+}
 
-  const lo = Number(bounds.lo)
-  const hi = Number(bounds.hi)
-  for (let from = lo; from <= hi; from += CHUNK) {
-    await db.runSql(`
-      update ${votesTable} v
-        join ${entityTable} e on (e.${entityField} = v.${entityField})
-         set v.target_user_id = e.author_id
-       where v.${entityField} >= ${from} and v.${entityField} < ${from + CHUNK}
-         and v.target_user_id is null
-    `)
+function readCursor(row, votesTable) {
+  if (!row || row.entityId == null || row.voterId == null) {
+    throw new Error(`Could not read ${votesTable} backfill cursor`)
+  }
+  const entityId = Number(row.entityId)
+  const voterId = Number(row.voterId)
+  if (!Number.isSafeInteger(entityId) || !Number.isSafeInteger(voterId)) {
+    throw new Error(`Could not read ${votesTable} backfill cursor`)
+  }
+  return { entityId, voterId }
+}
+
+function buildCursorCondition(entityField, cursor) {
+  if (!cursor) {
+    return ''
+  }
+  return (
+    `and (v.${entityField} > ${cursor.entityId} or ` +
+    `(v.${entityField} = ${cursor.entityId} and v.voter_id > ${cursor.voterId}))`
+  )
+}
+
+async function backfillTargetUserId(db, votesTable, entityTable, entityField) {
+  await db.runSql(`
+    create temporary table ${BACKFILL_BATCH_TABLE} (
+      entity_id int not null,
+      voter_id int not null,
+      primary key (entity_id, voter_id)
+    ) engine=memory
+  `)
+
+  let cursor
+  let batch = 0
+  try {
+    while (true) {
+      const startedAt = Date.now()
+      await db.runSql(`delete from ${BACKFILL_BATCH_TABLE}`)
+
+      const selectedResult = await db.runSql(`
+        insert into ${BACKFILL_BATCH_TABLE} (entity_id, voter_id)
+        select v.${entityField}, v.voter_id
+          from ${votesTable} v force index (primary)
+         where v.target_user_id is null
+           ${buildCursorCondition(entityField, cursor)}
+         order by v.${entityField}, v.voter_id
+         limit ${BACKFILL_BATCH_SIZE}
+      `)
+      const selected = getAffectedRows(selectedResult, `${votesTable} batch selection`)
+      if (selected > BACKFILL_BATCH_SIZE) {
+        throw new Error(`${votesTable} backfill selected ${selected} rows; maximum is ${BACKFILL_BATCH_SIZE}`)
+      }
+
+      if (selected === 0) {
+        // A concurrent legacy writer can insert a NULL target behind the local
+        // cursor. Wrap once more when that happens; the final indexed assertion
+        // remains the last line of defence before the feed is enabled.
+        if (cursor) {
+          const remaining = await db.runSql(`
+            select ${entityField} entityId, voter_id voterId
+              from ${votesTable} force index (primary)
+             where target_user_id is null
+             order by ${entityField}, voter_id
+             limit 1
+          `)
+          if (remaining && remaining.length) {
+            cursor = undefined
+            continue
+          }
+        }
+        break
+      }
+
+      const cursorRows = await db.runSql(`
+        select entity_id entityId, voter_id voterId
+          from ${BACKFILL_BATCH_TABLE}
+         order by entity_id desc, voter_id desc
+         limit 1
+      `)
+      const nextCursor = readCursor(cursorRows && cursorRows[0], votesTable)
+
+      // STRAIGHT_JOIN fixes the coarse-to-fine lock order: batch key -> entity
+      // -> vote row. The temporary table bounds both locks and writes to 10k.
+      const updatedResult = await db.runSql(`
+        update ${BACKFILL_BATCH_TABLE} b
+        straight_join ${entityTable} e on (e.${entityField} = b.entity_id)
+        straight_join ${votesTable} v on (v.${entityField} = b.entity_id and v.voter_id = b.voter_id)
+           set v.target_user_id = e.author_id
+         where v.target_user_id is null
+      `)
+      const updated = getAffectedRows(updatedResult, `${votesTable} batch update`)
+      if (updated !== selected) {
+        throw new Error(`${votesTable} backfill selected ${selected} rows but updated ${updated}`)
+      }
+
+      batch += 1
+      console.log(
+        `[my-votes-indexes] table=${votesTable} batch=${batch} selected=${selected} updated=${updated} ` +
+          `cursor=${nextCursor.entityId}:${nextCursor.voterId} elapsedMs=${Date.now() - startedAt}`,
+      )
+      cursor = nextCursor
+    }
+  } finally {
+    await db.runSql(`drop temporary table if exists ${BACKFILL_BATCH_TABLE}`)
   }
 }
 
@@ -158,8 +294,8 @@ exports.up = async function (db) {
       { name: 'idx_comment_votes_target_voted_at', columns: ['target_user_id', 'voted_at'] },
     ])
     await ensureIndexes(db, 'user_karma', [
-      { name: 'idx_user_karma_voter_voted_at', columns: ['voter_id', 'voted_at'] },
-      { name: 'idx_user_karma_user_voted_at', columns: ['user_id', 'voted_at'] },
+      { name: 'idx_user_karma_voter_voted_at', columns: ['voter_id', 'voted_at', 'user_id'] },
+      { name: 'idx_user_karma_user_voted_at', columns: ['user_id', 'voted_at', 'voter_id'] },
     ])
 
     await assertTargetBackfillComplete(db, 'post_votes', 'idx_post_votes_target_voted_at')
