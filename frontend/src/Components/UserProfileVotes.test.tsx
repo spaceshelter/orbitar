@@ -14,7 +14,7 @@ import UserProfileVotes from './UserProfileVotes'
 
 const mockUserVotes = jest.fn()
 const mockAPI = { userAPI: { userVotes: mockUserVotes } }
-const mockAppState = { userInfo: { username: 'me' } }
+const mockAppState = { userInfo: { id: 1, username: 'me' } }
 let mockFilter = ''
 let mockTab = 'mine'
 
@@ -119,34 +119,106 @@ const user = (id: number): UserInfo => ({
   karma: 0,
 })
 
-const postEvent = (id: number, targetUserId = 10): UserVoteFeedEvent => ({
-  type: 'post',
+const post = (id: number, targetUserId = 10): PostInfo => ({
+  id,
+  site: 'main',
+  author: user(targetUserId),
+  created: new Date(Date.UTC(2026, 4, 10)),
+  content: `post ${id}`,
+  rating: 1,
+  comments: 0,
+  newComments: 0,
   vote: 1,
-  votedAt: new Date(Date.UTC(2026, 4, 11, 10, 30 - id)),
-  voterId: 1,
-  targetUserId,
-  post: {
-    id,
-    site: 'main',
-    author: user(targetUserId),
-    created: new Date(Date.UTC(2026, 4, 10)),
-    content: `post ${id}`,
-    rating: 1,
-    comments: 0,
-    newComments: 0,
-    vote: 1,
-  },
 })
 
-const voteResult = (events: UserVoteFeedEvent[], hasMore = false, nextCursor?: string): UserVotesResult => ({
-  events,
-  users: {
-    10: user(10),
-    20: user(20),
-  },
-  hasMore,
-  nextCursor,
+const voteEvent = (
+  type: UserVoteFeedEvent['type'],
+  entityId: number,
+  options: Partial<Omit<UserVoteFeedEvent, 'type' | 'entityId'>> = {},
+): UserVoteFeedEvent => ({
+  type,
+  entityId,
+  postId: options.postId,
+  vote: options.vote ?? 1,
+  votedAt: options.votedAt ?? new Date(Date.UTC(2026, 4, 11, 10, 30 - entityId)),
+  voterId: options.voterId ?? 1,
+  targetUserId: options.targetUserId ?? 10,
 })
+
+const postEvent = (id: number, targetUserId = 10): UserVoteFeedEvent =>
+  voteEvent('post', id, { postId: id, targetUserId })
+
+const mineVoteResult = (events: UserVoteFeedEvent[], hasMore = false, nextCursor?: string): UserVotesResult => {
+  const posts = events.reduce<Record<number, PostInfo>>((result, event) => {
+    if (event.type === 'post') {
+      result[event.entityId] = post(event.entityId, event.targetUserId)
+    }
+    return result
+  }, {})
+
+  return {
+    direction: 'mine',
+    events,
+    users: {
+      1: user(1),
+      10: user(10),
+      20: user(20),
+    },
+    entities: {
+      posts,
+      comments: {},
+      parentComments: {},
+      postTitles: {},
+    },
+    hasMore,
+    nextCursor,
+  }
+}
+
+const receivedVoteResult = (events: UserVoteFeedEvent[], hasMore = false, nextCursor?: string): UserVotesResult => {
+  const posts = events.reduce<Record<number, { id: number; site: string; label: string; rating: number }>>(
+    (result, event) => {
+      if (event.type === 'post') {
+        result[event.entityId] = {
+          id: event.entityId,
+          site: 'main',
+          label: `received post ${event.entityId}`,
+          rating: 5,
+        }
+      }
+      return result
+    },
+    {},
+  )
+  const comments = events.reduce<
+    Record<number, { id: number; postId: number; site: string; postTitle?: string; rating: number }>
+  >((result, event) => {
+    if (event.type === 'comment') {
+      result[event.entityId] = {
+        id: event.entityId,
+        postId: event.postId || 0,
+        site: 'main',
+        postTitle: `parent post ${event.postId}`,
+        rating: 3,
+      }
+    }
+    return result
+  }, {})
+
+  return {
+    direction: 'received',
+    events,
+    users: {
+      1: user(1),
+      10: user(10),
+      20: user(20),
+      30: user(30),
+    },
+    subjects: { posts, comments },
+    hasMore,
+    nextCursor,
+  }
+}
 
 describe('UserProfileVotes request state', () => {
   let container: HTMLDivElement
@@ -182,10 +254,12 @@ describe('UserProfileVotes request state', () => {
     Array.from(container.querySelectorAll('[data-post-id]')).map((element) =>
       Number(element.getAttribute('data-post-id')),
     )
+  const requestSignal = (callIndex: number) => mockUserVotes.mock.calls[callIndex][4] as AbortSignal
 
   beforeEach(() => {
     mockFilter = ''
     mockTab = 'mine'
+    mockAppState.userInfo.id = 1
     mockUserVotes.mockReset()
     container = document.createElement('div')
     document.body.appendChild(container)
@@ -202,18 +276,21 @@ describe('UserProfileVotes request state', () => {
   test('ignores a stale load-more result after the tab changes', async () => {
     const stalePage = deferred<UserVotesResult>()
     mockUserVotes
-      .mockResolvedValueOnce(voteResult([postEvent(1)], true, 'old-cursor'))
+      .mockResolvedValueOnce(mineVoteResult([postEvent(1)], true, 'old-cursor'))
       .mockReturnValueOnce(stalePage.promise)
-      .mockResolvedValueOnce(voteResult([postEvent(10, 20)]))
+      .mockResolvedValueOnce(receivedVoteResult([postEvent(10, 20)]))
 
     await renderVotes()
     clickButton('Показать ещё')
+    const staleLoadMoreSignal = requestSignal(1)
+    expect(staleLoadMoreSignal.aborted).toBe(false)
 
     mockTab = 'received'
     await renderVotes()
+    expect(staleLoadMoreSignal.aborted).toBe(true)
 
     await act(async () => {
-      stalePage.resolve(voteResult([postEvent(2)], true, 'stale-cursor'))
+      stalePage.resolve(mineVoteResult([postEvent(2)], true, 'stale-cursor'))
       await stalePage.promise
     })
 
@@ -225,15 +302,17 @@ describe('UserProfileVotes request state', () => {
   test('ignores a stale load-more rejection and resets loading state for the new query', async () => {
     const stalePage = deferred<UserVotesResult>()
     mockUserVotes
-      .mockResolvedValueOnce(voteResult([postEvent(1)], true, 'old-cursor'))
+      .mockResolvedValueOnce(mineVoteResult([postEvent(1)], true, 'old-cursor'))
       .mockReturnValueOnce(stalePage.promise)
-      .mockResolvedValueOnce(voteResult([postEvent(10, 20)], true, 'new-cursor'))
+      .mockResolvedValueOnce(mineVoteResult([postEvent(10, 20)], true, 'new-cursor'))
 
     await renderVotes()
     clickButton('Показать ещё')
+    const staleLoadMoreSignal = requestSignal(1)
 
     mockFilter = 'new-filter'
     await renderVotes()
+    expect(staleLoadMoreSignal.aborted).toBe(true)
 
     const newLoadMoreButton = Array.from(container.querySelectorAll('button')).find(
       (candidate) => candidate.textContent?.trim() === 'Показать ещё',
@@ -250,11 +329,71 @@ describe('UserProfileVotes request state', () => {
     expect(container.textContent).not.toContain('Не удалось загрузить ещё оценки')
   })
 
+  test('renders compact normalized received subjects without mounting full post entities', async () => {
+    mockTab = 'received'
+    mockUserVotes.mockResolvedValueOnce(
+      receivedVoteResult([
+        voteEvent('post', 40, { postId: 40 }),
+        voteEvent('comment', 50, { postId: 77 }),
+        voteEvent('user', 30),
+      ]),
+    )
+
+    await renderVotes()
+
+    expect(container.textContent).toContain('пост #40: received post 40')
+    expect(container.textContent).toContain('комментарий #50 в посте #77: parent post 77')
+    expect(container.textContent).toContain('профиль user-30')
+    expect(renderedPostIds()).toEqual([])
+  })
+
+  test('deduplicates appended refs and joins a group across the page boundary', async () => {
+    mockUserVotes
+      .mockResolvedValueOnce(mineVoteResult([postEvent(1)], true, 'next-cursor'))
+      .mockResolvedValueOnce(mineVoteResult([postEvent(1), postEvent(2)]))
+
+    await renderVotes()
+    clickButton('Показать ещё')
+    await settlePromises()
+
+    expect(renderedPostIds()).toEqual([1, 2])
+    expect(container.textContent).toContain('2 оценки')
+  })
+
+  test('aborts an in-flight initial request when the query key changes', async () => {
+    const staleInitialPage = deferred<UserVotesResult>()
+    mockUserVotes.mockReturnValueOnce(staleInitialPage.promise).mockResolvedValueOnce(mineVoteResult([postEvent(10)]))
+
+    await renderVotes()
+    const staleInitialSignal = requestSignal(0)
+    expect(staleInitialSignal.aborted).toBe(false)
+
+    mockFilter = 'new-filter'
+    await renderVotes()
+
+    expect(staleInitialSignal.aborted).toBe(true)
+    expect(renderedPostIds()).toEqual([10])
+  })
+
+  test('aborts an in-flight request when the session user changes', async () => {
+    const staleInitialPage = deferred<UserVotesResult>()
+    mockUserVotes.mockReturnValueOnce(staleInitialPage.promise).mockResolvedValueOnce(mineVoteResult([postEvent(10)]))
+
+    await renderVotes()
+    const staleInitialSignal = requestSignal(0)
+
+    mockAppState.userInfo.id = 2
+    await renderVotes()
+
+    expect(staleInitialSignal.aborted).toBe(true)
+    expect(renderedPostIds()).toEqual([10])
+  })
+
   test('keeps loaded events and offers a retry when load-more fails', async () => {
     mockUserVotes
-      .mockResolvedValueOnce(voteResult([postEvent(1)], true, 'next-cursor'))
+      .mockResolvedValueOnce(mineVoteResult([postEvent(1)], true, 'next-cursor'))
       .mockRejectedValueOnce(new Error('temporary failure'))
-      .mockResolvedValueOnce(voteResult([postEvent(2)]))
+      .mockResolvedValueOnce(mineVoteResult([postEvent(2)]))
 
     await renderVotes()
     clickButton('Показать ещё')
@@ -272,7 +411,7 @@ describe('UserProfileVotes request state', () => {
   })
 
   test('removes a confirmed zero vote and recalculates its group', async () => {
-    mockUserVotes.mockResolvedValueOnce(voteResult([postEvent(1), postEvent(2)]))
+    mockUserVotes.mockResolvedValueOnce(mineVoteResult([postEvent(1), postEvent(2)]))
 
     await renderVotes()
     expect(container.textContent).toContain('2 оценки')

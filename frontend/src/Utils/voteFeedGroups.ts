@@ -14,21 +14,15 @@ export type VoteFeedGroup = {
 }
 
 export const getVoteFeedEventEntityId = (event: UserVoteFeedEvent): number => {
-  if (event.type === 'post') {
-    return event.post.id
-  }
-  if (event.type === 'comment') {
-    return event.comment.id
-  }
-  return event.user.id
+  return event.entityId
 }
 
 export const getVoteFeedEventPostId = (event: UserVoteFeedEvent): number | undefined => {
   if (event.type === 'post') {
-    return event.post.id
+    return event.entityId
   }
   if (event.type === 'comment') {
-    return event.comment.postLink.id
+    return event.postId
   }
   return undefined
 }

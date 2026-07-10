@@ -77,74 +77,94 @@ type UserVotesRequest = {
   perpage?: number
 }
 
-type UserVoteFeedEventBaseEntity = {
+type UserVoteFeedEventRefEntity = {
+  type: 'post' | 'comment' | 'user'
+  entityId: number
+  postId?: number
   vote: number
   votedAt: string
   voterId: number
   targetUserId: number
 }
 
-type UserVoteFeedPostEventEntity = UserVoteFeedEventBaseEntity & {
-  type: 'post'
-  post: PostEntity
+export type ReceivedPostSubject = {
+  id: number
+  site: string
+  label: string
+  rating: number
 }
 
-type UserVoteFeedCommentEventEntity = UserVoteFeedEventBaseEntity & {
-  type: 'comment'
-  comment: CommentEntity
-  parentComment?: CommentEntity
+export type ReceivedCommentSubject = {
+  id: number
+  postId: number
+  site: string
   postTitle?: string
+  rating: number
 }
 
-type UserVoteFeedUserEventEntity = UserVoteFeedEventBaseEntity & {
-  type: 'user'
-  user: UserInfo
-}
-
-type UserVoteFeedEventEntity =
-  | UserVoteFeedPostEventEntity
-  | UserVoteFeedCommentEventEntity
-  | UserVoteFeedUserEventEntity
-
-type UserVotesResponse = {
-  events: UserVoteFeedEventEntity[]
+type UserVotesResponseBase = {
+  events: UserVoteFeedEventRefEntity[]
   users: Record<number, UserInfo>
   hasMore: boolean
   nextCursor?: string
 }
 
-type UserVoteFeedEventBase = {
+type UserVotesMineResponse = UserVotesResponseBase & {
+  direction: 'mine'
+  entities: {
+    posts: Record<number, PostEntity>
+    comments: Record<number, CommentEntity>
+    parentComments: Record<number, CommentEntity>
+    postTitles: Record<number, string>
+  }
+}
+
+type UserVotesReceivedResponse = UserVotesResponseBase & {
+  direction: 'received'
+  subjects: {
+    posts: Record<number, ReceivedPostSubject>
+    comments: Record<number, ReceivedCommentSubject>
+  }
+}
+
+type UserVotesResponse = UserVotesMineResponse | UserVotesReceivedResponse
+
+export type UserVoteFeedEvent = {
+  type: 'post' | 'comment' | 'user'
+  entityId: number
+  postId?: number
   vote: number
   votedAt: Date
   voterId: number
   targetUserId: number
 }
 
-export type UserVoteFeedPostEvent = UserVoteFeedEventBase & {
-  type: 'post'
-  post: PostInfo
-}
-
-export type UserVoteFeedCommentEvent = UserVoteFeedEventBase & {
-  type: 'comment'
-  comment: CommentInfo
-  parentComment?: CommentInfo
-  postTitle?: string
-}
-
-export type UserVoteFeedUserEvent = UserVoteFeedEventBase & {
-  type: 'user'
-  user: UserInfo
-}
-
-export type UserVoteFeedEvent = UserVoteFeedPostEvent | UserVoteFeedCommentEvent | UserVoteFeedUserEvent
-
-export type UserVotesResult = {
+type UserVotesResultBase = {
   events: UserVoteFeedEvent[]
   users: Record<number, UserInfo>
   hasMore: boolean
   nextCursor?: string
 }
+
+export type UserVotesMineResult = UserVotesResultBase & {
+  direction: 'mine'
+  entities: {
+    posts: Record<number, PostInfo>
+    comments: Record<number, CommentInfo>
+    parentComments: Record<number, CommentInfo>
+    postTitles: Record<number, string>
+  }
+}
+
+export type UserVotesReceivedResult = UserVotesResultBase & {
+  direction: 'received'
+  subjects: {
+    posts: Record<number, ReceivedPostSubject>
+    comments: Record<number, ReceivedCommentSubject>
+  }
+}
+
+export type UserVotesResult = UserVotesMineResult | UserVotesReceivedResult
 
 export type TrialProgressDebugInfo = {
   effectiveKarmaPart: number
@@ -247,55 +267,57 @@ export default class UserAPI {
     filter: string,
     cursor: string | undefined,
     perpage: number,
+    signal?: AbortSignal,
   ): Promise<UserVotesResult> {
-    const result = await this.api.request<UserVotesRequest, UserVotesResponse>('/user/votes', {
-      direction,
-      format: 'html',
-      cursor,
-      perpage,
-      filter,
-    })
+    const result = await this.api.request<UserVotesRequest, UserVotesResponse>(
+      '/user/votes',
+      {
+        direction,
+        format: 'html',
+        cursor,
+        perpage,
+        filter,
+      },
+      undefined,
+      signal,
+    )
 
-    return {
-      events: result.events.map((event) => this.fixVoteFeedEvent(event, result.users)),
+    const base = {
+      events: result.events.map((event) => this.fixVoteFeedEvent(event)),
       users: result.users,
       hasMore: result.hasMore,
       nextCursor: result.nextCursor,
     }
-  }
 
-  private fixVoteFeedEvent(event: UserVoteFeedEventEntity, users: Record<number, UserInfo>): UserVoteFeedEvent {
-    const base = {
-      vote: event.vote,
-      votedAt: this.api.fixDate(new Date(event.votedAt)),
-      voterId: event.voterId,
-      targetUserId: event.targetUserId,
-    }
-
-    if (event.type === 'post') {
+    if (result.direction === 'received') {
       return {
         ...base,
-        type: 'post',
-        post: this.postAPIHelper.fixPosts([event.post], users)[0],
+        direction: 'received',
+        subjects: result.subjects,
       }
     }
 
-    if (event.type === 'comment') {
-      return {
-        ...base,
-        type: 'comment',
-        comment: this.postAPIHelper.fixComments([event.comment], users)[0],
-        parentComment: event.parentComment
-          ? this.postAPIHelper.fixComments([event.parentComment], users)[0]
-          : undefined,
-        postTitle: event.postTitle,
-      }
-    }
+    const posts: Record<number, PostInfo> = {}
+    this.postAPIHelper.fixPosts(Object.values(result.entities.posts), result.users).forEach((post) => {
+      posts[post.id] = post
+    })
 
     return {
       ...base,
-      type: 'user',
-      user: event.user,
+      direction: 'mine',
+      entities: {
+        posts,
+        comments: this.postAPIHelper.fixCommentsRecords(result.entities.comments, result.users),
+        parentComments: this.postAPIHelper.fixCommentsRecords(result.entities.parentComments, result.users),
+        postTitles: result.entities.postTitles,
+      },
+    }
+  }
+
+  private fixVoteFeedEvent(event: UserVoteFeedEventRefEntity): UserVoteFeedEvent {
+    return {
+      ...event,
+      votedAt: this.api.fixDate(new Date(event.votedAt)),
     }
   }
 

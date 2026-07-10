@@ -1,4 +1,4 @@
-import VoteRepository, { VoteFeedCursor } from '../../src/db/repositories/VoteRepository'
+import VoteFeedReadRepository, { VoteFeedCursor } from '../../src/db/repositories/VoteFeedReadRepository'
 
 const normalize = (query: string) => query.replace(/\s+/g, ' ').trim()
 
@@ -17,9 +17,9 @@ describe('VoteRepository vote feed', () => {
         },
       ]),
     }
-    const repository = new VoteRepository(db as any)
+    const repository = new VoteFeedReadRepository(db as any)
 
-    await expect(repository.getVoteFeedEvents(123, 'mine', 'orbitar', undefined, 21)).resolves.toEqual([
+    await expect(repository.getPageReferences(123, 'mine', 'orbitar', undefined, 21)).resolves.toEqual([
       {
         type: 'post',
         entityId: 10,
@@ -64,9 +64,9 @@ describe('VoteRepository vote feed', () => {
     const db = {
       fetchAll: jest.fn().mockResolvedValue([]),
     }
-    const repository = new VoteRepository(db as any)
+    const repository = new VoteFeedReadRepository(db as any)
 
-    await repository.getVoteFeedEvents(123, 'received', '', undefined, 21)
+    await repository.getPageReferences(123, 'received', '', undefined, 21)
 
     const [query, params] = db.fetchAll.mock.calls[0]
     const sql = normalize(query)
@@ -93,7 +93,7 @@ describe('VoteRepository vote feed', () => {
     const db = {
       fetchAll: jest.fn().mockResolvedValue([]),
     }
-    const repository = new VoteRepository(db as any)
+    const repository = new VoteFeedReadRepository(db as any)
     const cursor: VoteFeedCursor = {
       votedAt: new Date('2026-05-01T12:00:00.000Z'),
       type: 'comment',
@@ -101,7 +101,7 @@ describe('VoteRepository vote feed', () => {
       voterId: 42,
     }
 
-    await repository.getVoteFeedEvents(123, 'mine', '', cursor, 21)
+    await repository.getPageReferences(123, 'mine', '', cursor, 21)
 
     const [query, params] = db.fetchAll.mock.calls[0]
     const sql = normalize(query)
@@ -127,7 +127,7 @@ describe('VoteRepository vote feed', () => {
     const db = {
       fetchAll: jest.fn().mockResolvedValue([]),
     }
-    const repository = new VoteRepository(db as any)
+    const repository = new VoteFeedReadRepository(db as any)
     const cursor: VoteFeedCursor = {
       votedAt: new Date('2026-05-01T12:00:00.000Z'),
       type: 'user',
@@ -135,7 +135,7 @@ describe('VoteRepository vote feed', () => {
       voterId: 42,
     }
 
-    await repository.getVoteFeedEvents(123, 'received', '', cursor, 21)
+    await repository.getPageReferences(123, 'received', '', cursor, 21)
 
     const sql = normalize(db.fetchAll.mock.calls[0][0])
     // 'post' < 'user' and 'comment' < 'user': ties on votedAt stay reachable
@@ -147,104 +147,40 @@ describe('VoteRepository vote feed', () => {
     )
   })
 
-  test('content vote locks the entity before synchronizing its denormalized target in the transaction', async () => {
-    const operations: Array<[string, Record<string, unknown> | undefined]> = []
-    const connection = {
-      fetchOne: jest.fn((query: string, params: Record<string, unknown>) => {
-        operations.push([query, params])
-        if (query.includes('from posts')) {
-          return Promise.resolve({ site_id: '1', author_id: '2', rating: '5' })
+  test('received hydration selects one compact projection per unique subject', async () => {
+    const db = {
+      fetchAll: jest.fn((query: string) => {
+        if (query.includes('from posts p')) {
+          return Promise.resolve([{ id: 10, site: 'main', title: 'Post', html: '<p>Post</p>', rating: 5 }])
         }
-        return Promise.resolve({ vote: '0' })
-      }),
-      query: jest.fn((query: string, params?: Record<string, unknown>) => {
-        operations.push([query, params])
-        return Promise.resolve()
+        return Promise.resolve([{ id: 20, postId: 10, site: 'main', postTitle: 'Post', rating: 3 }])
       }),
     }
-    const db = {
-      inTransaction: jest.fn((callback) => callback(connection)),
-    }
-    const repository = new VoteRepository(db as any)
+    const repository = new VoteFeedReadRepository(db as any)
 
-    await expect(repository.postSetVote(10, 1, 123)).resolves.toBe(6)
+    await expect(repository.getReceivedPostSubjects([10, 10])).resolves.toHaveLength(1)
+    await expect(repository.getReceivedCommentSubjects([20, 20])).resolves.toHaveLength(1)
 
-    const entityLockIndex = operations.findIndex(([query]) => query.includes('from posts'))
-    const voteInsertIndex = operations.findIndex(([query]) => query.includes('into post_votes'))
-    const voteReadIndex = operations.findIndex(([query]) => query.includes('from post_votes'))
-    expect(entityLockIndex).toBe(0)
-    expect(voteInsertIndex).toBeGreaterThan(entityLockIndex)
-    expect(voteReadIndex).toBeGreaterThan(voteInsertIndex)
-    expect(normalize(operations[entityLockIndex][0])).toContain(
-      'select site_id, author_id, rating from posts where post_id = :entity_id FOR UPDATE',
+    const postSql = normalize(db.fetchAll.mock.calls[0][0])
+    expect(postSql).toContain('select p.post_id id, s.subdomain site, p.title, p.html, p.rating')
+    expect(postSql).not.toContain('p.source')
+    expect(postSql).not.toContain('p.author_id')
+
+    const commentSql = normalize(db.fetchAll.mock.calls[1][0])
+    expect(commentSql).toContain(
+      'select c.comment_id id, c.post_id postId, s.subdomain site, p.title postTitle, c.rating',
     )
-
-    const voteInsert = operations[voteInsertIndex]
-    expect(voteInsert).toBeDefined()
-    expect(voteInsert![0]).toContain('target_user_id')
-    expect(normalize(voteInsert![0])).toContain('on duplicate key update target_user_id = :target_user_id')
-    expect(voteInsert![1]).toMatchObject({ entity_id: 10, voter_id: 123, target_user_id: 2 })
-    expect(db.inTransaction).toHaveBeenCalledTimes(1)
+    expect(commentSql).not.toContain('c.source')
+    expect(commentSql).not.toContain('c.html')
+    expect(commentSql).not.toContain('c.author_id')
   })
 
-  test('changing a content vote updates voted_at', async () => {
-    const updates: string[] = []
-    const connection = {
-      fetchOne: jest
-        .fn()
-        .mockResolvedValueOnce({ site_id: '1', author_id: '2', rating: '5' })
-        .mockResolvedValueOnce({ vote: '0' }),
-      query: jest.fn((query: string) => {
-        updates.push(query)
-        return Promise.resolve()
-      }),
-    }
-    const db = {
-      inTransaction: jest.fn((callback) => callback(connection)),
-    }
-    const repository = new VoteRepository(db as any)
+  test('skips compact hydration queries for empty pages', async () => {
+    const db = { fetchAll: jest.fn() }
+    const repository = new VoteFeedReadRepository(db as any)
 
-    await expect(repository.postSetVote(10, 1, 123)).resolves.toBe(6)
-
-    expect(updates.join('\n')).toContain('voted_at=now()')
-  })
-
-  test('repeating the same content vote does not update voted_at', async () => {
-    const connection = {
-      fetchOne: jest
-        .fn()
-        .mockResolvedValueOnce({ site_id: '1', author_id: '2', rating: '5' })
-        .mockResolvedValueOnce({ vote: '1' }),
-      query: jest.fn().mockResolvedValue(undefined),
-    }
-    const db = {
-      inTransaction: jest.fn((callback) => callback(connection)),
-    }
-    const repository = new VoteRepository(db as any)
-
-    await expect(repository.postSetVote(10, 1, 123)).resolves.toBe(5)
-
-    const queries = connection.query.mock.calls.map(([query]) => normalize(query))
-    expect(queries).toHaveLength(3)
-    expect(queries[0]).toContain('on duplicate key update target_user_id = :target_user_id')
-    expect(queries.join('\n')).not.toContain('set vote=:vote')
-    expect(queries.join('\n')).not.toContain('voted_at=now()')
-  })
-
-  test('user votes update voted_at only when the vote value changes', async () => {
-    const connection = {
-      fetchOne: jest.fn().mockResolvedValue({ rating: '5' }),
-      query: jest.fn().mockResolvedValue(undefined),
-    }
-    const db = {
-      inTransaction: jest.fn((callback) => callback(connection)),
-    }
-    const repository = new VoteRepository(db as any)
-
-    await expect(repository.userSetVote(30, 2, 123)).resolves.toBe(5)
-
-    const [query] = connection.query.mock.calls[0]
-    expect(query).toContain('voted_at = if(vote <> :vote, now(), voted_at)')
-    expect(query).not.toContain('values(vote)')
+    await expect(repository.getReceivedPostSubjects([])).resolves.toEqual([])
+    await expect(repository.getReceivedCommentSubjects([])).resolves.toEqual([])
+    expect(db.fetchAll).not.toHaveBeenCalled()
   })
 })

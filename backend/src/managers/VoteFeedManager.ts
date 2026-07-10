@@ -1,26 +1,31 @@
+import { stripHtml } from 'string-strip-html'
 import { Logger } from 'winston'
 
 import { CommentEntity } from '../api/types/entities/CommentEntity'
 import { ContentFormat } from '../api/types/entities/common'
 import { PostEntity } from '../api/types/entities/PostEntity'
-import { UserEntity } from '../api/types/entities/UserEntity'
-import { UserVoteFeedEvent } from '../api/types/requests/UserVotes'
-import { Enricher } from '../api/utils/Enricher'
-import VoteRepository, { VoteFeedCursor, VoteFeedDirection, VoteFeedReference } from '../db/repositories/VoteRepository'
+import { UserEntity, UserGender } from '../api/types/entities/UserEntity'
+import {
+  ReceivedCommentSubject,
+  ReceivedPostSubject,
+  UserVoteFeedEventRef,
+  UserVotesResponse,
+} from '../api/types/requests/UserVotes'
+import VoteFeedReadRepository, {
+  VoteFeedCursor,
+  VoteFeedDirection,
+  VoteFeedReference,
+} from '../db/repositories/VoteFeedReadRepository'
 import PostManager from './PostManager'
+import { CommentInfoWithPostData } from './types/CommentInfo'
+import { PostInfo } from './types/PostInfo'
+import { UserInfo } from './types/UserInfo'
 import UserManager from './UserManager'
 
 export class InvalidVoteFeedCursorError extends Error {
   constructor() {
     super('Invalid vote feed cursor')
   }
-}
-
-export type VoteFeedResult = {
-  events: UserVoteFeedEvent[]
-  users: Record<number, UserEntity>
-  hasMore: boolean
-  nextCursor?: string
 }
 
 const VOTE_FEED_ENTITY_TYPES = ['post', 'comment', 'user']
@@ -62,24 +67,75 @@ export const decodeVoteFeedCursor = (cursor: string): VoteFeedCursor => {
   }
 }
 
+const toUserEntity = (user: UserInfo): UserEntity => ({
+  id: user.id,
+  username: user.username,
+  gender: user.gender as unknown as UserGender,
+  karma: user.karma,
+  name: user.name,
+  vote: user.vote,
+})
+
+const toPostEntity = (post: PostInfo): PostEntity => ({
+  id: post.id,
+  site: post.site,
+  title: post.title,
+  author: post.author,
+  created: post.created.toISOString(),
+  content: post.content,
+  rating: post.rating,
+  comments: post.comments,
+  newComments: post.newComments,
+  bookmark: post.bookmark,
+  watch: post.watch,
+  canEdit: post.canEdit,
+  editFlag: post.editFlag,
+  vote: post.vote,
+  language: post.language,
+})
+
+const toCommentEntity = (comment: CommentInfoWithPostData): CommentEntity => ({
+  id: comment.id,
+  author: comment.author,
+  content: comment.content,
+  created: comment.created.toISOString(),
+  deleted: comment.deleted,
+  rating: comment.rating,
+  parentComment: comment.parentComment,
+  editFlag: comment.editFlag,
+  post: comment.post,
+  site: comment.site,
+  canEdit: comment.canEdit,
+  isNew: comment.isNew,
+  vote: comment.vote,
+  language: comment.language,
+})
+
+const toEventRef = (ref: VoteFeedReference): UserVoteFeedEventRef => ({
+  type: ref.type,
+  entityId: ref.entityId,
+  postId: ref.postId,
+  voterId: ref.voterId,
+  targetUserId: ref.targetUserId,
+  vote: ref.vote,
+  votedAt: ref.votedAt.toISOString(),
+})
+
 export default class VoteFeedManager {
-  private readonly voteRepository: VoteRepository
+  private readonly voteFeedReadRepository: VoteFeedReadRepository
   private readonly postManager: PostManager
   private readonly userManager: UserManager
-  private readonly enricher: Enricher
   private readonly logger: Logger
 
   constructor(
-    voteRepository: VoteRepository,
+    voteFeedReadRepository: VoteFeedReadRepository,
     postManager: PostManager,
     userManager: UserManager,
-    enricher: Enricher,
     logger: Logger,
   ) {
-    this.voteRepository = voteRepository
+    this.voteFeedReadRepository = voteFeedReadRepository
     this.postManager = postManager
     this.userManager = userManager
-    this.enricher = enricher
     this.logger = logger
   }
 
@@ -90,130 +146,201 @@ export default class VoteFeedManager {
     cursor: string | undefined,
     perpage: number,
     format: ContentFormat,
-  ): Promise<VoteFeedResult> {
+  ): Promise<UserVotesResponse> {
     const decodedCursor = cursor ? decodeVoteFeedCursor(cursor) : undefined
-    const refs = await this.voteRepository.getVoteFeedEvents(forUserId, direction, filter, decodedCursor, perpage + 1)
+    const refs = await this.voteFeedReadRepository.getPageReferences(
+      forUserId,
+      direction,
+      filter,
+      decodedCursor,
+      perpage + 1,
+    )
     const hasMore = refs.length > perpage
     const pageRefs = hasMore ? refs.slice(0, perpage) : refs
+    const nextCursor = hasMore && pageRefs.length ? encodeVoteFeedCursor(pageRefs[pageRefs.length - 1]) : undefined
 
-    const postIds = [...new Set(pageRefs.filter((ref) => ref.type === 'post').map((ref) => ref.entityId))]
-    const commentIds = [...new Set(pageRefs.filter((ref) => ref.type === 'comment').map((ref) => ref.entityId))]
-    const profileUserIds = [...new Set(pageRefs.filter((ref) => ref.type === 'user').map((ref) => ref.entityId))]
-    const voterIds = [...new Set(pageRefs.map((ref) => ref.voterId))]
+    if (direction === 'received') {
+      return this.hydrateReceived(forUserId, pageRefs, hasMore, nextCursor)
+    }
+    return this.hydrateMine(forUserId, pageRefs, hasMore, nextCursor, format)
+  }
+
+  private async hydrateMine(
+    forUserId: number,
+    refs: VoteFeedReference[],
+    hasMore: boolean,
+    nextCursor: string | undefined,
+    format: ContentFormat,
+  ): Promise<UserVotesResponse> {
+    const postIds = this.entityIds(refs, 'post')
+    const commentIds = this.entityIds(refs, 'comment')
     const commentPostIds = [
-      ...new Set(
-        pageRefs
-          .filter((ref) => ref.type === 'comment' && ref.postId)
-          .map((ref) => ref.postId as number)
-          .filter((postId) => !postIds.includes(postId)),
-      ),
+      ...new Set(refs.flatMap((ref) => (ref.type === 'comment' && ref.postId ? [ref.postId] : []))),
     ]
-
-    const [rawPosts, rawComments, commentPostTitles] = await Promise.all([
+    const [posts, comments, postTitles] = await Promise.all([
       this.postManager.getPostsByIds(postIds, forUserId, format),
       this.postManager.getCommentsByIds(commentIds, forUserId, format),
       this.postManager.getPostTitlesByIds(commentPostIds),
     ])
+    const parentComments = await this.postManager.getParentCommentsForASetOfComments(comments, forUserId, format)
 
-    const { posts, users: postUsers } = await this.enricher.enrichRawPosts(rawPosts)
-    const rawParentComments = await this.postManager.getParentCommentsForASetOfComments(rawComments, forUserId, format)
-    const { allComments, users } = await this.enricher.enrichRawComments(rawComments, postUsers, format, (_) => false)
-    const { allComments: parentComments } = await this.enricher.enrichRawComments(
-      rawParentComments,
-      users,
-      format,
-      (_) => false,
-    )
-
-    const postsById: Record<number, PostEntity> = {}
-    const postTitlesById: Record<number, string> = { ...commentPostTitles }
-    posts.forEach((post) => {
-      postsById[post.id] = post
+    const postsById = this.indexById(posts.map(toPostEntity))
+    const commentsById = this.indexById(comments.map(toCommentEntity))
+    const parentCommentsById = this.indexById(parentComments.map(toCommentEntity))
+    for (const post of posts) {
       if (post.title) {
-        postTitlesById[post.id] = post.title
+        postTitles[post.id] = post.title
       }
-    })
+    }
 
-    const commentsById: Record<number, CommentEntity> = {}
-    allComments.forEach((comment) => {
-      commentsById[comment.id] = comment
-    })
-
-    const parentCommentsById: Record<number, CommentEntity> = {}
-    parentComments.forEach((comment) => {
-      parentCommentsById[comment.id] = comment
-    })
-
-    const voteUsers = await this.userManager.getByIds(
-      [...profileUserIds, ...voterIds].filter((voteUserId) => !users[voteUserId]),
+    const users = await this.loadUsers(refs, [
+      ...posts.map((post) => post.author),
+      ...comments.map((comment) => comment.author),
+      ...parentComments.map((comment) => comment.author),
+    ])
+    const events = this.filterExistingEvents(
+      refs,
+      users,
+      (ref) => {
+        if (ref.type === 'post') {
+          return !!postsById[ref.entityId]
+        }
+        if (ref.type === 'comment') {
+          return !!commentsById[ref.entityId]
+        }
+        return !!users[ref.entityId]
+      },
+      forUserId,
+      'mine',
     )
-    Object.assign(users, voteUsers)
 
-    const events: UserVoteFeedEvent[] = []
-    for (const ref of pageRefs) {
-      const event = this.buildEvent(ref, postsById, postTitlesById, commentsById, parentCommentsById, users)
-      if (event) {
-        events.push(event)
+    return {
+      direction: 'mine',
+      events,
+      users,
+      entities: {
+        posts: postsById,
+        comments: commentsById,
+        parentComments: parentCommentsById,
+        postTitles,
+      },
+      hasMore,
+      nextCursor,
+    }
+  }
+
+  private async hydrateReceived(
+    forUserId: number,
+    refs: VoteFeedReference[],
+    hasMore: boolean,
+    nextCursor: string | undefined,
+  ): Promise<UserVotesResponse> {
+    const [postRows, commentRows] = await Promise.all([
+      this.voteFeedReadRepository.getReceivedPostSubjects(this.entityIds(refs, 'post')),
+      this.voteFeedReadRepository.getReceivedCommentSubjects(this.entityIds(refs, 'comment')),
+    ])
+    const posts: Record<number, ReceivedPostSubject> = {}
+    for (const row of postRows) {
+      const title = row.title?.trim()
+      const fallback = stripHtml(row.html || '')
+        .result.replace(/\s+/g, ' ')
+        .trim()
+      const id = Number(row.id)
+      posts[id] = {
+        id,
+        site: row.site,
+        label: (title || fallback).slice(0, 72),
+        rating: Number(row.rating),
+      }
+    }
+    const comments: Record<number, ReceivedCommentSubject> = {}
+    for (const row of commentRows) {
+      const id = Number(row.id)
+      const postTitle = row.postTitle?.trim()
+      comments[id] = {
+        id,
+        postId: Number(row.postId),
+        site: row.site,
+        postTitle: postTitle || undefined,
+        rating: Number(row.rating),
+      }
+    }
+
+    const users = await this.loadUsers(refs)
+    const events = this.filterExistingEvents(
+      refs,
+      users,
+      (ref) => {
+        if (ref.type === 'post') {
+          return !!posts[ref.entityId]
+        }
+        if (ref.type === 'comment') {
+          return !!comments[ref.entityId]
+        }
+        return !!users[ref.entityId]
+      },
+      forUserId,
+      'received',
+    )
+
+    return {
+      direction: 'received',
+      events,
+      users,
+      subjects: { posts, comments },
+      hasMore,
+      nextCursor,
+    }
+  }
+
+  private entityIds(refs: VoteFeedReference[], type: VoteFeedReference['type']): number[] {
+    return [...new Set(refs.filter((ref) => ref.type === type).map((ref) => ref.entityId))]
+  }
+
+  private indexById<T extends { id: number }>(items: T[]): Record<number, T> {
+    return items.reduce<Record<number, T>>((index, item) => {
+      index[item.id] = item
+      return index
+    }, {})
+  }
+
+  private async loadUsers(refs: VoteFeedReference[], authorIds: number[] = []): Promise<Record<number, UserEntity>> {
+    const ids = new Set<number>(authorIds)
+    for (const ref of refs) {
+      ids.add(ref.voterId)
+      ids.add(ref.targetUserId)
+      if (ref.type === 'user') {
+        ids.add(ref.entityId)
+      }
+    }
+    const users = await this.userManager.getByIds([...ids])
+    return Object.values(users).reduce<Record<number, UserEntity>>((result, user) => {
+      result[user.id] = toUserEntity(user)
+      return result
+    }, {})
+  }
+
+  private filterExistingEvents(
+    refs: VoteFeedReference[],
+    users: Record<number, UserEntity>,
+    exists: (ref: VoteFeedReference) => boolean,
+    forUserId: number,
+    direction: VoteFeedDirection,
+  ): UserVoteFeedEventRef[] {
+    const events: UserVoteFeedEventRef[] = []
+    for (const ref of refs) {
+      if (exists(ref)) {
+        events.push(toEventRef(ref))
       } else {
         this.logger.warn('Dropped vote feed event with missing entity', {
           forUserId,
           direction,
           type: ref.type,
           entityId: ref.entityId,
+          userLoaded: ref.type === 'user' ? !!users[ref.entityId] : undefined,
         })
       }
     }
-
-    return {
-      events,
-      users,
-      hasMore,
-      nextCursor: hasMore && pageRefs.length ? encodeVoteFeedCursor(pageRefs[pageRefs.length - 1]) : undefined,
-    }
-  }
-
-  private buildEvent(
-    ref: VoteFeedReference,
-    postsById: Record<number, PostEntity>,
-    postTitlesById: Record<number, string>,
-    commentsById: Record<number, CommentEntity>,
-    parentCommentsById: Record<number, CommentEntity>,
-    users: Record<number, UserEntity>,
-  ): UserVoteFeedEvent | undefined {
-    const base = {
-      vote: ref.vote,
-      votedAt: ref.votedAt.toISOString(),
-      voterId: ref.voterId,
-      targetUserId: ref.targetUserId,
-    }
-
-    if (ref.type === 'post' && postsById[ref.entityId]) {
-      return {
-        ...base,
-        type: 'post',
-        post: postsById[ref.entityId],
-      }
-    }
-
-    if (ref.type === 'comment' && commentsById[ref.entityId]) {
-      const comment = commentsById[ref.entityId]
-      return {
-        ...base,
-        type: 'comment',
-        comment,
-        parentComment: comment.parentComment ? parentCommentsById[comment.parentComment] : undefined,
-        postTitle: (ref.postId && postTitlesById[ref.postId]) || undefined,
-      }
-    }
-
-    if (ref.type === 'user' && users[ref.entityId]) {
-      return {
-        ...base,
-        type: 'user',
-        user: users[ref.entityId],
-      }
-    }
-
-    return undefined
+    return events
   }
 }

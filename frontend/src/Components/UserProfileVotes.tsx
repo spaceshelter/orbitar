@@ -3,12 +3,18 @@ import { Link, useSearchParams } from 'react-router-dom'
 
 import Button from '@ui/Button'
 
-import { UserVoteFeedEvent, UserVotesDirection } from '../API/UserAPI'
+import {
+  UserVoteFeedEvent,
+  UserVotesDirection,
+  UserVotesMineResult,
+  UserVotesReceivedResult,
+  UserVotesResult,
+} from '../API/UserAPI'
 import { useAPI, useAppState } from '../AppState/AppState'
 import { CommentInfo, PostInfo } from '../Types/PostInfo'
 import { UserInfo } from '../Types/UserInfo'
 import { htmlToPlainText, pluralize } from '../Utils/utils'
-import { getVoteFeedEventEntityId, groupVoteFeedEvents, VoteFeedGroup } from '../Utils/voteFeedGroups'
+import { groupVoteFeedEvents, VoteFeedGroup } from '../Utils/voteFeedGroups'
 import CommentComponent from './CommentComponent'
 import { LARGE_AUTO_CUT } from './ContentComponent'
 import { formatRelativeAgeBucket } from './DateComponent'
@@ -22,18 +28,17 @@ import feedStyles from '../Pages/FeedPage.module.scss'
 import styles from './UserProfileVotes.module.scss'
 
 const perpage = 20
+const emptyUsers: Record<number, UserInfo> = {}
 
 const getTab = (searchParams: URLSearchParams): UserVotesDirection =>
   searchParams.get('tab') === 'received' ? 'received' : 'mine'
 
-const getEventKey = (event: UserVoteFeedEvent) => `${event.type}:${getVoteFeedEventEntityId(event)}:${event.voterId}`
+const getEventKey = (event: UserVoteFeedEvent) => `${event.type}:${event.entityId}:${event.voterId}`
 
 const getGroupKey = (group: VoteFeedGroup) =>
   `${group.kind}:${group.latestAt.toISOString()}:${group.events.map(getEventKey).join('|')}`
 
 const getUser = (users: Record<number, UserInfo>, userId?: number) => (userId ? users[userId] : undefined)
-
-const receivedVotingDisabledTitle = 'Здесь показана эта оценка; число посередине — общий рейтинг.'
 
 const getVoteText = (vote: number) => (vote > 0 ? `+${vote}` : String(vote))
 
@@ -45,16 +50,24 @@ const getScoreClassName = (rating: number) =>
     rating > 0 ? styles.voteValuePlus : rating < 0 ? styles.voteValueMinus : styles.voteValueZero
   }`
 
-const getEventEntityKey = (event: UserVoteFeedEvent) => `${event.type}:${getVoteFeedEventEntityId(event)}`
+const getEventEntityKey = (event: UserVoteFeedEvent) => `${event.type}:${event.entityId}`
 
-const getEventRating = (event: UserVoteFeedEvent) => {
+const getEventRating = (event: UserVoteFeedEvent, feed: UserVotesResult) => {
   if (event.type === 'post') {
-    return event.post.rating
+    return (
+      (feed.direction === 'mine'
+        ? feed.entities.posts[event.entityId]?.rating
+        : feed.subjects.posts[event.entityId]?.rating) ?? 0
+    )
   }
   if (event.type === 'comment') {
-    return event.comment.rating
+    return (
+      (feed.direction === 'mine'
+        ? feed.entities.comments[event.entityId]?.rating
+        : feed.subjects.comments[event.entityId]?.rating) ?? 0
+    )
   }
-  return event.user.karma
+  return feed.users[event.entityId]?.karma ?? 0
 }
 
 const getGroupEntityName = (event?: UserVoteFeedEvent) => {
@@ -88,10 +101,7 @@ const getPostLinkText = (postId: number, title?: string) => {
   return label ? `пост #${postId}: ${label}` : `пост #${postId}`
 }
 
-const getPostSubjectText = (post: PostInfo) => {
-  const label = getCompactText(post.title) || getCompactText(post.content)
-  return label ? `пост #${post.id}: ${label}` : `пост #${post.id}`
-}
+const getPostSubjectText = (postId: number, label: string) => (label ? `пост #${postId}: ${label}` : `пост #${postId}`)
 
 const renderGroupUserLink = (user?: UserInfo) => {
   if (!user) {
@@ -119,6 +129,54 @@ const getVoteTimeGroups = (events: UserVoteFeedEvent[]) =>
     return acc
   }, [])
 
+const mergeVoteFeedResults = (current: UserVotesResult, next: UserVotesResult): UserVotesResult => {
+  if (current.direction !== next.direction) {
+    return current
+  }
+
+  const knownEventKeys = new Set(current.events.map(getEventKey))
+  const nextEvents = next.events.filter((event) => {
+    const key = getEventKey(event)
+    if (knownEventKeys.has(key)) {
+      return false
+    }
+    knownEventKeys.add(key)
+    return true
+  })
+  const base = {
+    events: [...current.events, ...nextEvents],
+    users: { ...current.users, ...next.users },
+    hasMore: next.hasMore,
+    nextCursor: next.nextCursor,
+  }
+
+  if (current.direction === 'mine' && next.direction === 'mine') {
+    return {
+      ...base,
+      direction: 'mine',
+      entities: {
+        posts: { ...current.entities.posts, ...next.entities.posts },
+        comments: { ...current.entities.comments, ...next.entities.comments },
+        parentComments: { ...current.entities.parentComments, ...next.entities.parentComments },
+        postTitles: { ...current.entities.postTitles, ...next.entities.postTitles },
+      },
+    }
+  }
+
+  if (current.direction === 'received' && next.direction === 'received') {
+    return {
+      ...base,
+      direction: 'received',
+      subjects: {
+        posts: { ...current.subjects.posts, ...next.subjects.posts },
+        comments: { ...current.subjects.comments, ...next.subjects.comments },
+      },
+    }
+  }
+
+  return current
+}
+
 type UserProfileVotesProps = {
   basePath: string
   queryStringParams?: Record<string, string>
@@ -132,17 +190,22 @@ export default function UserProfileVotes({
 }: UserProfileVotesProps) {
   const api = useAPI()
   const { userInfo } = useAppState()
+  const sessionUserId = userInfo?.id
   const [searchParams] = useSearchParams()
   const tab = getTab(searchParams)
-  const [events, setEvents] = useState<UserVoteFeedEvent[]>()
-  const [users, setUsers] = useState<Record<number, UserInfo>>({})
-  const [hasMore, setHasMore] = useState(false)
-  const [nextCursor, setNextCursor] = useState<string>()
+  const [feed, setFeed] = useState<UserVotesResult>()
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string>()
   const [loadMoreError, setLoadMoreError] = useState<string>()
   const requestGenerationRef = useRef(0)
+  const loadMoreAbortControllerRef = useRef<AbortController>()
+  const events = feed?.events
+  const users = feed?.users || emptyUsers
+  const hasMore = feed?.hasMore || false
+  const nextCursor = feed?.nextCursor
+  const mineFeed: UserVotesMineResult | undefined = feed?.direction === 'mine' ? feed : undefined
+  const receivedFeed: UserVotesReceivedResult | undefined = feed?.direction === 'received' ? feed : undefined
 
   const buildSearchParams = (nextTab: UserVotesDirection, nextFilter: string) => {
     const params: Record<string, string> = { ...persistentQueryStringParams, tab: nextTab }
@@ -167,68 +230,70 @@ export default function UserProfileVotes({
     return () => {
       requestGenerationRef.current = requestGeneration + 1
     }
-  }, [api.userAPI, filter, tab])
+  }, [api.userAPI, filter, sessionUserId, tab])
 
   useEffect(() => {
     const requestGeneration = requestGenerationRef.current
+    const abortController = new AbortController()
+    loadMoreAbortControllerRef.current?.abort()
+    loadMoreAbortControllerRef.current = undefined
     setLoading(true)
     setLoadingMore(false)
-    setEvents(undefined)
-    setUsers({})
-    setHasMore(false)
-    setNextCursor(undefined)
+    setFeed(undefined)
     setError(undefined)
     setLoadMoreError(undefined)
     api.userAPI
-      .userVotes(tab, filter || '', undefined, perpage)
+      .userVotes(tab, filter || '', undefined, perpage, abortController.signal)
       .then((result) => {
-        if (requestGeneration !== requestGenerationRef.current) {
+        if (abortController.signal.aborted || requestGeneration !== requestGenerationRef.current) {
           return
         }
-        setEvents(result.events)
-        setUsers(result.users)
-        setHasMore(result.hasMore)
-        setNextCursor(result.nextCursor)
+        setFeed(result)
         setError(undefined)
         setLoading(false)
       })
       .catch(() => {
-        if (requestGeneration !== requestGenerationRef.current) {
+        if (abortController.signal.aborted || requestGeneration !== requestGenerationRef.current) {
           return
         }
         setError('Не удалось загрузить ленту оценок')
         setLoading(false)
       })
-  }, [api.userAPI, filter, tab])
+
+    return () => {
+      abortController.abort()
+      loadMoreAbortControllerRef.current?.abort()
+      loadMoreAbortControllerRef.current = undefined
+    }
+  }, [api.userAPI, filter, sessionUserId, tab])
 
   const loadMore = () => {
     if (!nextCursor || loadingMore) {
       return
     }
     const requestGeneration = requestGenerationRef.current
+    const abortController = new AbortController()
+    loadMoreAbortControllerRef.current?.abort()
+    loadMoreAbortControllerRef.current = abortController
     setLoadingMore(true)
     setLoadMoreError(undefined)
     api.userAPI
-      .userVotes(tab, filter || '', nextCursor, perpage)
+      .userVotes(tab, filter || '', nextCursor, perpage, abortController.signal)
       .then((result) => {
-        if (requestGeneration !== requestGenerationRef.current) {
+        if (abortController.signal.aborted || requestGeneration !== requestGenerationRef.current) {
           return
         }
-        setEvents((currentEvents) => {
-          const known = new Set((currentEvents || []).map(getEventKey))
-          return [...(currentEvents || []), ...result.events.filter((event) => !known.has(getEventKey(event)))]
-        })
-        setUsers((currentUsers) => ({ ...currentUsers, ...result.users }))
-        setHasMore(result.hasMore)
-        setNextCursor(result.nextCursor)
+        setFeed((currentFeed) => (currentFeed ? mergeVoteFeedResults(currentFeed, result) : result))
         setLoadingMore(false)
+        loadMoreAbortControllerRef.current = undefined
       })
       .catch(() => {
-        if (requestGeneration !== requestGenerationRef.current) {
+        if (abortController.signal.aborted || requestGeneration !== requestGenerationRef.current) {
           return
         }
         setLoadMoreError('Не удалось загрузить ещё оценки')
         setLoadingMore(false)
+        loadMoreAbortControllerRef.current = undefined
       })
   }
 
@@ -236,54 +301,96 @@ export default function UserProfileVotes({
 
   const updateVoteEvent = (event: UserVoteFeedEvent, rating: number, vote?: number) => {
     const key = getEventKey(event)
-    setEvents((currentEvents) => {
-      if (!currentEvents) {
-        return currentEvents
+    setFeed((currentFeed) => {
+      if (!currentFeed) {
+        return currentFeed
       }
 
       if ((vote ?? 0) === 0) {
-        return currentEvents.filter((currentEvent) => getEventKey(currentEvent) !== key)
+        return {
+          ...currentFeed,
+          events: currentFeed.events.filter((currentEvent) => getEventKey(currentEvent) !== key),
+        }
       }
 
-      return currentEvents.map((currentEvent) => {
+      const updatedEvents = currentFeed.events.map((currentEvent) => {
         if (getEventKey(currentEvent) !== key) {
           return currentEvent
-        }
-
-        if (currentEvent.type === 'post') {
-          return {
-            ...currentEvent,
-            vote: vote ?? 0,
-            post: {
-              ...currentEvent.post,
-              rating,
-              vote,
-            },
-          }
-        }
-
-        if (currentEvent.type === 'comment') {
-          return {
-            ...currentEvent,
-            vote: vote ?? 0,
-            comment: {
-              ...currentEvent.comment,
-              rating,
-              vote,
-            },
-          }
         }
 
         return {
           ...currentEvent,
           vote: vote ?? 0,
-          user: {
-            ...currentEvent.user,
-            karma: rating,
-            vote,
-          },
         }
       })
+
+      if (event.type === 'user') {
+        const currentUser = currentFeed.users[event.entityId]
+        return {
+          ...currentFeed,
+          events: updatedEvents,
+          users: currentUser
+            ? {
+                ...currentFeed.users,
+                [event.entityId]: { ...currentUser, karma: rating, vote },
+              }
+            : currentFeed.users,
+        }
+      }
+
+      if (currentFeed.direction === 'mine') {
+        if (event.type === 'post') {
+          const post = currentFeed.entities.posts[event.entityId]
+          return {
+            ...currentFeed,
+            events: updatedEvents,
+            entities: {
+              ...currentFeed.entities,
+              posts: post
+                ? { ...currentFeed.entities.posts, [event.entityId]: { ...post, rating, vote } }
+                : currentFeed.entities.posts,
+            },
+          }
+        }
+
+        const comment = currentFeed.entities.comments[event.entityId]
+        return {
+          ...currentFeed,
+          events: updatedEvents,
+          entities: {
+            ...currentFeed.entities,
+            comments: comment
+              ? { ...currentFeed.entities.comments, [event.entityId]: { ...comment, rating, vote } }
+              : currentFeed.entities.comments,
+          },
+        }
+      }
+
+      if (event.type === 'post') {
+        const subject = currentFeed.subjects.posts[event.entityId]
+        return {
+          ...currentFeed,
+          events: updatedEvents,
+          subjects: {
+            ...currentFeed.subjects,
+            posts: subject
+              ? { ...currentFeed.subjects.posts, [event.entityId]: { ...subject, rating } }
+              : currentFeed.subjects.posts,
+          },
+        }
+      }
+
+      const subject = currentFeed.subjects.comments[event.entityId]
+      return {
+        ...currentFeed,
+        events: updatedEvents,
+        subjects: {
+          ...currentFeed.subjects,
+          comments: subject
+            ? { ...currentFeed.subjects.comments, [event.entityId]: { ...subject, rating } }
+            : currentFeed.subjects.comments,
+        },
+      }
     })
   }
 
@@ -325,39 +432,59 @@ export default function UserProfileVotes({
   }
 
   const renderReceivedEventSubject = (event: UserVoteFeedEvent) => {
+    if (!receivedFeed) {
+      return null
+    }
+
     if (event.type === 'post') {
+      const subject = receivedFeed.subjects.posts[event.entityId]
+      if (!subject) {
+        return null
+      }
       return (
-        <PostLink className={styles.subjectLink} post={event.post}>
-          {getPostSubjectText(event.post)}
+        <PostLink className={styles.subjectLink} post={subject}>
+          {getPostSubjectText(subject.id, getCompactText(subject.label))}
         </PostLink>
       )
     }
 
     if (event.type === 'comment') {
-      const postTitle = getCompactText(event.postTitle)
+      const subject = receivedFeed.subjects.comments[event.entityId]
+      if (!subject) {
+        return null
+      }
+      const postTitle = getCompactText(subject.postTitle)
       return (
-        <PostLink className={styles.subjectLink} post={event.comment.postLink} commentId={event.comment.id}>
-          комментарий #{event.comment.id} в посте #{event.comment.postLink.id}
+        <PostLink
+          className={styles.subjectLink}
+          post={{ id: subject.postId, site: subject.site }}
+          commentId={subject.id}
+        >
+          комментарий #{subject.id} в посте #{subject.postId}
           {postTitle ? `: ${postTitle}` : ''}
         </PostLink>
       )
     }
 
+    const user = receivedFeed.users[event.entityId]
+    if (!user) {
+      return null
+    }
     return (
       <span className={styles.subjectInline}>
-        профиль <Username className={styles.voteUsername} user={event.user} />
+        профиль <Username className={styles.voteUsername} user={user} />
       </span>
     )
   }
 
   const renderReceivedGroupSubject = (group: VoteFeedGroup, sameEntity: boolean) => {
     const firstEvent = group.events[0]
-    if (!firstEvent) {
+    if (!firstEvent || !receivedFeed) {
       return null
     }
 
     if (sameEntity) {
-      const rating = getEventRating(firstEvent)
+      const rating = getEventRating(firstEvent, receivedFeed)
       return (
         <div className={styles.groupSubject}>
           <div className={styles.subjectMain}>{renderReceivedEventSubject(firstEvent)}</div>
@@ -369,18 +496,11 @@ export default function UserProfileVotes({
     }
 
     if (group.kind === 'context-post') {
-      const postLink =
-        firstEvent.type === 'post'
-          ? firstEvent.post
-          : firstEvent.type === 'comment'
-            ? firstEvent.comment.postLink
-            : undefined
-      const postTitle =
-        firstEvent.type === 'post'
-          ? firstEvent.post.title
-          : firstEvent.type === 'comment'
-            ? firstEvent.postTitle
-            : undefined
+      const postSubject = firstEvent.type === 'post' ? receivedFeed.subjects.posts[firstEvent.entityId] : undefined
+      const commentSubject =
+        firstEvent.type === 'comment' ? receivedFeed.subjects.comments[firstEvent.entityId] : undefined
+      const postLink = postSubject || (commentSubject && { id: commentSubject.postId, site: commentSubject.site })
+      const postTitle = postSubject?.label || commentSubject?.postTitle
       if (postLink) {
         return (
           <div className={styles.groupSubject}>
@@ -400,7 +520,7 @@ export default function UserProfileVotes({
 
   const renderReceivedVoteRow = (event: UserVoteFeedEvent, group: VoteFeedGroup, sameEntity: boolean) => {
     const voter = getUser(users, event.voterId)
-    const rating = getEventRating(event)
+    const rating = receivedFeed ? getEventRating(event, receivedFeed) : 0
 
     return (
       <div className={styles.voteRow} key={getEventKey(event)}>
@@ -460,63 +580,58 @@ export default function UserProfileVotes({
     )
   }
 
-  const renderPost = (event: Extract<UserVoteFeedEvent, { type: 'post' }>) => {
+  const renderPost = (event: UserVoteFeedEvent) => {
+    if (event.type !== 'post' || !mineFeed) {
+      return null
+    }
+    const post = mineFeed.entities.posts[event.entityId]
+    if (!post) {
+      return null
+    }
     const handleChange = (_id: number, post: Partial<PostInfo>, postApiCall?: boolean) => {
       if (postApiCall) {
-        updateVoteEvent(event, post.rating ?? event.post.rating, post.vote)
+        updateVoteEvent(event, post.rating ?? mineFeed.entities.posts[event.entityId]?.rating ?? 0, post.vote)
       }
     }
 
-    const post =
-      tab === 'received'
-        ? {
-            ...event.post,
-            vote: event.vote,
-          }
-        : event.post
-
-    return (
-      <PostComponent
-        post={post}
-        showSite={true}
-        votingDisabled={tab === 'received'}
-        votingDisabledTitle={receivedVotingDisabledTitle}
-        onChange={tab === 'mine' ? handleChange : undefined}
-        autoCut={LARGE_AUTO_CUT}
-      />
-    )
+    return <PostComponent post={post} showSite={true} onChange={handleChange} autoCut={LARGE_AUTO_CUT} />
   }
 
-  const renderComment = (event: Extract<UserVoteFeedEvent, { type: 'comment' }>) => {
+  const renderComment = (event: UserVoteFeedEvent) => {
+    if (event.type !== 'comment' || !mineFeed) {
+      return null
+    }
+    const comment = mineFeed.entities.comments[event.entityId]
+    if (!comment) {
+      return null
+    }
+    const parentComment = comment.parentComment ? mineFeed.entities.parentComments[comment.parentComment] : undefined
     const handleVote = (_id: number, comment: Partial<CommentInfo>, postApiCall?: boolean) => {
       if (postApiCall) {
-        updateVoteEvent(event, comment.rating ?? event.comment.rating, comment.vote)
+        updateVoteEvent(event, comment.rating ?? mineFeed.entities.comments[event.entityId]?.rating ?? 0, comment.vote)
       }
     }
-
-    const comment =
-      tab === 'received'
-        ? {
-            ...event.comment,
-            vote: event.vote,
-          }
-        : event.comment
 
     return (
       <CommentComponent
-        idx={event.parentComment ? 1 : 0}
-        parent={event.parentComment}
+        idx={parentComment ? 1 : 0}
+        parent={parentComment}
         currentUsername={userInfo?.username}
         comment={comment}
-        showSite={event.comment.site !== 'main'}
-        votingDisabled={tab === 'received'}
-        votingDisabledTitle={receivedVotingDisabledTitle}
-        onVote={tab === 'mine' ? handleVote : undefined}
+        showSite={comment.site !== 'main'}
+        onVote={handleVote}
       />
     )
   }
 
-  const renderUser = (event: Extract<UserVoteFeedEvent, { type: 'user' }>) => {
+  const renderUser = (event: UserVoteFeedEvent) => {
+    if (event.type !== 'user' || !mineFeed) {
+      return null
+    }
+    const user = mineFeed.users[event.entityId]
+    if (!user) {
+      return null
+    }
     const handleVote = (karma: number, vote?: number, postApiCall?: boolean) => {
       if (postApiCall) {
         updateVoteEvent(event, karma, vote)
@@ -526,27 +641,16 @@ export default function UserProfileVotes({
     return (
       <div className={styles.userEvent}>
         <div className={styles.userInfo}>
-          <Username user={event.user} />
+          <Username user={user} />
           <span>карма</span>
         </div>
-        {tab === 'mine' ? (
-          <RatingSwitch
-            type='user'
-            id={event.user.id}
-            double={true}
-            rating={{ vote: event.vote, value: event.user.karma }}
-            onVote={handleVote}
-          />
-        ) : (
-          <RatingSwitch
-            type='user'
-            id={event.user.id}
-            double={true}
-            rating={{ vote: event.vote, value: event.user.karma }}
-            votingDisabled={true}
-            votingDisabledTitle={receivedVotingDisabledTitle}
-          />
-        )}
+        <RatingSwitch
+          type='user'
+          id={user.id}
+          double={true}
+          rating={{ vote: event.vote, value: user.karma }}
+          onVote={handleVote}
+        />
       </div>
     )
   }
@@ -593,7 +697,7 @@ export default function UserProfileVotes({
             {!error && groups.length > 0 && (
               <div className={styles.groups}>
                 {groups.map((group) => {
-                  if (tab === 'received') {
+                  if (receivedFeed) {
                     return renderReceivedGroup(group)
                   }
 

@@ -43,13 +43,48 @@ describe('vote feed cursor codec', () => {
 
 describe('VoteFeedManager.getVoteFeed', () => {
   const users = {
-    30: { id: 30, username: 'target', gender: 0, karma: 7 },
-    201: { id: 201, username: 'post-author', gender: 0, karma: 0 },
-    301: { id: 301, username: 'voter', gender: 0, karma: 0 },
+    30: {
+      id: 30,
+      username: 'target',
+      gender: 0,
+      karma: 7,
+      name: 'Target',
+      registered: new Date('2020-01-01'),
+      ontrial: false,
+      bio_source: 'private source',
+      bio_html: '<p>private html</p>',
+    },
+    201: {
+      id: 201,
+      username: 'post-author',
+      gender: 0,
+      karma: 0,
+      name: 'Author',
+      registered: new Date('2020-01-01'),
+      ontrial: false,
+    },
+    301: {
+      id: 301,
+      username: 'voter',
+      gender: 0,
+      karma: 0,
+      name: 'Voter',
+      registered: new Date('2020-01-01'),
+      ontrial: false,
+    },
+    302: {
+      id: 302,
+      username: 'another-voter',
+      gender: 0,
+      karma: 0,
+      name: 'Another voter',
+      registered: new Date('2020-01-01'),
+      ontrial: false,
+    },
   }
 
   const makeRef = (overrides: any = {}) => ({
-    type: 'post',
+    type: 'post' as const,
     entityId: 10,
     postId: 10,
     voterId: 301,
@@ -60,12 +95,27 @@ describe('VoteFeedManager.getVoteFeed', () => {
   })
 
   const createManager = (overrides: any = {}) => {
-    const voteRepository = {
-      getVoteFeedEvents: jest.fn().mockResolvedValue([makeRef()]),
-      ...overrides.voteRepository,
+    const voteFeedReadRepository = {
+      getPageReferences: jest.fn().mockResolvedValue([makeRef()]),
+      getReceivedPostSubjects: jest.fn().mockResolvedValue([]),
+      getReceivedCommentSubjects: jest.fn().mockResolvedValue([]),
+      ...overrides.voteFeedReadRepository,
     }
     const postManager = {
-      getPostsByIds: jest.fn().mockResolvedValue([{ id: 10, author: 201, title: 'Post' }]),
+      getPostsByIds: jest.fn().mockResolvedValue([
+        {
+          id: 10,
+          site: 'main',
+          author: 201,
+          created: new Date('2026-05-01T10:00:00.000Z'),
+          title: 'Post',
+          content: '<p>content</p>',
+          rating: 3,
+          comments: 1,
+          newComments: 0,
+          vote: 0,
+        },
+      ]),
       getCommentsByIds: jest.fn().mockResolvedValue([]),
       getParentCommentsForASetOfComments: jest.fn().mockResolvedValue([]),
       getPostTitlesByIds: jest.fn().mockResolvedValue({}),
@@ -83,52 +133,51 @@ describe('VoteFeedManager.getVoteFeed', () => {
       }),
       ...overrides.userManager,
     }
-    const enricher = {
-      enrichRawPosts: jest.fn((rawPosts) =>
-        Promise.resolve({
-          posts: rawPosts.map((post: any) => ({ ...post, vote: 0 })),
-          users: { 201: users[201] },
-        }),
-      ),
-      enrichRawComments: jest.fn((comments, currentUsers) =>
-        Promise.resolve({
-          allComments: comments.map((comment: any) => ({ ...comment, source: 'Comment' })),
-          users: currentUsers,
-        }),
-      ),
-      ...overrides.enricher,
-    }
     const logger = { warn: jest.fn(), error: jest.fn() }
     const manager = new VoteFeedManager(
-      voteRepository as any,
+      voteFeedReadRepository as any,
       postManager as any,
       userManager as any,
-      enricher as any,
       logger as any,
     )
-    return { manager, voteRepository, postManager, userManager, enricher, logger }
+    return { manager, voteFeedReadRepository, postManager, userManager, logger }
   }
 
-  test('fetches perpage + 1 references and reports hasMore with a cursor of the last returned event', async () => {
+  test('fetches perpage + 1 references and cursors from the last returned reference', async () => {
     const refs = [
       makeRef({ entityId: 11, postId: 11, votedAt: new Date('2026-05-11T12:00:00.000Z') }),
       makeRef({ entityId: 10, postId: 10, votedAt: new Date('2026-05-11T11:00:00.000Z') }),
       makeRef({ entityId: 9, postId: 9, votedAt: new Date('2026-05-11T10:00:00.000Z') }),
     ]
-    const { manager, voteRepository, postManager } = createManager({
-      voteRepository: { getVoteFeedEvents: jest.fn().mockResolvedValue(refs) },
+    const { manager, voteFeedReadRepository, postManager } = createManager({
+      voteFeedReadRepository: { getPageReferences: jest.fn().mockResolvedValue(refs) },
       postManager: {
         getPostsByIds: jest.fn().mockResolvedValue([
-          { id: 11, author: 201 },
-          { id: 10, author: 201 },
+          {
+            id: 11,
+            site: 'main',
+            author: 201,
+            created: new Date(),
+            rating: 0,
+            comments: 0,
+            newComments: 0,
+          },
+          {
+            id: 10,
+            site: 'main',
+            author: 201,
+            created: new Date(),
+            rating: 0,
+            comments: 0,
+            newComments: 0,
+          },
         ]),
       },
     })
 
     const result = await manager.getVoteFeed(123, 'mine', '', undefined, 2, 'html')
 
-    expect(voteRepository.getVoteFeedEvents).toHaveBeenCalledWith(123, 'mine', '', undefined, 3)
-    // the extra row is only a hasMore probe and must not be fetched or returned
+    expect(voteFeedReadRepository.getPageReferences).toHaveBeenCalledWith(123, 'mine', '', undefined, 3)
     expect(postManager.getPostsByIds).toHaveBeenCalledWith([11, 10], 123, 'html')
     expect(result.events).toHaveLength(2)
     expect(result.hasMore).toBe(true)
@@ -140,13 +189,15 @@ describe('VoteFeedManager.getVoteFeed', () => {
     })
   })
 
-  test('decodes the incoming cursor and passes it to the repository', async () => {
-    const { manager, voteRepository } = createManager()
+  test('decodes an incoming cursor before querying references', async () => {
+    const { manager, voteFeedReadRepository } = createManager({
+      voteFeedReadRepository: { getPageReferences: jest.fn().mockResolvedValue([]) },
+    })
     const cursor = encodeVoteFeedCursor(makeRef({ entityId: 99 }))
 
     await manager.getVoteFeed(123, 'received', 'abc', cursor, 20, 'html')
 
-    expect(voteRepository.getVoteFeedEvents).toHaveBeenCalledWith(
+    expect(voteFeedReadRepository.getPageReferences).toHaveBeenCalledWith(
       123,
       'received',
       'abc',
@@ -156,99 +207,158 @@ describe('VoteFeedManager.getVoteFeed', () => {
   })
 
   test('throws InvalidVoteFeedCursorError before touching the repository', async () => {
-    const { manager, voteRepository } = createManager()
+    const { manager, voteFeedReadRepository } = createManager()
 
     await expect(manager.getVoteFeed(123, 'mine', '', 'broken!', 20, 'html')).rejects.toBeInstanceOf(
       InvalidVoteFeedCursorError,
     )
-    expect(voteRepository.getVoteFeedEvents).not.toHaveBeenCalled()
+    expect(voteFeedReadRepository.getPageReferences).not.toHaveBeenCalled()
   })
 
-  test('builds flat events without overriding the entity vote', async () => {
-    const { manager } = createManager()
-
-    const result = await manager.getVoteFeed(123, 'received', '', undefined, 20, 'html')
-
-    expect(result.hasMore).toBe(false)
-    expect(result.nextCursor).toBeUndefined()
-    expect(result.events).toEqual([
-      {
-        type: 'post',
-        vote: 1,
-        votedAt: '2026-05-11T10:00:00.000Z',
-        voterId: 301,
-        targetUserId: 201,
-        // the entity keeps the session user's own vote; event.vote carries the feed vote
-        post: { id: 10, author: 201, title: 'Post', vote: 0 },
-      },
-    ])
-    expect(result.users).toMatchObject({ 201: users[201], 301: users[301] })
-  })
-
-  test('comment events carry the parent post title fetched in batch', async () => {
-    const { manager, postManager } = createManager({
-      voteRepository: {
-        getVoteFeedEvents: jest
-          .fn()
-          .mockResolvedValue([makeRef({ type: 'comment', entityId: 555, postId: 77, targetUserId: 201 })]),
-      },
+  test('normalizes mine entities and loads all users in one batch with an explicit allowlist', async () => {
+    const refs = [
+      makeRef(),
+      makeRef({ type: 'comment', entityId: 55, postId: 77 }),
+      makeRef({ type: 'user', entityId: 30, postId: undefined, targetUserId: 30, vote: 2 }),
+    ]
+    const { manager, userManager } = createManager({
+      voteFeedReadRepository: { getPageReferences: jest.fn().mockResolvedValue(refs) },
       postManager: {
-        getPostsByIds: jest.fn().mockResolvedValue([]),
-        getCommentsByIds: jest.fn().mockResolvedValue([{ id: 555, author: 201, parentComment: undefined }]),
-        getParentCommentsForASetOfComments: jest.fn().mockResolvedValue([]),
+        getCommentsByIds: jest.fn().mockResolvedValue([
+          {
+            id: 55,
+            author: 201,
+            content: 'Comment',
+            created: new Date('2026-05-02T10:00:00.000Z'),
+            rating: 2,
+            parentComment: 50,
+            post: 77,
+            site: 'main',
+          },
+        ]),
+        getParentCommentsForASetOfComments: jest.fn().mockResolvedValue([
+          {
+            id: 50,
+            author: 201,
+            content: 'Parent',
+            created: new Date('2026-05-01T10:00:00.000Z'),
+            rating: 1,
+            post: 77,
+            site: 'main',
+          },
+        ]),
         getPostTitlesByIds: jest.fn().mockResolvedValue({ 77: 'Parent post' }),
       },
     })
 
+    const result = await manager.getVoteFeed(123, 'mine', '', undefined, 20, 'html')
+
+    expect(result.direction).toBe('mine')
+    if (result.direction !== 'mine') {
+      throw new Error('expected mine response')
+    }
+    expect(result.events).toEqual(
+      refs.map((ref) => ({
+        type: ref.type,
+        entityId: ref.entityId,
+        postId: ref.postId,
+        voterId: ref.voterId,
+        targetUserId: ref.targetUserId,
+        vote: ref.vote,
+        votedAt: ref.votedAt.toISOString(),
+      })),
+    )
+    expect(result.entities.posts[10]).toMatchObject({ id: 10, title: 'Post', vote: 0 })
+    expect(result.entities.comments[55]).toMatchObject({ id: 55, post: 77 })
+    expect(result.entities.parentComments[50]).toMatchObject({ id: 50 })
+    expect(result.entities.postTitles).toMatchObject({ 10: 'Post', 77: 'Parent post' })
+    expect(userManager.getByIds).toHaveBeenCalledTimes(1)
+    expect(result.users[30]).toEqual({
+      id: 30,
+      username: 'target',
+      gender: 0,
+      karma: 7,
+      name: 'Target',
+      vote: undefined,
+    })
+    expect(result.users[30]).not.toHaveProperty('registered')
+    expect(result.users[30]).not.toHaveProperty('ontrial')
+    expect(result.users[30]).not.toHaveProperty('bio_source')
+    expect(result.users[30]).not.toHaveProperty('bio_html')
+  })
+
+  test('uses compact received subjects and never hydrates full content', async () => {
+    const refs = [makeRef(), makeRef({ voterId: 302, votedAt: new Date('2026-05-11T09:00:00.000Z') })]
+    const html = `<p>${'heavy '.repeat(2_000)}</p>`
+    const { manager, voteFeedReadRepository, postManager, userManager } = createManager({
+      voteFeedReadRepository: {
+        getPageReferences: jest.fn().mockResolvedValue(refs),
+        getReceivedPostSubjects: jest.fn().mockResolvedValue([{ id: 10, site: 'main', title: '', html, rating: 9 }]),
+      },
+    })
+
+    const result = await manager.getVoteFeed(123, 'received', '', undefined, 20, 'source')
+
+    expect(result.direction).toBe('received')
+    if (result.direction !== 'received') {
+      throw new Error('expected received response')
+    }
+    expect(result.events).toHaveLength(2)
+    expect(Object.keys(result.subjects.posts)).toEqual(['10'])
+    expect(result.subjects.posts[10]).toEqual({
+      id: 10,
+      site: 'main',
+      label: expect.stringMatching(/^heavy/),
+      rating: 9,
+    })
+    expect(result.subjects.posts[10].label.length).toBeLessThanOrEqual(72)
+    expect(voteFeedReadRepository.getReceivedPostSubjects).toHaveBeenCalledWith([10])
+    expect(postManager.getPostsByIds).not.toHaveBeenCalled()
+    expect(postManager.getCommentsByIds).not.toHaveBeenCalled()
+    expect(userManager.getByIds).toHaveBeenCalledTimes(1)
+    expect(Buffer.byteLength(JSON.stringify(result))).toBeLessThan(25_000)
+  })
+
+  test('hydrates compact received comments with their post title', async () => {
+    const ref = makeRef({ type: 'comment', entityId: 55, postId: 77 })
+    const { manager, voteFeedReadRepository } = createManager({
+      voteFeedReadRepository: {
+        getPageReferences: jest.fn().mockResolvedValue([ref]),
+        getReceivedCommentSubjects: jest
+          .fn()
+          .mockResolvedValue([{ id: 55, postId: 77, site: 'main', postTitle: 'Parent post', rating: 2 }]),
+      },
+    })
+
     const result = await manager.getVoteFeed(123, 'received', '', undefined, 20, 'html')
 
-    expect(postManager.getPostTitlesByIds).toHaveBeenCalledWith([77])
-    expect(result.events[0]).toMatchObject({ type: 'comment', postTitle: 'Parent post' })
-  })
-
-  test('builds user events from the shared users map', async () => {
-    const { manager } = createManager({
-      voteRepository: {
-        getVoteFeedEvents: jest
-          .fn()
-          .mockResolvedValue([makeRef({ type: 'user', entityId: 30, postId: undefined, targetUserId: 30, vote: 2 })]),
-      },
-      postManager: {
-        getPostsByIds: jest.fn().mockResolvedValue([]),
-        getCommentsByIds: jest.fn().mockResolvedValue([]),
-        getParentCommentsForASetOfComments: jest.fn().mockResolvedValue([]),
-      },
+    expect(result.direction).toBe('received')
+    if (result.direction !== 'received') {
+      throw new Error('expected received response')
+    }
+    expect(voteFeedReadRepository.getReceivedCommentSubjects).toHaveBeenCalledWith([55])
+    expect(result.subjects.comments[55]).toEqual({
+      id: 55,
+      postId: 77,
+      site: 'main',
+      postTitle: 'Parent post',
+      rating: 2,
     })
-
-    const result = await manager.getVoteFeed(123, 'mine', '', undefined, 20, 'html')
-
-    expect(result.events).toEqual([
-      {
-        type: 'user',
-        vote: 2,
-        votedAt: '2026-05-11T10:00:00.000Z',
-        voterId: 301,
-        targetUserId: 30,
-        user: users[30],
-      },
-    ])
   })
 
-  test('drops events with missing entities and logs a warning', async () => {
+  test('drops references whose subject disappeared and logs a warning', async () => {
     const { manager, logger } = createManager({
-      postManager: {
-        getPostsByIds: jest.fn().mockResolvedValue([]),
-        getCommentsByIds: jest.fn().mockResolvedValue([]),
-        getParentCommentsForASetOfComments: jest.fn().mockResolvedValue([]),
+      voteFeedReadRepository: {
+        getReceivedPostSubjects: jest.fn().mockResolvedValue([]),
       },
     })
 
-    const result = await manager.getVoteFeed(123, 'mine', '', undefined, 20, 'html')
+    const result = await manager.getVoteFeed(123, 'received', '', undefined, 20, 'html')
 
     expect(result.events).toEqual([])
     expect(logger.warn).toHaveBeenCalledWith(
       'Dropped vote feed event with missing entity',
-      expect.objectContaining({ type: 'post', entityId: 10 }),
+      expect.objectContaining({ type: 'post', entityId: 10, direction: 'received' }),
     )
   })
 })

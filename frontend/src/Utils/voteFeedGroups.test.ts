@@ -14,23 +14,15 @@ type EventSpec = {
 }
 
 const vote = (spec: EventSpec): UserVoteFeedEvent => {
-  const base = {
+  return {
+    type: spec.type,
+    entityId: spec.entityId,
+    postId: spec.postId,
     vote: spec.vote ?? 1,
     votedAt: spec.votedAt ?? at(0),
     voterId: spec.voterId ?? 10,
     targetUserId: spec.targetUserId ?? 20,
   }
-  if (spec.type === 'post') {
-    return { ...base, type: 'post', post: { id: spec.entityId } as never }
-  }
-  if (spec.type === 'comment') {
-    return {
-      ...base,
-      type: 'comment',
-      comment: { id: spec.entityId, postLink: { id: spec.postId ?? 0 } } as never,
-    }
-  }
-  return { ...base, type: 'user', user: { id: spec.entityId } as never }
 }
 
 describe('groupVoteFeedEvents', () => {

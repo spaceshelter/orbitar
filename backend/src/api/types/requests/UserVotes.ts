@@ -13,35 +13,52 @@ export type UserVotesRequest = {
   perpage?: number
 }
 
-type UserVoteFeedEventBase = {
+export type UserVoteFeedEventRef = {
+  type: 'post' | 'comment' | 'user'
+  entityId: number
+  postId?: number
   vote: number
   votedAt: string
   voterId: number
   targetUserId: number
 }
 
-export type UserVoteFeedPostEvent = UserVoteFeedEventBase & {
-  type: 'post'
-  post: PostEntity
+export type ReceivedPostSubject = {
+  id: number
+  site: string
+  label: string
+  rating: number
 }
 
-export type UserVoteFeedCommentEvent = UserVoteFeedEventBase & {
-  type: 'comment'
-  comment: CommentEntity
-  parentComment?: CommentEntity
+export type ReceivedCommentSubject = {
+  id: number
+  postId: number
+  site: string
   postTitle?: string
+  rating: number
 }
 
-export type UserVoteFeedUserEvent = UserVoteFeedEventBase & {
-  type: 'user'
-  user: UserEntity
-}
-
-export type UserVoteFeedEvent = UserVoteFeedPostEvent | UserVoteFeedCommentEvent | UserVoteFeedUserEvent
-
-export type UserVotesResponse = {
-  events: UserVoteFeedEvent[]
+type UserVotesResponseBase = {
+  events: UserVoteFeedEventRef[]
   users: Record<number, UserEntity>
   hasMore: boolean
   nextCursor?: string
 }
+
+export type UserVotesResponse =
+  | (UserVotesResponseBase & {
+      direction: 'mine'
+      entities: {
+        posts: Record<number, PostEntity>
+        comments: Record<number, CommentEntity>
+        parentComments: Record<number, CommentEntity>
+        postTitles: Record<number, string>
+      }
+    })
+  | (UserVotesResponseBase & {
+      direction: 'received'
+      subjects: {
+        posts: Record<number, ReceivedPostSubject>
+        comments: Record<number, ReceivedCommentSubject>
+      }
+    })

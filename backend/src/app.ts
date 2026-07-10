@@ -38,6 +38,7 @@ import SiteRepository from './db/repositories/SiteRepository'
 import TranslationRepository from './db/repositories/TranslationRepository'
 import UserCredentials from './db/repositories/UserCredentials'
 import UserRepository from './db/repositories/UserRepository'
+import VoteFeedReadRepository from './db/repositories/VoteFeedReadRepository'
 import VoteRepository from './db/repositories/VoteRepository'
 import WebPushRepository from './db/repositories/WebPushRepository'
 import FeedManager from './managers/FeedManager'
@@ -116,6 +117,7 @@ const notificationsRepository = new NotificationsRepository(db)
 const postRepository = new PostRepository(db)
 const siteRepository = new SiteRepository(db)
 const voteRepository = new VoteRepository(db)
+const voteFeedReadRepository = new VoteFeedReadRepository(db)
 const userRepository = new UserRepository(db)
 const webPushRepository = new WebPushRepository(db)
 const translationRepository = new TranslationRepository(db)
@@ -202,10 +204,9 @@ const pollManager = new PollManager(pollRepository, userManager)
 
 const apiEnricher = new Enricher(siteManager, userManager)
 const voteFeedManager = new VoteFeedManager(
-  voteRepository,
+  voteFeedReadRepository,
   postManager,
   userManager,
-  apiEnricher,
   logger.child({ service: 'VOTEFEED' }),
 )
 
