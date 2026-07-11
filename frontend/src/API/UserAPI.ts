@@ -71,21 +71,22 @@ export type UserVotesDirection = 'mine' | 'received'
 
 type UserVotesRequest = {
   direction: UserVotesDirection
-  format?: ContentFormat
   filter?: string
   cursor?: string
   perpage?: number
 }
 
-type UserVoteFeedEventRefEntity = {
+type UserVoteFeedEventEntity<VotedAt> = {
   type: 'post' | 'comment' | 'user'
   entityId: number
   postId?: number
   vote: number
-  votedAt: string
+  votedAt: VotedAt
   voterId: number
   targetUserId: number
 }
+
+type UserVoteFeedEventRefEntity = UserVoteFeedEventEntity<string>
 
 export type ReceivedPostSubject = {
   id: number
@@ -129,15 +130,7 @@ type UserVotesReceivedResponse = UserVotesResponseBase & {
 
 type UserVotesResponse = UserVotesMineResponse | UserVotesReceivedResponse
 
-export type UserVoteFeedEvent = {
-  type: 'post' | 'comment' | 'user'
-  entityId: number
-  postId?: number
-  vote: number
-  votedAt: Date
-  voterId: number
-  targetUserId: number
-}
+export type UserVoteFeedEvent = UserVoteFeedEventEntity<Date>
 
 type UserVotesResultBase = {
   events: UserVoteFeedEvent[]
@@ -273,7 +266,6 @@ export default class UserAPI {
       '/user/votes',
       {
         direction,
-        format: 'html',
         cursor,
         perpage,
         filter,
@@ -283,7 +275,10 @@ export default class UserAPI {
     )
 
     const base = {
-      events: result.events.map((event) => this.fixVoteFeedEvent(event)),
+      events: result.events.map((event) => ({
+        ...event,
+        votedAt: this.api.fixDate(new Date(event.votedAt)),
+      })),
       users: result.users,
       hasMore: result.hasMore,
       nextCursor: result.nextCursor,
@@ -311,13 +306,6 @@ export default class UserAPI {
         parentComments: this.postAPIHelper.fixCommentsRecords(result.entities.parentComments, result.users),
         postTitles: result.entities.postTitles,
       },
-    }
-  }
-
-  private fixVoteFeedEvent(event: UserVoteFeedEventRefEntity): UserVoteFeedEvent {
-    return {
-      ...event,
-      votedAt: this.api.fixDate(new Date(event.votedAt)),
     }
   }
 

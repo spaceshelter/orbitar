@@ -2,7 +2,6 @@ import { stripHtml } from 'string-strip-html'
 import { Logger } from 'winston'
 
 import { CommentEntity } from '../api/types/entities/CommentEntity'
-import { ContentFormat } from '../api/types/entities/common'
 import { PostEntity } from '../api/types/entities/PostEntity'
 import { UserEntity, UserGender } from '../api/types/entities/UserEntity'
 import {
@@ -48,10 +47,11 @@ export const decodeVoteFeedCursor = (cursor: string): VoteFeedCursor => {
     throw new InvalidVoteFeedCursorError()
   }
 
+  const votedAt = typeof parsed?.votedAt === 'number' ? new Date(parsed.votedAt) : undefined
   if (
     !parsed ||
-    typeof parsed.votedAt !== 'number' ||
-    !Number.isFinite(parsed.votedAt) ||
+    !votedAt ||
+    Number.isNaN(votedAt.getTime()) ||
     !VOTE_FEED_ENTITY_TYPES.includes(parsed.type) ||
     !Number.isInteger(parsed.entityId) ||
     !Number.isInteger(parsed.voterId)
@@ -60,7 +60,7 @@ export const decodeVoteFeedCursor = (cursor: string): VoteFeedCursor => {
   }
 
   return {
-    votedAt: new Date(parsed.votedAt),
+    votedAt,
     type: parsed.type,
     entityId: parsed.entityId,
     voterId: parsed.voterId,
@@ -145,7 +145,6 @@ export default class VoteFeedManager {
     filter: string,
     cursor: string | undefined,
     perpage: number,
-    format: ContentFormat,
   ): Promise<UserVotesResponse> {
     const decodedCursor = cursor ? decodeVoteFeedCursor(cursor) : undefined
     const refs = await this.voteFeedReadRepository.getPageReferences(
@@ -162,7 +161,7 @@ export default class VoteFeedManager {
     if (direction === 'received') {
       return this.hydrateReceived(forUserId, pageRefs, hasMore, nextCursor)
     }
-    return this.hydrateMine(forUserId, pageRefs, hasMore, nextCursor, format)
+    return this.hydrateMine(forUserId, pageRefs, hasMore, nextCursor)
   }
 
   private async hydrateMine(
@@ -170,7 +169,6 @@ export default class VoteFeedManager {
     refs: VoteFeedReference[],
     hasMore: boolean,
     nextCursor: string | undefined,
-    format: ContentFormat,
   ): Promise<UserVotesResponse> {
     const postIds = this.entityIds(refs, 'post')
     const commentIds = this.entityIds(refs, 'comment')
@@ -178,11 +176,11 @@ export default class VoteFeedManager {
       ...new Set(refs.flatMap((ref) => (ref.type === 'comment' && ref.postId ? [ref.postId] : []))),
     ]
     const [posts, comments, postTitles] = await Promise.all([
-      this.postManager.getPostsByIds(postIds, forUserId, format),
-      this.postManager.getCommentsByIds(commentIds, forUserId, format),
+      this.postManager.getPostsByIds(postIds, forUserId),
+      this.postManager.getCommentsByIds(commentIds, forUserId),
       this.postManager.getPostTitlesByIds(commentPostIds),
     ])
-    const parentComments = await this.postManager.getParentCommentsForASetOfComments(comments, forUserId, format)
+    const parentComments = await this.postManager.getParentCommentsForASetOfComments(comments, forUserId, 'html')
 
     const postsById = this.indexById(posts.map(toPostEntity))
     const commentsById = this.indexById(comments.map(toCommentEntity))
@@ -200,7 +198,6 @@ export default class VoteFeedManager {
     ])
     const events = this.filterExistingEvents(
       refs,
-      users,
       (ref) => {
         if (ref.type === 'post') {
           return !!postsById[ref.entityId]
@@ -242,14 +239,16 @@ export default class VoteFeedManager {
     const posts: Record<number, ReceivedPostSubject> = {}
     for (const row of postRows) {
       const title = row.title?.trim()
-      const fallback = stripHtml(row.html || '')
-        .result.replace(/\s+/g, ' ')
-        .trim()
+      const label =
+        title ||
+        stripHtml(row.html || '')
+          .result.replace(/\s+/g, ' ')
+          .trim()
       const id = Number(row.id)
       posts[id] = {
         id,
         site: row.site,
-        label: (title || fallback).slice(0, 72),
+        label: label.slice(0, 72),
         rating: Number(row.rating),
       }
     }
@@ -269,7 +268,6 @@ export default class VoteFeedManager {
     const users = await this.loadUsers(refs)
     const events = this.filterExistingEvents(
       refs,
-      users,
       (ref) => {
         if (ref.type === 'post') {
           return !!posts[ref.entityId]
@@ -322,7 +320,6 @@ export default class VoteFeedManager {
 
   private filterExistingEvents(
     refs: VoteFeedReference[],
-    users: Record<number, UserEntity>,
     exists: (ref: VoteFeedReference) => boolean,
     forUserId: number,
     direction: VoteFeedDirection,
@@ -337,7 +334,6 @@ export default class VoteFeedManager {
           direction,
           type: ref.type,
           entityId: ref.entityId,
-          userLoaded: ref.type === 'user' ? !!users[ref.entityId] : undefined,
         })
       }
     }

@@ -226,7 +226,7 @@ describe('UserProfileVotes request state', () => {
 
   const renderVotes = async () => {
     await act(async () => {
-      root.render(<UserProfileVotes basePath='/profile/karma' showTabs={false} />)
+      root.render(<UserProfileVotes />)
       await Promise.resolve()
     })
   }

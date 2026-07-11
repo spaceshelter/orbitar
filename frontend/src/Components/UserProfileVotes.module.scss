@@ -1,32 +1,7 @@
-.tabs {
-  display: flex;
-  gap: 0;
-  margin: 0 -10px 16px;
-}
-
-.tab {
-  display: inline-block;
-  padding: 4px 10px;
-  text-decoration: none;
-}
-
-.tabActive {
-  color: var(--fg);
-  font-weight: bold;
-}
-
 .groups {
   display: flex;
   flex-direction: column;
   gap: 33px;
-}
-
-.group {
-  background: transparent;
-}
-
-.group:first-child {
-  margin-top: 0;
 }
 
 .groupHeader {

@@ -32,8 +32,6 @@ interface PostComponentProps {
   onEdit?: (post: PostInfo, text: string, title?: string) => Promise<PostInfo | undefined>
   dangerousHtmlTitle?: boolean
   hideRating?: boolean
-  votingDisabled?: boolean
-  votingDisabledTitle?: string
 }
 
 export default function PostComponent(props: PostComponentProps) {
@@ -213,14 +211,7 @@ export default function PostComponent(props: PostComponentProps) {
       <div className={styles.controls}>
         {!props.hideRating && (
           <div className={styles.control}>
-            <RatingSwitch
-              type='post'
-              id={id}
-              rating={{ vote, value: rating }}
-              onVote={handleVote}
-              votingDisabled={props.votingDisabled}
-              votingDisabledTitle={props.votingDisabledTitle}
-            />
+            <RatingSwitch type='post' id={id} rating={{ vote, value: rating }} onVote={handleVote} />
           </div>
         )}
         <div className={styles.control}>

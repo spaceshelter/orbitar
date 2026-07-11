@@ -79,7 +79,6 @@ export default class UserController {
     })
     const votesSchema = Joi.object<UserVotesRequest>({
       direction: Joi.valid('mine', 'received').required(),
-      format: joiFormat,
       filter: Joi.string().max(120).allow(null, ''),
       cursor: Joi.string().max(255).allow(null, ''),
       perpage: Joi.number().integer().min(1).max(50).default(20),
@@ -379,7 +378,7 @@ export default class UserController {
     }
 
     const userId = request.session.data.userId
-    const { direction, format, cursor, perpage, filter } = request.body
+    const { direction, cursor, perpage, filter } = request.body
 
     try {
       const restrictions = await this.userManager.getUserRestrictionsSnapshot(userId)
@@ -393,7 +392,6 @@ export default class UserController {
         filter || '',
         cursor || undefined,
         perpage || 20,
-        format,
       )
       return response.success(result)
     } catch (error) {

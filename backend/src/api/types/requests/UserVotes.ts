@@ -1,5 +1,4 @@
 import { CommentEntity } from '../entities/CommentEntity'
-import { ContentFormat } from '../entities/common'
 import { PostEntity } from '../entities/PostEntity'
 import { UserEntity } from '../entities/UserEntity'
 
@@ -7,7 +6,6 @@ export type UserVotesDirection = 'mine' | 'received'
 
 export type UserVotesRequest = {
   direction: UserVotesDirection
-  format: ContentFormat
   filter?: string
   cursor?: string
   perpage?: number

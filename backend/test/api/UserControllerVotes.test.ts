@@ -61,7 +61,6 @@ describe('UserController votes', () => {
         session: { data: { userId: 123 } },
         body: {
           direction: 'received',
-          format: 'html',
           filter: 'orbitar',
           cursor: 'cursor-token',
           perpage: 20,
@@ -72,7 +71,7 @@ describe('UserController votes', () => {
       response as any,
     )
 
-    expect(voteFeedManager.getVoteFeed).toHaveBeenCalledWith(123, 'received', 'orbitar', 'cursor-token', 20, 'html')
+    expect(voteFeedManager.getVoteFeed).toHaveBeenCalledWith(123, 'received', 'orbitar', 'cursor-token', 20)
     expect(response.success).toHaveBeenCalledWith(payload)
     expect(response.error).not.toHaveBeenCalled()
   })
@@ -84,12 +83,12 @@ describe('UserController votes', () => {
     await controller['votes'](
       {
         session: { data: { userId: 123 } },
-        body: { direction: 'mine', format: 'html', filter: '', cursor: '' },
+        body: { direction: 'mine', filter: '', cursor: '' },
       } as any,
       response as any,
     )
 
-    expect(voteFeedManager.getVoteFeed).toHaveBeenCalledWith(123, 'mine', '', undefined, 20, 'html')
+    expect(voteFeedManager.getVoteFeed).toHaveBeenCalledWith(123, 'mine', '', undefined, 20)
   })
 
   test('rejects restricted users before loading the vote feed', async () => {
@@ -101,7 +100,7 @@ describe('UserController votes', () => {
     await controller['votes'](
       {
         session: { data: { userId: 123 } },
-        body: { direction: 'mine', format: 'html' },
+        body: { direction: 'mine' },
       } as any,
       response as any,
     )
@@ -123,7 +122,7 @@ describe('UserController votes', () => {
     expect(validateVotes).toBeDefined()
     await new Promise<void>((resolve) => {
       response.error.mockImplementation(() => resolve())
-      validateVotes({ body: { direction: 'mine', format: 'html', perpage: 1.5 } } as any, response as any, () => {
+      validateVotes({ body: { direction: 'mine', perpage: 1.5 } } as any, response as any, () => {
         next()
         resolve()
       })
@@ -147,7 +146,7 @@ describe('UserController votes', () => {
     await controller['votes'](
       {
         session: { data: { userId: 123 } },
-        body: { direction: 'mine', format: 'html', cursor: 'broken' },
+        body: { direction: 'mine', cursor: 'broken' },
       } as any,
       response as any,
     )
@@ -165,7 +164,7 @@ describe('UserController votes', () => {
     await controller['votes'](
       {
         session: { data: { userId: 123 } },
-        body: { direction: 'mine', format: 'html' },
+        body: { direction: 'mine' },
       } as any,
       response as any,
     )

@@ -75,17 +75,18 @@ export default class VoteRepository {
       const prevVote = Number(existingVote?.vote || 0)
       const targetChanged =
         existingVote && (existingVote.target_user_id == null || Number(existingVote.target_user_id) !== authorId)
+      const entityParams = {
+        entity_id: entityId,
+        voter_id: userId,
+        target_user_id: authorId,
+      }
+      const voteParams = { ...entityParams, vote }
 
       if (!existingVote) {
         await conn.query(
           `insert into ${entityVotesTable} ( ${entityField}, voter_id, vote, target_user_id )
                values ( :entity_id, :voter_id, :vote, :target_user_id )`,
-          {
-            entity_id: entityId,
-            voter_id: userId,
-            vote,
-            target_user_id: authorId,
-          },
+          voteParams,
         )
       } else if (prevVote !== vote) {
         await conn.query(
@@ -95,12 +96,7 @@ export default class VoteRepository {
                        voted_at = now()
                    where ${entityField} = :entity_id
                      and voter_id = :voter_id`,
-          {
-            entity_id: entityId,
-            voter_id: userId,
-            vote,
-            target_user_id: authorId,
-          },
+          voteParams,
         )
       } else if (targetChanged) {
         await conn.query(
@@ -108,11 +104,7 @@ export default class VoteRepository {
                    set target_user_id = :target_user_id
                    where ${entityField} = :entity_id
                      and voter_id = :voter_id`,
-          {
-            entity_id: entityId,
-            voter_id: userId,
-            target_user_id: authorId,
-          },
+          entityParams,
         )
       } else {
         return prevRating
@@ -200,6 +192,7 @@ export default class VoteRepository {
         },
       )
       const prevVote = Number(existingVote?.vote || 0)
+      const voteParams = { user_id: toUserId, voter_id: voterId, vote }
 
       if (existingVote && prevVote === vote) {
         return prevRating
@@ -212,21 +205,13 @@ export default class VoteRepository {
                   voted_at = now()
             where user_id = :user_id
               and voter_id = :voter_id`,
-          {
-            user_id: toUserId,
-            voter_id: voterId,
-            vote,
-          },
+          voteParams,
         )
       } else {
         await conn.query(
           `insert into user_karma (user_id, voter_id, vote)
                values (:user_id, :voter_id, :vote)`,
-          {
-            user_id: toUserId,
-            voter_id: voterId,
-            vote,
-          },
+          voteParams,
         )
       }
 

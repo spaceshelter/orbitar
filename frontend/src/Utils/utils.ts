@@ -10,10 +10,6 @@ export function pluralize(count: number, words: string[]) {
   return count + ' ' + pluralizeWord(count, words)
 }
 
-export function htmlToPlainText(html: string) {
-  return new DOMParser().parseFromString(html, 'text/html').body.textContent || ''
-}
-
 export function scrollUnderTopbar(el: HTMLElement, toBottom?: boolean) {
   if (!el) {
     return

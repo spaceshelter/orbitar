@@ -76,8 +76,7 @@ export class UserCache {
   }
 
   public async getByIds(userIds: number[]): Promise<Record<number, UserInfo>> {
-    const uniqueUserIds = [...new Set(userIds)]
-    if (!uniqueUserIds.length) {
+    if (!userIds.length) {
       return {}
     }
 
@@ -87,7 +86,7 @@ export class UserCache {
 
     const users: Record<number, UserInfo> = {}
     const missingIds: number[] = []
-    for (const userId of uniqueUserIds) {
+    for (const userId of new Set(userIds)) {
       if (this.cacheId[userId]) {
         users[userId] = this.cacheId[userId]
       } else {

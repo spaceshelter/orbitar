@@ -71,10 +71,8 @@ const moreThanYearsAndMonths = (years: number, months: number) => {
   return `более ${yearsText} и ${monthsText} назад`
 }
 
-export function formatRelativeAgeBucket(date: Date) {
-  const now = moment()
-  const mDate = moment(date)
-  const diffMs = Math.max(0, Date.now() - mDate.valueOf())
+export function formatRelativeAgeBucket(date: Date, now = Date.now()) {
+  const diffMs = Math.max(0, now - date.getTime())
 
   if (diffMs < hourMs) {
     return exactMinutesAgo(Math.max(1, Math.floor(diffMs / minuteMs)))
@@ -92,7 +90,7 @@ export function formatRelativeAgeBucket(date: Date) {
     return moreThan(Math.floor(diffMs / weekMs), 'недели', 'недель')
   }
 
-  const totalMonths = Math.max(1, now.diff(mDate, 'months'))
+  const totalMonths = Math.max(1, moment(now).diff(date, 'months'))
 
   if (totalMonths < 12) {
     return moreThan(totalMonths, 'месяца', 'месяцев')

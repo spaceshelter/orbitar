@@ -13,7 +13,7 @@ import {
 import { useAPI, useAppState } from '../AppState/AppState'
 import { CommentInfo, PostInfo } from '../Types/PostInfo'
 import { UserInfo } from '../Types/UserInfo'
-import { htmlToPlainText, pluralize } from '../Utils/utils'
+import { pluralize } from '../Utils/utils'
 import { groupVoteFeedEvents, VoteFeedGroup } from '../Utils/voteFeedGroups'
 import CommentComponent from './CommentComponent'
 import { LARGE_AUTO_CUT } from './ContentComponent'
@@ -50,22 +50,12 @@ const getScoreClassName = (rating: number) =>
     rating > 0 ? styles.voteValuePlus : rating < 0 ? styles.voteValueMinus : styles.voteValueZero
   }`
 
-const getEventEntityKey = (event: UserVoteFeedEvent) => `${event.type}:${event.entityId}`
-
-const getEventRating = (event: UserVoteFeedEvent, feed: UserVotesResult) => {
+const getEventRating = (event: UserVoteFeedEvent, feed: UserVotesReceivedResult) => {
   if (event.type === 'post') {
-    return (
-      (feed.direction === 'mine'
-        ? feed.entities.posts[event.entityId]?.rating
-        : feed.subjects.posts[event.entityId]?.rating) ?? 0
-    )
+    return feed.subjects.posts[event.entityId]?.rating ?? 0
   }
   if (event.type === 'comment') {
-    return (
-      (feed.direction === 'mine'
-        ? feed.entities.comments[event.entityId]?.rating
-        : feed.subjects.comments[event.entityId]?.rating) ?? 0
-    )
+    return feed.subjects.comments[event.entityId]?.rating ?? 0
   }
   return feed.users[event.entityId]?.karma ?? 0
 }
@@ -81,9 +71,7 @@ const getGroupEntityName = (event?: UserVoteFeedEvent) => {
 }
 
 const getCompactText = (text?: string, limit = 72) => {
-  const compact = htmlToPlainText(text || '')
-    .replace(/\s+/g, ' ')
-    .trim()
+  const compact = (text || '').replace(/\s+/g, ' ').trim()
 
   if (!compact) {
     return ''
@@ -94,11 +82,6 @@ const getCompactText = (text?: string, limit = 72) => {
   }
 
   return `${compact.slice(0, limit).trim()}...`
-}
-
-const getPostLinkText = (postId: number, title?: string) => {
-  const label = getCompactText(title)
-  return label ? `пост #${postId}: ${label}` : `пост #${postId}`
 }
 
 const getPostSubjectText = (postId: number, label: string) => (label ? `пост #${postId}: ${label}` : `пост #${postId}`)
@@ -177,17 +160,10 @@ const mergeVoteFeedResults = (current: UserVotesResult, next: UserVotesResult): 
   return current
 }
 
-type UserProfileVotesProps = {
-  basePath: string
-  queryStringParams?: Record<string, string>
-  showTabs?: boolean
-}
+const updateRecord = <T,>(record: Record<number, T>, id: number, changes: Partial<T>): Record<number, T> =>
+  record[id] ? { ...record, [id]: { ...record[id], ...changes } } : record
 
-export default function UserProfileVotes({
-  basePath,
-  queryStringParams: persistentQueryStringParams = {},
-  showTabs = true,
-}: UserProfileVotesProps) {
+export default function UserProfileVotes() {
   const api = useAPI()
   const { userInfo } = useAppState()
   const sessionUserId = userInfo?.id
@@ -204,31 +180,18 @@ export default function UserProfileVotes({
   const users = feed?.users || emptyUsers
   const hasMore = feed?.hasMore || false
   const nextCursor = feed?.nextCursor
+  const feedDirection = feed?.direction || tab
   const mineFeed: UserVotesMineResult | undefined = feed?.direction === 'mine' ? feed : undefined
   const receivedFeed: UserVotesReceivedResult | undefined = feed?.direction === 'received' ? feed : undefined
 
-  const buildSearchParams = (nextTab: UserVotesDirection, nextFilter: string) => {
-    const params: Record<string, string> = { ...persistentQueryStringParams, tab: nextTab }
-    if (nextFilter) {
-      params.filter = nextFilter
-    }
-    return params
-  }
-
-  const { filter, defaultFilter, filterInputRef, handleFilterChange } = useProfileFeedFilter((value) =>
-    buildSearchParams(tab, value),
+  const { filter, defaultFilter, filterInputRef, handleFilterChange } = useProfileFeedFilter(
+    (value): Record<string, string> => (value ? { tab, filter: value } : { tab }),
   )
 
-  const tabUrl = (nextTab: UserVotesDirection) => {
-    const params = new URLSearchParams(buildSearchParams(nextTab, filter))
-    return `${basePath}?${params.toString()}`
-  }
-
   useLayoutEffect(() => {
-    const requestGeneration = requestGenerationRef.current + 1
-    requestGenerationRef.current = requestGeneration
+    requestGenerationRef.current += 1
     return () => {
-      requestGenerationRef.current = requestGeneration + 1
+      requestGenerationRef.current += 1
     }
   }, [api.userAPI, filter, sessionUserId, tab])
 
@@ -297,16 +260,17 @@ export default function UserProfileVotes({
       })
   }
 
-  const groups = useMemo(() => groupVoteFeedEvents(events || [], tab), [events, tab])
+  const groups = useMemo(() => groupVoteFeedEvents(events || [], feedDirection), [events, feedDirection])
 
   const updateVoteEvent = (event: UserVoteFeedEvent, rating: number, vote?: number) => {
     const key = getEventKey(event)
+    const nextVote = vote ?? 0
     setFeed((currentFeed) => {
       if (!currentFeed) {
         return currentFeed
       }
 
-      if ((vote ?? 0) === 0) {
+      if (nextVote === 0) {
         return {
           ...currentFeed,
           events: currentFeed.events.filter((currentEvent) => getEventKey(currentEvent) !== key),
@@ -320,82 +284,64 @@ export default function UserProfileVotes({
 
         return {
           ...currentEvent,
-          vote: vote ?? 0,
+          vote: nextVote,
         }
       })
 
       if (event.type === 'user') {
-        const currentUser = currentFeed.users[event.entityId]
         return {
           ...currentFeed,
           events: updatedEvents,
-          users: currentUser
-            ? {
-                ...currentFeed.users,
-                [event.entityId]: { ...currentUser, karma: rating, vote },
-              }
-            : currentFeed.users,
+          users: updateRecord(currentFeed.users, event.entityId, { karma: rating, vote: nextVote }),
         }
       }
 
       if (currentFeed.direction === 'mine') {
         if (event.type === 'post') {
-          const post = currentFeed.entities.posts[event.entityId]
           return {
             ...currentFeed,
             events: updatedEvents,
             entities: {
               ...currentFeed.entities,
-              posts: post
-                ? { ...currentFeed.entities.posts, [event.entityId]: { ...post, rating, vote } }
-                : currentFeed.entities.posts,
+              posts: updateRecord(currentFeed.entities.posts, event.entityId, { rating, vote: nextVote }),
             },
           }
         }
 
-        const comment = currentFeed.entities.comments[event.entityId]
         return {
           ...currentFeed,
           events: updatedEvents,
           entities: {
             ...currentFeed.entities,
-            comments: comment
-              ? { ...currentFeed.entities.comments, [event.entityId]: { ...comment, rating, vote } }
-              : currentFeed.entities.comments,
+            comments: updateRecord(currentFeed.entities.comments, event.entityId, { rating, vote: nextVote }),
           },
         }
       }
 
       if (event.type === 'post') {
-        const subject = currentFeed.subjects.posts[event.entityId]
         return {
           ...currentFeed,
           events: updatedEvents,
           subjects: {
             ...currentFeed.subjects,
-            posts: subject
-              ? { ...currentFeed.subjects.posts, [event.entityId]: { ...subject, rating } }
-              : currentFeed.subjects.posts,
+            posts: updateRecord(currentFeed.subjects.posts, event.entityId, { rating }),
           },
         }
       }
 
-      const subject = currentFeed.subjects.comments[event.entityId]
       return {
         ...currentFeed,
         events: updatedEvents,
         subjects: {
           ...currentFeed.subjects,
-          comments: subject
-            ? { ...currentFeed.subjects.comments, [event.entityId]: { ...subject, rating } }
-            : currentFeed.subjects.comments,
+          comments: updateRecord(currentFeed.subjects.comments, event.entityId, { rating }),
         },
       }
     })
   }
 
   const renderGroupHeader = (group: VoteFeedGroup) => {
-    if (tab !== 'received' && group.kind === 'single') {
+    if (feedDirection !== 'received' && group.kind === 'single') {
       return null
     }
 
@@ -495,26 +441,6 @@ export default function UserProfileVotes({
       )
     }
 
-    if (group.kind === 'context-post') {
-      const postSubject = firstEvent.type === 'post' ? receivedFeed.subjects.posts[firstEvent.entityId] : undefined
-      const commentSubject =
-        firstEvent.type === 'comment' ? receivedFeed.subjects.comments[firstEvent.entityId] : undefined
-      const postLink = postSubject || (commentSubject && { id: commentSubject.postId, site: commentSubject.site })
-      const postTitle = postSubject?.label || commentSubject?.postTitle
-      if (postLink) {
-        return (
-          <div className={styles.groupSubject}>
-            <div className={styles.subjectMain}>
-              обсуждение{' '}
-              <PostLink className={styles.subjectLink} post={postLink}>
-                {getPostLinkText(postLink.id, postTitle)}
-              </PostLink>
-            </div>
-          </div>
-        )
-      }
-    }
-
     return null
   }
 
@@ -563,11 +489,12 @@ export default function UserProfileVotes({
     const header = renderGroupHeader(group)
     const firstEvent = group.events[0]
     const sameEntity =
-      !!firstEvent && group.events.every((event) => getEventEntityKey(event) === getEventEntityKey(firstEvent))
+      !!firstEvent &&
+      group.events.every((event) => event.type === firstEvent.type && event.entityId === firstEvent.entityId)
     const timeGroups = getVoteTimeGroups(group.events)
 
     return (
-      <section key={getGroupKey(group)} className={styles.group}>
+      <section key={getGroupKey(group)}>
         <div className={styles.groupHeader}>
           {header}
           <span className={styles.groupCount}>{pluralize(group.events.length, ['оценка', 'оценки', 'оценок'])}</span>
@@ -588,9 +515,9 @@ export default function UserProfileVotes({
     if (!post) {
       return null
     }
-    const handleChange = (_id: number, post: Partial<PostInfo>, postApiCall?: boolean) => {
+    const handleChange = (_id: number, changes: Partial<PostInfo>, postApiCall?: boolean) => {
       if (postApiCall) {
-        updateVoteEvent(event, post.rating ?? mineFeed.entities.posts[event.entityId]?.rating ?? 0, post.vote)
+        updateVoteEvent(event, changes.rating ?? post.rating, changes.vote)
       }
     }
 
@@ -606,9 +533,9 @@ export default function UserProfileVotes({
       return null
     }
     const parentComment = comment.parentComment ? mineFeed.entities.parentComments[comment.parentComment] : undefined
-    const handleVote = (_id: number, comment: Partial<CommentInfo>, postApiCall?: boolean) => {
+    const handleVote = (_id: number, changes: Partial<CommentInfo>, postApiCall?: boolean) => {
       if (postApiCall) {
-        updateVoteEvent(event, comment.rating ?? mineFeed.entities.comments[event.entityId]?.rating ?? 0, comment.vote)
+        updateVoteEvent(event, changes.rating ?? comment.rating, changes.vote)
       }
     }
 
@@ -667,22 +594,12 @@ export default function UserProfileVotes({
 
   return (
     <div className={feedStyles.container}>
-      {showTabs && (
-        <div className={styles.tabs}>
-          <Link className={`${styles.tab} ${tab === 'received' ? styles.tabActive : ''}`} to={tabUrl('received')}>
-            Оценки мне
-          </Link>
-          <Link className={`${styles.tab} ${tab === 'mine' ? styles.tabActive : ''}`} to={tabUrl('mine')}>
-            Мои оценки
-          </Link>
-        </div>
-      )}
       <div className={feedStyles.filter}>
         <input
           ref={filterInputRef}
           onKeyUp={handleFilterChange}
           onChange={handleFilterChange}
-          placeholder={'фильтровать'}
+          placeholder='фильтровать'
           type='search'
           defaultValue={defaultFilter}
         />
@@ -703,7 +620,7 @@ export default function UserProfileVotes({
 
                   const header = renderGroupHeader(group)
                   return (
-                    <section key={getGroupKey(group)} className={styles.group}>
+                    <section key={getGroupKey(group)}>
                       {header && (
                         <div className={styles.groupHeader}>
                           {header}

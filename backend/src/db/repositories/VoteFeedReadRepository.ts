@@ -216,7 +216,9 @@ export default class VoteFeedReadRepository {
       return []
     }
     return this.db.fetchAll<ReceivedPostSubjectRaw>(
-      `select p.post_id id, s.subdomain site, p.title, p.html, p.rating
+      `select p.post_id id, s.subdomain site, p.title,
+              if(nullif(trim(p.title), '') is null, p.html, '') html,
+              p.rating
          from posts p
          join sites s on (s.site_id = p.site_id)
         where p.post_id in (:post_ids)`,

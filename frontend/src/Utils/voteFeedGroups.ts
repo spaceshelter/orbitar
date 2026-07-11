@@ -1,6 +1,6 @@
 import { UserVoteFeedEvent, UserVotesDirection } from '../API/UserAPI'
 
-export type VoteFeedGroupKind = 'entity' | 'voter' | 'target-author' | 'context-post' | 'single'
+type VoteFeedGroupKind = 'entity' | 'voter' | 'target-author' | 'context-post' | 'single'
 
 export type VoteFeedGroup = {
   kind: VoteFeedGroupKind
@@ -13,11 +13,7 @@ export type VoteFeedGroup = {
   contextPostId?: number
 }
 
-export const getVoteFeedEventEntityId = (event: UserVoteFeedEvent): number => {
-  return event.entityId
-}
-
-export const getVoteFeedEventPostId = (event: UserVoteFeedEvent): number | undefined => {
+const getVoteFeedEventPostId = (event: UserVoteFeedEvent): number | undefined => {
   if (event.type === 'post') {
     return event.entityId
   }
@@ -61,8 +57,7 @@ const getCandidates = (events: UserVoteFeedEvent[], start: number, direction: Us
         length: runLength(
           events,
           start,
-          (candidate) =>
-            candidate.type === event.type && getVoteFeedEventEntityId(candidate) === getVoteFeedEventEntityId(event),
+          (candidate) => candidate.type === event.type && candidate.entityId === event.entityId,
         ),
       },
       {
@@ -110,7 +105,7 @@ const pickGroup = (events: UserVoteFeedEvent[], start: number, direction: UserVo
       return {
         ...base,
         entityType: event.type,
-        entityId: getVoteFeedEventEntityId(event),
+        entityId: event.entityId,
       }
     case 'voter':
       return {

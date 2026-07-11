@@ -36,6 +36,12 @@ describe('vote feed cursor codec', () => {
       'non-integer entity',
       Buffer.from(JSON.stringify({ votedAt: 1, type: 'post', entityId: 'x', voterId: 1 })).toString('base64url'),
     ],
+    [
+      'out-of-range timestamp',
+      Buffer.from(JSON.stringify({ votedAt: Number.MAX_VALUE, type: 'post', entityId: 1, voterId: 1 })).toString(
+        'base64url',
+      ),
+    ],
   ])('rejects invalid cursor: %s', (_name, cursor) => {
     expect(() => decodeVoteFeedCursor(cursor)).toThrow(InvalidVoteFeedCursorError)
   })
@@ -175,10 +181,10 @@ describe('VoteFeedManager.getVoteFeed', () => {
       },
     })
 
-    const result = await manager.getVoteFeed(123, 'mine', '', undefined, 2, 'html')
+    const result = await manager.getVoteFeed(123, 'mine', '', undefined, 2)
 
     expect(voteFeedReadRepository.getPageReferences).toHaveBeenCalledWith(123, 'mine', '', undefined, 3)
-    expect(postManager.getPostsByIds).toHaveBeenCalledWith([11, 10], 123, 'html')
+    expect(postManager.getPostsByIds).toHaveBeenCalledWith([11, 10], 123)
     expect(result.events).toHaveLength(2)
     expect(result.hasMore).toBe(true)
     expect(decodeVoteFeedCursor(result.nextCursor!)).toEqual({
@@ -195,7 +201,7 @@ describe('VoteFeedManager.getVoteFeed', () => {
     })
     const cursor = encodeVoteFeedCursor(makeRef({ entityId: 99 }))
 
-    await manager.getVoteFeed(123, 'received', 'abc', cursor, 20, 'html')
+    await manager.getVoteFeed(123, 'received', 'abc', cursor, 20)
 
     expect(voteFeedReadRepository.getPageReferences).toHaveBeenCalledWith(
       123,
@@ -209,9 +215,7 @@ describe('VoteFeedManager.getVoteFeed', () => {
   test('throws InvalidVoteFeedCursorError before touching the repository', async () => {
     const { manager, voteFeedReadRepository } = createManager()
 
-    await expect(manager.getVoteFeed(123, 'mine', '', 'broken!', 20, 'html')).rejects.toBeInstanceOf(
-      InvalidVoteFeedCursorError,
-    )
+    await expect(manager.getVoteFeed(123, 'mine', '', 'broken!', 20)).rejects.toBeInstanceOf(InvalidVoteFeedCursorError)
     expect(voteFeedReadRepository.getPageReferences).not.toHaveBeenCalled()
   })
 
@@ -251,7 +255,7 @@ describe('VoteFeedManager.getVoteFeed', () => {
       },
     })
 
-    const result = await manager.getVoteFeed(123, 'mine', '', undefined, 20, 'html')
+    const result = await manager.getVoteFeed(123, 'mine', '', undefined, 20)
 
     expect(result.direction).toBe('mine')
     if (result.direction !== 'mine') {
@@ -297,7 +301,7 @@ describe('VoteFeedManager.getVoteFeed', () => {
       },
     })
 
-    const result = await manager.getVoteFeed(123, 'received', '', undefined, 20, 'source')
+    const result = await manager.getVoteFeed(123, 'received', '', undefined, 20)
 
     expect(result.direction).toBe('received')
     if (result.direction !== 'received') {
@@ -330,7 +334,7 @@ describe('VoteFeedManager.getVoteFeed', () => {
       },
     })
 
-    const result = await manager.getVoteFeed(123, 'received', '', undefined, 20, 'html')
+    const result = await manager.getVoteFeed(123, 'received', '', undefined, 20)
 
     expect(result.direction).toBe('received')
     if (result.direction !== 'received') {
@@ -353,7 +357,7 @@ describe('VoteFeedManager.getVoteFeed', () => {
       },
     })
 
-    const result = await manager.getVoteFeed(123, 'received', '', undefined, 20, 'html')
+    const result = await manager.getVoteFeed(123, 'received', '', undefined, 20)
 
     expect(result.events).toEqual([])
     expect(logger.warn).toHaveBeenCalledWith(

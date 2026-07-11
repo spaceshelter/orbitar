@@ -20,21 +20,26 @@ export function useProfileFeedFilter(buildSearchParams: (filter: string) => Reco
   const setDebouncedFilter = useDebouncedCallback(applyFilter, 1000)
 
   const handleFilterChange = (e: React.FormEvent<HTMLInputElement>) => {
-    if (e.nativeEvent instanceof KeyboardEvent && e.nativeEvent.key === 'Enter') {
-      applyFilter(e.currentTarget.value)
-    } else {
-      setDebouncedFilter(e.currentTarget.value)
+    if (e.nativeEvent instanceof KeyboardEvent) {
+      if (e.nativeEvent.key === 'Enter') {
+        setDebouncedFilter.cancel()
+        applyFilter(e.currentTarget.value)
+      }
+      return
     }
+    setDebouncedFilter(e.currentTarget.value)
   }
 
   useEffect(() => {
+    setDebouncedFilter.cancel()
     const nextSearchParams = new URLSearchParams(search)
     const nextFilter = nextSearchParams.get('filter') || ''
     setFilter(nextFilter)
     if (filterInputRef.current) {
       filterInputRef.current.value = nextFilter
     }
-  }, [search])
+    return () => setDebouncedFilter.cancel()
+  }, [search, setDebouncedFilter])
 
   return { filter, defaultFilter, filterInputRef, handleFilterChange }
 }

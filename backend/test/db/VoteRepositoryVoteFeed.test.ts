@@ -162,7 +162,7 @@ describe('VoteRepository vote feed', () => {
     await expect(repository.getReceivedCommentSubjects([20, 20])).resolves.toHaveLength(1)
 
     const postSql = normalize(db.fetchAll.mock.calls[0][0])
-    expect(postSql).toContain('select p.post_id id, s.subdomain site, p.title, p.html, p.rating')
+    expect(postSql).toContain("if(nullif(trim(p.title), '') is null, p.html, '') html")
     expect(postSql).not.toContain('p.source')
     expect(postSql).not.toContain('p.author_id')
 

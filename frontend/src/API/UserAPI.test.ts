@@ -52,7 +52,7 @@ describe('UserAPI.userVotes', () => {
 
     expect(api.request).toHaveBeenCalledWith(
       '/user/votes',
-      { direction: 'mine', format: 'html', cursor: undefined, perpage: 20, filter: '' },
+      { direction: 'mine', cursor: undefined, perpage: 20, filter: '' },
       undefined,
       abortController.signal,
     )

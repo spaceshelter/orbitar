@@ -58,9 +58,9 @@ export default class PostManager {
     return (await this.feedManager.convertRawPosts(forUserId, [rawPost], format))[0]
   }
 
-  async getPostsByIds(postIds: number[], forUserId: number, format: ContentFormat): Promise<PostInfo[]> {
+  async getPostsByIds(postIds: number[], forUserId: number): Promise<PostInfo[]> {
     const rawPosts = await this.postRepository.getPostsWithUserData(postIds, forUserId)
-    return await this.feedManager.convertRawPosts(forUserId, rawPosts, format)
+    return this.feedManager.convertRawPosts(forUserId, rawPosts, 'html')
   }
 
   async getPostTitlesByIds(postIds: number[]): Promise<Record<number, string>> {
@@ -378,13 +378,9 @@ export default class PostManager {
     return comment
   }
 
-  async getCommentsByIds(
-    commentIds: number[],
-    forUserId: number,
-    format: ContentFormat,
-  ): Promise<CommentInfoWithPostData[]> {
+  async getCommentsByIds(commentIds: number[], forUserId: number): Promise<CommentInfoWithPostData[]> {
     const rawComments = await this.commentRepository.getCommentsWithUserData(forUserId, commentIds)
-    return await this.convertRawCommentsWithPostData(forUserId, rawComments, format)
+    return this.convertRawCommentsWithPostData(forUserId, rawComments, 'html')
   }
 
   async editComment(

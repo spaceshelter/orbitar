@@ -31,8 +31,6 @@ interface CommentProps {
   idx?: number
   unreadOnly?: boolean
   hideRating?: boolean
-  votingDisabled?: boolean
-  votingDisabledTitle?: string
   currentUsername?: string
   onVote?: (id: number, comment: Partial<CommentInfo>, postApiCall?: boolean) => void
 }
@@ -187,8 +185,6 @@ export default function CommentComponent(props: CommentProps) {
                 id={props.comment.id}
                 rating={{ vote: props.comment.vote, value: props.comment.rating }}
                 onVote={handleVote}
-                votingDisabled={props.votingDisabled}
-                votingDisabledTitle={props.votingDisabledTitle}
               />
             </div>
           )}
