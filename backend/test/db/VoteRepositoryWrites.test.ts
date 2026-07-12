@@ -301,3 +301,33 @@ describe('VoteRepository concurrent user karma writes', () => {
     expect(db.users.get(2)).toBe(1)
   })
 })
+
+describe('VoteRepository deadlock retry', () => {
+  const deadlockError = () => Object.assign(new Error('Deadlock found when trying to get lock'), { errno: 1213 })
+
+  test('retries a deadlocked vote transaction once and returns the retry result', async () => {
+    const inTransaction = jest.fn().mockRejectedValueOnce(deadlockError()).mockResolvedValueOnce(7)
+    const repository = new VoteRepository({ inTransaction } as any)
+
+    await expect(repository.userSetVote(2, 1, 5)).resolves.toBe(7)
+    expect(inTransaction).toHaveBeenCalledTimes(2)
+  })
+
+  test('gives up after the retry budget instead of spinning on persistent deadlocks', async () => {
+    const error = deadlockError()
+    const inTransaction = jest.fn().mockRejectedValue(error)
+    const repository = new VoteRepository({ inTransaction } as any)
+
+    await expect(repository.postSetVote(10, 1, 123)).rejects.toBe(error)
+    expect(inTransaction).toHaveBeenCalledTimes(2)
+  })
+
+  test('rethrows non-deadlock errors without retrying', async () => {
+    const error = Object.assign(new Error('db down'), { errno: 1045 })
+    const inTransaction = jest.fn().mockRejectedValue(error)
+    const repository = new VoteRepository({ inTransaction } as any)
+
+    await expect(repository.commentSetVote(20, -1, 123)).rejects.toBe(error)
+    expect(inTransaction).toHaveBeenCalledTimes(1)
+  })
+})

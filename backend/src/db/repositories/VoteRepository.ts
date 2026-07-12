@@ -1,5 +1,7 @@
 import DB from '../DB'
 
+const ER_LOCK_DEADLOCK = 1213
+
 export type VoteWithUsername = {
   vote: number
   username: string
@@ -32,6 +34,23 @@ export default class VoteRepository {
     )
 
     return voteResult?.vote || 0
+  }
+
+  // Content and karma votes acquire `users` row locks in different relative orders
+  // (implicit FK checks after the entity lock vs explicit ascending locks first), so
+  // a rare cross-path lock cycle is possible. InnoDB resolves it by rolling back one
+  // transaction; retrying the rolled-back transaction from scratch is safe because
+  // every branch re-reads its state under fresh locks.
+  private async retryOnDeadlock<T>(run: () => Promise<T>, attempts = 2): Promise<T> {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await run()
+      } catch (error) {
+        if ((error as { errno?: number }).errno !== ER_LOCK_DEADLOCK || attempt >= attempts) {
+          throw error
+        }
+      }
+    }
   }
 
   private async setVotes(entityId: number, vote: number, userId: number, comments: boolean): Promise<number> {
@@ -152,14 +171,18 @@ export default class VoteRepository {
   }
 
   async postSetVote(postId: number, vote: number, userId: number): Promise<number> {
-    return this.setVotes(postId, vote, userId, false)
+    return this.retryOnDeadlock(() => this.setVotes(postId, vote, userId, false))
   }
 
   async commentSetVote(commentId: number, vote: number, userId: number): Promise<number> {
-    return this.setVotes(commentId, vote, userId, true)
+    return this.retryOnDeadlock(() => this.setVotes(commentId, vote, userId, true))
   }
 
   async userSetVote(toUserId: number, vote: number, voterId: number): Promise<number> {
+    return this.retryOnDeadlock(() => this.userSetVoteInTransaction(toUserId, vote, voterId))
+  }
+
+  private async userSetVoteInTransaction(toUserId: number, vote: number, voterId: number): Promise<number> {
     return await this.db.inTransaction(async (conn) => {
       // Lock both FK parents in a global order. Locking only the target deadlocks
       // reciprocal new votes when each insert checks the other user as its voter.
