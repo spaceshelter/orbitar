@@ -1,4 +1,4 @@
-import migration from '../../migrations/20260511000000-my-votes-indexes'
+import migration from '../../migrations/20260712000000-my-votes-indexes'
 
 const normalize = (query: string) => query.replace(/\s+/g, ' ').trim()
 
@@ -77,14 +77,16 @@ function createMockDb(options: MockOptions = {}) {
 
     if (sql.startsWith('alter table ')) {
       const table = sql.match(/^alter table (\w+)/)![1]
+      // Drops apply before adds so a `drop index X, add index X (…)` rebuild inside
+      // one ALTER nets to the new shape, mirroring MySQL's post-statement state.
+      for (const match of sql.matchAll(/drop index (\w+)/g)) {
+        indexes.delete(`${table}.${match[1]}`)
+      }
       for (const match of sql.matchAll(/add index (\w+) \(([^)]+)\)/g)) {
         indexes.set(
           `${table}.${match[1]}`,
           match[2].split(',').map((column) => column.trim()),
         )
-      }
-      for (const match of sql.matchAll(/drop index (\w+)/g)) {
-        indexes.delete(`${table}.${match[1]}`)
       }
       return []
     }
@@ -221,17 +223,30 @@ describe('my votes indexes migration', () => {
     expect(oldIndexDrop).toBeGreaterThan(postVerification)
   })
 
-  test('fails before replacing an existing index with the wrong ordered shape', async () => {
+  test('rebuilds a same-named index left behind by an older revision of this migration', async () => {
+    // The 2026-05/06 revisions created user_karma feed indexes without the explicit
+    // trailing PK column; environments that applied them must converge on re-run.
     const state = createMockDb({
       columns: ['post_votes.target_user_id', 'comment_votes.target_user_id'],
-      indexes: [...OLD_INDEXES, ['post_votes.idx_post_votes_voter_voted_at', ['voter_id', 'post_id']]],
+      indexes: [...OLD_INDEXES, ['user_karma.idx_user_karma_voter_voted_at', ['voter_id', 'voted_at']]],
     })
 
-    await expect(migration.up({ runSql: state.runSql })).rejects.toThrow(
-      'Index post_votes.idx_post_votes_voter_voted_at has unexpected definition',
-    )
+    await expect(migration.up({ runSql: state.runSql })).resolves.toBeNull()
 
-    expect(state.indexes.has('post_votes.voter_id_post_id')).toBe(true)
+    expect(state.indexes.get('user_karma.idx_user_karma_voter_voted_at')).toEqual(['voter_id', 'voted_at', 'user_id'])
+    expect(
+      state.queries.some((sql) =>
+        sql.includes(
+          'drop index idx_user_karma_voter_voted_at, ' +
+            'add index idx_user_karma_voter_voted_at (voter_id, voted_at, user_id)',
+        ),
+      ),
+    ).toBe(true)
+    expect(consoleLog).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'rebuilding user_karma.idx_user_karma_voter_voted_at: (voter_id, voted_at) -> (voter_id, voted_at, user_id)',
+      ),
+    )
     expect(state.queries[state.queries.length - 1]).toBe('set autocommit = 0')
   })
 

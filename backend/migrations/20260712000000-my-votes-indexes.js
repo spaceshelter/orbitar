@@ -14,6 +14,12 @@ exports.setup = function (options, seedLink) {
 // (voter_id, voted_at) / (target_user_id, voted_at) indexes so both directions of the
 // profile vote feed are served by a backward index scan with early termination.
 //
+// This file supersedes 20260511000000-my-votes-indexes: earlier revisions shipped under
+// that name, and db-migrate tracks applied migrations by filename, so environments that
+// ran an old revision would never converge on the current schema. Every step here is
+// guarded (column/index existence checks, exact index shapes with in-place rebuild,
+// resumable backfill), which makes a re-run on any previously migrated database a no-op.
+//
 // The indexes deliberately do NOT include `vote`: InnoDB secondary indexes implicitly
 // end with the primary key columns, which makes the index order match the feed's
 // deterministic sort (voted_at desc, entity_id desc, voter_id desc). Appending `vote`
@@ -63,9 +69,9 @@ async function getIndexDefinition(db, table, index) {
   }))
 }
 
-function assertIndexDefinition(table, index, columns, definition) {
+function getIndexDefinitionState(columns, definition) {
   if (!definition.length) {
-    return false
+    return 'missing'
   }
 
   const actualColumns = definition.map((part) => part.column)
@@ -74,13 +80,7 @@ function assertIndexDefinition(table, index, columns, definition) {
   const exactShape = definition.every(
     (part) => part.nonUnique === 1 && part.subPart === null && part.indexType === 'BTREE',
   )
-  if (!exactColumns || !exactShape) {
-    throw new Error(
-      `Index ${table}.${index} has unexpected definition (${actualColumns.join(', ')}); expected (${columns.join(', ')})`,
-    )
-  }
-
-  return true
+  return exactColumns && exactShape ? 'match' : 'mismatch'
 }
 
 async function ensureTargetColumn(db, table) {
@@ -96,24 +96,39 @@ async function dropTargetColumn(db, table) {
 }
 
 async function ensureIndexes(db, table, indexes) {
-  const missing = []
+  const changes = []
   for (const index of indexes) {
     const definition = await getIndexDefinition(db, table, index.name)
-    if (!assertIndexDefinition(table, index.name, index.columns, definition)) {
-      missing.push(index)
+    const state = getIndexDefinitionState(index.columns, definition)
+    if (state === 'match') {
+      continue
     }
+    if (state === 'mismatch') {
+      // A same-named index with a different shape means this environment applied an
+      // older revision of this migration. FORCE INDEX makes the exact ordered shape
+      // load-bearing, so rebuild it; drop+add inside one ALTER keeps foreign keys
+      // supported because MySQL validates them against the post-ALTER state.
+      console.log(
+        `[my-votes-indexes] rebuilding ${table}.${index.name}: ` +
+          `(${definition.map((part) => part.column).join(', ')}) -> (${index.columns.join(', ')})`,
+      )
+      changes.push(`drop index ${index.name}`)
+    }
+    changes.push(`add index ${index.name} (${index.columns.join(', ')})`)
   }
-  if (missing.length) {
-    const additions = missing.map((index) => `add index ${index.name} (${index.columns.join(', ')})`)
-    await db.runSql(`alter table ${table} ${additions.join(', ')}, algorithm=inplace, lock=none`)
+  if (changes.length) {
+    await db.runSql(`alter table ${table} ${changes.join(', ')}, algorithm=inplace, lock=none`)
   }
 
   // FORCE INDEX in the runtime query makes the exact ordered shape part of the
   // application contract. Re-read it after DDL instead of trusting only its name.
   for (const index of indexes) {
     const definition = await getIndexDefinition(db, table, index.name)
-    if (!assertIndexDefinition(table, index.name, index.columns, definition)) {
-      throw new Error(`Could not create index ${table}.${index.name}`)
+    if (getIndexDefinitionState(index.columns, definition) !== 'match') {
+      throw new Error(
+        `Could not create index ${table}.${index.name} (${index.columns.join(', ')}); ` +
+          `found (${definition.map((part) => part.column).join(', ') || 'none'})`,
+      )
     }
   }
 }
