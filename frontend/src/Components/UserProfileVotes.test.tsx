@@ -360,6 +360,24 @@ describe('UserProfileVotes request state', () => {
     expect(container.textContent).toContain('2 оценки')
   })
 
+  test('appending a page keeps the boundary group mounted instead of remounting it', async () => {
+    mockUserVotes
+      .mockResolvedValueOnce(mineVoteResult([postEvent(1)], true, 'next-cursor'))
+      .mockResolvedValueOnce(mineVoteResult([postEvent(2)]))
+
+    await renderVotes()
+    const firstPostNode = container.querySelector('[data-post-id="1"]')
+    expect(firstPostNode).not.toBeNull()
+
+    clickButton('Показать ещё')
+    await settlePromises()
+
+    expect(renderedPostIds()).toEqual([1, 2])
+    // The group key derives from the first event, so extending the group's tail
+    // must reconcile the existing DOM node rather than replace it.
+    expect(container.querySelector('[data-post-id="1"]')).toBe(firstPostNode)
+  })
+
   test('aborts an in-flight initial request when the query key changes', async () => {
     const staleInitialPage = deferred<UserVotesResult>()
     mockUserVotes.mockReturnValueOnce(staleInitialPage.promise).mockResolvedValueOnce(mineVoteResult([postEvent(10)]))

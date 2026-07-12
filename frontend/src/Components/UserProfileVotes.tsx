@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import Button from '@ui/Button'
@@ -35,8 +35,12 @@ const getTab = (searchParams: URLSearchParams): UserVotesDirection =>
 
 const getEventKey = (event: UserVoteFeedEvent) => `${event.type}:${event.entityId}:${event.voterId}`
 
-const getGroupKey = (group: VoteFeedGroup) =>
-  `${group.kind}:${group.latestAt.toISOString()}:${group.events.map(getEventKey).join('|')}`
+// Key groups by their first (newest) event only: appending a page extends a group's
+// tail (possibly changing its kind from 'single'), so a first-event key stays stable
+// and React reconciles children instead of remounting the whole section (heavy for
+// `mine`, which mounts full post/comment components). First events are unique per
+// group because every event starts at most one group.
+const getGroupKey = (group: VoteFeedGroup) => getEventKey(group.events[0])
 
 const getUser = (users: Record<number, UserInfo>, userId?: number) => (userId ? users[userId] : undefined)
 
@@ -174,7 +178,6 @@ export default function UserProfileVotes() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string>()
   const [loadMoreError, setLoadMoreError] = useState<string>()
-  const requestGenerationRef = useRef(0)
   const loadMoreAbortControllerRef = useRef<AbortController>()
   const events = feed?.events
   const users = feed?.users || emptyUsers
@@ -188,15 +191,7 @@ export default function UserProfileVotes() {
     (value): Record<string, string> => (value ? { tab, filter: value } : { tab }),
   )
 
-  useLayoutEffect(() => {
-    requestGenerationRef.current += 1
-    return () => {
-      requestGenerationRef.current += 1
-    }
-  }, [api.userAPI, filter, sessionUserId, tab])
-
   useEffect(() => {
-    const requestGeneration = requestGenerationRef.current
     const abortController = new AbortController()
     loadMoreAbortControllerRef.current?.abort()
     loadMoreAbortControllerRef.current = undefined
@@ -208,7 +203,7 @@ export default function UserProfileVotes() {
     api.userAPI
       .userVotes(tab, filter || '', undefined, perpage, abortController.signal)
       .then((result) => {
-        if (abortController.signal.aborted || requestGeneration !== requestGenerationRef.current) {
+        if (abortController.signal.aborted) {
           return
         }
         setFeed(result)
@@ -216,7 +211,7 @@ export default function UserProfileVotes() {
         setLoading(false)
       })
       .catch(() => {
-        if (abortController.signal.aborted || requestGeneration !== requestGenerationRef.current) {
+        if (abortController.signal.aborted) {
           return
         }
         setError('Не удалось загрузить ленту оценок')
@@ -234,7 +229,6 @@ export default function UserProfileVotes() {
     if (!nextCursor || loadingMore) {
       return
     }
-    const requestGeneration = requestGenerationRef.current
     const abortController = new AbortController()
     loadMoreAbortControllerRef.current?.abort()
     loadMoreAbortControllerRef.current = abortController
@@ -243,7 +237,7 @@ export default function UserProfileVotes() {
     api.userAPI
       .userVotes(tab, filter || '', nextCursor, perpage, abortController.signal)
       .then((result) => {
-        if (abortController.signal.aborted || requestGeneration !== requestGenerationRef.current) {
+        if (abortController.signal.aborted) {
           return
         }
         setFeed((currentFeed) => (currentFeed ? mergeVoteFeedResults(currentFeed, result) : result))
@@ -251,7 +245,7 @@ export default function UserProfileVotes() {
         loadMoreAbortControllerRef.current = undefined
       })
       .catch(() => {
-        if (abortController.signal.aborted || requestGeneration !== requestGenerationRef.current) {
+        if (abortController.signal.aborted) {
           return
         }
         setLoadMoreError('Не удалось загрузить ещё оценки')
@@ -261,6 +255,15 @@ export default function UserProfileVotes() {
   }
 
   const groups = useMemo(() => groupVoteFeedEvents(events || [], feedDirection), [events, feedDirection])
+  const receivedTimeGroups = useMemo(() => {
+    const buckets = new Map<VoteFeedGroup, ReturnType<typeof getVoteTimeGroups>>()
+    if (feedDirection === 'received') {
+      for (const group of groups) {
+        buckets.set(group, getVoteTimeGroups(group.events))
+      }
+    }
+    return buckets
+  }, [groups, feedDirection])
 
   const updateVoteEvent = (event: UserVoteFeedEvent, rating: number, vote?: number) => {
     const key = getEventKey(event)
@@ -476,7 +479,7 @@ export default function UserProfileVotes() {
     sameEntity: boolean,
   ) => {
     return (
-      <div className={styles.voteTimeGroup} key={`${timeGroup.bucket}:${timeGroup.events.map(getEventKey).join('|')}`}>
+      <div className={styles.voteTimeGroup} key={`${timeGroup.bucket}:${getEventKey(timeGroup.events[0])}`}>
         <div className={styles.voteTimeHeader}>{timeGroup.bucket}</div>
         <div className={styles.voteRows}>
           {timeGroup.events.map((event) => renderReceivedVoteRow(event, group, sameEntity))}
@@ -491,16 +494,18 @@ export default function UserProfileVotes() {
     const sameEntity =
       !!firstEvent &&
       group.events.every((event) => event.type === firstEvent.type && event.entityId === firstEvent.entityId)
-    const timeGroups = getVoteTimeGroups(group.events)
+    const timeGroups = receivedTimeGroups.get(group) || []
 
+    // Sibling keys keep the row container's identity when the header or subject
+    // block appears after a group absorbs appended events.
     return (
       <section key={getGroupKey(group)}>
-        <div className={styles.groupHeader}>
+        <div className={styles.groupHeader} key='header'>
           {header}
           <span className={styles.groupCount}>{pluralize(group.events.length, ['оценка', 'оценки', 'оценок'])}</span>
         </div>
         {renderReceivedGroupSubject(group, sameEntity)}
-        <div className={styles.voteTimeGroups}>
+        <div className={styles.voteTimeGroups} key='rows'>
           {timeGroups.map((timeGroup) => renderReceivedTimeGroup(group, timeGroup, sameEntity))}
         </div>
       </section>
@@ -619,17 +624,19 @@ export default function UserProfileVotes() {
                   }
 
                   const header = renderGroupHeader(group)
+                  // The events container is keyed so a header appearing (a 'single'
+                  // group growing into a real one) can't shift and remount it.
                   return (
                     <section key={getGroupKey(group)}>
                       {header && (
-                        <div className={styles.groupHeader}>
+                        <div className={styles.groupHeader} key='header'>
                           {header}
                           <span className={styles.groupCount}>
                             {pluralize(group.events.length, ['оценка', 'оценки', 'оценок'])}
                           </span>
                         </div>
                       )}
-                      <div className={styles.events}>
+                      <div className={styles.events} key='events'>
                         {group.events.map((event) => (
                           <div className={styles.event} key={getEventKey(event)}>
                             {renderEvent(event)}
