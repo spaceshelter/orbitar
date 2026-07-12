@@ -1,4 +1,4 @@
-import { escapePercent } from '../../utils/MySqlUtils'
+import { escapeLike } from '../../utils/MySqlUtils'
 import DB from '../DB'
 
 export type VoteFeedDirection = 'mine' | 'received'
@@ -182,7 +182,7 @@ export default class VoteFeedReadRepository {
       limit_count: limit,
     }
     if (filter) {
-      params.filter = `%${escapePercent(filter)}%`
+      params.filter = `%${escapeLike(filter)}%`
     }
     if (cursor) {
       params.cursor_voted_at = cursor.votedAt

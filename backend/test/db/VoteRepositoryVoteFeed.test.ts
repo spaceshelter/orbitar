@@ -60,6 +60,16 @@ describe('VoteRepository vote feed', () => {
     })
   })
 
+  test('escapes LIKE wildcards and the escape character so the filter matches literally', async () => {
+    const db = { fetchAll: jest.fn().mockResolvedValue([]) }
+    const repository = new VoteFeedReadRepository(db as any)
+
+    await repository.getPageReferences(123, 'mine', 'a_b%c\\d', undefined, 21)
+
+    const [, params] = db.fetchAll.mock.calls[0]
+    expect(params.filter).toBe('%a\\_b\\%c\\\\d%')
+  })
+
   test('received direction uses denormalized target ids and no joins without filter', async () => {
     const db = {
       fetchAll: jest.fn().mockResolvedValue([]),
