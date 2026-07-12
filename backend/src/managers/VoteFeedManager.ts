@@ -232,9 +232,11 @@ export default class VoteFeedManager {
     hasMore: boolean,
     nextCursor: string | undefined,
   ): Promise<UserVotesResponse> {
-    const [postRows, commentRows] = await Promise.all([
+    // loadUsers only needs the refs, so it can ride the same wave as the subjects.
+    const [postRows, commentRows, users] = await Promise.all([
       this.voteFeedReadRepository.getReceivedPostSubjects(this.entityIds(refs, 'post')),
       this.voteFeedReadRepository.getReceivedCommentSubjects(this.entityIds(refs, 'comment')),
+      this.loadUsers(refs),
     ])
     const posts: Record<number, ReceivedPostSubject> = {}
     for (const row of postRows) {
@@ -265,7 +267,6 @@ export default class VoteFeedManager {
       }
     }
 
-    const users = await this.loadUsers(refs)
     const events = this.filterExistingEvents(
       refs,
       (ref) => {
