@@ -1,6 +1,18 @@
 import { escapeLike } from '../../utils/MySqlUtils'
 import DB from '../DB'
 
+// Filtered branches scan the voted_at index and probe TEXT columns per row, so a
+// rarely-matching filter can walk a user's whole vote history. The optimizer hint
+// turns that worst case into a bounded, typed failure instead of minutes of CPU.
+const FILTER_MAX_EXECUTION_TIME_MS = 2000
+const ER_QUERY_TIMEOUT = 3024
+
+export class VoteFeedFilterTimeoutError extends Error {
+  constructor() {
+    super('Vote feed filter query timed out')
+  }
+}
+
 export type VoteFeedDirection = 'mine' | 'received'
 export type VoteFeedEntityType = 'post' | 'comment' | 'user'
 
@@ -169,8 +181,9 @@ export default class VoteFeedReadRepository {
     const union = VOTE_FEED_BRANCHES.map((spec) => this.buildBranch(spec, direction, filter, cursor)).join(
       '\nunion all\n',
     )
+    const timeoutHint = filter ? `/*+ MAX_EXECUTION_TIME(${FILTER_MAX_EXECUTION_TIME_MS}) */ ` : ''
     const query = `
-      select type, entityId, postId, voterId, targetUserId, vote, votedAt
+      select ${timeoutHint}type, entityId, postId, voterId, targetUserId, vote, votedAt
         from (${union}) votes
        order by votedAt desc, type desc, entityId desc, voterId desc
        limit :limit_count
@@ -190,7 +203,7 @@ export default class VoteFeedReadRepository {
       params.cursor_voter_id = cursor.voterId
     }
 
-    const rows = await this.db.fetchAll<{
+    let rows: Array<{
       type: VoteFeedEntityType
       entityId: number
       postId?: number
@@ -198,7 +211,15 @@ export default class VoteFeedReadRepository {
       targetUserId: number
       vote: number
       votedAt: Date | string
-    }>(query, params)
+    }>
+    try {
+      rows = await this.db.fetchAll(query, params)
+    } catch (error) {
+      if (filter && (error as { errno?: number }).errno === ER_QUERY_TIMEOUT) {
+        throw new VoteFeedFilterTimeoutError()
+      }
+      throw error
+    }
 
     return rows.map((row) => ({
       type: row.type,

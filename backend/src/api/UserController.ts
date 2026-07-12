@@ -3,6 +3,7 @@ import rateLimit from 'express-rate-limit'
 import Joi from 'joi'
 import { Logger } from 'winston'
 
+import { VoteFeedFilterTimeoutError } from '../db/repositories/VoteFeedReadRepository'
 import InviteManager from '../managers/InviteManager'
 import OAuth2Manager from '../managers/OAuth2Manager'
 import PostManager from '../managers/PostManager'
@@ -397,6 +398,9 @@ export default class UserController {
     } catch (error) {
       if (error instanceof InvalidVoteFeedCursorError) {
         return response.error('invalid-payload', 'Invalid cursor', 400)
+      }
+      if (error instanceof VoteFeedFilterTimeoutError) {
+        return response.error('filter-timeout', 'Filter is too heavy, narrow the query', 400)
       }
       this.logger.error('Could not get user votes feed', { userId, direction, error })
       return response.error('error', 'Could not get user votes feed', 500)

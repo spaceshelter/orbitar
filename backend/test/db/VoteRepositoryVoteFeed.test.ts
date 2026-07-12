@@ -1,4 +1,7 @@
-import VoteFeedReadRepository, { VoteFeedCursor } from '../../src/db/repositories/VoteFeedReadRepository'
+import VoteFeedReadRepository, {
+  VoteFeedCursor,
+  VoteFeedFilterTimeoutError,
+} from '../../src/db/repositories/VoteFeedReadRepository'
 
 const normalize = (query: string) => query.replace(/\s+/g, ' ').trim()
 
@@ -68,6 +71,21 @@ describe('VoteRepository vote feed', () => {
 
     const [, params] = db.fetchAll.mock.calls[0]
     expect(params.filter).toBe('%a\\_b\\%c\\\\d%')
+  })
+
+  test('bounds filtered queries with MAX_EXECUTION_TIME and maps timeouts to a typed error', async () => {
+    const timeoutError = Object.assign(new Error('Query execution was interrupted'), { errno: 3024 })
+    const db = { fetchAll: jest.fn().mockRejectedValue(timeoutError) }
+    const repository = new VoteFeedReadRepository(db as any)
+
+    await expect(repository.getPageReferences(123, 'mine', 'rare', undefined, 21)).rejects.toBeInstanceOf(
+      VoteFeedFilterTimeoutError,
+    )
+    expect(normalize(db.fetchAll.mock.calls[0][0])).toContain('select /*+ MAX_EXECUTION_TIME(2000) */')
+
+    // Unfiltered queries stay unbounded and propagate driver errors untouched.
+    await expect(repository.getPageReferences(123, 'mine', '', undefined, 21)).rejects.toBe(timeoutError)
+    expect(normalize(db.fetchAll.mock.calls[1][0])).not.toContain('MAX_EXECUTION_TIME')
   })
 
   test('received direction uses denormalized target ids and no joins without filter', async () => {

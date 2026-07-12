@@ -1,4 +1,5 @@
 import UserController from '../../src/api/UserController'
+import { VoteFeedFilterTimeoutError } from '../../src/db/repositories/VoteFeedReadRepository'
 import { InvalidVoteFeedCursorError } from '../../src/managers/VoteFeedManager'
 
 describe('UserController votes', () => {
@@ -152,6 +153,24 @@ describe('UserController votes', () => {
     )
 
     expect(response.error).toHaveBeenCalledWith('invalid-payload', 'Invalid cursor', 400)
+    expect(logger.error).not.toHaveBeenCalled()
+  })
+
+  test('responds 400 when the filtered feed query times out', async () => {
+    const { controller, logger } = createController({
+      voteFeedManager: { getVoteFeed: jest.fn().mockRejectedValue(new VoteFeedFilterTimeoutError()) },
+    })
+    const response = { success: jest.fn(), error: jest.fn() }
+
+    await controller['votes'](
+      {
+        session: { data: { userId: 123 } },
+        body: { direction: 'mine', filter: 'needle' },
+      } as any,
+      response as any,
+    )
+
+    expect(response.error).toHaveBeenCalledWith('filter-timeout', 'Filter is too heavy, narrow the query', 400)
     expect(logger.error).not.toHaveBeenCalled()
   })
 
