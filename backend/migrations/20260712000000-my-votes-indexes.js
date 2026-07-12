@@ -308,6 +308,10 @@ exports.up = async function (db) {
       { name: 'idx_comment_votes_voter_voted_at', columns: ['voter_id', 'voted_at'] },
       { name: 'idx_comment_votes_target_voted_at', columns: ['target_user_id', 'voted_at'] },
     ])
+    // Unlike the vote tables, user_karma needs the trailing PK column spelled out:
+    // with the 2-column shape the 5.7 planner ignores the extended-key order and
+    // scans the user's whole history forward (measured on a 100k-row clone: 5001
+    // handler reads vs 51 for a 51-row page).
     await ensureIndexes(db, 'user_karma', [
       { name: 'idx_user_karma_voter_voted_at', columns: ['voter_id', 'voted_at', 'user_id'] },
       { name: 'idx_user_karma_user_voted_at', columns: ['user_id', 'voted_at', 'voter_id'] },
