@@ -45,7 +45,10 @@ describe('UserController votes', () => {
     expect(voteFeedManager.getVoteFeed).not.toHaveBeenCalled()
   })
 
-  test('uses session user id and ignores body identity fields', async () => {
+  // In production Joi's validate() rejects unknown body keys with 400 before this
+  // handler runs (covered by the route-validation tests below); this asserts the
+  // handler itself derives the feed owner from the session and never from the body.
+  test('derives the feed owner from the session even if the body smuggles identity fields', async () => {
     const payload = {
       events: [{ type: 'post' }],
       users: { 1: { id: 1 } },
@@ -132,6 +135,35 @@ describe('UserController votes', () => {
     expect(response.error).toHaveBeenCalledWith(
       'invalid-payload',
       expect.stringContaining('integer'),
+      400,
+      expect.any(Object),
+    )
+    expect(next).not.toHaveBeenCalled()
+  })
+
+  test('route validation rejects unknown identity fields in the body', async () => {
+    const { controller } = createController()
+    const votesRoute = controller.router.stack.find((layer) => layer.route?.path === '/user/votes')
+    const validateVotes = votesRoute?.route.stack[2].handle
+    const response = { error: jest.fn() }
+    const next = jest.fn()
+
+    expect(validateVotes).toBeDefined()
+    await new Promise<void>((resolve) => {
+      response.error.mockImplementation(() => resolve())
+      validateVotes(
+        { body: { direction: 'mine', userId: 999, username: 'someone-else' } } as any,
+        response as any,
+        () => {
+          next()
+          resolve()
+        },
+      )
+    })
+
+    expect(response.error).toHaveBeenCalledWith(
+      'invalid-payload',
+      expect.stringContaining('not allowed'),
       400,
       expect.any(Object),
     )

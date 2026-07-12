@@ -81,6 +81,9 @@ const VOTE_FEED_BRANCHES: VoteFeedBranchSpec[] = [
     filterEntityCondition: 'p.source like :filter or p.title like :filter',
     whereColumn: { mine: 'pv.voter_id', received: 'pv.target_user_id' },
     filterUserColumn: { mine: 'pv.target_user_id', received: 'pv.voter_id' },
+    // No deleted filter on purpose: posts.deleted is never set by any code path and
+    // no post read path in the product filters it. Comments mirror the profile
+    // comments feed, which does exclude deleted rows.
     extraConditions: '',
   },
   {
@@ -129,6 +132,10 @@ export default class VoteFeedReadRepository {
       return ''
     }
 
+    // The JS string comparison below must order the type literals exactly like the
+    // outer `order by type desc` does in MySQL. For the lowercase-ascii literals
+    // 'comment' < 'post' < 'user' both systems agree under any utf8 collation; if a
+    // new entity type is ever added, revisit both sides together.
     const votedAt = `${spec.alias}.voted_at`
     if (spec.type > cursor.type) {
       return `and ${votedAt} < :cursor_voted_at`

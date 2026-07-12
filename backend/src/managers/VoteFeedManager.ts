@@ -29,6 +29,11 @@ export class InvalidVoteFeedCursorError extends Error {
 
 const VOTE_FEED_ENTITY_TYPES = ['post', 'comment', 'user']
 
+// Server-side cap keeps received payloads compact; the frontend applies the same
+// visual budget in getCompactText. Sliced over code points so a surrogate pair
+// (emoji) on the boundary is not cut in half.
+const RECEIVED_LABEL_MAX_CHARS = 72
+
 export const encodeVoteFeedCursor = (ref: VoteFeedReference): string =>
   Buffer.from(
     JSON.stringify({
@@ -67,6 +72,10 @@ export const decodeVoteFeedCursor = (cursor: string): VoteFeedCursor => {
   }
 }
 
+// These local mappers deliberately project a fixed allowlist instead of reusing
+// api/utils/Enricher (which carries last-read/unread machinery the feed does not
+// need). If PostEntity/CommentEntity grow fields, update both projections —
+// consolidating on Enricher is a candidate follow-up refactor.
 const toUserEntity = (user: UserInfo): UserEntity => ({
   id: user.id,
   username: user.username,
@@ -250,7 +259,7 @@ export default class VoteFeedManager {
       posts[id] = {
         id,
         site: row.site,
-        label: label.slice(0, 72),
+        label: [...label].slice(0, RECEIVED_LABEL_MAX_CHARS).join(''),
         rating: Number(row.rating),
       }
     }

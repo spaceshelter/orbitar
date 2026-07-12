@@ -74,6 +74,8 @@ const getGroupEntityName = (event?: UserVoteFeedEvent) => {
   return 'профиля'
 }
 
+// The 72-char budget mirrors the backend's RECEIVED_LABEL_MAX_CHARS; both slice
+// over code points so an emoji on the boundary is not cut in half.
 const getCompactText = (text?: string, limit = 72) => {
   const compact = (text || '').replace(/\s+/g, ' ').trim()
 
@@ -81,11 +83,12 @@ const getCompactText = (text?: string, limit = 72) => {
     return ''
   }
 
-  if (compact.length <= limit) {
+  const characters = Array.from(compact)
+  if (characters.length <= limit) {
     return compact
   }
 
-  return `${compact.slice(0, limit).trim()}...`
+  return `${characters.slice(0, limit).join('').trim()}...`
 }
 
 const getPostSubjectText = (postId: number, label: string) => (label ? `пост #${postId}: ${label}` : `пост #${postId}`)
@@ -118,6 +121,9 @@ const getVoteTimeGroups = (events: UserVoteFeedEvent[]) =>
 
 const mergeVoteFeedResults = (current: UserVotesResult, next: UserVotesResult): UserVotesResult => {
   if (current.direction !== next.direction) {
+    // Unreachable through the UI (a tab change resets the feed and aborts load-more);
+    // make a programming error visible instead of silently dropping the fetched page.
+    console.error('Vote feed direction mismatch on merge', current.direction, next.direction)
     return current
   }
 
@@ -161,6 +167,7 @@ const mergeVoteFeedResults = (current: UserVotesResult, next: UserVotesResult): 
     }
   }
 
+  // Unreachable: directions are equal above, but TypeScript cannot narrow the pair.
   return current
 }
 
@@ -181,7 +188,6 @@ export default function UserProfileVotes() {
   const loadMoreAbortControllerRef = useRef<AbortController>()
   const events = feed?.events
   const users = feed?.users || emptyUsers
-  const hasMore = feed?.hasMore || false
   const nextCursor = feed?.nextCursor
   const feedDirection = feed?.direction || tab
   const mineFeed: UserVotesMineResult | undefined = feed?.direction === 'mine' ? feed : undefined
@@ -658,7 +664,8 @@ export default function UserProfileVotes() {
                 {loadMoreError}
               </div>
             )}
-            {!error && hasMore && (
+            {/* Gate on nextCursor, the one field loadMore actually consumes. */}
+            {!error && nextCursor && (
               <div className={styles.loadMore}>
                 <Button variant='ghost' onClick={loadMore} disabled={loadingMore}>
                   {loadingMore ? 'Загружается...' : loadMoreError ? 'Повторить' : 'Показать ещё'}
