@@ -217,7 +217,7 @@ export const UserPage = observer(() => {
           {isInvites && <UserProfileInvites username={user.username} onInvitesChange={handleInvitesChange} />}
           {isKarma && (
             <>
-              <div className={styles.selfRegulationControls}>
+              <nav className={styles.selfRegulationControls} aria-label='Разделы саморегуляции'>
                 {selfRegulationTabs.map(({ id, label, to }) => (
                   <Link
                     key={id}
@@ -225,11 +225,12 @@ export const UserPage = observer(() => {
                       selfRegulationTab === id ? styles.selfRegulationControlActive : ''
                     }`}
                     to={to}
+                    aria-current={selfRegulationTab === id ? 'page' : undefined}
                   >
                     {label}
                   </Link>
                 ))}
-              </div>
+              </nav>
               {selfRegulationTab === 'mine' || selfRegulationTab === 'received' ? (
                 isMyProfile ? (
                   <UserProfileVotes />

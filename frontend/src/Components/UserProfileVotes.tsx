@@ -605,16 +605,21 @@ export default function UserProfileVotes() {
           onKeyUp={handleFilterChange}
           onChange={handleFilterChange}
           placeholder='фильтровать'
+          aria-label='Фильтр оценок'
           type='search'
           defaultValue={defaultFilter}
         />
       </div>
-      <div className={feedStyles.feed}>
+      <div className={feedStyles.feed} aria-busy={loading || loadingMore}>
         {loading ? (
-          <div className={feedStyles.loading}></div>
+          <div className={feedStyles.loading} role='status' aria-label='Загрузка оценок'></div>
         ) : (
           <>
-            {error && <div className={feedStyles.error}>{error}</div>}
+            {error && (
+              <div className={feedStyles.error} role='alert'>
+                {error}
+              </div>
+            )}
             {!error && events && events.length === 0 && <div className={styles.empty}>Оценок пока нет.</div>}
             {!error && groups.length > 0 && (
               <div className={styles.groups}>
@@ -648,7 +653,11 @@ export default function UserProfileVotes() {
                 })}
               </div>
             )}
-            {!error && loadMoreError && <div className={feedStyles.error}>{loadMoreError}</div>}
+            {!error && loadMoreError && (
+              <div className={feedStyles.error} role='alert'>
+                {loadMoreError}
+              </div>
+            )}
             {!error && hasMore && (
               <div className={styles.loadMore}>
                 <Button variant='ghost' onClick={loadMore} disabled={loadingMore}>
