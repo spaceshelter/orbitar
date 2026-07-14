@@ -13,7 +13,7 @@ jobs:
     environment: StagingRO
     runs-on: [self-hosted, stage]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
         with:
           path: media_backup_src
       - name: Run backup

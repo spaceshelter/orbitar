@@ -27,7 +27,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
 
       - name: Download DB backup
         id: get-db
@@ -39,7 +39,7 @@ jobs:
       - name: Load DB
         run: cat ${{ steps.get-db.outputs.db-dump-file }} | /usr/bin/mysql -h 127.0.0.1 -u root -p$MYSQL_ROOT_PASSWORD
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
 
       - name: Remove PII
         run: |
@@ -61,7 +61,7 @@ jobs:
           zip -m -P $STAGING_BACKUP_PASSWORD stage-backup.zip stage-backup.sql
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: stage-backup
           path: stage-backup.zip
@@ -72,7 +72,7 @@ jobs:
     environment: Staging
     runs-on: [self-hosted, stage]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
 
       - name: Download DB backup
         uses: ./.github/actions/get-db
