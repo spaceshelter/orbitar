@@ -30,6 +30,7 @@ describe('UserController votes', () => {
       {} as any,
       jest.fn(() => (_request: any, _response: any, next: any) => next()) as any,
       {} as any,
+      {} as any,
       logger as any,
     )
 

@@ -8,6 +8,7 @@ import { useUserProfile } from '../API/use/useUserProfile'
 import { useAPI, useAppState } from '../AppState/AppState'
 import DateComponent from '../Components/DateComponent'
 import RatingSwitch from '../Components/RatingSwitch'
+import Button from '../Components/UI/Button'
 import Username from '../Components/Username'
 import UserProfileBio from '../Components/UserProfileBio'
 import UserProfileClientsApps from '../Components/UserProfileClientsApps'
@@ -36,6 +37,7 @@ export const UserPage = observer(() => {
   const [state, refreshProfile] = useUserProfile(username || '')
 
   const [inviteListTruncated, setInviteListTruncated] = useState(true)
+  const [muted, setMuted] = useState(false)
 
   const isPosts = page === 'posts'
   const isComments = page === 'comments'
@@ -49,6 +51,7 @@ export const UserPage = observer(() => {
   useEffect(() => {
     if (state.status === 'ready') {
       document.title = state.profile.profile.username
+      setMuted(state.profile.isMuted)
     }
   }, [state])
 
@@ -120,6 +123,11 @@ export const UserPage = observer(() => {
       refreshProfile()
     }
 
+    const handleToggleMute = () => {
+      const request = muted ? api.notifications.unmuteUser(user.id) : api.notifications.muteUser(user.id)
+      request.then(() => setMuted(!muted)).catch((e) => console.error('Failed to toggle notification mute', e))
+    }
+
     return (
       <div className={styles.container}>
         <div className={styles.header}>
@@ -150,6 +158,21 @@ export const UserPage = observer(() => {
           <div className={styles.name}>
             <UserProfileName name={user.name} mine={!!isMyProfile} />
           </div>
+          {!isMyProfile && (
+            <Button
+              variant='ghost'
+              size='small'
+              className={styles.muteButton}
+              onClick={handleToggleMute}
+              title={
+                muted
+                  ? 'Снова получать уведомления от этого пользователя'
+                  : 'Не получать уведомления (упоминания и ответы) от этого пользователя. Его посты и комментарии останутся видны.'
+              }
+            >
+              {muted ? 'Включить уведомления' : 'Отключить уведомления'}
+            </Button>
+          )}
         </div>
 
         <div className={styles.controls}>
