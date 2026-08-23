@@ -1,4 +1,4 @@
-import React, { FunctionComponent } from 'react'
+import React, { FunctionComponent, PropsWithChildren } from 'react'
 import { Router } from 'react-router-dom'
 
 import { createRoot } from 'react-dom/client'
@@ -29,7 +29,7 @@ if (!container) {
   throw new Error('No root container found')
 }
 
-export const MobXAwareRouter: FunctionComponent = (props) => {
+export const MobXAwareRouter: FunctionComponent<PropsWithChildren> = (props) => {
   const { router } = useAppState()
   const [state, setState] = React.useState({
     action: router.history.action,

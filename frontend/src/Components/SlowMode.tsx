@@ -5,6 +5,7 @@ import styles from './SlowMode.module.scss'
 export type SlowModeProps = {
   endTime: Date
   endCallback?: () => void // called when slow mode ends
+  children?: React.ReactNode
 }
 
 /**
