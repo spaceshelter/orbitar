@@ -32,6 +32,7 @@ interface CommentProps {
   unreadOnly?: boolean
   hideRating?: boolean
   currentUsername?: string
+  postAuthorUsername?: string
 }
 
 export default function CommentComponent(props: CommentProps) {
@@ -133,6 +134,7 @@ export default function CommentComponent(props: CommentProps) {
           postLinkIsNew={props.unreadOnly}
           date={created}
           editFlag={editFlag}
+          isPostAuthor={!!props.postAuthorUsername && author.username === props.postAuthorUsername}
         />
         {editingText === false ? (
           showHistory ? (
@@ -280,6 +282,7 @@ export default function CommentComponent(props: CommentProps) {
                 unreadOnly={props.unreadOnly}
                 idx={idx}
                 currentUsername={props.currentUsername}
+                postAuthorUsername={props.postAuthorUsername}
               />
             ))
           ) : (

@@ -2,6 +2,7 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 
 import { EditFlag } from '@api/PostAPI'
+import classNames from 'classnames'
 
 import { PostLinkInfo } from '../Types/PostInfo'
 import { UserBaseInfo } from '../Types/UserInfo'
@@ -23,6 +24,7 @@ interface SignatureComponentProps {
   parentCommentAuthor?: string
   date: Date
   commentId?: number
+  isPostAuthor?: boolean
 }
 
 export const SignatureComponent = (props: SignatureComponentProps) => {
@@ -35,7 +37,8 @@ export const SignatureComponent = (props: SignatureComponentProps) => {
       ) : (
         ''
       )}
-      <Username className={styles.username} user={props.author} /> •{' '}
+      <Username className={classNames(styles.username, props.isPostAuthor && styles.postAuthor)} user={props.author} />{' '}
+      •{' '}
       <PostLink post={props.postLink} commentId={props.commentId}>
         <DateComponent date={props.date} />
       </PostLink>
