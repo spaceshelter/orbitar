@@ -71,30 +71,29 @@ jobs:
             // account is the sole reviewer always require post-merge review.
             const automatedAccount = 'Aivean2';
 
-            let shouldFlag = false;
-            let reason = '';
+            // Each branch spells out the whole sentence. The three reasons have no
+            // common grammatical shape, so a shared "merged with ..." prefix cannot
+            // host all of them.
+            let headline = '';
 
             if (prAuthor === automatedAccount) {
               // Case 1: PR authored by automated account — always flag
-              shouldFlag = true;
-              reason = `authored by automated account ${automatedAccount}`;
+              headline = `This PR was authored by automated account ${automatedAccount}.`;
             } else if (approverLogins.length === 0) {
               // Case 2: Merged with zero approved reviews
-              shouldFlag = true;
-              reason = 'no approved reviews';
+              headline = 'This PR was merged with no approved reviews.';
             } else if (
               approverLogins.length === 1 &&
               approverLogins[0] === automatedAccount
             ) {
-              // Case 3: Only reviewer is the automated account
-              shouldFlag = true;
-              reason = `only reviewed by automated account ${automatedAccount}`;
+              // Case 3: Only approver is the automated account
+              headline = `This PR was approved only by automated account ${automatedAccount}.`;
             }
 
-            if (shouldFlag) {
+            if (headline) {
               const body = [
                 `> [!WARNING]`,
-                `> **This PR was merged with ${reason}.**`,
+                `> **${headline}**`,
                 `> Post-merge review may be required.`,
                 `>`,
                 `> cc @spaceshelter/reviewers`,
@@ -107,7 +106,7 @@ jobs:
                 body: body,
               });
 
-              core.info(`Flagged PR #${prNumber}: ${reason}`);
+              core.info(`Flagged PR #${prNumber}: ${headline}`);
             } else {
               core.info(
                 `PR #${prNumber} has independent review from: ${approverLogins.join(', ')}`
