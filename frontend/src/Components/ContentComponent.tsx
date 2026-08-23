@@ -638,7 +638,14 @@ function updateImg(img: HTMLImageElement, setZoomedImg: (img: ZoomedImg | null) 
 }
 
 function updateSpoiler(spoiler: HTMLSpanElement) {
-  const spoilerOnClickHandler = () => {
+  const spoilerOnClickHandler = (event: MouseEvent) => {
+    // Where there is no hover, the tap that uncovers a spoiler is the only way to uncover it, so
+    // it cannot also mean "follow the link in there" - the reader could not read the link yet.
+    // Swallow that first tap; the handler removes itself, so the next one works normally.
+    // Where hover exists the blur is already gone before any click, so the click was deliberate.
+    if (!window.matchMedia('(hover: hover)').matches) {
+      event.preventDefault()
+    }
     spoiler.classList.remove('spoiler')
     spoiler.removeEventListener('click', spoilerOnClickHandler)
   }
