@@ -171,6 +171,7 @@ export default function CommentComponent(props: CommentProps) {
           <CreateCommentComponentRestricted
             post={props.comment.postLink}
             comment={props.comment}
+            isEdit={true}
             open={true}
             text={editingText}
             onAnswer={handleEditComplete}

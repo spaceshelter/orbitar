@@ -44,7 +44,7 @@
     "react-scripts": "^5.0.0",
     "react-textarea-autosize": "^8.4.0",
     "react-toastify": "^8.2.0",
-    "react-tweet": "^3.2.2",
+    "react-tweet": "^3.3.1",
     "react-zoom-pan-pinch": "^3.1.0",
     "scrypt-js": "^3.0.1",
     "textarea-caret": "^3.1.0",
