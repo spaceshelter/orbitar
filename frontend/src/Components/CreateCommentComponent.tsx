@@ -15,7 +15,6 @@ import getCaretCoordinates from 'textarea-caret'
 import { useDebouncedCallback } from 'use-debounce'
 
 import { CommentInfo, PostLinkInfo } from '../Types/PostInfo'
-import { UserGender } from '../Types/UserInfo'
 import ContentComponent from './ContentComponent'
 import MediaUploader, { CreateGalleryOption, MediaResult } from './MediaUploader'
 import { PollCreationWizard, PollCreationWizardSubmitData } from './PollCreationWizard'
@@ -47,12 +46,34 @@ interface CreateCommentProps {
   parentAuthorUserName?: string
 
   /**
+   * The form edits `comment` instead of replying to it.
+   * Only affects the placeholder — the caller still owns the submit handler.
+   */
+  isEdit?: boolean
+
+  /**
    * Optional tab index for the textarea. When provided, formatting buttons
    * will use the next index in sequence.
    */
   textareaTabIndex?: number
 
   onAnswer: (text: string, post?: PostLinkInfo, comment?: CommentInfo) => Promise<CommentInfo | string | undefined>
+}
+
+/**
+ * Tells the three uses of this form apart, because an empty textarea looks
+ * the same in all of them: a reply to a comment, a reply to the post itself,
+ * and everything else (new post, edits) where a hint would only get in the way.
+ */
+function getPlaceholderText(props: CreateCommentProps): string {
+  if (props.isEdit) {
+    return ''
+  }
+  if (props.comment) {
+    const parentAuthor = props.comment.author?.username
+    return parentAuthor ? `Ваш ответ на комментарий @${parentAuthor}` : 'Ваш ответ на комментарий'
+  }
+  return props.post ? 'Ваш ответ на пост' : ''
 }
 
 // same as CreateCommentComponent, but with slow mode and other restrictions
@@ -184,13 +205,7 @@ export default function CreateCommentComponent(props: CreateCommentProps) {
 
   const api = useAPI()
 
-  const pronoun =
-    props?.comment?.author?.gender === UserGender.he
-      ? 'ему'
-      : props?.comment?.author?.gender === UserGender.she
-        ? 'ей'
-        : ''
-  const placeholderText = props.comment ? `Ваш ответ ${pronoun}` : ''
+  const placeholderText = getPlaceholderText(props)
   const disabledButtons = isPosting || previewing !== null || mailForm
 
   const state = useAppState()
