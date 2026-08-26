@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { useLocation, useSearchParams } from 'react-router-dom'
 
 import { useDebouncedCallback } from 'use-debounce'
@@ -7,13 +7,15 @@ import { useDebouncedCallback } from 'use-debounce'
 // an uncontrolled search input synced both ways with the `filter` query param.
 export function useProfileFeedFilter(buildSearchParams: (filter: string) => Record<string, string>) {
   const [searchParams, setSearchParams] = useSearchParams()
-  const defaultFilter = searchParams.get('filter') || ''
-  const [filter, setFilter] = useState(defaultFilter)
+  // Derived straight from the URL: a state copy lags it by one commit, so a tab
+  // switch (whose links drop the filter param) would first fire a request for
+  // (new tab, stale filter) that the next render immediately aborts.
+  const filter = searchParams.get('filter') || ''
+  const defaultFilter = filter
   const { search } = useLocation()
   const filterInputRef = useRef<HTMLInputElement>(null)
 
   const applyFilter = (value: string) => {
-    setFilter(value)
     setSearchParams(buildSearchParams(value))
   }
 
@@ -32,9 +34,7 @@ export function useProfileFeedFilter(buildSearchParams: (filter: string) => Reco
 
   useEffect(() => {
     setDebouncedFilter.cancel()
-    const nextSearchParams = new URLSearchParams(search)
-    const nextFilter = nextSearchParams.get('filter') || ''
-    setFilter(nextFilter)
+    const nextFilter = new URLSearchParams(search).get('filter') || ''
     if (filterInputRef.current) {
       filterInputRef.current.value = nextFilter
     }

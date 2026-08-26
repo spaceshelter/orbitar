@@ -122,8 +122,10 @@ const getVoteTimeGroups = (events: UserVoteFeedEvent[]) =>
 const mergeVoteFeedResults = (current: UserVotesResult, next: UserVotesResult): UserVotesResult => {
   if (current.direction !== next.direction) {
     // Unreachable through the UI (a tab change resets the feed and aborts load-more);
-    // make a programming error visible instead of silently dropping the fetched page.
-    console.error('Vote feed direction mismatch on merge', current.direction, next.direction)
+    // surface a programming error in development instead of silently dropping the page.
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Vote feed direction mismatch on merge', current.direction, next.direction)
+    }
     return current
   }
 
@@ -305,35 +307,19 @@ export default function UserProfileVotes() {
         }
       }
 
-      if (currentFeed.direction === 'mine') {
-        if (event.type === 'post') {
-          return {
-            ...currentFeed,
-            events: updatedEvents,
-            entities: {
-              ...currentFeed.entities,
-              posts: updateRecord(currentFeed.entities.posts, event.entityId, { rating, vote: nextVote }),
-            },
-          }
-        }
-
-        return {
-          ...currentFeed,
-          events: updatedEvents,
-          entities: {
-            ...currentFeed.entities,
-            comments: updateRecord(currentFeed.entities.comments, event.entityId, { rating, vote: nextVote }),
-          },
-        }
+      // Only `mine` renderers mount a RatingSwitch, so votes can change only there;
+      // the guard is for TypeScript narrowing, not a reachable branch.
+      if (currentFeed.direction !== 'mine') {
+        return currentFeed
       }
 
       if (event.type === 'post') {
         return {
           ...currentFeed,
           events: updatedEvents,
-          subjects: {
-            ...currentFeed.subjects,
-            posts: updateRecord(currentFeed.subjects.posts, event.entityId, { rating }),
+          entities: {
+            ...currentFeed.entities,
+            posts: updateRecord(currentFeed.entities.posts, event.entityId, { rating, vote: nextVote }),
           },
         }
       }
@@ -341,9 +327,9 @@ export default function UserProfileVotes() {
       return {
         ...currentFeed,
         events: updatedEvents,
-        subjects: {
-          ...currentFeed.subjects,
-          comments: updateRecord(currentFeed.subjects.comments, event.entityId, { rating }),
+        entities: {
+          ...currentFeed.entities,
+          comments: updateRecord(currentFeed.entities.comments, event.entityId, { rating, vote: nextVote }),
         },
       }
     })
@@ -502,16 +488,14 @@ export default function UserProfileVotes() {
       group.events.every((event) => event.type === firstEvent.type && event.entityId === firstEvent.entityId)
     const timeGroups = receivedTimeGroups.get(group) || []
 
-    // Sibling keys keep the row container's identity when the header or subject
-    // block appears after a group absorbs appended events.
     return (
       <section key={getGroupKey(group)}>
-        <div className={styles.groupHeader} key='header'>
+        <div className={styles.groupHeader}>
           {header}
           <span className={styles.groupCount}>{pluralize(group.events.length, ['оценка', 'оценки', 'оценок'])}</span>
         </div>
         {renderReceivedGroupSubject(group, sameEntity)}
-        <div className={styles.voteTimeGroups} key='rows'>
+        <div className={styles.voteTimeGroups}>
           {timeGroups.map((timeGroup) => renderReceivedTimeGroup(group, timeGroup, sameEntity))}
         </div>
       </section>
@@ -616,9 +600,20 @@ export default function UserProfileVotes() {
           defaultValue={defaultFilter}
         />
       </div>
+      {/* Outside the aria-busy subtree, otherwise assistive tech defers its updates;
+          a status region announces its text content, so it must carry some. */}
+      <span className={styles.srOnly} role='status' aria-live='polite'>
+        {loading
+          ? 'Загружаются оценки'
+          : error
+            ? ''
+            : !events || events.length === 0
+              ? 'Оценок пока нет'
+              : `Показано ${pluralize(events.length, ['оценка', 'оценки', 'оценок'])}`}
+      </span>
       <div className={feedStyles.feed} aria-busy={loading || loadingMore}>
         {loading ? (
-          <div className={feedStyles.loading} role='status' aria-label='Загрузка оценок'></div>
+          <div className={feedStyles.loading}></div>
         ) : (
           <>
             {error && (
@@ -635,19 +630,17 @@ export default function UserProfileVotes() {
                   }
 
                   const header = renderGroupHeader(group)
-                  // The events container is keyed so a header appearing (a 'single'
-                  // group growing into a real one) can't shift and remount it.
                   return (
                     <section key={getGroupKey(group)}>
                       {header && (
-                        <div className={styles.groupHeader} key='header'>
+                        <div className={styles.groupHeader}>
                           {header}
                           <span className={styles.groupCount}>
                             {pluralize(group.events.length, ['оценка', 'оценки', 'оценок'])}
                           </span>
                         </div>
                       )}
-                      <div className={styles.events} key='events'>
+                      <div className={styles.events}>
                         {group.events.map((event) => (
                           <div className={styles.event} key={getEventKey(event)}>
                             {renderEvent(event)}
