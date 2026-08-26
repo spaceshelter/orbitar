@@ -76,13 +76,14 @@ export const decodeVoteFeedCursor = (cursor: string): VoteFeedCursor => {
 // api/utils/Enricher (which carries last-read/unread machinery the feed does not
 // need). If PostEntity/CommentEntity grow fields, update both projections —
 // consolidating on Enricher is a candidate follow-up refactor.
+// No `vote` on purpose: the cached UserInfo never carries one here, and events
+// already hold the viewer's karma vote where it matters.
 const toUserEntity = (user: UserInfo): UserEntity => ({
   id: user.id,
   username: user.username,
   gender: user.gender as unknown as UserGender,
   karma: user.karma,
   name: user.name,
-  vote: user.vote,
 })
 
 const toPostEntity = (post: PostInfo): PostEntity => ({

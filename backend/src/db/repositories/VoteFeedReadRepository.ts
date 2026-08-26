@@ -81,9 +81,9 @@ const VOTE_FEED_BRANCHES: VoteFeedBranchSpec[] = [
     filterEntityCondition: 'p.source like :filter or p.title like :filter',
     whereColumn: { mine: 'pv.voter_id', received: 'pv.target_user_id' },
     filterUserColumn: { mine: 'pv.target_user_id', received: 'pv.voter_id' },
-    // No deleted filter on purpose: posts.deleted is never set by any code path and
-    // no post read path in the product filters it. Comments mirror the profile
-    // comments feed, which does exclude deleted rows.
+    // No deleted filter on purpose: the posts table has no such column (the field
+    // on PostRaw is vestigial). Comments mirror the profile comments feed, which
+    // does exclude deleted rows.
     extraConditions: '',
   },
   {
