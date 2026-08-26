@@ -1,7 +1,7 @@
 import { ResultSetHeader } from 'mysql2'
 
 import CodeError from '../../CodeError'
-import { escapePercent } from '../../utils/MySqlUtils'
+import { escapeLike } from '../../utils/MySqlUtils'
 import DB from '../DB'
 import { CommentRaw, CommentRawWithUserData } from '../types/PostRaw'
 
@@ -90,7 +90,7 @@ export default class CommentRepository {
         for_user_id: forUserId,
         limit_from: limitFrom,
         limit_count: perPage,
-        filter: filter && '%' + escapePercent(filter) + '%',
+        filter: filter && '%' + escapeLike(filter) + '%',
       },
     )
   }
@@ -114,7 +114,7 @@ export default class CommentRepository {
             ${filter ? '  and source like :filter ' : ''}`,
         {
           user_id: userId,
-          filter: filter && '%' + escapePercent(filter) + '%',
+          filter: filter && '%' + escapeLike(filter) + '%',
         },
       )
       .then((res) => parseInt(res.cnt || '0'))
