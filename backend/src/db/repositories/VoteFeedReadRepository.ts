@@ -243,9 +243,12 @@ export default class VoteFeedReadRepository {
     if (!postIds.length) {
       return []
     }
+    // The html is only ever a fallback source for a ~72-char label of titleless
+    // posts; left(4096) bounds the transfer and the strip-html parse to a prefix
+    // instead of whole bodies (string-strip-html tolerates a truncated tail).
     return this.db.fetchAll<ReceivedPostSubjectRaw>(
       `select p.post_id id, s.subdomain site, p.title,
-              if(nullif(trim(p.title), '') is null, p.html, '') html,
+              if(nullif(trim(p.title), '') is null, left(p.html, 4096), '') html,
               p.rating
          from posts p
          join sites s on (s.site_id = p.site_id)
