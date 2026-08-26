@@ -382,8 +382,11 @@ export default class UserController {
     const { direction, cursor, perpage, filter } = request.body
 
     try {
+      // Barmalini is a shared rotating credential, and anonymization reassigns the
+      // denormalized vote targets to it - its "received" feed would aggregate every
+      // vote ever cast on anonymized content. Deny it like the other barmalini gates.
       const restrictions = await this.userManager.getUserRestrictionsSnapshot(userId)
-      if (restrictions.restrictedToPostId !== false) {
+      if (this.userManager.isBarmaliniUser(userId) || restrictions.restrictedToPostId !== false) {
         return response.error(ERROR_CODES.NO_PERMISSION, 'You are not allowed to view your votes feed', 403)
       }
 

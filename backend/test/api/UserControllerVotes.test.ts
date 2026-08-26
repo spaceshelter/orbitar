@@ -16,6 +16,7 @@ describe('UserController votes', () => {
     const userManager = {
       getUserRestrictionsSnapshot: jest.fn().mockResolvedValue({ restrictedToPostId: false }),
       getUserRestrictions: jest.fn(),
+      isBarmaliniUser: jest.fn().mockReturnValue(false),
       ...overrides.userManager,
     }
     const logger = {
@@ -114,6 +115,25 @@ describe('UserController votes', () => {
     expect(response.error).toHaveBeenCalledWith('no-permission', 'You are not allowed to view your votes feed', 403)
     expect(voteFeedManager.getVoteFeed).not.toHaveBeenCalled()
     expect(response.success).not.toHaveBeenCalled()
+  })
+
+  test('denies the shared barmalini account before loading the vote feed', async () => {
+    const { controller, voteFeedManager, userManager } = createController({
+      userManager: { isBarmaliniUser: jest.fn().mockReturnValue(true) },
+    })
+    const response = { success: jest.fn(), error: jest.fn() }
+
+    await controller['votes'](
+      {
+        session: { data: { userId: 666 } },
+        body: { direction: 'received' },
+      } as any,
+      response as any,
+    )
+
+    expect(userManager.isBarmaliniUser).toHaveBeenCalledWith(666)
+    expect(response.error).toHaveBeenCalledWith('no-permission', 'You are not allowed to view your votes feed', 403)
+    expect(voteFeedManager.getVoteFeed).not.toHaveBeenCalled()
   })
 
   test('route validation rejects a fractional perpage', async () => {
