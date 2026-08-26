@@ -69,6 +69,10 @@ async function getIndexDefinition(db, table, index) {
   }))
 }
 
+// Note: this state check (and ensureIndexes built on it) only ever describes and
+// creates NON-unique BTREE indexes. That is safe here because uniqueness on all
+// touched tables comes from their primary keys; do not reuse it for an index
+// whose uniqueness is load-bearing - it would silently downgrade it on rebuild.
 function getIndexDefinitionState(columns, definition) {
   if (!definition.length) {
     return 'missing'
@@ -180,7 +184,11 @@ function buildCursorCondition(entityField, cursor) {
   )
 }
 
-async function backfillTargetUserId(db, votesTable, entityTable, entityField) {
+async function createBatchTable(db) {
+  // A leftover table from an aborted earlier call on this same connection would
+  // fail the create and skip every later cleanup; clearing first makes the pair
+  // of backfill calls independent.
+  await db.runSql(`drop temporary table if exists ${BACKFILL_BATCH_TABLE}`)
   await db.runSql(`
     create temporary table ${BACKFILL_BATCH_TABLE} (
       entity_id int not null,
@@ -188,6 +196,10 @@ async function backfillTargetUserId(db, votesTable, entityTable, entityField) {
       primary key (entity_id, voter_id)
     ) engine=memory
   `)
+}
+
+async function backfillTargetUserId(db, votesTable, entityTable, entityField) {
+  await createBatchTable(db)
 
   let cursor
   let batch = 0
@@ -264,6 +276,47 @@ async function backfillTargetUserId(db, votesTable, entityTable, entityField) {
   }
 }
 
+// The primary-key backfill leaves a window: while the other table's backfill and
+// the index builds run (online DDL admits concurrent DML), still-running old
+// application code keeps inserting NULL targets. Once the target index exists,
+// NULL rows are found through it in milliseconds - drain whatever accumulated so
+// the assertion below races milliseconds of writes instead of minutes.
+async function drainRemainingTargets(db, votesTable, entityTable, entityField, targetIndex) {
+  await createBatchTable(db)
+  try {
+    while (true) {
+      await db.runSql(`delete from ${BACKFILL_BATCH_TABLE}`)
+
+      const selectedResult = await db.runSql(`
+        insert into ${BACKFILL_BATCH_TABLE} (entity_id, voter_id)
+        select v.${entityField}, v.voter_id
+          from ${votesTable} v force index (${targetIndex})
+         where v.target_user_id is null
+         limit ${BACKFILL_BATCH_SIZE}
+      `)
+      const selected = getAffectedRows(selectedResult, `${votesTable} drain selection`)
+      if (selected === 0) {
+        break
+      }
+
+      const updatedResult = await db.runSql(`
+        update ${BACKFILL_BATCH_TABLE} b
+        straight_join ${entityTable} e on (e.${entityField} = b.entity_id)
+        straight_join ${votesTable} v on (v.${entityField} = b.entity_id and v.voter_id = b.voter_id)
+           set v.target_user_id = e.author_id
+         where v.target_user_id is null
+      `)
+      const updated = getAffectedRows(updatedResult, `${votesTable} drain update`)
+      if (updated !== selected) {
+        throw new Error(`${votesTable} drain selected ${selected} rows but updated ${updated}`)
+      }
+      console.log(`[my-votes-indexes] table=${votesTable} drained=${selected}`)
+    }
+  } finally {
+    await db.runSql(`drop temporary table if exists ${BACKFILL_BATCH_TABLE}`)
+  }
+}
+
 async function assertTargetBackfillComplete(db, votesTable, targetIndex) {
   const rows = await db.runSql(`
     select 1 missing
@@ -316,6 +369,9 @@ exports.up = async function (db) {
       { name: 'idx_user_karma_voter_voted_at', columns: ['voter_id', 'voted_at', 'user_id'] },
       { name: 'idx_user_karma_user_voted_at', columns: ['user_id', 'voted_at', 'voter_id'] },
     ])
+
+    await drainRemainingTargets(db, 'post_votes', 'posts', 'post_id', 'idx_post_votes_target_voted_at')
+    await drainRemainingTargets(db, 'comment_votes', 'comments', 'comment_id', 'idx_comment_votes_target_voted_at')
 
     await assertTargetBackfillComplete(db, 'post_votes', 'idx_post_votes_target_voted_at')
     await assertTargetBackfillComplete(db, 'comment_votes', 'idx_comment_votes_target_voted_at')

@@ -14,6 +14,7 @@ type MockOptions = {
   updateCountDelta?: number
   columns?: string[]
   indexes?: Array<[string, string[]]>
+  lateNullVote?: boolean
 }
 
 const OLD_INDEXES: Array<[string, string[]]> = [
@@ -37,6 +38,7 @@ function createMockDb(options: MockOptions = {}) {
   }
   let temporaryRows: VoteRow[] = []
   let postUpdateAttempts = 0
+  let lateNullInjected = false
 
   const runSql = jest.fn(async (query: string) => {
     const sql = normalize(query)
@@ -106,6 +108,17 @@ function createMockDb(options: MockOptions = {}) {
 
     if (sql.startsWith('insert into tmp_my_votes_target_backfill')) {
       const table = sql.includes('from post_votes v') ? 'post_votes' : 'comment_votes'
+      // A concurrent legacy writer landing between the backfill and the drain:
+      // inject one NULL row the first time the drain scans via the target index.
+      if (
+        options.lateNullVote &&
+        table === 'post_votes' &&
+        sql.includes('idx_post_votes_target_voted_at') &&
+        !lateNullInjected
+      ) {
+        lateNullInjected = true
+        voteRows.post_votes.push({ entityId: 99999, voterId: 1, targetUserId: null })
+      }
       const cursorMatch = sql.match(
         /v\.(?:post_id|comment_id) > (\d+) or \(v\.(?:post_id|comment_id) = (\d+) and v\.voter_id > (\d+)\)/,
       )
@@ -221,6 +234,43 @@ describe('my votes indexes migration', () => {
     expect(firstIndexBuild).toBeGreaterThan(-1)
     expect(postVerification).toBeGreaterThan(firstIndexBuild)
     expect(oldIndexDrop).toBeGreaterThan(postVerification)
+  })
+
+  test('rebuilds on an environment where the older revision already dropped the legacy indexes', async () => {
+    // The exact population the rename targets: a fully-applied old revision has
+    // no voter_id-leading legacy index left, so idx_* is the sole FK support at
+    // the instant of the rebuild. (FK acceptance of the one-statement drop+add
+    // was confirmed against a live 5.7.44 snapshot; the mock models the state,
+    // not the constraint.)
+    const state = createMockDb({
+      columns: ['post_votes.target_user_id', 'comment_votes.target_user_id'],
+      indexes: [
+        ['post_votes.idx_post_votes_voter_voted_at', ['voter_id', 'voted_at']],
+        ['post_votes.idx_post_votes_target_voted_at', ['target_user_id', 'voted_at']],
+        ['comment_votes.idx_comment_votes_voter_voted_at', ['voter_id', 'voted_at']],
+        ['comment_votes.idx_comment_votes_target_voted_at', ['target_user_id', 'voted_at']],
+        ['user_karma.idx_user_karma_voter_voted_at', ['voter_id', 'voted_at']],
+        ['user_karma.idx_user_karma_user_voted_at', ['user_id', 'voted_at']],
+      ],
+    })
+
+    await expect(migration.up({ runSql: state.runSql })).resolves.toBeNull()
+
+    expect(state.indexes.get('user_karma.idx_user_karma_voter_voted_at')).toEqual(['voter_id', 'voted_at', 'user_id'])
+    expect(state.indexes.get('user_karma.idx_user_karma_user_voted_at')).toEqual(['user_id', 'voted_at', 'voter_id'])
+    expect(state.indexes.get('post_votes.idx_post_votes_voter_voted_at')).toEqual(['voter_id', 'voted_at'])
+    expect(state.indexes.has('post_votes.voter_id_post_id')).toBe(false)
+    expect(state.queries[state.queries.length - 1]).toBe('set autocommit = 0')
+  })
+
+  test('drains votes inserted by old application code after the primary-key backfill', async () => {
+    const state = createMockDb({ postRows: 3, lateNullVote: true })
+
+    await expect(migration.up({ runSql: state.runSql })).resolves.toBeNull()
+
+    const lateRow = state.voteRows.post_votes.find((row) => row.entityId === 99999)!
+    expect(lateRow.targetUserId).toBe(7)
+    expect(consoleLog).toHaveBeenCalledWith('[my-votes-indexes] table=post_votes drained=1')
   })
 
   test('rebuilds a same-named index left behind by an older revision of this migration', async () => {
