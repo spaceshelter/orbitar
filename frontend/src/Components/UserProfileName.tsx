@@ -19,7 +19,12 @@ export default function UserProfileName(props: UserProfileNameProps) {
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(props.name)
   const api = useAPI()
+  // Only listen for Enter while our own name is actually being edited. When the input is not
+  // rendered the ref is detached and react-hotkeys-hook falls back to a document-wide listener,
+  // so Enter pressed in any other <input> on the page (e.g. the posts/comments filter) would
+  // otherwise save the *viewed* profile's name onto the current user's account.
   const refEditName = useHotkeys<HTMLInputElement>('enter', () => handleEditNameComplete(), {
+    enabled: editing && props.mine,
     enableOnFormTags: ['INPUT'],
     preventDefault: true,
   })
@@ -33,6 +38,9 @@ export default function UserProfileName(props: UserProfileNameProps) {
   }
 
   const handleEditNameComplete = async () => {
+    if (!props.mine || !editing) {
+      return
+    }
     try {
       await api.userAPI.saveName(name)
       setEditing(false)
