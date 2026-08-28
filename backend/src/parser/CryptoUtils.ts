@@ -7,6 +7,10 @@ export function aesEncryptToBase64(data, key) {
   return CryptoJS.enc.Base64.stringify(toEncode)
 }
 
+// CBC+Pkcs7 without a MAC: a wrong key or corrupted input usually fails the
+// padding/UTF-8 checks and yields '', but can occasionally decode to garbage.
+// Callers must validate the returned plaintext (isValidBarmaliniPassword
+// parses it as a date and applies a time window).
 export function aesDecryptFromBase64(base64data, key) {
   try {
     const decoded = CryptoJS.enc.Base64.parse(base64data)
