@@ -29,7 +29,7 @@ jobs:
         run: zip -m -P $BACKUP_PASSWORD ${{ env.backupFileName }}.zip ${{ env.backupFileName }}
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.backupFileName }}
           path: ${{ env.backupFileName }}.zip

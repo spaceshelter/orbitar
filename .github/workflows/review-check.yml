@@ -35,7 +35,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Check reviews
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             // Determine PR number — from event (merge trigger) or input (manual dispatch)
