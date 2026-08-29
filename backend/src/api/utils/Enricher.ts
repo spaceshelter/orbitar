@@ -9,6 +9,7 @@ import { InviteEntity } from '../types/entities/InviteEntity'
 import { PostEntity } from '../types/entities/PostEntity'
 import { SiteBaseEntity, SiteWithUserInfoEntity } from '../types/entities/SiteEntity'
 import { UserEntity } from '../types/entities/UserEntity'
+import { toCommentEntity, toPostEntity, toUserEntities } from './entities'
 
 export type EnrichedPosts = {
   posts: PostEntity[]
@@ -34,7 +35,7 @@ export class Enricher {
 
   async enrichRawPosts(rawPosts: PostInfo[]): Promise<EnrichedPosts> {
     const sites: Record<string, SiteBaseEntity> = {}
-    const users = await this.userManager.getByIds(rawPosts.map((post) => post.author))
+    const users = toUserEntities(await this.userManager.getByIds(rawPosts.map((post) => post.author)))
     const posts: PostEntity[] = []
     for (const post of rawPosts) {
       if (!sites[post.site]) {
@@ -45,25 +46,7 @@ export class Enricher {
         }
       }
 
-      const postResult: PostEntity = {
-        ...post,
-        created: post.created.toISOString(),
-      }
-
-      if (post.bookmark) {
-        postResult.bookmark = post.bookmark
-      }
-      if (post.watch) {
-        postResult.watch = post.watch
-      }
-      if (post.canEdit) {
-        postResult.canEdit = post.canEdit
-      }
-      if (post.editFlag) {
-        postResult.editFlag = post.editFlag
-      }
-
-      posts.push(postResult)
+      posts.push(toPostEntity(post))
     }
 
     return {
@@ -82,30 +65,16 @@ export class Enricher {
     const commentUsers = await this.userManager.getByIds(
       rawComments.map((rawComment) => rawComment.author).filter((authorId) => !users[authorId]),
     )
-    Object.assign(users, commentUsers)
+    Object.assign(users, toUserEntities(commentUsers))
 
     const commentsIndex: Record<number, CommentEntity> = {}
     const rootComments: CommentEntity[] = []
     const allComments: CommentEntity[] = []
 
     for (const rawComment of rawComments) {
-      const comment: CommentEntity = {
-        ...rawComment,
-        created: rawComment.created.toISOString(),
-        isNew: false,
-        answers: undefined,
-      }
+      const comment: CommentEntity = toCommentEntity(rawComment, false)
       if (isNew(comment)) {
         comment.isNew = true
-      }
-      if (rawComment.deleted) {
-        comment.deleted = true
-      }
-      if (rawComment.canEdit) {
-        comment.canEdit = true
-      }
-      if (rawComment.editFlag) {
-        comment.editFlag = rawComment.editFlag
       }
 
       commentsIndex[rawComment.id] = comment

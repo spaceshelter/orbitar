@@ -1,24 +1,20 @@
 import { stripHtml } from 'string-strip-html'
 import { Logger } from 'winston'
 
-import { CommentEntity } from '../api/types/entities/CommentEntity'
-import { PostEntity } from '../api/types/entities/PostEntity'
-import { UserEntity, UserGender } from '../api/types/entities/UserEntity'
+import { UserEntity } from '../api/types/entities/UserEntity'
 import {
   ReceivedCommentSubject,
   ReceivedPostSubject,
   UserVoteFeedEventRef,
   UserVotesResponse,
 } from '../api/types/requests/UserVotes'
+import { toCommentEntity, toPostEntity, toUserEntity } from '../api/utils/entities'
 import VoteFeedReadRepository, {
   VoteFeedCursor,
   VoteFeedDirection,
   VoteFeedReference,
 } from '../db/repositories/VoteFeedReadRepository'
 import PostManager from './PostManager'
-import { CommentInfoWithPostData } from './types/CommentInfo'
-import { PostInfo } from './types/PostInfo'
-import { UserInfo } from './types/UserInfo'
 import UserManager from './UserManager'
 
 export class InvalidVoteFeedCursorError extends Error {
@@ -71,55 +67,6 @@ export const decodeVoteFeedCursor = (cursor: string): VoteFeedCursor => {
     voterId: parsed.voterId,
   }
 }
-
-// These local mappers deliberately project a fixed allowlist instead of reusing
-// api/utils/Enricher (which carries last-read/unread machinery the feed does not
-// need). If PostEntity/CommentEntity grow fields, update both projections —
-// consolidating on Enricher is a candidate follow-up refactor.
-// No `vote` on purpose: the cached UserInfo never carries one here, and events
-// already hold the viewer's karma vote where it matters.
-const toUserEntity = (user: UserInfo): UserEntity => ({
-  id: user.id,
-  username: user.username,
-  gender: user.gender as unknown as UserGender,
-  karma: user.karma,
-  name: user.name,
-})
-
-const toPostEntity = (post: PostInfo): PostEntity => ({
-  id: post.id,
-  site: post.site,
-  title: post.title,
-  author: post.author,
-  created: post.created.toISOString(),
-  content: post.content,
-  rating: post.rating,
-  comments: post.comments,
-  newComments: post.newComments,
-  bookmark: post.bookmark,
-  watch: post.watch,
-  canEdit: post.canEdit,
-  editFlag: post.editFlag,
-  vote: post.vote,
-  language: post.language,
-})
-
-const toCommentEntity = (comment: CommentInfoWithPostData): CommentEntity => ({
-  id: comment.id,
-  author: comment.author,
-  content: comment.content,
-  created: comment.created.toISOString(),
-  deleted: comment.deleted,
-  rating: comment.rating,
-  parentComment: comment.parentComment,
-  editFlag: comment.editFlag,
-  post: comment.post,
-  site: comment.site,
-  canEdit: comment.canEdit,
-  isNew: comment.isNew,
-  vote: comment.vote,
-  language: comment.language,
-})
 
 const toEventRef = (ref: VoteFeedReference): UserVoteFeedEventRef => ({
   type: ref.type,
@@ -182,24 +129,15 @@ export default class VoteFeedManager {
   ): Promise<UserVotesResponse> {
     const postIds = this.entityIds(refs, 'post')
     const commentIds = this.entityIds(refs, 'comment')
-    const commentPostIds = [
-      ...new Set(refs.flatMap((ref) => (ref.type === 'comment' && ref.postId ? [ref.postId] : []))),
-    ]
-    const [posts, comments, postTitles] = await Promise.all([
+    const [posts, comments] = await Promise.all([
       this.postManager.getPostsByIds(postIds, forUserId),
       this.postManager.getCommentsByIds(commentIds, forUserId),
-      this.postManager.getPostTitlesByIds(commentPostIds),
     ])
     const parentComments = await this.postManager.getParentCommentsForASetOfComments(comments, forUserId, 'html')
 
     const postsById = this.indexById(posts.map(toPostEntity))
-    const commentsById = this.indexById(comments.map(toCommentEntity))
-    const parentCommentsById = this.indexById(parentComments.map(toCommentEntity))
-    for (const post of posts) {
-      if (post.title) {
-        postTitles[post.id] = post.title
-      }
-    }
+    const commentsById = this.indexById(comments.map((comment) => toCommentEntity(comment)))
+    const parentCommentsById = this.indexById(parentComments.map((comment) => toCommentEntity(comment)))
 
     const users = await this.loadUsers(refs, [
       ...posts.map((post) => post.author),
@@ -229,7 +167,6 @@ export default class VoteFeedManager {
         posts: postsById,
         comments: commentsById,
         parentComments: parentCommentsById,
-        postTitles,
       },
       hasMore,
       nextCursor,
