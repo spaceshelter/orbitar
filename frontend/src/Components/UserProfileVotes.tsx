@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 
 import Button from '@ui/Button'
 
+import { APIError } from '../API/APIBase'
 import {
   UserVoteFeedEvent,
   UserVotesDirection,
@@ -62,16 +63,6 @@ const getEventRating = (event: UserVoteFeedEvent, feed: UserVotesReceivedResult)
     return feed.subjects.comments[event.entityId]?.rating ?? 0
   }
   return feed.users[event.entityId]?.karma ?? 0
-}
-
-const getGroupEntityName = (event?: UserVoteFeedEvent) => {
-  if (event?.type === 'post') {
-    return 'поста'
-  }
-  if (event?.type === 'comment') {
-    return 'комментария'
-  }
-  return 'профиля'
 }
 
 // The 72-char budget mirrors the backend's RECEIVED_LABEL_MAX_CHARS; both slice
@@ -153,7 +144,6 @@ const mergeVoteFeedResults = (current: UserVotesResult, next: UserVotesResult): 
         posts: { ...current.entities.posts, ...next.entities.posts },
         comments: { ...current.entities.comments, ...next.entities.comments },
         parentComments: { ...current.entities.parentComments, ...next.entities.parentComments },
-        postTitles: { ...current.entities.postTitles, ...next.entities.postTitles },
       },
     }
   }
@@ -199,13 +189,23 @@ export default function UserProfileVotes() {
     (value): Record<string, string> => (value ? { tab, filter: value } : { tab }),
   )
 
+  const feedContextRef = useRef<string>()
+
   useEffect(() => {
     const abortController = new AbortController()
     loadMoreAbortControllerRef.current?.abort()
     loadMoreAbortControllerRef.current = undefined
     setLoading(true)
     setLoadingMore(false)
-    setFeed(undefined)
+    // Keep the previous results on screen while only the filter changes: at a
+    // 500ms query budget a too-heavy filter is a normal outcome, and wiping the
+    // feed before every keystrokes' request would flash it away. A different
+    // tab or session user is a different feed - drop it.
+    const feedContext = `${sessionUserId ?? ''}:${tab}`
+    if (feedContextRef.current !== feedContext) {
+      setFeed(undefined)
+    }
+    feedContextRef.current = feedContext
     setError(undefined)
     setLoadMoreError(undefined)
     api.userAPI
@@ -218,11 +218,15 @@ export default function UserProfileVotes() {
         setError(undefined)
         setLoading(false)
       })
-      .catch(() => {
+      .catch((err) => {
         if (abortController.signal.aborted) {
           return
         }
-        setError('Не удалось загрузить ленту оценок')
+        setError(
+          err instanceof APIError && err.code === 'filter-timeout'
+            ? 'Фильтр оказался слишком тяжёлым и не уложился в лимит времени — уточните запрос.'
+            : 'Не удалось загрузить ленту оценок',
+        )
         setLoading(false)
       })
 
@@ -263,15 +267,10 @@ export default function UserProfileVotes() {
   }
 
   const groups = useMemo(() => groupVoteFeedEvents(events || [], feedDirection), [events, feedDirection])
-  const receivedTimeGroups = useMemo(() => {
-    const buckets = new Map<VoteFeedGroup, ReturnType<typeof getVoteTimeGroups>>()
-    if (feedDirection === 'received') {
-      for (const group of groups) {
-        buckets.set(group, getVoteTimeGroups(group.events))
-      }
-    }
-    return buckets
-  }, [groups, feedDirection])
+  const receivedTimeGroups = useMemo(
+    () => (feedDirection === 'received' ? getVoteTimeGroups(events || []) : []),
+    [events, feedDirection],
+  )
 
   const updateVoteEvent = (event: UserVoteFeedEvent, rating: number, vote?: number) => {
     const key = getEventKey(event)
@@ -336,20 +335,8 @@ export default function UserProfileVotes() {
   }
 
   const renderGroupHeader = (group: VoteFeedGroup) => {
-    if (feedDirection !== 'received' && group.kind === 'single') {
+    if (group.kind === 'single') {
       return null
-    }
-
-    if (group.kind === 'voter') {
-      const voter = getUser(users, group.voterId)
-      return (
-        <span className={styles.groupTitle}>
-          <span className={styles.groupActor}>
-            <span>Оценки от</span>
-            {renderGroupUserLink(voter)}
-          </span>
-        </span>
-      )
     }
 
     if (group.kind === 'target-author') {
@@ -368,8 +355,7 @@ export default function UserProfileVotes() {
       return <span className={styles.groupTitle}>Оценки в одном обсуждении</span>
     }
 
-    const firstEvent = group.events[0]
-    return <span className={styles.groupTitle}>Оценки {getGroupEntityName(firstEvent)}</span>
+    return null
   }
 
   const renderReceivedEventSubject = (event: UserVoteFeedEvent) => {
@@ -418,28 +404,7 @@ export default function UserProfileVotes() {
     )
   }
 
-  const renderReceivedGroupSubject = (group: VoteFeedGroup, sameEntity: boolean) => {
-    const firstEvent = group.events[0]
-    if (!firstEvent || !receivedFeed) {
-      return null
-    }
-
-    if (sameEntity) {
-      const rating = getEventRating(firstEvent, receivedFeed)
-      return (
-        <div className={styles.groupSubject}>
-          <div className={styles.subjectMain}>{renderReceivedEventSubject(firstEvent)}</div>
-          <div className={styles.subjectRating}>
-            рейтинг <span className={getScoreClassName(rating)}>{rating}</span>
-          </div>
-        </div>
-      )
-    }
-
-    return null
-  }
-
-  const renderReceivedVoteRow = (event: UserVoteFeedEvent, group: VoteFeedGroup, sameEntity: boolean) => {
+  const renderReceivedVoteRow = (event: UserVoteFeedEvent) => {
     const voter = getUser(users, event.voterId)
     const rating = receivedFeed ? getEventRating(event, receivedFeed) : 0
 
@@ -448,57 +413,27 @@ export default function UserProfileVotes() {
         <span className={getVoteClassName(event.vote)}>{getVoteText(event.vote)}</span>
         <div className={styles.voteRowBody}>
           <div className={styles.voteRowMain}>
-            {!sameEntity && <span className={styles.voteTarget}>{renderReceivedEventSubject(event)}</span>}
-            {group.kind !== 'voter' && (
-              <span className={styles.voteVoter}>
-                от {voter ? <Username className={styles.voteUsername} user={voter} /> : 'пользователя'}
-              </span>
-            )}
+            <span className={styles.voteTarget}>{renderReceivedEventSubject(event)}</span>
+            <span className={styles.voteVoter}>
+              от {voter ? <Username className={styles.voteUsername} user={voter} /> : 'пользователя'}
+            </span>
           </div>
-          {!sameEntity && (
-            <div className={styles.voteRowMeta}>
-              рейтинг <span className={getScoreClassName(rating)}>{rating}</span>
-            </div>
-          )}
+          <div className={styles.voteRowMeta}>
+            рейтинг <span className={getScoreClassName(rating)}>{rating}</span>
+          </div>
         </div>
       </div>
     )
   }
 
-  const renderReceivedTimeGroup = (
-    group: VoteFeedGroup,
-    timeGroup: { bucket: string; events: UserVoteFeedEvent[] },
-    sameEntity: boolean,
-  ) => {
+  // «Оценки мне» is a flat timeline: time-bucket sections, one row per vote,
+  // each row carrying its own subject, voter and rating.
+  const renderReceivedTimeGroup = (timeGroup: { bucket: string; events: UserVoteFeedEvent[] }) => {
     return (
       <div className={styles.voteTimeGroup} key={`${timeGroup.bucket}:${getEventKey(timeGroup.events[0])}`}>
         <div className={styles.voteTimeHeader}>{timeGroup.bucket}</div>
-        <div className={styles.voteRows}>
-          {timeGroup.events.map((event) => renderReceivedVoteRow(event, group, sameEntity))}
-        </div>
+        <div className={styles.voteRows}>{timeGroup.events.map((event) => renderReceivedVoteRow(event))}</div>
       </div>
-    )
-  }
-
-  const renderReceivedGroup = (group: VoteFeedGroup) => {
-    const header = renderGroupHeader(group)
-    const firstEvent = group.events[0]
-    const sameEntity =
-      !!firstEvent &&
-      group.events.every((event) => event.type === firstEvent.type && event.entityId === firstEvent.entityId)
-    const timeGroups = receivedTimeGroups.get(group) || []
-
-    return (
-      <section key={getGroupKey(group)}>
-        <div className={styles.groupHeader}>
-          {header}
-          <span className={styles.groupCount}>{pluralize(group.events.length, ['оценка', 'оценки', 'оценок'])}</span>
-        </div>
-        {renderReceivedGroupSubject(group, sameEntity)}
-        <div className={styles.voteTimeGroups}>
-          {timeGroups.map((timeGroup) => renderReceivedTimeGroup(group, timeGroup, sameEntity))}
-        </div>
-      </section>
     )
   }
 
@@ -612,7 +547,7 @@ export default function UserProfileVotes() {
               : `Показано ${pluralize(events.length, ['оценка', 'оценки', 'оценок'])}`}
       </span>
       <div className={feedStyles.feed} aria-busy={loading || loadingMore}>
-        {loading ? (
+        {loading && !feed ? (
           <div className={feedStyles.loading}></div>
         ) : (
           <>
@@ -622,13 +557,14 @@ export default function UserProfileVotes() {
               </div>
             )}
             {!error && events && events.length === 0 && <div className={styles.empty}>Оценок пока нет.</div>}
-            {!error && groups.length > 0 && (
+            {receivedFeed && receivedTimeGroups.length > 0 && (
+              <div className={styles.voteTimeGroups}>
+                {receivedTimeGroups.map((timeGroup) => renderReceivedTimeGroup(timeGroup))}
+              </div>
+            )}
+            {!receivedFeed && groups.length > 0 && (
               <div className={styles.groups}>
                 {groups.map((group) => {
-                  if (receivedFeed) {
-                    return renderReceivedGroup(group)
-                  }
-
                   const header = renderGroupHeader(group)
                   return (
                     <section key={getGroupKey(group)}>

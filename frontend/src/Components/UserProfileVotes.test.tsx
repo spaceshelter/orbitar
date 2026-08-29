@@ -168,7 +168,6 @@ const mineVoteResult = (events: UserVoteFeedEvent[], hasMore = false, nextCursor
       posts,
       comments: {},
       parentComments: {},
-      postTitles: {},
     },
     hasMore,
     nextCursor,

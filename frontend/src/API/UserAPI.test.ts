@@ -42,7 +42,6 @@ describe('UserAPI.userVotes', () => {
         posts: { 10: { id: 10, author: 7, created: '2026-05-10T10:00:00.000Z' } },
         comments: {},
         parentComments: {},
-        postTitles: { 10: 'Post 10' },
       },
       hasMore: true,
       nextCursor: 'next',
@@ -59,7 +58,7 @@ describe('UserAPI.userVotes', () => {
     expect(result).toMatchObject({
       direction: 'mine',
       events: [{ entityId: 10, votedAt: new Date('2026-05-11T10:00:00.000Z') }],
-      entities: { posts: { 10: { id: 10 } }, postTitles: { 10: 'Post 10' } },
+      entities: { posts: { 10: { id: 10 } } },
       hasMore: true,
       nextCursor: 'next',
     })

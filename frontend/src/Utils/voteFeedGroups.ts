@@ -1,14 +1,11 @@
 import { UserVoteFeedEvent, UserVotesDirection } from '../API/UserAPI'
 
-type VoteFeedGroupKind = 'entity' | 'voter' | 'target-author' | 'context-post' | 'single'
+type VoteFeedGroupKind = 'flat' | 'target-author' | 'context-post' | 'single'
 
 export type VoteFeedGroup = {
   kind: VoteFeedGroupKind
   latestAt: Date
   events: UserVoteFeedEvent[]
-  entityType?: 'post' | 'comment' | 'user'
-  entityId?: number
-  voterId?: number
   targetUserId?: number
   contextPostId?: number
 }
@@ -47,25 +44,8 @@ const contextPostRunLength = (events: UserVoteFeedEvent[], start: number) => {
   return runLength(events, start, (event) => getVoteFeedEventPostId(event) === postId)
 }
 
-const getCandidates = (events: UserVoteFeedEvent[], start: number, direction: UserVotesDirection): Candidate[] => {
+const getCandidates = (events: UserVoteFeedEvent[], start: number): Candidate[] => {
   const event = events[start]
-
-  if (direction === 'received') {
-    return [
-      {
-        kind: 'entity',
-        length: runLength(
-          events,
-          start,
-          (candidate) => candidate.type === event.type && candidate.entityId === event.entityId,
-        ),
-      },
-      {
-        kind: 'voter',
-        length: runLength(events, start, (candidate) => candidate.voterId === event.voterId),
-      },
-    ]
-  }
 
   return [
     {
@@ -79,9 +59,9 @@ const getCandidates = (events: UserVoteFeedEvent[], start: number, direction: Us
   ]
 }
 
-const pickGroup = (events: UserVoteFeedEvent[], start: number, direction: UserVotesDirection): VoteFeedGroup => {
+const pickGroup = (events: UserVoteFeedEvent[], start: number): VoteFeedGroup => {
   const event = events[start]
-  const candidate = getCandidates(events, start, direction).reduce<Candidate>(
+  const candidate = getCandidates(events, start).reduce<Candidate>(
     (best, current) => {
       if (current.length <= 1) {
         return best
@@ -101,17 +81,6 @@ const pickGroup = (events: UserVoteFeedEvent[], start: number, direction: UserVo
   }
 
   switch (candidate.kind) {
-    case 'entity':
-      return {
-        ...base,
-        entityType: event.type,
-        entityId: event.entityId,
-      }
-    case 'voter':
-      return {
-        ...base,
-        voterId: event.voterId,
-      }
     case 'target-author':
       return {
         ...base,
@@ -128,11 +97,29 @@ const pickGroup = (events: UserVoteFeedEvent[], start: number, direction: UserVo
 }
 
 export const groupVoteFeedEvents = (events: UserVoteFeedEvent[], direction: UserVotesDirection): VoteFeedGroup[] => {
+  if (!events.length) {
+    return []
+  }
+
+  // «Оценки мне» is a flat chronological timeline: run-based grouping fragments
+  // one subject into several groups whenever votes on other entities interleave
+  // (a real first page showed one comment split across four groups), and every
+  // received row already carries its own subject, voter and rating.
+  if (direction === 'received') {
+    return [
+      {
+        kind: 'flat',
+        latestAt: events[0].votedAt,
+        events,
+      },
+    ]
+  }
+
   const groups: VoteFeedGroup[] = []
   let index = 0
 
   while (index < events.length) {
-    const group = pickGroup(events, index, direction)
+    const group = pickGroup(events, index)
     groups.push(group)
     index += group.events.length
   }

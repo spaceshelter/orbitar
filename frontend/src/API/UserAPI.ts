@@ -116,7 +116,6 @@ type UserVotesMineResponse = UserVotesResponseBase & {
     posts: Record<number, PostEntity>
     comments: Record<number, CommentEntity>
     parentComments: Record<number, CommentEntity>
-    postTitles: Record<number, string>
   }
 }
 
@@ -145,7 +144,6 @@ export type UserVotesMineResult = UserVotesResultBase & {
     posts: Record<number, PostInfo>
     comments: Record<number, CommentInfo>
     parentComments: Record<number, CommentInfo>
-    postTitles: Record<number, string>
   }
 }
 
@@ -304,7 +302,6 @@ export default class UserAPI {
         posts,
         comments: this.postAPIHelper.fixCommentsRecords(result.entities.comments, result.users),
         parentComments: this.postAPIHelper.fixCommentsRecords(result.entities.parentComments, result.users),
-        postTitles: result.entities.postTitles,
       },
     }
   }

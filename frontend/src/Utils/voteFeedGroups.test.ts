@@ -26,36 +26,39 @@ const vote = (spec: EventSpec): UserVoteFeedEvent => {
 }
 
 describe('groupVoteFeedEvents', () => {
-  test('groups received votes by the same entity on a tie', () => {
-    const groups = groupVoteFeedEvents(
-      [
-        vote({ type: 'post', entityId: 100, voterId: 10, votedAt: at(3) }),
-        vote({ type: 'post', entityId: 100, voterId: 11, votedAt: at(2) }),
-        vote({ type: 'post', entityId: 101, voterId: 11, votedAt: at(1) }),
-      ],
-      'received',
-    )
+  test('keeps «received» a flat chronological timeline in one group', () => {
+    const events = [
+      vote({ type: 'post', entityId: 100, voterId: 10, votedAt: at(3) }),
+      vote({ type: 'post', entityId: 100, voterId: 11, votedAt: at(2) }),
+      vote({ type: 'post', entityId: 101, voterId: 11, votedAt: at(1) }),
+    ]
 
-    expect(groups).toMatchObject([
-      { kind: 'entity', entityType: 'post', entityId: 100, events: [{}, {}] },
-      { kind: 'single', events: [{}] },
+    expect(groupVoteFeedEvents(events, 'received')).toMatchObject([
+      { kind: 'flat', latestAt: at(3), events: [{}, {}, {}] },
     ])
   })
 
-  test('groups received votes by voter when that run is longer', () => {
-    const groups = groupVoteFeedEvents(
-      [
-        vote({ type: 'post', entityId: 100, postId: 100, voterId: 10, votedAt: at(4) }),
-        vote({ type: 'comment', entityId: 200, postId: 100, voterId: 10, votedAt: at(3) }),
-        vote({ type: 'user', entityId: 300, voterId: 10, votedAt: at(2) }),
-        vote({ type: 'post', entityId: 101, postId: 101, voterId: 11, votedAt: at(1) }),
-      ],
-      'received',
-    )
+  test('does not fragment an interleaved received subject into several groups', () => {
+    // The regression shape from review: votes on other entities interleave with
+    // one comment's votes; run-based grouping split it into four groups.
+    const events = [
+      vote({ type: 'comment', entityId: 42, voterId: 10, votedAt: at(5) }),
+      vote({ type: 'post', entityId: 99, voterId: 11, votedAt: at(4) }),
+      vote({ type: 'comment', entityId: 42, voterId: 12, votedAt: at(3) }),
+      vote({ type: 'user', entityId: 8, voterId: 13, votedAt: at(2) }),
+      vote({ type: 'comment', entityId: 42, voterId: 14, votedAt: at(1) }),
+    ]
 
-    expect(groups).toMatchObject([
-      { kind: 'voter', voterId: 10, events: [{}, {}, {}] },
-      { kind: 'single', events: [{}] },
+    const groups = groupVoteFeedEvents(events, 'received')
+
+    expect(groups).toHaveLength(1)
+    expect(groups[0].kind).toBe('flat')
+    expect(groups[0].events.map((event) => [event.type, event.entityId])).toEqual([
+      ['comment', 42],
+      ['post', 99],
+      ['comment', 42],
+      ['user', 8],
+      ['comment', 42],
     ])
   })
 
