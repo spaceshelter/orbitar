@@ -59,115 +59,125 @@ export default class VoteRepository {
     const entityTable = comments ? 'comments' : 'posts'
     const userSiteRatingField = comments ? 'comment_rating' : 'post_rating'
 
-    return await this.db.inTransaction(async (conn) => {
-      // Important! transaction must start with locking the most "coarse" table first (entity table)
-      // to prevent deadlocks
-      // tricky: related tables (entity_votes), are implicitly locking records in the entity table
-      const entity = await conn.fetchOne<{
-        site_id: string
-        author_id: string
-        rating: string
-      }>(
-        `select site_id, author_id, rating
+    // READ COMMITTED: the locking read below probes a (entity, voter) row that
+    // does not exist for first-time votes; under REPEATABLE READ that takes a
+    // gap lock on the voter_id secondary index and concurrent first votes
+    // sharing the gap deadlock on insert intention (measured: 22/400 failures
+    // survive the retry). Every read-modify-write here is FOR UPDATE-guarded,
+    // so RC changes no outcomes - it only stops locking the space between rows.
+    // Requires row-based binlogs on 5.7, which production uses.
+    return await this.db.inTransaction(
+      async (conn) => {
+        // Important! transaction must start with locking the most "coarse" table first (entity table)
+        // to prevent deadlocks
+        // tricky: related tables (entity_votes), are implicitly locking records in the entity table
+        const entity = await conn.fetchOne<{
+          site_id: string
+          author_id: string
+          rating: string
+        }>(
+          `select site_id, author_id, rating
                  from ${entityTable}
                  where ${entityField} = :entity_id
                      FOR UPDATE /* locks the row */`,
-        {
-          entity_id: entityId,
-        },
-      )
-      const entitySite = Number(entity.site_id)
-      const authorId = Number(entity.author_id)
-      const prevRating = Number(entity.rating || 0)
+          {
+            entity_id: entityId,
+          },
+        )
+        const entitySite = Number(entity.site_id)
+        const authorId = Number(entity.author_id)
+        const prevRating = Number(entity.rating || 0)
 
-      const existingVote = await conn.fetchOne<{ vote: string; target_user_id: string | null }>(
-        `select vote, target_user_id
+        const existingVote = await conn.fetchOne<{ vote: string; target_user_id: string | null }>(
+          `select vote, target_user_id
                  from ${entityVotesTable}
                  where ${entityField} = :entity_id
                    and voter_id = :voter_id
                      FOR UPDATE` /* Locks the row, or waits for the lock */,
-        {
+          {
+            entity_id: entityId,
+            voter_id: userId,
+          },
+        )
+        const prevVote = Number(existingVote?.vote || 0)
+        const targetChanged =
+          existingVote && (existingVote.target_user_id == null || Number(existingVote.target_user_id) !== authorId)
+        const entityParams = {
           entity_id: entityId,
           voter_id: userId,
-        },
-      )
-      const prevVote = Number(existingVote?.vote || 0)
-      const targetChanged =
-        existingVote && (existingVote.target_user_id == null || Number(existingVote.target_user_id) !== authorId)
-      const entityParams = {
-        entity_id: entityId,
-        voter_id: userId,
-        target_user_id: authorId,
-      }
-      const voteParams = { ...entityParams, vote }
+          target_user_id: authorId,
+        }
+        const voteParams = { ...entityParams, vote }
 
-      if (!existingVote) {
-        await conn.query(
-          `insert into ${entityVotesTable} ( ${entityField}, voter_id, vote, target_user_id )
+        if (!existingVote) {
+          await conn.query(
+            `insert into ${entityVotesTable} ( ${entityField}, voter_id, vote, target_user_id )
                values ( :entity_id, :voter_id, :vote, :target_user_id )`,
-          voteParams,
-        )
-      } else if (prevVote !== vote) {
-        await conn.query(
-          `update ${entityVotesTable}
+            voteParams,
+          )
+        } else if (prevVote !== vote) {
+          await conn.query(
+            `update ${entityVotesTable}
                    set vote = :vote,
                        target_user_id = :target_user_id,
                        voted_at = now()
                    where ${entityField} = :entity_id
                      and voter_id = :voter_id`,
-          voteParams,
-        )
-      } else if (targetChanged) {
-        await conn.query(
-          `update ${entityVotesTable}
+            voteParams,
+          )
+        } else if (targetChanged) {
+          await conn.query(
+            `update ${entityVotesTable}
                    set target_user_id = :target_user_id
                    where ${entityField} = :entity_id
                      and voter_id = :voter_id`,
-          entityParams,
-        )
-      } else {
-        return prevRating
-      }
+            entityParams,
+          )
+        } else {
+          return prevRating
+        }
 
-      const delta = vote - prevVote
-      if (delta === 0) {
-        return prevRating
-      }
+        const delta = vote - prevVote
+        if (delta === 0) {
+          return prevRating
+        }
 
-      await conn.query(
-        `update ${entityTable}
+        await conn.query(
+          `update ${entityTable}
                  set rating=rating + :delta
                  where ${entityField} = :entity_id`,
-        {
-          entity_id: entityId,
-          delta,
-        },
-      )
+          {
+            entity_id: entityId,
+            delta,
+          },
+        )
 
-      await conn.query(
-        `insert into user_site_rating (user_id, site_id, ${userSiteRatingField})
+        await conn.query(
+          `insert into user_site_rating (user_id, site_id, ${userSiteRatingField})
              values (:user_id, :site_id, :delta)
              on duplicate key update ${userSiteRatingField} = ${userSiteRatingField} + :delta`,
-        {
-          user_id: authorId,
-          site_id: entitySite,
-          delta,
-        },
-      )
+          {
+            user_id: authorId,
+            site_id: entitySite,
+            delta,
+          },
+        )
 
-      await conn.query(
-        `insert into user_user_rating (user_id, voter_id, ${userSiteRatingField})
+        await conn.query(
+          `insert into user_user_rating (user_id, voter_id, ${userSiteRatingField})
              values (:user_id, :voter_id, :delta)
              on duplicate key update ${userSiteRatingField} = ${userSiteRatingField} + :delta`,
-        {
-          user_id: authorId,
-          voter_id: userId,
-          delta,
-        },
-      )
+          {
+            user_id: authorId,
+            voter_id: userId,
+            delta,
+          },
+        )
 
-      return prevRating + delta
-    })
+        return prevRating + delta
+      },
+      { isolation: 'READ COMMITTED' },
+    )
   }
 
   async postSetVote(postId: number, vote: number, userId: number): Promise<number> {

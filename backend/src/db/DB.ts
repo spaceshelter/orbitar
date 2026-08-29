@@ -70,11 +70,19 @@ export class DBConnection {
     return insertResult.insertId
   }
 
-  async inTransaction<T>(transactionFunc: (connection: DBConnection) => Promise<T>): Promise<T> {
+  async inTransaction<T>(
+    transactionFunc: (connection: DBConnection) => Promise<T>,
+    options?: TransactionOptions,
+  ): Promise<T> {
     if (!('beginTransaction' in this.connection)) {
       throw new Error('Could not start transaction')
     }
 
+    if (options?.isolation) {
+      // Applies to the next transaction on this connection only, so the
+      // pooled connection needs no restore after commit/rollback.
+      await this.query(`SET TRANSACTION ISOLATION LEVEL ${options.isolation}`)
+    }
     await this.connection.beginTransaction()
 
     try {
@@ -86,6 +94,11 @@ export class DBConnection {
       throw err
     }
   }
+}
+
+export type TransactionOptions = {
+  // MySQL isolation level for the next transaction, e.g. 'READ COMMITTED'.
+  isolation?: 'READ COMMITTED'
 }
 
 export default class DB extends DBConnection {
@@ -133,11 +146,14 @@ export default class DB extends DBConnection {
    *
    *  Note: never hold onto the connection fetched from the pool
    */
-  async inTransaction<T>(transactionFunc: (connection: DBConnection) => Promise<T>): Promise<T> {
+  async inTransaction<T>(
+    transactionFunc: (connection: DBConnection) => Promise<T>,
+    options?: TransactionOptions,
+  ): Promise<T> {
     const conn = await this.pool.getConnection()
     const db = new DBConnection(conn, this.logger)
     try {
-      return await db.inTransaction(transactionFunc)
+      return await db.inTransaction(transactionFunc, options)
     } finally {
       conn.release()
     }
