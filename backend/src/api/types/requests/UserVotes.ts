@@ -50,7 +50,6 @@ export type UserVotesResponse =
         posts: Record<number, PostEntity>
         comments: Record<number, CommentEntity>
         parentComments: Record<number, CommentEntity>
-        postTitles: Record<number, string>
       }
     })
   | (UserVotesResponseBase & {

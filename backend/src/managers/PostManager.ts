@@ -63,17 +63,6 @@ export default class PostManager {
     return this.feedManager.convertRawPosts(forUserId, rawPosts, 'html')
   }
 
-  async getPostTitlesByIds(postIds: number[]): Promise<Record<number, string>> {
-    const rows = await this.postRepository.getPostTitles(postIds)
-    return rows.reduce<Record<number, string>>((titles, row) => {
-      // posts.title is nullable; a Record<number, string> must not smuggle nulls.
-      if (row.title) {
-        titles[row.post_id] = row.title
-      }
-      return titles
-    }, {})
-  }
-
   async getPostsByUser(
     userId: number,
     forUserId: number,

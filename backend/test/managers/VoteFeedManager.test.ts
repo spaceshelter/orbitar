@@ -124,7 +124,6 @@ describe('VoteFeedManager.getVoteFeed', () => {
       ]),
       getCommentsByIds: jest.fn().mockResolvedValue([]),
       getParentCommentsForASetOfComments: jest.fn().mockResolvedValue([]),
-      getPostTitlesByIds: jest.fn().mockResolvedValue({}),
       ...overrides.postManager,
     }
     const userManager = {
@@ -251,7 +250,6 @@ describe('VoteFeedManager.getVoteFeed', () => {
             site: 'main',
           },
         ]),
-        getPostTitlesByIds: jest.fn().mockResolvedValue({ 77: 'Parent post' }),
       },
     })
 
@@ -275,7 +273,6 @@ describe('VoteFeedManager.getVoteFeed', () => {
     expect(result.entities.posts[10]).toMatchObject({ id: 10, title: 'Post', vote: 0 })
     expect(result.entities.comments[55]).toMatchObject({ id: 55, post: 77 })
     expect(result.entities.parentComments[50]).toMatchObject({ id: 50 })
-    expect(result.entities.postTitles).toMatchObject({ 10: 'Post', 77: 'Parent post' })
     expect(userManager.getByIds).toHaveBeenCalledTimes(1)
     expect(result.users[30]).toEqual({
       id: 30,

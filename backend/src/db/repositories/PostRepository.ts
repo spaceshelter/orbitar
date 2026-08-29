@@ -76,18 +76,6 @@ export default class PostRepository {
     )
   }
 
-  async getPostTitles(postIds: number[]): Promise<{ post_id: number; title: string }[]> {
-    if (!postIds.length) {
-      return []
-    }
-    return this.db.fetchAll<{ post_id: number; title: string }>(
-      'select post_id, title from posts where post_id in (:post_ids)',
-      {
-        post_ids: postIds,
-      },
-    )
-  }
-
   async getPost(postId: number): Promise<PostRaw | undefined> {
     return await this.db.fetchOne<PostRaw>('select * from posts where post_id=:post_id', { post_id: postId })
   }
