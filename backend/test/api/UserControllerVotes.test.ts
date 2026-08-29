@@ -139,7 +139,8 @@ describe('UserController votes', () => {
   test('route validation rejects a fractional perpage', async () => {
     const { controller } = createController()
     const votesRoute = controller.router.stack.find((layer) => layer.route?.path === '/user/votes')
-    const validateVotes = votesRoute?.route.stack[2].handle
+    // [sharedReadRateLimiter, heavyFilterRateLimiter, oauth, validate, handler]
+    const validateVotes = votesRoute?.route.stack[3].handle
     const response = { error: jest.fn() }
     const next = jest.fn()
 
@@ -164,7 +165,8 @@ describe('UserController votes', () => {
   test('route validation rejects unknown identity fields in the body', async () => {
     const { controller } = createController()
     const votesRoute = controller.router.stack.find((layer) => layer.route?.path === '/user/votes')
-    const validateVotes = votesRoute?.route.stack[2].handle
+    // [sharedReadRateLimiter, heavyFilterRateLimiter, oauth, validate, handler]
+    const validateVotes = votesRoute?.route.stack[3].handle
     const response = { error: jest.fn() }
     const next = jest.fn()
 

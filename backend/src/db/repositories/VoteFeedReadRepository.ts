@@ -4,7 +4,9 @@ import DB from '../DB'
 // Filtered branches scan the voted_at index and probe TEXT columns per row, so a
 // rarely-matching filter can walk a user's whole vote history. The optimizer hint
 // turns that worst case into a bounded, typed failure instead of minutes of CPU.
-const FILTER_MAX_EXECUTION_TIME_MS = 2000
+// 500ms (not 2s): a filter that needs more would hit 2s on heavy voters anyway,
+// and with heavyFilterRateLimiter one user costs at most ~7.5 DB-seconds/minute.
+const FILTER_MAX_EXECUTION_TIME_MS = 500
 const ER_QUERY_TIMEOUT = 3024
 
 export class VoteFeedFilterTimeoutError extends Error {

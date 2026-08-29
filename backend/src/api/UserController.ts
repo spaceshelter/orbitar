@@ -12,7 +12,7 @@ import UserManager from '../managers/UserManager'
 import VoteFeedManager, { InvalidVoteFeedCursorError } from '../managers/VoteFeedManager'
 import { APIRequest, APIResponse, joiFormat, joiUsername, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
-import { commonRateLimitConfig, sharedReadRateLimiter } from './RateLimiters'
+import { commonRateLimitConfig, heavyFilterRateLimiter, sharedReadRateLimiter } from './RateLimiters'
 import { UserProfileEntity } from './types/entities/UserEntity'
 import { UserCommentsRequest, UserCommentsResponse } from './types/requests/UserComments'
 import { SuggestUsernameRequest, SuggestUsernameResponse } from './types/requests/UsernameSuggest'
@@ -139,6 +139,7 @@ export default class UserController {
     this.router.post(
       '/user/votes',
       sharedReadRateLimiter,
+      heavyFilterRateLimiter,
       oauth('читать свои оценки'),
       validate(votesSchema),
       (req, res) => this.votes(req, res),

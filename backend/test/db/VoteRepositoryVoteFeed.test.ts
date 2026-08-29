@@ -81,7 +81,7 @@ describe('VoteRepository vote feed', () => {
     await expect(repository.getPageReferences(123, 'mine', 'rare', undefined, 21)).rejects.toBeInstanceOf(
       VoteFeedFilterTimeoutError,
     )
-    expect(normalize(db.fetchAll.mock.calls[0][0])).toContain('select /*+ MAX_EXECUTION_TIME(2000) */')
+    expect(normalize(db.fetchAll.mock.calls[0][0])).toContain('select /*+ MAX_EXECUTION_TIME(500) */')
 
     // Unfiltered queries stay unbounded and propagate driver errors untouched.
     await expect(repository.getPageReferences(123, 'mine', '', undefined, 21)).rejects.toBe(timeoutError)
