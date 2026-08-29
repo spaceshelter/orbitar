@@ -81,6 +81,14 @@ jest.mock('./RatingSwitch', () => ({
   default: () => null,
 }))
 
+jest.mock('./InternalLinkExpandComponent', () => ({
+  __esModule: true,
+  default: ({ postId, commentId }: { postId: number; commentId?: number }) => (
+    <div data-expanded-post={postId} data-expanded-comment={commentId ?? ''}>
+      expanded {commentId ? `comment ${commentId}` : `post ${postId}`}
+    </div>
+  ),
+}))
 jest.mock('./PostLink', () => ({
   __esModule: true,
   default: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
@@ -427,6 +435,37 @@ describe('UserProfileVotes request state', () => {
     expect(container.textContent).not.toContain('Не удалось загрузить ещё оценки')
   })
 
+  test('expands a received subject inline and collapses it again', async () => {
+    mockTab = 'received'
+    mockUserVotes.mockResolvedValueOnce(
+      receivedVoteResult([voteEvent('comment', 50, { postId: 77 }), voteEvent('post', 40, { postId: 40 })]),
+    )
+    await renderVotes()
+    const buttons = () => Array.from(container.querySelectorAll<HTMLElement>('[aria-label="Развернуть"]'))
+    expect(buttons()).toHaveLength(2)
+    expect(container.querySelector('[data-expanded-comment]')).toBeNull()
+
+    act(() => {
+      buttons()[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(container.querySelector('[data-expanded-comment="50"]')).not.toBeNull()
+    expect(container.querySelector('[data-expanded-post="77"]')).not.toBeNull()
+    expect(container.querySelectorAll('[aria-expanded="true"]')).toHaveLength(1)
+
+    // the post row expands independently, keyboard works too
+    act(() => {
+      buttons()[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    })
+    expect(container.querySelector('[data-expanded-post="40"][data-expanded-comment=""]')).not.toBeNull()
+
+    const collapse = container.querySelector<HTMLElement>('[aria-label="Свернуть"]')
+    expect(collapse).not.toBeNull()
+    act(() => {
+      collapse?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(container.querySelector('[data-expanded-comment="50"]')).toBeNull()
+    expect(container.querySelector('[data-expanded-post="40"]')).not.toBeNull()
+  })
   test('removes a confirmed zero vote and recalculates its group', async () => {
     mockUserVotes.mockResolvedValueOnce(mineVoteResult([postEvent(1), postEvent(2)]))
 

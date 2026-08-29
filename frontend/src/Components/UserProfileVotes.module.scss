@@ -138,7 +138,34 @@
   display: grid;
   gap: 8px;
   grid-template-columns: 22px minmax(0, 1fr);
-  padding: 4px 0 5px;
+  padding: 9px 0 10px;
+}
+
+// Same affordance as internal links inside content (ContentComponent .expand-button):
+// an arrow that turns 90° when the subject is expanded inline.
+.expandButton {
+  color: var(--fgMedium);
+  cursor: pointer;
+  display: inline-block;
+  font-size: 20px;
+  margin-right: 2px;
+  transform: rotate(0deg);
+  transform-origin: 40% center;
+  transition: transform 0.25s;
+  user-select: none;
+  vertical-align: middle;
+  &:hover {
+    color: var(--primaryHover);
+  }
+}
+
+.expanded {
+  transform: rotate(90deg);
+}
+
+.voteExpand {
+  margin-top: 8px;
+  min-width: 0;
 }
 
 .voteValue {

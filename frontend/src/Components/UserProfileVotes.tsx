@@ -19,6 +19,7 @@ import { groupVoteFeedEvents, VoteFeedGroup } from '../Utils/voteFeedGroups'
 import CommentComponent from './CommentComponent'
 import { LARGE_AUTO_CUT } from './ContentComponent'
 import { formatRelativeAgeBucket } from './DateComponent'
+import InternalLinkExpandComponent from './InternalLinkExpandComponent'
 import PostComponent from './PostComponent'
 import PostLink from './PostLink'
 import RatingSwitch from './RatingSwitch'
@@ -177,6 +178,8 @@ export default function UserProfileVotes() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string>()
   const [loadMoreError, setLoadMoreError] = useState<string>()
+  // Received subjects (posts/comments) expanded inline, keyed by event key.
+  const [expandedSubjects, setExpandedSubjects] = useState<Set<string>>(() => new Set())
   const loadMoreAbortControllerRef = useRef<AbortController>()
   const events = feed?.events
   const users = feed?.users || emptyUsers
@@ -215,6 +218,7 @@ export default function UserProfileVotes() {
           return
         }
         setFeed(result)
+        setExpandedSubjects(new Set())
         setError(undefined)
         setLoading(false)
       })
@@ -358,38 +362,103 @@ export default function UserProfileVotes() {
     return null
   }
 
+  // Post and comment subjects expand inline, with the same click semantics as
+  // internal links inside content (ContentComponent.processExpandLink): a plain
+  // click on the arrow or the link toggles the expansion, ctrl/cmd-click (and
+  // middle-click) still opens the target as a normal link.
+  const toggleExpandedSubject = (key: string) => {
+    setExpandedSubjects((current) => {
+      const next = new Set(current)
+      if (next.has(key)) {
+        next.delete(key)
+      } else {
+        next.add(key)
+      }
+      return next
+    })
+  }
+
+  const renderExpandableSubject = (
+    key: string,
+    link: { post: { id: number; site: string }; commentId?: number },
+    text: React.ReactNode,
+  ) => {
+    const expanded = expandedSubjects.has(key)
+    const handleClick = (e: React.MouseEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        return
+      }
+      e.preventDefault()
+      toggleExpandedSubject(key)
+    }
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        toggleExpandedSubject(key)
+      }
+    }
+    return (
+      <>
+        за{' '}
+        <span
+          role='button'
+          tabIndex={0}
+          aria-expanded={expanded}
+          aria-label={expanded ? 'Свернуть' : 'Развернуть'}
+          className={`i i-expand ${styles.expandButton} ${expanded ? styles.expanded : ''}`}
+          onClick={handleClick}
+          onKeyDown={handleKeyDown}
+        />
+        <PostLink className={styles.subjectLink} post={link.post} commentId={link.commentId} onClick={handleClick}>
+          {text}
+        </PostLink>
+      </>
+    )
+  }
+
+  const getReceivedSubjectLink = (event: UserVoteFeedEvent) => {
+    if (!receivedFeed) {
+      return undefined
+    }
+    if (event.type === 'post') {
+      const subject = receivedFeed.subjects.posts[event.entityId]
+      return subject ? { post: { id: subject.id, site: subject.site } } : undefined
+    }
+    if (event.type === 'comment') {
+      const subject = receivedFeed.subjects.comments[event.entityId]
+      return subject ? { post: { id: subject.postId, site: subject.site }, commentId: subject.id } : undefined
+    }
+    return undefined
+  }
+
   const renderReceivedEventSubject = (event: UserVoteFeedEvent) => {
     if (!receivedFeed) {
       return null
     }
+    const key = getEventKey(event)
+    const link = getReceivedSubjectLink(event)
 
     if (event.type === 'post') {
       const subject = receivedFeed.subjects.posts[event.entityId]
-      if (!subject) {
+      if (!subject || !link) {
         return null
       }
-      return (
-        <PostLink className={styles.subjectLink} post={subject}>
-          {getPostSubjectText(subject.id, getCompactText(subject.label))}
-        </PostLink>
-      )
+      return renderExpandableSubject(key, link, getPostSubjectText(subject.id, getCompactText(subject.label)))
     }
 
     if (event.type === 'comment') {
       const subject = receivedFeed.subjects.comments[event.entityId]
-      if (!subject) {
+      if (!subject || !link) {
         return null
       }
       const postTitle = getCompactText(subject.postTitle)
-      return (
-        <PostLink
-          className={styles.subjectLink}
-          post={{ id: subject.postId, site: subject.site }}
-          commentId={subject.id}
-        >
+      return renderExpandableSubject(
+        key,
+        link,
+        <>
           комментарий #{subject.id} в посте #{subject.postId}
           {postTitle ? `: ${postTitle}` : ''}
-        </PostLink>
+        </>,
       )
     }
 
@@ -399,7 +468,7 @@ export default function UserProfileVotes() {
     }
     return (
       <span className={styles.subjectInline}>
-        профиль <Username className={styles.voteUsername} user={user} />
+        в профиль <Username className={styles.voteUsername} user={user} />
       </span>
     )
   }
@@ -407,9 +476,12 @@ export default function UserProfileVotes() {
   const renderReceivedVoteRow = (event: UserVoteFeedEvent) => {
     const voter = getUser(users, event.voterId)
     const rating = receivedFeed ? getEventRating(event, receivedFeed) : 0
+    const key = getEventKey(event)
+    const link = getReceivedSubjectLink(event)
+    const expanded = !!link && expandedSubjects.has(key)
 
     return (
-      <div className={styles.voteRow} key={getEventKey(event)}>
+      <div className={styles.voteRow} key={key}>
         <span className={getVoteClassName(event.vote)}>{getVoteText(event.vote)}</span>
         <div className={styles.voteRowBody}>
           <div className={styles.voteRowMain}>
@@ -421,6 +493,15 @@ export default function UserProfileVotes() {
           <div className={styles.voteRowMeta}>
             рейтинг <span className={getScoreClassName(rating)}>{rating}</span>
           </div>
+          {expanded && link && (
+            <div className={styles.voteExpand}>
+              <InternalLinkExpandComponent
+                postId={link.post.id}
+                commentId={link.commentId}
+                onClose={() => toggleExpandedSubject(key)}
+              />
+            </div>
+          )}
         </div>
       </div>
     )
