@@ -38,6 +38,7 @@ import SiteRepository from './db/repositories/SiteRepository'
 import TranslationRepository from './db/repositories/TranslationRepository'
 import UserCredentials from './db/repositories/UserCredentials'
 import UserRepository from './db/repositories/UserRepository'
+import VoteFeedReadRepository from './db/repositories/VoteFeedReadRepository'
 import VoteRepository from './db/repositories/VoteRepository'
 import WebPushRepository from './db/repositories/WebPushRepository'
 import FeedManager from './managers/FeedManager'
@@ -51,6 +52,7 @@ import SiteManager from './managers/SiteManager'
 import TranslationManager from './managers/TranslationManager'
 import { UserCache } from './managers/UserCache'
 import UserManager from './managers/UserManager'
+import VoteFeedManager from './managers/VoteFeedManager'
 import VoteManager from './managers/VoteManager'
 import AuthorizationCodeModelImpl from './oauth/AuthorizationCodeModelImpl'
 import TheParser from './parser/TheParser'
@@ -115,6 +117,7 @@ const notificationsRepository = new NotificationsRepository(db)
 const postRepository = new PostRepository(db)
 const siteRepository = new SiteRepository(db)
 const voteRepository = new VoteRepository(db)
+const voteFeedReadRepository = new VoteFeedReadRepository(db)
 const userRepository = new UserRepository(db)
 const webPushRepository = new WebPushRepository(db)
 const translationRepository = new TranslationRepository(db)
@@ -200,6 +203,12 @@ const oauth2Manager = new OAuth2Manager(oauthRepository, userManager, logger.chi
 const pollManager = new PollManager(pollRepository, userManager)
 
 const apiEnricher = new Enricher(siteManager, userManager)
+const voteFeedManager = new VoteFeedManager(
+  voteFeedReadRepository,
+  postManager,
+  userManager,
+  logger.child({ service: 'VOTEFEED' }),
+)
 
 const oauthMiddlewareGenerator = createOauth2MiddlewareGenerator(app, db, logger)
 
@@ -234,7 +243,7 @@ const requests = [
     apiEnricher,
     userManager,
     postManager,
-    voteManager,
+    voteFeedManager,
     inviteManager,
     oauthMiddlewareGenerator,
     oauth2Manager,

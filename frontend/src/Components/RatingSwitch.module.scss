@@ -38,6 +38,15 @@ div.rating {
   }
   button:disabled {
     color: var(--fgAlmostInvisible);
+    cursor: default;
+
+    &.minus {
+      color: color-mix(in srgb, var(--danger) 70%, var(--fgSoftest));
+    }
+
+    &.plus {
+      color: color-mix(in srgb, var(--primary) 70%, var(--fgSoftest));
+    }
   }
 }
 

@@ -3,15 +3,16 @@ import rateLimit from 'express-rate-limit'
 import Joi from 'joi'
 import { Logger } from 'winston'
 
+import { VoteFeedFilterTimeoutError } from '../db/repositories/VoteFeedReadRepository'
 import InviteManager from '../managers/InviteManager'
 import OAuth2Manager from '../managers/OAuth2Manager'
 import PostManager from '../managers/PostManager'
 import { UserGender, UserRatingBySubsite } from '../managers/types/UserInfo'
 import UserManager from '../managers/UserManager'
-import VoteManager from '../managers/VoteManager'
+import VoteFeedManager, { InvalidVoteFeedCursorError } from '../managers/VoteFeedManager'
 import { APIRequest, APIResponse, joiFormat, joiUsername, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
-import { commonRateLimitConfig, sharedReadRateLimiter } from './RateLimiters'
+import { commonRateLimitConfig, heavyFilterRateLimiter, sharedReadRateLimiter } from './RateLimiters'
 import { UserProfileEntity } from './types/entities/UserEntity'
 import { UserCommentsRequest, UserCommentsResponse } from './types/requests/UserComments'
 import { SuggestUsernameRequest, SuggestUsernameResponse } from './types/requests/UsernameSuggest'
@@ -34,6 +35,7 @@ import {
   UserSavePublicKeyRequest,
   UserSavePublicKeyResponse,
 } from './types/requests/UserProfile'
+import { UserVotesRequest, UserVotesResponse } from './types/requests/UserVotes'
 import { Enricher } from './utils/Enricher'
 // constant variables
 import { ERROR_CODES } from './utils/error-codes'
@@ -42,7 +44,7 @@ export default class UserController {
   public readonly router = Router()
   private readonly userManager: UserManager
   private readonly postManager: PostManager
-  private readonly voteManager: VoteManager
+  private readonly voteFeedManager: VoteFeedManager
   private readonly inviteManager: InviteManager
   private readonly logger: Logger
   private readonly enricher: Enricher
@@ -52,7 +54,7 @@ export default class UserController {
     enricher: Enricher,
     userManager: UserManager,
     postManager: PostManager,
-    voteManager: VoteManager,
+    voteFeedManager: VoteFeedManager,
     inviteManager: InviteManager,
     oauth: OAuth2MiddlewareGenerator,
     oauthManager: OAuth2Manager,
@@ -61,7 +63,7 @@ export default class UserController {
     this.enricher = enricher
     this.userManager = userManager
     this.postManager = postManager
-    this.voteManager = voteManager
+    this.voteFeedManager = voteFeedManager
     this.inviteManager = inviteManager
     this.oauthManager = oauthManager
     this.logger = logger
@@ -75,6 +77,12 @@ export default class UserController {
       filter: Joi.string().max(120).allow(null, ''),
       page: Joi.number().default(1),
       perpage: Joi.number().min(1).max(50).default(10),
+    })
+    const votesSchema = Joi.object<UserVotesRequest>({
+      direction: Joi.valid('mine', 'received').required(),
+      filter: Joi.string().max(120).allow(null, ''),
+      cursor: Joi.string().max(255).allow(null, ''),
+      perpage: Joi.number().integer().min(1).max(50).default(20),
     })
 
     const bioSchema = Joi.object<UserSaveBioRequest>({
@@ -127,6 +135,14 @@ export default class UserController {
       validate(postsOrCommentsSchema),
       oauth('читать комментарии пользователя'),
       (req, res) => this.comments(req, res),
+    )
+    this.router.post(
+      '/user/votes',
+      sharedReadRateLimiter,
+      heavyFilterRateLimiter,
+      oauth('читать свои оценки'),
+      validate(votesSchema),
+      (req, res) => this.votes(req, res),
     )
     this.router.post(
       '/user/karma',
@@ -355,6 +371,43 @@ export default class UserController {
       this.logger.error('Could not get user comments', { username, error })
       this.logger.error(error)
       return response.error('error', `Could not get comments for user ${username}`, 500)
+    }
+  }
+
+  async votes(request: APIRequest<UserVotesRequest>, response: APIResponse<UserVotesResponse>) {
+    if (!request.session.data.userId) {
+      return response.authRequired()
+    }
+
+    const userId = request.session.data.userId
+    const { direction, cursor, perpage, filter } = request.body
+
+    try {
+      // Barmalini is a shared rotating credential, and anonymization reassigns the
+      // denormalized vote targets to it - its "received" feed would aggregate every
+      // vote ever cast on anonymized content. Deny it like the other barmalini gates.
+      const restrictions = await this.userManager.getUserRestrictionsSnapshot(userId)
+      if (this.userManager.isBarmaliniUser(userId) || restrictions.restrictedToPostId !== false) {
+        return response.error(ERROR_CODES.NO_PERMISSION, 'You are not allowed to view your votes feed', 403)
+      }
+
+      const result = await this.voteFeedManager.getVoteFeed(
+        userId,
+        direction,
+        filter || '',
+        cursor || undefined,
+        perpage || 20,
+      )
+      return response.success(result)
+    } catch (error) {
+      if (error instanceof InvalidVoteFeedCursorError) {
+        return response.error('invalid-payload', 'Invalid cursor', 400)
+      }
+      if (error instanceof VoteFeedFilterTimeoutError) {
+        return response.error('filter-timeout', 'Filter is too heavy, narrow the query', 400)
+      }
+      this.logger.error('Could not get user votes feed', { userId, direction, error })
+      return response.error('error', 'Could not get user votes feed', 500)
     }
   }
 

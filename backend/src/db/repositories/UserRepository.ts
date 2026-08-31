@@ -26,6 +26,14 @@ export default class UserRepository {
     return await this.db.fetchOne<UserRaw>('select * from users where user_id=:user_id', { user_id: userId })
   }
 
+  async getUsersByIds(userIds: number[]): Promise<UserRaw[]> {
+    if (!userIds.length) {
+      return []
+    }
+
+    return await this.db.fetchAll<UserRaw>('select * from users where user_id in (:user_ids)', { user_ids: userIds })
+  }
+
   async getUserByUsername(username: string): Promise<UserRaw | undefined> {
     return await this.db.fetchOne<UserRaw>(
       `select *
@@ -363,6 +371,16 @@ export default class UserRepository {
         user: userId,
       })
       await db.query('update comments set author_id = :anon where author_id = :user', {
+        anon: anonymousUserId,
+        user: userId,
+      })
+      // Keep the same coarse entity -> vote-row lock order as VoteRepository.setVotes.
+      // The transaction makes the author and its denormalized targets visible atomically.
+      await db.query('update post_votes set target_user_id = :anon where target_user_id = :user', {
+        anon: anonymousUserId,
+        user: userId,
+      })
+      await db.query('update comment_votes set target_user_id = :anon where target_user_id = :user', {
         anon: anonymousUserId,
         user: userId,
       })

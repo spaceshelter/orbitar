@@ -112,6 +112,10 @@ export default class UserManager {
     return this.userCache.getById(userId)
   }
 
+  public async getByIds(userIds: number[]): Promise<Record<number, UserInfo>> {
+    return this.userCache.getByIds(userIds)
+  }
+
   public clearCache(userId: number) {
     this.userCache.clearCache(userId)
   }
@@ -409,6 +413,14 @@ export default class UserManager {
   }
 
   async getUserRestrictions(userId: number): Promise<UserRestrictions> {
+    const restrictions = await this.getUserRestrictionsSnapshot(userId)
+    if (restrictions.effectiveKarma < USER_RESTRICTIONS.NEG_KARMA_THRESH) {
+      await this.removeVotesWhenKarmaIsLow(userId)
+    }
+    return restrictions
+  }
+
+  async getUserRestrictionsSnapshot(userId: number): Promise<UserRestrictions> {
     let localCachedValue = this.userRestrictionsCache.get(userId)
     if (localCachedValue && localCachedValue.ts.getTime() < Date.now() - 1000 * 60 * 30 /* 30 minutes */) {
       localCachedValue = undefined
@@ -427,10 +439,6 @@ export default class UserManager {
       localCachedValue?.effectiveKarmaWOPenalty ?? (await this.getUserEffectiveKarma(userId)).effectiveKarma
     const penalty = ~~(await this.redis.get(`karma_penalty_${userId}`)) // parses string to int or 0
     const effectiveKarma = Math.max(effectiveKarmaWOPenalty - penalty, MIN_KARMA)
-
-    if (effectiveKarma < NEG_KARMA_THRESH) {
-      await this.removeVotesWhenKarmaIsLow(userId)
-    }
 
     const lastCommentTime = localCachedValue
       ? localCachedValue.lastCommentTime
@@ -766,10 +774,11 @@ export default class UserManager {
   }
 
   async anonymizeAccount(userId: number) {
-    if (!this.barmaliniUserConfigured()) {
+    const barmaliniUserId = config.barmalini.userId
+    if (!barmaliniUserId) {
       throw new Error('Barmalini user not configured')
     }
-    await this.userRepository.anonymizeAccount(userId, config.barmalini.userId!)
+    await this.userRepository.anonymizeAccount(userId, barmaliniUserId)
     this.clearCache(userId)
     this.clearUserRestrictionsCache(userId)
   }

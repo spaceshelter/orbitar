@@ -33,3 +33,9 @@ jobs:
         working-directory: ${{matrix.module}}
         if: matrix.module == 'backend'
         run: npm run test
+      - name: test
+        working-directory: ${{matrix.module}}
+        if: matrix.module == 'frontend'
+        env:
+          CI: 'true' # react-scripts needs CI to run non-interactively; build keeps the job-level hack
+        run: npm test -- --watchAll=false

@@ -35,7 +35,12 @@ export default class APIBase {
     this.sessionId = Cookies.get('session')
   }
 
-  async request<Req, Res>(url: string, payload: Req, responseCallback?: (resp: Response) => void): Promise<Res> {
+  async request<Req, Res>(
+    url: string,
+    payload: Req,
+    responseCallback?: (resp: Response) => void,
+    signal?: AbortSignal,
+  ): Promise<Res> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     }
@@ -48,6 +53,7 @@ export default class APIBase {
       // mode: 'cors',
       // credentials: 'include',
       headers,
+      signal,
     })
 
     if (responseCallback) {

@@ -67,6 +67,96 @@ type UserProfileCommentsResult = {
   total: number
 }
 
+export type UserVotesDirection = 'mine' | 'received'
+
+type UserVotesRequest = {
+  direction: UserVotesDirection
+  filter?: string
+  cursor?: string
+  perpage?: number
+}
+
+type UserVoteFeedEventEntity<VotedAt> = {
+  type: 'post' | 'comment' | 'user'
+  entityId: number
+  postId?: number
+  vote: number
+  votedAt: VotedAt
+  voterId: number
+  targetUserId: number
+}
+
+type UserVoteFeedEventRefEntity = UserVoteFeedEventEntity<string>
+
+export type ReceivedPostSubject = {
+  id: number
+  site: string
+  label: string
+  rating: number
+}
+
+export type ReceivedCommentSubject = {
+  id: number
+  postId: number
+  site: string
+  postTitle?: string
+  rating: number
+}
+
+type UserVotesResponseBase = {
+  events: UserVoteFeedEventRefEntity[]
+  users: Record<number, UserInfo>
+  hasMore: boolean
+  nextCursor?: string
+}
+
+type UserVotesMineResponse = UserVotesResponseBase & {
+  direction: 'mine'
+  entities: {
+    posts: Record<number, PostEntity>
+    comments: Record<number, CommentEntity>
+    parentComments: Record<number, CommentEntity>
+  }
+}
+
+type UserVotesReceivedResponse = UserVotesResponseBase & {
+  direction: 'received'
+  subjects: {
+    posts: Record<number, ReceivedPostSubject>
+    comments: Record<number, ReceivedCommentSubject>
+  }
+}
+
+type UserVotesResponse = UserVotesMineResponse | UserVotesReceivedResponse
+
+export type UserVoteFeedEvent = UserVoteFeedEventEntity<Date>
+
+type UserVotesResultBase = {
+  events: UserVoteFeedEvent[]
+  users: Record<number, UserInfo>
+  hasMore: boolean
+  nextCursor?: string
+}
+
+export type UserVotesMineResult = UserVotesResultBase & {
+  direction: 'mine'
+  entities: {
+    posts: Record<number, PostInfo>
+    comments: Record<number, CommentInfo>
+    parentComments: Record<number, CommentInfo>
+  }
+}
+
+export type UserVotesReceivedResult = UserVotesResultBase & {
+  direction: 'received'
+  subjects: {
+    posts: Record<number, ReceivedPostSubject>
+    comments: Record<number, ReceivedCommentSubject>
+  }
+}
+
+export type UserVotesResult = UserVotesMineResult | UserVotesReceivedResult
+
 export type TrialProgressDebugInfo = {
   effectiveKarmaPart: number
   daysOnSitePart: number
@@ -161,6 +251,59 @@ export default class UserAPI {
 
   async userKarma(username: string): Promise<UserKarmaResponse> {
     return await this.api.request<{ username: string }, UserKarmaResponse>('/user/karma', { username })
+  }
+
+  async userVotes(
+    direction: UserVotesDirection,
+    filter: string,
+    cursor: string | undefined,
+    perpage: number,
+    signal?: AbortSignal,
+  ): Promise<UserVotesResult> {
+    const result = await this.api.request<UserVotesRequest, UserVotesResponse>(
+      '/user/votes',
+      {
+        direction,
+        cursor,
+        perpage,
+        filter,
+      },
+      undefined,
+      signal,
+    )
+
+    const base = {
+      events: result.events.map((event) => ({
+        ...event,
+        votedAt: this.api.fixDate(new Date(event.votedAt)),
+      })),
+      users: result.users,
+      hasMore: result.hasMore,
+      nextCursor: result.nextCursor,
+    }
+
+    if (result.direction === 'received') {
+      return {
+        ...base,
+        direction: 'received',
+        subjects: result.subjects,
+      }
+    }
+
+    const posts: Record<number, PostInfo> = {}
+    this.postAPIHelper.fixPosts(Object.values(result.entities.posts), result.users).forEach((post) => {
+      posts[post.id] = post
+    })
+
+    return {
+      ...base,
+      direction: 'mine',
+      entities: {
+        posts,
+        comments: this.postAPIHelper.fixCommentsRecords(result.entities.comments, result.users),
+        parentComments: this.postAPIHelper.fixCommentsRecords(result.entities.parentComments, result.users),
+      },
+    }
   }
 
   userRestrictions(username: string): Promise<UserRestrictionsResponse> {

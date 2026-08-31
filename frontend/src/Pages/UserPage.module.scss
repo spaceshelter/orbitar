@@ -120,6 +120,22 @@
   }
 }
 
+.selfRegulationControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.selfRegulationControl {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.selfRegulationControlActive {
+  color: var(--fg);
+  font-weight: bold;
+}
+
 .userinfo {
   color: var(--fg);
   display: flex;

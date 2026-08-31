@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 
 import { observer } from 'mobx-react-lite'
 import moment from 'moment'
@@ -17,6 +17,7 @@ import { UserProfileKarma } from '../Components/UserProfileKarma'
 import UserProfileName from '../Components/UserProfileName'
 import UserProfilePosts from '../Components/UserProfilePosts'
 import UserProfileSettings from '../Components/UserProfileSettings'
+import UserProfileVotes from '../Components/UserProfileVotes'
 import { UserGender, UserProfileInfo } from '../Types/UserInfo'
 
 import { ReactComponent as AliveIcon } from '../Assets/alive.svg'
@@ -27,6 +28,7 @@ export const UserPage = observer(() => {
   const { userInfo, userRestrictions: restrictions } = useAppState()
   const api = useAPI()
   const params = useParams<{ username?: string; page?: string }>()
+  const [searchParams] = useSearchParams()
   const username = params.username || userInfo?.username
   const page = params.page || 'profile'
   const cutInvitesListInvitesNumber = 10
@@ -66,6 +68,18 @@ export const UserPage = observer(() => {
     const rating = { value: user.karma, vote: user.vote }
     const isMyProfile = userInfo && userInfo.id === user.id
     const base = isMyProfile ? '/profile' : '/u/' + user.username
+    const requestedSelfRegulationTab = searchParams.get('tab')
+    const selfRegulationTab =
+      requestedSelfRegulationTab === 'received' ? 'received' : requestedSelfRegulationTab === 'mine' ? 'mine' : 'status'
+    const selfRegulationTabs = [
+      { id: 'status', label: 'Статус', to: `${base}/karma` },
+      ...(isMyProfile
+        ? [
+            { id: 'received', label: 'Оценки мне', to: `${base}/karma?tab=received` },
+            { id: 'mine', label: 'Мои оценки', to: `${base}/karma?tab=mine` },
+          ]
+        : []),
+    ]
     const invitesFullList = profile.invites.slice().sort((a: UserProfileInfo, b: UserProfileInfo) => {
       if (a.active === b.active) {
         return a.registered > b.registered ? 1 : -1
@@ -201,7 +215,33 @@ export const UserPage = observer(() => {
           {isPosts && <UserProfilePosts username={user.username} />}
           {isComments && <UserProfileComments username={user.username} />}
           {isInvites && <UserProfileInvites username={user.username} onInvitesChange={handleInvitesChange} />}
-          {isKarma && <UserProfileKarma username={user.username} profile={profile} />}
+          {isKarma && (
+            <>
+              <nav className={styles.selfRegulationControls} aria-label='Разделы саморегуляции'>
+                {selfRegulationTabs.map(({ id, label, to }) => (
+                  <Link
+                    key={id}
+                    className={`${styles.selfRegulationControl} ${
+                      selfRegulationTab === id ? styles.selfRegulationControlActive : ''
+                    }`}
+                    to={to}
+                    aria-current={selfRegulationTab === id ? 'page' : undefined}
+                  >
+                    {label}
+                  </Link>
+                ))}
+              </nav>
+              {selfRegulationTab === 'mine' || selfRegulationTab === 'received' ? (
+                isMyProfile ? (
+                  <UserProfileVotes />
+                ) : (
+                  <div>Раздел доступен только в своём профиле.</div>
+                )
+              ) : (
+                <UserProfileKarma username={user.username} profile={profile} />
+              )}
+            </>
+          )}
           {isApps && <UserProfileClientsApps />}
           {isSettings && (
             <UserProfileSettings

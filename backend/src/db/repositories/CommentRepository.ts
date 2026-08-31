@@ -1,7 +1,7 @@
 import { ResultSetHeader } from 'mysql2'
 
 import CodeError from '../../CodeError'
-import { escapePercent } from '../../utils/MySqlUtils'
+import { escapeLike } from '../../utils/MySqlUtils'
 import DB from '../DB'
 import { CommentRaw, CommentRawWithUserData } from '../types/PostRaw'
 
@@ -26,10 +26,23 @@ export default class CommentRepository {
   }
 
   async getCommentWithUserData(forUserId: number, commentId: number): Promise<CommentRawWithUserData | undefined> {
-    return await this.db.fetchOne<CommentRaw>(
-      `select c.*, v.vote from comments c left join comment_votes v on (v.comment_id = c.comment_id and v.voter_id = :forUserId) where c.comment_id=:commentId`,
+    return (await this.getCommentsWithUserData(forUserId, [commentId]))[0]
+  }
+
+  async getCommentsWithUserData(forUserId: number, commentIds: number[]): Promise<CommentRawWithUserData[]> {
+    if (!commentIds.length) {
+      return []
+    }
+
+    return this.db.fetchAll<CommentRawWithUserData>(
+      `
+            select c.*, v.vote
+            from comments c
+                left join comment_votes v on (v.comment_id = c.comment_id and v.voter_id = :forUserId)
+            where c.comment_id in (:commentIds)
+        `,
       {
-        commentId,
+        commentIds,
         forUserId,
       },
     )
@@ -77,7 +90,7 @@ export default class CommentRepository {
         for_user_id: forUserId,
         limit_from: limitFrom,
         limit_count: perPage,
-        filter: filter && '%' + escapePercent(filter) + '%',
+        filter: filter && '%' + escapeLike(filter) + '%',
       },
     )
   }
@@ -101,7 +114,7 @@ export default class CommentRepository {
             ${filter ? '  and source like :filter ' : ''}`,
         {
           user_id: userId,
-          filter: filter && '%' + escapePercent(filter) + '%',
+          filter: filter && '%' + escapeLike(filter) + '%',
         },
       )
       .then((res) => parseInt(res.cnt || '0'))

@@ -32,6 +32,7 @@ interface CommentProps {
   unreadOnly?: boolean
   hideRating?: boolean
   currentUsername?: string
+  onVote?: (id: number, comment: Partial<CommentInfo>, postApiCall?: boolean) => void
 }
 
 export default function CommentComponent(props: CommentProps) {
@@ -83,12 +84,21 @@ export default function CommentComponent(props: CommentProps) {
     }
   }
 
+  const { comment: votedComment, onVote } = props
   const handleVote = useMemo(() => {
-    return (value: number, vote?: number) => {
-      props.comment.rating = value
-      props.comment.vote = vote
+    return (value: number, vote?: number, postApiCall?: boolean) => {
+      votedComment.rating = value
+      votedComment.vote = vote
+      onVote?.(
+        votedComment.id,
+        {
+          rating: value,
+          vote,
+        },
+        postApiCall,
+      )
     }
-  }, [props.comment])
+  }, [votedComment, onVote])
 
   const handleEdit = async () => {
     try {

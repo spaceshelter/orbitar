@@ -1,0 +1,292 @@
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: 33px;
+}
+
+.groupHeader {
+  align-items: baseline;
+  border-bottom: 1px solid var(--fgAlmostInvisible);
+  color: var(--fgSofter);
+  display: flex;
+  font-size: 14px;
+  gap: 12px;
+  justify-content: space-between;
+  line-height: 1.35;
+  margin: 0 0 2px;
+  padding-bottom: 9px;
+}
+
+.groupTitle {
+  align-items: baseline;
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+
+.groupActor {
+  align-items: baseline;
+  display: inline-flex;
+  gap: 4px;
+  line-height: inherit;
+  white-space: nowrap;
+}
+
+.groupUserLink {
+  color: var(--primary);
+  display: inline;
+  line-height: inherit;
+  vertical-align: baseline;
+  white-space: nowrap;
+
+  &:hover {
+    color: var(--primaryHover);
+  }
+}
+
+.groupCount {
+  color: var(--fgSoftest);
+  flex: 0 0 auto;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.events {
+  display: flex;
+  flex-direction: column;
+}
+
+.event {
+  padding: 12px 0 14px;
+}
+
+.event + .event {
+  border-top: 1px solid var(--fgAlmostInvisible);
+}
+
+.event :global(.postComponent),
+.event :global(.comment) {
+  margin-bottom: 0;
+}
+
+.groupSubject {
+  align-items: baseline;
+  color: var(--fgSofter);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  line-height: 1.35;
+  padding: 8px 0 6px;
+}
+
+.subjectMain {
+  min-width: 0;
+}
+
+.subjectLink {
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+
+.subjectInline {
+  align-items: baseline;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.subjectRating,
+.voteRowMeta {
+  color: var(--fgSoftest);
+  font-size: 13px;
+}
+
+.subjectRating {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.subjectRatingValue {
+  font-weight: 700;
+}
+
+.voteRows {
+  display: flex;
+  flex-direction: column;
+}
+
+.voteTimeGroups {
+  display: flex;
+  flex-direction: column;
+}
+
+.voteTimeGroup + .voteTimeGroup {
+  margin-top: 10px;
+}
+
+.voteTimeHeader {
+  color: var(--fgSoftest);
+  font-size: 13px;
+  line-height: 1.35;
+  padding: 8px 0 2px;
+}
+
+.voteRow {
+  align-items: baseline;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 22px minmax(0, 1fr);
+  padding: 9px 0 10px;
+}
+
+// Same affordance as internal links inside content (ContentComponent .expand-button):
+// an arrow that turns 90° when the subject is expanded inline.
+.expandButton {
+  color: var(--fgMedium);
+  cursor: pointer;
+  display: inline-block;
+  font-size: 20px;
+  margin-right: 2px;
+  transform: rotate(0deg);
+  transform-origin: 40% center;
+  transition: transform 0.25s;
+  user-select: none;
+  vertical-align: middle;
+  &:hover {
+    color: var(--primaryHover);
+  }
+}
+
+.expanded {
+  transform: rotate(90deg);
+}
+
+.voteExpand {
+  margin-top: 8px;
+  min-width: 0;
+}
+
+.voteValue {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.voteValuePlus {
+  color: var(--primary);
+}
+
+.voteValueMinus {
+  color: var(--danger);
+}
+
+.voteValueZero {
+  color: var(--fgSoftest);
+}
+
+.voteRowBody {
+  min-width: 0;
+}
+
+.voteRowMain {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  line-height: 1.35;
+}
+
+.voteTarget {
+  min-width: 0;
+}
+
+.voteVoter {
+  align-items: baseline;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.voteUsername {
+  display: inline;
+  line-height: inherit;
+  vertical-align: baseline;
+
+  &:global(.i) {
+    line-height: inherit;
+  }
+
+  &:global(.i):before {
+    display: inline-block;
+    line-height: 1;
+    position: relative;
+    top: 0.18em;
+    vertical-align: baseline;
+  }
+}
+
+.voteRowMeta {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  line-height: 1.35;
+  margin-top: 2px;
+}
+
+.userEvent {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.userInfo {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.empty {
+  color: var(--fg-light-color);
+  padding: 24px 0;
+}
+
+.loadMore {
+  display: flex;
+  justify-content: center;
+  padding: 16px 0;
+}
+
+@media only screen and (max-width: 600px) {
+  .groupHeader {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .groupSubject {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+}
+
+// Visually hidden but exposed to assistive tech (the standard clip pattern).
+.srOnly {
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}

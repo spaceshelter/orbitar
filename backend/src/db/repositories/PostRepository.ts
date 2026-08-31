@@ -2,7 +2,7 @@ import { ResultSetHeader } from 'mysql2'
 
 import { FeedSorting } from '../../api/types/entities/common'
 import CodeError from '../../CodeError'
-import { escapePercent } from '../../utils/MySqlUtils'
+import { escapeLike } from '../../utils/MySqlUtils'
 import DB from '../DB'
 import { ContentSourceRaw } from '../types/ContentSourceRaw'
 import { PostBareBonesRaw, PostRaw, PostRawWithUserData } from '../types/PostRaw'
@@ -144,7 +144,7 @@ export default class PostRepository {
         for_user_id: forUserId,
         limit_from: limitFrom,
         limit_count: perPage,
-        filter: filter && '%' + escapePercent(filter) + '%',
+        filter: filter && '%' + escapeLike(filter) + '%',
       },
     )
   }
@@ -156,7 +156,7 @@ export default class PostRepository {
              where author_id = :user_id ${filter ? ' and (source like :filter or title like :filter) ' : ''}`,
       {
         user_id: userId,
-        filter: filter && '%' + escapePercent(filter) + '%',
+        filter: filter && '%' + escapeLike(filter) + '%',
       },
     )
     if (!result) {
