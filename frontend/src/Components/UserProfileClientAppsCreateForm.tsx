@@ -201,7 +201,8 @@ export default function UserProfileClientAppsCreateForm(props: UserProfileClient
             />
             <p>
               <span className={classNames('i', 'i-info')}></span> Поддерживаются HTTPS URLs и custom protocol URIs
-              (например, myapp://callback для мобильных приложений). В development режиме также разрешены HTTP URLs.
+              (например, myapp://callback для мобильных приложений). HTTP URLs разрешены для localhost, 127.0.0.1 и
+              [::1].
             </p>
             {errors.redirectUris && <p className={styles.error}>{errors.redirectUris.message}</p>}
           </label>
