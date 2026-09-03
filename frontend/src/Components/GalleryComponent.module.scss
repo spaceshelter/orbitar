@@ -6,8 +6,8 @@ $thumbnail-height: 4rem;
 $arrow-size: 2rem;
 $arrow-icon-size: 1rem;
 
-$indicator-size: 0.75rem;
-$indicator-spacing: 0.5rem;
+$indicator-size: 0.5rem;
+$indicator-spacing: 0.4rem;
 
 $transition-duration: 300ms;
 $transition-easing: ease-in-out;
@@ -192,6 +192,8 @@ $transition-easing: ease-in-out;
   padding: 0.2rem 0.4rem;
   border-radius: 4px;
   background-color: var(--bg);
+  opacity: 0.7;
+  touch-action: none;
 }
 
 .indicator {
@@ -225,18 +227,24 @@ $transition-easing: ease-in-out;
   border-radius: 50%;
   background-color: var(--fg);
   transition: all $transition-duration $transition-easing;
+}
 
-  .indicator:hover:not(:disabled) & {
+.indicator[data-hovered] .indicatorDot {
+  background-color: var(--primary);
+  transform: scale(1.2);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .indicator:hover:not(:disabled) .indicatorDot {
     background-color: var(--primary);
     transform: scale(1.2);
   }
 }
 
-.indicatorActive {
-  .indicatorDot {
-    background-color: var(--primary);
-    transform: scale(1.1);
-  }
+.indicatorActive .indicatorDot,
+.indicator[data-active] .indicatorDot {
+  background-color: var(--primary);
+  transform: scale(1.1);
 }
 
 .thumbnails {
@@ -386,21 +394,22 @@ $transition-easing: ease-in-out;
   }
 
   .arrow {
-    width: 2rem;
-    height: 2rem;
-
-    svg {
-      width: 1rem;
-      height: 1rem;
-    }
+    display: none;
   }
 
-  .arrowPrev {
-    left: 0.25rem;
+  .indicatorPlaceholder {
+    width: calc($indicator-size * 2 * 0.6) !important;
+    height: calc($indicator-size * 2 * 0.6) !important;
   }
 
-  .arrowNext {
-    right: 0.25rem;
+  .indicator {
+    width: $indicator-size * 2;
+    height: $indicator-size * 2;
+  }
+
+  .indicators {
+    gap: $indicator-spacing * 1.5;
+    padding: 0.3rem 0.5rem;
   }
 }
 
@@ -527,7 +536,7 @@ $transition-easing: ease-in-out;
   background: none;
   border: none;
   cursor: pointer;
-  z-index: 200;
+  z-index: 10;
   color: white;
   font-size: 40px;
   text-shadow:
