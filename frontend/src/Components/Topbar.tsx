@@ -80,7 +80,7 @@ const HomeButton = () => {
   const [savedRoute, setSavedRoute] = useLocalStorage('homeButtonRoute', '/')
 
   const routes: [string, boolean][] = []
-  for (const route of ['/', '/posts', '/all']) {
+  for (const route of ['/subscriptions', '/posts', '/all']) {
     // Fine to disable, we're calling this hook a fixed number of times
     // eslint-disable-next-line react-hooks/rules-of-hooks
     routes.push([route, !!useMatch(route)])
@@ -88,7 +88,7 @@ const HomeButton = () => {
 
   useEffect(() => {
     routes.forEach(([route, match]) => {
-      if (match && savedRoute !== route) {
+      if (match && route !== '/' && savedRoute !== route) {
         setSavedRoute(route)
       }
     })
