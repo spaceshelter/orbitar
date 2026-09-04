@@ -18,7 +18,7 @@ import TheParser from '../parser/TheParser'
 import { sendResetPasswordEmail } from '../utils/Mailer'
 import NotificationManager from './NotificationManager'
 import { UserGender, UserInfo, UserRatingBySubsite, UserRestrictions, UserStats } from './types/UserInfo'
-import { UserCache } from './UserCache'
+import { UserCache, UserCacheEviction, UserCacheInspection, UserCacheStats } from './UserCache'
 
 const USER_RESTRICTIONS = {
   MIN_KARMA: -1000,
@@ -122,6 +122,106 @@ export default class UserManager {
 
   public clearUserRestrictionsCache(userId: number) {
     this.userRestrictionsCache.delete(userId)
+  }
+
+  /** Evicts one user from every in-memory cache this manager owns: identity, restrictions, last visit. */
+  public evictUserCaches(userId: number): UserCacheEviction & { restrictions: boolean; lastVisit: boolean } {
+    const identity = this.userCache.clearCache(userId)
+    const restrictions = this.userRestrictionsCache.delete(userId)
+    const lastVisit = userId in this.cacheLastVisit
+    delete this.cacheLastVisit[userId]
+    return { ...identity, restrictions, lastVisit }
+  }
+
+  /** Drops every in-memory user cache. The username suggestions trie is kept, see rebuildUsernameSuggestions. */
+  public clearAllCaches(): UserCacheStats & { restrictions: number; lastVisit: number } {
+    const identity = this.userCache.clearAll()
+    const restrictions = this.userRestrictionsCache.size
+    this.userRestrictionsCache.clear()
+    const lastVisit = Object.keys(this.cacheLastVisit).length
+    this.cacheLastVisit = {}
+    this.cachedNumActiveUsersThatCanVote.lastUpdateTs = 0
+    return { ...identity, restrictions, lastVisit }
+  }
+
+  public userCacheStats(): UserCacheStats & { restrictions: number; lastVisit: number } {
+    return {
+      ...this.userCache.stats(),
+      restrictions: this.userRestrictionsCache.size,
+      lastVisit: Object.keys(this.cacheLastVisit).length,
+    }
+  }
+
+  public inspectUserCache(
+    userId: number,
+  ): UserCacheInspection & { restrictionsCached: boolean; lastVisitCached: boolean } {
+    return {
+      ...this.userCache.inspect(userId),
+      restrictionsCached: this.userRestrictionsCache.has(userId),
+      lastVisitCached: userId in this.cacheLastVisit,
+    }
+  }
+
+  /** Reads the user straight from the DB, bypassing every cache. */
+  public async getUserInfoFromDb(userId: number): Promise<UserInfo | undefined> {
+    const raw = await this.userRepository.getUserById(userId)
+    return raw ? this.userCache.mapUserRaw(raw) : undefined
+  }
+
+  public rebuildUsernameSuggestions(): Promise<number> {
+    return this.userCache.rebuildUsernameSuggestions()
+  }
+
+  static readonly KARMA_CACHE_KEY_PATTERNS = [
+    'active_karma_votes_*',
+    'trial_progress_*',
+    'remove_votes_when_karma_is_low_*',
+    'is_user_active_*',
+  ]
+
+  /**
+   * Deletes the Redis caches derived from karma votes and activity for one user. With asVoter, also
+   * the vote caches of everyone this user has karma-voted: those are keyed by voter username and go
+   * stale on a rename. karma_penalty_* is state set by hand, never a cache, and is left alone.
+   * Returns the keys that actually existed.
+   */
+  public async evictKarmaCaches(userId: number, asVoter = false): Promise<string[]> {
+    const keys = [
+      `active_karma_votes_${userId}`,
+      `trial_progress_${userId}`,
+      `remove_votes_when_karma_is_low_${userId}`,
+      `is_user_active_${userId}`,
+    ]
+    if (asVoter) {
+      for (const targetId of await this.voteRepository.getKarmaVoteTargetIds(userId)) {
+        keys.push(`active_karma_votes_${targetId}`, `trial_progress_${targetId}`)
+      }
+    }
+    const deleted: string[] = []
+    for (const key of keys) {
+      if (await this.redis.del(key)) {
+        deleted.push(key)
+      }
+    }
+    return deleted
+  }
+
+  /** Deletes every key of the karma cache families (KARMA_CACHE_KEY_PATTERNS). Returns counts per pattern. */
+  public async evictAllKarmaCaches(): Promise<Record<string, number>> {
+    const deleted: Record<string, number> = {}
+    for (const pattern of UserManager.KARMA_CACHE_KEY_PATTERNS) {
+      let count = 0
+      let cursor = 0
+      do {
+        const reply = await this.redis.scan(cursor, { MATCH: pattern, COUNT: 200 })
+        cursor = reply.cursor
+        if (reply.keys.length) {
+          count += await this.redis.del(reply.keys)
+        }
+      } while (cursor !== 0)
+      deleted[pattern] = count
+    }
+    return deleted
   }
 
   async getByUsername(username: string): Promise<UserInfo | undefined> {

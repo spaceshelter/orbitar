@@ -4,6 +4,34 @@ import UserRepository from '../db/repositories/UserRepository'
 import { UserRaw } from '../db/types/UserRaw'
 import { UserInfo, UserStats } from './types/UserInfo'
 
+export type UserCacheEviction = {
+  byId: boolean
+  /** every username key that pointed at the user, including ones left behind by a rename */
+  usernameKeys: string[]
+  publicKey: boolean
+  parent: boolean
+  stats: boolean
+}
+
+export type UserCacheStats = {
+  byId: number
+  byUsername: number
+  parents: number
+  publicKeys: number
+  stats: number
+  usernameSuggestions: number
+}
+
+export type UserCacheInspection = {
+  byId: UserInfo | undefined
+  usernameKeys: string[]
+  /** false when a username key points at a different object than the id entry (an orphan) */
+  consistent: boolean
+  publicKeyCached: boolean
+  parentCached: boolean
+  statsCached: boolean
+}
+
 export class UserCache {
   private userRepository: UserRepository
   /**
@@ -17,29 +45,38 @@ export class UserCache {
   private cacheUsername: Record<string, UserInfo> = {}
   private cachedUserParents: Record<number, number | undefined | false> = {}
   private cachedPublicKeys: Record<number, string | undefined> = {}
-  private usernamesSuggestionsCache = new TrieSearch('k', { min: 1 })
+  private usernamesSuggestionsCache = UserCache.createSuggestionsTrie()
+  private usernamesSuggestionsCount = 0
   private userStatsCache = new Map<number, UserStats>()
 
   constructor(userRepository: UserRepository) {
     this.userRepository = userRepository
     ;(async () => {
-      await this.createUsernamesSuggestionsCache()
+      await this.rebuildUsernameSuggestions()
     })()
   }
 
-  private async createUsernamesSuggestionsCache() {
+  private static createSuggestionsTrie() {
+    return new TrieSearch('k', { min: 1 })
+  }
+
+  /**
+   * Rebuilds the username suggestions trie from the DB and swaps it in atomically.
+   * The trie only ever grows (on registration), so renames and deletions need this.
+   * Returns the number of usernames loaded.
+   */
+  public async rebuildUsernameSuggestions(): Promise<number> {
+    const trie = UserCache.createSuggestionsTrie()
     const usersCount = await this.userRepository.getUserCount()
+    let count = 0
     for (let i = 0; i < usersCount; i += 1000) {
       const usernames = await this.userRepository.getUsernames(i)
-      const entries = []
-      usernames.map((user) => {
-        entries.push({
-          k: user.username.toLowerCase(),
-          v: user.username,
-        })
-      })
-      this.usernamesSuggestionsCache.addAll(entries)
+      trie.addAll(usernames.map((user) => ({ k: user.username.toLowerCase(), v: user.username })))
+      count += usernames.length
     }
+    this.usernamesSuggestionsCache = trie
+    this.usernamesSuggestionsCount = count
+    return count
   }
 
   private initialize() {
@@ -104,14 +141,67 @@ export class UserCache {
     return users
   }
 
-  public clearCache(userId: number) {
-    const cacheEntry = this.cacheId[userId]
-    if (!cacheEntry) {
-      return
-    }
+  /**
+   * Evicts everything cached for the user. Username keys are matched by the cached id rather than
+   * by the name of the current id entry, so keys left behind by a rename are removed as well.
+   */
+  public clearCache(userId: number): UserCacheEviction {
+    const byId = userId in this.cacheId
     delete this.cacheId[userId]
-    delete this.cacheUsername[cacheEntry.username]
+
+    const usernameKeys: string[] = []
+    for (const [username, user] of Object.entries(this.cacheUsername)) {
+      if (user.id === userId) {
+        usernameKeys.push(username)
+        delete this.cacheUsername[username]
+      }
+    }
+
+    const publicKey = userId in this.cachedPublicKeys
     delete this.cachedPublicKeys[userId]
+    const parent = userId in this.cachedUserParents
+    delete this.cachedUserParents[userId]
+    const stats = this.userStatsCache.delete(userId)
+
+    return { byId, usernameKeys, publicKey, parent, stats }
+  }
+
+  /** Drops every cached user. The username suggestions trie is kept. Returns the sizes that were dropped. */
+  public clearAll(): UserCacheStats {
+    const stats = this.stats()
+    this.cacheId = {}
+    this.cacheUsername = {}
+    this.cachedUserParents = {}
+    this.cachedPublicKeys = {}
+    this.userStatsCache.clear()
+    return stats
+  }
+
+  public stats(): UserCacheStats {
+    return {
+      byId: Object.keys(this.cacheId).length,
+      byUsername: Object.keys(this.cacheUsername).length,
+      parents: Object.keys(this.cachedUserParents).length,
+      publicKeys: Object.keys(this.cachedPublicKeys).length,
+      stats: this.userStatsCache.size,
+      usernameSuggestions: this.usernamesSuggestionsCount,
+    }
+  }
+
+  public inspect(userId: number): UserCacheInspection {
+    const byId = this.cacheId[userId]
+    const usernameKeys = Object.entries(this.cacheUsername)
+      .filter(([, user]) => user.id === userId)
+      .map(([username]) => username)
+    const consistent = usernameKeys.every((username) => this.cacheUsername[username] === byId)
+    return {
+      byId,
+      usernameKeys,
+      consistent,
+      publicKeyCached: userId in this.cachedPublicKeys,
+      parentCached: userId in this.cachedUserParents,
+      statsCached: this.userStatsCache.has(userId),
+    }
   }
 
   private cache(user: UserInfo) {
@@ -183,6 +273,7 @@ export class UserCache {
   }
 
   addUsernameSuggestion(username) {
+    this.usernamesSuggestionsCount++
     return this.usernamesSuggestionsCache.add({ k: username.toLowerCase(), v: username })
   }
 
