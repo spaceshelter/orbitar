@@ -100,6 +100,14 @@ async function resolveUserId(userManager: UserManager, params: AdminParams): Pro
   return user.id
 }
 
+/** Session ids are bearer credentials; keep them out of the (root-readable) logs. */
+function maskSecrets(params: AdminParams): AdminParams {
+  if (typeof params.sessionId !== 'string') {
+    return params
+  }
+  return { ...params, sessionId: params.sessionId.slice(0, 6) + '…' }
+}
+
 export function buildAdminRoutes(deps: AdminDeps): AdminRoute[] {
   const { userManager, siteManager, feedManager, postManager, inviteManager } = deps
   return [
@@ -260,17 +268,18 @@ export function createAdminApp(deps: AdminDeps, logger: Logger): express.Express
         return
       }
       const params = value as AdminParams
+      const loggedParams = maskSecrets(params)
       try {
         const payload = await route.handler(params)
-        logger.info(`${route.method} ${route.path}`, { params, payload })
+        logger.info(`${route.method} ${route.path}`, { params: loggedParams, payload })
         res.json({ result: 'success', payload })
       } catch (err) {
         if (err instanceof AdminError) {
-          logger.warn(`${route.method} ${route.path}: ${err.message}`, { params })
+          logger.warn(`${route.method} ${route.path}: ${err.message}`, { params: loggedParams })
           res.status(err.status).json({ result: 'error', code: err.code, message: err.message })
           return
         }
-        logger.error(`${route.method} ${route.path} failed`, { params, error: err })
+        logger.error(`${route.method} ${route.path} failed`, { params: loggedParams, error: err })
         res.status(500).json({
           result: 'error',
           code: 'error',

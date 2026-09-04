@@ -205,3 +205,24 @@ describe('loopback guard', () => {
     expect(next).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('admin server logging', () => {
+  test('session ids are masked in the log line but used in full', async () => {
+    const spy = { info: jest.fn(), warn: jest.fn(), error: jest.fn() }
+    const server = http.createServer(
+      createAdminApp(makeDeps() as unknown as AdminDeps, spy as unknown as winston.Logger),
+    )
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+    const port = (server.address() as AddressInfo).port
+    try {
+      const reply = await request(port, 'POST', '/cache/sessions/evict', { sessionId: 'abcdef0123456789abcdef' })
+      expect(reply.status).toBe(200)
+      expect(spy.info).toHaveBeenCalledWith(
+        'POST /cache/sessions/evict',
+        expect.objectContaining({ params: { sessionId: 'abcdef…' } }),
+      )
+    } finally {
+      await new Promise((resolve) => server.close(resolve))
+    }
+  })
+})
