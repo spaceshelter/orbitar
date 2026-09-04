@@ -41,7 +41,6 @@ describe('in-memory session eviction', () => {
     expect(sessionMemoryStats()).toMatchObject({ sessions: 1, users: 1 })
     expect(evictSessionsFromMemory(6)).toBe(1)
   })
-})
 
   test('sessions created through the login path are indexed and evictable by user id', async () => {
     const db = { fetchOne: jest.fn(), query: jest.fn().mockResolvedValue(undefined) }
