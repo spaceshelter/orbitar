@@ -208,6 +208,13 @@ export default class Session {
   async store() {
     if (!this.id) return
 
+    if (this.data.userId) {
+      // The login path is init() -> data.userId = ... -> store(); restore() only indexes sessions it
+      // re-reads from the DB. Index here too, so per-user eviction and destroyAllForCurrentUser()
+      // see sessions created since the last restart.
+      addToUserSessions(this.data.userId, this.id)
+    }
+
     const data = {
       userId: this.data.userId,
     }

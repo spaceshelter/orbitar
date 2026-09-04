@@ -40,7 +40,7 @@ service with its parameters and result.
 | POST | `/cache/users/evict` | `userId` or `username` | identity (by id and by every username key pointing at it), restrictions, last visit, feed subscriptions, content counters, invite availability |
 | POST | `/cache/users/evict-all` | | all of the above for every user; the username trie is kept |
 | POST | `/cache/usernames/rebuild` | | the `@mention` autocomplete trie, reloaded from the DB and swapped atomically |
-| POST | `/cache/karma/evict` | `userId` or `username`, `asVoter` (default `false`) | Redis `active_karma_votes_<id>`, `trial_progress_<id>`, `remove_votes_when_karma_is_low_<id>`, `is_user_active_<id>`; with `asVoter` also the `active_karma_votes`/`trial_progress` of everyone the user has karma-voted |
+| POST | `/cache/karma/evict` | `userId` or `username`, `asVoter` (default `false`) | Redis `active_karma_votes_<id>`, `trial_progress_<id>`, `remove_votes_when_karma_is_low_<id>`, `is_user_active_<id>`; with `asVoter` also `active_karma_votes_<targetId>` of everyone the user has karma-voted (its value is a map keyed by voter username, so it goes stale when the voter is renamed) |
 | POST | `/cache/karma/evict-all` | | every key of those four families, via SCAN |
 | POST | `/cache/sites/evict` | `siteId` or `site` | in-process site cache, by id and by subdomain |
 | POST | `/cache/sites/evict-all` | | the whole site cache |
@@ -67,8 +67,8 @@ The steps stay manual; the server just makes each cache reachable.
 2. `POST /cache/users/evict {"userId": <id>}` — do this **before** touching Redis. Recomputing a
    Redis karma cache looks voters up by name, and if that happens while the process still holds
    the old identity it leaves an orphaned old-name key behind.
-3. `POST /cache/karma/evict {"userId": <id>, "asVoter": true}` — the vote caches are keyed by
-   voter username.
+3. `POST /cache/karma/evict {"userId": <id>, "asVoter": true}` — `active_karma_votes_<targetId>`
+   holds a map keyed by voter username, so every target the user has voted on carries the old name.
 4. `POST /cache/usernames/rebuild` — the autocomplete trie only ever grows on registration.
 5. `GET /cache/users/inspect?userId=<id>` — expect `drift: false` and `cache.consistent: true`.
 

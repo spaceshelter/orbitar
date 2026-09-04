@@ -190,8 +190,8 @@ export function buildAdminRoutes(deps: AdminDeps): AdminRoute[] {
       path: '/cache/karma/evict',
       description:
         'Delete the Redis karma caches of one user (userId or username): active_karma_votes, trial_progress, ' +
-        'remove_votes_when_karma_is_low, is_user_active. With asVoter=true also the active_karma_votes and ' +
-        'trial_progress of everyone the user has karma-voted (those are keyed by voter username). ' +
+        'remove_votes_when_karma_is_low, is_user_active. With asVoter=true also active_karma_votes_<targetId> of ' +
+        'everyone the user has karma-voted: that value is a map keyed by voter username, so it goes stale on a rename. ' +
         'karma_penalty is state, never touched.',
       schema: userRef.keys({ asVoter: Joi.boolean().default(false) }),
       handler: async (params) => {

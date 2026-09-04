@@ -41,6 +41,23 @@ describe('UserCache eviction', () => {
     expect(cache.stats()).toMatchObject({ byId: 0, byUsername: 0 })
   })
 
+  test('clearCache leaves a username key alone once another user owns it', async () => {
+    const repository = makeRepository([])
+    const cache = new UserCache(repository as unknown as UserRepository)
+    repository.getUserByUsername.mockResolvedValueOnce(raw(1, 'Taken'))
+    await cache.getByUsername('Taken')
+    // user 1 gave the name up and user 2 took it; a lookup of user 2 now caches it under the same key
+    repository.getUserById.mockResolvedValueOnce(raw(2, 'Taken'))
+    await cache.getById(2)
+
+    expect(cache.inspect(1).usernameKeys).toEqual([])
+    expect(cache.inspect(2).usernameKeys).toEqual(['Taken'])
+    expect(cache.clearCache(1).usernameKeys).toEqual([])
+    await expect(cache.getByUsername('Taken')).resolves.toMatchObject({ id: 2 })
+    expect(cache.clearCache(2).usernameKeys).toEqual(['Taken'])
+    expect(cache.stats()).toMatchObject({ byId: 0, byUsername: 0 })
+  })
+
   test('clearAll drops everything and reports what was there', async () => {
     const repository = makeRepository([])
     const cache = new UserCache(repository as unknown as UserRepository)

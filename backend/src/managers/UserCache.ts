@@ -43,6 +43,8 @@ export class UserCache {
   private initializedState: Promise<void> | boolean = false
   private cacheId: Record<number, UserInfo> = {}
   private cacheUsername: Record<string, UserInfo> = {}
+  /** reverse index of cacheUsername: every key that has pointed at a user id, so eviction stays O(1) */
+  private usernameKeysById = new Map<number, Set<string>>()
   private cachedUserParents: Record<number, number | undefined | false> = {}
   private cachedPublicKeys: Record<number, string | undefined> = {}
   private usernamesSuggestionsCache = UserCache.createSuggestionsTrie()
@@ -150,11 +152,16 @@ export class UserCache {
     delete this.cacheId[userId]
 
     const usernameKeys: string[] = []
-    for (const [username, user] of Object.entries(this.cacheUsername)) {
-      if (user.id === userId) {
-        usernameKeys.push(username)
-        delete this.cacheUsername[username]
+    const keys = this.usernameKeysById.get(userId)
+    if (keys) {
+      for (const username of keys) {
+        // a key can have been taken over by another user since (rename collisions); leave those alone
+        if (this.cacheUsername[username] !== undefined && this.cacheUsername[username].id === userId) {
+          usernameKeys.push(username)
+          delete this.cacheUsername[username]
+        }
       }
+      this.usernameKeysById.delete(userId)
     }
 
     const publicKey = userId in this.cachedPublicKeys
@@ -171,6 +178,7 @@ export class UserCache {
     const stats = this.stats()
     this.cacheId = {}
     this.cacheUsername = {}
+    this.usernameKeysById.clear()
     this.cachedUserParents = {}
     this.cachedPublicKeys = {}
     this.userStatsCache.clear()
@@ -190,9 +198,12 @@ export class UserCache {
 
   public inspect(userId: number): UserCacheInspection {
     const byId = this.cacheId[userId]
-    const usernameKeys = Object.entries(this.cacheUsername)
-      .filter(([, user]) => user.id === userId)
-      .map(([username]) => username)
+    const keys = this.usernameKeysById.get(userId)
+    const usernameKeys = keys
+      ? Array.from(keys).filter(
+          (username) => this.cacheUsername[username] !== undefined && this.cacheUsername[username].id === userId,
+        )
+      : []
     const consistent = usernameKeys.every((username) => this.cacheUsername[username] === byId)
     return {
       byId,
@@ -207,6 +218,12 @@ export class UserCache {
   private cache(user: UserInfo) {
     this.cacheId[user.id] = user
     this.cacheUsername[user.username] = user
+    let keys = this.usernameKeysById.get(user.id)
+    if (!keys) {
+      keys = new Set()
+      this.usernameKeysById.set(user.id, keys)
+    }
+    keys.add(user.username)
   }
 
   public async getByUsername(username: string): Promise<UserInfo | undefined> {

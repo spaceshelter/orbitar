@@ -181,8 +181,10 @@ export default class UserManager {
 
   /**
    * Deletes the Redis caches derived from karma votes and activity for one user. With asVoter, also
-   * the vote caches of everyone this user has karma-voted: those are keyed by voter username and go
-   * stale on a rename. karma_penalty_* is state set by hand, never a cache, and is left alone.
+   * `active_karma_votes_<targetId>` of everyone this user has karma-voted: that value is a
+   * `Record<voterUsername, vote>`, so it goes stale when the voter is renamed. `trial_progress_*`
+   * of those targets is a plain number derived from the votes and is left alone.
+   * karma_penalty_* is state set by hand, never a cache, and is never touched.
    * Returns the keys that actually existed.
    */
   public async evictKarmaCaches(userId: number, asVoter = false): Promise<string[]> {
@@ -194,7 +196,7 @@ export default class UserManager {
     ]
     if (asVoter) {
       for (const targetId of await this.voteRepository.getKarmaVoteTargetIds(userId)) {
-        keys.push(`active_karma_votes_${targetId}`, `trial_progress_${targetId}`)
+        keys.push(`active_karma_votes_${targetId}`)
       }
     }
     const deleted: string[] = []
