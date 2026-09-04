@@ -39,7 +39,10 @@ describe('in-memory session eviction', () => {
     expect(evictSessionFromMemory('sess-b')).toBe(true)
     expect(evictSessionFromMemory('sess-b')).toBe(false)
     expect(sessionMemoryStats()).toMatchObject({ sessions: 1, users: 1 })
-    expect(evictSessionsFromMemory(6)).toBe(1)
+    expect(evictSessionFromMemory('sess-c')).toBe(true)
+    // the last session of a user takes the index entry with it, so `users` does not over-count
+    expect(sessionMemoryStats()).toMatchObject({ sessions: 0, users: 0 })
+    expect(evictSessionsFromMemory(6)).toBe(0)
   })
 
   test('sessions created through the login path are indexed and evictable by user id', async () => {

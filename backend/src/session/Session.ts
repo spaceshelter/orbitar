@@ -25,6 +25,9 @@ function deleteFromUserSessions(userId: number, sessionId: string) {
   const userSessions = sessionsByUser.get(userId)
   if (userSessions) {
     userSessions.delete(sessionId)
+    if (userSessions.size === 0) {
+      sessionsByUser.delete(userId)
+    }
   }
 }
 
