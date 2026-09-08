@@ -53,6 +53,13 @@ export type WebPushSubscribeRequest = {
 }
 export type WebPushSubscribeResponse = Record<string, unknown>
 
+export type NotificationsMuteRequest = {
+  userId: number
+}
+export type NotificationsMuteResponse = {
+  muted: boolean
+}
+
 export default class NotificationsAPI {
   api: APIBase
 
@@ -90,6 +97,18 @@ export default class NotificationsAPI {
   subscribe(subscription: PushSubscription): Promise<WebPushSubscribeResponse> {
     return this.api.request<WebPushSubscribeRequest, WebPushSubscribeResponse>('/notifications/subscribe', {
       subscription: subscription.toJSON(),
+    })
+  }
+
+  muteUser(userId: number): Promise<NotificationsMuteResponse> {
+    return this.api.request<NotificationsMuteRequest, NotificationsMuteResponse>('/notifications/mute', {
+      userId,
+    })
+  }
+
+  unmuteUser(userId: number): Promise<NotificationsMuteResponse> {
+    return this.api.request<NotificationsMuteRequest, NotificationsMuteResponse>('/notifications/unmute', {
+      userId,
     })
   }
 }

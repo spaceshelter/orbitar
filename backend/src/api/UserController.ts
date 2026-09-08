@@ -5,6 +5,7 @@ import { Logger } from 'winston'
 
 import { VoteFeedFilterTimeoutError } from '../db/repositories/VoteFeedReadRepository'
 import InviteManager from '../managers/InviteManager'
+import NotificationManager from '../managers/NotificationManager'
 import OAuth2Manager from '../managers/OAuth2Manager'
 import PostManager from '../managers/PostManager'
 import { UserGender, UserRatingBySubsite } from '../managers/types/UserInfo'
@@ -49,6 +50,7 @@ export default class UserController {
   private readonly logger: Logger
   private readonly enricher: Enricher
   private readonly oauthManager: OAuth2Manager
+  private readonly notificationManager: NotificationManager
 
   constructor(
     enricher: Enricher,
@@ -58,6 +60,7 @@ export default class UserController {
     inviteManager: InviteManager,
     oauth: OAuth2MiddlewareGenerator,
     oauthManager: OAuth2Manager,
+    notificationManager: NotificationManager,
     logger: Logger,
   ) {
     this.enricher = enricher
@@ -66,6 +69,7 @@ export default class UserController {
     this.voteFeedManager = voteFeedManager
     this.inviteManager = inviteManager
     this.oauthManager = oauthManager
+    this.notificationManager = notificationManager
     this.logger = logger
 
     const profileSchema = Joi.object<UserProfileRequest>({
@@ -227,6 +231,7 @@ export default class UserController {
       const numberOfComments = (await this.postManager.getUserCommentsTotal(profileInfo.id, '')) || 0
       const visitedDaysAgo = await this.userManager.getUserVisitedDaysAgo(profileInfo.id)
       const hasOwnApps = await this.oauthManager.hasOwnApps(profileInfo.id)
+      const isMuted = profileInfo.id !== userId && (await this.notificationManager.isMuted(userId, profileInfo.id))
 
       // if viewing own profile, get available invites number
       let numberOfInvitesAvailable = 0
@@ -265,6 +270,7 @@ export default class UserController {
         publicKey,
         visitedDaysAgo,
         hasOwnApps,
+        isMuted,
       })
     } catch (error) {
       this.logger.error('Could not get user profile', { username })

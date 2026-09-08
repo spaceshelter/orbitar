@@ -10,6 +10,14 @@ import { sharedReadRateLimiter } from './RateLimiters'
 import { NotificationEntity } from './types/entities/NotificationEntity'
 import { NotificationsListRequest, NotificationsListResponse } from './types/requests/NotificationsList'
 import {
+  NotificationsMutedRequest,
+  NotificationsMutedResponse,
+  NotificationsMuteRequest,
+  NotificationsMuteResponse,
+  NotificationsUnmuteRequest,
+  NotificationsUnmuteResponse,
+} from './types/requests/NotificationsMute'
+import {
   NotificationsHideRequest,
   NotificationsHideResponse,
   NotificationsReadRequest,
@@ -25,6 +33,10 @@ import { NotificationsSubscribeRequest, NotificationsSubscribeResponse } from '.
 
 const hideAllSchema = Joi.object<NotificationsHideAllRequest>({
   readOnly: Joi.boolean(),
+})
+
+const muteSchema = Joi.object<NotificationsMuteRequest>({
+  userId: Joi.number().integer().positive().required(),
 })
 
 export default class NotificationsController {
@@ -71,6 +83,23 @@ export default class NotificationsController {
     )
     this.router.post('/notifications/subscribe', sharedReadRateLimiter, oauth('подписка на уведомления'), (req, res) =>
       this.subscribe(req, res),
+    )
+    this.router.post(
+      '/notifications/mute',
+      sharedReadRateLimiter,
+      oauth('отключать уведомления от пользователя'),
+      validate(muteSchema),
+      (req, res) => this.mute(req, res),
+    )
+    this.router.post(
+      '/notifications/unmute',
+      sharedReadRateLimiter,
+      oauth('включать уведомления от пользователя'),
+      validate(muteSchema),
+      (req, res) => this.unmute(req, res),
+    )
+    this.router.post('/notifications/muted', sharedReadRateLimiter, oauth('список отключённых'), (req, res) =>
+      this.muted(req, res),
     )
   }
 
@@ -184,5 +213,64 @@ export default class NotificationsController {
     await this.userManager.setPushSubscription(request.session.data.userId, request.body.subscription)
 
     response.status(200).success({})
+  }
+
+  async mute(request: APIRequest<NotificationsMuteRequest>, response: APIResponse<NotificationsMuteResponse>) {
+    if (!request.session.data.userId) {
+      return response.authRequired()
+    }
+
+    const userId = request.session.data.userId
+    const { userId: mutedUserId } = request.body
+
+    if (mutedUserId === userId) {
+      return response.error('mute-self', 'You cannot mute yourself', 400)
+    }
+
+    try {
+      const target = await this.userManager.getById(mutedUserId)
+      if (!target) {
+        return response.error('user-not-found', 'User not found', 404)
+      }
+
+      await this.notificationManager.muteUser(userId, mutedUserId)
+      return response.success({ muted: true })
+    } catch (err) {
+      this.logger.error('Notifications mute error', { error: err, mutedUserId })
+      return response.error('error', 'Unknown error', 500)
+    }
+  }
+
+  async unmute(request: APIRequest<NotificationsUnmuteRequest>, response: APIResponse<NotificationsUnmuteResponse>) {
+    if (!request.session.data.userId) {
+      return response.authRequired()
+    }
+
+    const userId = request.session.data.userId
+    const { userId: mutedUserId } = request.body
+
+    try {
+      await this.notificationManager.unmuteUser(userId, mutedUserId)
+      return response.success({ muted: false })
+    } catch (err) {
+      this.logger.error('Notifications unmute error', { error: err, mutedUserId })
+      return response.error('error', 'Unknown error', 500)
+    }
+  }
+
+  async muted(request: APIRequest<NotificationsMutedRequest>, response: APIResponse<NotificationsMutedResponse>) {
+    if (!request.session.data.userId) {
+      return response.authRequired()
+    }
+
+    const userId = request.session.data.userId
+
+    try {
+      const users = await this.notificationManager.getMutedUsers(userId)
+      return response.success({ users })
+    } catch (err) {
+      this.logger.error('Notifications muted list error', { error: err })
+      return response.error('error', 'Unknown error', 500)
+    }
   }
 }
