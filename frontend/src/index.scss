@@ -98,6 +98,16 @@ svg#spoiler-mask {
   background-color: var(--fg);
   filter: blur(2px);
   opacity: 0.8;
+  /* hide the text by its own color, not by matching the background: browser
+     "night mode" repaints backgrounds and breaks the match, leaving the text
+     readable under nothing but the 2px blur.
+     children that set their own color (links, irony) never inherit that, so
+     cover them too; scoping to :not(:hover) hands each one its own color back
+     on reveal, without naming any of them here */
+  &:not(:hover),
+  &:not(:hover) * {
+    color: transparent;
+  }
   /* more blur to img video etc */
   & > * {
     filter: url('#spoiler-mask-filter');
