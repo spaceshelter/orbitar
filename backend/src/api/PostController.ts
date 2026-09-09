@@ -5,6 +5,7 @@ import { APIError, AuthenticationError, RateLimitError } from 'openai'
 import { Logger } from 'winston'
 
 import CodeError from '../CodeError'
+import ActivityManager from '../managers/ActivityManager'
 import FeedManager from '../managers/FeedManager'
 import PostManager from '../managers/PostManager'
 import SiteManager from '../managers/SiteManager'
@@ -41,6 +42,7 @@ export default class PostController {
   private readonly userManager: UserManager
   private readonly siteManager: SiteManager
   private readonly translationManager: TranslationManager
+  private readonly activityManager: ActivityManager
   private readonly logger: Logger
   private readonly enricher: Enricher
 
@@ -79,6 +81,7 @@ export default class PostController {
     siteManager: SiteManager,
     userManager: UserManager,
     translationManager: TranslationManager,
+    activityManager: ActivityManager,
     oauth: OAuth2MiddlewareGenerator,
     logger: Logger,
   ) {
@@ -88,6 +91,7 @@ export default class PostController {
     this.siteManager = siteManager
     this.feedManager = feedManager
     this.translationManager = translationManager
+    this.activityManager = activityManager
     this.logger = logger
 
     const getSchema = Joi.object<PostGetRequest>({
@@ -336,6 +340,15 @@ export default class PostController {
         users,
       } = await this.enricher.enrichRawPosts([postInfo])
 
+      const user = await this.userManager.getById(userId)
+      this.activityManager.push({
+        type: 'post:edited',
+        userId,
+        username: user.username,
+        postId: id,
+        site: postInfo.site,
+      })
+
       this.logger.info(`Post edited by #${userId}`, { user_id: userId, post_id: id, format, content, title })
       response.success({ post, users })
     } catch (err) {
@@ -379,6 +392,15 @@ export default class PostController {
       const {
         posts: [post],
       } = await this.enricher.enrichRawPosts([postInfo])
+
+      const user = await this.userManager.getById(userId)
+      this.activityManager.push({
+        type: 'post:created',
+        userId,
+        username: user.username,
+        postId: postInfo.id,
+        site,
+      })
 
       this.logger.info(`Post created by #${userId}`, { user_id: userId, site, format, content, title })
       response.success({ post })
@@ -459,6 +481,14 @@ export default class PostController {
       comment.canEdit = overrideUserId === userId
 
       const users: Record<number, UserEntity> = { [overrideUserId]: await this.userManager.getById(overrideUserId) }
+
+      this.activityManager.push({
+        type: 'comment:created',
+        userId: overrideUserId,
+        username: users[overrideUserId].username,
+        postId,
+        commentId: commentInfo.id,
+      })
 
       this.logger.info(`Comment created by #${overrideUserId} @${users[overrideUserId].username}`, {
         comment: content,
@@ -595,6 +625,15 @@ export default class PostController {
         allComments: [comment],
         users,
       } = await this.enricher.enrichRawComments([commentInfo], {}, format, () => false)
+
+      const user = await this.userManager.getById(userId)
+      this.activityManager.push({
+        type: 'comment:edited',
+        userId,
+        username: user.username,
+        postId: commentInfo.post,
+        commentId,
+      })
 
       response.success({
         comment: comment,

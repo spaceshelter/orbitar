@@ -4,6 +4,7 @@ import Joi from 'joi'
 import { RateLimiterMemory } from 'rate-limiter-flexible'
 import { Logger } from 'winston'
 
+import ActivityManager from '../managers/ActivityManager'
 import UserManager from '../managers/UserManager'
 import VoteManager from '../managers/VoteManager'
 import { APIRequest, APIResponse, validate } from './ApiMiddleware'
@@ -17,6 +18,7 @@ export default class VoteController {
   public router = Router()
   private voteManager: VoteManager
   private userManager: UserManager
+  private activityManager: ActivityManager
   private logger: Logger
 
   // 60 requests per two minutes
@@ -36,9 +38,16 @@ export default class VoteController {
     duration: 60 * 60, // Per hour
   })
 
-  constructor(voteManager: VoteManager, userManager: UserManager, oauth: OAuth2MiddlewareGenerator, logger: Logger) {
+  constructor(
+    voteManager: VoteManager,
+    userManager: UserManager,
+    activityManager: ActivityManager,
+    oauth: OAuth2MiddlewareGenerator,
+    logger: Logger,
+  ) {
     this.voteManager = voteManager
     this.userManager = userManager
+    this.activityManager = activityManager
     this.logger = logger
 
     const voteSchema = Joi.object<VoteSetRequest>({
@@ -114,6 +123,33 @@ export default class VoteController {
         user_id: userId,
         item_id: id,
       })
+
+      const user = await this.userManager.getById(userId)
+      const activityType =
+        type === 'post'
+          ? ('vote:post' as const)
+          : type === 'comment'
+            ? ('vote:comment' as const)
+            : ('vote:karma' as const)
+
+      const activityEntry: Parameters<ActivityManager['push']>[0] = {
+        type: activityType,
+        userId,
+        username: user.username,
+        vote: rangedVote,
+      }
+
+      if (type === 'post') {
+        activityEntry.postId = id
+      } else if (type === 'comment') {
+        activityEntry.commentId = id
+      } else if (type === 'user') {
+        const targetUserInfo = await this.userManager.getById(id)
+        activityEntry.targetUserId = id
+        activityEntry.targetUsername = targetUserInfo?.username ?? null
+      }
+
+      this.activityManager.push(activityEntry)
 
       response.success({
         type: type,
