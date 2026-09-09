@@ -149,11 +149,14 @@ export default class UserManager {
 
   async checkPassword(username: string, password: string): Promise<UserInfo | false> {
     const user = await this.getByUsername(username)
+    if (!user) {
+      return false
+    }
     if (this.isBarmaliniUser(user.id)) {
       return this.isValidBarmaliniPassword(password) ? user : false
     }
 
-    const passwordHash = user && (await this.userRepository.getPasswordHashByUserId(user.id))
+    const passwordHash = await this.userRepository.getPasswordHashByUserId(user.id)
 
     if (!passwordHash || !(await bcrypt.compare(password, passwordHash))) {
       return false
