@@ -92,6 +92,13 @@ type FeedWatchResponse = {
   sites: Record<string, SiteInfo>
 }
 
+type FeedBookmarkRequest = {
+  filter?: string
+  page?: number
+  perpage?: number
+  format?: ContentFormat
+}
+
 type PostGetRequest = {
   id: number
   format?: ContentFormat
@@ -264,6 +271,15 @@ export default class PostAPI {
   feedWatch(all: boolean, page: number, perpage: number): Promise<FeedWatchResponse> {
     return this.api.request<FeedWatchRequest, FeedWatchResponse>('/feed/watch', {
       filter: all ? 'all' : 'new',
+      page,
+      perpage,
+      format: 'html',
+    })
+  }
+
+  feedBookmark(filter: string | undefined, page: number, perpage: number): Promise<FeedWatchResponse> {
+    return this.api.request<FeedBookmarkRequest, FeedWatchResponse>('/feed/bookmark', {
+      filter,
       page,
       perpage,
       format: 'html',
