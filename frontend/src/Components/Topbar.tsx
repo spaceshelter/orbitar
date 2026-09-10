@@ -63,6 +63,7 @@ export const Topbar = observer((props: TopbarProps) => {
         </div>
 
         <div className={styles.right}>
+          <OnlineCount />
           <SearchButton />
           <WatchButton />
           <NotificationsButton onClick={handleNotificationsToggle} />
@@ -130,6 +131,17 @@ const WatchButton = observer(() => {
       <HotIcon />
       <span className={styles.label}>{watchCommentsCount > 0 ? watchCommentsCount : ''}</span>
     </ReloadingLink>
+  )
+})
+
+const OnlineCount = observer(() => {
+  const { onlineCount } = useAppState()
+  if (!onlineCount) return null
+  return (
+    <div className={styles.onlineCount} title='Пользователей онлайн'>
+      <span className='i i-user' />
+      {onlineCount}
+    </div>
   )
 })
 

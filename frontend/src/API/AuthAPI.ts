@@ -12,6 +12,7 @@ export type StatusResponse = {
     unread: number
     visible: number
   }
+  onlineCount: number
 }
 
 type SignInRequest = Record<string, unknown>

@@ -71,6 +71,9 @@ export class AppState {
     @observable
     watchCommentsCount = 0;
 
+    @observable
+    onlineCount = 0;
+
     @observable.struct
     subscriptions: SiteWithUserInfo[] | undefined = undefined;
 
@@ -175,6 +178,11 @@ export class AppState {
     @action
     setWatchCommentsCount(value: number) {
         this.watchCommentsCount = value;
+    }
+
+    @action
+    setOnlineCount(value: number) {
+        this.onlineCount = value;
     }
 
     @action

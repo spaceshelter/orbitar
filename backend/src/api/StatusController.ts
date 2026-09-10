@@ -44,9 +44,17 @@ export default class StatusController {
         return response.error('error', 'Unknown error', 500)
       }
 
+      let onlineCount = 0
+      try {
+        onlineCount = await this.userManager.trackOnline(userId)
+      } catch (err) {
+        this.logger.warn('Failed to track online users', { error: err })
+      }
+
       return response.success({
         user,
         ...stats,
+        onlineCount,
       })
     } catch (err) {
       this.logger.error(err)
