@@ -212,6 +212,7 @@ export const UserPage = observer(() => {
               bio_html={profile.profile.bio_html}
             />
           )}
+          {isProfile && profile.numberOfPosts > 0 && <UserProfilePosts username={user.username} preview />}
           {isPosts && <UserProfilePosts username={user.username} />}
           {isComments && <UserProfileComments username={user.username} />}
           {isInvites && <UserProfileInvites username={user.username} onInvitesChange={handleInvitesChange} />}

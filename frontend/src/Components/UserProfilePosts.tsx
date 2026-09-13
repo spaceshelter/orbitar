@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 
 import { useFeed } from '../API/use/useFeed'
 import { useAPI } from '../AppState/AppState'
@@ -14,13 +14,14 @@ import feedStyles from '../Pages/FeedPage.module.scss'
 
 type UserProfilePostsProps = {
   username: string
+  preview?: boolean
 }
 
 export default function UserProfilePosts(props: UserProfilePostsProps) {
   const api = useAPI()
   const [searchParams] = useSearchParams()
-  const perpage = 20
-  const page = parseInt(searchParams.get('page') || '1')
+  const perpage = props.preview ? 1 : 20
+  const page = props.preview ? 1 : parseInt(searchParams.get('page') || '1')
   const { filter, defaultFilter, filterInputRef, handleFilterChange } = useProfileFeedFilter((value) => ({
     filter: value,
   }))
@@ -32,11 +33,11 @@ export default function UserProfilePosts(props: UserProfilePostsProps) {
     perpage,
     undefined,
     undefined,
-    filter || '',
+    props.preview ? '' : filter || '',
   )
   useEffect(() => {
-    window.scrollTo({ top: 0 })
-  }, [page])
+    if (!props.preview) window.scrollTo({ top: 0 })
+  }, [page, props.preview])
 
   const params = filter ? { filter } : undefined
 
@@ -63,16 +64,24 @@ export default function UserProfilePosts(props: UserProfilePostsProps) {
 
   return (
     <div className={styles.container}>
-      <div className={feedStyles.filter}>
-        <input
-          ref={filterInputRef}
-          onKeyUp={handleFilterChange}
-          onChange={handleFilterChange}
-          placeholder={'фильтровать'}
-          type='search'
-          defaultValue={defaultFilter}
-        />
-      </div>
+      {props.preview && (
+        <div className={feedStyles.profilePreviewHeader}>
+          <b>Последний пост</b>
+          <Link to={`/u/${props.username}/posts`}>Все посты</Link>
+        </div>
+      )}
+      {!props.preview && (
+        <div className={feedStyles.filter}>
+          <input
+            ref={filterInputRef}
+            onKeyUp={handleFilterChange}
+            onChange={handleFilterChange}
+            placeholder={'фильтровать'}
+            type='search'
+            defaultValue={defaultFilter}
+          />
+        </div>
+      )}
       <div className={styles.feed}>
         {loading ? (
           <div className={styles.loading}></div>
@@ -93,9 +102,11 @@ export default function UserProfilePosts(props: UserProfilePostsProps) {
                 ))}
               </div>
             )}
-            <div className={styles.paginatorContainer}>
-              <Paginator page={page} pages={pages} base={`/u/${props.username}/posts`} queryStringParams={params} />
-            </div>
+            {!props.preview && (
+              <div className={styles.paginatorContainer}>
+                <Paginator page={page} pages={pages} base={`/u/${props.username}/posts`} queryStringParams={params} />
+              </div>
+            )}
           </>
         )}
       </div>
