@@ -12,6 +12,7 @@ import { toCommentEntity, toPostEntity, toUserEntity } from '../api/utils/entiti
 import VoteFeedReadRepository, {
   VoteFeedCursor,
   VoteFeedDirection,
+  VoteFeedFilterOptions,
   VoteFeedReference,
 } from '../db/repositories/VoteFeedReadRepository'
 import PostManager from './PostManager'
@@ -29,6 +30,35 @@ const VOTE_FEED_ENTITY_TYPES = ['post', 'comment', 'user']
 // visual budget in getCompactText. Sliced over code points so a surrogate pair
 // (emoji) on the boundary is not cut in half.
 const RECEIVED_LABEL_MAX_CHARS = 72
+
+const toPlainText = (html: string) =>
+  stripHtml(html || '')
+    .result.replace(/\s+/g, ' ')
+    .trim()
+
+// A visible ellipsis keeps a cut-off quote from reading as the whole comment.
+const truncateLabel = (text: string) => {
+  const characters = [...text]
+  return characters.length <= RECEIVED_LABEL_MAX_CHARS
+    ? text
+    : `${characters.slice(0, RECEIVED_LABEL_MAX_CHARS).join('').trimEnd()}…`
+}
+
+// A comment made only of media strips to nothing; name what it is so the feed
+// never shows an empty quote.
+const toCommentExcerpt = (html: string) => {
+  const text = toPlainText(html)
+  if (text) {
+    return truncateLabel(text)
+  }
+  if (/<(video|iframe)\b/i.test(html || '')) {
+    return '[видео]'
+  }
+  if (/<img\b/i.test(html || '')) {
+    return '[картинка]'
+  }
+  return ''
+}
 
 export const encodeVoteFeedCursor = (ref: VoteFeedReference): string =>
   Buffer.from(
@@ -102,6 +132,7 @@ export default class VoteFeedManager {
     filter: string,
     cursor: string | undefined,
     perpage: number,
+    options: VoteFeedFilterOptions = {},
   ): Promise<UserVotesResponse> {
     const decodedCursor = cursor ? decodeVoteFeedCursor(cursor) : undefined
     const refs = await this.voteFeedReadRepository.getPageReferences(
@@ -110,6 +141,7 @@ export default class VoteFeedManager {
       filter,
       decodedCursor,
       perpage + 1,
+      options,
     )
     const hasMore = refs.length > perpage
     const pageRefs = hasMore ? refs.slice(0, perpage) : refs
@@ -188,16 +220,11 @@ export default class VoteFeedManager {
     const posts: Record<number, ReceivedPostSubject> = {}
     for (const row of postRows) {
       const title = row.title?.trim()
-      const label =
-        title ||
-        stripHtml(row.html || '')
-          .result.replace(/\s+/g, ' ')
-          .trim()
       const id = Number(row.id)
       posts[id] = {
         id,
         site: row.site,
-        label: [...label].slice(0, RECEIVED_LABEL_MAX_CHARS).join(''),
+        label: truncateLabel(title || toPlainText(row.html)),
         rating: Number(row.rating),
       }
     }
@@ -210,6 +237,7 @@ export default class VoteFeedManager {
         postId: Number(row.postId),
         site: row.site,
         postTitle: postTitle || undefined,
+        excerpt: toCommentExcerpt(row.html),
         rating: Number(row.rating),
       }
     }

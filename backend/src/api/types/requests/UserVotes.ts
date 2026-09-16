@@ -9,6 +9,10 @@ export type UserVotesRequest = {
   filter?: string
   cursor?: string
   perpage?: number
+  type?: 'post' | 'comment' | 'user'
+  sign?: 'minus'
+  // Lower bound on voted_at; Joi validation converts the ISO string to a Date.
+  since?: Date
 }
 
 export type UserVoteFeedEventRef = {
@@ -33,6 +37,7 @@ export type ReceivedCommentSubject = {
   postId: number
   site: string
   postTitle?: string
+  excerpt: string
   rating: number
 }
 
