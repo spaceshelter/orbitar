@@ -1,0 +1,372 @@
+// Nested under .filters/.card so these win over the UI kit button variants that
+// they restyle (both are single-class selectors otherwise).
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 22px;
+
+  .dropdownButton {
+    align-items: center;
+    background: var(--dim2);
+    border-radius: 8px;
+    color: var(--fg);
+    font-size: 14px;
+    font-weight: normal;
+    gap: 6px;
+    height: auto;
+    opacity: 1;
+    padding: 7px 14px;
+
+    &:hover {
+      background: var(--dim3);
+      color: var(--fgHard);
+    }
+  }
+
+  .menuItem {
+    border-radius: 6px;
+    color: var(--fgMedium);
+    font-size: 14px;
+    font-weight: normal;
+    height: auto;
+    justify-content: flex-start;
+    padding: 5px 10px;
+    text-align: left;
+    width: 100%;
+
+    &:hover {
+      background: var(--dim2);
+      color: var(--fg);
+    }
+  }
+
+  .menuItemActive {
+    background: var(--dim3);
+    color: var(--fg);
+  }
+}
+
+.dropdown {
+  position: relative;
+}
+
+.caret {
+  color: var(--fgSofter);
+  font-size: 12px;
+}
+
+.menu {
+  background: var(--elevated);
+  border-radius: 8px;
+  box-shadow: 0 10px 24px var(--shadow);
+  display: flex;
+  flex-direction: column;
+  left: 0;
+  min-width: 200px;
+  padding: 4px;
+  position: absolute;
+  top: calc(100% + 4px);
+  z-index: 10;
+}
+
+.menuHeading {
+  color: var(--fgSofter);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  padding: 6px 10px 2px;
+  text-transform: uppercase;
+}
+
+.menuSeparator {
+  background: var(--fgAlmostInvisible);
+  height: 1px;
+  margin: 4px 2px;
+}
+
+.section {
+  margin-bottom: 28px;
+}
+
+.sectionHeader {
+  align-items: baseline;
+  border-bottom: 1px solid var(--fgAlmostInvisible);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding-bottom: 6px;
+}
+
+.sectionTitle {
+  color: var(--fgMedium);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.sectionSum {
+  white-space: nowrap;
+}
+
+.sectionNote {
+  color: var(--fgSofter);
+  font-size: 12px;
+  margin: 6px 0 12px;
+}
+
+.meta {
+  color: var(--fgSofter);
+  font-size: 12px;
+  margin-left: 6px;
+}
+
+.value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.plus {
+  color: var(--primary);
+}
+
+.minus {
+  color: var(--danger);
+}
+
+.zero {
+  color: var(--fgSofter);
+}
+
+.big {
+  font-size: 17px;
+}
+
+.small {
+  font-size: 12px;
+}
+
+.card {
+  background: var(--dim2);
+  border-radius: 8px;
+  margin-bottom: 10px;
+  padding: 12px 14px;
+
+  // UI kit buttons are flex boxes with padding; these read as inline links.
+  .moreVoters,
+  .expandCard {
+    background: none;
+    color: var(--link);
+    display: inline-block;
+    font-size: 13px;
+    font-weight: normal;
+    height: auto;
+    min-width: 0;
+    padding: 0;
+    vertical-align: baseline;
+
+    &:hover {
+      background: none;
+      color: var(--linkHover);
+    }
+  }
+
+  .expandCard {
+    margin: 6px 0 0 40px;
+  }
+}
+
+.sectionNote + .card,
+.sectionHeader + .card {
+  margin-top: 12px;
+}
+
+.cardHeader {
+  align-items: baseline;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.cardTitleWrap {
+  min-width: 0;
+}
+
+.cardTitle,
+.cardTitlePlain {
+  color: var(--fgHard);
+  font-weight: 600;
+}
+
+.site {
+  border: 1px solid var(--fgAlmostInvisible);
+  border-radius: 4px;
+  color: var(--fgSofter);
+  font-size: 12px;
+  margin-left: 8px;
+  padding: 0 5px;
+}
+
+.cardSum {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.subject {
+  border-top: 1px solid var(--fgAlmostInvisible);
+  display: flex;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.subjectValue {
+  flex: 0 0 30px;
+  text-align: right;
+}
+
+.subjectMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.karmaRow .subjectMain {
+  padding-left: 40px;
+}
+
+.quote {
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+
+// Same affordance as internal links inside content: the arrow turns 90° when the
+// post or comment is expanded in place.
+.expandArrow {
+  color: var(--fgMedium);
+  cursor: pointer;
+  display: inline-block;
+  font-size: 18px;
+  line-height: 1;
+  margin-right: 2px;
+  transform-origin: 40% center;
+  transition: transform 0.25s;
+  user-select: none;
+  vertical-align: middle;
+
+  &:hover {
+    color: var(--primaryHover);
+  }
+}
+
+.expandArrowOpen {
+  transform: rotate(90deg);
+}
+
+.subjectKind {
+  color: var(--fgSofter);
+  font-style: italic;
+}
+
+.voters {
+  color: var(--fgSofter);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.voter {
+  color: var(--link);
+}
+
+.chronology {
+  columns: 2;
+  font-size: 13px;
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+
+  li {
+    padding: 1px 0;
+  }
+
+  @media (max-width: 599px) {
+    columns: 1;
+  }
+}
+
+.time {
+  color: var(--fgSofter);
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+.expandedContent {
+  margin-top: 8px;
+}
+
+.tail {
+  border: 1px dashed var(--fgAlmostInvisible);
+  border-radius: 8px;
+  color: var(--fgSofter);
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 8px 14px;
+}
+
+.tailHead {
+  color: var(--fgMedium);
+}
+
+.tailItem {
+  white-space: nowrap;
+}
+
+.tailLink {
+  color: var(--fg);
+}
+
+.empty {
+  background: var(--dim2);
+  border-radius: 8px;
+  color: var(--fgMedium);
+  font-size: 14px;
+  padding: 16px;
+}
+
+.footer,
+.empty {
+  .widenButton {
+    background: var(--dim2);
+    border-radius: 8px;
+    color: var(--fg);
+    font-size: 14px;
+    font-weight: normal;
+    height: auto;
+    opacity: 1;
+    padding: 8px 18px;
+  }
+}
+
+.empty .widenButton {
+  background: var(--dim3);
+  margin-top: 10px;
+}
+
+.footer {
+  display: flex;
+  justify-content: center;
+  margin: 6px 0 24px;
+}
+
+.srOnly {
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}

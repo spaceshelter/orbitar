@@ -74,6 +74,19 @@ type UserVotesRequest = {
   filter?: string
   cursor?: string
   perpage?: number
+  type?: ReceivedVoteType
+  sign?: 'minus'
+  since?: string
+}
+
+export type ReceivedVoteType = 'post' | 'comment' | 'user'
+
+export type ReceivedVotesQuery = {
+  type?: ReceivedVoteType
+  sign?: 'minus'
+  since?: Date
+  cursor?: string
+  perpage: number
 }
 
 type UserVoteFeedEventEntity<VotedAt> = {
@@ -100,6 +113,7 @@ export type ReceivedCommentSubject = {
   postId: number
   site: string
   postTitle?: string
+  excerpt: string
   rating: number
 }
 
@@ -254,16 +268,15 @@ export default class UserAPI {
   }
 
   async userVotes(
-    direction: UserVotesDirection,
     filter: string,
     cursor: string | undefined,
     perpage: number,
     signal?: AbortSignal,
-  ): Promise<UserVotesResult> {
+  ): Promise<UserVotesMineResult> {
     const result = await this.api.request<UserVotesRequest, UserVotesResponse>(
       '/user/votes',
       {
-        direction,
+        direction: 'mine',
         cursor,
         perpage,
         filter,
@@ -271,23 +284,8 @@ export default class UserAPI {
       undefined,
       signal,
     )
-
-    const base = {
-      events: result.events.map((event) => ({
-        ...event,
-        votedAt: this.api.fixDate(new Date(event.votedAt)),
-      })),
-      users: result.users,
-      hasMore: result.hasMore,
-      nextCursor: result.nextCursor,
-    }
-
-    if (result.direction === 'received') {
-      return {
-        ...base,
-        direction: 'received',
-        subjects: result.subjects,
-      }
+    if (result.direction !== 'mine') {
+      throw new Error('Unexpected vote feed direction')
     }
 
     const posts: Record<number, PostInfo> = {}
@@ -296,13 +294,50 @@ export default class UserAPI {
     })
 
     return {
-      ...base,
+      events: result.events.map((event) => ({
+        ...event,
+        votedAt: this.api.fixDate(new Date(event.votedAt)),
+      })),
+      users: result.users,
+      hasMore: result.hasMore,
+      nextCursor: result.nextCursor,
       direction: 'mine',
       entities: {
         posts,
         comments: this.postAPIHelper.fixCommentsRecords(result.entities.comments, result.users),
         parentComments: this.postAPIHelper.fixCommentsRecords(result.entities.parentComments, result.users),
       },
+    }
+  }
+
+  async receivedVotes(query: ReceivedVotesQuery, signal?: AbortSignal): Promise<UserVotesReceivedResult> {
+    const result = await this.api.request<UserVotesRequest, UserVotesResponse>(
+      '/user/votes',
+      {
+        direction: 'received',
+        type: query.type,
+        sign: query.sign,
+        since: query.since?.toISOString(),
+        cursor: query.cursor,
+        perpage: query.perpage,
+      },
+      undefined,
+      signal,
+    )
+    if (result.direction !== 'received') {
+      throw new Error('Unexpected vote feed direction')
+    }
+
+    return {
+      direction: 'received',
+      events: result.events.map((event) => ({
+        ...event,
+        votedAt: this.api.fixDate(new Date(event.votedAt)),
+      })),
+      users: result.users,
+      subjects: result.subjects,
+      hasMore: result.hasMore,
+      nextCursor: result.nextCursor,
     }
   }
 
