@@ -182,7 +182,7 @@ describe('VoteFeedManager.getVoteFeed', () => {
 
     const result = await manager.getVoteFeed(123, 'mine', '', undefined, 2)
 
-    expect(voteFeedReadRepository.getPageReferences).toHaveBeenCalledWith(123, 'mine', '', undefined, 3)
+    expect(voteFeedReadRepository.getPageReferences).toHaveBeenCalledWith(123, 'mine', '', undefined, 3, {})
     expect(postManager.getPostsByIds).toHaveBeenCalledWith([11, 10], 123)
     expect(result.events).toHaveLength(2)
     expect(result.hasMore).toBe(true)
@@ -208,6 +208,7 @@ describe('VoteFeedManager.getVoteFeed', () => {
       'abc',
       { votedAt: new Date('2026-05-11T10:00:00.000Z'), type: 'post', entityId: 99, voterId: 301 },
       21,
+      {},
     )
   })
 
@@ -312,7 +313,8 @@ describe('VoteFeedManager.getVoteFeed', () => {
       label: expect.stringMatching(/^heavy/),
       rating: 9,
     })
-    expect(result.subjects.posts[10].label.length).toBeLessThanOrEqual(72)
+    expect([...result.subjects.posts[10].label]).toHaveLength(72)
+    expect(result.subjects.posts[10].label).toMatch(/heavy…$/)
     expect(voteFeedReadRepository.getReceivedPostSubjects).toHaveBeenCalledWith([10])
     expect(postManager.getPostsByIds).not.toHaveBeenCalled()
     expect(postManager.getCommentsByIds).not.toHaveBeenCalled()
@@ -320,14 +322,21 @@ describe('VoteFeedManager.getVoteFeed', () => {
     expect(Buffer.byteLength(JSON.stringify(result))).toBeLessThan(25_000)
   })
 
-  test('hydrates compact received comments with their post title', async () => {
+  test('hydrates compact received comments with their post title and a plain-text excerpt', async () => {
     const ref = makeRef({ type: 'comment', entityId: 55, postId: 77 })
     const { manager, voteFeedReadRepository } = createManager({
       voteFeedReadRepository: {
         getPageReferences: jest.fn().mockResolvedValue([ref]),
-        getReceivedCommentSubjects: jest
-          .fn()
-          .mockResolvedValue([{ id: 55, postId: 77, site: 'main', postTitle: 'Parent post', rating: 2 }]),
+        getReceivedCommentSubjects: jest.fn().mockResolvedValue([
+          {
+            id: 55,
+            postId: 77,
+            site: 'main',
+            postTitle: 'Parent post',
+            html: '<p>Хорошее <b>уточнение</b>,\n   спасибо.</p>',
+            rating: 2,
+          },
+        ]),
       },
     })
 
@@ -343,7 +352,54 @@ describe('VoteFeedManager.getVoteFeed', () => {
       postId: 77,
       site: 'main',
       postTitle: 'Parent post',
+      excerpt: 'Хорошее уточнение, спасибо.',
       rating: 2,
+    })
+  })
+
+  test('cuts received comment excerpts at 72 code points with an ellipsis and names media-only comments', async () => {
+    const refs = [
+      makeRef({ type: 'comment', entityId: 1, postId: 77 }),
+      makeRef({ type: 'comment', entityId: 2, postId: 77 }),
+      makeRef({ type: 'comment', entityId: 3, postId: 77 }),
+    ]
+    const longText = `${'😀'.repeat(71)}абв`
+    const subject = (id: number, html: string) => ({ id, postId: 77, site: 'main', postTitle: 'P', html, rating: 1 })
+    const { manager } = createManager({
+      voteFeedReadRepository: {
+        getPageReferences: jest.fn().mockResolvedValue(refs),
+        getReceivedCommentSubjects: jest
+          .fn()
+          .mockResolvedValue([
+            subject(1, `<p>${longText}</p>`),
+            subject(2, '<p><img src="https://example.com/cat.jpg"></p>'),
+            subject(3, '<div><video src="https://example.com/cat.mp4"></video></div>'),
+          ]),
+      },
+    })
+
+    const result = await manager.getVoteFeed(123, 'received', '', undefined, 20)
+    if (result.direction !== 'received') {
+      throw new Error('expected received response')
+    }
+
+    expect(result.subjects.comments[1].excerpt).toBe(`${'😀'.repeat(71)}а…`)
+    expect(result.subjects.comments[2].excerpt).toBe('[картинка]')
+    expect(result.subjects.comments[3].excerpt).toBe('[видео]')
+  })
+
+  test('passes type, sign and time-bound filters through to the reference query', async () => {
+    const since = new Date('2026-09-02T00:00:00.000Z')
+    const { manager, voteFeedReadRepository } = createManager({
+      voteFeedReadRepository: { getPageReferences: jest.fn().mockResolvedValue([]) },
+    })
+
+    await manager.getVoteFeed(123, 'received', '', undefined, 200, { types: ['comment'], sign: 'minus', since })
+
+    expect(voteFeedReadRepository.getPageReferences).toHaveBeenCalledWith(123, 'received', '', undefined, 201, {
+      types: ['comment'],
+      sign: 'minus',
+      since,
     })
   })
 

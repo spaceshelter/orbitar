@@ -3,7 +3,7 @@ import rateLimit from 'express-rate-limit'
 import Joi from 'joi'
 import { Logger } from 'winston'
 
-import { VoteFeedFilterTimeoutError } from '../db/repositories/VoteFeedReadRepository'
+import { VoteFeedFilterOptions, VoteFeedFilterTimeoutError } from '../db/repositories/VoteFeedReadRepository'
 import InviteManager from '../managers/InviteManager'
 import OAuth2Manager from '../managers/OAuth2Manager'
 import PostManager from '../managers/PostManager'
@@ -82,7 +82,16 @@ export default class UserController {
       direction: Joi.valid('mine', 'received').required(),
       filter: Joi.string().max(120).allow(null, ''),
       cursor: Joi.string().max(255).allow(null, ''),
-      perpage: Joi.number().integer().min(1).max(50).default(20),
+      // Received subjects are compact, so a period loads in a few large pages;
+      // mine pages hydrate full posts and comments and stay small.
+      perpage: Joi.number()
+        .integer()
+        .min(1)
+        .default(20)
+        .when('direction', { is: 'received', then: Joi.number().max(200), otherwise: Joi.number().max(50) }),
+      type: Joi.valid('post', 'comment', 'user'),
+      sign: Joi.valid('minus'),
+      since: Joi.date().iso(),
     })
 
     const bioSchema = Joi.object<UserSaveBioRequest>({
@@ -380,7 +389,17 @@ export default class UserController {
     }
 
     const userId = request.session.data.userId
-    const { direction, cursor, perpage, filter } = request.body
+    const { direction, cursor, perpage, filter, type, sign, since } = request.body
+    const filterOptions: VoteFeedFilterOptions = {}
+    if (type) {
+      filterOptions.types = [type]
+    }
+    if (sign) {
+      filterOptions.sign = sign
+    }
+    if (since) {
+      filterOptions.since = new Date(since)
+    }
 
     try {
       // Barmalini is a shared rotating credential, and anonymization reassigns the
@@ -397,6 +416,7 @@ export default class UserController {
         filter || '',
         cursor || undefined,
         perpage || 20,
+        filterOptions,
       )
       return response.success(result)
     } catch (error) {
