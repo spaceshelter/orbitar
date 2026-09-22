@@ -123,6 +123,41 @@ test('URL extraction', () => {
   expect(urlRegex.exec('https://i.imgur.com/LEv7f25.mp4')[0]).toEqual('https://i.imgur.com/LEv7f25.mp4')
 })
 
+test('URL extraction: balanced parentheses in the resource path', () => {
+  // balanced parens are part of the url: wikipedia disambiguation titles, DOI/PII identifiers
+  urlRegex.lastIndex = 0
+  expect(urlRegex.exec('https://en.wikipedia.org/wiki/Hill_Valley_(Back_to_the_Future)')[0]).toEqual(
+    'https://en.wikipedia.org/wiki/Hill_Valley_(Back_to_the_Future)',
+  )
+  urlRegex.lastIndex = 0
+  expect(urlRegex.exec('https://www.cell.com/neuron/fulltext/S0896-6273(21)00423-2')[0]).toEqual(
+    'https://www.cell.com/neuron/fulltext/S0896-6273(21)00423-2',
+  )
+  urlRegex.lastIndex = 0
+  expect(urlRegex.exec('http://foo.com/blah_(wikipedia)_blah#cite-1')[0]).toEqual(
+    'http://foo.com/blah_(wikipedia)_blah#cite-1',
+  )
+  urlRegex.lastIndex = 0
+  expect(urlRegex.exec('http://foo.com/(something)?after=parens')[0]).toEqual('http://foo.com/(something)?after=parens')
+
+  // ...but a url wrapped in prose parentheses still stops before the closing one,
+  // even when its own path ends with a parenthesised group
+  urlRegex.lastIndex = 0
+  expect(urlRegex.exec('see (http://test.com/a) after')[0]).toEqual('http://test.com/a')
+  urlRegex.lastIndex = 0
+  expect(urlRegex.exec('(https://ru.wikipedia.org/wiki/Test_(meaning)) tail')[0]).toEqual(
+    'https://ru.wikipedia.org/wiki/Test_(meaning)',
+  )
+
+  // an unbalanced opening paren is not consumed
+  urlRegex.lastIndex = 0
+  expect(urlRegex.exec('http://test.com/foo(bar')[0]).toEqual('http://test.com/foo')
+
+  // only one nesting level is supported, same as other linkifiers
+  urlRegex.lastIndex = 0
+  expect(urlRegex.exec('http://example.com/x_(y_(z))')[0]).toEqual('http://example.com/x_')
+})
+
 test('mention extraction', () => {
   // baseline
   mentionsRegex.lastIndex = 0
