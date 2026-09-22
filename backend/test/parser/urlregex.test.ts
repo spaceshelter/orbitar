@@ -179,6 +179,22 @@ test('mention extraction', () => {
   mentionsRegex.lastIndex = 0
   expect(mentionsRegex.exec('[@test]')[0]).toEqual('@test')
 
+  // ...but a slash is a path separator, not a separator between words: a
+  // mention may not start inside a URL path (`orbitar.space/@test` is a
+  // profile URL, not a mention of `test`).
+  mentionsRegex.lastIndex = 0
+  expect(mentionsRegex.test('orbitar.space/@test')).toBe(false)
+
+  mentionsRegex.lastIndex = 0
+  expect(mentionsRegex.test('docs/@test for details')).toBe(false)
+
+  mentionsRegex.lastIndex = 0
+  expect(mentionsRegex.test('/@test')).toBe(false)
+
+  // the slash is the only added exclusion: one space away it still matches
+  mentionsRegex.lastIndex = 0
+  expect(mentionsRegex.exec('orbitar.space/ @test')[0]).toEqual('@test')
+
   // cyrillic
   mentionsRegex.lastIndex = 0
   expect(mentionsRegex.exec('@тест')[0]).toEqual('@тест')

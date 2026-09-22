@@ -111,7 +111,12 @@ const urlPath = '(?:\\([^\\s()]*\\)|[^\\s.,:;!()\\[\\]{}]|[.,:;!]+\\b)*'
 
 export const urlRegex = new RegExp('\\b' + getRegex(urlPath), 'gi')
 export const urlRegexExact = new RegExp('^' + getRegex() + '$', 'i')
-export const mentionsRegex = new RegExp('\\B@([a-zа-я0-9_-]+)', 'gi')
+// A mention may not begin inside a URL path. `\B` before `@` is true whenever the
+// preceding character is not a word character -- `/` included -- so a scheme-less
+// URL such as `orbitar.space/@user` had its `@` consumed and the handle re-linked
+// to /u/user, destroying the URL and notifying whoever the path segment named.
+// For the literal `@`, `\B` is exactly `(?<!\w)`; `/` is the added exclusion.
+export const mentionsRegex = new RegExp('(?<![\\w/])@([a-zа-я0-9_-]+)', 'gi')
 
 export function escapeRegExp(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
