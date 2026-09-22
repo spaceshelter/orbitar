@@ -166,6 +166,28 @@ test('unwrap nested links', () => {
   )
 })
 
+test('parentheses in autolinked url', () => {
+  // a bare url whose path contains balanced parens must be linked whole
+  expect(p.parse('https://en.wikipedia.org/wiki/Hill_Valley_(Back_to_the_Future)').text).toEqual(
+    '<a href="https://en.wikipedia.org/wiki/Hill_Valley_(Back_to_the_Future)" target="_blank">https://en.wikipedia.org/wiki/Hill_Valley_(Back_to_the_Future)</a>',
+  )
+
+  // an explicit A tag whose text is the same url: the inner autolink replaces the
+  // wrapper (see 'unwrap nested links'), so it has to reproduce the whole url
+  expect(
+    p.parse(
+      '<a href="https://en.wikipedia.org/wiki/Hill_Valley_(Back_to_the_Future)">https://en.wikipedia.org/wiki/Hill_Valley_(Back_to_the_Future)</a>',
+    ).text,
+  ).toEqual(
+    '<a href="https://en.wikipedia.org/wiki/Hill_Valley_(Back_to_the_Future)" target="_blank">https://en.wikipedia.org/wiki/Hill_Valley_(Back_to_the_Future)</a>',
+  )
+
+  // a url wrapped in prose parens still stops before the closing one
+  expect(p.parse('(https://en.wikipedia.org/wiki/Delorean) etc').text).toEqual(
+    '(<a href="https://en.wikipedia.org/wiki/Delorean" target="_blank">https://en.wikipedia.org/wiki/Delorean</a>) etc',
+  )
+})
+
 test('mentions', () => {
   // `<a href="${encodeURI(`/u/${token.data}`)}" target="_blank" class="mention">${htmlEscape(token.data)}</a>`;
 

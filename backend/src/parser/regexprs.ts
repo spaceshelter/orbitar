@@ -97,7 +97,19 @@ function getRegex(path = '\\S*') {
   )
 }
 
-export const urlRegex = new RegExp('\\b' + getRegex('(?:[^\\s.,:;!()\\[\\]{}]|[.,:;!]+\\b)*'), 'gi')
+// Resource-path atom for URL *extraction* from free text. Three alternatives, in order:
+//  1. `\(...\)` — a balanced parenthesised run, so that URLs which legitimately contain
+//     parentheses survive (Wikipedia disambiguation titles, DOI/PII identifiers).
+//     Only one nesting level is supported, which matches what other linkifiers do.
+//  2. any character that is neither whitespace, sentence punctuation nor a bracket;
+//  3. a run of `.,:;!` that is still followed by a word boundary, i.e. punctuation
+//     *inside* the URL but not trailing it.
+// Alternative 1 must come first, and it deliberately cannot span whitespace or an inner
+// paren, so a URL wrapped in prose parens — `(http://test.com?q=1)` — still stops before
+// the closing one.
+const urlPath = '(?:\\([^\\s()]*\\)|[^\\s.,:;!()\\[\\]{}]|[.,:;!]+\\b)*'
+
+export const urlRegex = new RegExp('\\b' + getRegex(urlPath), 'gi')
 export const urlRegexExact = new RegExp('^' + getRegex() + '$', 'i')
 export const mentionsRegex = new RegExp('\\B@([a-zа-я0-9_-]+)', 'gi')
 
