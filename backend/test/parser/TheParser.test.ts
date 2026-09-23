@@ -221,6 +221,25 @@ test('mentions', () => {
     '<a href="/u/test" target="_blank" class="mention">test</a>',
     ['test'],
   ])
+  // A scheme-less URL is not matched by urlRegex, so its path reached the mention
+  // extractor: the `@` was eaten, the handle was re-linked to /u/<handle> and the
+  // remaining text no longer formed a URL. The empty `mentions` array is the other
+  // half of the fix -- that array is what sendMentionNotify() iterates over.
+  expect(parse('orbitar.space/@test')).toEqual(['orbitar.space/@test', []])
+
+  expect(parse('see docs/@test for details')).toEqual(['see docs/@test for details', []])
+
+  // a URL with a scheme was always consumed by urlRegex first -- unchanged
+  expect(parse('https://orbitar.space/@test')).toEqual([
+    '<a href="https://orbitar.space/@test" target="_blank">https://orbitar.space/@test</a>',
+    [],
+  ])
+
+  // positive control: the same handle one space away is still a mention
+  expect(parse('orbitar.space/ @test')).toEqual([
+    'orbitar.space/ <a href="/u/test" target="_blank" class="mention">test</a>',
+    ['test'],
+  ])
 })
 
 test('parse html comment', () => {
