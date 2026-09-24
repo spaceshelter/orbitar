@@ -4,6 +4,7 @@ import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom'
 import Button from '@ui/Button'
 
 import { usePost } from '../API/use/usePost'
+import { useReadProgress } from '../API/use/useReadProgress'
 import { useAppState } from '../AppState/AppState'
 import CommentComponent from '../Components/CommentComponent'
 import { CreateCommentComponentRestricted } from '../Components/CreateCommentComponent'
@@ -23,11 +24,10 @@ export default function PostPage() {
   const { site, userInfo } = useAppState()
   const containerRef = useRef<HTMLDivElement>(null)
   const unreadOnly = search.get('new') !== null
-  const { post, comments, anonymousUser, postComment, editComment, editPost, error, reload, updatePost } = usePost(
-    site,
-    postId,
-    unreadOnly,
-  )
+  const { post, comments, rawComments, anonymousUser, postComment, editComment, editPost, error, reload, updatePost } =
+    usePost(site, postId, unreadOnly)
+
+  useReadProgress(postId, rawComments, comments, containerRef)
 
   useEffect(() => {
     let docTitle = `Пост #${postId}`
