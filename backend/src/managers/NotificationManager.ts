@@ -191,7 +191,7 @@ export default class NotificationManager {
 
   async sendNotification(forUserId: number, notification: UserNotification) {
     const json = JSON.stringify(notification)
-    await this.notificationsRepository.addNotification(
+    const notificationId = await this.notificationsRepository.addNotification(
       forUserId,
       notification.type,
       notification.source.byUserId,
@@ -202,7 +202,7 @@ export default class NotificationManager {
     this.userCache.deleteUserStatsCache(forUserId)
 
     // send push in background
-    this.sendWebPush(forUserId, notification)
+    this.sendWebPush(forUserId, notification, notificationId)
       .then()
       .catch((err) => this.logger.error('Failed to send web push', { forUserId, err }))
   }
@@ -264,30 +264,97 @@ export default class NotificationManager {
   async setRead(forUserId: number, notificationId: number) {
     await this.notificationsRepository.setRead(forUserId, notificationId)
     this.userCache.deleteUserStatsCache(forUserId)
+
+    // send push to close notification on all devices
+    this.sendCloseNotificationPush(forUserId, notificationId)
+      .then()
+      .catch((err) => this.logger.error('Failed to send close notification push', { forUserId, notificationId, err }))
   }
 
   async setReadAndHidden(userId: number, hideId: number) {
     await this.notificationsRepository.setReadAndHidden(userId, hideId)
     this.userCache.deleteUserStatsCache(userId)
+
+    // send push to close notification on all devices
+    this.sendCloseNotificationPush(userId, hideId)
+      .then()
+      .catch((err) => this.logger.error('Failed to send close notification push', { userId, hideId, err }))
   }
 
   async setReadForPost(forUserId: number, postId: number) {
+    // Get notifications for this post before marking them as read
+    const allNotifications = await this.notificationsRepository.getNotifications(forUserId)
+    const postNotifications = allNotifications.filter((n) => {
+      try {
+        const data = JSON.parse(n.data) as UserNotification
+        return data.source.postId === postId && n.read === 0
+      } catch {
+        return false
+      }
+    })
+
     const res = await this.notificationsRepository.setReadForPost(forUserId, postId)
     this.userCache.deleteUserStatsCache(forUserId)
+
+    // send push to close notifications for this post on all devices
+    if (res) {
+      postNotifications.forEach((notification) => {
+        this.sendCloseNotificationPush(forUserId, notification.notification_id)
+          .then()
+          .catch((err) =>
+            this.logger.error('Failed to send close notification push', {
+              forUserId,
+              notificationId: notification.notification_id,
+              err,
+            }),
+          )
+      })
+    }
+
     return res
   }
 
   async setReadAll(forUserId: number) {
+    const notifications = await this.notificationsRepository.getNotifications(forUserId)
     await this.notificationsRepository.setReadAll(forUserId)
     this.userCache.deleteUserStatsCache(forUserId)
+
+    // send push to close all notifications on all devices
+    notifications.forEach((notification) => {
+      this.sendCloseNotificationPush(forUserId, notification.notification_id)
+        .then()
+        .catch((err) =>
+          this.logger.error('Failed to send close notification push', {
+            forUserId,
+            notificationId: notification.notification_id,
+            err,
+          }),
+        )
+    })
   }
 
   async setHiddenAll(forUserId: number, readOnly: boolean) {
+    const notifications = await this.notificationsRepository.getNotifications(forUserId)
     await this.notificationsRepository.setReadAndHideAll(forUserId, readOnly)
     this.userCache.deleteUserStatsCache(forUserId)
+
+    // send push to close notifications on all devices
+    notifications
+      .filter((notification) => !readOnly || notification.read === 1)
+      .forEach((notification) => {
+        this.sendCloseNotificationPush(forUserId, notification.notification_id)
+          .then()
+          .catch((err) =>
+            this.logger.error('Failed to send close notification push', {
+              forUserId,
+              notificationId: notification.notification_id,
+              err,
+            }),
+          )
+      })
   }
 
-  private async sendWebPush(forUserId: number, notification: UserNotification) {
+  private async sendWebPush(forUserId: number, notification: UserNotification, notificationId: number) {
     if (!this.couldSendWebPush) {
       this.logger.debug('Skipping web push - VAPID not configured')
       return
@@ -338,7 +405,37 @@ export default class NotificationManager {
 
     for (const subscription of subscriptions) {
       try {
-        await webpush.sendNotification(subscription, JSON.stringify({ title, body: commentText, icon, url }))
+        await webpush.sendNotification(
+          subscription,
+          JSON.stringify({ title, body: commentText, icon, url, notificationId }),
+        )
+      } catch (err) {
+        const badCodes = [404, 410]
+        if (badCodes.includes(err.statusCode)) {
+          this.logger.info(`Bad subscription for user ${forUserId} with auth ${subscription.keys.auth},
+                    got ${err.statusCode} status code, removing subscription`)
+          await this.webPushRepository.resetSubscription(forUserId, subscription.keys.auth)
+        } else if (err.statusCode < 500) {
+          this.logger.error(err)
+        }
+      }
+    }
+  }
+
+  private async sendCloseNotificationPush(forUserId: number, notificationId: number) {
+    if (!this.couldSendWebPush) {
+      this.logger.debug('Skipping close notification push - VAPID not configured')
+      return
+    }
+
+    const subscriptions = await this.webPushRepository.getSubscriptions(forUserId)
+    if (!subscriptions.length) {
+      return
+    }
+
+    for (const subscription of subscriptions) {
+      try {
+        await webpush.sendNotification(subscription, JSON.stringify({ closeNotificationId: notificationId }))
       } catch (err) {
         const badCodes = [404, 410]
         if (badCodes.includes(err.statusCode)) {
