@@ -64,6 +64,21 @@ const PARALLAX_PX = 22
 const LIGHT: [number, number, number] = normalize3([-0.35, -0.62, -0.7])
 const LIGHT_2D: [number, number] = normalize2([-0.45, -0.9])
 const PLANET_FILL_RGB: RGB = [6, 9, 26]
+const SUNSET_RGB: RGB = [255, 150, 95]
+// atmosphere color by height above the limb (css px)
+const SUNRISE_STOPS: [number, RGB][] = [
+  [0, [255, 135, 80]],
+  [4, [255, 200, 150]],
+  [8, [235, 240, 245]],
+  [16, [140, 210, 245]],
+  [40, [70, 130, 225]],
+  [90, [45, 75, 175]],
+]
+const HAZE_STOPS: [number, RGB][] = [
+  [0, [110, 200, 235]],
+  [30, [80, 150, 225]],
+  [90, [50, 85, 185]],
+]
 const PLANET_FILL = `rgb(${PLANET_FILL_RGB.join(',')})`
 
 const STAR_COLORS: RGB[] = [
@@ -335,7 +350,7 @@ export function startCosmicScene(canvas: HTMLCanvasElement): () => void {
       ppx - LIGHT_2D[0] * r * 0.4,
       ppy - LIGHT_2D[1] * r * 0.4,
     )
-    rim.addColorStop(0, 'rgba(220,245,255,0.85)')
+    rim.addColorStop(0, 'rgba(255,232,205,0.85)')
     rim.addColorStop(0.35, 'rgba(140,210,240,0.35)')
     rim.addColorStop(1, 'rgba(120,190,230,0)')
     ctx.globalCompositeOperation = 'lighter'
@@ -575,6 +590,8 @@ function makePlanet(layout: Layout, rand: Rand) {
   const simg = sctx.createImageData(cw, ch)
   const gimg = gctx.createImageData(cw, ch)
   const noise = makeNoise(rand)
+  // 3 texels, in planet-radius units
+  const edge = 3 / (scale * r)
 
   const dark: RGB = [5, 8, 20]
   const bandA: RGB = [26, 44, 80]
@@ -585,11 +602,18 @@ function makePlanet(layout: Layout, rand: Rand) {
     const py = y0 + j / scale
     for (let i = 0; i < cw; i++) {
       const px = x0 + i / scale
-      const dx = (px - cx) / r
-      const dy = (py - cy) / r
-      const d2 = dx * dx + dy * dy
+      const rawDx = (px - cx) / r
+      const rawDy = (py - cy) / r
+      const d = Math.sqrt(rawDx * rawDx + rawDy * rawDy)
       const k = (i + j * cw) * 4
-      if (d2 <= 1.0) {
+      // Both textures are half resolution and get upscaled with bilinear filtering,
+      // so each extends a few texels past the limb (surface clamped to the limb,
+      // glow at full limb strength). Otherwise texels on the wrong side of the edge
+      // bleed in as a dark stair-step pattern along the limb.
+      if (d <= 1 + edge) {
+        const dx = d > 1 ? rawDx / d : rawDx
+        const dy = d > 1 ? rawDy / d : rawDy
+        const d2 = Math.min(1, d * d)
         const nz = Math.sqrt(1 - d2)
         const lambert = Math.max(0, dx * LIGHT[0] + dy * LIGHT[1] + nz * LIGHT[2])
         const lit = 0.02 + 0.9 * Math.pow(lambert, 4)
@@ -600,23 +624,35 @@ function makePlanet(layout: Layout, rand: Rand) {
         const bands = noise.fbm(lon * 1.2, lat * 26 + warp * 3, 4)
         const t = smoothstep(0.3, 0.75, bands)
         const fresnel = Math.pow(1 - nz, 3)
-        const rimLight = fresnel * (0.25 + 0.75 * Math.max(0, dx * LIGHT_2D[0] + dy * LIGHT_2D[1]))
+        const facing = Math.max(0, dx * LIGHT_2D[0] + dy * LIGHT_2D[1])
+        const rimLight = fresnel * (0.25 + 0.75 * facing)
+        // the terminator near the sunrise point is lit through the most air: reddened
+        // (only a thin band inside the limb: the whole visible cap is near-limb)
+        const limbDistance = (1 - Math.sqrt(d2)) * r
+        const rimColor = mixRGB(atmo, SUNSET_RGB, Math.pow(facing, 10) * Math.exp(-limbDistance / 10) * 0.8)
         const fade = py > fadeFrom ? smoothstep(fadeFrom, y1, py) : 0
         for (let c = 0; c < 3; c++) {
           const base = lerp(bandA[c], bandB[c], t)
-          const color = dark[c] + base * lit + atmo[c] * rimLight * 0.7
+          const color = dark[c] + base * lit + rimColor[c] * rimLight * 0.7
           simg.data[k + c] = clamp255(lerp(color, PLANET_FILL_RGB[c], fade))
         }
         simg.data[k + 3] = 255
-      } else {
-        const dist = (Math.sqrt(d2) - 1) * r
-        const dirX = dx / Math.sqrt(d2)
-        const dirY = dy / Math.sqrt(d2)
-        const light = 0.2 + 0.8 * Math.pow(Math.max(0, dirX * LIGHT_2D[0] + dirY * LIGHT_2D[1]), 2)
-        const g = (Math.exp(-dist / 9) * 0.55 + Math.exp(-dist / 55) * 0.2) * light
-        gimg.data[k] = clamp255(atmo[0] * g)
-        gimg.data[k + 1] = clamp255(atmo[1] * g)
-        gimg.data[k + 2] = clamp255(atmo[2] * g)
+      }
+      if (d >= 1 - edge) {
+        const dist = Math.max(0, (d - 1) * r)
+        const dirX = rawDx / d
+        const dirY = rawDy / d
+        const facing = Math.max(0, dirX * LIGHT_2D[0] + dirY * LIGHT_2D[1])
+        const light = 0.2 + 0.8 * Math.pow(facing, 2)
+        // Rayleigh scattering: the lowest, longest light paths lose their blue, so
+        // near the sunrise point the limb is layered orange -> white -> cyan -> blue
+        const sunward = Math.pow(facing, 8)
+        const color = mixRGB(sampleStops(HAZE_STOPS, dist), sampleStops(SUNRISE_STOPS, dist), sunward)
+        const g =
+          (Math.exp(-dist / 9) * 0.55 + Math.exp(-dist / 55) * 0.2) * light + Math.exp(-dist / 4) * 0.35 * sunward
+        gimg.data[k] = clamp255(color[0] * g)
+        gimg.data[k + 1] = clamp255(color[1] * g)
+        gimg.data[k + 2] = clamp255(color[2] * g)
         gimg.data[k + 3] = 255
       }
     }
@@ -734,6 +770,22 @@ function samplePalette(palette: RGB[], t: number): RGB {
   const a = palette[i]
   const b = palette[i + 1]
   return [lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k)]
+}
+
+function sampleStops(stops: [number, RGB][], x: number): RGB {
+  if (x <= stops[0][0]) return stops[0][1]
+  for (let i = 1; i < stops.length; i++) {
+    if (x <= stops[i][0]) {
+      const [x0, a] = stops[i - 1]
+      const [x1, b] = stops[i]
+      return mixRGB(a, b, (x - x0) / (x1 - x0))
+    }
+  }
+  return stops[stops.length - 1][1]
+}
+
+function mixRGB(a: RGB, b: RGB, t: number): RGB {
+  return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)]
 }
 
 function pickWeighted(weights: number[], r: number): number {
