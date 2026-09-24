@@ -6,6 +6,7 @@ import { Logger } from 'winston'
 
 import CodeError from '../CodeError'
 import { InviteRawWithIssuer } from '../db/types/InviteRaw'
+import ActivityManager from '../managers/ActivityManager'
 import InviteManager from '../managers/InviteManager'
 import UserManager from '../managers/UserManager'
 import { APIRequest, APIResponse, joiPassword, joiUsername, validate } from './ApiMiddleware'
@@ -25,6 +26,7 @@ export default class InviteController {
   public router = Router()
   private inviteManager: InviteManager
   private userManager: UserManager
+  private activityManager: ActivityManager
   private enricher: Enricher
   private logger: Logger
 
@@ -32,11 +34,13 @@ export default class InviteController {
     inviteManager: InviteManager,
     userManager: UserManager,
     enricher: Enricher,
+    activityManager: ActivityManager,
     oauth: OAuth2MiddlewareGenerator,
     logger: Logger,
   ) {
     this.inviteManager = inviteManager
     this.userManager = userManager
+    this.activityManager = activityManager
     this.enricher = enricher
 
     this.logger = logger
@@ -151,6 +155,12 @@ export default class InviteController {
       const passwordHash = await bcrypt.hash(password, 10)
 
       const user = await this.userManager.registerByInvite(code, username, name, email, passwordHash, gender)
+
+      this.activityManager.push({
+        type: 'user:registered',
+        userId: user.id,
+        username: user.username,
+      })
 
       this.logger.info(`Invite ${code} used by #${user.id} @${user.username}`, { invite: code, username })
 

@@ -4,6 +4,7 @@ import Joi from 'joi'
 import { Logger } from 'winston'
 
 import CodeError from '../CodeError'
+import ActivityManager from '../managers/ActivityManager'
 import FeedManager from '../managers/FeedManager'
 import SiteManager from '../managers/SiteManager'
 import UserManager from '../managers/UserManager'
@@ -23,6 +24,7 @@ export default class SiteController {
   private readonly feedManager: FeedManager
   private readonly siteManager: SiteManager
   private readonly userManager: UserManager
+  private readonly activityManager: ActivityManager
   private readonly enricher: Enricher
 
   // 60 per hour
@@ -37,6 +39,7 @@ export default class SiteController {
     feedManager: FeedManager,
     siteManager: SiteManager,
     userManager: UserManager,
+    activityManager: ActivityManager,
     oauth: OAuth2MiddlewareGenerator,
     logger: Logger,
   ) {
@@ -45,6 +48,7 @@ export default class SiteController {
     this.feedManager = feedManager
     this.siteManager = siteManager
     this.userManager = userManager
+    this.activityManager = activityManager
 
     const siteSchema = Joi.object<SiteRequest>({
       site: Joi.string().required(),
@@ -199,6 +203,14 @@ export default class SiteController {
       }
 
       const siteInfo = await this.siteManager.createSite(userId, site, name)
+
+      const user = await this.userManager.getById(userId)
+      this.activityManager.push({
+        type: 'site:created',
+        userId,
+        username: user.username,
+        site,
+      })
 
       response.success({ site: siteInfo })
     } catch (error) {

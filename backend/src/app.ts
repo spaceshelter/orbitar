@@ -9,6 +9,7 @@ import helmet from 'helmet'
 import jsonStringify from 'safe-stable-stringify'
 import winston from 'winston'
 
+import ActivityController from './api/ActivityController'
 import { apiMiddleware } from './api/ApiMiddleware'
 import AuthController from './api/AuthController'
 import FeedController from './api/FeedController'
@@ -41,6 +42,7 @@ import UserRepository from './db/repositories/UserRepository'
 import VoteFeedReadRepository from './db/repositories/VoteFeedReadRepository'
 import VoteRepository from './db/repositories/VoteRepository'
 import WebPushRepository from './db/repositories/WebPushRepository'
+import ActivityManager from './managers/ActivityManager'
 import FeedManager from './managers/FeedManager'
 import InviteManager from './managers/InviteManager'
 import NotificationManager from './managers/NotificationManager'
@@ -199,6 +201,7 @@ const postManager = new PostManager(
 )
 const voteManager = new VoteManager(voteRepository, postManager, userManager, redis.client)
 const searchManager = new SearchManager(userManager, siteManager, logger.child({ service: 'SEARCH' }))
+const activityManager = new ActivityManager(redis.client, logger.child({ service: 'ACTIVITY' }))
 const oauth2Manager = new OAuth2Manager(oauthRepository, userManager, logger.child({ service: 'OAUTH2' }))
 const pollManager = new PollManager(pollRepository, userManager)
 
@@ -218,6 +221,7 @@ const requests = [
     inviteManager,
     userManager,
     apiEnricher,
+    activityManager,
     oauthMiddlewareGenerator,
     logger.child({ service: 'INVITE' }),
   ),
@@ -228,6 +232,7 @@ const requests = [
     siteManager,
     userManager,
     translationManager,
+    activityManager,
     oauthMiddlewareGenerator,
     logger.child({ service: 'POST' }),
   ),
@@ -238,7 +243,13 @@ const requests = [
     oauthMiddlewareGenerator,
     logger.child({ service: 'STATUS' }),
   ),
-  new VoteController(voteManager, userManager, oauthMiddlewareGenerator, logger.child({ service: 'VOTE' })),
+  new VoteController(
+    voteManager,
+    userManager,
+    activityManager,
+    oauthMiddlewareGenerator,
+    logger.child({ service: 'VOTE' }),
+  ),
   new UserController(
     apiEnricher,
     userManager,
@@ -263,6 +274,7 @@ const requests = [
     feedManager,
     siteManager,
     userManager,
+    activityManager,
     oauthMiddlewareGenerator,
     logger.child({ service: 'SITE' }),
   ),
@@ -275,6 +287,7 @@ const requests = [
   new SearchController(userManager, searchManager, oauthMiddlewareGenerator, logger.child({ service: 'SEARCH' })),
   new OAuth2Controller(oauth2Manager, userManager, oauthScopesFilter, app.oauth, logger.child({ service: 'OAUTH2' })),
   new PollController(pollManager, userManager, oauthMiddlewareGenerator, logger.child({ service: 'POLL' })),
+  new ActivityController(activityManager, oauthMiddlewareGenerator, logger.child({ service: 'ACTIVITY' })),
 ]
 
 const filterLog = winston.format((info) => {
