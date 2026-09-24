@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useEffect, useMemo, useRef } from 'react'
+import { createContext, CSSProperties, ReactNode, useContext, useEffect, useMemo, useRef } from 'react'
 
 import rgba from 'color-normalize'
 import colorspace from 'color-space'
@@ -121,6 +121,17 @@ function applyTheme(stylesheet: HTMLStyleElement, toStyle: ThemeStyles, withTran
   } else {
     stylesheet.innerHTML = css
   }
+}
+
+/** Top-level theme colors as CSS custom properties, to pin a subtree to a specific theme. */
+export const themeCssVars = (name: keyof ThemeCollection): CSSProperties => {
+  const vars: Record<string, string> = {}
+  const colors = getThemes()[name].colors
+  for (const key in colors) {
+    const color = colors[key]
+    if (typeof color === 'string') vars[`--${key}`] = color
+  }
+  return vars as CSSProperties
 }
 
 export const getThemes = () => {

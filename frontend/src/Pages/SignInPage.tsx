@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import classNames from 'classnames'
@@ -6,6 +6,8 @@ import { SubmitHandler, useForm } from 'react-hook-form'
 
 import { APIError } from '../API/APIBase'
 import { useAPI } from '../AppState/AppState'
+import CosmicBackground from '../Components/CosmicBackground'
+import { themeCssVars } from '../Theme/ThemeProvider'
 
 import styles from './SignInPage.module.scss'
 
@@ -13,6 +15,9 @@ type SignInForm = {
   username: string
   password: string
 }
+
+// the cosmic backdrop only reads well on dark, so the page ignores the light theme
+const darkThemeVars = themeCssVars('dark')
 
 export default function SignInPage() {
   const api = useAPI()
@@ -23,6 +28,19 @@ export default function SignInPage() {
   const [passwordShown, setPasswordShown] = useState(false)
 
   document.title = 'Вход'
+
+  // the page is a full-screen dark scene: drop the always-on scrollbar gutter
+  // and let native scrollbars/controls render dark
+  useEffect(() => {
+    const root = document.documentElement.style
+    const { overflowY, colorScheme } = root
+    root.overflowY = 'auto'
+    root.colorScheme = 'dark'
+    return () => {
+      root.overflowY = overflowY
+      root.colorScheme = colorScheme
+    }
+  }, [])
 
   const {
     register,
@@ -59,39 +77,42 @@ export default function SignInPage() {
   }
 
   return (
-    <div className={styles.signup}>
-      <h2>Вход</h2>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <label>Юзернейм</label>
-        <input
-          type='text'
-          {...register('username', {
-            required: 'Кто ты без юзернейма?',
-          })}
-        />
-        {errors.username && <p className={styles.error}>{errors.username.message}</p>}
+    <div className={styles.page} style={darkThemeVars}>
+      <CosmicBackground />
+      <div className={styles.signup}>
+        <h2>Вход</h2>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <label>Юзернейм</label>
+          <input
+            type='text'
+            {...register('username', {
+              required: 'Кто ты без юзернейма?',
+            })}
+          />
+          {errors.username && <p className={styles.error}>{errors.username.message}</p>}
 
-        <label>Пароль</label>
-        <input
-          type={passwordShown ? 'text' : 'password'}
-          {...register('password', {
-            required: 'Дальше вы не пройдёте, пока не покажете бумаги',
-          })}
-        />
-        <span
-          className={classNames('i', passwordShown ? 'i-hide' : 'i-eye', styles.togglePass)}
-          onClick={togglePassword}
-        ></span>
+          <label>Пароль</label>
+          <input
+            type={passwordShown ? 'text' : 'password'}
+            {...register('password', {
+              required: 'Дальше вы не пройдёте, пока не покажете бумаги',
+            })}
+          />
+          <span
+            className={classNames('i', passwordShown ? 'i-hide' : 'i-eye', styles.togglePass)}
+            onClick={togglePassword}
+          ></span>
 
-        {errors.password && <p className={styles.error}>{errors.password.message}</p>}
+          {errors.password && <p className={styles.error}>{errors.password.message}</p>}
 
-        <div>
-          <input type='submit' disabled={!isValid || isSigningIn} value='Войти' />
+          <div>
+            <input type='submit' disabled={!isValid || isSigningIn} value='Войти' />
+          </div>
+          {error && <p className={styles.error}>{error}</p>}
+        </form>
+        <div className={styles.resetLink}>
+          <Link to='/forgot-password'>Забыли пароль?</Link>
         </div>
-        {error && <p className={styles.error}>{error}</p>}
-      </form>
-      <div className={styles.resetLink}>
-        <Link to='/forgot-password'>Забыли пароль?</Link>
       </div>
     </div>
   )
