@@ -115,6 +115,16 @@ export default class PostAPIHelper {
     }
   }
 
+  async feedBookmark(filter: string | undefined, page: number, perPage: number): Promise<FeedSubscriptionsResult> {
+    const response = await this.postAPI.feedBookmark(filter, page, perPage)
+    return {
+      posts: this.fixPosts(response.posts, response.users),
+      sites: response.sites,
+      total: response.total,
+      sorting: FeedSorting.postCommentedAt,
+    }
+  }
+
   fixPosts(posts: PostEntity[], users: Record<number, UserInfo>): PostInfo[] {
     return posts.map((post) => {
       const p: PostInfo = { ...post } as unknown as PostInfo

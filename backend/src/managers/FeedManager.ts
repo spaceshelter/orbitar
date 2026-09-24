@@ -264,6 +264,21 @@ export default class FeedManager {
     return await this.postRepository.getWatchPostsTotal(forUserId, all)
   }
 
+  async getBookmarkFeed(
+    forUserId: number,
+    page: number = 0,
+    perpage: number = 10,
+    filter = '',
+    format: ContentFormat = 'html',
+  ): Promise<PostInfo[]> {
+    const rawPosts = await this.postRepository.getBookmarkPosts(forUserId, page, perpage, filter)
+    return await this.convertRawPosts(forUserId, rawPosts, format)
+  }
+
+  async getBookmarkTotal(forUserId: number, filter = ''): Promise<number> {
+    return await this.postRepository.getBookmarkPostsTotal(forUserId, filter)
+  }
+
   async getSiteFeed(
     forUserId: number,
     siteId: number,
