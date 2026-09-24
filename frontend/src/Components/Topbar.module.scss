@@ -25,6 +25,19 @@
   .right {
     padding-right: 28px;
   }
+  .onlineCount {
+    display: flex;
+    align-items: center;
+    color: var(--fg);
+    gap: 4px;
+    cursor: default;
+    font-size: 16px;
+
+    span {
+      font-size: 20px;
+      color: var(--primary);
+    }
+  }
 
   //:global{ }
 

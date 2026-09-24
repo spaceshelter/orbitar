@@ -109,6 +109,7 @@ export default class APIHelper {
     this.appState.setWatchCommentsCount(status.watch.comments)
     this.appState.setUnreadNotificationsCount(status.notifications.unread)
     this.appState.setVisibleNotificationsCount(status.notifications.visible)
+    this.appState.setOnlineCount(status.onlineCount)
     this.appState.setAppLoadingState(AppLoadingState.authorized)
     this.appState.setLatestHash(fingerprint || '')
   }
