@@ -53,6 +53,30 @@ export default class PostManager {
     this.parser = parser
   }
 
+  /** Drops the cached post/comment counters of one user, or of everyone when no user is given. */
+  public clearContentNumberCache(userId?: number): { posts: number; comments: number } {
+    if (userId === undefined) {
+      const removed = this.contentNumberCacheStats()
+      this.numberOfPostsCache = {}
+      this.numberOfCommentsCache = {}
+      return removed
+    }
+    const removed = {
+      posts: userId in this.numberOfPostsCache ? 1 : 0,
+      comments: userId in this.numberOfCommentsCache ? 1 : 0,
+    }
+    delete this.numberOfPostsCache[userId]
+    delete this.numberOfCommentsCache[userId]
+    return removed
+  }
+
+  public contentNumberCacheStats(): { posts: number; comments: number } {
+    return {
+      posts: Object.keys(this.numberOfPostsCache).length,
+      comments: Object.keys(this.numberOfCommentsCache).length,
+    }
+  }
+
   async getPost(postId: number, forUserId: number, format: ContentFormat): Promise<PostInfo | undefined> {
     const [rawPost] = await this.postRepository.getPostsWithUserData([postId], forUserId)
     return (await this.feedManager.convertRawPosts(forUserId, [rawPost], format))[0]

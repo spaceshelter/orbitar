@@ -1,5 +1,7 @@
 type Config = {
   port: number
+  /** loopback-only admin server (see admin/AdminServer.ts), 0 disables it */
+  adminPort: number
   logLevel: string
   mysql: MysqlConfig
   redis: RedisConfig
@@ -65,6 +67,7 @@ export type OAuthConfig = {
 
 export const config: Config = {
   port: parseInt(process.env.SERVER_PORT) || 5001,
+  adminPort: process.env.ADMIN_PORT === undefined ? 5002 : parseInt(process.env.ADMIN_PORT) || 0,
   logLevel: process.env.LOG_LEVEL || 'info',
   mysql: {
     host: process.env.MYSQL_HOST || 'mysql',

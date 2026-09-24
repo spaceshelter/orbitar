@@ -151,7 +151,6 @@ export default class UserController {
       oauth('читать инфо о карме пользователя'),
       (req, res) => this.karma(req, res),
     )
-    this.router.post('/user/clearCache', validate(profileSchema), (req, res) => this.clearCache(req, res))
     this.router.post(
       '/user/restrictions',
       sharedReadRateLimiter,
@@ -476,27 +475,6 @@ export default class UserController {
       })
     } catch (error) {
       this.logger.error('Could not get user restrictions', { username, error })
-      return response.error('error', `Could not get restrictions for user ${username}`, 500)
-    }
-  }
-
-  async clearCache(request: APIRequest<UserProfileRequest>, response: APIResponse<void>) {
-    if (!request.session.data.userId) {
-      return response.authRequired()
-    }
-    const { username } = request.body
-
-    try {
-      const profile = await this.userManager.getByUsername(username)
-
-      if (!profile) {
-        return response.error(ERROR_CODES.NOT_FOUND, 'User not found', 404)
-      }
-
-      this.userManager.clearCache(profile.id)
-      this.userManager.clearUserRestrictionsCache(profile.id)
-    } catch (error) {
-      this.logger.error('Something went wrong', { username, error })
       return response.error('error', `Could not get restrictions for user ${username}`, 500)
     }
   }
