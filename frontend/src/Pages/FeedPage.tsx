@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import { Link, useMatch, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useMatch, useSearchParams } from 'react-router-dom'
 
 import classNames from 'classnames'
 import { observer } from 'mobx-react-lite'
+import useLocalStorage from 'use-local-storage'
 
 import { APIError } from '../API/APIBase'
 import { FeedType, useFeed } from '../API/use/useFeed'
@@ -20,22 +21,32 @@ const FeedPage = observer(() => {
   const api = useAPI()
 
   const [search] = useSearchParams()
-
-  const matchRoutePosts = !!useMatch('/posts')
-  const matchRouteAll = !!useMatch('/all')
+  const [savedRoute] = useLocalStorage('homeButtonRoute', '/')
 
   let feedType: FeedType = 'site'
-  let baseRoute = '/'
+  let baseRoute = useLocation().pathname
+
+  if (!!useMatch('/') && savedRoute) {
+    baseRoute = savedRoute
+  }
+
   if (site === 'main') {
-    if (matchRoutePosts) {
-      feedType = 'site'
-      baseRoute = '/posts'
-    } else if (matchRouteAll) {
-      feedType = 'all'
-      baseRoute = '/all'
-    } else {
-      feedType = 'subscriptions'
-      baseRoute = '/'
+    switch (baseRoute) {
+      case '/all':
+        feedType = 'all'
+        break
+
+      case '/':
+        if (!savedRoute || savedRoute === '/') {
+          baseRoute = '/subscriptions'
+          feedType = 'subscriptions'
+          break
+        }
+        break
+
+      case '/subscriptions':
+        feedType = 'subscriptions'
+        break
     }
   } else {
     baseRoute = '/s/' + site
@@ -102,7 +113,11 @@ const FeedPage = observer(() => {
           )}
           {siteInfo?.site === 'main' && (
             <div className={styles.feedControls}>
-              <ReloadingLink to='/' className={feedType === 'subscriptions' ? styles.active : ''} replace={true}>
+              <ReloadingLink
+                to='/subscriptions'
+                className={feedType === 'subscriptions' ? styles.active : ''}
+                replace={true}
+              >
                 подписки
               </ReloadingLink>
               •
