@@ -8,12 +8,20 @@ export type PostGetRequest = {
   id: number
   format?: ContentFormat
   noComments?: boolean
+  commentIndex?: boolean
+}
+
+export type PostCommentIndexEntry = {
+  id: number
+  parentComment?: number
+  isNew?: boolean
 }
 
 export type PostGetResponse = {
   post: PostEntity
   site: SiteWithUserInfoEntity
   comments: CommentEntity[]
+  commentIndex?: PostCommentIndexEntry[]
   users: Record<number, UserEntity>
   anonymousUser?: UserEntity
 }

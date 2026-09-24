@@ -438,7 +438,8 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
   {
     "id": "number",
     "format": "string",
-    "noComments": "boolean"
+    "noComments": "boolean",
+    "commentIndex": "boolean"
   }
   ```
 
@@ -451,11 +452,14 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
       "post": "object",
       "site": "object",
       "comments": "array",
+      "commentIndex": "array (only when requested)",
       "users": "object",
       "anonymousUser": "object"
     }
   }
   ```
+
+Set `commentIndex: true` to return an ordered, lightweight array of `{id, parentComment?, isNew?}` entries instead of comment bodies. The index includes every comment in the post and reflects the user's unread state when the request starts. `noComments` and existing requests without `commentIndex` retain their previous behavior. Use the index to select a bounded page of IDs for `/post/get-comments`.
 
 - **Example**:
 
@@ -464,6 +468,24 @@ Many endpoints have rate limits. When a rate limit is exceeded, the server will 
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer your_access_token" \
     -d '{"id": 12345, "format": "html", "noComments": false}'
+  ```
+
+#### Get Comment Bodies by ID
+- **POST** `https://api.orbitar.space/api/v1/post/get-comments`
+- **Description**: Load up to 25 comments from one post, without loading their descendants
+- **Authentication**: Required; same post access restrictions as `/post/get`
+- **Request body**: `{"postId": 12345, "ids": [5678, 5679]}` (1–25 unique positive IDs)
+- **Response payload**: `{"comments": [/* flat comment entities */], "users": {/* referenced users */}}`
+
+IDs belonging to another post are omitted. Clients should use the `isNew` values from the index as their initial unread snapshot because read state can change between requests.
+
+- **Example**:
+
+  ```bash
+  curl -X POST https://api.orbitar.space/api/v1/post/get-comments \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer your_access_token" \
+    -d '{"postId": 12345, "ids": [5678, 5679]}'
   ```
 
 #### Create Post
