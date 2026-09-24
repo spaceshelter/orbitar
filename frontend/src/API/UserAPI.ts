@@ -29,6 +29,7 @@ type UserProfileResponse = {
   publicKey: string
   hasOwnApps: boolean
   visitedDaysAgo: number
+  isMuted: boolean
 }
 type UserProfilePostsRequest = {
   username: string
