@@ -5,6 +5,12 @@ import { escapeLike } from '../../utils/MySqlUtils'
 import DB from '../DB'
 import { CommentRaw, CommentRawWithUserData } from '../types/PostRaw'
 
+export type CommentIndexRow = {
+  comment_id: number
+  parent_comment_id: number | null
+  author_id: number
+}
+
 export default class CommentRepository {
   private db: DB
 
@@ -63,6 +69,30 @@ export default class CommentRepository {
         post_id: postId,
         user_id: forUserId,
       },
+    )
+  }
+
+  async getPostCommentIndex(postId: number): Promise<CommentIndexRow[]> {
+    return this.db.query(
+      `select comment_id, parent_comment_id, author_id
+       from comments where post_id = :post_id order by comment_id`,
+      { post_id: postId },
+    )
+  }
+
+  async getPostCommentsByIds(
+    postId: number,
+    forUserId: number,
+    commentIds: number[],
+  ): Promise<CommentRawWithUserData[]> {
+    if (!commentIds.length) {
+      return []
+    }
+    return this.db.fetchAll<CommentRawWithUserData>(
+      `select c.*, v.vote from comments c
+       left join comment_votes v on (v.comment_id = c.comment_id and v.voter_id = :user_id)
+       where c.post_id = :post_id and c.comment_id in (:comment_ids)`,
+      { post_id: postId, user_id: forUserId, comment_ids: commentIds },
     )
   }
 
