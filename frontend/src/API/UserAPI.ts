@@ -108,14 +108,20 @@ export type ReceivedPostSubject = {
   rating: number
 }
 
-export type ReceivedCommentSubject = {
+type ReceivedCommentSubjectEntity = {
   id: number
   postId: number
   site: string
+  // The post's title, or the start of its text when it has none.
   postTitle?: string
+  // Plain-text start of the comment; empty when it has no text.
   excerpt: string
+  media?: 'image' | 'video'
+  created: string
   rating: number
 }
+
+export type ReceivedCommentSubject = Omit<ReceivedCommentSubjectEntity, 'created'> & { created: Date }
 
 type UserVotesResponseBase = {
   events: UserVoteFeedEventRefEntity[]
@@ -137,7 +143,7 @@ type UserVotesReceivedResponse = UserVotesResponseBase & {
   direction: 'received'
   subjects: {
     posts: Record<number, ReceivedPostSubject>
-    comments: Record<number, ReceivedCommentSubject>
+    comments: Record<number, ReceivedCommentSubjectEntity>
   }
 }
 
@@ -328,6 +334,11 @@ export default class UserAPI {
       throw new Error('Unexpected vote feed direction')
     }
 
+    const comments: Record<number, ReceivedCommentSubject> = {}
+    Object.values(result.subjects.comments).forEach((comment) => {
+      comments[comment.id] = { ...comment, created: this.api.fixDate(new Date(comment.created)) }
+    })
+
     return {
       direction: 'received',
       events: result.events.map((event) => ({
@@ -335,7 +346,7 @@ export default class UserAPI {
         votedAt: this.api.fixDate(new Date(event.votedAt)),
       })),
       users: result.users,
-      subjects: result.subjects,
+      subjects: { posts: result.subjects.posts, comments },
       hasMore: result.hasMore,
       nextCursor: result.nextCursor,
     }

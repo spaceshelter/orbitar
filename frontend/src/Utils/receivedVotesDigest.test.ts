@@ -1,5 +1,12 @@
 import { UserVoteFeedEvent } from '../API/UserAPI'
-import { buildReceivedDigest, DigestSection, getPeriodSince, getWiderPeriod } from './receivedVotesDigest'
+import {
+  buildReceivedDigest,
+  DigestSection,
+  getPeriodOptions,
+  getPeriodSince,
+  getWiderPeriod,
+  limitPeriod,
+} from './receivedVotesDigest'
 
 const at = (month: number, day: number, hour = 12, year = 2026) => new Date(year, month - 1, day, hour, 0)
 
@@ -63,7 +70,31 @@ describe('getWiderPeriod', () => {
     ['year', 'all'],
     ['all', undefined],
   ] as const)('%s widens to %s', (period, wider) => {
-    expect(getWiderPeriod(period)).toBe(wider)
+    expect(getWiderPeriod(period, 'all')).toBe(wider)
+  })
+
+  test.each([
+    ['week', '2weeks'],
+    ['2weeks', 'month'],
+    ['month', undefined],
+  ] as const)('minus-only %s widens to %s at most up to a month', (period, wider) => {
+    expect(getWiderPeriod(period, 'minus')).toBe(wider)
+  })
+})
+
+describe('minus-only periods', () => {
+  test('offer a week, two weeks and a month; all votes offer every period', () => {
+    expect(getPeriodOptions('minus')).toEqual(['week', '2weeks', 'month'])
+    expect(getPeriodOptions('all')).toEqual(['week', '2weeks', 'month', 'year', 'all'])
+  })
+
+  test.each([
+    ['year', 'minus', 'month'],
+    ['all', 'minus', 'month'],
+    ['2weeks', 'minus', '2weeks'],
+    ['year', 'all', 'year'],
+  ] as const)('limit %s for %s votes to %s', (period, sign, limited) => {
+    expect(limitPeriod(period, sign)).toBe(limited)
   })
 })
 
