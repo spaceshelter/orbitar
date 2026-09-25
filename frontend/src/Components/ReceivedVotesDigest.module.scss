@@ -1,87 +1,8 @@
-// Nested under .filters/.card so these win over the UI kit button variants that
-// they restyle (both are single-class selectors otherwise).
 .filters {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin: 0 0 22px;
-
-  .dropdownButton {
-    align-items: center;
-    background: var(--dim2);
-    border-radius: 8px;
-    color: var(--fg);
-    font-size: 14px;
-    font-weight: normal;
-    gap: 6px;
-    height: auto;
-    opacity: 1;
-    padding: 7px 14px;
-
-    &:hover {
-      background: var(--dim3);
-      color: var(--fgHard);
-    }
-  }
-
-  .menuItem {
-    border-radius: 6px;
-    color: var(--fgMedium);
-    font-size: 14px;
-    font-weight: normal;
-    height: auto;
-    justify-content: flex-start;
-    padding: 5px 10px;
-    text-align: left;
-    width: 100%;
-
-    &:hover {
-      background: var(--dim2);
-      color: var(--fg);
-    }
-  }
-
-  .menuItemActive {
-    background: var(--dim3);
-    color: var(--fg);
-  }
-}
-
-.dropdown {
-  position: relative;
-}
-
-.caret {
-  color: var(--fgSofter);
-  font-size: 12px;
-}
-
-.menu {
-  background: var(--elevated);
-  border-radius: 8px;
-  box-shadow: 0 10px 24px var(--shadow);
-  display: flex;
-  flex-direction: column;
-  left: 0;
-  min-width: 200px;
-  padding: 4px;
-  position: absolute;
-  top: calc(100% + 4px);
-  z-index: 10;
-}
-
-.menuHeading {
-  color: var(--fgSofter);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  padding: 6px 10px 2px;
-  text-transform: uppercase;
-}
-
-.menuSeparator {
-  background: var(--fgAlmostInvisible);
-  height: 1px;
-  margin: 4px 2px;
 }
 
 .section {
@@ -114,6 +35,11 @@
   color: var(--fgSofter);
   font-size: 12px;
   margin: 6px 0 12px;
+}
+
+// The partial-section note and «чаще всех» read as one block.
+.sectionNote + .sectionNote {
+  margin-top: -8px;
 }
 
 .meta {
@@ -152,6 +78,8 @@
   border-radius: 8px;
   margin-bottom: 10px;
   padding: 12px 14px;
+  // Keeps a card scrolled into view clear of the fixed top bar.
+  scroll-margin-top: 72px;
 
   // UI kit buttons are flex boxes with padding; these read as inline links.
   .moreVoters,
@@ -198,6 +126,7 @@
 .cardTitlePlain {
   color: var(--fgHard);
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .site {
@@ -212,6 +141,15 @@
 .cardSum {
   text-align: right;
   white-space: nowrap;
+
+  // On a phone the people and time go under the sum, leaving the title room
+  // for two lines instead of four.
+  @media (max-width: 599px) {
+    .meta {
+      display: block;
+      margin-left: 0;
+    }
+  }
 }
 
 .subject {
@@ -268,6 +206,11 @@
   font-style: italic;
 }
 
+.subjectTime {
+  color: var(--fgSofter);
+  font-size: 13px;
+}
+
 .voters {
   color: var(--fgSofter);
   font-size: 13px;
@@ -317,12 +260,16 @@
   color: var(--fgMedium);
 }
 
+// An item stays on one line while it fits and wraps inside itself when it does
+// not, so a long title never pushes the line past the card on narrow screens.
 .tailItem {
-  white-space: nowrap;
+  display: inline-block;
+  max-width: 100%;
 }
 
 .tailLink {
   color: var(--fg);
+  overflow-wrap: anywhere;
 }
 
 .empty {
@@ -353,9 +300,60 @@
 }
 
 .footer {
+  align-items: center;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
   margin: 6px 0 24px;
+}
+
+.errorText {
+  color: var(--danger);
+  font-size: 14px;
+}
+
+.empty .errorText + .widenButton {
+  margin-top: 10px;
+}
+
+@keyframes skeletonPulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.skeleton {
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+.skeletonHeader {
+  border-bottom: 1px solid var(--fgAlmostInvisible);
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+}
+
+.skeletonCard {
+  background: var(--dim2);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 14px;
+}
+
+.skeletonLine {
+  background: var(--dim3);
+  border-radius: 4px;
+  display: block;
+  height: 12px;
+  max-width: 100%;
 }
 
 .srOnly {

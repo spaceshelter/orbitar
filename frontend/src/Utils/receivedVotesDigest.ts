@@ -1,6 +1,7 @@
 import { UserVoteFeedEvent } from '../API/UserAPI'
 
 export type VotePeriod = 'week' | '2weeks' | 'month' | 'year' | 'all'
+export type VoteSign = 'all' | 'minus'
 
 export type DigestVoter = { voterId: number; vote: number }
 
@@ -53,13 +54,12 @@ const CARD_MIN_VOTES = 3
 
 const PERIOD_DAYS: Record<Exclude<VotePeriod, 'all'>, number> = { week: 7, '2weeks': 14, month: 30, year: 365 }
 
-const WIDER_PERIOD: Record<VotePeriod, VotePeriod | undefined> = {
-  week: '2weeks',
-  '2weeks': 'month',
-  month: 'year',
-  year: 'all',
-  all: undefined,
-}
+const PERIODS: VotePeriod[] = ['week', '2weeks', 'month', 'year', 'all']
+
+// Minus-only pages read every vote in their window (the feed indexes carry no
+// `vote`), and a year-long list of everyone who minused you is not something to
+// make easy either: minus-only windows stop at a month, as the API enforces.
+const MINUS_ONLY_PERIODS: VotePeriod[] = ['week', '2weeks', 'month']
 
 const MONTHS_GENITIVE = [
   'января',
@@ -115,7 +115,18 @@ export const getPeriodSince = (period: VotePeriod, now: Date): Date | undefined 
   return addDays(startOfDay(now), -(PERIOD_DAYS[period] - 1))
 }
 
-export const getWiderPeriod = (period: VotePeriod): VotePeriod | undefined => WIDER_PERIOD[period]
+export const getPeriodOptions = (sign: VoteSign): VotePeriod[] => (sign === 'minus' ? MINUS_ONLY_PERIODS : PERIODS)
+
+export const limitPeriod = (period: VotePeriod, sign: VoteSign): VotePeriod => {
+  const options = getPeriodOptions(sign)
+  return options.includes(period) ? period : options[options.length - 1]
+}
+
+export const getWiderPeriod = (period: VotePeriod, sign: VoteSign): VotePeriod | undefined => {
+  const options = getPeriodOptions(sign)
+  const index = options.indexOf(period)
+  return index < 0 ? undefined : options[index + 1]
+}
 
 const formatDayRange = (start: Date, end: Date) => {
   if (start.getMonth() !== end.getMonth()) {
@@ -127,8 +138,8 @@ const formatDayRange = (start: Date, end: Date) => {
   return `${start.getDate()}–${end.getDate()} ${MONTHS_GENITIVE[end.getMonth()]}`
 }
 
-const sumPlus = (events: UserVoteFeedEvent[]) => events.reduce((sum, event) => sum + Math.max(event.vote, 0), 0)
-const sumMinus = (events: UserVoteFeedEvent[]) => events.reduce((sum, event) => sum + Math.min(event.vote, 0), 0)
+export const sumPlus = (events: UserVoteFeedEvent[]) => events.reduce((sum, event) => sum + Math.max(event.vote, 0), 0)
+export const sumMinus = (events: UserVoteFeedEvent[]) => events.reduce((sum, event) => sum + Math.min(event.vote, 0), 0)
 const countPeople = (events: UserVoteFeedEvent[]) => new Set(events.map((event) => event.voterId)).size
 
 // One entry per voter with their newest vote; minus voters first, the rest keep

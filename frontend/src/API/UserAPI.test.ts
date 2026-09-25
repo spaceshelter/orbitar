@@ -69,11 +69,10 @@ describe('UserAPI.userVotes', () => {
   test('receivedVotes sends type, sign and an ISO lower bound and keeps subjects compact', async () => {
     const { api, postAPIHelper, userAPI } = createUserAPI()
     const abortController = new AbortController()
+    const comment = { id: 20, postId: 10, site: 'main', postTitle: 'Post 10', excerpt: '', media: 'image', rating: 5 }
     const subjects = {
-      posts: {},
-      comments: {
-        20: { id: 20, postId: 10, site: 'main', postTitle: 'Post 10', excerpt: 'Хорошее уточнение', rating: 5 },
-      },
+      posts: { 10: { id: 10, site: 'main', label: 'Post 10', rating: 9 } },
+      comments: { 20: { ...comment, created: '2026-09-12T16:06:00.000Z' } },
     }
     api.request.mockResolvedValue({
       direction: 'received',
@@ -126,10 +125,14 @@ describe('UserAPI.userVotes', () => {
         },
       ],
       users: { 1: user },
-      subjects,
+      subjects: {
+        posts: subjects.posts,
+        comments: { 20: { ...comment, created: new Date('2026-09-12T16:06:00.000Z') } },
+      },
       hasMore: true,
       nextCursor: 'next',
     })
+    expect(api.fixDate).toHaveBeenCalledWith(new Date('2026-09-12T16:06:00.000Z'))
     expect(postAPIHelper.fixPosts).not.toHaveBeenCalled()
     expect(postAPIHelper.fixCommentsRecords).not.toHaveBeenCalled()
   })
