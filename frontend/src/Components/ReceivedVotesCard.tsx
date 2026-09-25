@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import Button from '@ui/Button'
 import classNames from 'classnames'
 
-import { UserVoteFeedEvent, UserVotesReceivedResult } from '../API/UserAPI'
+import { ReceivedMediaKind, UserVoteFeedEvent, UserVotesReceivedResult } from '../API/UserAPI'
 import { DigestCard, DigestKarma, DigestSubject, DigestVoter, sumMinus, sumPlus } from '../Utils/receivedVotesDigest'
 import { pluralize } from '../Utils/utils'
 import InternalLinkExpandComponent from './InternalLinkExpandComponent'
@@ -17,7 +17,20 @@ const NAMES_PER_SUBJECT = 3
 
 const MONTHS_SHORT = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
 
-const MEDIA_LABELS = { image: 'картинка', video: 'видео' }
+// A post or comment without text is named by what it consists of; 'медиа' when
+// that can't be told either (an embed of an unknown kind, say).
+const MEDIA_LABELS: Record<ReceivedMediaKind, string> = {
+  image: 'картинка',
+  gif: 'гифка',
+  video: 'видео',
+  media: 'медиа',
+}
+const MEDIA_POST_TITLES: Record<ReceivedMediaKind, string> = {
+  image: 'Пост с картинкой',
+  gif: 'Пост с гифкой',
+  video: 'Пост с видео',
+  media: 'Пост с медиа',
+}
 
 // Users and subjects of the loaded pages, shared by every card of the digest.
 export type DigestLookup = Pick<UserVotesReceivedResult, 'users' | 'subjects'>
@@ -39,16 +52,20 @@ const visibleVoters = (voters: DigestVoter[]) => {
 }
 
 // The post a discussion belongs to: its own label if it was voted on, otherwise
-// the title carried by any of its comments.
+// the title carried by any of its comments. A name made up for a post without
+// title and text is `generated`, so it is not dressed up as a quoted title.
 export const discussionInfo = (lookup: DigestLookup, postId: number, events: UserVoteFeedEvent[]) => {
   const post = lookup.subjects.posts[postId]
   const comment = events
     .map((event) => (event.type === 'comment' ? lookup.subjects.comments[event.entityId] : undefined))
     .find((subject) => subject)
-  return {
-    title: post?.label || comment?.postTitle || `пост #${postId}`,
-    site: post?.site || comment?.site || 'main',
+  const site = post?.site || comment?.site || 'main'
+  const title = post?.label || comment?.postTitle
+  if (title) {
+    return { title, site, generated: false }
   }
+  const media = post?.media || comment?.postMedia
+  return { title: media ? MEDIA_POST_TITLES[media] : `пост #${postId}`, site, generated: true }
 }
 
 export function Sums({ plus, minus, size }: { plus: number; minus: number; size?: 'big' | 'small' }) {
@@ -170,21 +187,21 @@ function SubjectRow({ lookup, subject, site }: { lookup: DigestLookup; subject: 
       >
         {formatVote(subject.sum)}
       </span>
+      <span
+        role='button'
+        tabIndex={0}
+        aria-expanded={expanded}
+        aria-label={expanded ? 'Свернуть' : 'Развернуть'}
+        className={classNames('i i-expand', styles.expandArrow, expanded && styles.expandArrowOpen)}
+        onClick={toggle}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            toggle()
+          }
+        }}
+      />
       <div className={styles.subjectMain}>
-        <span
-          role='button'
-          tabIndex={0}
-          aria-expanded={expanded}
-          aria-label={expanded ? 'Свернуть' : 'Развернуть'}
-          className={classNames('i i-expand', styles.expandArrow, expanded && styles.expandArrowOpen)}
-          onClick={toggle}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault()
-              toggle()
-            }
-          }}
-        />
         {subject.type === 'post' ? (
           link(styles.subjectKind, 'сам пост')
         ) : comment?.excerpt ? (
@@ -193,7 +210,7 @@ function SubjectRow({ lookup, subject, site }: { lookup: DigestLookup; subject: 
           // Without text to quote, what the comment holds and when it was written
           // tell the rows of a picture thread apart.
           <>
-            {link(styles.subjectKind, (comment?.media && MEDIA_LABELS[comment.media]) || 'комментарий')}
+            {link(styles.subjectKind, MEDIA_LABELS[comment?.media || 'media'])}
             {comment && <span className={styles.subjectTime}> · {formatShortTime(comment.created)}</span>}
           </>
         )}
@@ -213,7 +230,7 @@ export default function ReceivedVotesCard({ lookup, card }: { lookup: DigestLook
   const articleRef = useRef<HTMLElement>(null)
   const collapsing = useRef(false)
   const events = card.subjects.flatMap((subject) => subject.events)
-  const { title, site } = discussionInfo(lookup, card.postId, events)
+  const { title, site, generated } = discussionInfo(lookup, card.postId, events)
   const hidden = card.subjects.slice(SUBJECTS_PER_CARD)
   const hiddenEvents = hidden.flatMap((subject) => subject.events)
   const hiddenComments = hidden.filter((subject) => subject.type === 'comment').length
@@ -236,16 +253,19 @@ export default function ReceivedVotesCard({ lookup, card }: { lookup: DigestLook
     <article className={styles.card} ref={articleRef}>
       <header className={styles.cardHeader}>
         <div className={styles.cardTitleWrap}>
-          <PostLink className={styles.cardTitle} post={{ id: card.postId, site }}>
+          <PostLink
+            className={classNames(styles.cardTitle, generated && styles.generatedTitle)}
+            post={{ id: card.postId, site }}
+          >
             {title}
           </PostLink>
           {site !== 'main' && <span className={styles.site}>{site}</span>}
         </div>
         <div className={styles.cardSum}>
           <Sums plus={card.plus} minus={card.minus} size='big' />
-          <span className={styles.meta}>
-            {card.people} чел. · {formatShortTime(card.latestAt)}
-          </span>
+        </div>
+        <div className={styles.cardMeta}>
+          {card.people} чел. · {formatShortTime(card.latestAt)}
         </div>
       </header>
       {(expanded ? card.subjects : card.subjects.slice(0, SUBJECTS_PER_CARD)).map((subject) => (

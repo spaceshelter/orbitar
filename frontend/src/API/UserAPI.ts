@@ -101,10 +101,15 @@ type UserVoteFeedEventEntity<VotedAt> = {
 
 type UserVoteFeedEventRefEntity = UserVoteFeedEventEntity<string>
 
+// What a post or comment without text consists of; 'media' when it can't be told.
+export type ReceivedMediaKind = 'image' | 'gif' | 'video' | 'media'
+
 export type ReceivedPostSubject = {
   id: number
   site: string
+  // The title, or the start of the text of an untitled post; empty without both.
   label: string
+  media?: ReceivedMediaKind
   rating: number
 }
 
@@ -114,9 +119,10 @@ type ReceivedCommentSubjectEntity = {
   site: string
   // The post's title, or the start of its text when it has none.
   postTitle?: string
+  postMedia?: ReceivedMediaKind
   // Plain-text start of the comment; empty when it has no text.
   excerpt: string
-  media?: 'image' | 'video'
+  media?: ReceivedMediaKind
   created: string
   rating: number
 }

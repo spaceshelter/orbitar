@@ -42,6 +42,10 @@
   margin-top: -8px;
 }
 
+.sectionNote .meta {
+  margin-left: 0;
+}
+
 .meta {
   color: var(--fgSofter);
   font-size: 12px;
@@ -74,6 +78,12 @@
 }
 
 .card {
+  // Row columns: the sum, then the expand arrow, then the text; everything
+  // under a row's text (names, timeline, «ещё …») lines up with the text.
+  --value-width: 30px;
+  --arrow-width: 10px;
+  --text-indent: calc(var(--value-width) + 10px + var(--arrow-width) + 5px);
+
   background: var(--dim2);
   border-radius: 8px;
   margin-bottom: 10px;
@@ -101,7 +111,7 @@
   }
 
   .expandCard {
-    margin: 6px 0 0 40px;
+    margin: 6px 0 0 var(--text-indent);
   }
 }
 
@@ -112,13 +122,24 @@
 
 .cardHeader {
   align-items: baseline;
-  display: flex;
-  gap: 12px;
-  justify-content: space-between;
+  column-gap: 6px;
+  display: grid;
+  grid-template-areas: 'title sum meta';
+  grid-template-columns: minmax(0, 1fr) auto auto;
   margin-bottom: 6px;
+
+  // On a phone the people and time go under the title, which keeps the width
+  // of all but the sum.
+  @media (max-width: 599px) {
+    grid-template-areas: 'title sum' 'meta .';
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 2px;
+  }
 }
 
 .cardTitleWrap {
+  grid-area: title;
+  margin-right: 6px;
   min-width: 0;
 }
 
@@ -127,6 +148,17 @@
   color: var(--fgHard);
   font-weight: 600;
   overflow-wrap: anywhere;
+}
+
+.cardTitlePlain {
+  grid-area: title;
+}
+
+// A name made up for a post without title and text, not the author's own.
+.cardTitle.generatedTitle,
+.tailLink.generatedTitle {
+  color: var(--fgMedium);
+  font-style: italic;
 }
 
 .site {
@@ -139,28 +171,29 @@
 }
 
 .cardSum {
+  grid-area: sum;
   text-align: right;
   white-space: nowrap;
+}
 
-  // On a phone the people and time go under the sum, leaving the title room
-  // for two lines instead of four.
-  @media (max-width: 599px) {
-    .meta {
-      display: block;
-      margin-left: 0;
-    }
-  }
+.cardMeta {
+  color: var(--fgSofter);
+  font-size: 12px;
+  grid-area: meta;
+  white-space: nowrap;
 }
 
 .subject {
   border-top: 1px solid var(--fgAlmostInvisible);
   display: flex;
-  gap: 10px;
   padding: 6px 0;
 }
 
+// Grows for a three-digit sum instead of running into the arrow.
 .subjectValue {
-  flex: 0 0 30px;
+  flex: 0 0 auto;
+  margin-right: 10px;
+  min-width: var(--value-width);
   text-align: right;
 }
 
@@ -170,7 +203,7 @@
 }
 
 .karmaRow .subjectMain {
-  padding-left: 40px;
+  padding-left: var(--text-indent);
 }
 
 .quote {
@@ -181,16 +214,17 @@
 // Same affordance as internal links inside content: the arrow turns 90° when the
 // post or comment is expanded in place.
 .expandArrow {
+  align-self: flex-start;
   color: var(--fgMedium);
   cursor: pointer;
-  display: inline-block;
+  flex: 0 0 var(--arrow-width);
   font-size: 18px;
   line-height: 1;
-  margin-right: 2px;
+  margin: 1px 5px 0 0;
+  text-align: center;
   transform-origin: 40% center;
   transition: transform 0.25s;
   user-select: none;
-  vertical-align: middle;
 
   &:hover {
     color: var(--primaryHover);
