@@ -334,6 +334,7 @@ describe('VoteFeedManager.getVoteFeed', () => {
             site: 'main',
             postTitle: 'Parent post',
             html: '<p>Хорошее <b>уточнение</b>,\n   спасибо.</p>',
+            created: new Date('2026-05-01T10:00:00.000Z'),
             rating: 2,
           },
         ]),
@@ -347,33 +348,40 @@ describe('VoteFeedManager.getVoteFeed', () => {
       throw new Error('expected received response')
     }
     expect(voteFeedReadRepository.getReceivedCommentSubjects).toHaveBeenCalledWith([55])
-    expect(result.subjects.comments[55]).toEqual({
+    expect(result.subjects.comments[55]).toStrictEqual({
       id: 55,
       postId: 77,
       site: 'main',
       postTitle: 'Parent post',
       excerpt: 'Хорошее уточнение, спасибо.',
+      created: '2026-05-01T10:00:00.000Z',
       rating: 2,
     })
   })
 
-  test('cuts received comment excerpts at 72 code points with an ellipsis and names media-only comments', async () => {
+  test('names the discussion of a comment by the start of an untitled post', async () => {
     const refs = [
       makeRef({ type: 'comment', entityId: 1, postId: 77 }),
-      makeRef({ type: 'comment', entityId: 2, postId: 77 }),
-      makeRef({ type: 'comment', entityId: 3, postId: 77 }),
+      makeRef({ type: 'comment', entityId: 2, postId: 78 }),
     ]
-    const longText = `${'😀'.repeat(71)}абв`
-    const subject = (id: number, html: string) => ({ id, postId: 77, site: 'main', postTitle: 'P', html, rating: 1 })
+    const row = (id: number, postId: number, postHtml: string) => ({
+      id,
+      postId,
+      site: 'main',
+      postTitle: '  ',
+      postHtml,
+      html: '<p>Ответ</p>',
+      created: new Date('2026-05-01T10:00:00.000Z'),
+      rating: 1,
+    })
     const { manager } = createManager({
       voteFeedReadRepository: {
         getPageReferences: jest.fn().mockResolvedValue(refs),
         getReceivedCommentSubjects: jest
           .fn()
           .mockResolvedValue([
-            subject(1, `<p>${longText}</p>`),
-            subject(2, '<p><img src="https://example.com/cat.jpg"></p>'),
-            subject(3, '<div><video src="https://example.com/cat.mp4"></video></div>'),
+            row(1, 77, '<p>Кто-нибудь знает, <b>где</b> купить сыр?</p><img src="https://example.com/c.jpg">'),
+            row(2, 78, '<img src="https://example.com/cat.jpg">'),
           ]),
       },
     })
@@ -383,9 +391,111 @@ describe('VoteFeedManager.getVoteFeed', () => {
       throw new Error('expected received response')
     }
 
+    expect(result.subjects.comments[1].postTitle).toBe('Кто-нибудь знает, где купить сыр?')
+    // Nothing to read in a picture-only post: the client falls back to its number.
+    expect(result.subjects.comments[2].postTitle).toBeUndefined()
+  })
+
+  test('cuts received comment excerpts at 72 code points with an ellipsis', async () => {
+    const refs = [makeRef({ type: 'comment', entityId: 1, postId: 77 })]
+    const longText = `${'😀'.repeat(71)}абв`
+    const { manager } = createManager({
+      voteFeedReadRepository: {
+        getPageReferences: jest.fn().mockResolvedValue(refs),
+        getReceivedCommentSubjects: jest.fn().mockResolvedValue([
+          {
+            id: 1,
+            postId: 77,
+            site: 'main',
+            postTitle: 'P',
+            html: `<p>${longText}</p>`,
+            created: new Date('2026-05-01T10:00:00.000Z'),
+            rating: 1,
+          },
+        ]),
+      },
+    })
+
+    const result = await manager.getVoteFeed(123, 'received', '', undefined, 20)
+    if (result.direction !== 'received') {
+      throw new Error('expected received response')
+    }
+
     expect(result.subjects.comments[1].excerpt).toBe(`${'😀'.repeat(71)}а…`)
-    expect(result.subjects.comments[2].excerpt).toBe('[картинка]')
-    expect(result.subjects.comments[3].excerpt).toBe('[видео]')
+    expect(result.subjects.comments[1].media).toBeUndefined()
+  })
+
+  // Shapes produced by TheParser: plain images, a bare <video>, and the preview-image
+  // embeds it renders for YouTube, Vimeo, Coub and hosted videos with a poster.
+  test.each([
+    ['a picture', '<img src="https://example.com/cat.jpg" alt=""/>', 'image'],
+    [
+      'a bare video',
+      '<video preload="metadata" controls=""><source src="https://example.com/cat.mp4"></video>',
+      'video',
+    ],
+    [
+      'a YouTube embed',
+      '<a class="youtube-embed" href="https://youtu.be/x" target="_blank"><img src="t.jpg" alt="" data-youtube="https://www.youtube.com/embed/x"/></a>',
+      'video',
+    ],
+    [
+      'a Coub embed',
+      '<a class="coub-embed" href="https://coub.com/view/x" target="_blank"><img src="p.jpg" alt="" data-coub="https://coub.com/embed/x"/></a>',
+      'video',
+    ],
+    [
+      'a hosted video with a poster',
+      '<a class="video-embed" href="https://idiod.video/x.mp4" target="_blank"><img src="p.jpg" alt="" data-video="https://idiod.video/x.mp4"/></a>',
+      'video',
+    ],
+    ['markup with nothing to show', '<p> </p>', undefined],
+  ])('describes a comment made only of %s by its media kind', async (_label, html, media) => {
+    const { manager } = createManager({
+      voteFeedReadRepository: {
+        getPageReferences: jest.fn().mockResolvedValue([makeRef({ type: 'comment', entityId: 1, postId: 77 })]),
+        getReceivedCommentSubjects: jest
+          .fn()
+          .mockResolvedValue([
+            { id: 1, postId: 77, site: 'main', postTitle: 'P', html, created: new Date(), rating: 1 },
+          ]),
+      },
+    })
+
+    const result = await manager.getVoteFeed(123, 'received', '', undefined, 20)
+    if (result.direction !== 'received') {
+      throw new Error('expected received response')
+    }
+
+    expect(result.subjects.comments[1].excerpt).toBe('')
+    expect(result.subjects.comments[1].media).toBe(media)
+  })
+
+  test('keeps the text excerpt and no media kind for a comment with text and a picture', async () => {
+    const { manager } = createManager({
+      voteFeedReadRepository: {
+        getPageReferences: jest.fn().mockResolvedValue([makeRef({ type: 'comment', entityId: 1, postId: 77 })]),
+        getReceivedCommentSubjects: jest.fn().mockResolvedValue([
+          {
+            id: 1,
+            postId: 77,
+            site: 'main',
+            postTitle: 'P',
+            html: 'Смотрите:<br /><img src="https://example.com/cat.jpg" alt=""/>',
+            created: new Date(),
+            rating: 1,
+          },
+        ]),
+      },
+    })
+
+    const result = await manager.getVoteFeed(123, 'received', '', undefined, 20)
+    if (result.direction !== 'received') {
+      throw new Error('expected received response')
+    }
+
+    expect(result.subjects.comments[1].excerpt).toBe('Смотрите:')
+    expect(result.subjects.comments[1].media).toBeUndefined()
   })
 
   test('passes type, sign and time-bound filters through to the reference query', async () => {

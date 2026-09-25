@@ -44,20 +44,21 @@ const truncateLabel = (text: string) => {
     : `${characters.slice(0, RECEIVED_LABEL_MAX_CHARS).join('').trimEnd()}…`
 }
 
-// A comment made only of media strips to nothing; name what it is so the feed
-// never shows an empty quote.
-const toCommentExcerpt = (html: string) => {
-  const text = toPlainText(html)
-  if (text) {
-    return truncateLabel(text)
+// TheParser renders YouTube, Vimeo, Coub and hosted videos with a poster as a
+// preview <img> inside <a class="…-embed">, so a video is recognised by the embed
+// markup before the <img> fallback.
+const VIDEO_MARKUP = /<video\b|<iframe\b|class="(youtube|vimeo|coub|video)-embed"/i
+
+// A comment made only of media strips to nothing; the kind lets the feed name it
+// instead of quoting an empty string.
+const toCommentMedia = (html: string): ReceivedCommentSubject['media'] => {
+  if (VIDEO_MARKUP.test(html)) {
+    return 'video'
   }
-  if (/<(video|iframe)\b/i.test(html || '')) {
-    return '[видео]'
+  if (/<img\b/i.test(html)) {
+    return 'image'
   }
-  if (/<img\b/i.test(html || '')) {
-    return '[картинка]'
-  }
-  return ''
+  return undefined
 }
 
 export const encodeVoteFeedCursor = (ref: VoteFeedReference): string =>
@@ -231,13 +232,17 @@ export default class VoteFeedManager {
     const comments: Record<number, ReceivedCommentSubject> = {}
     for (const row of commentRows) {
       const id = Number(row.id)
-      const postTitle = row.postTitle?.trim()
+      const postTitle = row.postTitle?.trim() || truncateLabel(toPlainText(row.postHtml))
+      const text = toPlainText(row.html)
+      const media = text ? undefined : toCommentMedia(row.html || '')
       comments[id] = {
         id,
         postId: Number(row.postId),
         site: row.site,
         postTitle: postTitle || undefined,
-        excerpt: toCommentExcerpt(row.html),
+        excerpt: truncateLabel(text),
+        ...(media && { media }),
+        created: new Date(row.created).toISOString(),
         rating: Number(row.rating),
       }
     }
