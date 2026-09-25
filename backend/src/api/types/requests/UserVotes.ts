@@ -36,8 +36,13 @@ export type ReceivedCommentSubject = {
   id: number
   postId: number
   site: string
+  // The post's title, or the start of its text when it has none.
   postTitle?: string
+  // Plain-text start of the comment; empty when it has no text.
   excerpt: string
+  // What a comment without text consists of, so it can be named instead of quoted.
+  media?: 'image' | 'video'
+  created: string
   rating: number
 }
 

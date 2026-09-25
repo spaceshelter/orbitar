@@ -230,7 +230,9 @@ describe('VoteRepository vote feed', () => {
 
     const commentSql = normalize(db.fetchAll.mock.calls[1][0])
     expect(commentSql).toContain(
-      'select c.comment_id id, c.post_id postId, s.subdomain site, p.title postTitle, left(c.html, 4096) html, c.rating',
+      'select c.comment_id id, c.post_id postId, s.subdomain site, p.title postTitle,' +
+        " if(nullif(trim(p.title), '') is null, left(p.html, 4096), '') postHtml," +
+        ' left(c.html, 4096) html, c.created_at created, c.rating',
     )
     expect(commentSql).not.toContain('c.source')
     expect(commentSql).not.toContain('c.author_id')
