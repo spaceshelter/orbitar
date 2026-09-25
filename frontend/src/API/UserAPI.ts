@@ -175,8 +175,6 @@ export type UserVotesReceivedResult = UserVotesResultBase & {
   }
 }
 
-export type UserVotesResult = UserVotesMineResult | UserVotesReceivedResult
-
 export type TrialProgressDebugInfo = {
   effectiveKarmaPart: number
   daysOnSitePart: number
