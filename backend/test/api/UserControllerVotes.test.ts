@@ -76,7 +76,7 @@ describe('UserController votes', () => {
       response as any,
     )
 
-    expect(voteFeedManager.getVoteFeed).toHaveBeenCalledWith(123, 'received', 'orbitar', 'cursor-token', 20)
+    expect(voteFeedManager.getVoteFeed).toHaveBeenCalledWith(123, 'received', 'orbitar', 'cursor-token', 20, {})
     expect(response.success).toHaveBeenCalledWith(payload)
     expect(response.error).not.toHaveBeenCalled()
   })
@@ -93,7 +93,7 @@ describe('UserController votes', () => {
       response as any,
     )
 
-    expect(voteFeedManager.getVoteFeed).toHaveBeenCalledWith(123, 'mine', '', undefined, 20)
+    expect(voteFeedManager.getVoteFeed).toHaveBeenCalledWith(123, 'mine', '', undefined, 20, {})
   })
 
   test('rejects restricted users before loading the vote feed', async () => {
@@ -136,10 +136,92 @@ describe('UserController votes', () => {
     expect(voteFeedManager.getVoteFeed).not.toHaveBeenCalled()
   })
 
+  const runVotesValidation = (body: Record<string, unknown>) => {
+    const { controller } = createController()
+    const votesRoute = controller.router.stack.find((layer) => layer.route?.path === '/user/votes')
+    // [sharedReadRateLimiter, heavyReadRateLimiter, oauth, validate, handler]
+    const validateVotes = votesRoute?.route.stack[3].handle
+    const request = { body } as any
+    return new Promise<{ ok: boolean; body?: any; message?: string }>((resolve) => {
+      validateVotes(
+        request,
+        { error: (_code: string, message: string) => resolve({ ok: false, message }) } as any,
+        () => resolve({ ok: true, body: request.body }),
+      )
+    })
+  }
+
+  const DAY_MS = 24 * 60 * 60 * 1000
+  const daysAgo = (days: number) => new Date(Date.now() - days * DAY_MS).toISOString()
+
+  test('route validation accepts received type, minus-only and time-bound filters with a 200-event page', async () => {
+    // The frontend's «за месяц» starts at local midnight 29 days before today.
+    const since = daysAgo(30)
+    const result = await runVotesValidation({
+      direction: 'received',
+      type: 'comment',
+      sign: 'minus',
+      since,
+      perpage: 200,
+    })
+
+    expect(result).toMatchObject({ ok: true })
+    expect(result.body.since).toEqual(new Date(since))
+  })
+
+  test('route validation leaves the lower bound optional when all signs are requested', async () => {
+    await expect(runVotesValidation({ direction: 'received', type: 'comment' })).resolves.toMatchObject({ ok: true })
+    await expect(runVotesValidation({ direction: 'received', since: daysAgo(365) })).resolves.toMatchObject({
+      ok: true,
+    })
+  })
+
+  test.each([
+    ['a mine page above 50 events', { direction: 'mine', perpage: 51 }, 'less than or equal to 50'],
+    ['a received page above 200 events', { direction: 'received', perpage: 201 }, 'less than or equal to 200'],
+    ['an unknown entity type', { direction: 'received', type: 'karma' }, '"type" must be one of'],
+    ['a sign other than minus', { direction: 'received', sign: 'plus' }, '"sign" must be'],
+    ['a lower bound that is not an ISO date', { direction: 'received', since: 'yesterday' }, '"since" must be'],
+    ['a minus-only page without a lower bound', { direction: 'received', sign: 'minus' }, '"since" is required'],
+    [
+      'a minus-only page reaching back more than 31 days',
+      { direction: 'received', sign: 'minus', since: daysAgo(32) },
+      '"since" must be within 31 days',
+    ],
+    ['an entity type on my own votes', { direction: 'mine', type: 'comment' }, '"type" is not allowed'],
+    ['a sign on my own votes', { direction: 'mine', sign: 'minus', since: daysAgo(1) }, '"sign" is not allowed'],
+    ['a lower bound on my own votes', { direction: 'mine', since: daysAgo(1) }, '"since" is not allowed'],
+  ])('route validation rejects %s', async (_label, body, message) => {
+    const result = await runVotesValidation(body)
+
+    expect(result.ok).toBe(false)
+    expect(result.message).toContain(message)
+  })
+
+  test('forwards received filters to the feed manager', async () => {
+    const { controller, voteFeedManager } = createController()
+    const response = { success: jest.fn(), error: jest.fn() }
+    const since = new Date('2026-09-02T00:00:00.000Z')
+
+    await controller['votes'](
+      {
+        session: { data: { userId: 123 } },
+        body: { direction: 'received', type: 'comment', sign: 'minus', since, perpage: 200 },
+      } as any,
+      response as any,
+    )
+
+    expect(voteFeedManager.getVoteFeed).toHaveBeenCalledWith(123, 'received', '', undefined, 200, {
+      types: ['comment'],
+      sign: 'minus',
+      since,
+    })
+  })
+
   test('route validation rejects a fractional perpage', async () => {
     const { controller } = createController()
     const votesRoute = controller.router.stack.find((layer) => layer.route?.path === '/user/votes')
-    // [sharedReadRateLimiter, heavyFilterRateLimiter, oauth, validate, handler]
+    // [sharedReadRateLimiter, heavyReadRateLimiter, oauth, validate, handler]
     const validateVotes = votesRoute?.route.stack[3].handle
     const response = { error: jest.fn() }
     const next = jest.fn()
@@ -165,7 +247,7 @@ describe('UserController votes', () => {
   test('route validation rejects unknown identity fields in the body', async () => {
     const { controller } = createController()
     const votesRoute = controller.router.stack.find((layer) => layer.route?.path === '/user/votes')
-    // [sharedReadRateLimiter, heavyFilterRateLimiter, oauth, validate, handler]
+    // [sharedReadRateLimiter, heavyReadRateLimiter, oauth, validate, handler]
     const validateVotes = votesRoute?.route.stack[3].handle
     const response = { error: jest.fn() }
     const next = jest.fn()

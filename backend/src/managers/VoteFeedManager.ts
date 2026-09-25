@@ -12,8 +12,10 @@ import { toCommentEntity, toPostEntity, toUserEntity } from '../api/utils/entiti
 import VoteFeedReadRepository, {
   VoteFeedCursor,
   VoteFeedDirection,
+  VoteFeedFilterOptions,
   VoteFeedReference,
 } from '../db/repositories/VoteFeedReadRepository'
+import { getMediaKind } from '../utils/MediaKind'
 import PostManager from './PostManager'
 import UserManager from './UserManager'
 
@@ -29,6 +31,19 @@ const VOTE_FEED_ENTITY_TYPES = ['post', 'comment', 'user']
 // visual budget in getCompactText. Sliced over code points so a surrogate pair
 // (emoji) on the boundary is not cut in half.
 const RECEIVED_LABEL_MAX_CHARS = 72
+
+const toPlainText = (html: string) =>
+  stripHtml(html || '')
+    .result.replace(/\s+/g, ' ')
+    .trim()
+
+// A visible ellipsis keeps a cut-off quote from reading as the whole comment.
+const truncateLabel = (text: string) => {
+  const characters = [...text]
+  return characters.length <= RECEIVED_LABEL_MAX_CHARS
+    ? text
+    : `${characters.slice(0, RECEIVED_LABEL_MAX_CHARS).join('').trimEnd()}…`
+}
 
 export const encodeVoteFeedCursor = (ref: VoteFeedReference): string =>
   Buffer.from(
@@ -102,6 +117,7 @@ export default class VoteFeedManager {
     filter: string,
     cursor: string | undefined,
     perpage: number,
+    options: VoteFeedFilterOptions = {},
   ): Promise<UserVotesResponse> {
     const decodedCursor = cursor ? decodeVoteFeedCursor(cursor) : undefined
     const refs = await this.voteFeedReadRepository.getPageReferences(
@@ -110,6 +126,7 @@ export default class VoteFeedManager {
       filter,
       decodedCursor,
       perpage + 1,
+      options,
     )
     const hasMore = refs.length > perpage
     const pageRefs = hasMore ? refs.slice(0, perpage) : refs
@@ -185,31 +202,33 @@ export default class VoteFeedManager {
       this.voteFeedReadRepository.getReceivedCommentSubjects(this.entityIds(refs, 'comment')),
       this.loadUsers(refs),
     ])
+    // Posts and comments without text are named by what they consist of instead.
     const posts: Record<number, ReceivedPostSubject> = {}
     for (const row of postRows) {
-      const title = row.title?.trim()
-      const label =
-        title ||
-        stripHtml(row.html || '')
-          .result.replace(/\s+/g, ' ')
-          .trim()
       const id = Number(row.id)
+      const label = truncateLabel(row.title?.trim() || toPlainText(row.html))
       posts[id] = {
         id,
         site: row.site,
-        label: [...label].slice(0, RECEIVED_LABEL_MAX_CHARS).join(''),
+        label,
+        ...(!label && { media: getMediaKind(row.html || '') }),
         rating: Number(row.rating),
       }
     }
     const comments: Record<number, ReceivedCommentSubject> = {}
     for (const row of commentRows) {
       const id = Number(row.id)
-      const postTitle = row.postTitle?.trim()
+      const postTitle = row.postTitle?.trim() || truncateLabel(toPlainText(row.postHtml))
+      const excerpt = truncateLabel(toPlainText(row.html))
       comments[id] = {
         id,
         postId: Number(row.postId),
         site: row.site,
         postTitle: postTitle || undefined,
+        ...(!postTitle && { postMedia: getMediaKind(row.postHtml || '') }),
+        excerpt,
+        ...(!excerpt && { media: getMediaKind(row.html || '') }),
+        created: new Date(row.created).toISOString(),
         rating: Number(row.rating),
       }
     }

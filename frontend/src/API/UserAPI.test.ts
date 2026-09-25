@@ -47,7 +47,7 @@ describe('UserAPI.userVotes', () => {
       nextCursor: 'next',
     })
 
-    const result = await userAPI.userVotes('mine', '', undefined, 20, abortController.signal)
+    const result = await userAPI.userVotes('', undefined, 20, abortController.signal)
 
     expect(api.request).toHaveBeenCalledWith(
       '/user/votes',
@@ -66,8 +66,14 @@ describe('UserAPI.userVotes', () => {
     expect(postAPIHelper.fixCommentsRecords).toHaveBeenCalledTimes(2)
   })
 
-  test('keeps received subjects compact and skips full entity conversion', async () => {
+  test('receivedVotes sends type, sign and an ISO lower bound and keeps subjects compact', async () => {
     const { api, postAPIHelper, userAPI } = createUserAPI()
+    const abortController = new AbortController()
+    const comment = { id: 20, postId: 10, site: 'main', postTitle: 'Post 10', excerpt: '', media: 'image', rating: 5 }
+    const subjects = {
+      posts: { 10: { id: 10, site: 'main', label: 'Post 10', rating: 9 } },
+      comments: { 20: { ...comment, created: '2026-09-12T16:06:00.000Z' } },
+    }
     api.request.mockResolvedValue({
       direction: 'received',
       events: [
@@ -75,27 +81,58 @@ describe('UserAPI.userVotes', () => {
           type: 'comment',
           entityId: 20,
           postId: 10,
-          vote: 1,
-          votedAt: '2026-05-11T10:00:00.000Z',
+          vote: -1,
+          votedAt: '2026-09-15T10:00:00.000Z',
+          voterId: 1,
+          targetUserId: 7,
+        },
+      ],
+      users: { 1: user },
+      subjects,
+      hasMore: true,
+      nextCursor: 'next',
+    })
+
+    const result = await userAPI.receivedVotes(
+      { type: 'comment', sign: 'minus', since: new Date('2026-09-03T00:00:00.000Z'), cursor: 'prev', perpage: 200 },
+      abortController.signal,
+    )
+
+    expect(api.request).toHaveBeenCalledWith(
+      '/user/votes',
+      {
+        direction: 'received',
+        type: 'comment',
+        sign: 'minus',
+        since: '2026-09-03T00:00:00.000Z',
+        cursor: 'prev',
+        perpage: 200,
+      },
+      undefined,
+      abortController.signal,
+    )
+    expect(result).toEqual({
+      direction: 'received',
+      events: [
+        {
+          type: 'comment',
+          entityId: 20,
+          postId: 10,
+          vote: -1,
+          votedAt: new Date('2026-09-15T10:00:00.000Z'),
           voterId: 1,
           targetUserId: 7,
         },
       ],
       users: { 1: user },
       subjects: {
-        posts: {},
-        comments: { 20: { id: 20, postId: 10, site: 'main', postTitle: 'Post 10', rating: 5 } },
+        posts: subjects.posts,
+        comments: { 20: { ...comment, created: new Date('2026-09-12T16:06:00.000Z') } },
       },
-      hasMore: false,
+      hasMore: true,
+      nextCursor: 'next',
     })
-
-    const result = await userAPI.userVotes('received', '', undefined, 20)
-
-    expect(result).toMatchObject({
-      direction: 'received',
-      events: [{ entityId: 20, postId: 10, votedAt: new Date('2026-05-11T10:00:00.000Z') }],
-      subjects: { comments: { 20: { postTitle: 'Post 10' } } },
-    })
+    expect(api.fixDate).toHaveBeenCalledWith(new Date('2026-09-12T16:06:00.000Z'))
     expect(postAPIHelper.fixPosts).not.toHaveBeenCalled()
     expect(postAPIHelper.fixCommentsRecords).not.toHaveBeenCalled()
   })

@@ -117,6 +117,40 @@ describe('VoteRepository vote feed', () => {
     })
   })
 
+  test('received feed narrows to entity types, minus votes and a lower time bound', async () => {
+    const db = { fetchAll: jest.fn().mockResolvedValue([]) }
+    const repository = new VoteFeedReadRepository(db as any)
+    const since = new Date('2026-09-02T00:00:00.000Z')
+
+    await repository.getPageReferences(123, 'received', '', undefined, 201, {
+      types: ['comment'],
+      sign: 'minus',
+      since,
+    })
+
+    const [query, params] = db.fetchAll.mock.calls[0]
+    const sql = normalize(query)
+    expect(sql).toContain('from comment_votes cv')
+    expect(sql).not.toContain('from post_votes')
+    expect(sql).not.toContain('from user_karma')
+    expect(sql).not.toContain('union all')
+    expect(sql).toContain('and cv.vote < 0')
+    expect(sql).not.toContain('cv.vote != 0')
+    expect(sql).toContain('and cv.voted_at >= :since')
+    expect(params).toEqual({ user_id: 123, branch_limit: 201, limit_count: 201, since })
+  })
+
+  test('minus-only pages carry the execution-time guard and map its timeout like a text filter', async () => {
+    const timeoutError = Object.assign(new Error('Query execution was interrupted'), { errno: 3024 })
+    const db = { fetchAll: jest.fn().mockRejectedValue(timeoutError) }
+    const repository = new VoteFeedReadRepository(db as any)
+
+    await expect(
+      repository.getPageReferences(123, 'received', '', undefined, 21, { sign: 'minus' }),
+    ).rejects.toBeInstanceOf(VoteFeedFilterTimeoutError)
+    expect(normalize(db.fetchAll.mock.calls[0][0])).toContain('select /*+ MAX_EXECUTION_TIME(500) */')
+  })
+
   test('cursor predicate is simplified per branch against the cursor type', async () => {
     const db = {
       fetchAll: jest.fn().mockResolvedValue([]),
@@ -196,10 +230,11 @@ describe('VoteRepository vote feed', () => {
 
     const commentSql = normalize(db.fetchAll.mock.calls[1][0])
     expect(commentSql).toContain(
-      'select c.comment_id id, c.post_id postId, s.subdomain site, p.title postTitle, c.rating',
+      'select c.comment_id id, c.post_id postId, s.subdomain site, p.title postTitle,' +
+        " if(nullif(trim(p.title), '') is null, left(p.html, 4096), '') postHtml," +
+        ' left(c.html, 4096) html, c.created_at created, c.rating',
     )
     expect(commentSql).not.toContain('c.source')
-    expect(commentSql).not.toContain('c.html')
     expect(commentSql).not.toContain('c.author_id')
   })
 

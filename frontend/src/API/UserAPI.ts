@@ -74,6 +74,19 @@ type UserVotesRequest = {
   filter?: string
   cursor?: string
   perpage?: number
+  type?: ReceivedVoteType
+  sign?: 'minus'
+  since?: string
+}
+
+export type ReceivedVoteType = 'post' | 'comment' | 'user'
+
+export type ReceivedVotesQuery = {
+  type?: ReceivedVoteType
+  sign?: 'minus'
+  since?: Date
+  cursor?: string
+  perpage: number
 }
 
 type UserVoteFeedEventEntity<VotedAt> = {
@@ -88,20 +101,33 @@ type UserVoteFeedEventEntity<VotedAt> = {
 
 type UserVoteFeedEventRefEntity = UserVoteFeedEventEntity<string>
 
+// What a post or comment without text consists of; 'media' when it can't be told.
+export type ReceivedMediaKind = 'image' | 'gif' | 'video' | 'media'
+
 export type ReceivedPostSubject = {
   id: number
   site: string
+  // The title, or the start of the text of an untitled post; empty without both.
   label: string
+  media?: ReceivedMediaKind
   rating: number
 }
 
-export type ReceivedCommentSubject = {
+type ReceivedCommentSubjectEntity = {
   id: number
   postId: number
   site: string
+  // The post's title, or the start of its text when it has none.
   postTitle?: string
+  postMedia?: ReceivedMediaKind
+  // Plain-text start of the comment; empty when it has no text.
+  excerpt: string
+  media?: ReceivedMediaKind
+  created: string
   rating: number
 }
+
+export type ReceivedCommentSubject = Omit<ReceivedCommentSubjectEntity, 'created'> & { created: Date }
 
 type UserVotesResponseBase = {
   events: UserVoteFeedEventRefEntity[]
@@ -123,7 +149,7 @@ type UserVotesReceivedResponse = UserVotesResponseBase & {
   direction: 'received'
   subjects: {
     posts: Record<number, ReceivedPostSubject>
-    comments: Record<number, ReceivedCommentSubject>
+    comments: Record<number, ReceivedCommentSubjectEntity>
   }
 }
 
@@ -154,8 +180,6 @@ export type UserVotesReceivedResult = UserVotesResultBase & {
     comments: Record<number, ReceivedCommentSubject>
   }
 }
-
-export type UserVotesResult = UserVotesMineResult | UserVotesReceivedResult
 
 export type TrialProgressDebugInfo = {
   effectiveKarmaPart: number
@@ -254,16 +278,15 @@ export default class UserAPI {
   }
 
   async userVotes(
-    direction: UserVotesDirection,
     filter: string,
     cursor: string | undefined,
     perpage: number,
     signal?: AbortSignal,
-  ): Promise<UserVotesResult> {
+  ): Promise<UserVotesMineResult> {
     const result = await this.api.request<UserVotesRequest, UserVotesResponse>(
       '/user/votes',
       {
-        direction,
+        direction: 'mine',
         cursor,
         perpage,
         filter,
@@ -271,23 +294,8 @@ export default class UserAPI {
       undefined,
       signal,
     )
-
-    const base = {
-      events: result.events.map((event) => ({
-        ...event,
-        votedAt: this.api.fixDate(new Date(event.votedAt)),
-      })),
-      users: result.users,
-      hasMore: result.hasMore,
-      nextCursor: result.nextCursor,
-    }
-
-    if (result.direction === 'received') {
-      return {
-        ...base,
-        direction: 'received',
-        subjects: result.subjects,
-      }
+    if (result.direction !== 'mine') {
+      throw new Error('Unexpected vote feed direction')
     }
 
     const posts: Record<number, PostInfo> = {}
@@ -296,13 +304,55 @@ export default class UserAPI {
     })
 
     return {
-      ...base,
+      events: result.events.map((event) => ({
+        ...event,
+        votedAt: this.api.fixDate(new Date(event.votedAt)),
+      })),
+      users: result.users,
+      hasMore: result.hasMore,
+      nextCursor: result.nextCursor,
       direction: 'mine',
       entities: {
         posts,
         comments: this.postAPIHelper.fixCommentsRecords(result.entities.comments, result.users),
         parentComments: this.postAPIHelper.fixCommentsRecords(result.entities.parentComments, result.users),
       },
+    }
+  }
+
+  async receivedVotes(query: ReceivedVotesQuery, signal?: AbortSignal): Promise<UserVotesReceivedResult> {
+    const result = await this.api.request<UserVotesRequest, UserVotesResponse>(
+      '/user/votes',
+      {
+        direction: 'received',
+        type: query.type,
+        sign: query.sign,
+        since: query.since?.toISOString(),
+        cursor: query.cursor,
+        perpage: query.perpage,
+      },
+      undefined,
+      signal,
+    )
+    if (result.direction !== 'received') {
+      throw new Error('Unexpected vote feed direction')
+    }
+
+    const comments: Record<number, ReceivedCommentSubject> = {}
+    Object.values(result.subjects.comments).forEach((comment) => {
+      comments[comment.id] = { ...comment, created: this.api.fixDate(new Date(comment.created)) }
+    })
+
+    return {
+      direction: 'received',
+      events: result.events.map((event) => ({
+        ...event,
+        votedAt: this.api.fixDate(new Date(event.votedAt)),
+      })),
+      users: result.users,
+      subjects: { posts: result.subjects.posts, comments },
+      hasMore: result.hasMore,
+      nextCursor: result.nextCursor,
     }
   }
 
