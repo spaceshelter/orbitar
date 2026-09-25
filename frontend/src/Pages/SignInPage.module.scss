@@ -1,11 +1,37 @@
+.page {
+  position: relative;
+  box-sizing: border-box;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px 18vh;
+  background: #03040a;
+  color: var(--fg);
+  color-scheme: dark;
+}
+
 .signup {
   box-sizing: border-box;
-  min-height: 100%;
-  padding: 60px 0 60px;
-  width: 600px;
-  max-width: 80vw;
-  margin: 0 auto;
+  width: 400px;
+  max-width: 100%;
   position: relative;
+  z-index: 1;
+  padding: 32px 32px 12px;
+  border-radius: 16px;
+  background: rgba(10, 13, 28, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  backdrop-filter: blur(14px) saturate(1.3);
+  animation: rise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+
+  @media (max-width: 480px) {
+    padding: 24px 20px 8px;
+  }
 
   form,
   h2,
@@ -17,10 +43,13 @@
   }
   h2,
   h3 {
-    margin: 10px auto;
+    margin: 0 auto 20px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
   }
   form {
-    margin-bottom: 60px;
+    position: relative;
+    margin-bottom: 24px;
   }
   .resetInfo {
     color: gray;
@@ -39,8 +68,9 @@
 
   label {
     display: block;
-    font-size: 18px;
-    margin-bottom: 4px;
+    font-size: 15px;
+    color: var(--fgMedium);
+    margin-bottom: 6px;
   }
 
   input {
@@ -50,6 +80,35 @@
     padding: 5px;
     font-size: 18px;
     margin-bottom: 16px;
+  }
+
+  input[type='text'],
+  input[type='password'] {
+    padding: 8px 10px;
+    background: rgba(0, 0, 0, 0.35);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    transition: box-shadow 0.2s;
+
+    &:focus {
+      box-shadow:
+        inset 0 0 0 1px var(--primary),
+        0 0 0 3px var(--primaryAlmostInvisible);
+    }
+
+    // keep browser autofill from painting the fields pale blue/yellow
+    &:-webkit-autofill {
+      -webkit-text-fill-color: var(--fg);
+      caret-color: var(--fg);
+      transition: background-color 9999s ease-out;
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+        inset 0 0 0 100px rgba(8, 11, 24, 0.95);
+    }
+  }
+
+  input[type='submit'] {
+    margin-top: 8px;
+    padding: 10px 16px;
   }
 
   p.error {
@@ -64,8 +123,25 @@
     color: var(--fgSoft);
     font-size: 20px;
     position: absolute;
-    right: 8px;
-    margin-top: -42px;
+    right: 10px;
+    margin-top: -46px;
     cursor: pointer;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signup {
+    animation: none;
   }
 }

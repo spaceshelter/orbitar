@@ -166,6 +166,28 @@ test('unwrap nested links', () => {
   )
 })
 
+test('parentheses in autolinked url', () => {
+  // a bare url whose path contains balanced parens must be linked whole
+  expect(p.parse('https://en.wikipedia.org/wiki/Hill_Valley_(Back_to_the_Future)').text).toEqual(
+    '<a href="https://en.wikipedia.org/wiki/Hill_Valley_(Back_to_the_Future)" target="_blank">https://en.wikipedia.org/wiki/Hill_Valley_(Back_to_the_Future)</a>',
+  )
+
+  // an explicit A tag whose text is the same url: the inner autolink replaces the
+  // wrapper (see 'unwrap nested links'), so it has to reproduce the whole url
+  expect(
+    p.parse(
+      '<a href="https://en.wikipedia.org/wiki/Hill_Valley_(Back_to_the_Future)">https://en.wikipedia.org/wiki/Hill_Valley_(Back_to_the_Future)</a>',
+    ).text,
+  ).toEqual(
+    '<a href="https://en.wikipedia.org/wiki/Hill_Valley_(Back_to_the_Future)" target="_blank">https://en.wikipedia.org/wiki/Hill_Valley_(Back_to_the_Future)</a>',
+  )
+
+  // a url wrapped in prose parens still stops before the closing one
+  expect(p.parse('(https://en.wikipedia.org/wiki/Delorean) etc').text).toEqual(
+    '(<a href="https://en.wikipedia.org/wiki/Delorean" target="_blank">https://en.wikipedia.org/wiki/Delorean</a>) etc',
+  )
+})
+
 test('mentions', () => {
   // `<a href="${encodeURI(`/u/${token.data}`)}" target="_blank" class="mention">${htmlEscape(token.data)}</a>`;
 
@@ -197,6 +219,25 @@ test('mentions', () => {
   // mentions in links take precedence
   expect(parse('<a href="https://test.com">@test</a>')).toEqual([
     '<a href="/u/test" target="_blank" class="mention">test</a>',
+    ['test'],
+  ])
+  // A scheme-less URL is not matched by urlRegex, so its path reached the mention
+  // extractor: the `@` was eaten, the handle was re-linked to /u/<handle> and the
+  // remaining text no longer formed a URL. The empty `mentions` array is the other
+  // half of the fix -- that array is what sendMentionNotify() iterates over.
+  expect(parse('orbitar.space/@test')).toEqual(['orbitar.space/@test', []])
+
+  expect(parse('see docs/@test for details')).toEqual(['see docs/@test for details', []])
+
+  // a URL with a scheme was always consumed by urlRegex first -- unchanged
+  expect(parse('https://orbitar.space/@test')).toEqual([
+    '<a href="https://orbitar.space/@test" target="_blank">https://orbitar.space/@test</a>',
+    [],
+  ])
+
+  // positive control: the same handle one space away is still a mention
+  expect(parse('orbitar.space/ @test')).toEqual([
+    'orbitar.space/ <a href="/u/test" target="_blank" class="mention">test</a>',
     ['test'],
   ])
 })
