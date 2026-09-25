@@ -5,7 +5,8 @@ import DB from '../DB'
 // rarely-matching filter can walk a user's whole vote history. The optimizer hint
 // turns that worst case into a bounded, typed failure instead of minutes of CPU.
 // 500ms (not 2s): a filter that needs more would hit 2s on heavy voters anyway,
-// and with heavyFilterRateLimiter one user costs at most ~7.5 DB-seconds/minute.
+// and heavyReadRateLimiter counts these pages (and minus-only ones), so one user
+// costs at most ~7.5 DB-seconds/minute.
 const FILTER_MAX_EXECUTION_TIME_MS = 500
 const ER_QUERY_TIMEOUT = 3024
 
