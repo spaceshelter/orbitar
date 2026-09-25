@@ -12,7 +12,7 @@ import UserManager from '../managers/UserManager'
 import VoteFeedManager, { InvalidVoteFeedCursorError } from '../managers/VoteFeedManager'
 import { APIRequest, APIResponse, joiFormat, joiUsername, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
-import { commonRateLimitConfig, heavyFilterRateLimiter, sharedReadRateLimiter } from './RateLimiters'
+import { commonRateLimitConfig, heavyReadRateLimiter, sharedReadRateLimiter } from './RateLimiters'
 import { UserProfileEntity } from './types/entities/UserEntity'
 import { UserCommentsRequest, UserCommentsResponse } from './types/requests/UserComments'
 import { SuggestUsernameRequest, SuggestUsernameResponse } from './types/requests/UsernameSuggest'
@@ -39,6 +39,11 @@ import { UserVotesRequest, UserVotesResponse } from './types/requests/UserVotes'
 import { Enricher } from './utils/Enricher'
 // constant variables
 import { ERROR_CODES } from './utils/error-codes'
+
+const DAY_MS = 24 * 60 * 60 * 1000
+// The widest minus-only window the profile offers is «за месяц» (30 local days);
+// one extra day absorbs time zones and daylight saving shifts.
+const MINUS_ONLY_WINDOW_DAYS = 31
 
 export default class UserController {
   public readonly router = Router()
@@ -89,9 +94,23 @@ export default class UserController {
         .min(1)
         .default(20)
         .when('direction', { is: 'received', then: Joi.number().max(200), otherwise: Joi.number().max(50) }),
-      type: Joi.valid('post', 'comment', 'user'),
-      sign: Joi.valid('minus'),
-      since: Joi.date().iso(),
+      type: Joi.valid('post', 'comment', 'user').when('direction', { is: 'received', otherwise: Joi.forbidden() }),
+      sign: Joi.valid('minus').when('direction', { is: 'received', otherwise: Joi.forbidden() }),
+      // `vote` is not in the feed indexes, so a minus-only page reads every vote in
+      // its window to find the ~1% that are minuses: the window stays within a month.
+      since: Joi.date()
+        .iso()
+        .when('direction', { is: 'received', otherwise: Joi.forbidden() })
+        .when('sign', {
+          is: 'minus',
+          then: Joi.required().custom((value: Date, helpers) =>
+            Date.now() - value.getTime() > MINUS_ONLY_WINDOW_DAYS * DAY_MS
+              ? helpers.message({
+                  custom: `{{#label}} must be within ${MINUS_ONLY_WINDOW_DAYS} days for minus-only pages`,
+                })
+              : value,
+          ),
+        }),
     })
 
     const bioSchema = Joi.object<UserSaveBioRequest>({
@@ -148,7 +167,7 @@ export default class UserController {
     this.router.post(
       '/user/votes',
       sharedReadRateLimiter,
-      heavyFilterRateLimiter,
+      heavyReadRateLimiter,
       oauth('читать свои оценки'),
       validate(votesSchema),
       (req, res) => this.votes(req, res),
