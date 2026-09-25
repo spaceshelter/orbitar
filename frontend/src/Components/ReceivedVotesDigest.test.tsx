@@ -3,7 +3,7 @@ import React from 'react'
 import { createRoot, Root } from 'react-dom/client'
 import { act } from 'react-dom/test-utils'
 
-import { ReceivedCommentSubject, UserVoteFeedEvent, UserVotesReceivedResult } from '../API/UserAPI'
+import { ReceivedCommentSubject, ReceivedMediaKind, UserVoteFeedEvent, UserVotesReceivedResult } from '../API/UserAPI'
 import { UserInfo } from '../Types/UserInfo'
 import ReceivedVotesDigest from './ReceivedVotesDigest'
 
@@ -110,7 +110,7 @@ const comment = (
   postId: number,
   postTitle: string,
   excerpt: string,
-  media?: 'image' | 'video',
+  media?: ReceivedMediaKind,
 ): ReceivedCommentSubject => ({
   id,
   postId,
@@ -139,7 +139,11 @@ const page = (
       505: comment(505, 50, 'Селфи-тайм 2', 'Пятый'),
       511: comment(511, 51, 'Мемы', '', 'image'),
       512: comment(512, 51, 'Мемы', '', 'video'),
-      513: comment(513, 51, 'Мемы', ''),
+      513: comment(513, 51, 'Мемы', '', 'gif'),
+      514: comment(514, 51, 'Мемы', '', 'media'),
+      515: comment(515, 51, 'Мемы', ''),
+      901: { ...comment(901, 90, '', 'Ответ'), postTitle: undefined, postMedia: 'image' },
+      911: { ...comment(911, 91, '', 'Ответ'), postTitle: undefined, postMedia: 'media' },
       601: { ...comment(601, 60, 'Про миграции', 'Кэшем'), site: 'dev' },
       701: comment(701, 70, 'Мелкий пост', 'Ок'),
       801: comment(801, 80, 'Ещё один небольшой разговор', 'Да'),
@@ -511,15 +515,48 @@ describe('ReceivedVotesDigest', () => {
         vote('comment', 511, 1, 1, at(16, 10), 51),
         vote('comment', 512, 2, 1, at(16, 9), 51),
         vote('comment', 513, 3, 1, at(16, 8), 51),
+        vote('comment', 514, 4, 1, at(16, 7), 51),
+        vote('comment', 515, 5, 1, at(16, 6), 51),
       ]),
     )
     await render()
+    await click(buttonByText('ещё 2 комментария'))
 
     const text = container.textContent || ''
     expect(text).toContain('картинка · 12 сен, 18:06')
     expect(text).toContain('видео · 12 сен, 18:06')
-    expect(text).toContain('комментарий · 12 сен, 18:06')
+    expect(text).toContain('гифка · 12 сен, 18:06')
+    // Neither the kind nor the text is known: the row says it is some media.
+    expect(text.match(/медиа · 12 сен, 18:06/g)).toHaveLength(2)
+    expect(text).not.toContain('комментарий ·')
     expect(text).not.toContain('«»')
+  })
+
+  test('names discussions of untitled posts without text by their media, without quotes', async () => {
+    mockReceivedVotes.mockResolvedValueOnce(
+      page(
+        [
+          vote('post', 92, 1, 1, at(16, 10)),
+          vote('post', 92, 2, 1, at(16, 9)),
+          vote('post', 92, 3, 1, at(16, 8)),
+          vote('comment', 901, 4, 1, at(15, 10), 90),
+          vote('comment', 911, 5, 1, at(15, 9), 91),
+        ],
+        {
+          subjects: {
+            posts: { 92: { id: 92, site: 'main', label: '', media: 'video', rating: 3 } },
+            comments: page([]).subjects.comments,
+          },
+        },
+      ),
+    )
+    await render()
+
+    const title = container.querySelector('article header a')
+    expect(title?.textContent).toBe('Пост с видео')
+    expect(title?.className).toContain('generatedTitle')
+    const items = Array.from(container.querySelectorAll('.tailItem')).map((item) => item.textContent)
+    expect(items).toEqual(['Пост с картинкой\u00a0+1\u00a0·', 'Пост с медиа\u00a0+1'])
   })
 
   test('keeps the separators of the small-discussions line inside its items', async () => {

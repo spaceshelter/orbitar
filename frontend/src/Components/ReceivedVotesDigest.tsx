@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import Button from '@ui/Button'
+import classNames from 'classnames'
 
 import { ReceivedVotesFilters, useReceivedVotes } from '../API/use/useReceivedVotes'
 import {
@@ -104,14 +105,17 @@ function DigestTail({ lookup, section, partial }: { lookup: DigestLookup; sectio
         <Sums plus={plus} minus={minus} size='small' />:
       </span>{' '}
       {section.tail.map((item, index) => {
-        const { title, site } = discussionInfo(lookup, item.postId, item.events)
+        const { title, site, generated } = discussionInfo(lookup, item.postId, item.events)
         // The sum and the separator stay glued to the title so a line never
         // starts with «·»; long titles wrap inside their own item.
         return (
           <React.Fragment key={item.postId}>
             <span className={styles.tailItem}>
-              <PostLink className={styles.tailLink} post={{ id: item.postId, site }}>
-                «{title}»
+              <PostLink
+                className={classNames(styles.tailLink, generated && styles.generatedTitle)}
+                post={{ id: item.postId, site }}
+              >
+                {generated ? title : `«${title}»`}
               </PostLink>
               {' '}
               <Sums plus={item.plus} minus={item.minus} size='small' />
