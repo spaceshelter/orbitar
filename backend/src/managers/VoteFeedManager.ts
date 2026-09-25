@@ -15,6 +15,7 @@ import VoteFeedReadRepository, {
   VoteFeedFilterOptions,
   VoteFeedReference,
 } from '../db/repositories/VoteFeedReadRepository'
+import { getMediaKind } from '../utils/MediaKind'
 import PostManager from './PostManager'
 import UserManager from './UserManager'
 
@@ -42,23 +43,6 @@ const truncateLabel = (text: string) => {
   return characters.length <= RECEIVED_LABEL_MAX_CHARS
     ? text
     : `${characters.slice(0, RECEIVED_LABEL_MAX_CHARS).join('').trimEnd()}…`
-}
-
-// TheParser renders YouTube, Vimeo, Coub and hosted videos with a poster as a
-// preview <img> inside <a class="…-embed">, so a video is recognised by the embed
-// markup before the <img> fallback.
-const VIDEO_MARKUP = /<video\b|<iframe\b|class="(youtube|vimeo|coub|video)-embed"/i
-
-// A comment made only of media strips to nothing; the kind lets the feed name it
-// instead of quoting an empty string.
-const toCommentMedia = (html: string): ReceivedCommentSubject['media'] => {
-  if (VIDEO_MARKUP.test(html)) {
-    return 'video'
-  }
-  if (/<img\b/i.test(html)) {
-    return 'image'
-  }
-  return undefined
 }
 
 export const encodeVoteFeedCursor = (ref: VoteFeedReference): string =>
@@ -218,14 +202,16 @@ export default class VoteFeedManager {
       this.voteFeedReadRepository.getReceivedCommentSubjects(this.entityIds(refs, 'comment')),
       this.loadUsers(refs),
     ])
+    // Posts and comments without text are named by what they consist of instead.
     const posts: Record<number, ReceivedPostSubject> = {}
     for (const row of postRows) {
-      const title = row.title?.trim()
       const id = Number(row.id)
+      const label = truncateLabel(row.title?.trim() || toPlainText(row.html))
       posts[id] = {
         id,
         site: row.site,
-        label: truncateLabel(title || toPlainText(row.html)),
+        label,
+        ...(!label && { media: getMediaKind(row.html || '') }),
         rating: Number(row.rating),
       }
     }
@@ -233,15 +219,15 @@ export default class VoteFeedManager {
     for (const row of commentRows) {
       const id = Number(row.id)
       const postTitle = row.postTitle?.trim() || truncateLabel(toPlainText(row.postHtml))
-      const text = toPlainText(row.html)
-      const media = text ? undefined : toCommentMedia(row.html || '')
+      const excerpt = truncateLabel(toPlainText(row.html))
       comments[id] = {
         id,
         postId: Number(row.postId),
         site: row.site,
         postTitle: postTitle || undefined,
-        excerpt: truncateLabel(text),
-        ...(media && { media }),
+        ...(!postTitle && { postMedia: getMediaKind(row.postHtml || '') }),
+        excerpt,
+        ...(!excerpt && { media: getMediaKind(row.html || '') }),
         created: new Date(row.created).toISOString(),
         rating: Number(row.rating),
       }
