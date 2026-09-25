@@ -425,31 +425,15 @@ describe('VoteFeedManager.getVoteFeed', () => {
     expect(result.subjects.comments[1].media).toBeUndefined()
   })
 
-  // Shapes produced by TheParser: plain images, a bare <video>, and the preview-image
-  // embeds it renders for YouTube, Vimeo, Coub and hosted videos with a poster.
+  // The kinds themselves are covered by test/utils/MediaKind.test.ts.
   test.each([
-    ['a picture', '<img src="https://example.com/cat.jpg" alt=""/>', 'image'],
-    [
-      'a bare video',
-      '<video preload="metadata" controls=""><source src="https://example.com/cat.mp4"></video>',
-      'video',
-    ],
+    ['a GIF', '<img src="https://media.tenor.com/a/waiting.gif" alt=""/>', 'gif'],
     [
       'a YouTube embed',
       '<a class="youtube-embed" href="https://youtu.be/x" target="_blank"><img src="t.jpg" alt="" data-youtube="https://www.youtube.com/embed/x"/></a>',
       'video',
     ],
-    [
-      'a Coub embed',
-      '<a class="coub-embed" href="https://coub.com/view/x" target="_blank"><img src="p.jpg" alt="" data-coub="https://coub.com/embed/x"/></a>',
-      'video',
-    ],
-    [
-      'a hosted video with a poster',
-      '<a class="video-embed" href="https://idiod.video/x.mp4" target="_blank"><img src="p.jpg" alt="" data-video="https://idiod.video/x.mp4"/></a>',
-      'video',
-    ],
-    ['markup with nothing to show', '<p> </p>', undefined],
+    ['markup with nothing recognisable', '<p> </p>', 'media'],
   ])('describes a comment made only of %s by its media kind', async (_label, html, media) => {
     const { manager } = createManager({
       voteFeedReadRepository: {
@@ -469,6 +453,42 @@ describe('VoteFeedManager.getVoteFeed', () => {
 
     expect(result.subjects.comments[1].excerpt).toBe('')
     expect(result.subjects.comments[1].media).toBe(media)
+  })
+
+  test('describes untitled posts without text by their media, both voted on and as a discussion', async () => {
+    const picture = '<img src="https://b.orbitar.media/2Bjr.png" alt=""/>'
+    const { manager } = createManager({
+      voteFeedReadRepository: {
+        getPageReferences: jest
+          .fn()
+          .mockResolvedValue([makeRef({ entityId: 10 }), makeRef({ type: 'comment', entityId: 1, postId: 20 })]),
+        getReceivedPostSubjects: jest
+          .fn()
+          .mockResolvedValue([{ id: 10, site: 'main', title: ' ', html: picture, rating: 9 }]),
+        getReceivedCommentSubjects: jest.fn().mockResolvedValue([
+          {
+            id: 1,
+            postId: 20,
+            site: 'main',
+            postTitle: '',
+            postHtml: '<iframe src="https://open.spotify.com/embed/track/1"></iframe>',
+            html: '<p>Ответ</p>',
+            created: new Date('2026-05-01T10:00:00.000Z'),
+            rating: 1,
+          },
+        ]),
+      },
+    })
+
+    const result = await manager.getVoteFeed(123, 'received', '', undefined, 20)
+    if (result.direction !== 'received') {
+      throw new Error('expected received response')
+    }
+
+    expect(result.subjects.posts[10]).toEqual({ id: 10, site: 'main', label: '', media: 'image', rating: 9 })
+    expect(result.subjects.comments[1].postTitle).toBeUndefined()
+    expect(result.subjects.comments[1].postMedia).toBe('media')
+    expect(result.subjects.comments[1].media).toBeUndefined()
   })
 
   test('keeps the text excerpt and no media kind for a comment with text and a picture', async () => {

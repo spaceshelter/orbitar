@@ -25,10 +25,15 @@ export type UserVoteFeedEventRef = {
   targetUserId: number
 }
 
+// What a post or comment without text consists of; 'media' when it can't be told.
+export type ReceivedMediaKind = 'image' | 'gif' | 'video' | 'media'
+
 export type ReceivedPostSubject = {
   id: number
   site: string
+  // The title, or the start of the text of an untitled post; empty without both.
   label: string
+  media?: ReceivedMediaKind
   rating: number
 }
 
@@ -38,10 +43,12 @@ export type ReceivedCommentSubject = {
   site: string
   // The post's title, or the start of its text when it has none.
   postTitle?: string
+  // What an untitled post without text consists of.
+  postMedia?: ReceivedMediaKind
   // Plain-text start of the comment; empty when it has no text.
   excerpt: string
   // What a comment without text consists of, so it can be named instead of quoted.
-  media?: 'image' | 'video'
+  media?: ReceivedMediaKind
   created: string
   rating: number
 }
