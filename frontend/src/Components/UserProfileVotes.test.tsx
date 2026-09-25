@@ -3,7 +3,7 @@ import React from 'react'
 import { createRoot, Root } from 'react-dom/client'
 import { act } from 'react-dom/test-utils'
 
-import { UserVoteFeedEvent, UserVotesResult } from '../API/UserAPI'
+import { UserVoteFeedEvent, UserVotesMineResult } from '../API/UserAPI'
 import { PostInfo } from '../Types/PostInfo'
 import { UserInfo } from '../Types/UserInfo'
 import UserProfileVotes from './UserProfileVotes'
@@ -161,7 +161,7 @@ const voteEvent = (
 const postEvent = (id: number, targetUserId = 10): UserVoteFeedEvent =>
   voteEvent('post', id, { postId: id, targetUserId })
 
-const mineVoteResult = (events: UserVoteFeedEvent[], hasMore = false, nextCursor?: string): UserVotesResult => {
+const mineVoteResult = (events: UserVoteFeedEvent[], hasMore = false, nextCursor?: string): UserVotesMineResult => {
   const posts = events.reduce<Record<number, PostInfo>>((result, event) => {
     if (event.type === 'post') {
       result[event.entityId] = post(event.entityId, event.targetUserId)
@@ -241,7 +241,7 @@ describe('UserProfileVotes request state', () => {
   })
 
   test('ignores a stale load-more result after the tab changes', async () => {
-    const stalePage = deferred<UserVotesResult>()
+    const stalePage = deferred<UserVotesMineResult>()
     mockUserVotes
       .mockResolvedValueOnce(mineVoteResult([postEvent(1)], true, 'old-cursor'))
       .mockReturnValueOnce(stalePage.promise)
@@ -267,7 +267,7 @@ describe('UserProfileVotes request state', () => {
   })
 
   test('ignores a stale load-more rejection and resets loading state for the new query', async () => {
-    const stalePage = deferred<UserVotesResult>()
+    const stalePage = deferred<UserVotesMineResult>()
     mockUserVotes
       .mockResolvedValueOnce(mineVoteResult([postEvent(1)], true, 'old-cursor'))
       .mockReturnValueOnce(stalePage.promise)
@@ -328,7 +328,7 @@ describe('UserProfileVotes request state', () => {
   })
 
   test('aborts an in-flight initial request when the query key changes', async () => {
-    const staleInitialPage = deferred<UserVotesResult>()
+    const staleInitialPage = deferred<UserVotesMineResult>()
     mockUserVotes.mockReturnValueOnce(staleInitialPage.promise).mockResolvedValueOnce(mineVoteResult([postEvent(10)]))
 
     await renderVotes()
@@ -343,7 +343,7 @@ describe('UserProfileVotes request state', () => {
   })
 
   test('aborts an in-flight request when the session user changes', async () => {
-    const staleInitialPage = deferred<UserVotesResult>()
+    const staleInitialPage = deferred<UserVotesMineResult>()
     mockUserVotes.mockReturnValueOnce(staleInitialPage.promise).mockResolvedValueOnce(mineVoteResult([postEvent(10)]))
 
     await renderVotes()
