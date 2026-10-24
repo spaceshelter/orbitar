@@ -25,8 +25,9 @@ import { PostCommentRequest, PostCommentResponse } from './types/requests/PostCo
 import { PostCreateRequest, PostCreateResponse } from './types/requests/PostCreate'
 import { PostEditRequest, PostEditResponse } from './types/requests/PostEdit'
 import { PostCommentEditRequest, PostCommentEditResponse } from './types/requests/PostEditComment'
-import { PostGetRequest, PostGetResponse } from './types/requests/PostGet'
+import { PostCommentIndexEntry, PostGetRequest, PostGetResponse } from './types/requests/PostGet'
 import { PostGetCommentRequest, PostGetCommentResponse } from './types/requests/PostGetComment'
+import { PostGetCommentsRequest, PostGetCommentsResponse } from './types/requests/PostGetComments'
 import { PostHistoryRequest, PostHistoryResponse } from './types/requests/PostHistory'
 import { PostReadRequest, PostReadResponse } from './types/requests/PostRead'
 import { PostWatchRequest, PostWatchResponse } from './types/requests/PostWatch'
@@ -94,6 +95,11 @@ export default class PostController {
       id: Joi.number().required(),
       format: joiFormat,
       noComments: Joi.boolean().default(false),
+      commentIndex: Joi.boolean().default(false),
+    })
+    const getCommentsSchema = Joi.object<PostGetCommentsRequest>({
+      postId: Joi.number().integer().positive().required(),
+      ids: Joi.array().items(Joi.number().integer().positive()).min(1).max(25).unique().required(),
     })
     const readSchema = Joi.object<PostReadRequest>({
       post_id: Joi.number().required(),
@@ -159,6 +165,13 @@ export default class PostController {
 
     this.router.post('/post/get', sharedReadRateLimiter, validate(getSchema), oauth('читать посты'), (req, res) =>
       this.postGet(req, res),
+    )
+    this.router.post(
+      '/post/get-comments',
+      sharedReadRateLimiter,
+      validate(getCommentsSchema),
+      oauth('читать комментарии поста'),
+      (req, res) => this.getComments(req, res),
     )
     this.router.post(
       '/post/create',
@@ -252,7 +265,7 @@ export default class PostController {
     }
 
     const userId = request.session.data.userId
-    const { id: postId, format, noComments } = request.body
+    const { id: postId, format, noComments, commentIndex: includeCommentIndex } = request.body
 
     try {
       const rawPost = await this.postManager.getPost(postId, userId, format)
@@ -279,7 +292,15 @@ export default class PostController {
       }
 
       let comments: CommentEntity[] = []
-      if (!noComments) {
+      let commentIndex: PostCommentIndexEntry[] | undefined
+      if (includeCommentIndex) {
+        const rows = await this.postManager.getPostCommentIndex(postId)
+        commentIndex = rows.map((row) => ({
+          id: row.comment_id,
+          ...(row.parent_comment_id ? { parentComment: row.parent_comment_id } : {}),
+          ...(row.author_id !== userId && row.comment_id > (rawPost.lastReadCommentId || 0) ? { isNew: true } : {}),
+        }))
+      } else if (!noComments) {
         const rawComments = await this.postManager.getPostComments(postId, userId, format)
 
         if (!restrictions.canEditOwnContent) {
@@ -302,12 +323,48 @@ export default class PostController {
         post: post,
         site: this.enricher.siteInfoToEntity(site),
         comments: comments,
+        ...(commentIndex ? { commentIndex } : {}),
         users: users,
         anonymousUser: userIdOverrideEntity,
       })
     } catch (err) {
       this.logger.error('Post get error', { error: err, post_id: postId })
       this.logger.error(err)
+      return response.error('error', 'Unknown error', 500)
+    }
+  }
+
+  async getComments(request: APIRequest<PostGetCommentsRequest>, response: APIResponse<PostGetCommentsResponse>) {
+    const userId = request.session.data.userId
+    if (!userId) {
+      return response.authRequired()
+    }
+    const { postId, ids } = request.body
+
+    try {
+      const post = await this.postManager.getPost(postId, userId, 'html')
+      if (!post) {
+        return response.error('no-post', 'Post not found')
+      }
+      const restrictions = await this.userManager.getUserRestrictions(userId)
+      if (restrictions.restrictedToPostId !== false && post.author !== userId) {
+        return response.error('access-denied', "You don't have permission to view this post", 403)
+      }
+
+      const rawComments = await this.postManager.getPostCommentsByIds(postId, userId, ids)
+      if (!restrictions.canEditOwnContent) {
+        rawComments.forEach((comment) => (comment.canEdit = false))
+      }
+      const { allComments, users } = await this.enricher.enrichRawComments(
+        rawComments,
+        {},
+        'html',
+        (comment) => comment.author !== userId && comment.id > (post.lastReadCommentId || 0),
+      )
+      // This endpoint returns a flat batch, even if a parent and a child are requested together.
+      response.success({ comments: allComments.map(({ answers, ...comment }) => comment), users })
+    } catch (err) {
+      this.logger.error('Post comments get error', { error: err, post_id: postId })
       return response.error('error', 'Unknown error', 500)
     }
   }

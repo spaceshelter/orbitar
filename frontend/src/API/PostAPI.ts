@@ -96,13 +96,25 @@ type PostGetRequest = {
   id: number
   format?: ContentFormat
   noComments?: boolean
+  commentIndex?: boolean
+}
+export type PostCommentIndexEntry = {
+  id: number
+  parentComment?: number
+  isNew?: boolean
 }
 type PostGetResponse = {
   post: PostEntity
   site: SiteInfo
   comments: CommentEntity[]
+  commentIndex?: PostCommentIndexEntry[]
   users: Record<number, UserInfo>
   anonymousUser?: UserInfo
+}
+
+type PostGetCommentsResponse = {
+  comments: CommentEntity[]
+  users: Record<number, UserInfo>
 }
 
 type CommentGetRequest = {
@@ -270,11 +282,24 @@ export default class PostAPI {
     })
   }
 
-  get(postId: number, format: ContentFormat = 'html', noComments = false): Promise<PostGetResponse> {
+  get(
+    postId: number,
+    format: ContentFormat = 'html',
+    noComments = false,
+    commentIndex = false,
+  ): Promise<PostGetResponse> {
     return this.api.request<PostGetRequest, PostGetResponse>('/post/get', {
       id: postId,
       format,
       noComments,
+      ...(commentIndex ? { commentIndex: true } : {}),
+    })
+  }
+
+  getComments(postId: number, ids: number[]): Promise<PostGetCommentsResponse> {
+    return this.api.request<{ postId: number; ids: number[] }, PostGetCommentsResponse>('/post/get-comments', {
+      postId,
+      ids,
     })
   }
 
