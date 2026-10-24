@@ -53,3 +53,7 @@
 
   reverse_proxy http://backend:5001
 }
+
+# Extra site blocks for this host (e.g. a colocated orbitar-media, see caddy/sites/README.md).
+# The deploy copies /opt/deployment-specific-files/caddy-sites/*.caddy here; none is fine.
+import sites/*.caddy
