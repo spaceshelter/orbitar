@@ -99,6 +99,10 @@ jobs:
           cp -f /opt/deployment-specific-files/chain.pem ./caddy/certs
           cp -f /opt/deployment-specific-files/priv.pem ./caddy/certs
           cp -f /opt/deployment-specific-files/.env ./
+          # optional extra Caddy sites for this host (caddy/sites/README.md)
+          shopt -s nullglob
+          for f in /opt/deployment-specific-files/caddy-sites/*.caddy; do cp -f "$f" ./caddy/sites/; done
+          shopt -u nullglob
           
           # remove any FINGERPRINT= lines from .env
           sed -i '/^FINGERPRINT=/d' .env

@@ -15,6 +15,7 @@ services:
     volumes:
       - $PWD/caddy/Caddyfile.ssl.local:/etc/caddy/Caddyfile:ro
       - $PWD/caddy/certs:/certs:ro
+      - $PWD/caddy/sites:/etc/caddy/sites:ro
       - frontend_build:/srv:ro
       - caddy_data:/data
       - caddy_config:/config
