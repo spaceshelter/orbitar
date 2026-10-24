@@ -25,7 +25,47 @@ function deleteFromUserSessions(userId: number, sessionId: string) {
   const userSessions = sessionsByUser.get(userId)
   if (userSessions) {
     userSessions.delete(sessionId)
+    if (userSessions.size === 0) {
+      sessionsByUser.delete(userId)
+    }
   }
+}
+
+/**
+ * Drops the in-memory copies of a user's sessions. Rows in the `sessions` table are left alone:
+ * pair this with a DB delete to force a logout. The process keeps honouring cached sessions
+ * until they are evicted here, so a DB-only cleanup is not enough.
+ */
+export function evictSessionsFromMemory(userId: number): number {
+  const userSessions = sessionsByUser.get(userId)
+  if (!userSessions) {
+    return 0
+  }
+  let evicted = 0
+  for (const sessionId of userSessions) {
+    if (sessionStorage[sessionId]) {
+      delete sessionStorage[sessionId]
+      evicted++
+    }
+  }
+  sessionsByUser.delete(userId)
+  return evicted
+}
+
+export function evictSessionFromMemory(sessionId: string): boolean {
+  const cached = sessionStorage[sessionId]
+  if (!cached) {
+    return false
+  }
+  delete sessionStorage[sessionId]
+  if (cached.data.userId) {
+    deleteFromUserSessions(cached.data.userId, sessionId)
+  }
+  return true
+}
+
+export function sessionMemoryStats(): { sessions: number; users: number } {
+  return { sessions: Object.keys(sessionStorage).length, users: sessionsByUser.size }
 }
 
 export default class Session {
@@ -170,6 +210,13 @@ export default class Session {
 
   async store() {
     if (!this.id) return
+
+    if (this.data.userId) {
+      // The login path is init() -> data.userId = ... -> store(); restore() only indexes sessions it
+      // re-reads from the DB. Index here too, so per-user eviction and destroyAllForCurrentUser()
+      // see sessions created since the last restart.
+      addToUserSessions(this.data.userId, this.id)
+    }
 
     const data = {
       userId: this.data.userId,

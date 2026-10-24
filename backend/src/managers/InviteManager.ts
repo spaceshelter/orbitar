@@ -28,6 +28,20 @@ export default class InviteManager {
     this.parser = parser
   }
 
+  /** Drops the cached invite availability of one user, or of everyone when no user is given. */
+  public clearInvitesAvailabilityCache(userId?: number): number {
+    if (userId === undefined) {
+      const removed = this.invitesAvailabilityCache.size
+      this.invitesAvailabilityCache.clear()
+      return removed
+    }
+    return this.invitesAvailabilityCache.delete(userId) ? 1 : 0
+  }
+
+  public invitesAvailabilityCacheStats(): number {
+    return this.invitesAvailabilityCache.size
+  }
+
   async get(code: string): Promise<InviteRawWithIssuer | undefined> {
     return await this.inviteRepository.getInviteWithIssuer(code)
   }

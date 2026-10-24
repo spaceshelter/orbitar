@@ -68,6 +68,20 @@ export default class FeedManager {
     this.logger = logger
   }
 
+  /** Drops the cached site subscriptions of one user, or of everyone when no user is given. */
+  public clearUserSubscriptionsCache(userId?: number): number {
+    if (userId === undefined) {
+      const removed = this.userSubscriptionsCache.size
+      this.userSubscriptionsCache.clear()
+      return removed
+    }
+    return this.userSubscriptionsCache.delete(userId) ? 1 : 0
+  }
+
+  public userSubscriptionsCacheStats(): number {
+    return this.userSubscriptionsCache.size
+  }
+
   private offsetPostTs(ts: Date): number {
     if (!this.minDate) {
       return 0
