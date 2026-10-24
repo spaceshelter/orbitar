@@ -247,6 +247,7 @@ const requests = [
     inviteManager,
     oauthMiddlewareGenerator,
     oauth2Manager,
+    notificationManager,
     logger.child({ service: 'USER' }),
   ),
   new FeedController(

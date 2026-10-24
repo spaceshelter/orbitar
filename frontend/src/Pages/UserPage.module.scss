@@ -136,6 +136,22 @@
   font-weight: bold;
 }
 
+.muteButton {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 4px 12px;
+  background-color: var(--bg);
+  border: 1px solid var(--disabled-fg);
+  border-radius: 4px;
+  color: var(--fgSoft);
+  font-size: 14px;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--fg);
+  }
+}
+
 .userinfo {
   color: var(--fg);
   display: flex;
