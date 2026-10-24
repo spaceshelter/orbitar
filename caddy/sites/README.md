@@ -5,7 +5,8 @@ host can sit behind Orbitar's Caddy (it owns port 443). Nothing here is required
 a "No files matching import glob pattern" warning.
 
 The deploy workflow copies `/opt/deployment-specific-files/caddy-sites/*.caddy` from the host into this directory.
-Don't commit host-specific site files.
+Host-specific site files stay out of git (`.gitignore` here). The deploy runs `caddy validate` on the result before
+touching `/orbitar`, so a broken site file stops the deploy instead of taking Orbitar down.
 
 ## Media hosting on the same host
 
@@ -20,6 +21,9 @@ media.example.org, b.media.example.org, origin.media.example.org {
 ```
 
 Point DNS for the three names at this host. Without a `tls` line Caddy gets certificates from Let's Encrypt
-through the TLS-ALPN challenge on 443 and keeps them in the `caddy_data` volume. Then set
+through the TLS-ALPN challenge on 443 and keeps them in the `caddy_data` volume. That only works for names that
+resolve straight to this host: behind a TLS-terminating proxy (a proxied Cloudflare record, like `orbitar.space`) the
+challenge never reaches Caddy, and port 80 isn't published for HTTP-01, so such a site needs a `tls` line with its own
+certificate, like the Orbitar sites in `Caddyfile.ssl.local`. Then set
 `MEDIA_HOSTING_URL=https://media.example.org` and `MEDIA_HOSTING_CLIENT_ID` (the media stack's `CLIENT_ID`) in
 `.env` and rebuild: the frontend bakes the URL in at build time.

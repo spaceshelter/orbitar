@@ -110,6 +110,11 @@ jobs:
           echo "FINGERPRINT=$(date +%s%N)$RANDOM" >> .env
           
 
+      # caddy/sites/*.caddy come from the host and no CI sees them; a parse error would make Caddy exit
+      # on start. Validate in the workspace, before /orbitar is touched, with the service's own env and mounts.
+      - name: Validate Caddy config
+        run: docker compose -p orbitar -f docker-compose.ssl.local.yml run --rm --no-deps caddy caddy validate --config /etc/caddy/Caddyfile
+
       - name: Build
         env:
           # replace None with an empty string
