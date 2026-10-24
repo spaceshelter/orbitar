@@ -6,7 +6,9 @@ a "No files matching import glob pattern" warning.
 
 The deploy workflow copies `/opt/deployment-specific-files/caddy-sites/*.caddy` from the host into this directory.
 Host-specific site files stay out of git (`.gitignore` here). The deploy runs `caddy validate` on the result before
-touching `/orbitar`, so a broken site file stops the deploy instead of taking Orbitar down.
+touching `/orbitar`, so a syntax or config error stops the deploy instead of taking Orbitar down. It doesn't start
+listeners, though: a site that can't bind (e.g. `bind` to an address the container doesn't have) still passes, so
+keep site blocks to plain host names on the default port.
 
 ## Media hosting on the same host
 
