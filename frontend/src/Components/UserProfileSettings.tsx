@@ -77,6 +77,26 @@ export function getShowInlineTranslateButton(): boolean {
   return localStorage.getItem('showInlineTranslateButton') === 'true'
 }
 
+export type CommentBorderLevel = 'fgAlmostInvisible' | 'fgGhost' | 'fgSofter' | 'fgMedium'
+
+const commentBorderLevels: { value: CommentBorderLevel; label: string }[] = [
+  { value: 'fgAlmostInvisible', label: 'Невидимая' },
+  { value: 'fgGhost', label: 'Едва заметная' },
+  { value: 'fgSofter', label: 'Обычная' },
+  { value: 'fgMedium', label: 'Яркая' },
+]
+
+export function getCommentBorderLevel(): CommentBorderLevel {
+  const stored = localStorage.getItem('commentBorderLevel')
+  return commentBorderLevels.some(({ value }) => value === stored)
+    ? (stored as CommentBorderLevel)
+    : 'fgAlmostInvisible'
+}
+
+export function applyCommentBorderLevel(level: CommentBorderLevel): void {
+  document.documentElement.style.setProperty('--commentBorderColor', `var(--${level})`)
+}
+
 export default function UserProfileSettings(props: UserProfileSettingsProps) {
   useEffect(() => {
     window.scrollTo({ top: 0 })
@@ -94,6 +114,7 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
   const [autoMute, setAutoMute] = useState<boolean>(getAutoMuteVideos())
   const [preferredLang, setPreferredLang] = useState<string>(getPreferredLang())
   const [showInlineTranslateButton, setShowInlineTranslateButton] = useState<boolean>(getShowInlineTranslateButton())
+  const [commentBorderLevel, setCommentBorderLevel] = useState<CommentBorderLevel>(getCommentBorderLevel())
 
   const confirmWrapper = (message: string, callback: () => void) => async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -158,6 +179,10 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
     setPreferredLang(lang)
   }
 
+  const changeCommentBorderLevel = (ev: React.FormEvent<HTMLSelectElement>) => {
+    setCommentBorderLevel(ev.currentTarget.value as CommentBorderLevel)
+  }
+
   const handleGenderChange = (e: React.MouseEvent) => {
     e.preventDefault()
     if (gender === undefined) {
@@ -197,6 +222,11 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
     localStorage.setItem('preferredLang', preferredLang)
   }, [preferredLang])
 
+  useEffect(() => {
+    localStorage.setItem('commentBorderLevel', commentBorderLevel)
+    applyCommentBorderLevel(commentBorderLevel)
+  }, [commentBorderLevel])
+
   return (
     <div className={styles.settings}>
       <section className={styles.section}>
@@ -224,6 +254,16 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
       <section className={styles.section}>
         <div className={styles.buttonRow}>
           <ThemeToggleComponent dynamic={true} buttonLabel='Сменить тему' />
+        </div>
+        <div className={styles.row}>
+          <span className={styles.selectLabel}>Линия треда комментариев:</span>
+          <select onChange={changeCommentBorderLevel} value={commentBorderLevel}>
+            {commentBorderLevels.map(({ value, label }) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
         </div>
       </section>
 

@@ -10,6 +10,7 @@ import { getThemes, ThemeProvider } from './Theme/ThemeProvider'
 import './icons.font'
 
 import { ReloadOnUpdate } from './Components/ReloadOnUpdate'
+import { applyCommentBorderLevel, getCommentBorderLevel } from './Components/UserProfileSettings'
 
 ;(async () => {
   if (!('serviceWorker' in navigator)) {
@@ -28,6 +29,8 @@ const container = document.getElementById('root')
 if (!container) {
   throw new Error('No root container found')
 }
+
+applyCommentBorderLevel(getCommentBorderLevel())
 
 export const MobXAwareRouter: FunctionComponent = (props) => {
   const { router } = useAppState()
