@@ -1,6 +1,6 @@
-import { UserVoteFeedEvent, UserVotesDirection } from '../API/UserAPI'
+import { UserVoteFeedEvent } from '../API/UserAPI'
 
-type VoteFeedGroupKind = 'flat' | 'target-author' | 'context-post' | 'single'
+type VoteFeedGroupKind = 'target-author' | 'context-post' | 'single'
 
 export type VoteFeedGroup = {
   kind: VoteFeedGroupKind
@@ -96,23 +96,9 @@ const pickGroup = (events: UserVoteFeedEvent[], start: number): VoteFeedGroup =>
   }
 }
 
-export const groupVoteFeedEvents = (events: UserVoteFeedEvent[], direction: UserVotesDirection): VoteFeedGroup[] => {
+export const groupVoteFeedEvents = (events: UserVoteFeedEvent[]): VoteFeedGroup[] => {
   if (!events.length) {
     return []
-  }
-
-  // «Оценки мне» is a flat chronological timeline: run-based grouping fragments
-  // one subject into several groups whenever votes on other entities interleave
-  // (a real first page showed one comment split across four groups), and every
-  // received row already carries its own subject, voter and rating.
-  if (direction === 'received') {
-    return [
-      {
-        kind: 'flat',
-        latestAt: events[0].votedAt,
-        events,
-      },
-    ]
   }
 
   const groups: VoteFeedGroup[] = []

@@ -5,7 +5,8 @@ import DB from '../DB'
 // rarely-matching filter can walk a user's whole vote history. The optimizer hint
 // turns that worst case into a bounded, typed failure instead of minutes of CPU.
 // 500ms (not 2s): a filter that needs more would hit 2s on heavy voters anyway,
-// and with heavyFilterRateLimiter one user costs at most ~7.5 DB-seconds/minute.
+// and heavyReadRateLimiter counts these pages (and minus-only ones), so one user
+// costs at most ~7.5 DB-seconds/minute.
 const FILTER_MAX_EXECUTION_TIME_MS = 500
 const ER_QUERY_TIMEOUT = 3024
 
@@ -26,6 +27,12 @@ export type VoteFeedReference = {
   targetUserId: number
   vote: number
   votedAt: Date
+}
+
+export type VoteFeedFilterOptions = {
+  types?: VoteFeedEntityType[]
+  sign?: 'minus'
+  since?: Date
 }
 
 // Keyset cursor: position of the last seen event in the
@@ -50,6 +57,9 @@ export type ReceivedCommentSubjectRaw = {
   postId: number
   site: string
   postTitle: string
+  postHtml: string
+  html: string
+  created: Date
   rating: number
 }
 
@@ -156,13 +166,18 @@ export default class VoteFeedReadRepository {
     spec: VoteFeedBranchSpec,
     direction: VoteFeedDirection,
     filter: string,
-    cursor?: VoteFeedCursor,
+    cursor: VoteFeedCursor | undefined,
+    options: VoteFeedFilterOptions,
   ): string {
     const filterJoins = filter
       ? `${spec.filterJoins} join users fu on (fu.user_id = ${spec.filterUserColumn[direction]})`
       : ''
     const entityFilter = spec.filterEntityCondition ? `${spec.filterEntityCondition} or ` : ''
     const filterCondition = filter ? `and (${entityFilter}fu.username like :filter or fu.name like :filter)` : ''
+    const voteCondition = options.sign === 'minus' ? `${spec.alias}.vote < 0` : `${spec.alias}.vote != 0`
+    // The lower bound is a range on the feed index's second column, so a bounded
+    // window stops scanning at its start instead of walking the whole history.
+    const sinceCondition = options.since ? `and ${spec.alias}.voted_at >= :since` : ''
 
     // Driving each branch from its feed index lets MySQL 5.7 stop at the
     // branch limit instead of scanning and sorting the user's vote history.
@@ -172,7 +187,8 @@ export default class VoteFeedReadRepository {
               ${spec.joins}
               ${filterJoins}
         where ${spec.whereColumn[direction]} = :user_id
-          and ${spec.alias}.vote != 0
+          and ${voteCondition}
+          ${sinceCondition}
           ${spec.extraConditions}
           ${filterCondition}
           ${this.buildCursorCondition(spec, cursor)}
@@ -186,11 +202,18 @@ export default class VoteFeedReadRepository {
     filter: string,
     cursor: VoteFeedCursor | undefined,
     limit: number,
+    options: VoteFeedFilterOptions = {},
   ): Promise<VoteFeedReference[]> {
-    const union = VOTE_FEED_BRANCHES.map((spec) => this.buildBranch(spec, direction, filter, cursor)).join(
-      '\nunion all\n',
-    )
-    const timeoutHint = filter ? `/*+ MAX_EXECUTION_TIME(${FILTER_MAX_EXECUTION_TIME_MS}) */ ` : ''
+    const branches = options.types?.length
+      ? VOTE_FEED_BRANCHES.filter((spec) => options.types?.includes(spec.type))
+      : VOTE_FEED_BRANCHES
+    const union = branches
+      .map((spec) => this.buildBranch(spec, direction, filter, cursor, options))
+      .join('\nunion all\n')
+    // Minus votes are ~1% of history and `vote` is not in the feed index, so a
+    // minus-only page can walk far back just like a rarely-matching text filter.
+    const guarded = !!filter || options.sign === 'minus'
+    const timeoutHint = guarded ? `/*+ MAX_EXECUTION_TIME(${FILTER_MAX_EXECUTION_TIME_MS}) */ ` : ''
     const query = `
       select ${timeoutHint}type, entityId, postId, voterId, targetUserId, vote, votedAt
         from (${union}) votes
@@ -205,6 +228,9 @@ export default class VoteFeedReadRepository {
     }
     if (filter) {
       params.filter = `%${escapeLike(filter)}%`
+    }
+    if (options.since) {
+      params.since = options.since
     }
     if (cursor) {
       params.cursor_voted_at = cursor.votedAt
@@ -224,7 +250,7 @@ export default class VoteFeedReadRepository {
     try {
       rows = await this.db.fetchAll(query, params)
     } catch (error) {
-      if (filter && (error as { errno?: number }).errno === ER_QUERY_TIMEOUT) {
+      if (guarded && (error as { errno?: number }).errno === ER_QUERY_TIMEOUT) {
         throw new VoteFeedFilterTimeoutError()
       }
       throw error
@@ -263,8 +289,12 @@ export default class VoteFeedReadRepository {
     if (!commentIds.length) {
       return []
     }
+    // Same bounded prefixes as post labels: the comment html only feeds a ~72-char
+    // excerpt, and an untitled post's html names the discussion instead of a title.
     return this.db.fetchAll<ReceivedCommentSubjectRaw>(
-      `select c.comment_id id, c.post_id postId, s.subdomain site, p.title postTitle, c.rating
+      `select c.comment_id id, c.post_id postId, s.subdomain site, p.title postTitle,
+              if(nullif(trim(p.title), '') is null, left(p.html, 4096), '') postHtml,
+              left(c.html, 4096) html, c.created_at created, c.rating
          from comments c
          join posts p on (p.post_id = c.post_id)
          join sites s on (s.site_id = c.site_id)

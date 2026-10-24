@@ -1,0 +1,404 @@
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 22px;
+}
+
+.section {
+  margin-bottom: 28px;
+}
+
+.sectionHeader {
+  align-items: baseline;
+  border-bottom: 1px solid var(--fgAlmostInvisible);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding-bottom: 6px;
+}
+
+.sectionTitle {
+  color: var(--fgMedium);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.sectionSum {
+  white-space: nowrap;
+}
+
+.sectionNote {
+  color: var(--fgSofter);
+  font-size: 12px;
+  margin: 6px 0 12px;
+}
+
+// The partial-section note and «чаще всех» read as one block.
+.sectionNote + .sectionNote {
+  margin-top: -8px;
+}
+
+.sectionNote .meta {
+  margin-left: 0;
+}
+
+.meta {
+  color: var(--fgSofter);
+  font-size: 12px;
+  margin-left: 6px;
+}
+
+.value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.plus {
+  color: var(--primary);
+}
+
+.minus {
+  color: var(--danger);
+}
+
+.zero {
+  color: var(--fgSofter);
+}
+
+.big {
+  font-size: 17px;
+}
+
+.small {
+  font-size: 12px;
+}
+
+.card {
+  // Row columns: the sum, then the expand arrow, then the text; everything
+  // under a row's text (names, timeline, «ещё …») lines up with the text.
+  --value-width: 30px;
+  --arrow-width: 10px;
+  --text-indent: calc(var(--value-width) + 10px + var(--arrow-width) + 5px);
+
+  background: var(--dim2);
+  border-radius: 8px;
+  margin-bottom: 10px;
+  padding: 12px 14px;
+  // Keeps a card scrolled into view clear of the fixed top bar.
+  scroll-margin-top: 72px;
+
+  // UI kit buttons are flex boxes with padding; these read as inline links.
+  .moreVoters,
+  .expandCard {
+    background: none;
+    color: var(--link);
+    display: inline-block;
+    font-size: 13px;
+    font-weight: normal;
+    height: auto;
+    min-width: 0;
+    padding: 0;
+    vertical-align: baseline;
+
+    &:hover {
+      background: none;
+      color: var(--linkHover);
+    }
+  }
+
+  .expandCard {
+    margin: 6px 0 0 var(--text-indent);
+  }
+}
+
+.sectionNote + .card,
+.sectionHeader + .card {
+  margin-top: 12px;
+}
+
+.cardHeader {
+  align-items: baseline;
+  column-gap: 6px;
+  display: grid;
+  grid-template-areas: 'title sum meta';
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  margin-bottom: 6px;
+
+  // On a phone the people and time go under the title, which keeps the width
+  // of all but the sum.
+  @media (max-width: 599px) {
+    grid-template-areas: 'title sum' 'meta .';
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 2px;
+  }
+}
+
+.cardTitleWrap {
+  grid-area: title;
+  margin-right: 6px;
+  min-width: 0;
+}
+
+.cardTitle,
+.cardTitlePlain {
+  color: var(--fgHard);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.cardTitlePlain {
+  grid-area: title;
+}
+
+// A name made up for a post without title and text, not the author's own.
+.cardTitle.generatedTitle,
+.tailLink.generatedTitle {
+  color: var(--fgMedium);
+  font-style: italic;
+}
+
+.site {
+  border: 1px solid var(--fgAlmostInvisible);
+  border-radius: 4px;
+  color: var(--fgSofter);
+  font-size: 12px;
+  margin-left: 8px;
+  padding: 0 5px;
+}
+
+.cardSum {
+  grid-area: sum;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.cardMeta {
+  color: var(--fgSofter);
+  font-size: 12px;
+  grid-area: meta;
+  white-space: nowrap;
+}
+
+.subject {
+  border-top: 1px solid var(--fgAlmostInvisible);
+  display: flex;
+  padding: 6px 0;
+}
+
+// Grows for a three-digit sum instead of running into the arrow.
+.subjectValue {
+  flex: 0 0 auto;
+  margin-right: 10px;
+  min-width: var(--value-width);
+  text-align: right;
+}
+
+.subjectMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.karmaRow .subjectMain {
+  padding-left: var(--text-indent);
+}
+
+.quote {
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+
+// Same affordance as internal links inside content: the arrow turns 90° when the
+// post or comment is expanded in place.
+.expandArrow {
+  align-self: flex-start;
+  color: var(--fgMedium);
+  cursor: pointer;
+  flex: 0 0 var(--arrow-width);
+  font-size: 18px;
+  line-height: 1;
+  margin: 1px 5px 0 0;
+  text-align: center;
+  transform-origin: 40% center;
+  transition: transform 0.25s;
+  user-select: none;
+
+  &:hover {
+    color: var(--primaryHover);
+  }
+}
+
+.expandArrowOpen {
+  transform: rotate(90deg);
+}
+
+.subjectKind {
+  color: var(--fgSofter);
+  font-style: italic;
+}
+
+.subjectTime {
+  color: var(--fgSofter);
+  font-size: 13px;
+}
+
+.voters {
+  color: var(--fgSofter);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.voter {
+  color: var(--link);
+}
+
+.chronology {
+  columns: 2;
+  font-size: 13px;
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+
+  li {
+    padding: 1px 0;
+  }
+
+  @media (max-width: 599px) {
+    columns: 1;
+  }
+}
+
+.time {
+  color: var(--fgSofter);
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+.expandedContent {
+  margin-top: 8px;
+}
+
+.tail {
+  border: 1px dashed var(--fgAlmostInvisible);
+  border-radius: 8px;
+  color: var(--fgSofter);
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 8px 14px;
+}
+
+.tailHead {
+  color: var(--fgMedium);
+}
+
+// An item stays on one line while it fits and wraps inside itself when it does
+// not, so a long title never pushes the line past the card on narrow screens.
+.tailItem {
+  display: inline-block;
+  max-width: 100%;
+}
+
+.tailLink {
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+
+.empty {
+  background: var(--dim2);
+  border-radius: 8px;
+  color: var(--fgMedium);
+  font-size: 14px;
+  padding: 16px;
+}
+
+.footer,
+.empty {
+  .widenButton {
+    background: var(--dim2);
+    border-radius: 8px;
+    color: var(--fg);
+    font-size: 14px;
+    font-weight: normal;
+    height: auto;
+    opacity: 1;
+    padding: 8px 18px;
+  }
+}
+
+.empty .widenButton {
+  background: var(--dim3);
+  margin-top: 10px;
+}
+
+.footer {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 6px 0 24px;
+}
+
+.errorText {
+  color: var(--danger);
+  font-size: 14px;
+}
+
+.empty .errorText + .widenButton {
+  margin-top: 10px;
+}
+
+@keyframes skeletonPulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.skeleton {
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+.skeletonHeader {
+  border-bottom: 1px solid var(--fgAlmostInvisible);
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+}
+
+.skeletonCard {
+  background: var(--dim2);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 14px;
+}
+
+.skeletonLine {
+  background: var(--dim3);
+  border-radius: 4px;
+  display: block;
+  height: 12px;
+  max-width: 100%;
+}
+
+.srOnly {
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
