@@ -52,7 +52,7 @@ const MAX_HEIGHT = 450
 /**
  * Adds size to the URL for images from the media hosting domain.
  * Uses REACT_APP_MEDIA_HOSTING_URL to determine which URLs to transform.
- * Example: https://b.orbitar.media/image.jpg => https://b.orbitar.media/100/image.jpg
+ * Example: https://orbitar.media/image.jpg => https://orbitar.media/100/image.jpg
  */
 function getThumbnailUrl(url: string | undefined, size = 100): string | undefined {
   if (!url) return url
