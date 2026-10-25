@@ -41,7 +41,7 @@ export default class TheParser {
 
   private readonly mediaHostingConfig: MediaHostingConfig
   private readonly parserConfig: ParserConfig
-  private readonly mediaHostingUrlOrigin: string
+  private readonly mediaHostingUrlRegex: RegExp
   private readonly blockTags: string[]
 
   // Stack of tags that are currently being parsed, for internal use only
@@ -50,8 +50,9 @@ export default class TheParser {
   constructor(parserConfig: ParserConfig) {
     this.parserConfig = parserConfig
     this.mediaHostingConfig = parserConfig.mediaHosting
-    // add origin. subdomain to the url
-    this.mediaHostingUrlOrigin = this.mediaHostingConfig.url.replace(/^https?:\/\//, 'https://origin.')
+    // the media host or any subdomain of it (origin. bypasses the cdn, b. is the old cdn host)
+    const mediaHost = escapeRegExp(new URL(this.mediaHostingConfig.url).host)
+    this.mediaHostingUrlRegex = new RegExp(`^https?://(?:[a-z0-9-]+\\.)*${mediaHost}(?=[/?#]|$)`, 'i')
 
     this.allowedTags = {
       a: (node) => this.parseA(node),
@@ -315,13 +316,15 @@ export default class TheParser {
     return `${expandButton}<a href="${encodeURI(twitterUrl)}" target="_blank">${displayText}</a>`
   }
 
+  /** Links to the media host's subdomains point to the media host itself. */
+  toMediaHostingUrl(url: string): string {
+    return url.replace(this.mediaHostingUrlRegex, this.mediaHostingConfig.url)
+  }
+
   processImage(url: Url<string>) {
     if (url.pathname.match(/\.(jpg|gif|png|webp|jpeg|svg)$/)) {
       let img = url.toString()
-      // the origin bypasses the cdn
-      if (img.startsWith(this.mediaHostingUrlOrigin)) {
-        img = img.replace(this.mediaHostingUrlOrigin, this.mediaHostingConfig.url)
-      }
+      img = this.toMediaHostingUrl(img)
 
       return `<img src="${encodeURI(img)}" alt=""/>`
     }
@@ -531,10 +534,7 @@ export default class TheParser {
     if (!this.validUrl(url)) {
       return this.parseDisallowedTag(node)
     }
-    // the origin bypasses the cdn
-    if (url.startsWith(this.mediaHostingUrlOrigin)) {
-      url = url.replace(this.mediaHostingUrlOrigin, this.mediaHostingConfig.url)
-    }
+    url = this.toMediaHostingUrl(url)
 
     const alt = node.attribs['alt'] ? htmlEscape(node.attribs['alt']) : ''
 
@@ -623,14 +623,10 @@ export default class TheParser {
       )
     }
     const orbitarMediaPoster = () => {
-      if (url.startsWith(this.mediaHostingConfig.url) || url.startsWith(this.mediaHostingUrlOrigin)) {
+      if (this.mediaHostingUrlRegex.test(url)) {
         const match = url.match(/.*\/([^.]+\.mp4)(\/raw)?$/)
-        return (
-          match && [
-            `${this.mediaHostingConfig.url}/preview/${encodeURI(match[1])}`,
-            `${this.mediaHostingConfig.url}/${encodeURI(match[1])}/raw`,
-          ]
-        )
+        const base = this.mediaHostingConfig.url
+        return match && [`${base}/preview/${encodeURI(match[1])}`, `${base}/${encodeURI(match[1])}/raw`]
       }
     }
     const dumpVideoPoster = () => {
@@ -642,9 +638,7 @@ export default class TheParser {
     const posterUrl = imgurPoster() || idiodPoster() || dumpVideoPoster() || orbitarMediaPoster()
     if (posterUrl) {
       const [poster, video] = posterUrl
-      if (url.startsWith(this.mediaHostingUrlOrigin)) {
-        url = url.replace(this.mediaHostingUrlOrigin, this.mediaHostingConfig.url)
-      }
+      url = this.toMediaHostingUrl(url)
       return (
         `<a class="video-embed" href="${encodeURI(url)}" target="_blank">` +
         `<img src="${encodeURI(poster)}" alt="" data-video="${encodeURI(video)}"${loop ? ' data-loop="true"' : ''}/></a>`

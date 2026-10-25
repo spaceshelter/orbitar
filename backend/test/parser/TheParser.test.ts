@@ -8,19 +8,30 @@ const p = new TheParser({
   siteDomain: 'orbitar.local',
 })
 
-test('origin media urls are rewritten to the cdn, b. links are left alone', () => {
-  expect(p.parse('<img src="https://origin.orbitar.media/img1.jpg"/>').text).toEqual(
-    '<img src="https://orbitar.media/img1.jpg" alt=""/>',
-  )
-  expect(p.parse('https://origin.orbitar.media/img1.jpg').text).toEqual(
-    '<img src="https://orbitar.media/img1.jpg" alt=""/>',
-  )
-  expect(p.parse('<img src="https://b.orbitar.media/img1.jpg"/>').text).toEqual(
-    '<img src="https://b.orbitar.media/img1.jpg" alt=""/>',
-  )
-  expect(p.parse('https://b.orbitar.media/8feuw2.mp4').text).toEqual(
-    '<video  preload="metadata" controls="" width="500"><source src="https://b.orbitar.media/8feuw2.mp4" type="video/mp4"></video>',
-  )
+test('media host subdomains are rewritten to the media host', () => {
+  const embed = (href: string) =>
+    `<a class="video-embed" href="${href}" target="_blank"><img src="https://orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://orbitar.media/8feuw2.mp4/raw"/></a>`
+  for (const sub of ['origin.', 'b.', 'x.y.']) {
+    expect(p.parse(`<img src="https://${sub}orbitar.media/img1.jpg"/>`).text).toEqual(
+      '<img src="https://orbitar.media/img1.jpg" alt=""/>',
+    )
+    expect(p.parse(`https://${sub}orbitar.media/img1.jpg`).text).toEqual(
+      '<img src="https://orbitar.media/img1.jpg" alt=""/>',
+    )
+    expect(p.parse(`https://${sub}orbitar.media/8feuw2.mp4`).text).toEqual(embed('https://orbitar.media/8feuw2.mp4'))
+    expect(p.parse(`https://${sub}orbitar.media/8feuw2.mp4/raw`).text).toEqual(
+      embed('https://orbitar.media/8feuw2.mp4/raw'),
+    )
+    expect(p.parse(`<video src="https://${sub}orbitar.media/8feuw2.mp4"></video>`).text).toEqual(
+      embed('https://orbitar.media/8feuw2.mp4'),
+    )
+  }
+  // look-alike hosts are not the media host
+  for (const host of ['notorbitar.media', 'orbitar.media.example.com']) {
+    expect(p.parse(`<img src="https://${host}/img1.jpg"/>`).text).toEqual(
+      `<img src="https://${host}/img1.jpg" alt=""/>`,
+    )
+  }
 })
 
 test('parse A tag', () => {
