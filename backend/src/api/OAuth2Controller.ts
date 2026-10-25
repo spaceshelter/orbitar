@@ -8,8 +8,15 @@ import { config } from '../config'
 import { OAuth2ClientRaw } from '../db/types/OAuth2'
 import OAuth2Manager from '../managers/OAuth2Manager'
 import UserManager from '../managers/UserManager'
-import { escapeRegExp } from '../parser/regexprs'
-import { APIRequest, APIResponse, joiClientId, singleUriValidator, urisListValidator, validate } from './ApiMiddleware'
+import {
+  APIRequest,
+  APIResponse,
+  joiClientId,
+  mediaHostingUrlPattern,
+  singleUriValidator,
+  urisListValidator,
+  validate,
+} from './ApiMiddleware'
 import { ExpressOauth2ScopesFilter } from './OAuth2Middleware'
 import { OAuth2ClientEntity } from './types/entities/OAuth2ClientEntity'
 import {
@@ -96,7 +103,7 @@ const updateLogoUrlSchema = Joi.object<OAuth2ClientUpdateLogoUrlRequest>({
       scheme: ['http', 'https'],
     })
     .max(255)
-    .pattern(new RegExp(`^${escapeRegExp(config.mediaHosting.url)}`))
+    .pattern(mediaHostingUrlPattern(config.mediaHosting.url))
     .required(),
 })
 
