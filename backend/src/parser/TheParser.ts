@@ -42,7 +42,8 @@ export default class TheParser {
   private readonly mediaHostingConfig: MediaHostingConfig
   private readonly parserConfig: ParserConfig
   private readonly mediaHostingUrlOrigin: string
-  private readonly mediaHostingUrlBunny: string
+  // b. subdomain: links posted before the CDN served the main domain
+  private readonly mediaHostingUrlLegacyCdn: string
   private readonly blockTags: string[]
 
   // Stack of tags that are currently being parsed, for internal use only
@@ -54,7 +55,7 @@ export default class TheParser {
     // add origin. subdomain to the url
     this.mediaHostingUrlOrigin = this.mediaHostingConfig.url.replace(/^https?:\/\//, 'https://origin.')
 
-    this.mediaHostingUrlBunny = this.mediaHostingConfig.url.replace(/^https?:\/\//, 'https://b.')
+    this.mediaHostingUrlLegacyCdn = this.mediaHostingConfig.url.replace(/^https?:\/\//, 'https://b.')
 
     this.allowedTags = {
       a: (node) => this.parseA(node),
@@ -321,12 +322,9 @@ export default class TheParser {
   processImage(url: Url<string>) {
     if (url.pathname.match(/\.(jpg|gif|png|webp|jpeg|svg)$/)) {
       let img = url.toString()
-      // replace media url with bunny cdn
-      if (img.startsWith(this.mediaHostingConfig.url) || img.startsWith(this.mediaHostingUrlOrigin)) {
-        img = img.replace(
-          new RegExp(`^(${escapeRegExp(this.mediaHostingUrlOrigin)}|${escapeRegExp(this.mediaHostingConfig.url)})`),
-          this.mediaHostingUrlBunny,
-        )
+      // the origin bypasses the cdn
+      if (img.startsWith(this.mediaHostingUrlOrigin)) {
+        img = img.replace(this.mediaHostingUrlOrigin, this.mediaHostingConfig.url)
       }
 
       return `<img src="${encodeURI(img)}" alt=""/>`
@@ -373,7 +371,7 @@ export default class TheParser {
       if (match) {
         const coubId = match[1]
         const origUrl = `https://coub.com/view/${coubId}`
-        const previewUrl = `${this.mediaHostingUrlBunny}/coub/${coubId}`
+        const previewUrl = `${this.mediaHostingConfig.url}/coub/${coubId}`
         const embedUrl = `https://coub.com/embed/${coubId}`
 
         return (
@@ -458,7 +456,7 @@ export default class TheParser {
     const startTime = url.hash ? parseTime(qs.parse(url.hash.substring(1)).t) : 0
 
     const origUrl = `https://vimeo.com/${videoId}${startTime ? '#t=' + startTime : ''}`
-    const previewUrl = `${this.mediaHostingUrlBunny}/vimeo/${videoId}`
+    const previewUrl = `${this.mediaHostingConfig.url}/vimeo/${videoId}`
     const embedUrl = `https://player.vimeo.com/video/${videoId}${startTime ? '#t=' + startTime : ''}`
 
     return (
@@ -537,12 +535,9 @@ export default class TheParser {
     if (!this.validUrl(url)) {
       return this.parseDisallowedTag(node)
     }
-    // replace media url with bunny cdn
-    if (url.startsWith(this.mediaHostingConfig.url) || url.startsWith(this.mediaHostingUrlOrigin)) {
-      url = url.replace(
-        new RegExp(`^(${escapeRegExp(this.mediaHostingUrlOrigin)}|${escapeRegExp(this.mediaHostingConfig.url)})`),
-        this.mediaHostingUrlBunny,
-      )
+    // the origin bypasses the cdn
+    if (url.startsWith(this.mediaHostingUrlOrigin)) {
+      url = url.replace(this.mediaHostingUrlOrigin, this.mediaHostingConfig.url)
     }
 
     const alt = node.attribs['alt'] ? htmlEscape(node.attribs['alt']) : ''
@@ -635,13 +630,13 @@ export default class TheParser {
       if (
         url.startsWith(this.mediaHostingConfig.url) ||
         url.startsWith(this.mediaHostingUrlOrigin) ||
-        url.startsWith(this.mediaHostingUrlBunny)
+        url.startsWith(this.mediaHostingUrlLegacyCdn)
       ) {
         const match = url.match(/.*\/([^.]+\.mp4)(\/raw)?$/)
         return (
           match && [
-            `${this.mediaHostingUrlBunny}/preview/${encodeURI(match[1])}`,
-            `${this.mediaHostingUrlBunny}/${encodeURI(match[1])}/raw`,
+            `${this.mediaHostingConfig.url}/preview/${encodeURI(match[1])}`,
+            `${this.mediaHostingConfig.url}/${encodeURI(match[1])}/raw`,
           ]
         )
       }
@@ -656,7 +651,7 @@ export default class TheParser {
     if (posterUrl) {
       const [poster, video] = posterUrl
       if (url.startsWith(this.mediaHostingUrlOrigin)) {
-        url = url.replace(this.mediaHostingUrlOrigin, this.mediaHostingUrlBunny)
+        url = url.replace(this.mediaHostingUrlOrigin, this.mediaHostingConfig.url)
       }
       return (
         `<a class="video-embed" href="${encodeURI(url)}" target="_blank">` +

@@ -8,6 +8,21 @@ const p = new TheParser({
   siteDomain: 'orbitar.local',
 })
 
+test('origin media urls are rewritten to the cdn, legacy b. links still work', () => {
+  expect(p.parse('<img src="https://origin.orbitar.media/img1.jpg"/>').text).toEqual(
+    '<img src="https://orbitar.media/img1.jpg" alt=""/>',
+  )
+  expect(p.parse('https://origin.orbitar.media/img1.jpg').text).toEqual(
+    '<img src="https://orbitar.media/img1.jpg" alt=""/>',
+  )
+  expect(p.parse('<img src="https://b.orbitar.media/img1.jpg"/>').text).toEqual(
+    '<img src="https://b.orbitar.media/img1.jpg" alt=""/>',
+  )
+  expect(p.parse('https://b.orbitar.media/8feuw2.mp4').text).toEqual(
+    `<a class="video-embed" href="https://b.orbitar.media/8feuw2.mp4" target="_blank"><img src="https://orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://orbitar.media/8feuw2.mp4/raw"/></a>`,
+  )
+})
+
 test('parse A tag', () => {
   // already encoded
   expect(
@@ -55,7 +70,7 @@ test('youtube shorts', () => {
 test('vimeo player embed', () => {
   expect(p.parse('https://www.vimeo.com/123456789').text).toEqual(
     `<a class="vimeo-embed" href="https://vimeo.com/123456789" target="_blank">` +
-      `<img src="https://b.orbitar.media/vimeo/123456789" alt="" data-vimeo="https://player.vimeo.com/video/123456789"/></a>`,
+      `<img src="https://orbitar.media/vimeo/123456789" alt="" data-vimeo="https://player.vimeo.com/video/123456789"/></a>`,
   )
 })
 
@@ -73,25 +88,25 @@ test('idiod video embed', () => {
 
 test('orbitar video embed', () => {
   expect(p.parse('https://orbitar.media/8feuw2.mp4').text).toEqual(
-    `<a class="video-embed" href="https://orbitar.media/8feuw2.mp4" target="_blank"><img src="https://b.orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://b.orbitar.media/8feuw2.mp4/raw"/></a>`,
+    `<a class="video-embed" href="https://orbitar.media/8feuw2.mp4" target="_blank"><img src="https://orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://orbitar.media/8feuw2.mp4/raw"/></a>`,
   )
 })
 
 test('orbitar video embed origin', () => {
   expect(p.parse('https://origin.orbitar.media/8feuw2.mp4').text).toEqual(
-    `<a class="video-embed" href="https://b.orbitar.media/8feuw2.mp4" target="_blank"><img src="https://b.orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://b.orbitar.media/8feuw2.mp4/raw"/></a>`,
+    `<a class="video-embed" href="https://orbitar.media/8feuw2.mp4" target="_blank"><img src="https://orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://orbitar.media/8feuw2.mp4/raw"/></a>`,
   )
 })
 
 test('raw orbitar video embed', () => {
   expect(p.parse('https://orbitar.media/8feuw2.mp4/raw').text).toEqual(
-    `<a class="video-embed" href="https://orbitar.media/8feuw2.mp4/raw" target="_blank"><img src="https://b.orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://b.orbitar.media/8feuw2.mp4/raw"/></a>`,
+    `<a class="video-embed" href="https://orbitar.media/8feuw2.mp4/raw" target="_blank"><img src="https://orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://orbitar.media/8feuw2.mp4/raw"/></a>`,
   )
 })
 
 test('origin orbitar video embed', () => {
   expect(p.parse('https://origin.orbitar.media/8feuw2.mp4/raw').text).toEqual(
-    `<a class="video-embed" href="https://b.orbitar.media/8feuw2.mp4/raw" target="_blank"><img src="https://b.orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://b.orbitar.media/8feuw2.mp4/raw"/></a>`,
+    `<a class="video-embed" href="https://orbitar.media/8feuw2.mp4/raw" target="_blank"><img src="https://orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://orbitar.media/8feuw2.mp4/raw"/></a>`,
   )
 })
 
@@ -106,7 +121,7 @@ test('mp4 video element', () => {
 
 test('coub embed', () => {
   expect(p.parse('https://coub.com/view/1eyshv').text).toEqual(
-    `<a class="coub-embed" href="https://coub.com/view/1eyshv" target="_blank"><img src="https://b.orbitar.media/coub/1eyshv" alt="" data-coub="https://coub.com/embed/1eyshv"/></a>`,
+    `<a class="coub-embed" href="https://coub.com/view/1eyshv" target="_blank"><img src="https://orbitar.media/coub/1eyshv" alt="" data-coub="https://coub.com/embed/1eyshv"/></a>`,
   )
 })
 
@@ -314,7 +329,7 @@ test('parse expand tag', () => {
 test('parse gallery with single image returns just the image (no wrapper)', () => {
   const result = p.parse('<gallery><img src="https://orbitar.media/img1.jpg" alt="img1"/></gallery>')
   // Single item gallery returns content without wrapper
-  expect(result.text).toEqual('<img src="https://b.orbitar.media/img1.jpg" alt="img1"/>')
+  expect(result.text).toEqual('<img src="https://orbitar.media/img1.jpg" alt="img1"/>')
 })
 
 test('parse gallery with nested tags', () => {
@@ -322,7 +337,7 @@ test('parse gallery with nested tags', () => {
     '<gallery><img src="https://orbitar.media/img1.jpg" alt="img1"/><img src="https://orbitar.media/img2.jpg" alt="img2"/></gallery>',
   )
   expect(result.text).toEqual(
-    '<div class="gallery"><img src="https://b.orbitar.media/img1.jpg" alt="img1"/><img src="https://b.orbitar.media/img2.jpg" alt="img2"/></div>',
+    '<div class="gallery"><img src="https://orbitar.media/img1.jpg" alt="img1"/><img src="https://orbitar.media/img2.jpg" alt="img2"/></div>',
   )
 })
 
@@ -541,11 +556,11 @@ describe('gallery filtering with multiple items', () => {
     expect(result.text).not.toContain('onerror')
   })
 
-  test('gallery rewrites orbitar media URLs to CDN', () => {
+  test('gallery keeps orbitar media URLs', () => {
     const result = p.parse('<gallery>https://orbitar.media/a.jpg https://orbitar.media/b.jpg</gallery>')
     expect(result.text).toContain('<div class="gallery"')
-    expect(result.text).toContain('https://b.orbitar.media/a.jpg')
-    expect(result.text).toContain('https://b.orbitar.media/b.jpg')
+    expect(result.text).toContain('https://orbitar.media/a.jpg')
+    expect(result.text).toContain('https://orbitar.media/b.jpg')
   })
 
   test('gallery keeps idiod.video URLs as video embeds', () => {
@@ -741,9 +756,9 @@ describe('gallery edge cases', () => {
     expect(result.text).toContain('vimeo-embed')
   })
 
-  test('orbitar media URL gets CDN rewrite', () => {
+  test('orbitar media URL is kept', () => {
     const result = p.parse('<gallery>https://orbitar.media/image.jpg</gallery>')
-    expect(result.text).toContain('https://b.orbitar.media/image.jpg')
+    expect(result.text).toContain('https://orbitar.media/image.jpg')
   })
 
   test('HTML comment inside gallery with single image', () => {
@@ -1002,13 +1017,13 @@ test('parse img alt attribute for double escape', () => {
   // alt contains HTML special chars
   const result = p.parse('<img src="https://orbitar.media/img1.jpg" alt="&lt;test&gt; &amp; &quot;"/>')
   expect(result.text).toEqual(
-    '<img src="https://b.orbitar.media/img1.jpg" alt="&amp;lt;test&amp;gt; &amp;amp; &amp;quot;"/>',
+    '<img src="https://orbitar.media/img1.jpg" alt="&amp;lt;test&amp;gt; &amp;amp; &amp;quot;"/>',
   )
 })
 
 test('parse img alt attribute with quotes', () => {
   const result = p.parse('<img src="https://orbitar.media/img1.jpg" alt="a &quot;quote&quot;"/>')
-  expect(result.text).toEqual('<img src="https://b.orbitar.media/img1.jpg" alt="a &amp;quot;quote&amp;quot;"/>')
+  expect(result.text).toEqual('<img src="https://orbitar.media/img1.jpg" alt="a &amp;quot;quote&amp;quot;"/>')
 })
 
 test('parse img alt attribute vulnerable with single quote', () => {
@@ -1018,12 +1033,12 @@ test('parse img alt attribute vulnerable with single quote', () => {
 
 test('parse img alt attribute with single quote', () => {
   const result = p.parse('<img src="https://orbitar.media/img1.jpg" alt="it\'s a test"/>')
-  expect(result.text).toEqual('<img src="https://b.orbitar.media/img1.jpg" alt="it&#39;s a test"/>')
+  expect(result.text).toEqual('<img src="https://orbitar.media/img1.jpg" alt="it&#39;s a test"/>')
 })
 
 test('parse img with missing alt attribute', () => {
   const result = p.parse('<img src="https://orbitar.media/img1.jpg"/>')
-  expect(result.text).toEqual('<img src="https://b.orbitar.media/img1.jpg" alt=""/>')
+  expect(result.text).toEqual('<img src="https://orbitar.media/img1.jpg" alt=""/>')
 })
 
 test('parse secret mailbox with valid secret attribute', () => {
