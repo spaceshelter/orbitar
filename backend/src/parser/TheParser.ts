@@ -42,8 +42,6 @@ export default class TheParser {
   private readonly mediaHostingConfig: MediaHostingConfig
   private readonly parserConfig: ParserConfig
   private readonly mediaHostingUrlOrigin: string
-  // b. subdomain: links posted before the CDN served the main domain
-  private readonly mediaHostingUrlLegacyCdn: string
   private readonly blockTags: string[]
 
   // Stack of tags that are currently being parsed, for internal use only
@@ -54,8 +52,6 @@ export default class TheParser {
     this.mediaHostingConfig = parserConfig.mediaHosting
     // add origin. subdomain to the url
     this.mediaHostingUrlOrigin = this.mediaHostingConfig.url.replace(/^https?:\/\//, 'https://origin.')
-
-    this.mediaHostingUrlLegacyCdn = this.mediaHostingConfig.url.replace(/^https?:\/\//, 'https://b.')
 
     this.allowedTags = {
       a: (node) => this.parseA(node),
@@ -627,11 +623,7 @@ export default class TheParser {
       )
     }
     const orbitarMediaPoster = () => {
-      if (
-        url.startsWith(this.mediaHostingConfig.url) ||
-        url.startsWith(this.mediaHostingUrlOrigin) ||
-        url.startsWith(this.mediaHostingUrlLegacyCdn)
-      ) {
+      if (url.startsWith(this.mediaHostingConfig.url) || url.startsWith(this.mediaHostingUrlOrigin)) {
         const match = url.match(/.*\/([^.]+\.mp4)(\/raw)?$/)
         return (
           match && [

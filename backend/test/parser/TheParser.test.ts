@@ -8,7 +8,7 @@ const p = new TheParser({
   siteDomain: 'orbitar.local',
 })
 
-test('origin media urls are rewritten to the cdn, legacy b. links still work', () => {
+test('origin media urls are rewritten to the cdn, b. links are left alone', () => {
   expect(p.parse('<img src="https://origin.orbitar.media/img1.jpg"/>').text).toEqual(
     '<img src="https://orbitar.media/img1.jpg" alt=""/>',
   )
@@ -19,7 +19,7 @@ test('origin media urls are rewritten to the cdn, legacy b. links still work', (
     '<img src="https://b.orbitar.media/img1.jpg" alt=""/>',
   )
   expect(p.parse('https://b.orbitar.media/8feuw2.mp4').text).toEqual(
-    `<a class="video-embed" href="https://b.orbitar.media/8feuw2.mp4" target="_blank"><img src="https://orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://orbitar.media/8feuw2.mp4/raw"/></a>`,
+    '<video  preload="metadata" controls="" width="500"><source src="https://b.orbitar.media/8feuw2.mp4" type="video/mp4"></video>',
   )
 })
 
