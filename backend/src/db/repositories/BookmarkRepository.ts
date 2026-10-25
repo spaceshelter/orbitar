@@ -51,10 +51,15 @@ export default class BookmarkRepository {
       const actualReadCount = parseInt(actualReadCountResult?.cnt || '0')
 
       // finally update counter
+      // Both branches only move progress forward: the guards above ran on a non-locking read, so a
+      // concurrent request may have committed newer progress since. The recount cannot legitimately
+      // shrink (comments are never deleted and new ones get higher ids), so greatest() loses nothing.
       if (fetchedBookmark) {
         await conn.query(
           `
-                    update user_bookmarks set read_comments = :read_comments, last_read_comment_id = :last_read_comment_id
+                    update user_bookmarks
+                    set read_comments = greatest(read_comments, :read_comments),
+                        last_read_comment_id = greatest(coalesce(last_read_comment_id, 0), :last_read_comment_id)
                     where user_id=:user_id and post_id=:post_id
                 `,
           {
@@ -65,8 +70,8 @@ export default class BookmarkRepository {
           },
         )
       } else {
-        // The select above takes no lock when the row is missing, so a concurrent request
-        // (or setBookmark/setWatch) may insert it first; merge instead of failing on the PK.
+        // No row was seen, but a concurrent request (or setBookmark/setWatch) may insert it first;
+        // merge instead of failing on the PK.
         await conn.query(
           `
                     insert into user_bookmarks (post_id, user_id, read_comments, last_read_comment_id)

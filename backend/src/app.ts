@@ -1,6 +1,7 @@
 import 'dotenv-flow/config'
 // Patches Express 4 so a rejected promise from an async route handler reaches the error handler below
-// instead of becoming an unhandled rejection that kills the process.
+// instead of becoming an unhandled rejection that kills the process. It monkey-patches Express internals
+// (router/Layer); drop it when moving to Express 5, which handles async rejections natively.
 import 'express-async-errors'
 
 import colors from '@colors/colors/safe'
@@ -94,12 +95,25 @@ const consoleTransport = new winston.transports.Console({
       service = colors[color](service)
       return `${info.level} ${service} ${info.message} ${colors.gray(rest)}`
     }),
-    winston.format.errors({ stack: true }),
   ),
+})
+
+// Error's message/stack are not enumerable, so the JSON printf above would log a nested
+// `{ error: err }` as `{}` and a bare `logger.error(err)` with an `undefined` message.
+// errors() handles the bare form; expandErrors() handles errors passed as metadata fields.
+const expandErrors = winston.format((info) => {
+  for (const key of Object.keys(info)) {
+    const value = info[key]
+    if (value instanceof Error) {
+      info[key] = { ...value, name: value.name, message: value.message, stack: value.stack }
+    }
+  }
+  return info
 })
 
 const logger = winston.createLogger({
   level: config.logLevel,
+  format: winston.format.combine(winston.format.errors({ stack: true }), expandErrors()),
   transports: [consoleTransport],
 })
 
@@ -325,11 +339,6 @@ app.all('*', (req, res) => {
   res.status(404).json({ result: 'error', code: '404', message: 'Unknown endpoint' })
 })
 
-// mysql2 errors carry enumerable fields (code, sql), but message/stack of a plain Error are not
-// enumerable and would be dropped by the JSON log formatter.
-const describeError = (err: unknown) =>
-  err instanceof Error ? { ...err, name: err.name, message: err.message, stack: err.stack } : err
-
 app.use(
   (
     err: { status?: number; statusCode?: number; expose?: boolean; message?: string },
@@ -338,7 +347,7 @@ app.use(
     next: express.NextFunction,
   ) => {
     if (res.headersSent) {
-      logger.error('Unhandled route error after response was sent', { error: describeError(err), url: req.originalUrl })
+      logger.error('Unhandled route error after response was sent', { error: err, url: req.originalUrl })
       return next(err)
     }
 
@@ -348,7 +357,7 @@ app.use(
       return res.status(status).json({ result: 'error', code: String(status), message: err.message })
     }
 
-    logger.error('Unhandled route error', { error: describeError(err), url: req.originalUrl })
+    logger.error('Unhandled route error', { error: err, url: req.originalUrl })
     res.status(500).json({ result: 'error', code: 'error', message: 'Unknown error' })
   },
 )
@@ -356,7 +365,7 @@ app.use(
 process.on('unhandledRejection', (reason) => {
   // Route rejections are handled above. Anything else is unexpected background state, so keep Node's
   // default of exiting (Docker restarts the container), but log it through winston first.
-  logger.error('Unhandled promise rejection, exiting', { error: describeError(reason) })
+  logger.error('Unhandled promise rejection, exiting', { error: reason })
   process.exit(1)
 })
 ;(async () => {

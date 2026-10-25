@@ -307,7 +307,6 @@ export default class PostController {
       })
     } catch (err) {
       this.logger.error('Post get error', { error: err, post_id: postId })
-      this.logger.error(err)
       return response.error('error', 'Unknown error', 500)
     }
   }
@@ -340,7 +339,6 @@ export default class PostController {
       response.success({ post, users })
     } catch (err) {
       this.logger.error('Post edit error', { error: err, user_id: userId, post_id: id, format, content, title })
-      this.logger.error(err)
 
       if (err instanceof CodeError && err.code === 'access-denied') {
         return response.error('access-denied', 'Access-denied')
@@ -384,7 +382,6 @@ export default class PostController {
       response.success({ post })
     } catch (err) {
       this.logger.error('Post create failed', { error: err, user_id: userId, site, format, content, title })
-      this.logger.error(err)
       return response.error('error', 'Unknown error', 500)
     }
   }
@@ -400,7 +397,6 @@ export default class PostController {
       response.success({ content: result })
     } catch (err) {
       this.logger.error('Comment create failed', { error: err, user_id: userId, content })
-      this.logger.error(err)
       return response.error('error', 'Unknown error', 500)
     }
   }
@@ -472,7 +468,6 @@ export default class PostController {
       })
     } catch (err) {
       this.logger.error('Comment create failed', { error: err, user_id: userId, format, content, post_id: postId })
-      this.logger.error(err)
       return response.error('error', 'Unknown error', 500)
     }
   }
@@ -512,7 +507,6 @@ export default class PostController {
       response.success({ bookmark: bookmark })
     } catch (err) {
       this.logger.error('Bookmark failed', { error: err, user_id: userId, post_id: postId, bookmark })
-      this.logger.error(err)
       return response.error('error', 'Unknown error', 500)
     }
   }
@@ -531,7 +525,6 @@ export default class PostController {
       response.success({ watch })
     } catch (err) {
       this.logger.error('Watch failed', { error: err, user_id: userId, post_id: postId, watch })
-      this.logger.error(err)
       return response.error('error', 'Unknown error', 500)
     }
   }
@@ -567,7 +560,6 @@ export default class PostController {
       })
     } catch (err) {
       this.logger.error('Comment get error', { error: err, comment_id: commentId })
-      this.logger.error(err)
       return response.error('error', 'Unknown error', 500)
     }
   }
@@ -602,7 +594,6 @@ export default class PostController {
       })
     } catch (err) {
       this.logger.error('Comment edit error', { error: err, comment_id: commentId })
-      this.logger.error(err)
 
       if (err instanceof CodeError && err.code === 'access-denied') {
         return response.error('access-denied', 'Access-denied')
@@ -692,7 +683,6 @@ export default class PostController {
       })
     } catch (err) {
       this.logger.error('History request error', { error: err, ref_id: id, ref_type: type })
-      this.logger.error(err)
 
       if (err instanceof CodeError && err.code === 'access-denied') {
         return response.error('access-denied', 'Access-denied')
