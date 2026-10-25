@@ -26,6 +26,19 @@ test('media host subdomains are rewritten to the media host', () => {
       embed('https://orbitar.media/8feuw2.mp4'),
     )
   }
+  // an explicit port is part of the host
+  expect(p.parse('<video src="https://origin.orbitar.media:443/8feuw2.mp4"></video>').text).toEqual(
+    embed('https://orbitar.media/8feuw2.mp4'),
+  )
+  // a trailing slash in the config doesn't double the slash
+  const slash = new TheParser({
+    mediaHosting: { url: 'https://orbitar.media/', dimsAesKey: '' },
+    siteDomain: 'orbitar.local',
+  })
+  expect(slash.parse('<img src="https://origin.orbitar.media/img1.jpg"/>').text).toEqual(
+    '<img src="https://orbitar.media/img1.jpg" alt=""/>',
+  )
+  expect(slash.parse('https://b.orbitar.media/8feuw2.mp4').text).toEqual(embed('https://orbitar.media/8feuw2.mp4'))
   // look-alike hosts are not the media host
   for (const host of ['notorbitar.media', 'orbitar.media.example.com']) {
     expect(p.parse(`<img src="https://${host}/img1.jpg"/>`).text).toEqual(

@@ -41,6 +41,7 @@ export default class TheParser {
 
   private readonly mediaHostingConfig: MediaHostingConfig
   private readonly parserConfig: ParserConfig
+  private readonly mediaHostingOrigin: string
   private readonly mediaHostingUrlRegex: RegExp
   private readonly blockTags: string[]
 
@@ -51,8 +52,10 @@ export default class TheParser {
     this.parserConfig = parserConfig
     this.mediaHostingConfig = parserConfig.mediaHosting
     // the media host or any subdomain of it (origin. bypasses the cdn, b. is the old cdn host)
-    const mediaHost = escapeRegExp(new URL(this.mediaHostingConfig.url).host)
-    this.mediaHostingUrlRegex = new RegExp(`^https?://(?:[a-z0-9-]+\\.)*${mediaHost}(?=[/?#]|$)`, 'i')
+    const mediaHostingUrl = new URL(this.mediaHostingConfig.url)
+    this.mediaHostingOrigin = mediaHostingUrl.origin
+    const mediaHost = escapeRegExp(mediaHostingUrl.hostname)
+    this.mediaHostingUrlRegex = new RegExp(`^https?://(?:[a-z0-9-]+\\.)*${mediaHost}(?::\\d+)?(?=[/?#]|$)`, 'i')
 
     this.allowedTags = {
       a: (node) => this.parseA(node),
@@ -318,7 +321,7 @@ export default class TheParser {
 
   /** Links to the media host's subdomains point to the media host itself. */
   toMediaHostingUrl(url: string): string {
-    return url.replace(this.mediaHostingUrlRegex, this.mediaHostingConfig.url)
+    return url.replace(this.mediaHostingUrlRegex, this.mediaHostingOrigin)
   }
 
   processImage(url: Url<string>) {
@@ -370,7 +373,7 @@ export default class TheParser {
       if (match) {
         const coubId = match[1]
         const origUrl = `https://coub.com/view/${coubId}`
-        const previewUrl = `${this.mediaHostingConfig.url}/coub/${coubId}`
+        const previewUrl = `${this.mediaHostingOrigin}/coub/${coubId}`
         const embedUrl = `https://coub.com/embed/${coubId}`
 
         return (
@@ -455,7 +458,7 @@ export default class TheParser {
     const startTime = url.hash ? parseTime(qs.parse(url.hash.substring(1)).t) : 0
 
     const origUrl = `https://vimeo.com/${videoId}${startTime ? '#t=' + startTime : ''}`
-    const previewUrl = `${this.mediaHostingConfig.url}/vimeo/${videoId}`
+    const previewUrl = `${this.mediaHostingOrigin}/vimeo/${videoId}`
     const embedUrl = `https://player.vimeo.com/video/${videoId}${startTime ? '#t=' + startTime : ''}`
 
     return (
@@ -625,7 +628,7 @@ export default class TheParser {
     const orbitarMediaPoster = () => {
       if (this.mediaHostingUrlRegex.test(url)) {
         const match = url.match(/.*\/([^.]+\.mp4)(\/raw)?$/)
-        const base = this.mediaHostingConfig.url
+        const base = this.mediaHostingOrigin
         return match && [`${base}/preview/${encodeURI(match[1])}`, `${base}/${encodeURI(match[1])}/raw`]
       }
     }
