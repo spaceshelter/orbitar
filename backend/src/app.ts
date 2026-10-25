@@ -1,4 +1,7 @@
 import 'dotenv-flow/config'
+// Patches Express 4 so a rejected promise from an async route handler reaches the error handler below
+// instead of becoming an unhandled rejection that kills the process.
+import 'express-async-errors'
 
 import colors from '@colors/colors/safe'
 import OAuthServer from '@node-oauth/express-oauth-server'
@@ -320,6 +323,19 @@ for (const request of requests) {
 
 app.all('*', (req, res) => {
   res.status(404).json({ result: 'error', code: '404', message: 'Unknown endpoint' })
+})
+
+app.use((err: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  logger.error('Unhandled route error', { error: err, url: req.originalUrl })
+  if (res.headersSent) {
+    return next(err)
+  }
+  res.status(500).json({ result: 'error', code: 'error', message: 'Unknown error' })
+})
+
+process.on('unhandledRejection', (reason) => {
+  // Log instead of crashing: a stray rejection outside a request should not take the whole backend down.
+  logger.error('Unhandled promise rejection', { error: reason })
 })
 ;(async () => {
   await db.ping()

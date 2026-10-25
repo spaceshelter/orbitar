@@ -65,10 +65,15 @@ export default class BookmarkRepository {
           },
         )
       } else {
+        // The select above takes no lock when the row is missing, so a concurrent request
+        // (or setBookmark/setWatch) may insert it first; merge instead of failing on the PK.
         await conn.query(
           `
                     insert into user_bookmarks (post_id, user_id, read_comments, last_read_comment_id)
                     values (:post_id, :user_id, :read_comments, :last_read_comment_id)
+                    on duplicate key update
+                        read_comments = greatest(read_comments, values(read_comments)),
+                        last_read_comment_id = greatest(coalesce(last_read_comment_id, 0), values(last_read_comment_id))
                 `,
           {
             post_id: postId,
