@@ -325,17 +325,39 @@ app.all('*', (req, res) => {
   res.status(404).json({ result: 'error', code: '404', message: 'Unknown endpoint' })
 })
 
-app.use((err: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  logger.error('Unhandled route error', { error: err, url: req.originalUrl })
-  if (res.headersSent) {
-    return next(err)
-  }
-  res.status(500).json({ result: 'error', code: 'error', message: 'Unknown error' })
-})
+// mysql2 errors carry enumerable fields (code, sql), but message/stack of a plain Error are not
+// enumerable and would be dropped by the JSON log formatter.
+const describeError = (err: unknown) =>
+  err instanceof Error ? { ...err, name: err.name, message: err.message, stack: err.stack } : err
+
+app.use(
+  (
+    err: { status?: number; statusCode?: number; expose?: boolean; message?: string },
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction,
+  ) => {
+    if (res.headersSent) {
+      logger.error('Unhandled route error after response was sent', { error: describeError(err), url: req.originalUrl })
+      return next(err)
+    }
+
+    // Client errors raised by body-parser and friends (malformed JSON 400, oversized body 413) keep their status.
+    const status = err?.status || err?.statusCode
+    if (status >= 400 && status < 500 && err.expose) {
+      return res.status(status).json({ result: 'error', code: String(status), message: err.message })
+    }
+
+    logger.error('Unhandled route error', { error: describeError(err), url: req.originalUrl })
+    res.status(500).json({ result: 'error', code: 'error', message: 'Unknown error' })
+  },
+)
 
 process.on('unhandledRejection', (reason) => {
-  // Log instead of crashing: a stray rejection outside a request should not take the whole backend down.
-  logger.error('Unhandled promise rejection', { error: reason })
+  // Route rejections are handled above. Anything else is unexpected background state, so keep Node's
+  // default of exiting (Docker restarts the container), but log it through winston first.
+  logger.error('Unhandled promise rejection, exiting', { error: describeError(reason) })
+  process.exit(1)
 })
 ;(async () => {
   await db.ping()
