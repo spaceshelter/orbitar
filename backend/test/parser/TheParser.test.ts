@@ -26,6 +26,10 @@ test('media host subdomains are rewritten to the media host', () => {
       embed('https://orbitar.media/8feuw2.mp4'),
     )
   }
+  // videos the embed doesn't take (query, fragment) still get the media host
+  expect(p.parse('<video src="https://b.orbitar.media/8feuw2.mp4/raw#t=2"></video>').text).toEqual(
+    '<video  preload="metadata" controls="" width="500"><source src="https://orbitar.media/8feuw2.mp4/raw#t=2" type="video/mp4"></video>',
+  )
   // an explicit port is part of the host
   expect(p.parse('<video src="https://origin.orbitar.media:443/8feuw2.mp4"></video>').text).toEqual(
     embed('https://orbitar.media/8feuw2.mp4'),

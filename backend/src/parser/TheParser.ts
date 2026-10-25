@@ -615,6 +615,7 @@ export default class TheParser {
   }
 
   renderVideoTag(url: string, loop: boolean) {
+    url = this.toMediaHostingUrl(url)
     const imgurPoster = () => {
       const match = url.match(/https?:\/\/i.imgur.com\/([^.]+).mp4$/)
       return match && [`https://i.imgur.com/${encodeURI(match[1])}.jpg`, url]
@@ -641,7 +642,6 @@ export default class TheParser {
     const posterUrl = imgurPoster() || idiodPoster() || dumpVideoPoster() || orbitarMediaPoster()
     if (posterUrl) {
       const [poster, video] = posterUrl
-      url = this.toMediaHostingUrl(url)
       return (
         `<a class="video-embed" href="${encodeURI(url)}" target="_blank">` +
         `<img src="${encodeURI(poster)}" alt="" data-video="${encodeURI(video)}"${loop ? ' data-loop="true"' : ''}/></a>`
