@@ -26,26 +26,6 @@
   min-width: 0;
 }
 
-.groupActor {
-  align-items: baseline;
-  display: inline-flex;
-  gap: 4px;
-  line-height: inherit;
-  white-space: nowrap;
-}
-
-.groupUserLink {
-  color: var(--primary);
-  display: inline;
-  line-height: inherit;
-  vertical-align: baseline;
-  white-space: nowrap;
-
-  &:hover {
-    color: var(--primaryHover);
-  }
-}
-
 .groupCount {
   color: var(--fgSoftest);
   flex: 0 0 auto;

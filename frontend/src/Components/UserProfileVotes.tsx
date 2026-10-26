@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 
 import Button from '@ui/Button'
 
@@ -7,7 +7,6 @@ import { APIError } from '../API/APIBase'
 import { UserVoteFeedEvent, UserVotesMineResult } from '../API/UserAPI'
 import { useAPI, useAppState } from '../AppState/AppState'
 import { CommentInfo, PostInfo } from '../Types/PostInfo'
-import { UserInfo } from '../Types/UserInfo'
 import { pluralize } from '../Utils/utils'
 import { groupVoteFeedEvents, VoteFeedGroup } from '../Utils/voteFeedGroups'
 import CommentComponent from './CommentComponent'
@@ -22,8 +21,6 @@ import feedStyles from '../Pages/FeedPage.module.scss'
 import styles from './UserProfileVotes.module.scss'
 
 const perpage = 20
-const emptyUsers: Record<number, UserInfo> = {}
-
 const getEventKey = (event: UserVoteFeedEvent) => `${event.type}:${event.entityId}:${event.voterId}`
 
 // Key groups by their first (newest) event only: appending a page extends a group's
@@ -32,20 +29,6 @@ const getEventKey = (event: UserVoteFeedEvent) => `${event.type}:${event.entityI
 // as every event mounts a full post/comment component). First events are unique per
 // group because every event starts at most one group.
 const getGroupKey = (group: VoteFeedGroup) => getEventKey(group.events[0])
-
-const getUser = (users: Record<number, UserInfo>, userId?: number) => (userId ? users[userId] : undefined)
-
-const renderGroupUserLink = (user?: UserInfo) => {
-  if (!user) {
-    return <span>пользователя</span>
-  }
-
-  return (
-    <Link className={styles.groupUserLink} to={`/u/${user.username}`}>
-      {user.username}
-    </Link>
-  )
-}
 
 const mergeVoteFeedResults = (current: UserVotesMineResult, next: UserVotesMineResult): UserVotesMineResult => {
   const knownEventKeys = new Set(current.events.map(getEventKey))
@@ -86,7 +69,6 @@ function MineVotesFeed() {
   const [loadMoreError, setLoadMoreError] = useState<string>()
   const loadMoreAbortControllerRef = useRef<AbortController>()
   const events = feed?.events
-  const users = feed?.users || emptyUsers
   const nextCursor = feed?.nextCursor
 
   const { filter, defaultFilter, filterInputRef, handleFilterChange } = useProfileFeedFilter(
@@ -229,18 +211,6 @@ function MineVotesFeed() {
   }
 
   const renderGroupHeader = (group: VoteFeedGroup) => {
-    if (group.kind === 'target-author') {
-      const target = getUser(users, group.targetUserId)
-      return (
-        <span className={styles.groupTitle}>
-          <span className={styles.groupActor}>
-            <span>Материалы</span>
-            {renderGroupUserLink(target)}
-          </span>
-        </span>
-      )
-    }
-
     if (group.kind === 'context-post') {
       return <span className={styles.groupTitle}>Оценки в одном обсуждении</span>
     }
