@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAPI, useAppState } from '../../AppState/AppState'
 import { getPeriodSince, VotePeriod, VoteSign } from '../../Utils/receivedVotesDigest'
 import { APIError } from '../APIBase'
-import { ReceivedVotesQuery, ReceivedVoteType, UserVoteFeedEvent, UserVotesReceivedResult } from '../UserAPI'
+import { getVoteEventKey, ReceivedVotesQuery, ReceivedVoteType, UserVotesReceivedResult } from '../UserAPI'
 
 const PAGE_SIZE = 200
 // Periods up to a month follow the cursor on their own for this many pages; past
@@ -13,13 +13,11 @@ const AUTO_FOLLOW_PAGES = 5
 
 export type ReceivedVotesFilters = { type: 'all' | ReceivedVoteType; sign: VoteSign; period: VotePeriod }
 
-const eventKey = (event: UserVoteFeedEvent) => `${event.type}:${event.entityId}:${event.voterId}`
-
 const mergePages = (current: UserVotesReceivedResult, next: UserVotesReceivedResult): UserVotesReceivedResult => {
-  const known = new Set(current.events.map(eventKey))
+  const known = new Set(current.events.map(getVoteEventKey))
   return {
     direction: 'received',
-    events: [...current.events, ...next.events.filter((event) => !known.has(eventKey(event)))],
+    events: [...current.events, ...next.events.filter((event) => !known.has(getVoteEventKey(event)))],
     users: { ...current.users, ...next.users },
     subjects: {
       posts: { ...current.subjects.posts, ...next.subjects.posts },

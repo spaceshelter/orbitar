@@ -4,7 +4,7 @@ import { useSearchParams } from 'react-router-dom'
 import Button from '@ui/Button'
 
 import { APIError } from '../API/APIBase'
-import { UserVoteFeedEvent, UserVotesMineResult } from '../API/UserAPI'
+import { getVoteEventKey, UserVoteFeedEvent, UserVotesMineResult } from '../API/UserAPI'
 import { useAPI, useAppState } from '../AppState/AppState'
 import { CommentInfo, PostInfo } from '../Types/PostInfo'
 import { pluralize } from '../Utils/utils'
@@ -21,19 +21,18 @@ import feedStyles from '../Pages/FeedPage.module.scss'
 import styles from './UserProfileVotes.module.scss'
 
 const perpage = 20
-const getEventKey = (event: UserVoteFeedEvent) => `${event.type}:${event.entityId}:${event.voterId}`
 
 // Key groups by their first (newest) event only: appending a page extends a group's
 // tail (possibly changing its kind from 'single'), so a first-event key stays stable
 // and React reconciles children instead of remounting the whole section (heavy here,
 // as every event mounts a full post/comment component). First events are unique per
 // group because every event starts at most one group.
-const getGroupKey = (group: VoteFeedGroup) => getEventKey(group.events[0])
+const getGroupKey = (group: VoteFeedGroup) => getVoteEventKey(group.events[0])
 
 const mergeVoteFeedResults = (current: UserVotesMineResult, next: UserVotesMineResult): UserVotesMineResult => {
-  const knownEventKeys = new Set(current.events.map(getEventKey))
+  const knownEventKeys = new Set(current.events.map(getVoteEventKey))
   const nextEvents = next.events.filter((event) => {
-    const key = getEventKey(event)
+    const key = getVoteEventKey(event)
     if (knownEventKeys.has(key)) {
       return false
     }
@@ -155,7 +154,7 @@ function MineVotesFeed() {
   const groups = useMemo(() => groupVoteFeedEvents(events || []), [events])
 
   const updateVoteEvent = (event: UserVoteFeedEvent, rating: number, vote?: number) => {
-    const key = getEventKey(event)
+    const key = getVoteEventKey(event)
     const nextVote = vote ?? 0
     setFeed((currentFeed) => {
       if (!currentFeed) {
@@ -165,12 +164,12 @@ function MineVotesFeed() {
       if (nextVote === 0) {
         return {
           ...currentFeed,
-          events: currentFeed.events.filter((currentEvent) => getEventKey(currentEvent) !== key),
+          events: currentFeed.events.filter((currentEvent) => getVoteEventKey(currentEvent) !== key),
         }
       }
 
       const updatedEvents = currentFeed.events.map((currentEvent) => {
-        if (getEventKey(currentEvent) !== key) {
+        if (getVoteEventKey(currentEvent) !== key) {
           return currentEvent
         }
 
@@ -354,7 +353,7 @@ function MineVotesFeed() {
                       )}
                       <div className={styles.events}>
                         {group.events.map((event) => (
-                          <div className={styles.event} key={getEventKey(event)}>
+                          <div className={styles.event} key={getVoteEventKey(event)}>
                             {renderEvent(event)}
                           </div>
                         ))}

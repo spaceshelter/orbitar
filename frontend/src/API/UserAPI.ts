@@ -155,6 +155,9 @@ type UserVotesResponse = UserVotesMineResponse | UserVotesReceivedResponse
 
 export type UserVoteFeedEvent = UserVoteFeedEventEntity<Date>
 
+// A voter has one vote per subject, so this keys an event across pages.
+export const getVoteEventKey = (event: UserVoteFeedEvent) => `${event.type}:${event.entityId}:${event.voterId}`
+
 type UserVotesResultBase = {
   events: UserVoteFeedEvent[]
   users: Record<number, UserInfo>
