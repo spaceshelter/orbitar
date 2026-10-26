@@ -26,13 +26,25 @@ const vote = (spec: EventSpec): UserVoteFeedEvent => {
 }
 
 describe('groupVoteFeedEvents', () => {
-  test('groups own votes by target author on a tie', () => {
+  // A run of votes on one author's posts and comments is neither folded nor capped,
+  // so a «Материалы автора» header over it says nothing the rows do not.
+  test('leaves votes on one author in different discussions ungrouped', () => {
+    const groups = groupVoteFeedEvents([
+      vote({ type: 'post', entityId: 100, postId: 100, targetUserId: 20, votedAt: at(3) }),
+      vote({ type: 'comment', entityId: 200, postId: 101, targetUserId: 20, votedAt: at(2) }),
+      vote({ type: 'user', entityId: 20, targetUserId: 20, votedAt: at(1) }),
+    ])
+
+    expect(groups).toMatchObject([{ kind: 'single' }, { kind: 'single' }, { kind: 'single' }])
+  })
+
+  test('groups own votes on one author in one discussion by the discussion', () => {
     const groups = groupVoteFeedEvents([
       vote({ type: 'post', entityId: 100, postId: 100, targetUserId: 20, votedAt: at(2) }),
       vote({ type: 'comment', entityId: 200, postId: 100, targetUserId: 20, votedAt: at(1) }),
     ])
 
-    expect(groups).toMatchObject([{ kind: 'target-author', targetUserId: 20, events: [{}, {}] }])
+    expect(groups).toMatchObject([{ kind: 'context-post', contextPostId: 100, events: [{}, {}] }])
   })
 
   test('groups own votes by context post when target authors differ', () => {
