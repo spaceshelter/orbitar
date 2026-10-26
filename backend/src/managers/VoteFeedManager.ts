@@ -25,6 +25,17 @@ export class InvalidVoteFeedCursorError extends Error {
   }
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000
+// The widest minus-only window the profile offers is «за месяц» (30 local days);
+// one extra day absorbs time zones and daylight saving shifts.
+const MINUS_ONLY_WINDOW_DAYS = 31
+
+export class InvalidVoteFeedWindowError extends Error {
+  constructor() {
+    super(`Minus-only pages need since within the last ${MINUS_ONLY_WINDOW_DAYS} days`)
+  }
+}
+
 const VOTE_FEED_ENTITY_TYPES = ['post', 'comment', 'user']
 
 // Server-side cap keeps received payloads compact; the frontend applies the same
@@ -119,6 +130,14 @@ export default class VoteFeedManager {
     perpage: number,
     options: VoteFeedFilterOptions = {},
   ): Promise<UserVotesResponse> {
+    // `vote` is not in the feed indexes, so a minus-only page reads every vote in
+    // its window to find the ~1% that are minuses: the window stays within a month.
+    if (
+      options.sign === 'minus' &&
+      (!options.since || Date.now() - options.since.getTime() > MINUS_ONLY_WINDOW_DAYS * DAY_MS)
+    ) {
+      throw new InvalidVoteFeedWindowError()
+    }
     const decodedCursor = cursor ? decodeVoteFeedCursor(cursor) : undefined
     const refs = await this.voteFeedReadRepository.getPageReferences(
       forUserId,
