@@ -51,21 +51,19 @@ const visibleVoters = (voters: DigestVoter[]) => {
   return [...minus, ...plus.slice(0, Math.max(0, NAMES_PER_SUBJECT - minus.length))]
 }
 
-// The post a discussion belongs to: its own label if it was voted on, otherwise
-// the title carried by any of its comments. A name made up for a post without
-// title and text is `generated`, so it is not dressed up as a quoted title.
+// A discussion is named by its post: the title or the start of its text. A name
+// made up for a post without both, or for one that is gone, is `generated`, so it
+// is not dressed up as a quoted title.
 export const discussionInfo = (lookup: DigestLookup, postId: number, events: UserVoteFeedEvent[]) => {
   const post = lookup.subjects.posts[postId]
   const comment = events
     .map((event) => (event.type === 'comment' ? lookup.subjects.comments[event.entityId] : undefined))
     .find((subject) => subject)
   const site = post?.site || comment?.site || 'main'
-  const title = post?.label || comment?.postTitle
-  if (title) {
-    return { title, site, generated: false }
+  if (post?.label) {
+    return { title: post.label, site, generated: false }
   }
-  const media = post?.media || comment?.postMedia
-  return { title: media ? MEDIA_POST_TITLES[media] : `пост #${postId}`, site, generated: true }
+  return { title: post?.media ? MEDIA_POST_TITLES[post.media] : `пост #${postId}`, site, generated: true }
 }
 
 export function Sums({ plus, minus, size }: { plus: number; minus: number; size?: 'big' | 'small' }) {

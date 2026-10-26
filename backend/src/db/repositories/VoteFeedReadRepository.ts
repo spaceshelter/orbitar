@@ -56,8 +56,6 @@ export type ReceivedCommentSubjectRaw = {
   id: number
   postId: number
   site: string
-  postTitle: string
-  postHtml: string
   html: string
   created: Date
   rating: number
@@ -289,14 +287,11 @@ export default class VoteFeedReadRepository {
     if (!commentIds.length) {
       return []
     }
-    // Same bounded prefixes as post labels: the comment html only feeds a ~72-char
-    // excerpt, and an untitled post's html names the discussion instead of a title.
+    // The same bounded prefix as post labels: the comment html only feeds a ~72-char
+    // excerpt. Discussions are named from getReceivedPostSubjects, once per post.
     return this.db.fetchAll<ReceivedCommentSubjectRaw>(
-      `select c.comment_id id, c.post_id postId, s.subdomain site, p.title postTitle,
-              if(nullif(trim(p.title), '') is null, left(p.html, 4096), '') postHtml,
-              left(c.html, 4096) html, c.created_at created, c.rating
+      `select c.comment_id id, c.post_id postId, s.subdomain site, left(c.html, 4096) html, c.created_at created, c.rating
          from comments c
-         join posts p on (p.post_id = c.post_id)
          join sites s on (s.site_id = c.site_id)
         where c.comment_id in (:comment_ids)
           and c.deleted = 0`,

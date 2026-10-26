@@ -323,7 +323,7 @@ describe('VoteFeedManager.getVoteFeed', () => {
     expect(Buffer.byteLength(JSON.stringify(result))).toBeLessThan(25_000)
   })
 
-  test('hydrates compact received comments with their post title and a plain-text excerpt', async () => {
+  test('hydrates compact received comments with a plain-text excerpt', async () => {
     const ref = makeRef({ type: 'comment', entityId: 55, postId: 77 })
     const { manager, voteFeedReadRepository } = createManager({
       voteFeedReadRepository: {
@@ -333,7 +333,6 @@ describe('VoteFeedManager.getVoteFeed', () => {
             id: 55,
             postId: 77,
             site: 'main',
-            postTitle: 'Parent post',
             html: '<p>Хорошее <b>уточнение</b>,\n   спасибо.</p>',
             created: new Date('2026-05-01T10:00:00.000Z'),
             rating: 2,
@@ -353,37 +352,37 @@ describe('VoteFeedManager.getVoteFeed', () => {
       id: 55,
       postId: 77,
       site: 'main',
-      postTitle: 'Parent post',
       excerpt: 'Хорошее уточнение, спасибо.',
       created: '2026-05-01T10:00:00.000Z',
       rating: 2,
     })
   })
 
-  test('names the discussion of a comment by the start of an untitled post', async () => {
+  // Many comments of a page share a discussion: its post is loaded once, with the
+  // voted posts, instead of with every comment.
+  test('loads the posts of commented discussions once, together with the voted posts', async () => {
     const refs = [
-      makeRef({ type: 'comment', entityId: 1, postId: 77 }),
-      makeRef({ type: 'comment', entityId: 2, postId: 78 }),
+      makeRef({ entityId: 10 }),
+      makeRef({ type: 'comment', entityId: 55, postId: 77 }),
+      makeRef({ type: 'comment', entityId: 56, postId: 77 }),
+      makeRef({ type: 'comment', entityId: 57, postId: 10 }),
     ]
-    const row = (id: number, postId: number, postHtml: string) => ({
+    const comment = (id: number, postId: number) => ({
       id,
       postId,
       site: 'main',
-      postTitle: '  ',
-      postHtml,
       html: '<p>Ответ</p>',
       created: new Date('2026-05-01T10:00:00.000Z'),
       rating: 1,
     })
-    const { manager } = createManager({
+    const { manager, voteFeedReadRepository } = createManager({
       voteFeedReadRepository: {
         getPageReferences: jest.fn().mockResolvedValue(refs),
-        getReceivedCommentSubjects: jest
-          .fn()
-          .mockResolvedValue([
-            row(1, 77, '<p>Кто-нибудь знает, <b>где</b> купить сыр?</p><img src="https://example.com/c.jpg">'),
-            row(2, 78, '<img src="https://example.com/cat.jpg">'),
-          ]),
+        getReceivedPostSubjects: jest.fn().mockResolvedValue([
+          { id: 10, site: 'main', title: 'Voted post', html: '', rating: 9 },
+          { id: 77, site: 'main', title: ' ', html: '<p>Кто-нибудь знает, <b>где</b> купить сыр?</p>', rating: 4 },
+        ]),
+        getReceivedCommentSubjects: jest.fn().mockResolvedValue([comment(55, 77), comment(56, 77), comment(57, 10)]),
       },
     })
 
@@ -392,9 +391,18 @@ describe('VoteFeedManager.getVoteFeed', () => {
       throw new Error('expected received response')
     }
 
-    expect(result.subjects.comments[1].postTitle).toBe('Кто-нибудь знает, где купить сыр?')
-    // Nothing to read in a picture-only post: the client falls back to its number.
-    expect(result.subjects.comments[2].postTitle).toBeUndefined()
+    expect(voteFeedReadRepository.getReceivedPostSubjects).toHaveBeenCalledTimes(1)
+    expect(voteFeedReadRepository.getReceivedPostSubjects).toHaveBeenCalledWith([10, 77])
+    expect(voteFeedReadRepository.getReceivedCommentSubjects).toHaveBeenCalledWith([55, 56, 57])
+    expect(result.events).toHaveLength(4)
+    expect(result.subjects.posts[77]).toEqual({
+      id: 77,
+      site: 'main',
+      label: 'Кто-нибудь знает, где купить сыр?',
+      rating: 4,
+    })
+    expect(result.subjects.comments[55]).not.toHaveProperty('postTitle')
+    expect(result.subjects.comments[55]).not.toHaveProperty('postMedia')
   })
 
   test('cuts received comment excerpts at 72 code points with an ellipsis', async () => {
@@ -408,7 +416,6 @@ describe('VoteFeedManager.getVoteFeed', () => {
             id: 1,
             postId: 77,
             site: 'main',
-            postTitle: 'P',
             html: `<p>${longText}</p>`,
             created: new Date('2026-05-01T10:00:00.000Z'),
             rating: 1,
@@ -428,10 +435,10 @@ describe('VoteFeedManager.getVoteFeed', () => {
 
   // The kinds themselves are covered by test/utils/MediaKind.test.ts.
   test.each([
-    ['a GIF', '<img src="https://media.tenor.com/a/waiting.gif" alt=""/>', 'gif'],
+    ['a GIF', '<img src="https://media.tenor.com/a/waiting.gif" alt="" data-media="gif"/>', 'gif'],
     [
       'a YouTube embed',
-      '<a class="youtube-embed" href="https://youtu.be/x" target="_blank"><img src="t.jpg" alt="" data-youtube="https://www.youtube.com/embed/x"/></a>',
+      '<a class="youtube-embed" data-media="video" href="https://youtu.be/x" target="_blank"><img src="t.jpg" alt="" data-youtube="https://www.youtube.com/embed/x"/></a>',
       'video',
     ],
     ['markup with nothing recognisable', '<p> </p>', 'media'],
@@ -441,9 +448,7 @@ describe('VoteFeedManager.getVoteFeed', () => {
         getPageReferences: jest.fn().mockResolvedValue([makeRef({ type: 'comment', entityId: 1, postId: 77 })]),
         getReceivedCommentSubjects: jest
           .fn()
-          .mockResolvedValue([
-            { id: 1, postId: 77, site: 'main', postTitle: 'P', html, created: new Date(), rating: 1 },
-          ]),
+          .mockResolvedValue([{ id: 1, postId: 77, site: 'main', html, created: new Date(), rating: 1 }]),
       },
     })
 
@@ -457,22 +462,27 @@ describe('VoteFeedManager.getVoteFeed', () => {
   })
 
   test('describes untitled posts without text by their media, both voted on and as a discussion', async () => {
-    const picture = '<img src="https://b.orbitar.media/2Bjr.png" alt=""/>'
+    const picture = '<img src="https://b.orbitar.media/2Bjr.png" alt="" data-media="image"/>'
     const { manager } = createManager({
       voteFeedReadRepository: {
         getPageReferences: jest
           .fn()
           .mockResolvedValue([makeRef({ entityId: 10 }), makeRef({ type: 'comment', entityId: 1, postId: 20 })]),
-        getReceivedPostSubjects: jest
-          .fn()
-          .mockResolvedValue([{ id: 10, site: 'main', title: ' ', html: picture, rating: 9 }]),
+        getReceivedPostSubjects: jest.fn().mockResolvedValue([
+          { id: 10, site: 'main', title: ' ', html: picture, rating: 9 },
+          {
+            id: 20,
+            site: 'main',
+            title: '',
+            html: '<iframe src="https://open.spotify.com/embed/1"></iframe>',
+            rating: 2,
+          },
+        ]),
         getReceivedCommentSubjects: jest.fn().mockResolvedValue([
           {
             id: 1,
             postId: 20,
             site: 'main',
-            postTitle: '',
-            postHtml: '<iframe src="https://open.spotify.com/embed/track/1"></iframe>',
             html: '<p>Ответ</p>',
             created: new Date('2026-05-01T10:00:00.000Z'),
             rating: 1,
@@ -487,8 +497,7 @@ describe('VoteFeedManager.getVoteFeed', () => {
     }
 
     expect(result.subjects.posts[10]).toEqual({ id: 10, site: 'main', label: '', media: 'image', rating: 9 })
-    expect(result.subjects.comments[1].postTitle).toBeUndefined()
-    expect(result.subjects.comments[1].postMedia).toBe('media')
+    expect(result.subjects.posts[20]).toEqual({ id: 20, site: 'main', label: '', media: 'media', rating: 2 })
     expect(result.subjects.comments[1].media).toBeUndefined()
   })
 
@@ -501,7 +510,6 @@ describe('VoteFeedManager.getVoteFeed', () => {
             id: 1,
             postId: 77,
             site: 'main',
-            postTitle: 'P',
             html: 'Смотрите:<br /><img src="https://example.com/cat.jpg" alt=""/>',
             created: new Date(),
             rating: 1,
