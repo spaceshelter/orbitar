@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 
 import Button from '@ui/Button'
 import classNames from 'classnames'
+import moment from 'moment'
 
 import { getVoteEventKey, ReceivedMediaKind, UserVoteFeedEvent, UserVotesReceivedResult } from '../API/UserAPI'
 import { DigestCard, DigestKarma, DigestSubject, DigestVoter, sumMinus, sumPlus } from '../Utils/receivedVotesDigest'
@@ -10,12 +11,12 @@ import { pluralize } from '../Utils/utils'
 import InternalLinkExpandComponent from './InternalLinkExpandComponent'
 import PostLink from './PostLink'
 
+import 'moment/locale/ru'
+
 import styles from './ReceivedVotesDigest.module.scss'
 
 const SUBJECTS_PER_CARD = 3
 const NAMES_PER_SUBJECT = 3
-
-const MONTHS_SHORT = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
 
 // A post or comment without text is named by what it consists of; 'медиа' when
 // that can't be told either (an embed of an unknown kind, say).
@@ -37,10 +38,7 @@ export type DigestLookup = Pick<UserVotesReceivedResult, 'users' | 'subjects'>
 
 export const formatVote = (value: number) => (value > 0 ? `+${value}` : value < 0 ? `−${Math.abs(value)}` : '0')
 
-export const formatShortTime = (date: Date) =>
-  `${date.getDate()} ${MONTHS_SHORT[date.getMonth()]}, ${String(date.getHours()).padStart(2, '0')}:${String(
-    date.getMinutes(),
-  ).padStart(2, '0')}`
+export const formatShortTime = (date: Date) => moment(date).locale('ru').format('D MMM, HH:mm')
 
 // Minus voters are always named; plus voters fill the rest of the budget.
 const visibleVoters = (voters: DigestVoter[]) => {

@@ -4,22 +4,10 @@ import { pluralizeWord } from '../Utils/utils'
 
 import 'moment/locale/ru'
 
+// moment's Russian locale already puts a month after a day in the genitive
+// («5 сентября») and leaves it in the nominative on its own.
 moment.locale('ru')
 moment.updateLocale('ru', {
-  months: [
-    'января',
-    'февраля',
-    'марта',
-    'апреля',
-    'мая',
-    'июня',
-    'июля',
-    'августа',
-    'сентября',
-    'октября',
-    'ноября',
-    'декабря',
-  ],
   relativeTime: {
     future: '%s',
   },
