@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import Button from '@ui/Button'
 import classNames from 'classnames'
 
-import { ReceivedMediaKind, UserVoteFeedEvent, UserVotesReceivedResult } from '../API/UserAPI'
+import { getVoteEventKey, ReceivedMediaKind, UserVoteFeedEvent, UserVotesReceivedResult } from '../API/UserAPI'
 import { DigestCard, DigestKarma, DigestSubject, DigestVoter, sumMinus, sumPlus } from '../Utils/receivedVotesDigest'
 import { pluralize } from '../Utils/utils'
 import InternalLinkExpandComponent from './InternalLinkExpandComponent'
@@ -41,8 +41,6 @@ export const formatShortTime = (date: Date) =>
   `${date.getDate()} ${MONTHS_SHORT[date.getMonth()]}, ${String(date.getHours()).padStart(2, '0')}:${String(
     date.getMinutes(),
   ).padStart(2, '0')}`
-
-const eventKey = (event: UserVoteFeedEvent) => `${event.type}:${event.entityId}:${event.voterId}`
 
 // Minus voters are always named; plus voters fill the rest of the budget.
 const visibleVoters = (voters: DigestVoter[]) => {
@@ -138,7 +136,7 @@ function Voters({
       {open && (
         <ul className={styles.chronology}>
           {events.map((event) => (
-            <li key={eventKey(event)}>
+            <li key={getVoteEventKey(event)}>
               <span className={classNames(styles.value, event.vote < 0 ? styles.minus : styles.plus, styles.small)}>
                 {formatVote(event.vote)}
               </span>{' '}
