@@ -9,7 +9,7 @@ import OAuth2Manager from '../managers/OAuth2Manager'
 import PostManager from '../managers/PostManager'
 import { UserGender, UserRatingBySubsite } from '../managers/types/UserInfo'
 import UserManager from '../managers/UserManager'
-import VoteFeedManager, { InvalidVoteFeedCursorError } from '../managers/VoteFeedManager'
+import VoteFeedManager, { InvalidVoteFeedCursorError, InvalidVoteFeedWindowError } from '../managers/VoteFeedManager'
 import { APIRequest, APIResponse, joiFormat, joiUsername, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
 import { commonRateLimitConfig, heavyReadRateLimiter, sharedReadRateLimiter } from './RateLimiters'
@@ -39,11 +39,6 @@ import { UserVotesRequest, UserVotesResponse } from './types/requests/UserVotes'
 import { Enricher } from './utils/Enricher'
 // constant variables
 import { ERROR_CODES } from './utils/error-codes'
-
-const DAY_MS = 24 * 60 * 60 * 1000
-// The widest minus-only window the profile offers is «за месяц» (30 local days);
-// one extra day absorbs time zones and daylight saving shifts.
-const MINUS_ONLY_WINDOW_DAYS = 31
 
 export default class UserController {
   public readonly router = Router()
@@ -96,21 +91,7 @@ export default class UserController {
         .when('direction', { is: 'received', then: Joi.number().max(200), otherwise: Joi.number().max(50) }),
       type: Joi.valid('post', 'comment', 'user').when('direction', { is: 'received', otherwise: Joi.forbidden() }),
       sign: Joi.valid('minus').when('direction', { is: 'received', otherwise: Joi.forbidden() }),
-      // `vote` is not in the feed indexes, so a minus-only page reads every vote in
-      // its window to find the ~1% that are minuses: the window stays within a month.
-      since: Joi.date()
-        .iso()
-        .when('direction', { is: 'received', otherwise: Joi.forbidden() })
-        .when('sign', {
-          is: 'minus',
-          then: Joi.required().custom((value: Date, helpers) =>
-            Date.now() - value.getTime() > MINUS_ONLY_WINDOW_DAYS * DAY_MS
-              ? helpers.message({
-                  custom: `{{#label}} must be within ${MINUS_ONLY_WINDOW_DAYS} days for minus-only pages`,
-                })
-              : value,
-          ),
-        }),
+      since: Joi.date().iso().when('direction', { is: 'received', otherwise: Joi.forbidden() }),
     })
 
     const bioSchema = Joi.object<UserSaveBioRequest>({
@@ -441,6 +422,9 @@ export default class UserController {
     } catch (error) {
       if (error instanceof InvalidVoteFeedCursorError) {
         return response.error('invalid-payload', 'Invalid cursor', 400)
+      }
+      if (error instanceof InvalidVoteFeedWindowError) {
+        return response.error('invalid-payload', error.message, 400)
       }
       if (error instanceof VoteFeedFilterTimeoutError) {
         return response.error('filter-timeout', 'Filter is too heavy, narrow the query', 400)

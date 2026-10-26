@@ -2,6 +2,7 @@ import VoteFeedManager, {
   decodeVoteFeedCursor,
   encodeVoteFeedCursor,
   InvalidVoteFeedCursorError,
+  InvalidVoteFeedWindowError,
 } from '../../src/managers/VoteFeedManager'
 
 describe('vote feed cursor codec', () => {
@@ -518,8 +519,11 @@ describe('VoteFeedManager.getVoteFeed', () => {
     expect(result.subjects.comments[1].media).toBeUndefined()
   })
 
+  const DAY_MS = 24 * 60 * 60 * 1000
+
   test('passes type, sign and time-bound filters through to the reference query', async () => {
-    const since = new Date('2026-09-02T00:00:00.000Z')
+    // The frontend's «за месяц» starts at local midnight 29 days before today.
+    const since = new Date(Date.now() - 30 * DAY_MS)
     const { manager, voteFeedReadRepository } = createManager({
       voteFeedReadRepository: { getPageReferences: jest.fn().mockResolvedValue([]) },
     })
@@ -531,6 +535,20 @@ describe('VoteFeedManager.getVoteFeed', () => {
       sign: 'minus',
       since,
     })
+  })
+
+  // `vote` is not in the feed indexes, so a minus-only page reads every vote in its
+  // window to find the ~1% that are minuses: the window has to be bounded.
+  test.each([
+    ['without a lower bound', undefined],
+    ['reaching back more than 31 days', new Date(Date.now() - 32 * DAY_MS)],
+  ])('rejects a minus-only page %s before querying', async (_label, since) => {
+    const { manager, voteFeedReadRepository } = createManager()
+
+    await expect(
+      manager.getVoteFeed(123, 'received', '', undefined, 200, { sign: 'minus', since }),
+    ).rejects.toBeInstanceOf(InvalidVoteFeedWindowError)
+    expect(voteFeedReadRepository.getPageReferences).not.toHaveBeenCalled()
   })
 
   test('drops references whose subject disappeared and logs a warning', async () => {

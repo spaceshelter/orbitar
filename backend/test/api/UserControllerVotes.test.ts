@@ -1,6 +1,6 @@
 import UserController from '../../src/api/UserController'
 import { VoteFeedFilterTimeoutError } from '../../src/db/repositories/VoteFeedReadRepository'
-import { InvalidVoteFeedCursorError } from '../../src/managers/VoteFeedManager'
+import { InvalidVoteFeedCursorError, InvalidVoteFeedWindowError } from '../../src/managers/VoteFeedManager'
 
 describe('UserController votes', () => {
   const createController = (overrides: any = {}) => {
@@ -169,6 +169,14 @@ describe('UserController votes', () => {
     expect(result.body.since).toEqual(new Date(since))
   })
 
+  // How far back a minus-only page may reach is VoteFeedManager's rule, not the schema's.
+  test('route validation leaves the minus-only window to the feed manager', async () => {
+    await expect(runVotesValidation({ direction: 'received', sign: 'minus' })).resolves.toMatchObject({ ok: true })
+    await expect(
+      runVotesValidation({ direction: 'received', sign: 'minus', since: daysAgo(32) }),
+    ).resolves.toMatchObject({ ok: true })
+  })
+
   test('route validation leaves the lower bound optional when all signs are requested', async () => {
     await expect(runVotesValidation({ direction: 'received', type: 'comment' })).resolves.toMatchObject({ ok: true })
     await expect(runVotesValidation({ direction: 'received', since: daysAgo(365) })).resolves.toMatchObject({
@@ -182,12 +190,6 @@ describe('UserController votes', () => {
     ['an unknown entity type', { direction: 'received', type: 'karma' }, '"type" must be one of'],
     ['a sign other than minus', { direction: 'received', sign: 'plus' }, '"sign" must be'],
     ['a lower bound that is not an ISO date', { direction: 'received', since: 'yesterday' }, '"since" must be'],
-    ['a minus-only page without a lower bound', { direction: 'received', sign: 'minus' }, '"since" is required'],
-    [
-      'a minus-only page reaching back more than 31 days',
-      { direction: 'received', sign: 'minus', since: daysAgo(32) },
-      '"since" must be within 31 days',
-    ],
     ['an entity type on my own votes', { direction: 'mine', type: 'comment' }, '"type" is not allowed'],
     ['a sign on my own votes', { direction: 'mine', sign: 'minus', since: daysAgo(1) }, '"sign" is not allowed'],
     ['a lower bound on my own votes', { direction: 'mine', since: daysAgo(1) }, '"since" is not allowed'],
@@ -307,6 +309,28 @@ describe('UserController votes', () => {
     )
 
     expect(response.error).toHaveBeenCalledWith('filter-timeout', 'Filter is too heavy, narrow the query', 400)
+    expect(logger.error).not.toHaveBeenCalled()
+  })
+
+  test('responds 400 when a minus-only page reaches back too far', async () => {
+    const { controller, logger } = createController({
+      voteFeedManager: { getVoteFeed: jest.fn().mockRejectedValue(new InvalidVoteFeedWindowError()) },
+    })
+    const response = { success: jest.fn(), error: jest.fn() }
+
+    await controller['votes'](
+      {
+        session: { data: { userId: 123 } },
+        body: { direction: 'received', sign: 'minus' },
+      } as any,
+      response as any,
+    )
+
+    expect(response.error).toHaveBeenCalledWith(
+      'invalid-payload',
+      'Minus-only pages need since within the last 31 days',
+      400,
+    )
     expect(logger.error).not.toHaveBeenCalled()
   })
 
