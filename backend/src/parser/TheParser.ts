@@ -10,6 +10,11 @@ import { joiClientId, joiSite } from '../api/ApiMiddleware'
 import { MediaHostingConfig } from '../config'
 import { escapeRegExp, mentionsRegex, urlRegex, urlRegexExact } from './regexprs'
 
+// Every picture and video the parser renders carries data-media with its kind, so
+// stored html says what it shows without re-deciding what a URL renders as.
+const imageMedia = (url: string) => `data-media="${/\.gif([?#]|$)/i.test(url) ? 'gif' : 'image'}"`
+const VIDEO_MEDIA = 'data-media="video"'
+
 export type ParseResult = {
   text: string
   mentions: string[]
@@ -329,7 +334,7 @@ export default class TheParser {
         )
       }
 
-      return `<img src="${encodeURI(img)}" alt=""/>`
+      return `<img src="${encodeURI(img)}" alt="" ${imageMedia(img)}/>`
     }
 
     return false
@@ -377,7 +382,7 @@ export default class TheParser {
         const embedUrl = `https://coub.com/embed/${coubId}`
 
         return (
-          `<a class="coub-embed" href="${encodeURI(origUrl)}" target="_blank">` +
+          `<a class="coub-embed" ${VIDEO_MEDIA} href="${encodeURI(origUrl)}" target="_blank">` +
           `<img src="${encodeURI(previewUrl)}" alt="" data-coub="${encodeURI(embedUrl)}"/></a>`
         )
       }
@@ -443,7 +448,7 @@ export default class TheParser {
     }
 
     return (
-      `<a class="youtube-embed" href="${encodeURI(urlStr)}" target="_blank">` +
+      `<a class="youtube-embed" ${VIDEO_MEDIA} href="${encodeURI(urlStr)}" target="_blank">` +
       `<img src="${encodeURI(thumbnail)}" alt="" data-youtube="${encodeURI(embed)}"/></a>`
     )
   }
@@ -462,7 +467,7 @@ export default class TheParser {
     const embedUrl = `https://player.vimeo.com/video/${videoId}${startTime ? '#t=' + startTime : ''}`
 
     return (
-      `<a class="vimeo-embed" href="${encodeURI(origUrl)}" target="_blank">` +
+      `<a class="vimeo-embed" ${VIDEO_MEDIA} href="${encodeURI(origUrl)}" target="_blank">` +
       `<img src="${encodeURI(previewUrl)}" alt="" data-vimeo="${encodeURI(embedUrl)}"/></a>`
     )
 
@@ -547,7 +552,12 @@ export default class TheParser {
 
     const alt = node.attribs['alt'] ? htmlEscape(node.attribs['alt']) : ''
 
-    return { text: `<img src="${encodeURI(url)}" alt="${alt}"/>`, mentions: [], urls: [], images: [url] }
+    return {
+      text: `<img src="${encodeURI(url)}" alt="${alt}" ${imageMedia(url)}/>`,
+      mentions: [],
+      urls: [],
+      images: [url],
+    }
   }
 
   parsePre(node: Element): ParseResult {
@@ -659,11 +669,11 @@ export default class TheParser {
         url = url.replace(this.mediaHostingUrlOrigin, this.mediaHostingUrlBunny)
       }
       return (
-        `<a class="video-embed" href="${encodeURI(url)}" target="_blank">` +
+        `<a class="video-embed" ${VIDEO_MEDIA} href="${encodeURI(url)}" target="_blank">` +
         `<img src="${encodeURI(poster)}" alt="" data-video="${encodeURI(video)}"${loop ? ' data-loop="true"' : ''}/></a>`
       )
     }
-    return `<video ${loop ? 'loop=""' : ''} preload="metadata" controls="" width="500"><source src="${encodeURI(url)}" type="video/mp4"></video>`
+    return `<video ${VIDEO_MEDIA}${loop ? ' loop=""' : ''} preload="metadata" controls="" width="500"><source src="${encodeURI(url)}" type="video/mp4"></video>`
   }
 
   parseIrony(node: Element): ParseResult {
