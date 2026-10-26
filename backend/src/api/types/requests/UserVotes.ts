@@ -9,6 +9,10 @@ export type UserVotesRequest = {
   filter?: string
   cursor?: string
   perpage?: number
+  type?: 'post' | 'comment' | 'user'
+  sign?: 'minus'
+  // Lower bound on voted_at; Joi validation converts the ISO string to a Date.
+  since?: Date
 }
 
 export type UserVoteFeedEventRef = {
@@ -21,10 +25,16 @@ export type UserVoteFeedEventRef = {
   targetUserId: number
 }
 
+// What a post or comment without text consists of; 'media' when it can't be told.
+export type ReceivedMediaKind = 'image' | 'gif' | 'video' | 'media'
+
+// A post that was voted on or holds a voted comment; it names the discussion.
 export type ReceivedPostSubject = {
   id: number
   site: string
+  // The title, or the start of the text of an untitled post; empty without both.
   label: string
+  media?: ReceivedMediaKind
   rating: number
 }
 
@@ -32,7 +42,11 @@ export type ReceivedCommentSubject = {
   id: number
   postId: number
   site: string
-  postTitle?: string
+  // Plain-text start of the comment; empty when it has no text.
+  excerpt: string
+  // What a comment without text consists of, so it can be named instead of quoted.
+  media?: ReceivedMediaKind
+  created: string
   rating: number
 }
 

@@ -3,16 +3,16 @@ import rateLimit from 'express-rate-limit'
 import Joi from 'joi'
 import { Logger } from 'winston'
 
-import { VoteFeedFilterTimeoutError } from '../db/repositories/VoteFeedReadRepository'
+import { VoteFeedFilterOptions, VoteFeedFilterTimeoutError } from '../db/repositories/VoteFeedReadRepository'
 import InviteManager from '../managers/InviteManager'
 import OAuth2Manager from '../managers/OAuth2Manager'
 import PostManager from '../managers/PostManager'
 import { UserGender, UserRatingBySubsite } from '../managers/types/UserInfo'
 import UserManager from '../managers/UserManager'
-import VoteFeedManager, { InvalidVoteFeedCursorError } from '../managers/VoteFeedManager'
+import VoteFeedManager, { InvalidVoteFeedCursorError, InvalidVoteFeedWindowError } from '../managers/VoteFeedManager'
 import { APIRequest, APIResponse, joiFormat, joiUsername, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
-import { commonRateLimitConfig, heavyFilterRateLimiter, sharedReadRateLimiter } from './RateLimiters'
+import { commonRateLimitConfig, heavyReadRateLimiter, sharedReadRateLimiter } from './RateLimiters'
 import { UserProfileEntity } from './types/entities/UserEntity'
 import { UserCommentsRequest, UserCommentsResponse } from './types/requests/UserComments'
 import { SuggestUsernameRequest, SuggestUsernameResponse } from './types/requests/UsernameSuggest'
@@ -82,7 +82,16 @@ export default class UserController {
       direction: Joi.valid('mine', 'received').required(),
       filter: Joi.string().max(120).allow(null, ''),
       cursor: Joi.string().max(255).allow(null, ''),
-      perpage: Joi.number().integer().min(1).max(50).default(20),
+      // Received subjects are compact, so a period loads in a few large pages;
+      // mine pages hydrate full posts and comments and stay small.
+      perpage: Joi.number()
+        .integer()
+        .min(1)
+        .default(20)
+        .when('direction', { is: 'received', then: Joi.number().max(200), otherwise: Joi.number().max(50) }),
+      type: Joi.valid('post', 'comment', 'user').when('direction', { is: 'received', otherwise: Joi.forbidden() }),
+      sign: Joi.valid('minus').when('direction', { is: 'received', otherwise: Joi.forbidden() }),
+      since: Joi.date().iso().when('direction', { is: 'received', otherwise: Joi.forbidden() }),
     })
 
     const bioSchema = Joi.object<UserSaveBioRequest>({
@@ -139,7 +148,7 @@ export default class UserController {
     this.router.post(
       '/user/votes',
       sharedReadRateLimiter,
-      heavyFilterRateLimiter,
+      heavyReadRateLimiter,
       oauth('читать свои оценки'),
       validate(votesSchema),
       (req, res) => this.votes(req, res),
@@ -379,7 +388,17 @@ export default class UserController {
     }
 
     const userId = request.session.data.userId
-    const { direction, cursor, perpage, filter } = request.body
+    const { direction, cursor, perpage, filter, type, sign, since } = request.body
+    const filterOptions: VoteFeedFilterOptions = {}
+    if (type) {
+      filterOptions.types = [type]
+    }
+    if (sign) {
+      filterOptions.sign = sign
+    }
+    if (since) {
+      filterOptions.since = new Date(since)
+    }
 
     try {
       // Barmalini is a shared rotating credential, and anonymization reassigns the
@@ -396,11 +415,15 @@ export default class UserController {
         filter || '',
         cursor || undefined,
         perpage || 20,
+        filterOptions,
       )
       return response.success(result)
     } catch (error) {
       if (error instanceof InvalidVoteFeedCursorError) {
         return response.error('invalid-payload', 'Invalid cursor', 400)
+      }
+      if (error instanceof InvalidVoteFeedWindowError) {
+        return response.error('invalid-payload', error.message, 400)
       }
       if (error instanceof VoteFeedFilterTimeoutError) {
         return response.error('filter-timeout', 'Filter is too heavy, narrow the query', 400)

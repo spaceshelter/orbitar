@@ -2,6 +2,7 @@ import React, { ForwardedRef, useEffect, useRef, useState } from 'react'
 
 import { toast } from 'react-toastify'
 
+import useDocumentEvent from '../API/use/useDocumentEvent'
 import { useAPI } from '../AppState/AppState'
 import { pluralize } from '../Utils/utils'
 import Username from './Username'
@@ -79,23 +80,22 @@ export default function RatingSwitch(props: RatingSwitchProps) {
     } else {
       popupEl.style.top = '30px'
     }
-
-    const clickHandler = (e: MouseEvent) => {
-      e.stopPropagation()
-      e.preventDefault()
-      hide()
-      return false
-    }
-    document.addEventListener('mousedown', clickHandler)
-    return () => {
-      document.removeEventListener('mousedown', clickHandler)
-    }
   }, [showPopup, ratingRef, popupRef, votes, currentVote, props.id, props.type, api.voteAPI])
 
   const hide = () => {
     setShowPopup(false)
     setVotes(undefined)
   }
+
+  useDocumentEvent(
+    'mousedown',
+    (e) => {
+      e.stopPropagation()
+      e.preventDefault()
+      hide()
+    },
+    showPopup,
+  )
 
   const handleVote = (vote: number) => {
     return async (ev: React.MouseEvent) => {

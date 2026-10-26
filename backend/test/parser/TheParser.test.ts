@@ -10,13 +10,13 @@ const p = new TheParser({
 
 test('media host subdomains are rewritten to the media host', () => {
   const embed = (href: string) =>
-    `<a class="video-embed" href="${href}" target="_blank"><img src="https://orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://orbitar.media/8feuw2.mp4/raw"/></a>`
+    `<a class="video-embed" data-media="video" href="${href}" target="_blank"><img src="https://orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://orbitar.media/8feuw2.mp4/raw"/></a>`
   for (const sub of ['origin.', 'b.', 'x.y.']) {
     expect(p.parse(`<img src="https://${sub}orbitar.media/img1.jpg"/>`).text).toEqual(
-      '<img src="https://orbitar.media/img1.jpg" alt=""/>',
+      '<img src="https://orbitar.media/img1.jpg" alt="" data-media="image"/>',
     )
     expect(p.parse(`https://${sub}orbitar.media/img1.jpg`).text).toEqual(
-      '<img src="https://orbitar.media/img1.jpg" alt=""/>',
+      '<img src="https://orbitar.media/img1.jpg" alt="" data-media="image"/>',
     )
     expect(p.parse(`https://${sub}orbitar.media/8feuw2.mp4`).text).toEqual(embed('https://orbitar.media/8feuw2.mp4'))
     expect(p.parse(`https://${sub}orbitar.media/8feuw2.mp4/raw`).text).toEqual(
@@ -28,7 +28,7 @@ test('media host subdomains are rewritten to the media host', () => {
   }
   // videos the embed doesn't take (query, fragment) still get the media host
   expect(p.parse('<video src="https://b.orbitar.media/8feuw2.mp4/raw#t=2"></video>').text).toEqual(
-    '<video  preload="metadata" controls="" width="500"><source src="https://orbitar.media/8feuw2.mp4/raw#t=2" type="video/mp4"></video>',
+    '<video data-media="video" preload="metadata" controls="" width="500"><source src="https://orbitar.media/8feuw2.mp4/raw#t=2" type="video/mp4"></video>',
   )
   // an explicit port is part of the host
   expect(p.parse('<video src="https://origin.orbitar.media:443/8feuw2.mp4"></video>').text).toEqual(
@@ -40,13 +40,13 @@ test('media host subdomains are rewritten to the media host', () => {
     siteDomain: 'orbitar.local',
   })
   expect(slash.parse('<img src="https://origin.orbitar.media/img1.jpg"/>').text).toEqual(
-    '<img src="https://orbitar.media/img1.jpg" alt=""/>',
+    '<img src="https://orbitar.media/img1.jpg" alt="" data-media="image"/>',
   )
   expect(slash.parse('https://b.orbitar.media/8feuw2.mp4').text).toEqual(embed('https://orbitar.media/8feuw2.mp4'))
   // look-alike hosts are not the media host
   for (const host of ['notorbitar.media', 'orbitar.media.example.com']) {
     expect(p.parse(`<img src="https://${host}/img1.jpg"/>`).text).toEqual(
-      `<img src="https://${host}/img1.jpg" alt=""/>`,
+      `<img src="https://${host}/img1.jpg" alt="" data-media="image"/>`,
     )
   }
 })
@@ -85,19 +85,19 @@ test('detect url in text', () => {
 
 test('return valid youtube url', () => {
   expect(p.parse('https://www.youtube.com/watch?v=aboZctrHfK8').text).toEqual(
-    `<a class="youtube-embed" href="https://www.youtube.com/watch?v=aboZctrHfK8" target="_blank"><img src="https://img.youtube.com/vi/aboZctrHfK8/0.jpg" alt="" data-youtube="https://www.youtube.com/embed/aboZctrHfK8"/></a>`,
+    `<a class="youtube-embed" data-media="video" href="https://www.youtube.com/watch?v=aboZctrHfK8" target="_blank"><img src="https://img.youtube.com/vi/aboZctrHfK8/0.jpg" alt="" data-youtube="https://www.youtube.com/embed/aboZctrHfK8"/></a>`,
   )
 })
 
 test('youtube shorts', () => {
   expect(p.parse('https://youtube.com/shorts/XeZorMhBlzQ?feature=share').text).toEqual(
-    `<a class="youtube-embed" href="https://www.youtube.com/watch?v=XeZorMhBlzQ" target="_blank"><img src="https://img.youtube.com/vi/XeZorMhBlzQ/0.jpg" alt="" data-youtube="https://www.youtube.com/embed/XeZorMhBlzQ"/></a>`,
+    `<a class="youtube-embed" data-media="video" href="https://www.youtube.com/watch?v=XeZorMhBlzQ" target="_blank"><img src="https://img.youtube.com/vi/XeZorMhBlzQ/0.jpg" alt="" data-youtube="https://www.youtube.com/embed/XeZorMhBlzQ"/></a>`,
   )
 })
 
 test('vimeo player embed', () => {
   expect(p.parse('https://www.vimeo.com/123456789').text).toEqual(
-    `<a class="vimeo-embed" href="https://vimeo.com/123456789" target="_blank">` +
+    `<a class="vimeo-embed" data-media="video" href="https://vimeo.com/123456789" target="_blank">` +
       `<img src="https://orbitar.media/vimeo/123456789" alt="" data-vimeo="https://player.vimeo.com/video/123456789"/></a>`,
   )
 })
@@ -110,31 +110,31 @@ test('vimeo player illegal embed', () => {
 
 test('idiod video embed', () => {
   expect(p.parse('https://idiod.video/8feuw2.mp4').text).toEqual(
-    `<a class="video-embed" href="https://idiod.video/8feuw2.mp4" target="_blank"><img src="https://idiod.video/preview/8feuw2.mp4" alt="" data-video="https://idiod.video/8feuw2.mp4"/></a>`,
+    `<a class="video-embed" data-media="video" href="https://idiod.video/8feuw2.mp4" target="_blank"><img src="https://idiod.video/preview/8feuw2.mp4" alt="" data-video="https://idiod.video/8feuw2.mp4"/></a>`,
   )
 })
 
 test('orbitar video embed', () => {
   expect(p.parse('https://orbitar.media/8feuw2.mp4').text).toEqual(
-    `<a class="video-embed" href="https://orbitar.media/8feuw2.mp4" target="_blank"><img src="https://orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://orbitar.media/8feuw2.mp4/raw"/></a>`,
+    `<a class="video-embed" data-media="video" href="https://orbitar.media/8feuw2.mp4" target="_blank"><img src="https://orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://orbitar.media/8feuw2.mp4/raw"/></a>`,
   )
 })
 
 test('orbitar video embed origin', () => {
   expect(p.parse('https://origin.orbitar.media/8feuw2.mp4').text).toEqual(
-    `<a class="video-embed" href="https://orbitar.media/8feuw2.mp4" target="_blank"><img src="https://orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://orbitar.media/8feuw2.mp4/raw"/></a>`,
+    `<a class="video-embed" data-media="video" href="https://orbitar.media/8feuw2.mp4" target="_blank"><img src="https://orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://orbitar.media/8feuw2.mp4/raw"/></a>`,
   )
 })
 
 test('raw orbitar video embed', () => {
   expect(p.parse('https://orbitar.media/8feuw2.mp4/raw').text).toEqual(
-    `<a class="video-embed" href="https://orbitar.media/8feuw2.mp4/raw" target="_blank"><img src="https://orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://orbitar.media/8feuw2.mp4/raw"/></a>`,
+    `<a class="video-embed" data-media="video" href="https://orbitar.media/8feuw2.mp4/raw" target="_blank"><img src="https://orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://orbitar.media/8feuw2.mp4/raw"/></a>`,
   )
 })
 
 test('origin orbitar video embed', () => {
   expect(p.parse('https://origin.orbitar.media/8feuw2.mp4/raw').text).toEqual(
-    `<a class="video-embed" href="https://orbitar.media/8feuw2.mp4/raw" target="_blank"><img src="https://orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://orbitar.media/8feuw2.mp4/raw"/></a>`,
+    `<a class="video-embed" data-media="video" href="https://orbitar.media/8feuw2.mp4/raw" target="_blank"><img src="https://orbitar.media/preview/8feuw2.mp4" alt="" data-video="https://orbitar.media/8feuw2.mp4/raw"/></a>`,
   )
 })
 
@@ -143,14 +143,30 @@ test('mp4 video element', () => {
     p.parse('<video src="https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_1MB.mp4">')
       .text,
   ).toEqual(
-    `<video  preload="metadata" controls="" width="500"><source src="https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_1MB.mp4" type="video/mp4"></video>`,
+    `<video data-media="video" preload="metadata" controls="" width="500"><source src="https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/1080/Big_Buck_Bunny_1080_10s_1MB.mp4" type="video/mp4"></video>`,
   )
 })
 
 test('coub embed', () => {
   expect(p.parse('https://coub.com/view/1eyshv').text).toEqual(
-    `<a class="coub-embed" href="https://coub.com/view/1eyshv" target="_blank"><img src="https://orbitar.media/coub/1eyshv" alt="" data-coub="https://coub.com/embed/1eyshv"/></a>`,
+    `<a class="coub-embed" data-media="video" href="https://coub.com/view/1eyshv" target="_blank"><img src="https://orbitar.media/coub/1eyshv" alt="" data-coub="https://coub.com/embed/1eyshv"/></a>`,
   )
+})
+
+// Stored html names its own media, so the vote digest can describe a post or a
+// comment without text (utils/MediaKind) without re-deciding what a URL renders as.
+test.each([
+  ['a picture link', 'https://example.com/cat.jpg', 'image'],
+  ['a GIF link', 'https://example.com/cat.gif', 'gif'],
+  ['a picture tag', '<img src="https://example.com/cat.png"/>', 'image'],
+  ['a GIF tag with a query string', '<img src="https://example.com/cat.gif?w=1"/>', 'gif'],
+  ['a YouTube link', 'https://youtu.be/aboZctrHfK8', 'video'],
+  ['a Vimeo link', 'https://vimeo.com/123456', 'video'],
+  ['a Coub link', 'https://coub.com/view/1eyshv', 'video'],
+  ['a hosted video with a poster', 'https://idiod.video/test.mp4', 'video'],
+  ['a video tag', '<video src="https://example.com/a.mp4">', 'video'],
+])('tags %s with its media kind', (_label, source, kind) => {
+  expect(p.parse(source).text.match(/data-media="\w+"/g)).toEqual([`data-media="${kind}"`])
 })
 
 test('strip leading and trailing non-printable chars', () => {
@@ -357,7 +373,7 @@ test('parse expand tag', () => {
 test('parse gallery with single image returns just the image (no wrapper)', () => {
   const result = p.parse('<gallery><img src="https://orbitar.media/img1.jpg" alt="img1"/></gallery>')
   // Single item gallery returns content without wrapper
-  expect(result.text).toEqual('<img src="https://orbitar.media/img1.jpg" alt="img1"/>')
+  expect(result.text).toEqual('<img src="https://orbitar.media/img1.jpg" alt="img1" data-media="image"/>')
 })
 
 test('parse gallery with nested tags', () => {
@@ -365,7 +381,7 @@ test('parse gallery with nested tags', () => {
     '<gallery><img src="https://orbitar.media/img1.jpg" alt="img1"/><img src="https://orbitar.media/img2.jpg" alt="img2"/></gallery>',
   )
   expect(result.text).toEqual(
-    '<div class="gallery"><img src="https://orbitar.media/img1.jpg" alt="img1"/><img src="https://orbitar.media/img2.jpg" alt="img2"/></div>',
+    '<div class="gallery"><img src="https://orbitar.media/img1.jpg" alt="img1" data-media="image"/><img src="https://orbitar.media/img2.jpg" alt="img2" data-media="image"/></div>',
   )
 })
 
@@ -409,7 +425,7 @@ test('parse gallery with internal URL only returns link', () => {
 test('parse gallery with single image URL returns just image (no wrapper)', () => {
   const result = p.parse('<gallery>https://example.com/image.jpg</gallery>')
   // 1 media item -> content parsed as regular content (no wrapper)
-  expect(result.text).toEqual('<img src="https://example.com/image.jpg" alt=""/>')
+  expect(result.text).toEqual('<img src="https://example.com/image.jpg" alt="" data-media="image"/>')
 })
 
 test('parse gallery keeps youtube URLs', () => {
@@ -1045,28 +1061,32 @@ test('parse img alt attribute for double escape', () => {
   // alt contains HTML special chars
   const result = p.parse('<img src="https://orbitar.media/img1.jpg" alt="&lt;test&gt; &amp; &quot;"/>')
   expect(result.text).toEqual(
-    '<img src="https://orbitar.media/img1.jpg" alt="&amp;lt;test&amp;gt; &amp;amp; &amp;quot;"/>',
+    '<img src="https://orbitar.media/img1.jpg" alt="&amp;lt;test&amp;gt; &amp;amp; &amp;quot;" data-media="image"/>',
   )
 })
 
 test('parse img alt attribute with quotes', () => {
   const result = p.parse('<img src="https://orbitar.media/img1.jpg" alt="a &quot;quote&quot;"/>')
-  expect(result.text).toEqual('<img src="https://orbitar.media/img1.jpg" alt="a &amp;quot;quote&amp;quot;"/>')
+  expect(result.text).toEqual(
+    '<img src="https://orbitar.media/img1.jpg" alt="a &amp;quot;quote&amp;quot;" data-media="image"/>',
+  )
 })
 
 test('parse img alt attribute vulnerable with single quote', () => {
   const result = p.parse('<img src="https://example.com/pic.jpg" alt=\'"><b>INJECTED</b>\'>')
-  expect(result.text).toEqual('<img src="https://example.com/pic.jpg" alt="&quot;&gt;&lt;b&gt;INJECTED&lt;/b&gt;"/>')
+  expect(result.text).toEqual(
+    '<img src="https://example.com/pic.jpg" alt="&quot;&gt;&lt;b&gt;INJECTED&lt;/b&gt;" data-media="image"/>',
+  )
 })
 
 test('parse img alt attribute with single quote', () => {
   const result = p.parse('<img src="https://orbitar.media/img1.jpg" alt="it\'s a test"/>')
-  expect(result.text).toEqual('<img src="https://orbitar.media/img1.jpg" alt="it&#39;s a test"/>')
+  expect(result.text).toEqual('<img src="https://orbitar.media/img1.jpg" alt="it&#39;s a test" data-media="image"/>')
 })
 
 test('parse img with missing alt attribute', () => {
   const result = p.parse('<img src="https://orbitar.media/img1.jpg"/>')
-  expect(result.text).toEqual('<img src="https://orbitar.media/img1.jpg" alt=""/>')
+  expect(result.text).toEqual('<img src="https://orbitar.media/img1.jpg" alt="" data-media="image"/>')
 })
 
 test('parse secret mailbox with valid secret attribute', () => {

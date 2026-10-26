@@ -1,0 +1,99 @@
+// Nested under .dropdown so these win over the UI kit button variants that they
+// restyle (both are single-class selectors otherwise).
+.dropdown {
+  position: relative;
+
+  .dropdownButton {
+    align-items: center;
+    background: var(--dim2);
+    border-radius: 8px;
+    color: var(--fg);
+    font-size: 14px;
+    font-weight: normal;
+    gap: 6px;
+    height: auto;
+    opacity: 1;
+    padding: 7px 14px;
+
+    &:hover {
+      background: var(--dim3);
+      color: var(--fgHard);
+    }
+  }
+
+  .menuItem {
+    border-radius: 6px;
+    color: var(--fgMedium);
+    font-size: 14px;
+    font-weight: normal;
+    height: auto;
+    justify-content: flex-start;
+    padding: 5px 10px;
+    text-align: left;
+    width: 100%;
+
+    &:hover,
+    &:focus-visible {
+      background: var(--dim2);
+      color: var(--fg);
+    }
+
+    &:focus-visible {
+      outline: 1px solid var(--fgSoftest);
+      outline-offset: -1px;
+    }
+  }
+
+  .menuItemActive,
+  .menuItemActive:hover {
+    background: var(--dim3);
+    color: var(--fg);
+  }
+}
+
+.caret {
+  color: var(--fgSofter);
+  font-size: 12px;
+}
+
+.menu {
+  background: var(--elevated);
+  border-radius: 8px;
+  box-shadow: 0 10px 24px var(--shadow);
+  display: flex;
+  flex-direction: column;
+  left: 0;
+  max-width: calc(100vw - 16px);
+  min-width: 200px;
+  padding: 4px;
+  position: absolute;
+  top: calc(100% + 4px);
+  z-index: 10;
+}
+
+.menuAlignEnd {
+  left: auto;
+  right: 0;
+}
+
+.menuHeading {
+  color: var(--fgSofter);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  padding: 6px 10px 2px;
+  text-transform: uppercase;
+}
+
+.menuSeparator {
+  background: var(--fgAlmostInvisible);
+  height: 1px;
+  margin: 4px 2px;
+}
+
+.menuNote {
+  border-top: 1px solid var(--fgAlmostInvisible);
+  color: var(--fgSofter);
+  font-size: 12px;
+  margin: 4px 2px 0;
+  padding: 6px 8px 2px;
+}

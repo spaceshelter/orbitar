@@ -21,16 +21,17 @@ export const sharedReadRateLimiter = rateLimit({
 })
 
 /**
- * 15/min — extra budget for feed requests carrying a non-empty filter.
- * A rarely-matching filter walks the user's whole vote history probing TEXT
- * per row (bounded at FILTER_MAX_EXECUTION_TIME_MS), so filtered requests get
+ * 15/min — extra budget for vote feed requests that may scan far back: a
+ * non-empty text filter or a minus-only page. Both walk the voted_at index
+ * and check each row (bounded at FILTER_MAX_EXECUTION_TIME_MS), so they get
  * their own conservative budget on top of the shared read limiter:
  * 15/min x 0.5s caps one user at ~7.5 DB-seconds per minute instead of 240.
- * Unfiltered pages skip this limiter entirely.
+ * Other pages skip this limiter entirely.
  */
-export const heavyFilterRateLimiter = rateLimit({
+export const heavyReadRateLimiter = rateLimit({
   max: 15,
   windowMs: 60 * 1000,
   ...commonRateLimitConfig,
-  skip: (req) => !String(req.body?.filter ?? '').trim(),
+  // Runs before Joi validation; `sign` only accepts the exact 'minus' there.
+  skip: (req) => !String(req.body?.filter ?? '').trim() && req.body?.sign !== 'minus',
 })
