@@ -128,6 +128,19 @@ function DigestTail({ lookup, section, partial }: { lookup: DigestLookup; sectio
   )
 }
 
+function RetryError({ error, onRetry }: { error: string; onRetry: () => void }) {
+  return (
+    <>
+      <div className={styles.errorText} role='alert'>
+        {error}
+      </div>
+      <Button variant='ghost' className={styles.widenButton} onClick={onRetry}>
+        Повторить
+      </Button>
+    </>
+  )
+}
+
 export default function ReceivedVotesDigest() {
   const [searchParams, setSearchParams] = useSearchParams()
   const filters = readFilters(searchParams)
@@ -169,6 +182,11 @@ export default function ReceivedVotesDigest() {
   const events = feed?.events || []
   const filtered = type !== 'all' || sign !== 'all'
   const wider = getWiderPeriod(period, sign)
+  const widenButton = wider && (
+    <Button variant='ghost' className={styles.widenButton} onClick={() => writeFilters({ ...filters, period: wider })}>
+      {`Показать ${PERIOD_LABELS[wider].toLowerCase()}`}
+    </Button>
+  )
   // Pages arrive newest first, so only the oldest loaded section can be missing
   // votes: while more are coming it is held back, afterwards it is marked.
   const incomplete = !!feed?.hasMore
@@ -238,12 +256,7 @@ export default function ReceivedVotesDigest() {
         {loading && !feed && <div className={feedStyles.loading}></div>}
         {error && !feed && (
           <div className={styles.empty}>
-            <div className={styles.errorText} role='alert'>
-              {error}
-            </div>
-            <Button variant='ghost' className={styles.widenButton} onClick={retry}>
-              Повторить
-            </Button>
+            <RetryError error={error} onRetry={retry} />
           </div>
         )}
         {!loading && !error && feed && events.length === 0 && (
@@ -253,15 +266,7 @@ export default function ReceivedVotesDigest() {
                 ? `${filtered ? 'Таких оценок' : 'Оценок'} пока нет.`
                 : `${PERIOD_LABELS[period]} ${filtered ? 'таких оценок' : 'оценок'} не было.`}
             </div>
-            {wider && (
-              <Button
-                variant='ghost'
-                className={styles.widenButton}
-                onClick={() => writeFilters({ ...filters, period: wider })}
-              >
-                {`Показать ${PERIOD_LABELS[wider].toLowerCase()}`}
-              </Button>
-            )}
+            {widenButton}
           </div>
         )}
         {feed &&
@@ -296,28 +301,13 @@ export default function ReceivedVotesDigest() {
         {!loading && feed && events.length > 0 && (
           <div className={styles.footer}>
             {error ? (
-              <>
-                <div className={styles.errorText} role='alert'>
-                  {error}
-                </div>
-                <Button variant='ghost' className={styles.widenButton} onClick={retry}>
-                  Повторить
-                </Button>
-              </>
+              <RetryError error={error} onRetry={retry} />
             ) : incomplete && feed.nextCursor ? (
               <Button variant='ghost' className={styles.widenButton} onClick={loadMore} disabled={loadingMore}>
                 {loadingMore ? 'Загружается...' : 'Показать ещё'}
               </Button>
             ) : (
-              wider && (
-                <Button
-                  variant='ghost'
-                  className={styles.widenButton}
-                  onClick={() => writeFilters({ ...filters, period: wider })}
-                >
-                  {`Показать ${PERIOD_LABELS[wider].toLowerCase()}`}
-                </Button>
-              )
+              widenButton
             )}
           </div>
         )}
