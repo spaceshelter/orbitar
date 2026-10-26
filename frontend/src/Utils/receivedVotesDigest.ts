@@ -1,4 +1,8 @@
+import moment from 'moment'
+
 import { UserVoteFeedEvent } from '../API/UserAPI'
+
+import 'moment/locale/ru'
 
 export type VotePeriod = 'week' | '2weeks' | 'month' | 'year' | 'all'
 export type VoteSign = 'all' | 'minus'
@@ -61,36 +65,6 @@ const PERIODS: VotePeriod[] = ['week', '2weeks', 'month', 'year', 'all']
 // make easy either: minus-only windows stop at a month, as the API enforces.
 const MINUS_ONLY_PERIODS: VotePeriod[] = ['week', '2weeks', 'month']
 
-const MONTHS_GENITIVE = [
-  'января',
-  'февраля',
-  'марта',
-  'апреля',
-  'мая',
-  'июня',
-  'июля',
-  'августа',
-  'сентября',
-  'октября',
-  'ноября',
-  'декабря',
-]
-
-const MONTHS_NOMINATIVE = [
-  'январь',
-  'февраль',
-  'март',
-  'апрель',
-  'май',
-  'июнь',
-  'июль',
-  'август',
-  'сентябрь',
-  'октябрь',
-  'ноябрь',
-  'декабрь',
-]
-
 const startOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate())
 
 const addDays = (date: Date, days: number) => {
@@ -128,14 +102,18 @@ export const getWiderPeriod = (period: VotePeriod, sign: VoteSign): VotePeriod |
   return index < 0 ? undefined : options[index + 1]
 }
 
+// moment's Russian locale declines a month after a day («7 сентября») and leaves
+// it in the nominative on its own («сентябрь 2026»).
+const formatDate = (date: Date, format: string) => moment(date).locale('ru').format(format)
+
 const formatDayRange = (start: Date, end: Date) => {
   if (start.getMonth() !== end.getMonth()) {
-    return `${start.getDate()} ${MONTHS_GENITIVE[start.getMonth()]} – ${end.getDate()} ${MONTHS_GENITIVE[end.getMonth()]}`
+    return `${formatDate(start, 'D MMMM')} – ${formatDate(end, 'D MMMM')}`
   }
   if (start.getDate() === end.getDate()) {
-    return `${end.getDate()} ${MONTHS_GENITIVE[end.getMonth()]}`
+    return formatDate(end, 'D MMMM')
   }
-  return `${start.getDate()}–${end.getDate()} ${MONTHS_GENITIVE[end.getMonth()]}`
+  return `${start.getDate()}–${formatDate(end, 'D MMMM')}`
 }
 
 export const sumPlus = (events: UserVoteFeedEvent[]) => events.reduce((sum, event) => sum + Math.max(event.vote, 0), 0)
@@ -266,7 +244,7 @@ export const buildReceivedDigest = (events: UserVoteFeedEvent[], options: Digest
   return entriesOf(buckets).map(([key, sectionEvents]) => {
     const sample = sectionEvents[0].votedAt
     if (options.granularity === 'month') {
-      return buildSection(key, `${MONTHS_NOMINATIVE[sample.getMonth()]} ${sample.getFullYear()}`, sectionEvents)
+      return buildSection(key, formatDate(sample, 'MMMM YYYY'), sectionEvents)
     }
     const weekStart = startOfWeek(sample)
     const weekEnd = addDays(weekStart, 6)

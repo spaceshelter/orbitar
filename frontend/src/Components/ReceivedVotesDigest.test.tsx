@@ -525,11 +525,11 @@ describe('ReceivedVotesDigest', () => {
     await click(buttonByText('ещё 2 комментария'))
 
     const text = container.textContent || ''
-    expect(text).toContain('картинка · 12 сен, 18:06')
-    expect(text).toContain('видео · 12 сен, 18:06')
-    expect(text).toContain('гифка · 12 сен, 18:06')
+    expect(text).toContain('картинка · 12 сент., 18:06')
+    expect(text).toContain('видео · 12 сент., 18:06')
+    expect(text).toContain('гифка · 12 сент., 18:06')
     // Neither the kind nor the text is known: the row says it is some media.
-    expect(text.match(/медиа · 12 сен, 18:06/g)).toHaveLength(2)
+    expect(text.match(/медиа · 12 сент., 18:06/g)).toHaveLength(2)
     expect(text).not.toContain('комментарий ·')
     expect(text).not.toContain('«»')
   })
