@@ -3,10 +3,21 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Button from '@ui/Button'
 import classNames from 'classnames'
 
+import useDocumentEvent from '../API/use/useDocumentEvent'
+
 import styles from './FilterDropdown.module.scss'
 
 // React 18's useId is not in the @types/react this project pins.
 let dropdownCount = 0
+
+const menuItems = (menu: HTMLElement | null) =>
+  Array.from(menu?.querySelectorAll<HTMLElement>('[role="menuitemradio"]') || [])
+
+const focusChecked = (menu: HTMLElement | null) => {
+  const list = menuItems(menu)
+  const checked = list.findIndex((item) => item.getAttribute('aria-checked') === 'true')
+  list[Math.max(checked, 0)]?.focus()
+}
 
 export type FilterMenuItem = { key: string; label: string; checked: boolean; onSelect: () => void }
 export type FilterMenuGroup = { key: string; heading?: string; items: FilterMenuItem[] }
@@ -28,17 +39,9 @@ export default function FilterDropdown({ label, menuLabel, groups, note, open, o
   const [id] = useState(() => `filter-dropdown-${++dropdownCount}`)
   const rootRef = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
-  const onOpenChangeRef = useRef(onOpenChange)
-  onOpenChangeRef.current = onOpenChange
   const [alignEnd, setAlignEnd] = useState(false)
 
   const trigger = () => rootRef.current?.querySelector<HTMLElement>('[aria-haspopup="menu"]')
-  const items = () => Array.from(menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitemradio"]') || [])
-  const focusChecked = () => {
-    const list = items()
-    const checked = list.findIndex((item) => item.getAttribute('aria-checked') === 'true')
-    list[Math.max(checked, 0)]?.focus()
-  }
   const close = (returnFocus: boolean) => {
     onOpenChange(false)
     if (returnFocus) {
@@ -56,40 +59,35 @@ export default function FilterDropdown({ label, menuLabel, groups, note, open, o
   }, [open])
 
   useEffect(() => {
-    if (!open) {
-      return
-    }
-    const list = Array.from(menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitemradio"]') || [])
-    const checked = list.findIndex((item) => item.getAttribute('aria-checked') === 'true')
-    list[Math.max(checked, 0)]?.focus()
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        const hadFocus = !!rootRef.current?.contains(document.activeElement)
-        onOpenChangeRef.current(false)
-        if (hadFocus) {
-          rootRef.current?.querySelector<HTMLElement>('[aria-haspopup="menu"]')?.focus()
-        }
-      }
-    }
-    const handleMouseDown = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) {
-        onOpenChangeRef.current(false)
-      }
-    }
-    document.addEventListener('keydown', handleKeyDown)
-    document.addEventListener('mousedown', handleMouseDown)
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-      document.removeEventListener('mousedown', handleMouseDown)
+    if (open) {
+      focusChecked(menuRef.current)
     }
   }, [open])
+
+  useDocumentEvent(
+    'keydown',
+    (event) => {
+      if (event.key === 'Escape') {
+        close(!!rootRef.current?.contains(document.activeElement))
+      }
+    },
+    open,
+  )
+  useDocumentEvent(
+    'mousedown',
+    (event) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        close(false)
+      }
+    },
+    open,
+  )
 
   const handleTriggerKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault()
       if (open) {
-        focusChecked()
+        focusChecked(menuRef.current)
       } else {
         onOpenChange(true)
       }
@@ -97,7 +95,7 @@ export default function FilterDropdown({ label, menuLabel, groups, note, open, o
   }
 
   const handleMenuKeyDown = (event: React.KeyboardEvent) => {
-    const list = items()
+    const list = menuItems(menuRef.current)
     const current = list.indexOf(document.activeElement as HTMLElement)
     const move = (index: number) => {
       event.preventDefault()

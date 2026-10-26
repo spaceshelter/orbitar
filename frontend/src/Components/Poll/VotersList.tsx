@@ -6,6 +6,8 @@ import { useAPI } from '@state/AppState'
 import classNames from 'classnames'
 import { createPortal } from 'react-dom'
 
+import useDocumentEvent from '../../API/use/useDocumentEvent'
+
 import styles from './VotersList.module.scss'
 
 export const VotersTooltip: React.FC<{
@@ -44,8 +46,11 @@ export const VotersTooltip: React.FC<{
 
     tooltip.style.top = `${rect.bottom + window.scrollY}px`
     tooltip.style.right = `${document.documentElement.clientWidth - rect.right}px`
+  }, [showTooltip, fetchVoters, votesCount])
 
-    const clickHandler = (e: MouseEvent) => {
+  useDocumentEvent(
+    'mousedown',
+    (e) => {
       // Check if the click is inside the tooltip
       if (tooltipRef.current && tooltipRef.current.contains(e.target as Node)) {
         return // Don't close if clicked inside tooltip
@@ -54,13 +59,9 @@ export const VotersTooltip: React.FC<{
       e.stopPropagation()
       e.preventDefault()
       setShowTooltip(false)
-      return false
-    }
-    document.addEventListener('mousedown', clickHandler)
-    return () => {
-      document.removeEventListener('mousedown', clickHandler)
-    }
-  }, [showTooltip, fetchVoters, votesCount])
+    },
+    showTooltip && votesCount > 0,
+  )
 
   const handleTooltipClick = (e: React.MouseEvent<HTMLSpanElement>) => {
     if (onClick) {

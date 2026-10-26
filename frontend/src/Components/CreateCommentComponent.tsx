@@ -14,6 +14,7 @@ import { toast } from 'react-toastify'
 import getCaretCoordinates from 'textarea-caret'
 import { useDebouncedCallback } from 'use-debounce'
 
+import useDocumentEvent from '../API/use/useDocumentEvent'
 import { CommentInfo, PostLinkInfo } from '../Types/PostInfo'
 import ContentComponent from './ContentComponent'
 import MediaUploader, { CreateGalleryOption, MediaResult } from './MediaUploader'
@@ -856,18 +857,7 @@ const SpilloverWrapper = (props: {
     }
   }, [])
 
-  useEffect(() => {
-    if (!showOptions) {
-      return
-    }
-    const handleClick = (e: MouseEvent) => {
-      setShowOptions(false)
-    }
-    document.addEventListener('click', handleClick)
-    return () => {
-      document.removeEventListener('click', handleClick)
-    }
-  }, [showOptions])
+  useDocumentEvent('click', () => setShowOptions(false), showOptions)
 
   const toggleOptions = (e: React.MouseEvent) => {
     e.stopPropagation()
