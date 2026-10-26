@@ -46,8 +46,8 @@ export default class TheParser {
 
   private readonly mediaHostingConfig: MediaHostingConfig
   private readonly parserConfig: ParserConfig
-  private readonly mediaHostingUrlOrigin: string
-  private readonly mediaHostingUrlBunny: string
+  private readonly mediaHostingOrigin: string
+  private readonly mediaHostingUrlRegex: RegExp
   private readonly blockTags: string[]
 
   // Stack of tags that are currently being parsed, for internal use only
@@ -56,10 +56,11 @@ export default class TheParser {
   constructor(parserConfig: ParserConfig) {
     this.parserConfig = parserConfig
     this.mediaHostingConfig = parserConfig.mediaHosting
-    // add origin. subdomain to the url
-    this.mediaHostingUrlOrigin = this.mediaHostingConfig.url.replace(/^https?:\/\//, 'https://origin.')
-
-    this.mediaHostingUrlBunny = this.mediaHostingConfig.url.replace(/^https?:\/\//, 'https://b.')
+    // the media host or any subdomain of it (origin. bypasses the cdn, b. is the old cdn host)
+    const mediaHostingUrl = new URL(this.mediaHostingConfig.url)
+    this.mediaHostingOrigin = mediaHostingUrl.origin
+    const mediaHost = escapeRegExp(mediaHostingUrl.hostname)
+    this.mediaHostingUrlRegex = new RegExp(`^https?://(?:[a-z0-9-]+\\.)*${mediaHost}(?::\\d+)?(?=[/?#]|$)`, 'i')
 
     this.allowedTags = {
       a: (node) => this.parseA(node),
@@ -323,16 +324,15 @@ export default class TheParser {
     return `${expandButton}<a href="${encodeURI(twitterUrl)}" target="_blank">${displayText}</a>`
   }
 
+  /** Links to the media host's subdomains point to the media host itself. */
+  toMediaHostingUrl(url: string): string {
+    return url.replace(this.mediaHostingUrlRegex, this.mediaHostingOrigin)
+  }
+
   processImage(url: Url<string>) {
     if (url.pathname.match(/\.(jpg|gif|png|webp|jpeg|svg)$/)) {
       let img = url.toString()
-      // replace media url with bunny cdn
-      if (img.startsWith(this.mediaHostingConfig.url) || img.startsWith(this.mediaHostingUrlOrigin)) {
-        img = img.replace(
-          new RegExp(`^(${escapeRegExp(this.mediaHostingUrlOrigin)}|${escapeRegExp(this.mediaHostingConfig.url)})`),
-          this.mediaHostingUrlBunny,
-        )
-      }
+      img = this.toMediaHostingUrl(img)
 
       return `<img src="${encodeURI(img)}" alt="" ${imageMedia(img)}/>`
     }
@@ -378,7 +378,7 @@ export default class TheParser {
       if (match) {
         const coubId = match[1]
         const origUrl = `https://coub.com/view/${coubId}`
-        const previewUrl = `${this.mediaHostingUrlBunny}/coub/${coubId}`
+        const previewUrl = `${this.mediaHostingOrigin}/coub/${coubId}`
         const embedUrl = `https://coub.com/embed/${coubId}`
 
         return (
@@ -463,7 +463,7 @@ export default class TheParser {
     const startTime = url.hash ? parseTime(qs.parse(url.hash.substring(1)).t) : 0
 
     const origUrl = `https://vimeo.com/${videoId}${startTime ? '#t=' + startTime : ''}`
-    const previewUrl = `${this.mediaHostingUrlBunny}/vimeo/${videoId}`
+    const previewUrl = `${this.mediaHostingOrigin}/vimeo/${videoId}`
     const embedUrl = `https://player.vimeo.com/video/${videoId}${startTime ? '#t=' + startTime : ''}`
 
     return (
@@ -542,13 +542,7 @@ export default class TheParser {
     if (!this.validUrl(url)) {
       return this.parseDisallowedTag(node)
     }
-    // replace media url with bunny cdn
-    if (url.startsWith(this.mediaHostingConfig.url) || url.startsWith(this.mediaHostingUrlOrigin)) {
-      url = url.replace(
-        new RegExp(`^(${escapeRegExp(this.mediaHostingUrlOrigin)}|${escapeRegExp(this.mediaHostingConfig.url)})`),
-        this.mediaHostingUrlBunny,
-      )
-    }
+    url = this.toMediaHostingUrl(url)
 
     const alt = node.attribs['alt'] ? htmlEscape(node.attribs['alt']) : ''
 
@@ -631,6 +625,7 @@ export default class TheParser {
   }
 
   renderVideoTag(url: string, loop: boolean) {
+    url = this.toMediaHostingUrl(url)
     const imgurPoster = () => {
       const match = url.match(/https?:\/\/i.imgur.com\/([^.]+).mp4$/)
       return match && [`https://i.imgur.com/${encodeURI(match[1])}.jpg`, url]
@@ -642,18 +637,10 @@ export default class TheParser {
       )
     }
     const orbitarMediaPoster = () => {
-      if (
-        url.startsWith(this.mediaHostingConfig.url) ||
-        url.startsWith(this.mediaHostingUrlOrigin) ||
-        url.startsWith(this.mediaHostingUrlBunny)
-      ) {
+      if (this.mediaHostingUrlRegex.test(url)) {
         const match = url.match(/.*\/([^.]+\.mp4)(\/raw)?$/)
-        return (
-          match && [
-            `${this.mediaHostingUrlBunny}/preview/${encodeURI(match[1])}`,
-            `${this.mediaHostingUrlBunny}/${encodeURI(match[1])}/raw`,
-          ]
-        )
+        const base = this.mediaHostingOrigin
+        return match && [`${base}/preview/${encodeURI(match[1])}`, `${base}/${encodeURI(match[1])}/raw`]
       }
     }
     const dumpVideoPoster = () => {
@@ -665,9 +652,6 @@ export default class TheParser {
     const posterUrl = imgurPoster() || idiodPoster() || dumpVideoPoster() || orbitarMediaPoster()
     if (posterUrl) {
       const [poster, video] = posterUrl
-      if (url.startsWith(this.mediaHostingUrlOrigin)) {
-        url = url.replace(this.mediaHostingUrlOrigin, this.mediaHostingUrlBunny)
-      }
       return (
         `<a class="video-embed" ${VIDEO_MEDIA} href="${encodeURI(url)}" target="_blank">` +
         `<img src="${encodeURI(poster)}" alt="" data-video="${encodeURI(video)}"${loop ? ' data-loop="true"' : ''}/></a>`

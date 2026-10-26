@@ -99,12 +99,27 @@ jobs:
           cp -f /opt/deployment-specific-files/chain.pem ./caddy/certs
           cp -f /opt/deployment-specific-files/priv.pem ./caddy/certs
           cp -f /opt/deployment-specific-files/.env ./
+          # optional extra Caddy sites for this host (caddy/sites/README.md)
+          shopt -s nullglob
+          for f in /opt/deployment-specific-files/caddy-sites/*.caddy; do cp -f "$f" ./caddy/sites/; done
+          shopt -u nullglob
           
           # remove any FINGERPRINT= lines from .env
           sed -i '/^FINGERPRINT=/d' .env
           # add FINGERPRINT to .env
           echo "FINGERPRINT=$(date +%s%N)$RANDOM" >> .env
           
+
+      # caddy/sites/*.caddy come from the host and no CI sees them; a config error would make Caddy exit
+      # on start. Validate in the workspace, before /orbitar is touched, with the service's env and mounts,
+      # in a throwaway project so the live stack's volumes are never mounted.
+      - name: Validate Caddy config
+        run: |
+          check="docker compose -p orbitar-caddy-check -f docker-compose.ssl.local.yml"
+          rc=0
+          $check run --rm --no-deps caddy caddy validate --config /etc/caddy/Caddyfile || rc=$?
+          $check down -v
+          exit $rc
 
       - name: Build
         env:

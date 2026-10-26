@@ -16,6 +16,12 @@ import styles from './MediaUploader.module.scss'
 
 const GALLERY_HEIGHT = 280
 
+/**
+ * Upload failure whose message the media host meant for the user — e.g. «File too big. 50mb max».
+ * Anything else stays a plain Error and keeps the generic toast.
+ */
+class MediaHostError extends Error {}
+
 export type MediaResult = {
   type: 'video' | 'image'
   url: string
@@ -364,7 +370,9 @@ export default function MediaUploader(props: MediaUploaderProps) {
 
       props.onSuccess(result, galleryOption)
     } catch (e) {
-      handleError('Произошла ошибка при загрузке 🥺')
+      handleError(
+        e instanceof MediaHostError ? `Не удалось загрузить: ${e.message}` : 'Произошла ошибка при загрузке 🥺',
+      )
     }
   }
 
@@ -431,6 +439,9 @@ export default function MediaUploader(props: MediaUploaderProps) {
         } as MediaResult
       } else {
         console.error('UPLOAD FAILED: no link', data, file.type)
+        if (typeof data.reason === 'string' && data.reason) {
+          throw new MediaHostError(data.reason)
+        }
         throw new Error('UPLOAD FAILED: no link')
       }
     } finally {
