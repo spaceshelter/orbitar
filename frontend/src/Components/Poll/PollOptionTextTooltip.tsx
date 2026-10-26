@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react'
 
 import { createPortal } from 'react-dom'
 
+import useDocumentEvent from '../../API/use/useDocumentEvent'
+
 import styles from './PollComponent.module.scss'
 
 interface PollOptionTextWithTooltipProps {
@@ -46,21 +48,20 @@ export const PollOptionTextWithTooltip: React.FC<PollOptionTextWithTooltipProps>
 
     tooltip.style.top = `${rect.bottom + window.scrollY}px`
     tooltip.style.left = `${Math.max(20, rect.left - 150)}px` // Center tooltip roughly
+  }, [showTooltip])
 
-    const clickHandler = (e: MouseEvent) => {
+  useDocumentEvent(
+    'mousedown',
+    (e) => {
       if (tooltipRef.current && tooltipRef.current.contains(e.target as Node)) {
         return // Don't close if clicked inside tooltip
       }
 
       e.stopPropagation()
       setShowTooltip(false)
-    }
-
-    document.addEventListener('mousedown', clickHandler)
-    return () => {
-      document.removeEventListener('mousedown', clickHandler)
-    }
-  }, [showTooltip])
+    },
+    showTooltip,
+  )
 
   const handleClick = (e: React.MouseEvent<HTMLSpanElement>) => {
     e.stopPropagation()

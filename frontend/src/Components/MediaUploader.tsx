@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 import Button from '@ui/Button'
 import Checkbox from '@ui/Checkbox'
 import { toast } from 'react-toastify'
 
+import useDocumentEvent from '../API/use/useDocumentEvent'
 import useFocus from '../API/use/useFocus'
 import GalleryComponent, { GalleryElement } from './GalleryComponent'
 import Overlay from './Overlay'
@@ -115,25 +116,17 @@ export default function MediaUploader(props: MediaUploaderProps) {
     }
   }, [uploadArray.length])
 
-  const handlePressEnter = useCallback(
-    (e: React.KeyboardEvent<HTMLFormElement> | KeyboardEvent) => {
-      if (e.key === 'Enter') {
-        const target = e.target as HTMLElement
-        const tag = target.tagName.toLowerCase()
+  useDocumentEvent('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const target = e.target as HTMLElement
+      const tag = target.tagName.toLowerCase()
 
-        if (tag === 'textarea' || target.isContentEditable) return
+      if (tag === 'textarea' || target.isContentEditable) return
 
-        e.preventDefault()
-        if (uploadArray.length > 0) formRef.current?.requestSubmit()
-      }
-    },
-    [uploadArray.length],
-  )
-
-  useEffect(() => {
-    document.addEventListener('keydown', handlePressEnter)
-    return () => document.removeEventListener('keydown', handlePressEnter)
-  }, [handlePressEnter])
+      e.preventDefault()
+      if (uploadArray.length > 0) formRef.current?.requestSubmit()
+    }
+  })
 
   const scrollToGalleryIndex = (idx: number) => {
     scrollKeyRef.current++
