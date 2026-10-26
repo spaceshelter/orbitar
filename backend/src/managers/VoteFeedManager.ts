@@ -215,9 +215,12 @@ export default class VoteFeedManager {
     hasMore: boolean,
     nextCursor: string | undefined,
   ): Promise<UserVotesResponse> {
-    // loadUsers only needs the refs, so it can ride the same wave as the subjects.
+    // Every post a page touches, voted on or holding a voted comment, is loaded
+    // once and names its discussion. loadUsers only needs the refs, so it can ride
+    // the same wave as the subjects.
+    const postIds = [...new Set(refs.flatMap((ref) => (ref.postId ? [Number(ref.postId)] : [])))]
     const [postRows, commentRows, users] = await Promise.all([
-      this.voteFeedReadRepository.getReceivedPostSubjects(this.entityIds(refs, 'post')),
+      this.voteFeedReadRepository.getReceivedPostSubjects(postIds),
       this.voteFeedReadRepository.getReceivedCommentSubjects(this.entityIds(refs, 'comment')),
       this.loadUsers(refs),
     ])
@@ -237,14 +240,11 @@ export default class VoteFeedManager {
     const comments: Record<number, ReceivedCommentSubject> = {}
     for (const row of commentRows) {
       const id = Number(row.id)
-      const postTitle = row.postTitle?.trim() || truncateLabel(toPlainText(row.postHtml))
       const excerpt = truncateLabel(toPlainText(row.html))
       comments[id] = {
         id,
         postId: Number(row.postId),
         site: row.site,
-        postTitle: postTitle || undefined,
-        ...(!postTitle && { postMedia: getMediaKind(row.postHtml || '') }),
         excerpt,
         ...(!excerpt && { media: getMediaKind(row.html || '') }),
         created: new Date(row.created).toISOString(),
