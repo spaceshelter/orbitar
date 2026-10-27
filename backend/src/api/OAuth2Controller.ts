@@ -12,9 +12,9 @@ import {
   APIRequest,
   APIResponse,
   joiClientId,
-  mediaHostingUrlPattern,
   singleUriValidator,
   urisListValidator,
+  urlUnderBasePattern,
   validate,
 } from './ApiMiddleware'
 import { ExpressOauth2ScopesFilter } from './OAuth2Middleware'
@@ -103,7 +103,7 @@ const updateLogoUrlSchema = Joi.object<OAuth2ClientUpdateLogoUrlRequest>({
       scheme: ['http', 'https'],
     })
     .max(255)
-    .pattern(mediaHostingUrlPattern(config.mediaHosting.url))
+    .pattern(urlUnderBasePattern(config.mediaHosting.url))
     .required(),
 })
 

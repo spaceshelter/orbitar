@@ -138,11 +138,11 @@ export const joiSiteName = Joi.string().min(siteNameMinLengthChars).max(siteName
 
 export const joiClientId = Joi.string().max(36).min(36)
 
-// Matches URLs served by the media host configured in `baseUrl`.
+// Matches URLs served under `baseUrl`.
 // A bare prefix is not enough: `https://orbitar.media` also prefixes
 // `https://orbitar.media.evil.example/logo.png`, so require the path separator that ends the
 // authority. A path in `baseUrl` is kept, and a trailing slash in it does not change the result.
-export const mediaHostingUrlPattern = (baseUrl: string): RegExp =>
+export const urlUnderBasePattern = (baseUrl: string): RegExp =>
   new RegExp(`^${escapeRegExp(baseUrl.replace(/\/+$/, ''))}/`)
 
 export const validateSingleRedirectUri = (url: string): boolean => {

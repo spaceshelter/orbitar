@@ -1,7 +1,7 @@
-import { mediaHostingUrlPattern } from '../../src/api/ApiMiddleware'
+import { urlUnderBasePattern } from '../../src/api/ApiMiddleware'
 
-describe('mediaHostingUrlPattern', () => {
-  const matches = (baseUrl: string, url: string) => mediaHostingUrlPattern(baseUrl).test(url)
+describe('urlUnderBasePattern', () => {
+  const matches = (baseUrl: string, url: string) => urlUnderBasePattern(baseUrl).test(url)
 
   it('accepts a URL served by the configured host', () => {
     expect(matches('https://orbitar.media', 'https://orbitar.media/logo.png')).toBe(true)
