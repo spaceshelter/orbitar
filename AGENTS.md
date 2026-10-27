@@ -85,3 +85,4 @@ Within `frontend/` and `backend/` you can run:
 
 - Architecture overview: `docs/architecture.md`
 - API documentation: `docs/api/README.md`
+- Admin cache server (loopback-only ops endpoints): `docs/admin-server.md`
