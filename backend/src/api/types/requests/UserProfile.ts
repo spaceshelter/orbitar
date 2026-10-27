@@ -22,6 +22,9 @@ export type UserProfileResponse = {
   hasOwnApps: boolean
 
   visitedDaysAgo: number
+
+  // Whether the requesting user has muted this profile's notifications.
+  isMuted: boolean
 }
 
 export type TrialProgressDebugInfo = {
