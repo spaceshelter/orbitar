@@ -12,6 +12,25 @@
   border-radius: 6px;
 }
 
+.threadToggle {
+  color: var(--fgSoftest);
+  cursor: pointer;
+}
+
+.threadPages {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0 24px;
+  color: var(--fgSoftest);
+  font-size: 14px;
+}
+
+.threadPages button {
+  cursor: pointer;
+  color: var(--fg);
+}
+
 .postButtons {
   margin: 30px 0;
   border-radius: 6px;

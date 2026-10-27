@@ -33,6 +33,9 @@ interface CommentProps {
   hideRating?: boolean
   currentUsername?: string
   onVote?: (id: number, comment: Partial<CommentInfo>, postApiCall?: boolean) => void
+  threaded?: boolean
+  threadedChildren?: React.ReactNode
+  threadToggle?: React.ReactNode
 }
 
 export default function CommentComponent(props: CommentProps) {
@@ -179,6 +182,7 @@ export default function CommentComponent(props: CommentProps) {
         )}
 
         <div className={styles.controls}>
+          {props.threadToggle && <div className={styles.control}>{props.threadToggle}</div>}
           {!props.hideRating && (
             <div className={styles.control}>
               <RatingSwitch
@@ -267,7 +271,7 @@ export default function CommentComponent(props: CommentProps) {
           )}
         </div>
       </div>
-      {props.comment.answers || answerOpen ? (
+      {props.comment.answers || answerOpen || (props.threaded && props.threadedChildren) ? (
         <div className={styles.answers + (isFlat ? ' isFlat' : '')}>
           {props.onAnswer && (
             <CreateCommentComponentRestricted
@@ -278,7 +282,9 @@ export default function CommentComponent(props: CommentProps) {
               storageKey={`cp:${props.comment.id}`}
             />
           )}
-          {props.comment.answers && props.onAnswer ? (
+          {props.threaded ? (
+            props.threadedChildren
+          ) : props.comment.answers && props.onAnswer ? (
             props.comment.answers.map((comment, idx) => (
               <CommentComponent
                 maxTreeDepth={maxDepth}
