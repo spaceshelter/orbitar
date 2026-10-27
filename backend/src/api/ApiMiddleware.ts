@@ -4,6 +4,7 @@ import { NextFunction } from 'express-serve-static-core'
 import Joi, { ObjectSchema } from 'joi'
 import isURL from 'validator/lib/isURL'
 
+import { escapeRegExp } from '../parser/regexprs'
 import Session from '../session/Session'
 
 type ResponseSuccess<T> = {
@@ -136,6 +137,13 @@ export const joiSite = Joi.string()
 export const joiSiteName = Joi.string().min(siteNameMinLengthChars).max(siteNameMaxLengthChars)
 
 export const joiClientId = Joi.string().max(36).min(36)
+
+// Matches URLs served under `baseUrl`.
+// A bare prefix is not enough: `https://orbitar.media` also prefixes
+// `https://orbitar.media.evil.example/logo.png`, so require the path separator that ends the
+// authority. A path in `baseUrl` is kept, and a trailing slash in it does not change the result.
+export const urlUnderBasePattern = (baseUrl: string): RegExp =>
+  new RegExp(`^${escapeRegExp(baseUrl.replace(/\/+$/, ''))}/`)
 
 export const validateSingleRedirectUri = (url: string): boolean => {
   try {
