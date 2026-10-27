@@ -29,18 +29,3 @@ challenge never reaches Caddy, and port 80 isn't published for HTTP-01, so such 
 certificate, like the Orbitar sites in `Caddyfile.ssl.local`. Then set
 `MEDIA_HOSTING_URL=https://media.example.org` and `MEDIA_HOSTING_CLIENT_ID` (the media stack's `CLIENT_ID`) in
 `.env` and rebuild: the frontend bakes the URL in at build time.
-
-### Older installations: the `b.` and `origin.` subdomains
-
-Orbitar used to link media through `b.` (the old CDN host) and `origin.` (a CDN bypass). Since #550 the
-parser rewrites every subdomain of the media host back onto the host itself, so a fresh install never emits
-either name and does not need them. Content rendered before that change still has them baked in, so an
-existing deployment keeps serving all three until the stored content is rewritten:
-
-```
-media.example.org, b.media.example.org, origin.media.example.org {
-  reverse_proxy 172.17.0.1:8090
-}
-```
-
-Those two names then need DNS and a certificate as well, on the same terms as the first.
