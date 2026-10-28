@@ -10,6 +10,7 @@ import { APIRequest, APIResponse, joiFormat, joiSite, validate } from './ApiMidd
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
 import { sharedReadRateLimiter } from './RateLimiters'
 import { FeedSorting } from './types/entities/common'
+import { FeedBookmarkRequest, FeedBookmarkResponse } from './types/requests/FeedBookmark'
 import { FeedPostsRequest, FeedPostsResponse } from './types/requests/FeedPosts'
 import { FeedSortingSaveRequest, FeedSortingSaveResponse } from './types/requests/FeedSortingSave'
 import { FeedSubscriptionsRequest, FeedSubscriptionsResponse } from './types/requests/FeedSubscriptions'
@@ -58,6 +59,12 @@ export default class FeedController {
       perpage: Joi.number().min(1).max(50).default(10),
       format: joiFormat,
     })
+    const feedBookmarkSchema = Joi.object<FeedBookmarkRequest>({
+      filter: Joi.string().max(100).optional().allow(''),
+      page: Joi.number().default(1),
+      perpage: Joi.number().min(1).max(50).default(10),
+      format: joiFormat,
+    })
     const feedSortingSchema = Joi.object<FeedSortingSaveRequest>({
       site: joiSite.required(),
       feedSorting: Joi.number().valid(FeedSorting.postCreatedAt, FeedSorting.postCommentedAt),
@@ -86,6 +93,13 @@ export default class FeedController {
       oauth('фид отслеживаемых'),
       validate(feedWatchSchema),
       (req, res) => this.feedWatch(req, res),
+    )
+    this.router.post(
+      '/feed/bookmark',
+      sharedReadRateLimiter,
+      oauth('фид избранного'),
+      validate(feedBookmarkSchema),
+      (req, res) => this.feedBookmark(req, res),
     )
     this.router.post(
       '/feed/sorting',
@@ -235,6 +249,48 @@ export default class FeedController {
       })
     } catch (err) {
       this.logger.error('Subscriptions feed failed', { error: err, user_id: userId, format })
+      return response.error('error', 'Unknown error', 500)
+    }
+  }
+
+  async feedBookmark(request: APIRequest<FeedBookmarkRequest>, response: APIResponse<FeedBookmarkResponse>) {
+    if (!request.session.data.userId) {
+      return response.authRequired()
+    }
+
+    const userId = request.session.data.userId
+    this.userManager.logVisit(userId)
+    const { filter, format, page, perpage: perPage } = request.body
+
+    try {
+      const restrictedPosts = await this.feedManager.getRestrictedPosts(
+        userId,
+        page ?? 0,
+        perPage ?? 10,
+        format ?? 'html',
+        FeedSorting.postCommentedAt,
+      )
+      const total = restrictedPosts
+        ? await this.postManager.getPostsByUserTotal(userId)
+        : await this.feedManager.getBookmarkTotal(userId, filter)
+
+      const rawPosts = restrictedPosts || (await this.feedManager.getBookmarkFeed(
+        userId,
+        page,
+        perPage,
+        filter,
+        format,
+      ))
+      const { posts, users, sites } = await this.enricher.enrichRawPosts(rawPosts)
+
+      response.success({
+        posts,
+        total,
+        users,
+        sites,
+      })
+    } catch (err) {
+      this.logger.error('Bookmark feed failed', { error: err, user_id: userId, format })
       return response.error('error', 'Unknown error', 500)
     }
   }

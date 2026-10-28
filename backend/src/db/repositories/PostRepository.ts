@@ -259,6 +259,60 @@ export default class PostRepository {
     )
   }
 
+  async getBookmarkPostsTotal(forUserId: number, filter = ''): Promise<number> {
+    const result = await this.db.fetchOne<{ cnt: string }>(
+      `
+            select count(*) cnt
+            from user_bookmarks b
+                join posts p on (p.post_id = b.post_id)
+            where b.user_id = :user_id
+                and b.bookmark = 1
+                ${filter ? ' and (p.source like :filter or p.title like :filter) ' : ''}
+        `,
+      {
+        user_id: forUserId,
+        filter: filter && '%' + escapePercent(filter) + '%',
+      },
+    )
+    if (!result) {
+      return 0
+    }
+    return parseInt(result.cnt || '')
+  }
+
+  async getBookmarkPosts(
+    forUserId: number,
+    page: number,
+    perPage: number,
+    filter = '',
+  ): Promise<PostRawWithUserData[]> {
+    const limitFrom = (page - 1) * perPage
+
+    return await this.db.query(
+      `
+        select p.*, v.vote, b.read_comments, b.bookmark, b.last_read_comment_id, b.watch, (p.comments - b.read_comments) cnt
+        from
+            user_bookmarks b
+            join posts p on (p.post_id = b.post_id)
+            left join post_votes v on (v.post_id = p.post_id and v.voter_id=:user_id)
+        where
+            b.user_id = :user_id
+            and b.bookmark = 1
+            ${filter ? ' and (p.source like :filter or p.title like :filter) ' : ''}
+        order by
+            b.post_updated_at desc
+        limit
+            :limit_from,:limit_count
+      `,
+      {
+        user_id: forUserId,
+        limit_from: limitFrom,
+        limit_count: perPage,
+        filter: filter && '%' + escapePercent(filter) + '%',
+      },
+    )
+  }
+
   async createPost(
     siteId: number,
     userId: number,

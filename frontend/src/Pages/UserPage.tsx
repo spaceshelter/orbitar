@@ -10,6 +10,7 @@ import DateComponent from '../Components/DateComponent'
 import RatingSwitch from '../Components/RatingSwitch'
 import Username from '../Components/Username'
 import UserProfileBio from '../Components/UserProfileBio'
+import UserProfileBookmark from '../Components/UserProfileBookmark'
 import UserProfileClientsApps from '../Components/UserProfileClientsApps'
 import UserProfileComments from '../Components/UserProfileComments'
 import { UserProfileInvites } from '../Components/UserProfileInvites'
@@ -43,8 +44,9 @@ export const UserPage = observer(() => {
   const isKarma = page === 'karma'
   const isSettings = page === 'settings'
   const isApps = page === 'apps'
+  const isBookmark = page === 'bookmark'
 
-  const isProfile = !isPosts && !isComments && !isInvites && !isKarma && !isSettings && !isApps
+  const isProfile = !isPosts && !isComments && !isInvites && !isKarma && !isSettings && !isApps && !isBookmark
 
   useEffect(() => {
     if (state.status === 'ready') {
@@ -162,6 +164,11 @@ export const UserPage = observer(() => {
           <Link className={`${styles.control} ${isComments ? styles.active : ''}`} to={base + '/comments'}>
             Комментарии ({profile.numberOfComments.toLocaleString()})
           </Link>
+          {isMyProfile && (
+            <Link className={`${styles.control} ${isBookmark ? styles.active : ''}`} to={base + '/bookmark'}>
+              Избранное
+            </Link>
+          )}
           <Link className={`${styles.control} ${isKarma ? styles.active : ''}`} to={base + '/karma'}>
             Саморегуляция
           </Link>
@@ -214,6 +221,7 @@ export const UserPage = observer(() => {
           )}
           {isPosts && <UserProfilePosts username={user.username} />}
           {isComments && <UserProfileComments username={user.username} />}
+          {isBookmark && <UserProfileBookmark />}
           {isInvites && <UserProfileInvites username={user.username} onInvitesChange={handleInvitesChange} />}
           {isKarma && (
             <>
