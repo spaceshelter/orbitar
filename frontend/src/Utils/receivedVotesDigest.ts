@@ -2,8 +2,6 @@ import moment from 'moment'
 
 import { UserVoteFeedEvent } from '../API/UserAPI'
 
-import 'moment/locale/ru'
-
 export type VotePeriod = 'week' | '2weeks' | 'month' | 'year' | 'all'
 export type VoteSign = 'all' | 'minus'
 
@@ -65,20 +63,13 @@ const PERIODS: VotePeriod[] = ['week', '2weeks', 'month', 'year', 'all']
 // make easy either: minus-only windows stop at a month, as the API enforces.
 const MINUS_ONLY_PERIODS: VotePeriod[] = ['week', '2weeks', 'month']
 
-const startOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate())
+const startOfDay = (date: Date) => moment(date).startOf('day').toDate()
 
-const addDays = (date: Date, days: number) => {
-  const result = new Date(date)
-  result.setDate(result.getDate() + days)
-  return result
-}
+const addDays = (date: Date, days: number) => moment(date).add(days, 'days').toDate()
 
-const startOfWeek = (date: Date) => {
-  const day = startOfDay(date)
-  return addDays(day, -((day.getDay() + 6) % 7))
-}
+const startOfWeek = (date: Date) => moment(date).startOf('isoWeek').toDate()
 
-const dateKey = (date: Date) => `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
+const dateKey = (date: Date) => moment(date).format('YYYY-M-D')
 
 // Periods are whole local days ending today, so «за 2 недели» always holds 14 days
 // regardless of the weekday it is opened on.
@@ -102,9 +93,9 @@ export const getWiderPeriod = (period: VotePeriod, sign: VoteSign): VotePeriod |
   return index < 0 ? undefined : options[index + 1]
 }
 
-// moment's Russian locale declines a month after a day («7 сентября») and leaves
-// it in the nominative on its own («сентябрь 2026»).
-const formatDate = (date: Date, format: string) => moment(date).locale('ru').format(format)
+// With the Russian locale DateComponent sets for the app, moment declines a month
+// after a day («7 сентября») and leaves it in the nominative on its own («сентябрь 2026»).
+const formatDate = (date: Date, format: string) => moment(date).format(format)
 
 const formatDayRange = (start: Date, end: Date) => {
   if (start.getMonth() !== end.getMonth()) {

@@ -11,8 +11,6 @@ import { pluralize } from '../Utils/utils'
 import InternalLinkExpandComponent from './InternalLinkExpandComponent'
 import PostLink from './PostLink'
 
-import 'moment/locale/ru'
-
 import styles from './ReceivedVotesDigest.module.scss'
 
 const SUBJECTS_PER_CARD = 3
@@ -38,7 +36,7 @@ export type DigestLookup = Pick<UserVotesReceivedResult, 'users' | 'subjects'>
 
 export const formatVote = (value: number) => (value > 0 ? `+${value}` : value < 0 ? `−${Math.abs(value)}` : '0')
 
-export const formatShortTime = (date: Date) => moment(date).locale('ru').format('D MMM, HH:mm')
+export const formatShortTime = (date: Date) => moment(date).format('D MMM, HH:mm')
 
 // Minus voters are always named; plus voters fill the rest of the budget.
 const visibleVoters = (voters: DigestVoter[]) => {

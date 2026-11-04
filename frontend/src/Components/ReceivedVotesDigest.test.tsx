@@ -7,6 +7,9 @@ import { ReceivedCommentSubject, ReceivedMediaKind, UserVoteFeedEvent, UserVotes
 import { UserInfo } from '../Types/UserInfo'
 import ReceivedVotesDigest from './ReceivedVotesDigest'
 
+// Dates use the moment locale that DateComponent sets up for the app.
+import './DateComponent'
+
 /* eslint-disable react/forbid-elements -- the UI kit button is mocked with a raw button */
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true

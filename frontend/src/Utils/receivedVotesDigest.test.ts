@@ -8,7 +8,7 @@ import {
   limitPeriod,
 } from './receivedVotesDigest'
 
-// The app loads DateComponent's moment locale setup too; labels must not depend on it.
+// Labels use the moment locale that DateComponent sets up for the app.
 import '../Components/DateComponent'
 
 const at = (month: number, day: number, hour = 12, year = 2026) => new Date(year, month - 1, day, hour, 0)
