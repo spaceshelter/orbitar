@@ -3,6 +3,24 @@
   flex-wrap: wrap;
   gap: 8px;
   margin: 0 0 22px;
+
+  // Nested so these win over the UI kit select's own single-class rules.
+  .filterSelect {
+    background-color: var(--dim2);
+    border-radius: 8px;
+    color: var(--fg);
+    // As wide as the chosen option where supported, not as the longest one.
+    field-sizing: content;
+    font-weight: normal;
+    max-width: 100%;
+    padding: 7px 10px;
+    width: auto;
+
+    &:hover {
+      background-color: var(--dim3);
+      color: var(--fgHard);
+    }
+  }
 }
 
 .section {

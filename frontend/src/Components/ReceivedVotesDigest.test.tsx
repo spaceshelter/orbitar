@@ -48,6 +48,9 @@ jest.mock(
   { virtual: true },
 )
 
+// The real UI kit select: these tests read its options and groups.
+jest.mock('@ui/Select', () => jest.requireActual('./UI/Select'), { virtual: true })
+
 jest.mock('./PostLink', () => ({
   __esModule: true,
   default: ({
@@ -192,22 +195,34 @@ describe('ReceivedVotesDigest', () => {
     })
   }
 
-  const openMenus = () => Array.from(container.querySelectorAll('[role="menu"]'))
+  const select = (label: string) => container.querySelector<HTMLSelectElement>(`select[aria-label="${label}"]`)
+
+  const selectedText = (label: string) => {
+    const element = select(label)
+    return element?.options[element.selectedIndex]?.textContent
+  }
+
+  const optionTexts = (label: string) => Array.from(select(label)?.options || []).map((option) => option.textContent)
+
+  const groupLabels = (label: string) =>
+    Array.from(select(label)?.querySelectorAll('optgroup') || []).map((group) => group.label)
+
+  const choose = async (label: string, value: string) => {
+    const element = select(label)
+    expect(element).not.toBeNull()
+    await act(async () => {
+      if (element) {
+        element.value = value
+        element.dispatchEvent(new Event('change', { bubbles: true }))
+      }
+    })
+  }
 
   const flush = async () => {
     await act(async () => {
       await Promise.resolve()
     })
   }
-
-  const press = async (key: string, target: Element | null = document.activeElement) => {
-    expect(target).not.toBeNull()
-    await act(async () => {
-      target?.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }))
-    })
-  }
-
-  const focusedText = () => document.activeElement?.textContent?.trim()
 
   const sections = () => Array.from(container.querySelectorAll('section'))
 
@@ -240,8 +255,8 @@ describe('ReceivedVotesDigest', () => {
       expect.any(AbortSignal),
     )
     const text = container.textContent || ''
-    expect(buttonByText('Все оценки')).toBeDefined()
-    expect(buttonByText('За 2 недели')).toBeDefined()
+    expect(selectedText('Какие оценки показывать')).toBe('Все оценки')
+    expect(selectedText('Период')).toBe('За 2 недели')
     expect(text).toContain('14–16 сентября')
     expect(text).toContain('Селфи-тайм 2')
     expect(text).toContain('«Уйдите в другие посты»')
@@ -299,44 +314,30 @@ describe('ReceivedVotesDigest', () => {
     expect(container.textContent).toContain('Про миграции')
   })
 
-  test('keeps a single filter menu open at a time and closes it on Escape or an outside click', async () => {
+  test('offers every kind of vote grouped by sign and writes the chosen filters to the URL', async () => {
     mockReceivedVotes.mockResolvedValueOnce(page(twoWeeks))
     await render()
 
-    await click(buttonByText('Все оценки'))
-    expect(openMenus()).toHaveLength(1)
-    expect(openMenus()[0].textContent).toContain('Только минусы')
-    expect(buttonByText('Все оценки')?.getAttribute('aria-expanded')).toBe('true')
+    expect(groupLabels('Какие оценки показывать')).toEqual(['Плюсы и минусы', 'Только минусы'])
+    expect(optionTexts('Какие оценки показывать')).toEqual([
+      'Все оценки',
+      'Комментарии',
+      'Посты',
+      'Карма',
+      'Все минусы',
+      'Минусы за комментарии',
+      'Минусы за посты',
+      'Минусы в карму',
+    ])
 
-    await click(buttonByText('За 2 недели'))
-    expect(openMenus()).toHaveLength(1)
-    expect(openMenus()[0].textContent).toContain('За год')
-    expect(openMenus()[0].textContent).not.toContain('Только минусы')
+    await choose('Какие оценки показывать', 'minus:comment')
+    expect(mockSetSearchParams).toHaveBeenLastCalledWith({ tab: 'received', what: 'comment', sign: 'minus' })
 
-    await act(async () => {
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
-    })
-    expect(openMenus()).toHaveLength(0)
-
-    await click(buttonByText('Все оценки'))
-    await act(async () => {
-      document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
-    })
-    expect(openMenus()).toHaveLength(0)
+    await choose('Период', 'month')
+    expect(mockSetSearchParams).toHaveBeenLastCalledWith({ tab: 'received', period: 'month' })
   })
 
-  test('writes the chosen filter to the URL and closes the menu', async () => {
-    mockReceivedVotes.mockResolvedValueOnce(page(twoWeeks))
-    await render()
-
-    await click(buttonByText('Все оценки'))
-    await click(buttonByText('Только минусы'))
-
-    expect(mockSetSearchParams).toHaveBeenCalledWith({ tab: 'received', sign: 'minus' })
-    expect(openMenus()).toHaveLength(0)
-  })
-
-  test('reads filters from the URL and names the buttons after the choice', async () => {
+  test('reads filters from the URL into the selects', async () => {
     mockSearchParams = new URLSearchParams({ tab: 'received', what: 'comment', period: 'year' })
     mockReceivedVotes.mockResolvedValueOnce(page([]))
 
@@ -346,8 +347,8 @@ describe('ReceivedVotesDigest', () => {
       { type: 'comment', since: new Date(2025, 8, 17), perpage: 200 },
       expect.any(AbortSignal),
     )
-    expect(buttonByText('Комментарии')).toBeDefined()
-    expect(buttonByText('За год')).toBeDefined()
+    expect(selectedText('Какие оценки показывать')).toBe('Комментарии')
+    expect(selectedText('Период')).toBe('За год')
     // With a filter applied the period was not empty, only the filtered slice was.
     expect(container.textContent).toContain('За год таких оценок не было.')
   })
@@ -577,48 +578,6 @@ describe('ReceivedVotesDigest', () => {
     expect(looseText).not.toContain('·')
   })
 
-  test('moves focus into an open menu and through its items from the keyboard', async () => {
-    mockReceivedVotes.mockResolvedValueOnce(page(twoWeeks))
-    await render()
-    const trigger = buttonByText('Все оценки')
-
-    await click(trigger)
-    expect(focusedText()).toBe('Всё')
-    expect(document.activeElement?.getAttribute('aria-checked')).toBe('true')
-
-    await press('ArrowDown')
-    expect(focusedText()).toBe('Комментарии')
-    await press('End')
-    expect(focusedText()).toBe('Только минусы')
-    await press('ArrowDown')
-    expect(focusedText()).toBe('Всё')
-    await press('ArrowUp')
-    expect(focusedText()).toBe('Только минусы')
-    await press('Home')
-    expect(focusedText()).toBe('Всё')
-
-    await press('Escape')
-    expect(openMenus()).toHaveLength(0)
-    expect(document.activeElement).toBe(trigger)
-
-    await press('ArrowDown', trigger || null)
-    expect(openMenus()).toHaveLength(1)
-    expect(focusedText()).toBe('Всё')
-  })
-
-  test('returns focus to the menu button after a choice', async () => {
-    mockReceivedVotes.mockResolvedValueOnce(page(twoWeeks))
-    await render()
-    const trigger = buttonByText('За 2 недели')
-
-    await click(trigger)
-    await click(buttonByText('За месяц'))
-
-    expect(mockSetSearchParams).toHaveBeenCalledWith({ tab: 'received', period: 'month' })
-    expect(openMenus()).toHaveLength(0)
-    expect(document.activeElement).toBe(trigger)
-  })
-
   test('limits minus-only views to a month', async () => {
     mockSearchParams = new URLSearchParams({ tab: 'received', sign: 'minus', period: 'year' })
     mockReceivedVotes.mockResolvedValueOnce(page([]))
@@ -629,18 +588,11 @@ describe('ReceivedVotesDigest', () => {
       { sign: 'minus', since: new Date(2026, 7, 18), perpage: 200 },
       expect.any(AbortSignal),
     )
-    expect(buttonByText('За месяц')).toBeDefined()
+    expect(selectedText('Период')).toBe('За месяц')
     expect(container.textContent).toContain('За месяц таких оценок не было.')
     expect(buttonByText('Показать за')).toBeUndefined()
-
-    await click(buttonByText('За месяц'))
-    const menu = openMenus()[0]
-    expect(Array.from(menu.querySelectorAll('[role="menuitemradio"]')).map((item) => item.textContent)).toEqual([
-      'За неделю',
-      'За 2 недели',
-      'За месяц',
-    ])
-    expect(menu.textContent).toContain('Минусы — не дальше месяца')
+    expect(groupLabels('Период')).toEqual(['Минусы — не дальше месяца'])
+    expect(optionTexts('Период')).toEqual(['За неделю', 'За 2 недели', 'За месяц'])
   })
 
   test('narrows a long period to a month when only minuses are chosen', async () => {
@@ -648,8 +600,7 @@ describe('ReceivedVotesDigest', () => {
     mockReceivedVotes.mockResolvedValueOnce(page(twoWeeks))
     await render()
 
-    await click(buttonByText('Все оценки'))
-    await click(buttonByText('Только минусы'))
+    await choose('Какие оценки показывать', 'minus:all')
 
     expect(mockSetSearchParams).toHaveBeenCalledWith({ tab: 'received', sign: 'minus', period: 'month' })
   })

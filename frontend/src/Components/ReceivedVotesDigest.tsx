@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import Button from '@ui/Button'
+import Select from '@ui/Select'
 import classNames from 'classnames'
 
 import { ReceivedVotesFilters, useReceivedVotes } from '../API/use/useReceivedVotes'
@@ -15,7 +16,6 @@ import {
   VoteSign,
 } from '../Utils/receivedVotesDigest'
 import { pluralize } from '../Utils/utils'
-import FilterDropdown from './FilterDropdown'
 import PostLink from './PostLink'
 import ReceivedVotesCard, {
   DigestLookup,
@@ -31,19 +31,9 @@ import styles from './ReceivedVotesDigest.module.scss'
 const DEFAULT_PERIOD: VotePeriod = '2weeks'
 
 type TypeFilter = ReceivedVotesFilters['type']
-type MenuName = 'what' | 'period'
 
-const TYPE_OPTIONS: Array<{ value: TypeFilter; label: string }> = [
-  { value: 'all', label: 'Всё' },
-  { value: 'comment', label: 'Комментарии' },
-  { value: 'post', label: 'Посты' },
-  { value: 'user', label: 'Карма' },
-]
-
-const SIGN_OPTIONS: Array<{ value: VoteSign; label: string }> = [
-  { value: 'all', label: 'Плюсы и минусы' },
-  { value: 'minus', label: 'Только минусы' },
-]
+const TYPES: TypeFilter[] = ['all', 'comment', 'post', 'user']
+const SIGNS: VoteSign[] = ['all', 'minus']
 
 const PERIOD_LABELS: Record<VotePeriod, string> = {
   week: 'За неделю',
@@ -53,10 +43,18 @@ const PERIOD_LABELS: Record<VotePeriod, string> = {
   all: 'За всё время',
 }
 
+const SIGN_LABELS: Record<VoteSign, string> = { all: 'Плюсы и минусы', minus: 'Только минусы' }
+
 const WHAT_LABELS: Record<VoteSign, Record<TypeFilter, string>> = {
   all: { all: 'Все оценки', comment: 'Комментарии', post: 'Посты', user: 'Карма' },
-  minus: { all: 'Только минусы', comment: 'Минусы за комментарии', post: 'Минусы за посты', user: 'Минусы в карму' },
+  minus: { all: 'Все минусы', comment: 'Минусы за комментарии', post: 'Минусы за посты', user: 'Минусы в карму' },
 }
+
+// Type and sign are picked together: one option per pair, grouped by sign.
+const WHAT_OPTIONS = SIGNS.map((sign) => ({
+  label: SIGN_LABELS[sign],
+  options: TYPES.map((type) => ({ value: `${sign}:${type}`, label: WHAT_LABELS[sign][type] })),
+}))
 
 const readFilters = (params: URLSearchParams): ReceivedVotesFilters => {
   const what = params.get('what')
@@ -146,7 +144,6 @@ export default function ReceivedVotesDigest() {
   const filters = readFilters(searchParams)
   const { type, sign, period } = filters
   const { feed, periodWindow, loading, loadingMore, error, loadMore, retry } = useReceivedVotes(filters)
-  const [openMenu, setOpenMenu] = useState<MenuName>()
 
   const digest = useMemo<DigestSection[]>(
     () =>
@@ -172,12 +169,10 @@ export default function ReceivedVotesDigest() {
     if (nextPeriod !== DEFAULT_PERIOD) {
       params.period = nextPeriod
     }
-    setOpenMenu(undefined)
     setSearchParams(params)
   }
 
-  const menuToggle = (name: MenuName) => (open: boolean) =>
-    setOpenMenu((current) => (open ? name : current === name ? undefined : current))
+  const periodOptions = getPeriodOptions(sign).map((option) => ({ value: option, label: PERIOD_LABELS[option] }))
 
   const events = feed?.events || []
   const filtered = type !== 'all' || sign !== 'all'
@@ -196,51 +191,22 @@ export default function ReceivedVotesDigest() {
   return (
     <div className={feedStyles.container}>
       <div className={styles.filters}>
-        <FilterDropdown
-          label={WHAT_LABELS[sign][type]}
-          menuLabel='Какие оценки показывать'
-          open={openMenu === 'what'}
-          onOpenChange={menuToggle('what')}
-          groups={[
-            {
-              key: 'type',
-              heading: 'Что',
-              items: TYPE_OPTIONS.map((option) => ({
-                key: option.value,
-                label: option.label,
-                checked: type === option.value,
-                onSelect: () => writeFilters({ ...filters, type: option.value }),
-              })),
-            },
-            {
-              key: 'sign',
-              heading: 'Какие',
-              items: SIGN_OPTIONS.map((option) => ({
-                key: option.value,
-                label: option.label,
-                checked: sign === option.value,
-                onSelect: () => writeFilters({ ...filters, sign: option.value }),
-              })),
-            },
-          ]}
+        <Select
+          className={styles.filterSelect}
+          aria-label='Какие оценки показывать'
+          value={`${sign}:${type}`}
+          options={WHAT_OPTIONS}
+          onChange={(value) => {
+            const [nextSign, nextType] = value.split(':') as [VoteSign, TypeFilter]
+            writeFilters({ ...filters, sign: nextSign, type: nextType })
+          }}
         />
-        <FilterDropdown
-          label={PERIOD_LABELS[period]}
-          menuLabel='Период'
-          open={openMenu === 'period'}
-          onOpenChange={menuToggle('period')}
-          note={sign === 'minus' ? 'Минусы — не дальше месяца' : undefined}
-          groups={[
-            {
-              key: 'period',
-              items: getPeriodOptions(sign).map((option) => ({
-                key: option,
-                label: PERIOD_LABELS[option],
-                checked: period === option,
-                onSelect: () => writeFilters({ ...filters, period: option }),
-              })),
-            },
-          ]}
+        <Select
+          className={styles.filterSelect}
+          aria-label='Период'
+          value={period}
+          options={sign === 'minus' ? [{ label: 'Минусы — не дальше месяца', options: periodOptions }] : periodOptions}
+          onChange={(value) => writeFilters({ ...filters, period: value as VotePeriod })}
         />
       </div>
 
