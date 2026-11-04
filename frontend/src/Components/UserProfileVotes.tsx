@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import Button from '@ui/Button'
 
-import { APIError } from '../API/APIBase'
+import { appendVoteFeedPage, useVoteFeedPages } from '../API/use/useVoteFeedPages'
 import { getVoteEventKey, UserVoteFeedEvent, UserVotesMineResult } from '../API/UserAPI'
 import { useAPI, useAppState } from '../AppState/AppState'
 import { CommentInfo, PostInfo } from '../Types/PostInfo'
@@ -29,30 +29,14 @@ const perpage = 20
 // group because every event starts at most one group.
 const getGroupKey = (group: VoteFeedGroup) => getVoteEventKey(group.events[0])
 
-const mergeVoteFeedResults = (current: UserVotesMineResult, next: UserVotesMineResult): UserVotesMineResult => {
-  const knownEventKeys = new Set(current.events.map(getVoteEventKey))
-  const nextEvents = next.events.filter((event) => {
-    const key = getVoteEventKey(event)
-    if (knownEventKeys.has(key)) {
-      return false
-    }
-    knownEventKeys.add(key)
-    return true
-  })
-
-  return {
-    direction: 'mine',
-    events: [...current.events, ...nextEvents],
-    users: { ...current.users, ...next.users },
-    entities: {
-      posts: { ...current.entities.posts, ...next.entities.posts },
-      comments: { ...current.entities.comments, ...next.entities.comments },
-      parentComments: { ...current.entities.parentComments, ...next.entities.parentComments },
-    },
-    hasMore: next.hasMore,
-    nextCursor: next.nextCursor,
-  }
-}
+const mergeMinePages = (current: UserVotesMineResult, next: UserVotesMineResult): UserVotesMineResult => ({
+  ...appendVoteFeedPage(current, next),
+  entities: {
+    posts: { ...current.entities.posts, ...next.entities.posts },
+    comments: { ...current.entities.comments, ...next.entities.comments },
+    parentComments: { ...current.entities.parentComments, ...next.entities.parentComments },
+  },
+})
 
 const updateRecord = <T,>(record: Record<number, T>, id: number, changes: Partial<T>): Record<number, T> =>
   record[id] ? { ...record, [id]: { ...record[id], ...changes } } : record
@@ -60,96 +44,25 @@ const updateRecord = <T,>(record: Record<number, T>, id: number, changes: Partia
 function MineVotesFeed() {
   const api = useAPI()
   const { userInfo } = useAppState()
-  const sessionUserId = userInfo?.id
-  const [feed, setFeed] = useState<UserVotesMineResult>()
-  const [loading, setLoading] = useState(true)
-  const [loadingMore, setLoadingMore] = useState(false)
-  const [error, setError] = useState<string>()
-  const [loadMoreError, setLoadMoreError] = useState<string>()
-  const loadMoreAbortControllerRef = useRef<AbortController>()
-  const events = feed?.events
-  const nextCursor = feed?.nextCursor
 
   const { filter, defaultFilter, filterInputRef, handleFilterChange } = useProfileFeedFilter(
     (value): Record<string, string> => (value ? { tab: 'mine', filter: value } : { tab: 'mine' }),
   )
 
-  const feedContextRef = useRef<string>()
-
-  useEffect(() => {
-    const abortController = new AbortController()
-    loadMoreAbortControllerRef.current?.abort()
-    loadMoreAbortControllerRef.current = undefined
-    setLoading(true)
-    setLoadingMore(false)
-    // Keep the previous results on screen while only the filter changes: at a
-    // 500ms query budget a too-heavy filter is a normal outcome, and wiping the
-    // feed before every keystrokes' request would flash it away. A different
-    // session user is a different feed - drop it.
-    const feedContext = `${sessionUserId ?? ''}`
-    if (feedContextRef.current !== feedContext) {
-      setFeed(undefined)
-    }
-    feedContextRef.current = feedContext
-    setError(undefined)
-    setLoadMoreError(undefined)
-    api.userAPI
-      .userVotes(filter || '', undefined, perpage, abortController.signal)
-      .then((result) => {
-        if (abortController.signal.aborted) {
-          return
-        }
-        setFeed(result)
-        setError(undefined)
-        setLoading(false)
-      })
-      .catch((err) => {
-        if (abortController.signal.aborted) {
-          return
-        }
-        setError(
-          err instanceof APIError && err.code === 'filter-timeout'
-            ? 'Фильтр оказался слишком тяжёлым и не уложился в лимит времени — уточните запрос.'
-            : 'Не удалось загрузить ленту оценок',
-        )
-        setLoading(false)
-      })
-
-    return () => {
-      abortController.abort()
-      loadMoreAbortControllerRef.current?.abort()
-      loadMoreAbortControllerRef.current = undefined
-    }
-  }, [api.userAPI, filter, sessionUserId])
-
-  const loadMore = () => {
-    if (!nextCursor || loadingMore) {
-      return
-    }
-    const abortController = new AbortController()
-    loadMoreAbortControllerRef.current?.abort()
-    loadMoreAbortControllerRef.current = abortController
-    setLoadingMore(true)
-    setLoadMoreError(undefined)
-    api.userAPI
-      .userVotes(filter || '', nextCursor, perpage, abortController.signal)
-      .then((result) => {
-        if (abortController.signal.aborted) {
-          return
-        }
-        setFeed((currentFeed) => (currentFeed ? mergeVoteFeedResults(currentFeed, result) : result))
-        setLoadingMore(false)
-        loadMoreAbortControllerRef.current = undefined
-      })
-      .catch(() => {
-        if (abortController.signal.aborted) {
-          return
-        }
-        setLoadMoreError('Не удалось загрузить ещё оценки')
-        setLoadingMore(false)
-        loadMoreAbortControllerRef.current = undefined
-      })
-  }
+  const fetchPage = useCallback(
+    (cursor: string | undefined, signal: AbortSignal) => api.userAPI.userVotes(filter || '', cursor, perpage, signal),
+    [api.userAPI, filter],
+  )
+  // Previous results stay on screen while only the filter changes: at a 500ms query
+  // budget a too-heavy filter is a normal outcome, and wiping the feed before every
+  // keystroke's request would flash it away.
+  const { feed, setFeed, loading, loadingMore, error, loadMoreError, loadMore } = useVoteFeedPages(fetchPage, {
+    merge: mergeMinePages,
+    timeoutError: 'Фильтр оказался слишком тяжёлым и не уложился в лимит времени — уточните запрос.',
+    keepWhileReloading: true,
+  })
+  const events = feed?.events
+  const nextCursor = feed?.nextCursor
 
   const groups = useMemo(() => groupVoteFeedEvents(events || []), [events])
 
