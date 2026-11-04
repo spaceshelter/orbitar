@@ -55,15 +55,6 @@
   margin: 6px 0 12px;
 }
 
-// The partial-section note and «чаще всех» read as one block.
-.sectionNote + .sectionNote {
-  margin-top: -8px;
-}
-
-.sectionNote .meta {
-  margin-left: 0;
-}
-
 .meta {
   color: var(--fgSofter);
   font-size: 12px;

@@ -37,7 +37,6 @@ export type DigestSection = {
   plus: number
   minus: number
   people: number
-  topVoter?: { voterId: number; count: number }
   cards: DigestCard[]
   karma?: DigestKarma
   tail: DigestTailItem[]
@@ -194,20 +193,12 @@ const buildSection = (key: string, label: string, events: UserVoteFeedEvent[]): 
   }
   cards.sort((a, b) => cardWeight(b) - cardWeight(a) || b.latestAt.getTime() - a.latestAt.getTime())
 
-  let topVoter: DigestSection['topVoter']
-  for (const [voterId, voterEvents] of entriesOf(groupBy(events, (event) => event.voterId))) {
-    if (voterEvents.length >= 2 && (!topVoter || voterEvents.length > topVoter.count)) {
-      topVoter = { voterId, count: voterEvents.length }
-    }
-  }
-
   return {
     key,
     label,
     plus: sumPlus(events),
     minus: sumMinus(events),
     people: countPeople(events),
-    topVoter,
     cards,
     karma: karmaEvents.length
       ? {

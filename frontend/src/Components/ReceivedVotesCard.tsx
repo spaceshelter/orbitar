@@ -74,7 +74,7 @@ export function Sums({ plus, minus, size }: { plus: number; minus: number; size?
   )
 }
 
-export function VoterName({ lookup, voterId }: { lookup: DigestLookup; voterId: number }) {
+function VoterName({ lookup, voterId }: { lookup: DigestLookup; voterId: number }) {
   const user = lookup.users[voterId]
   if (!user) {
     return <span>пользователь</span>

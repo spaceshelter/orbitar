@@ -36,7 +36,6 @@ const summarize = (sections: DigestSection[]) =>
     plus: section.plus,
     minus: section.minus,
     people: section.people,
-    topVoter: section.topVoter,
     cards: section.cards.map((card) => ({
       postId: card.postId,
       plus: card.plus,
@@ -124,7 +123,6 @@ describe('buildReceivedDigest', () => {
         plus: 6,
         minus: -1,
         people: 5,
-        topVoter: { voterId: 1, count: 2 },
         cards: [
           {
             postId: 50,
@@ -143,7 +141,6 @@ describe('buildReceivedDigest', () => {
         plus: 2,
         minus: 0,
         people: 1,
-        topVoter: { voterId: 6, count: 2 },
         cards: [],
         karma: undefined,
         tail: [{ postId: 70, plus: 2, minus: 0, count: 2 }],
@@ -153,7 +150,6 @@ describe('buildReceivedDigest', () => {
         plus: 1,
         minus: 0,
         people: 1,
-        topVoter: undefined,
         cards: [],
         karma: undefined,
         tail: [{ postId: 80, plus: 1, minus: 0, count: 1 }],

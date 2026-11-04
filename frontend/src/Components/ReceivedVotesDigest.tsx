@@ -17,13 +17,7 @@ import {
 } from '../Utils/receivedVotesDigest'
 import { pluralize } from '../Utils/utils'
 import PostLink from './PostLink'
-import ReceivedVotesCard, {
-  DigestLookup,
-  discussionInfo,
-  ReceivedKarmaCard,
-  Sums,
-  VoterName,
-} from './ReceivedVotesCard'
+import ReceivedVotesCard, { DigestLookup, discussionInfo, ReceivedKarmaCard, Sums } from './ReceivedVotesCard'
 
 import feedStyles from '../Pages/FeedPage.module.scss'
 import styles from './ReceivedVotesDigest.module.scss'
@@ -247,14 +241,6 @@ export default function ReceivedVotesDigest() {
               </div>
               {section.key === partialKey && (
                 <div className={styles.sectionNote}>Загружена только часть оценок за эти дни.</div>
-              )}
-              {section.topVoter && (
-                <div className={styles.sectionNote}>
-                  чаще всех: <VoterName lookup={feed} voterId={section.topVoter.voterId} />{' '}
-                  <span className={styles.meta}>
-                    ({pluralize(section.topVoter.count, ['оценка', 'оценки', 'оценок'])})
-                  </span>
-                </div>
               )}
               {section.cards.map((card) => (
                 <ReceivedVotesCard key={card.key} lookup={feed} card={card} />
