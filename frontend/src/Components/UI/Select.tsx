@@ -13,14 +13,9 @@ interface Option {
   label: string
 }
 
-/**
- * Interface for a group of options, rendered as an optgroup
- * @interface OptionGroup
- */
+/** Options under a heading, rendered as an optgroup */
 interface OptionGroup {
-  /** Heading of the group */
   label: string
-  /** Options of the group */
   options: Option[]
 }
 

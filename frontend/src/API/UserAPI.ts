@@ -81,13 +81,7 @@ type UserVotesRequest = {
 
 export type ReceivedVoteType = 'post' | 'comment' | 'user'
 
-export type ReceivedVotesQuery = {
-  type?: ReceivedVoteType
-  sign?: 'minus'
-  since?: Date
-  cursor?: string
-  perpage: number
-}
+export type ReceivedVotesQuery = Pick<UserVotesRequest, 'type' | 'sign' | 'cursor'> & { since?: Date; perpage: number }
 
 type UserVoteFeedEventEntity<VotedAt> = {
   type: 'post' | 'comment' | 'user'
@@ -101,16 +95,11 @@ type UserVoteFeedEventEntity<VotedAt> = {
 
 type UserVoteFeedEventRefEntity = UserVoteFeedEventEntity<string>
 
-// What a post or comment without text consists of; 'media' when it can't be told.
-export type ReceivedMediaKind = 'image' | 'gif' | 'video' | 'media'
-
-// A post that was voted on or holds a voted comment; it names the discussion.
+// A voted post or the post of a voted comment.
 export type ReceivedPostSubject = {
   id: number
   site: string
-  // The title, or the start of the text of an untitled post; empty without both.
   label: string
-  media?: ReceivedMediaKind
   rating: number
 }
 
@@ -118,9 +107,7 @@ type ReceivedCommentSubjectEntity = {
   id: number
   postId: number
   site: string
-  // Plain-text start of the comment; empty when it has no text.
   excerpt: string
-  media?: ReceivedMediaKind
   created: string
   rating: number
 }
@@ -155,10 +142,9 @@ type UserVotesResponse = UserVotesMineResponse | UserVotesReceivedResponse
 
 export type UserVoteFeedEvent = UserVoteFeedEventEntity<Date>
 
-// A voter has one vote per subject, so this keys an event across pages.
 export const getVoteEventKey = (event: UserVoteFeedEvent) => `${event.type}:${event.entityId}:${event.voterId}`
 
-type UserVotesResultBase = {
+export type UserVotesResultBase = {
   events: UserVoteFeedEvent[]
   users: Record<number, UserInfo>
   hasMore: boolean
@@ -278,41 +264,31 @@ export default class UserAPI {
     return await this.api.request<{ username: string }, UserKarmaResponse>('/user/karma', { username })
   }
 
+  private async voteFeedPage<R extends UserVotesResponse>(request: UserVotesRequest, signal?: AbortSignal) {
+    const result = await this.api.request<UserVotesRequest, R>('/user/votes', request, undefined, signal)
+    return {
+      ...result,
+      events: result.events.map((event) => ({ ...event, votedAt: this.api.fixDate(new Date(event.votedAt)) })),
+    }
+  }
+
   async userVotes(
     filter: string,
     cursor: string | undefined,
     perpage: number,
     signal?: AbortSignal,
   ): Promise<UserVotesMineResult> {
-    const result = await this.api.request<UserVotesRequest, UserVotesResponse>(
-      '/user/votes',
-      {
-        direction: 'mine',
-        cursor,
-        perpage,
-        filter,
-      },
-      undefined,
+    const result = await this.voteFeedPage<UserVotesMineResponse>(
+      { direction: 'mine', cursor, perpage, filter },
       signal,
     )
-    if (result.direction !== 'mine') {
-      throw new Error('Unexpected vote feed direction')
-    }
-
     const posts: Record<number, PostInfo> = {}
     this.postAPIHelper.fixPosts(Object.values(result.entities.posts), result.users).forEach((post) => {
       posts[post.id] = post
     })
 
     return {
-      events: result.events.map((event) => ({
-        ...event,
-        votedAt: this.api.fixDate(new Date(event.votedAt)),
-      })),
-      users: result.users,
-      hasMore: result.hasMore,
-      nextCursor: result.nextCursor,
-      direction: 'mine',
+      ...result,
       entities: {
         posts,
         comments: this.postAPIHelper.fixCommentsRecords(result.entities.comments, result.users),
@@ -321,40 +297,19 @@ export default class UserAPI {
     }
   }
 
-  async receivedVotes(query: ReceivedVotesQuery, signal?: AbortSignal): Promise<UserVotesReceivedResult> {
-    const result = await this.api.request<UserVotesRequest, UserVotesResponse>(
-      '/user/votes',
-      {
-        direction: 'received',
-        type: query.type,
-        sign: query.sign,
-        since: query.since?.toISOString(),
-        cursor: query.cursor,
-        perpage: query.perpage,
-      },
-      undefined,
+  async receivedVotes(
+    { type, sign, since, cursor, perpage }: ReceivedVotesQuery,
+    signal?: AbortSignal,
+  ): Promise<UserVotesReceivedResult> {
+    const result = await this.voteFeedPage<UserVotesReceivedResponse>(
+      { direction: 'received', type, sign, since: since?.toISOString(), cursor, perpage },
       signal,
     )
-    if (result.direction !== 'received') {
-      throw new Error('Unexpected vote feed direction')
-    }
-
     const comments: Record<number, ReceivedCommentSubject> = {}
     Object.values(result.subjects.comments).forEach((comment) => {
       comments[comment.id] = { ...comment, created: this.api.fixDate(new Date(comment.created)) }
     })
-
-    return {
-      direction: 'received',
-      events: result.events.map((event) => ({
-        ...event,
-        votedAt: this.api.fixDate(new Date(event.votedAt)),
-      })),
-      users: result.users,
-      subjects: { posts: result.subjects.posts, comments },
-      hasMore: result.hasMore,
-      nextCursor: result.nextCursor,
-    }
+    return { ...result, subjects: { ...result.subjects, comments } }
   }
 
   userRestrictions(username: string): Promise<UserRestrictionsResponse> {

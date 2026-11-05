@@ -28,10 +28,9 @@ export const sharedReadRateLimiter = rateLimit({
  * 15/min x 0.5s caps one user at ~7.5 DB-seconds per minute instead of 240.
  * Other pages skip this limiter entirely.
  */
-export const heavyReadRateLimiter = rateLimit({
+export const heavyFilterRateLimiter = rateLimit({
   max: 15,
   windowMs: 60 * 1000,
   ...commonRateLimitConfig,
-  // Runs before Joi validation; `sign` only accepts the exact 'minus' there.
   skip: (req) => !String(req.body?.filter ?? '').trim() && req.body?.sign !== 'minus',
 })

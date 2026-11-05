@@ -5,233 +5,109 @@ import { UserVoteFeedEvent } from '../API/UserAPI'
 export type VotePeriod = 'week' | '2weeks' | 'month' | 'year' | 'all'
 export type VoteSign = 'all' | 'minus'
 
-export type DigestVoter = { voterId: number; vote: number }
+// Votes sharing a key: a section, a discussion (keyed by its post) or a subject.
+export type VoteGroup<K = string> = { key: K; events: UserVoteFeedEvent[] }
 
-export type DigestSubject = {
-  key: string
-  type: 'post' | 'comment'
-  entityId: number
-  sum: number
-  latestAt: Date
-  events: UserVoteFeedEvent[]
-  voters: DigestVoter[]
-}
-
-export type DigestCard = {
-  key: string
-  postId: number
-  plus: number
-  minus: number
-  people: number
-  latestAt: Date
-  subjects: DigestSubject[]
-}
-
-export type DigestTailItem = { postId: number; plus: number; minus: number; count: number; events: UserVoteFeedEvent[] }
-
-export type DigestKarma = { plus: number; minus: number; voters: DigestVoter[]; events: UserVoteFeedEvent[] }
-
-export type DigestSection = {
-  key: string
+export type DigestSection = VoteGroup & {
   label: string
-  plus: number
-  minus: number
-  people: number
-  cards: DigestCard[]
-  karma?: DigestKarma
-  tail: DigestTailItem[]
-}
-
-type DigestOptions = {
-  granularity: 'week' | 'month'
-  // Window bounds only trim the section labels; events are expected to be in range.
-  since?: Date
-  now: Date
+  cards: VoteGroup<number>[]
+  tail: VoteGroup<number>[]
+  karma: UserVoteFeedEvent[]
 }
 
 // A discussion earns its own card from this many votes in a section, or from a
 // single minus: minuses are rare and their authors must always stay named.
 const CARD_MIN_VOTES = 3
 
-const PERIOD_DAYS: Record<Exclude<VotePeriod, 'all'>, number> = { week: 7, '2weeks': 14, month: 30, year: 365 }
-
+const PERIOD_DAYS = { week: 7, '2weeks': 14, month: 30, year: 365 }
 const PERIODS: VotePeriod[] = ['week', '2weeks', 'month', 'year', 'all']
+// Minus-only windows stop at a month, as the API enforces.
+const MINUS_ONLY_PERIODS = PERIODS.slice(0, 3)
 
-// Minus-only pages read every vote in their window (the feed indexes carry no
-// `vote`), and a year-long list of everyone who minused you is not something to
-// make easy either: minus-only windows stop at a month, as the API enforces.
-const MINUS_ONLY_PERIODS: VotePeriod[] = ['week', '2weeks', 'month']
+// Whole local days ending today: «за 2 недели» always holds 14 days.
+export const getPeriodSince = (period: VotePeriod, now: Date) =>
+  period === 'all'
+    ? undefined
+    : moment(now)
+        .startOf('day')
+        .subtract(PERIOD_DAYS[period] - 1, 'days')
+        .toDate()
 
-const startOfDay = (date: Date) => moment(date).startOf('day').toDate()
+export const getPeriodOptions = (sign: VoteSign) => (sign === 'minus' ? MINUS_ONLY_PERIODS : PERIODS)
 
-const addDays = (date: Date, days: number) => moment(date).add(days, 'days').toDate()
-
-const startOfWeek = (date: Date) => moment(date).startOf('isoWeek').toDate()
-
-const dateKey = (date: Date) => moment(date).format('YYYY-M-D')
-
-// Periods are whole local days ending today, so «за 2 недели» always holds 14 days
-// regardless of the weekday it is opened on.
-export const getPeriodSince = (period: VotePeriod, now: Date): Date | undefined => {
-  if (period === 'all') {
-    return undefined
-  }
-  return addDays(startOfDay(now), -(PERIOD_DAYS[period] - 1))
-}
-
-export const getPeriodOptions = (sign: VoteSign): VotePeriod[] => (sign === 'minus' ? MINUS_ONLY_PERIODS : PERIODS)
-
-export const limitPeriod = (period: VotePeriod, sign: VoteSign): VotePeriod => {
+export const limitPeriod = (period: VotePeriod, sign: VoteSign) => {
   const options = getPeriodOptions(sign)
   return options.includes(period) ? period : options[options.length - 1]
 }
 
 export const getWiderPeriod = (period: VotePeriod, sign: VoteSign): VotePeriod | undefined => {
   const options = getPeriodOptions(sign)
-  const index = options.indexOf(period)
-  return index < 0 ? undefined : options[index + 1]
-}
-
-// With the Russian locale DateComponent sets for the app, moment declines a month
-// after a day («7 сентября») and leaves it in the nominative on its own («сентябрь 2026»).
-const formatDate = (date: Date, format: string) => moment(date).format(format)
-
-const formatDayRange = (start: Date, end: Date) => {
-  if (start.getMonth() !== end.getMonth()) {
-    return `${formatDate(start, 'D MMMM')} – ${formatDate(end, 'D MMMM')}`
-  }
-  if (start.getDate() === end.getDate()) {
-    return formatDate(end, 'D MMMM')
-  }
-  return `${start.getDate()}–${formatDate(end, 'D MMMM')}`
+  return options.includes(period) ? options[options.indexOf(period) + 1] : undefined
 }
 
 export const sumPlus = (events: UserVoteFeedEvent[]) => events.reduce((sum, event) => sum + Math.max(event.vote, 0), 0)
 export const sumMinus = (events: UserVoteFeedEvent[]) => events.reduce((sum, event) => sum + Math.min(event.vote, 0), 0)
-const countPeople = (events: UserVoteFeedEvent[]) => new Set(events.map((event) => event.voterId)).size
+export const countPeople = (events: UserVoteFeedEvent[]) => new Set(events.map((event) => event.voterId)).size
 
-// One entry per voter with their newest vote; minus voters first, the rest keep
-// the newest-first order of the events.
-const orderVoters = (events: UserVoteFeedEvent[]): DigestVoter[] => {
-  const seen = new Set<number>()
-  const voters: DigestVoter[] = []
-  for (const event of events) {
-    if (!seen.has(event.voterId)) {
-      seen.add(event.voterId)
-      voters.push({ voterId: event.voterId, vote: event.vote })
-    }
-  }
-  return [...voters.filter((voter) => voter.vote < 0), ...voters.filter((voter) => voter.vote >= 0)]
-}
+export const orderVoters = (events: UserVoteFeedEvent[]) => [
+  ...events.filter((event) => event.vote < 0),
+  ...events.filter((event) => event.vote > 0),
+]
 
-const groupBy = <K>(events: UserVoteFeedEvent[], keyOf: (event: UserVoteFeedEvent) => K) => {
+const groupBy = <K>(events: UserVoteFeedEvent[], keyOf: (event: UserVoteFeedEvent) => K): VoteGroup<K>[] => {
   const groups = new Map<K, UserVoteFeedEvent[]>()
-  for (const event of events) {
+  events.forEach((event) => {
     const key = keyOf(event)
     const group = groups.get(key)
-    if (group) {
-      group.push(event)
-    } else {
-      groups.set(key, [event])
-    }
-  }
-  return groups
+    if (group) group.push(event)
+    else groups.set(key, [event])
+  })
+  return Array.from(groups, ([key, events]) => ({ key, events }))
 }
 
-// The frontend compiles to ES5 without downlevelIteration, so Maps are walked via arrays.
-const entriesOf = <K, V>(map: Map<K, V>): Array<[K, V]> => Array.from(map.entries())
+const byWeight = (a: VoteGroup<unknown>, b: VoteGroup<unknown>) =>
+  b.events.length - a.events.length || b.events[0].votedAt.getTime() - a.events[0].votedAt.getTime()
 
-const byWeightThenRecency = (a: DigestSubject, b: DigestSubject) =>
-  b.events.length - a.events.length || b.latestAt.getTime() - a.latestAt.getTime()
-
-const cardWeight = (card: DigestCard) => card.subjects.reduce((count, subject) => count + subject.events.length, 0)
-
-const buildCard = (postId: number, events: UserVoteFeedEvent[]): DigestCard => {
-  const subjects = entriesOf(groupBy(events, (event) => `${event.type}:${event.entityId}`)).map(
-    ([key, subjectEvents]): DigestSubject => ({
-      key,
-      type: subjectEvents[0].type === 'post' ? 'post' : 'comment',
-      entityId: subjectEvents[0].entityId,
-      sum: subjectEvents.reduce((sum, event) => sum + event.vote, 0),
-      latestAt: subjectEvents[0].votedAt,
-      events: subjectEvents,
-      voters: orderVoters(subjectEvents),
-    }),
-  )
-  return {
-    key: `post:${postId}`,
-    postId,
-    plus: sumPlus(events),
-    minus: sumMinus(events),
-    people: countPeople(events),
-    latestAt: events[0].votedAt,
-    subjects: subjects.sort(byWeightThenRecency),
-  }
-}
+export const subjectsOf = (events: UserVoteFeedEvent[]) =>
+  groupBy(events, (event) => `${event.type}:${event.entityId}`).sort(byWeight)
 
 const buildSection = (key: string, label: string, events: UserVoteFeedEvent[]): DigestSection => {
-  const karmaEvents = events.filter((event) => event.type === 'user')
-  const threads = groupBy(
+  const discussions = groupBy(
     events.filter((event) => event.type !== 'user'),
     (event) => (event.type === 'post' ? event.entityId : (event.postId as number)),
   )
-
-  const cards: DigestCard[] = []
-  const tail: DigestTailItem[] = []
-  for (const [postId, threadEvents] of entriesOf(threads)) {
-    if (threadEvents.length >= CARD_MIN_VOTES || threadEvents.some((event) => event.vote < 0)) {
-      cards.push(buildCard(postId, threadEvents))
-    } else {
-      tail.push({
-        postId,
-        plus: sumPlus(threadEvents),
-        minus: sumMinus(threadEvents),
-        count: threadEvents.length,
-        events: threadEvents,
-      })
-    }
-  }
-  cards.sort((a, b) => cardWeight(b) - cardWeight(a) || b.latestAt.getTime() - a.latestAt.getTime())
-
+  const isCard = ({ events }: VoteGroup<number>) =>
+    events.length >= CARD_MIN_VOTES || events.some((event) => event.vote < 0)
   return {
     key,
     label,
-    plus: sumPlus(events),
-    minus: sumMinus(events),
-    people: countPeople(events),
-    cards,
-    karma: karmaEvents.length
-      ? {
-          plus: sumPlus(karmaEvents),
-          minus: sumMinus(karmaEvents),
-          voters: orderVoters(karmaEvents),
-          events: karmaEvents,
-        }
-      : undefined,
-    tail,
+    events,
+    cards: discussions.filter(isCard).sort(byWeight),
+    tail: discussions.filter((discussion) => !isCard(discussion)),
+    karma: events.filter((event) => event.type === 'user'),
   }
 }
 
-// Groups a newest-first page of received votes into calendar sections: each
-// discussion (a post with the votes on it and on comments in it) becomes a card,
-// small positive discussions collapse into the section's tail line.
-export const buildReceivedDigest = (events: UserVoteFeedEvent[], options: DigestOptions): DigestSection[] => {
-  const today = startOfDay(options.now)
-  const buckets = groupBy(events, (event) =>
-    options.granularity === 'week'
-      ? dateKey(startOfWeek(event.votedAt))
-      : `${event.votedAt.getFullYear()}-${event.votedAt.getMonth() + 1}`,
-  )
+// Relies on the ru locale DateComponent sets app-wide: «7 сентября», but «сентябрь 2026».
+const formatDays = (start: moment.Moment, end: moment.Moment) =>
+  start.isSame(end, 'day')
+    ? end.format('D MMMM')
+    : start.isSame(end, 'month')
+      ? `${start.date()}–${end.format('D MMMM')}`
+      : `${start.format('D MMMM')} – ${end.format('D MMMM')}`
 
-  return entriesOf(buckets).map(([key, sectionEvents]) => {
-    const sample = sectionEvents[0].votedAt
-    if (options.granularity === 'month') {
-      return buildSection(key, formatDate(sample, 'MMMM YYYY'), sectionEvents)
-    }
-    const weekStart = startOfWeek(sample)
-    const weekEnd = addDays(weekStart, 6)
-    const start = options.since && options.since > weekStart ? startOfDay(options.since) : weekStart
-    const end = today < weekEnd ? today : weekEnd
-    return buildSection(key, formatDayRange(start, end), sectionEvents)
-  })
-}
+// Calendar sections of newest-first votes; `since` and `now` only trim the labels.
+export const buildReceivedDigest = (
+  events: UserVoteFeedEvent[],
+  { granularity, since, now }: { granularity: 'week' | 'month'; since?: Date; now: Date },
+) =>
+  groupBy(events, (event) => moment(event.votedAt).format(granularity === 'week' ? 'GGGG-WW' : 'YYYY-MM')).map(
+    ({ key, events }) => {
+      const first = moment(events[0].votedAt)
+      if (granularity === 'month') return buildSection(key, first.format('MMMM YYYY'), events)
+      const weekStart = first.startOf('isoWeek')
+      const start = since && weekStart.isBefore(since) ? moment(since).startOf('day') : weekStart
+      const end = moment.min(moment(now).startOf('day'), weekStart.clone().add(6, 'days'))
+      return buildSection(key, formatDays(start, end), events)
+    },
+  )

@@ -3,12 +3,12 @@ import { useSearchParams } from 'react-router-dom'
 
 import Button from '@ui/Button'
 
-import { appendVoteFeedPage, useVoteFeedPages } from '../API/use/useVoteFeedPages'
-import { getVoteEventKey, UserVoteFeedEvent, UserVotesMineResult } from '../API/UserAPI'
+import { useVoteFeedPages } from '../API/use/useVoteFeedPages'
+import { getVoteEventKey, UserVoteFeedEvent } from '../API/UserAPI'
 import { useAPI, useAppState } from '../AppState/AppState'
 import { CommentInfo, PostInfo } from '../Types/PostInfo'
 import { pluralize } from '../Utils/utils'
-import { groupVoteFeedEvents, VoteFeedGroup } from '../Utils/voteFeedGroups'
+import { groupVoteFeedEvents } from '../Utils/voteFeedGroups'
 import CommentComponent from './CommentComponent'
 import { LARGE_AUTO_CUT } from './ContentComponent'
 import PostComponent from './PostComponent'
@@ -21,22 +21,6 @@ import feedStyles from '../Pages/FeedPage.module.scss'
 import styles from './UserProfileVotes.module.scss'
 
 const perpage = 20
-
-// Key groups by their first (newest) event only: appending a page extends a group's
-// tail (possibly changing its kind from 'single'), so a first-event key stays stable
-// and React reconciles children instead of remounting the whole section (heavy here,
-// as every event mounts a full post/comment component). First events are unique per
-// group because every event starts at most one group.
-const getGroupKey = (group: VoteFeedGroup) => getVoteEventKey(group.events[0])
-
-const mergeMinePages = (current: UserVotesMineResult, next: UserVotesMineResult): UserVotesMineResult => ({
-  ...appendVoteFeedPage(current, next),
-  entities: {
-    posts: { ...current.entities.posts, ...next.entities.posts },
-    comments: { ...current.entities.comments, ...next.entities.comments },
-    parentComments: { ...current.entities.parentComments, ...next.entities.parentComments },
-  },
-})
 
 const updateRecord = <T,>(record: Record<number, T>, id: number, changes: Partial<T>): Record<number, T> =>
   record[id] ? { ...record, [id]: { ...record[id], ...changes } } : record
@@ -57,7 +41,7 @@ function MineVotesFeed() {
   // budget a too-heavy filter is a normal outcome, and wiping the feed before every
   // keystroke's request would flash it away.
   const { feed, setFeed, loading, loadingMore, error, loadMoreError, loadMore } = useVoteFeedPages(fetchPage, {
-    merge: mergeMinePages,
+    tables: 'entities',
     timeoutError: 'Фильтр оказался слишком тяжёлым и не уложился в лимит времени — уточните запрос.',
     keepWhileReloading: true,
   })
@@ -120,14 +104,6 @@ function MineVotesFeed() {
         },
       }
     })
-  }
-
-  const renderGroupHeader = (group: VoteFeedGroup) => {
-    if (group.kind === 'context-post') {
-      return <span className={styles.groupTitle}>Оценки в одном обсуждении</span>
-    }
-
-    return null
   }
 
   const renderPost = (event: UserVoteFeedEvent) => {
@@ -252,28 +228,26 @@ function MineVotesFeed() {
             {!error && events && events.length === 0 && <div className={styles.empty}>Оценок пока нет.</div>}
             {groups.length > 0 && (
               <div className={styles.groups}>
-                {groups.map((group) => {
-                  const header = renderGroupHeader(group)
-                  return (
-                    <section key={getGroupKey(group)}>
-                      {header && (
-                        <div className={styles.groupHeader}>
-                          {header}
-                          <span className={styles.groupCount}>
-                            {pluralize(group.events.length, ['оценка', 'оценки', 'оценок'])}
-                          </span>
-                        </div>
-                      )}
-                      <div className={styles.events}>
-                        {group.events.map((event) => (
-                          <div className={styles.event} key={getVoteEventKey(event)}>
-                            {renderEvent(event)}
-                          </div>
-                        ))}
+                {groups.map((group) => (
+                  // Keyed by the newest event: a next page only extends a run, so its rows stay mounted.
+                  <section key={getVoteEventKey(group[0])}>
+                    {group.length > 1 && (
+                      <div className={styles.groupHeader}>
+                        <span className={styles.groupTitle}>Оценки в одном обсуждении</span>
+                        <span className={styles.groupCount}>
+                          {pluralize(group.length, ['оценка', 'оценки', 'оценок'])}
+                        </span>
                       </div>
-                    </section>
-                  )
-                })}
+                    )}
+                    <div className={styles.events}>
+                      {group.map((event) => (
+                        <div className={styles.event} key={getVoteEventKey(event)}>
+                          {renderEvent(event)}
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                ))}
               </div>
             )}
             {!error && loadMoreError && (
@@ -296,10 +270,6 @@ function MineVotesFeed() {
   )
 }
 
-// «Мои оценки» and «Оценки мне» load and present votes differently (a post/comment
-// feed with a text filter vs. a digest of discussions with type/sign/period filters),
-// so the tab picks a whole component; switching tabs unmounts the other one and
-// aborts its in-flight requests.
 export default function UserProfileVotes() {
   const [searchParams] = useSearchParams()
   return searchParams.get('tab') === 'received' ? <ReceivedVotesDigest /> : <MineVotesFeed />

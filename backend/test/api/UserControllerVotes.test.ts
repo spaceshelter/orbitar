@@ -139,7 +139,7 @@ describe('UserController votes', () => {
   const runVotesValidation = (body: Record<string, unknown>) => {
     const { controller } = createController()
     const votesRoute = controller.router.stack.find((layer) => layer.route?.path === '/user/votes')
-    // [sharedReadRateLimiter, heavyReadRateLimiter, oauth, validate, handler]
+    // [sharedReadRateLimiter, heavyFilterRateLimiter, oauth, validate, handler]
     const validateVotes = votesRoute?.route.stack[3].handle
     const request = { body } as any
     return new Promise<{ ok: boolean; body?: any; message?: string }>((resolve) => {
@@ -154,8 +154,7 @@ describe('UserController votes', () => {
   const DAY_MS = 24 * 60 * 60 * 1000
   const daysAgo = (days: number) => new Date(Date.now() - days * DAY_MS).toISOString()
 
-  test('route validation accepts received type, minus-only and time-bound filters with a 200-event page', async () => {
-    // The frontend's «за месяц» starts at local midnight 29 days before today.
+  test('route validation accepts received filters with a 200-event page and converts the lower bound', async () => {
     const since = daysAgo(30)
     const result = await runVotesValidation({
       direction: 'received',
@@ -170,18 +169,13 @@ describe('UserController votes', () => {
   })
 
   // How far back a minus-only page may reach is VoteFeedManager's rule, not the schema's.
-  test('route validation leaves the minus-only window to the feed manager', async () => {
-    await expect(runVotesValidation({ direction: 'received', sign: 'minus' })).resolves.toMatchObject({ ok: true })
-    await expect(
-      runVotesValidation({ direction: 'received', sign: 'minus', since: daysAgo(32) }),
-    ).resolves.toMatchObject({ ok: true })
-  })
-
-  test('route validation leaves the lower bound optional when all signs are requested', async () => {
-    await expect(runVotesValidation({ direction: 'received', type: 'comment' })).resolves.toMatchObject({ ok: true })
-    await expect(runVotesValidation({ direction: 'received', since: daysAgo(365) })).resolves.toMatchObject({
-      ok: true,
-    })
+  test.each([
+    ['a minus-only page without a lower bound', { direction: 'received', sign: 'minus' }],
+    ['a minus-only page reaching back past a month', { direction: 'received', sign: 'minus', since: daysAgo(32) }],
+    ['a type without a lower bound', { direction: 'received', type: 'comment' }],
+    ['a year-long window of all signs', { direction: 'received', since: daysAgo(365) }],
+  ])('route validation accepts %s', async (_label, body) => {
+    await expect(runVotesValidation(body)).resolves.toMatchObject({ ok: true })
   })
 
   test.each([
@@ -214,7 +208,7 @@ describe('UserController votes', () => {
     )
 
     expect(voteFeedManager.getVoteFeed).toHaveBeenCalledWith(123, 'received', '', undefined, 200, {
-      types: ['comment'],
+      type: 'comment',
       sign: 'minus',
       since,
     })
@@ -223,7 +217,7 @@ describe('UserController votes', () => {
   test('route validation rejects a fractional perpage', async () => {
     const { controller } = createController()
     const votesRoute = controller.router.stack.find((layer) => layer.route?.path === '/user/votes')
-    // [sharedReadRateLimiter, heavyReadRateLimiter, oauth, validate, handler]
+    // [sharedReadRateLimiter, heavyFilterRateLimiter, oauth, validate, handler]
     const validateVotes = votesRoute?.route.stack[3].handle
     const response = { error: jest.fn() }
     const next = jest.fn()
@@ -249,7 +243,7 @@ describe('UserController votes', () => {
   test('route validation rejects unknown identity fields in the body', async () => {
     const { controller } = createController()
     const votesRoute = controller.router.stack.find((layer) => layer.route?.path === '/user/votes')
-    // [sharedReadRateLimiter, heavyReadRateLimiter, oauth, validate, handler]
+    // [sharedReadRateLimiter, heavyFilterRateLimiter, oauth, validate, handler]
     const validateVotes = votesRoute?.route.stack[3].handle
     const response = { error: jest.fn() }
     const next = jest.fn()

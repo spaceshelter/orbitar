@@ -1,33 +1,49 @@
-import React, { useMemo } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import React, { useCallback, useMemo, useRef, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 
 import Button from '@ui/Button'
 import Select from '@ui/Select'
 import classNames from 'classnames'
+import moment from 'moment'
+import { flushSync } from 'react-dom'
 
-import { ReceivedVotesFilters, useReceivedVotes } from '../API/use/useReceivedVotes'
+import { useVoteFeedPages } from '../API/use/useVoteFeedPages'
+import { getVoteEventKey, ReceivedVoteType, UserVoteFeedEvent, UserVotesReceivedResult } from '../API/UserAPI'
+import { useAPI } from '../AppState/AppState'
 import {
   buildReceivedDigest,
-  DigestSection,
+  countPeople,
   getPeriodOptions,
+  getPeriodSince,
   getWiderPeriod,
   limitPeriod,
+  orderVoters,
+  subjectsOf,
+  sumMinus,
+  sumPlus,
+  VoteGroup,
   VotePeriod,
   VoteSign,
 } from '../Utils/receivedVotesDigest'
 import { pluralize } from '../Utils/utils'
+import InternalLinkExpandComponent from './InternalLinkExpandComponent'
 import PostLink from './PostLink'
-import ReceivedVotesCard, { DigestLookup, discussionInfo, ReceivedKarmaCard, Sums } from './ReceivedVotesCard'
 
 import feedStyles from '../Pages/FeedPage.module.scss'
 import styles from './ReceivedVotesDigest.module.scss'
+import votesStyles from './UserProfileVotes.module.scss'
 
+const PAGE_SIZE = 200
+// Periods up to a month load this many pages on their own; longer periods and later pages load on demand.
+const AUTO_FOLLOW_PAGES = 5
 const DEFAULT_PERIOD: VotePeriod = '2weeks'
+const SUBJECTS_PER_CARD = 3
+const NAMES_PER_SUBJECT = 3
 
-type TypeFilter = ReceivedVotesFilters['type']
+type TypeFilter = 'all' | ReceivedVoteType
+type Lookup = Pick<UserVotesReceivedResult, 'users' | 'subjects'>
 
 const TYPES: TypeFilter[] = ['all', 'comment', 'post', 'user']
-const SIGNS: VoteSign[] = ['all', 'minus']
 
 const PERIOD_LABELS: Record<VotePeriod, string> = {
   week: 'За неделю',
@@ -37,81 +53,267 @@ const PERIOD_LABELS: Record<VotePeriod, string> = {
   all: 'За всё время',
 }
 
-const SIGN_LABELS: Record<VoteSign, string> = { all: 'Плюсы и минусы', minus: 'Только минусы' }
-
-const WHAT_LABELS: Record<VoteSign, Record<TypeFilter, string>> = {
-  all: { all: 'Все оценки', comment: 'Комментарии', post: 'Посты', user: 'Карма' },
-  minus: { all: 'Все минусы', comment: 'Минусы за комментарии', post: 'Минусы за посты', user: 'Минусы в карму' },
-}
-
-// Type and sign are picked together: one option per pair, grouped by sign.
-const WHAT_OPTIONS = SIGNS.map((sign) => ({
-  label: SIGN_LABELS[sign],
-  options: TYPES.map((type) => ({ value: `${sign}:${type}`, label: WHAT_LABELS[sign][type] })),
+const WHAT_OPTIONS = [
+  { sign: 'all', label: 'Плюсы и минусы', names: ['Все оценки', 'Комментарии', 'Посты', 'Карма'] },
+  {
+    sign: 'minus',
+    label: 'Только минусы',
+    names: ['Все минусы', 'Минусы за комментарии', 'Минусы за посты', 'Минусы в карму'],
+  },
+].map(({ sign, label, names }) => ({
+  label,
+  options: TYPES.map((type, index) => ({ value: `${sign}:${type}`, label: names[index] })),
 }))
 
-const readFilters = (params: URLSearchParams): ReceivedVotesFilters => {
-  const what = params.get('what')
-  const period = params.get('period')
+const readFilters = (params: URLSearchParams) => {
   const sign: VoteSign = params.get('sign') === 'minus' ? 'minus' : 'all'
-  return {
-    type: what === 'comment' || what === 'post' || what === 'user' ? what : 'all',
-    sign,
-    period: limitPeriod(
-      period === 'week' || period === 'month' || period === 'year' || period === 'all' ? period : DEFAULT_PERIOD,
-      sign,
-    ),
-  }
+  const type = TYPES.find((value) => value === params.get('what')) || 'all'
+  const period = getPeriodOptions('all').find((value) => value === params.get('period')) || DEFAULT_PERIOD
+  return { type, sign, period: limitPeriod(period, sign) }
 }
 
-// Placeholder shaped like a section while its first votes load.
-function DigestSkeleton() {
+const formatVote = (value: number) => (value > 0 ? `+${value}` : value < 0 ? `−${-value}` : '0')
+
+const formatTime = (date: Date) => moment(date).format('D MMM, HH:mm')
+
+// A name made up for a post without a label, or for a missing post, is `generated` and not quoted.
+const discussionInfo = (lookup: Lookup, postId: number) => {
+  const post = lookup.subjects.posts[postId]
+  return post?.label
+    ? { title: post.label, site: post.site, generated: false }
+    : { title: post ? 'Пост с медиа' : `пост #${postId}`, site: post?.site || 'main', generated: true }
+}
+
+const Vote = ({ value, size, className }: { value: number; size?: 'big' | 'small'; className?: string }) => (
+  <span
+    className={classNames(
+      styles.value,
+      value > 0 ? styles.plus : value < 0 ? styles.minus : styles.zero,
+      size && styles[size],
+      className,
+    )}
+  >
+    {formatVote(value)}
+  </span>
+)
+
+function Sums({ events, size }: { events: UserVoteFeedEvent[]; size?: 'big' | 'small' }) {
+  const [plus, minus] = [sumPlus(events), sumMinus(events)]
+  if (!plus && !minus) return <Vote value={0} size={size} />
   return (
-    <div className={styles.skeleton} aria-hidden='true'>
-      <div className={styles.skeletonHeader}>
-        <span className={styles.skeletonLine} style={{ width: 110 }} />
-        <span className={styles.skeletonLine} style={{ width: 70 }} />
+    <>
+      {plus > 0 && <Vote value={plus} size={size} />}
+      {plus > 0 && minus < 0 && ' '}
+      {minus < 0 && <Vote value={minus} size={size} />}
+    </>
+  )
+}
+
+function VoterName({ lookup, voterId }: { lookup: Lookup; voterId: number }) {
+  const username = lookup.users[voterId]?.username
+  return username ? <Link to={`/u/${username}`}>{username}</Link> : <span>пользователь</span>
+}
+
+function Voters({ lookup, events }: { lookup: Lookup; events: UserVoteFeedEvent[] }) {
+  const [open, setOpen] = useState(false)
+  const voters = orderVoters(events)
+  const minus = voters.filter((voter) => voter.vote < 0).length
+  // Minus voters are always named; plus voters fill the rest of the budget.
+  const shown = voters.slice(0, Math.max(NAMES_PER_SUBJECT, minus))
+  return (
+    <>
+      <div className={styles.voters}>
+        {shown.map((voter, index) => (
+          <React.Fragment key={voter.voterId}>
+            {index > 0 && ', '}
+            <VoterName lookup={lookup} voterId={voter.voterId} />
+            {voter.vote < 0 && minus < voters.length && (
+              <>
+                {' '}
+                <Vote value={voter.vote} size='small' />
+              </>
+            )}
+          </React.Fragment>
+        ))}
+        {voters.length > shown.length && (
+          <>
+            {' '}
+            <Button variant='minimal' className={styles.moreVoters} aria-expanded={open} onClick={() => setOpen(!open)}>
+              {`и ещё ${voters.length - shown.length}`}
+            </Button>
+          </>
+        )}
       </div>
-      {[0, 1].map((card) => (
-        <div className={styles.skeletonCard} key={card}>
-          <span className={styles.skeletonLine} style={{ width: card ? '38%' : '52%' }} />
-          <span className={styles.skeletonLine} style={{ width: card ? '71%' : '64%' }} />
-          <span className={styles.skeletonLine} style={{ width: card ? '44%' : '58%' }} />
-        </div>
-      ))}
+      {open && (
+        <ul className={styles.chronology}>
+          {events.map((event) => (
+            <li key={getVoteEventKey(event)}>
+              <Vote value={event.vote} size='small' /> <VoterName lookup={lookup} voterId={event.voterId} />{' '}
+              <time className={styles.time}>{formatTime(event.votedAt)}</time>
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  )
+}
+
+function SubjectRow({ lookup, subject, site }: { lookup: Lookup; subject: VoteGroup; site: string }) {
+  const [expanded, setExpanded] = useState(false)
+  const { type, entityId } = subject.events[0]
+  const comment = type === 'comment' ? lookup.subjects.comments[entityId] : undefined
+  const postId = comment ? comment.postId : entityId
+  const toggle = () => setExpanded(!expanded)
+  // Like internal links in content: a click expands in place, ctrl/cmd-click still opens.
+  const link = (className: string, text: string) => (
+    <PostLink
+      className={className}
+      post={{ id: postId, site }}
+      commentId={comment?.id}
+      onClick={(event: React.MouseEvent) => {
+        if (event.ctrlKey || event.metaKey) return
+        event.preventDefault()
+        toggle()
+      }}
+    >
+      {text}
+    </PostLink>
+  )
+  return (
+    <div className={styles.subject}>
+      <Vote value={subject.events.reduce((sum, event) => sum + event.vote, 0)} className={styles.subjectValue} />
+      <span
+        role='button'
+        tabIndex={0}
+        aria-expanded={expanded}
+        aria-label={expanded ? 'Свернуть' : 'Развернуть'}
+        className={classNames('i i-expand', styles.expandArrow, expanded && styles.expandArrowOpen)}
+        onClick={toggle}
+        onKeyDown={(event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return
+          event.preventDefault()
+          toggle()
+        }}
+      />
+      <div className={styles.subjectMain}>
+        {type === 'post' && link(styles.subjectKind, 'сам пост')}
+        {comment?.excerpt && link(styles.quote, `«${comment.excerpt}»`)}
+        {/* Without text to quote, the time tells the rows of a picture thread apart. */}
+        {type === 'comment' && !comment?.excerpt && (
+          <>
+            {link(styles.subjectKind, 'медиа')}
+            {comment && <span className={styles.subjectTime}> · {formatTime(comment.created)}</span>}
+          </>
+        )}
+        <Voters lookup={lookup} events={subject.events} />
+        {expanded && (
+          <div className={styles.expandedContent}>
+            <InternalLinkExpandComponent postId={postId} commentId={comment?.id} onClose={toggle} />
+          </div>
+        )}
+      </div>
     </div>
   )
 }
 
-function DigestTail({ lookup, section, partial }: { lookup: DigestLookup; section: DigestSection; partial: boolean }) {
-  if (!section.tail.length) {
-    return null
-  }
-  const plus = section.tail.reduce((sum, item) => sum + item.plus, 0)
-  const minus = section.tail.reduce((sum, item) => sum + item.minus, 0)
+function DiscussionCard({ lookup, discussion }: { lookup: Lookup; discussion: VoteGroup<number> }) {
+  const [expanded, setExpanded] = useState(false)
+  const articleRef = useRef<HTMLElement>(null)
+  const { key: postId, events } = discussion
+  const { title, site, generated } = discussionInfo(lookup, postId)
+  const subjects = subjectsOf(events)
+  const hidden = subjects.slice(SUBJECTS_PER_CARD)
+  const hiddenComments = hidden.filter((subject) => subject.events[0].type === 'comment').length
+  const hiddenLabel = [
+    hidden.length > hiddenComments && 'пост',
+    hiddenComments > 0 && pluralize(hiddenComments, ['комментарий', 'комментария', 'комментариев']),
+  ]
+    .filter(Boolean)
+    .join(' и ')
+  return (
+    <article className={styles.card} ref={articleRef}>
+      <header className={styles.cardHeader}>
+        <div className={styles.cardTitleWrap}>
+          <PostLink
+            className={classNames(styles.cardTitle, generated && styles.generatedTitle)}
+            post={{ id: postId, site }}
+          >
+            {title}
+          </PostLink>
+          {site !== 'main' && <span className={styles.site}>{site}</span>}
+        </div>
+        <div className={styles.cardSum}>
+          <Sums events={events} size='big' />
+        </div>
+        <div className={styles.cardMeta}>
+          {countPeople(events)} чел. · {formatTime(events[0].votedAt)}
+        </div>
+      </header>
+      {(expanded ? subjects : subjects.slice(0, SUBJECTS_PER_CARD)).map((subject) => (
+        <SubjectRow key={subject.key} lookup={lookup} subject={subject} site={site} />
+      ))}
+      {hidden.length > 0 && (
+        <Button
+          variant='minimal'
+          className={styles.expandCard}
+          aria-expanded={expanded}
+          onClick={() => {
+            // Collapsing a long card from its bottom would leave the reader far below it.
+            flushSync(() => setExpanded(!expanded))
+            if (expanded) articleRef.current?.scrollIntoView?.({ block: 'nearest' })
+          }}
+        >
+          {expanded ? (
+            'свернуть'
+          ) : (
+            <>
+              ещё {hiddenLabel} · <Sums events={hidden.flatMap((subject) => subject.events)} size='small' />
+            </>
+          )}
+        </Button>
+      )}
+    </article>
+  )
+}
+
+function KarmaCard({ lookup, events }: { lookup: Lookup; events: UserVoteFeedEvent[] }) {
+  return (
+    <article className={styles.card}>
+      <header className={styles.cardHeader}>
+        <span className={styles.cardTitlePlain}>Карма профиля</span>
+        <div className={styles.cardSum}>
+          <Sums events={events} size='big' />
+        </div>
+      </header>
+      <div className={classNames(styles.subject, styles.karmaRow)}>
+        <Voters lookup={lookup} events={events} />
+      </div>
+    </article>
+  )
+}
+
+function DigestTail({ lookup, tail, partial }: { lookup: Lookup; tail: VoteGroup<number>[]; partial: boolean }) {
   return (
     <div className={styles.tail}>
       <span className={styles.tailHead}>
-        {partial ? 'Пока по' : 'По'} 1–2 оценки в{' '}
-        {pluralize(section.tail.length, ['обсуждении', 'обсуждениях', 'обсуждениях'])}{' '}
-        <Sums plus={plus} minus={minus} size='small' />:
+        {partial ? 'Пока по' : 'По'} 1–2 оценки в {pluralize(tail.length, ['обсуждении', 'обсуждениях', 'обсуждениях'])}{' '}
+        <Sums events={tail.flatMap((item) => item.events)} size='small' />:
       </span>{' '}
-      {section.tail.map((item, index) => {
-        const { title, site, generated } = discussionInfo(lookup, item.postId, item.events)
-        // The sum and the separator stay glued to the title so a line never
-        // starts with «·»; long titles wrap inside their own item.
+      {tail.map(({ key: postId, events }, index) => {
+        const { title, site, generated } = discussionInfo(lookup, postId)
+        // The sum and «·» share the title's item, so no line starts with them.
         return (
-          <React.Fragment key={item.postId}>
+          <React.Fragment key={postId}>
             <span className={styles.tailItem}>
               <PostLink
                 className={classNames(styles.tailLink, generated && styles.generatedTitle)}
-                post={{ id: item.postId, site }}
+                post={{ id: postId, site }}
               >
                 {generated ? title : `«${title}»`}
               </PostLink>
               {' '}
-              <Sums plus={item.plus} minus={item.minus} size='small' />
-              {index < section.tail.length - 1 && ' ·'}
+              <Sums events={events} size='small' />
+              {index < tail.length - 1 && ' ·'}
             </span>{' '}
           </React.Fragment>
         )
@@ -120,59 +322,64 @@ function DigestTail({ lookup, section, partial }: { lookup: DigestLookup; sectio
   )
 }
 
-function RetryError({ error, onRetry }: { error: string; onRetry: () => void }) {
-  return (
-    <>
-      <div className={styles.errorText} role='alert'>
-        {error}
-      </div>
-      <Button variant='ghost' className={styles.widenButton} onClick={onRetry}>
-        Повторить
-      </Button>
-    </>
-  )
-}
+const RetryError = ({ error, onRetry }: { error: string; onRetry: () => void }) => (
+  <>
+    <div className={styles.errorText} role='alert'>
+      {error}
+    </div>
+    <Button variant='ghost' className={styles.widenButton} onClick={onRetry}>
+      Повторить
+    </Button>
+  </>
+)
 
 export default function ReceivedVotesDigest() {
+  const api = useAPI()
   const [searchParams, setSearchParams] = useSearchParams()
   const filters = readFilters(searchParams)
   const { type, sign, period } = filters
-  const { feed, periodWindow, loading, loadingMore, error, loadMore, retry } = useReceivedVotes(filters)
+  const long = period === 'year' || period === 'all'
 
-  const digest = useMemo<DigestSection[]>(
+  // The window ends when the filters are chosen; later pages and the section labels share it.
+  const { now, query } = useMemo(() => {
+    const now = new Date()
+    const type = filters.type === 'all' ? undefined : filters.type
+    return { now, query: { type, sign: sign === 'minus' ? sign : undefined, since: getPeriodSince(period, now) } }
+  }, [filters.type, sign, period])
+  const fetchPage = useCallback(
+    (cursor: string | undefined, signal: AbortSignal) =>
+      api.userAPI.receivedVotes({ ...query, cursor, perpage: PAGE_SIZE }, signal),
+    [api.userAPI, query],
+  )
+  const { feed, loading, loadingMore, error, loadMoreError, loadMore, retry } = useVoteFeedPages(fetchPage, {
+    tables: 'subjects',
+    timeoutError: 'Запрос оказался слишком тяжёлым — сузьте период.',
+    followPages: long ? 1 : AUTO_FOLLOW_PAGES,
+  })
+  const failure = error || loadMoreError
+  const digest = useMemo(
     () =>
-      feed
-        ? buildReceivedDigest(feed.events, {
-            granularity: period === 'year' || period === 'all' ? 'month' : 'week',
-            since: periodWindow.since,
-            now: periodWindow.now,
-          })
-        : [],
-    [feed, period, periodWindow],
+      feed ? buildReceivedDigest(feed.events, { granularity: long ? 'month' : 'week', since: query.since, now }) : [],
+    [feed, long, query, now],
   )
 
-  const writeFilters = (next: ReceivedVotesFilters) => {
-    const params: Record<string, string> = { tab: 'received' }
+  const writeFilters = (changes: Partial<typeof filters>) => {
+    const next = { ...filters, ...changes }
     const nextPeriod = limitPeriod(next.period, next.sign)
-    if (next.type !== 'all') {
-      params.what = next.type
-    }
-    if (next.sign !== 'all') {
-      params.sign = next.sign
-    }
-    if (nextPeriod !== DEFAULT_PERIOD) {
-      params.period = nextPeriod
-    }
-    setSearchParams(params)
+    setSearchParams({
+      tab: 'received',
+      ...(next.type !== 'all' && { what: next.type }),
+      ...(next.sign !== 'all' && { sign: next.sign }),
+      ...(nextPeriod !== DEFAULT_PERIOD && { period: nextPeriod }),
+    })
   }
 
-  const periodOptions = getPeriodOptions(sign).map((option) => ({ value: option, label: PERIOD_LABELS[option] }))
-
+  const periodOptions = getPeriodOptions(sign).map((value) => ({ value, label: PERIOD_LABELS[value] }))
   const events = feed?.events || []
   const filtered = type !== 'all' || sign !== 'all'
   const wider = getWiderPeriod(period, sign)
   const widenButton = wider && (
-    <Button variant='ghost' className={styles.widenButton} onClick={() => writeFilters({ ...filters, period: wider })}>
+    <Button variant='ghost' className={styles.widenButton} onClick={() => writeFilters({ period: wider })}>
       {`Показать ${PERIOD_LABELS[wider].toLowerCase()}`}
     </Button>
   )
@@ -192,7 +399,7 @@ export default function ReceivedVotesDigest() {
           options={WHAT_OPTIONS}
           onChange={(value) => {
             const [nextSign, nextType] = value.split(':') as [VoteSign, TypeFilter]
-            writeFilters({ ...filters, sign: nextSign, type: nextType })
+            writeFilters({ sign: nextSign, type: nextType })
           }}
         />
         <Select
@@ -200,26 +407,26 @@ export default function ReceivedVotesDigest() {
           aria-label='Период'
           value={period}
           options={sign === 'minus' ? [{ label: 'Минусы — не дальше месяца', options: periodOptions }] : periodOptions}
-          onChange={(value) => writeFilters({ ...filters, period: value as VotePeriod })}
+          onChange={(value) => writeFilters({ period: value as VotePeriod })}
         />
       </div>
 
-      <span className={styles.srOnly} role='status' aria-live='polite'>
+      <span className={votesStyles.srOnly} role='status' aria-live='polite'>
         {loading
           ? 'Загружаются оценки'
-          : error
+          : failure
             ? ''
             : `Показано ${pluralize(events.length, ['оценка', 'оценки', 'оценок'])}${incomplete ? ', есть ещё' : ''}`}
       </span>
 
       <div className={feedStyles.feed} aria-busy={loading || loadingMore}>
         {loading && !feed && <div className={feedStyles.loading}></div>}
-        {error && !feed && (
+        {failure && !feed && (
           <div className={styles.empty}>
-            <RetryError error={error} onRetry={retry} />
+            <RetryError error={failure} onRetry={retry} />
           </div>
         )}
-        {!loading && !error && feed && events.length === 0 && (
+        {!loading && !failure && feed && !events.length && (
           <div className={styles.empty}>
             <div>
               {period === 'all'
@@ -235,26 +442,33 @@ export default function ReceivedVotesDigest() {
               <div className={styles.sectionHeader}>
                 <h3 className={styles.sectionTitle}>{section.label}</h3>
                 <div className={styles.sectionSum}>
-                  <Sums plus={section.plus} minus={section.minus} />
-                  <span className={styles.meta}>· {section.people} чел.</span>
+                  <Sums events={section.events} />
+                  <span className={styles.meta}>· {countPeople(section.events)} чел.</span>
                 </div>
               </div>
               {section.key === partialKey && (
                 <div className={styles.sectionNote}>Загружена только часть оценок за эти дни.</div>
               )}
               {section.cards.map((card) => (
-                <ReceivedVotesCard key={card.key} lookup={feed} card={card} />
+                <DiscussionCard key={card.key} lookup={feed} discussion={card} />
               ))}
-              {section.karma && <ReceivedKarmaCard lookup={feed} karma={section.karma} />}
-              <DigestTail lookup={feed} section={section} partial={section.key === partialKey} />
+              {section.karma.length > 0 && <KarmaCard lookup={feed} events={section.karma} />}
+              {section.tail.length > 0 && (
+                <DigestTail lookup={feed} tail={section.tail} partial={section.key === partialKey} />
+              )}
             </section>
           ))}
-        {loading && <DigestSkeleton />}
-        {!loading && feed && events.length > 0 && (
+        {loading && (
+          <div className={styles.skeleton} aria-hidden='true'>
+            <div className={styles.skeletonCard} />
+            <div className={styles.skeletonCard} />
+          </div>
+        )}
+        {!loading && events.length > 0 && (
           <div className={styles.footer}>
-            {error ? (
-              <RetryError error={error} onRetry={retry} />
-            ) : incomplete && feed.nextCursor ? (
+            {failure ? (
+              <RetryError error={failure} onRetry={retry} />
+            ) : incomplete && feed?.nextCursor ? (
               <Button variant='ghost' className={styles.widenButton} onClick={loadMore} disabled={loadingMore}>
                 {loadingMore ? 'Загружается...' : 'Показать ещё'}
               </Button>

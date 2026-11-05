@@ -15,7 +15,6 @@ import VoteFeedReadRepository, {
   VoteFeedFilterOptions,
   VoteFeedReference,
 } from '../db/repositories/VoteFeedReadRepository'
-import { getMediaKind } from '../utils/MediaKind'
 import PostManager from './PostManager'
 import UserManager from './UserManager'
 
@@ -26,8 +25,7 @@ export class InvalidVoteFeedCursorError extends Error {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
-// The widest minus-only window the profile offers is «за месяц» (30 local days);
-// one extra day absorbs time zones and daylight saving shifts.
+// «За месяц», the widest minus-only period, is 30 local days; one more day absorbs time zones and DST.
 const MINUS_ONLY_WINDOW_DAYS = 31
 
 export class InvalidVoteFeedWindowError extends Error {
@@ -38,9 +36,8 @@ export class InvalidVoteFeedWindowError extends Error {
 
 const VOTE_FEED_ENTITY_TYPES = ['post', 'comment', 'user']
 
-// Server-side cap keeps received payloads compact; the frontend applies the same
-// visual budget in getCompactText. Sliced over code points so a surrogate pair
-// (emoji) on the boundary is not cut in half.
+// Server-side cap keeps received payloads compact. Sliced over code points so a
+// surrogate pair (emoji) on the boundary is not cut in half.
 const RECEIVED_LABEL_MAX_CHARS = 72
 
 const toPlainText = (html: string) =>
@@ -48,7 +45,6 @@ const toPlainText = (html: string) =>
     .result.replace(/\s+/g, ' ')
     .trim()
 
-// A visible ellipsis keeps a cut-off quote from reading as the whole comment.
 const truncateLabel = (text: string) => {
   const characters = [...text]
   return characters.length <= RECEIVED_LABEL_MAX_CHARS
@@ -130,8 +126,7 @@ export default class VoteFeedManager {
     perpage: number,
     options: VoteFeedFilterOptions = {},
   ): Promise<UserVotesResponse> {
-    // `vote` is not in the feed indexes, so a minus-only page reads every vote in
-    // its window to find the ~1% that are minuses: the window stays within a month.
+    // A minus-only page scans every vote in its window, so the window stays within a month.
     if (
       options.sign === 'minus' &&
       (!options.since || Date.now() - options.since.getTime() > MINUS_ONLY_WINDOW_DAYS * DAY_MS)
@@ -215,16 +210,13 @@ export default class VoteFeedManager {
     hasMore: boolean,
     nextCursor: string | undefined,
   ): Promise<UserVotesResponse> {
-    // Every post a page touches, voted on or holding a voted comment, is loaded
-    // once and names its discussion. loadUsers only needs the refs, so it can ride
-    // the same wave as the subjects.
+    // loadUsers only needs the refs, so it can ride the same wave as the subjects.
     const postIds = [...new Set(refs.flatMap((ref) => (ref.postId ? [Number(ref.postId)] : [])))]
     const [postRows, commentRows, users] = await Promise.all([
       this.voteFeedReadRepository.getReceivedPostSubjects(postIds),
       this.voteFeedReadRepository.getReceivedCommentSubjects(this.entityIds(refs, 'comment')),
       this.loadUsers(refs),
     ])
-    // Posts and comments without text are named by what they consist of instead.
     const posts: Record<number, ReceivedPostSubject> = {}
     for (const row of postRows) {
       const id = Number(row.id)
@@ -233,20 +225,17 @@ export default class VoteFeedManager {
         id,
         site: row.site,
         label,
-        ...(!label && { media: getMediaKind(row.html || '') }),
         rating: Number(row.rating),
       }
     }
     const comments: Record<number, ReceivedCommentSubject> = {}
     for (const row of commentRows) {
       const id = Number(row.id)
-      const excerpt = truncateLabel(toPlainText(row.html))
       comments[id] = {
         id,
         postId: Number(row.postId),
         site: row.site,
-        excerpt,
-        ...(!excerpt && { media: getMediaKind(row.html || '') }),
+        excerpt: truncateLabel(toPlainText(row.html)),
         created: new Date(row.created).toISOString(),
         rating: Number(row.rating),
       }

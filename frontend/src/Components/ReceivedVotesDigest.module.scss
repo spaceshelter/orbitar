@@ -45,20 +45,26 @@
   text-transform: uppercase;
 }
 
-.sectionSum {
+.sectionSum,
+.cardSum,
+.cardMeta {
   white-space: nowrap;
 }
 
-.sectionNote {
+.meta,
+.cardMeta,
+.sectionNote,
+.time {
   color: var(--fgSofter);
   font-size: 12px;
-  margin: 6px 0 12px;
 }
 
 .meta {
-  color: var(--fgSofter);
-  font-size: 12px;
   margin-left: 6px;
+}
+
+.sectionNote {
+  margin: 6px 0 12px;
 }
 
 .value {
@@ -87,8 +93,7 @@
 }
 
 .card {
-  // Row columns: the sum, then the expand arrow, then the text; everything
-  // under a row's text (names, timeline, «ещё …») lines up with the text.
+  // Row columns: the sum, the expand arrow, the text; whatever goes under the text aligns with it.
   --value-width: 30px;
   --arrow-width: 10px;
   --text-indent: calc(var(--value-width) + 10px + var(--arrow-width) + 5px);
@@ -100,7 +105,6 @@
   // Keeps a card scrolled into view clear of the fixed top bar.
   scroll-margin-top: 72px;
 
-  // UI kit buttons are flex boxes with padding; these read as inline links.
   .moreVoters,
   .expandCard {
     background: none;
@@ -137,8 +141,6 @@
   grid-template-columns: minmax(0, 1fr) auto auto;
   margin-bottom: 6px;
 
-  // On a phone the people and time go under the title, which keeps the width
-  // of all but the sum.
   @media (max-width: 599px) {
     grid-template-areas: 'title sum' 'meta .';
     grid-template-columns: minmax(0, 1fr) auto;
@@ -163,7 +165,6 @@
   grid-area: title;
 }
 
-// A name made up for a post without title and text, not the author's own.
 .cardTitle.generatedTitle,
 .tailLink.generatedTitle {
   color: var(--fgMedium);
@@ -182,14 +183,10 @@
 .cardSum {
   grid-area: sum;
   text-align: right;
-  white-space: nowrap;
 }
 
 .cardMeta {
-  color: var(--fgSofter);
-  font-size: 12px;
   grid-area: meta;
-  white-space: nowrap;
 }
 
 .subject {
@@ -211,7 +208,8 @@
   min-width: 0;
 }
 
-.karmaRow .subjectMain {
+.karmaRow {
+  flex-direction: column;
   padding-left: var(--text-indent);
 }
 
@@ -220,8 +218,6 @@
   overflow-wrap: anywhere;
 }
 
-// Same affordance as internal links inside content: the arrow turns 90° when the
-// post or comment is expanded in place.
 .expandArrow {
   align-self: flex-start;
   color: var(--fgMedium);
@@ -249,19 +245,14 @@
   font-style: italic;
 }
 
-.subjectTime {
+.subjectTime,
+.voters {
   color: var(--fgSofter);
   font-size: 13px;
 }
 
 .voters {
-  color: var(--fgSofter);
-  font-size: 13px;
   margin-top: 2px;
-}
-
-.voter {
-  color: var(--link);
 }
 
 .chronology {
@@ -281,8 +272,6 @@
 }
 
 .time {
-  color: var(--fgSofter);
-  font-size: 12px;
   margin-left: 4px;
 }
 
@@ -303,8 +292,7 @@
   color: var(--fgMedium);
 }
 
-// An item stays on one line while it fits and wraps inside itself when it does
-// not, so a long title never pushes the line past the card on narrow screens.
+// A long title wraps inside its item instead of pushing the line past the card.
 .tailItem {
   display: inline-block;
   max-width: 100%;
@@ -355,10 +343,6 @@
   font-size: 14px;
 }
 
-.empty .errorText + .widenButton {
-  margin-top: 10px;
-}
-
 @keyframes skeletonPulse {
   50% {
     opacity: 0.55;
@@ -373,41 +357,20 @@
   }
 }
 
-.skeletonHeader {
-  border-bottom: 1px solid var(--fgAlmostInvisible);
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-}
-
+// A card with three lines of text, drawn by gradients.
 .skeletonCard {
-  background: var(--dim2);
+  background: var(--dim2) no-repeat;
+  background-image: linear-gradient(var(--dim3), var(--dim3)), linear-gradient(var(--dim3), var(--dim3)),
+    linear-gradient(var(--dim3), var(--dim3));
+  background-position:
+    14px 14px,
+    14px 36px,
+    14px 58px;
+  background-size:
+    52% 12px,
+    64% 12px,
+    44% 12px;
   border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  height: 84px;
   margin-bottom: 10px;
-  padding: 14px;
-}
-
-.skeletonLine {
-  background: var(--dim3);
-  border-radius: 4px;
-  display: block;
-  height: 12px;
-  max-width: 100%;
-}
-
-.srOnly {
-  border: 0;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  height: 1px;
-  margin: -1px;
-  overflow: hidden;
-  padding: 0;
-  position: absolute;
-  white-space: nowrap;
-  width: 1px;
 }

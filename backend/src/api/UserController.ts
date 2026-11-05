@@ -3,7 +3,7 @@ import rateLimit from 'express-rate-limit'
 import Joi from 'joi'
 import { Logger } from 'winston'
 
-import { VoteFeedFilterOptions, VoteFeedFilterTimeoutError } from '../db/repositories/VoteFeedReadRepository'
+import { VoteFeedFilterTimeoutError } from '../db/repositories/VoteFeedReadRepository'
 import InviteManager from '../managers/InviteManager'
 import OAuth2Manager from '../managers/OAuth2Manager'
 import PostManager from '../managers/PostManager'
@@ -12,7 +12,7 @@ import UserManager from '../managers/UserManager'
 import VoteFeedManager, { InvalidVoteFeedCursorError, InvalidVoteFeedWindowError } from '../managers/VoteFeedManager'
 import { APIRequest, APIResponse, joiFormat, joiUsername, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
-import { commonRateLimitConfig, heavyReadRateLimiter, sharedReadRateLimiter } from './RateLimiters'
+import { commonRateLimitConfig, heavyFilterRateLimiter, sharedReadRateLimiter } from './RateLimiters'
 import { UserProfileEntity } from './types/entities/UserEntity'
 import { UserCommentsRequest, UserCommentsResponse } from './types/requests/UserComments'
 import { SuggestUsernameRequest, SuggestUsernameResponse } from './types/requests/UsernameSuggest'
@@ -82,8 +82,7 @@ export default class UserController {
       direction: Joi.valid('mine', 'received').required(),
       filter: Joi.string().max(120).allow(null, ''),
       cursor: Joi.string().max(255).allow(null, ''),
-      // Received subjects are compact, so a period loads in a few large pages;
-      // mine pages hydrate full posts and comments and stay small.
+      // Received pages carry compact subjects and can be large; mine pages hydrate full posts and comments.
       perpage: Joi.number()
         .integer()
         .min(1)
@@ -148,7 +147,7 @@ export default class UserController {
     this.router.post(
       '/user/votes',
       sharedReadRateLimiter,
-      heavyReadRateLimiter,
+      heavyFilterRateLimiter,
       oauth('читать свои оценки'),
       validate(votesSchema),
       (req, res) => this.votes(req, res),
@@ -389,16 +388,6 @@ export default class UserController {
 
     const userId = request.session.data.userId
     const { direction, cursor, perpage, filter, type, sign, since } = request.body
-    const filterOptions: VoteFeedFilterOptions = {}
-    if (type) {
-      filterOptions.types = [type]
-    }
-    if (sign) {
-      filterOptions.sign = sign
-    }
-    if (since) {
-      filterOptions.since = new Date(since)
-    }
 
     try {
       // Barmalini is a shared rotating credential, and anonymization reassigns the
@@ -415,7 +404,7 @@ export default class UserController {
         filter || '',
         cursor || undefined,
         perpage || 20,
-        filterOptions,
+        { type, sign, since },
       )
       return response.success(result)
     } catch (error) {

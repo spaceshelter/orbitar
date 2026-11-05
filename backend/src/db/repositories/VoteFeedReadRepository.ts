@@ -5,8 +5,7 @@ import DB from '../DB'
 // rarely-matching filter can walk a user's whole vote history. The optimizer hint
 // turns that worst case into a bounded, typed failure instead of minutes of CPU.
 // 500ms (not 2s): a filter that needs more would hit 2s on heavy voters anyway,
-// and heavyReadRateLimiter counts these pages (and minus-only ones), so one user
-// costs at most ~7.5 DB-seconds/minute.
+// and with heavyFilterRateLimiter one user costs at most ~7.5 DB-seconds/minute.
 const FILTER_MAX_EXECUTION_TIME_MS = 500
 const ER_QUERY_TIMEOUT = 3024
 
@@ -30,7 +29,7 @@ export type VoteFeedReference = {
 }
 
 export type VoteFeedFilterOptions = {
-  types?: VoteFeedEntityType[]
+  type?: VoteFeedEntityType
   sign?: 'minus'
   since?: Date
 }
@@ -173,8 +172,7 @@ export default class VoteFeedReadRepository {
     const entityFilter = spec.filterEntityCondition ? `${spec.filterEntityCondition} or ` : ''
     const filterCondition = filter ? `and (${entityFilter}fu.username like :filter or fu.name like :filter)` : ''
     const voteCondition = options.sign === 'minus' ? `${spec.alias}.vote < 0` : `${spec.alias}.vote != 0`
-    // The lower bound is a range on the feed index's second column, so a bounded
-    // window stops scanning at its start instead of walking the whole history.
+    // A range on the feed index's second column: the scan stops at the window start.
     const sinceCondition = options.since ? `and ${spec.alias}.voted_at >= :since` : ''
 
     // Driving each branch from its feed index lets MySQL 5.7 stop at the
@@ -202,14 +200,10 @@ export default class VoteFeedReadRepository {
     limit: number,
     options: VoteFeedFilterOptions = {},
   ): Promise<VoteFeedReference[]> {
-    const branches = options.types?.length
-      ? VOTE_FEED_BRANCHES.filter((spec) => options.types?.includes(spec.type))
-      : VOTE_FEED_BRANCHES
-    const union = branches
+    const union = VOTE_FEED_BRANCHES.filter((spec) => !options.type || spec.type === options.type)
       .map((spec) => this.buildBranch(spec, direction, filter, cursor, options))
       .join('\nunion all\n')
-    // Minus votes are ~1% of history and `vote` is not in the feed index, so a
-    // minus-only page can walk far back just like a rarely-matching text filter.
+    // `vote` is not in the feed index and ~1% of votes are minuses: a minus-only page can scan far back.
     const guarded = !!filter || options.sign === 'minus'
     const timeoutHint = guarded ? `/*+ MAX_EXECUTION_TIME(${FILTER_MAX_EXECUTION_TIME_MS}) */ ` : ''
     const query = `
@@ -287,8 +281,7 @@ export default class VoteFeedReadRepository {
     if (!commentIds.length) {
       return []
     }
-    // The same bounded prefix as post labels: the comment html only feeds a ~72-char
-    // excerpt. Discussions are named from getReceivedPostSubjects, once per post.
+    // The same bounded prefix as post labels: the html only feeds a ~72-char excerpt.
     return this.db.fetchAll<ReceivedCommentSubjectRaw>(
       `select c.comment_id id, c.post_id postId, s.subdomain site, left(c.html, 4096) html, c.created_at created, c.rating
          from comments c

@@ -3,7 +3,7 @@ import React from 'react'
 import { createRoot, Root } from 'react-dom/client'
 import { act } from 'react-dom/test-utils'
 
-import { ReceivedCommentSubject, ReceivedMediaKind, UserVoteFeedEvent, UserVotesReceivedResult } from '../API/UserAPI'
+import { ReceivedCommentSubject, UserVoteFeedEvent, UserVotesReceivedResult } from '../API/UserAPI'
 import { UserInfo } from '../Types/UserInfo'
 import ReceivedVotesDigest from './ReceivedVotesDigest'
 
@@ -38,38 +38,24 @@ jest.mock(
   '@ui/Button',
   () => ({
     __esModule: true,
-    default: ({
-      children,
-      variant: _variant,
-      size: _size,
-      active: _active,
-      ...props
-    }: React.ComponentProps<'button'> & { variant?: string; size?: string; active?: boolean }) => (
-      <button {...props}>{children}</button>
+    default: ({ variant, size, active, ...props }: React.ComponentProps<'button'> & Record<string, unknown>) => (
+      <button {...props} />
     ),
   }),
   { virtual: true },
 )
 
-// The real UI kit select: these tests read its options and groups.
 jest.mock('@ui/Select', () => jest.requireActual('./UI/Select'), { virtual: true })
 
 jest.mock('./PostLink', () => ({
   __esModule: true,
   default: ({
-    children,
     post,
     commentId,
-    className,
-    onClick,
-  }: {
-    children?: React.ReactNode
-    post: { id: number }
-    commentId?: number
-    className?: string
-    onClick?: React.MouseEventHandler
-  }) => (
-    <a className={className} href={`/p${post.id}${commentId ? `#${commentId}` : ''}`} onClick={onClick}>
+    children,
+    ...props
+  }: React.ComponentProps<'a'> & { post: { id: number }; commentId?: number }) => (
+    <a {...props} href={`/p${post.id}${commentId ? `#${commentId}` : ''}`}>
       {children}
     </a>
   ),
@@ -111,12 +97,11 @@ const vote = (
   votedAt,
 })
 
-const comment = (id: number, postId: number, excerpt: string, media?: ReceivedMediaKind): ReceivedCommentSubject => ({
+const comment = (id: number, postId: number, excerpt: string): ReceivedCommentSubject => ({
   id,
   postId,
   site: 'main',
   excerpt,
-  media,
   created: new Date(2026, 8, 12, 18, 6),
   rating: 1,
 })
@@ -129,15 +114,14 @@ const page = (
   events,
   users: Object.fromEntries(events.map((event) => [event.voterId, user(event.voterId)])),
   subjects: {
-    // Every discussion of the page, voted on or not, comes with its post.
     posts: {
       50: { id: 50, site: 'main', label: 'Селфи-тайм 2', rating: 10 },
       51: { id: 51, site: 'main', label: 'Мемы', rating: 3 },
       60: { id: 60, site: 'dev', label: 'Про миграции', rating: 2 },
       70: { id: 70, site: 'main', label: 'Мелкий пост', rating: 1 },
       80: { id: 80, site: 'main', label: 'Ещё один небольшой разговор', rating: 1 },
-      90: { id: 90, site: 'main', label: '', media: 'image', rating: 1 },
-      91: { id: 91, site: 'main', label: '', media: 'media', rating: 1 },
+      90: { id: 90, site: 'main', label: '', rating: 1 },
+      91: { id: 91, site: 'main', label: '', rating: 1 },
     },
     comments: {
       501: comment(501, 50, 'Уйдите в другие посты'),
@@ -145,11 +129,8 @@ const page = (
       503: comment(503, 50, 'Третий'),
       504: comment(504, 50, 'Четвёртый'),
       505: comment(505, 50, 'Пятый'),
-      511: comment(511, 51, '', 'image'),
-      512: comment(512, 51, '', 'video'),
-      513: comment(513, 51, '', 'gif'),
-      514: comment(514, 51, '', 'media'),
-      515: comment(515, 51, ''),
+      511: comment(511, 51, ''),
+      512: comment(512, 51, ''),
       901: comment(901, 90, 'Ответ'),
       911: comment(911, 91, 'Ответ'),
       601: { ...comment(601, 60, 'Кэшем'), site: 'dev' },
@@ -176,13 +157,14 @@ describe('ReceivedVotesDigest', () => {
   let container: HTMLDivElement
   let root: Root
 
-  const render = async () => {
-    await act(async () => {
-      root.render(<ReceivedVotesDigest />)
-    })
-    await act(async () => {
+  const flush = () =>
+    act(async () => {
       await Promise.resolve()
     })
+
+  const render = async () => {
+    await act(async () => root.render(<ReceivedVotesDigest />))
+    await flush()
   }
 
   const buttonByText = (text: string) =>
@@ -193,9 +175,7 @@ describe('ReceivedVotesDigest', () => {
     await act(async () => {
       element?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
-    await act(async () => {
-      await Promise.resolve()
-    })
+    await flush()
   }
 
   const select = (label: string) => container.querySelector<HTMLSelectElement>(`select[aria-label="${label}"]`)
@@ -218,12 +198,6 @@ describe('ReceivedVotesDigest', () => {
         element.value = value
         element.dispatchEvent(new Event('change', { bubbles: true }))
       }
-    })
-  }
-
-  const flush = async () => {
-    await act(async () => {
-      await Promise.resolve()
     })
   }
 
@@ -352,7 +326,6 @@ describe('ReceivedVotesDigest', () => {
     )
     expect(selectedText('Какие оценки показывать')).toBe('Комментарии')
     expect(selectedText('Период')).toBe('За год')
-    // With a filter applied the period was not empty, only the filtered slice was.
     expect(container.textContent).toContain('За год таких оценок не было.')
   })
 
@@ -451,7 +424,6 @@ describe('ReceivedVotesDigest', () => {
     expect(current.textContent).not.toContain('Загружена только часть')
     expect(oldest.textContent).toContain('7–13 сентября')
     expect(oldest.textContent).toContain('Загружена только часть оценок за эти дни.')
-    // Two votes loaded so far in each small discussion; more may follow.
     expect(oldest.textContent).toContain('Пока по 1–2 оценки в 2 обсуждениях')
     expect(buttonByText('Показать ещё')).toBeDefined()
   })
@@ -515,54 +487,27 @@ describe('ReceivedVotesDigest', () => {
     expect(buttonByText('ещё 2 комментария')?.getAttribute('aria-expanded')).toBe('false')
   })
 
-  test('names comments without text by what they hold and when they were written', async () => {
+  test('names comments and untitled posts without text as media, comments with their time', async () => {
     mockReceivedVotes.mockResolvedValueOnce(
       page([
         vote('comment', 511, 1, 1, at(16, 10), 51),
-        vote('comment', 512, 2, 1, at(16, 9), 51),
-        vote('comment', 513, 3, 1, at(16, 8), 51),
-        vote('comment', 514, 4, 1, at(16, 7), 51),
-        vote('comment', 515, 5, 1, at(16, 6), 51),
+        vote('comment', 511, 2, 1, at(16, 9), 51),
+        vote('comment', 512, 3, 1, at(16, 8), 51),
+        vote('post', 91, 4, 1, at(16, 7)),
+        vote('post', 91, 5, 1, at(16, 6)),
+        vote('post', 91, 6, 1, at(16, 5)),
+        vote('comment', 901, 7, 1, at(15, 10), 90),
       ]),
     )
     await render()
-    await click(buttonByText('ещё 2 комментария'))
 
-    const text = container.textContent || ''
-    expect(text).toContain('картинка · 12 сент., 18:06')
-    expect(text).toContain('видео · 12 сент., 18:06')
-    expect(text).toContain('гифка · 12 сент., 18:06')
-    // Neither the kind nor the text is known: the row says it is some media.
-    expect(text.match(/медиа · 12 сент., 18:06/g)).toHaveLength(2)
-    expect(text).not.toContain('комментарий ·')
-    expect(text).not.toContain('«»')
-  })
-
-  test('names discussions of untitled posts without text by their media, without quotes', async () => {
-    mockReceivedVotes.mockResolvedValueOnce(
-      page(
-        [
-          vote('post', 92, 1, 1, at(16, 10)),
-          vote('post', 92, 2, 1, at(16, 9)),
-          vote('post', 92, 3, 1, at(16, 8)),
-          vote('comment', 901, 4, 1, at(15, 10), 90),
-          vote('comment', 911, 5, 1, at(15, 9), 91),
-        ],
-        {
-          subjects: {
-            posts: { ...page([]).subjects.posts, 92: { id: 92, site: 'main', label: '', media: 'video', rating: 3 } },
-            comments: page([]).subjects.comments,
-          },
-        },
-      ),
-    )
-    await render()
-
-    const title = container.querySelector('article header a')
-    expect(title?.textContent).toBe('Пост с видео')
-    expect(title?.className).toContain('generatedTitle')
+    expect(container.textContent?.match(/медиа · 12 сент., 18:06/g)).toHaveLength(2)
+    expect(container.textContent).not.toContain('«»')
+    const titles = Array.from(container.querySelectorAll('article header a'))
+    expect(titles.map((title) => title.textContent)).toEqual(['Мемы', 'Пост с медиа'])
+    expect(titles[1].className).toContain('generatedTitle')
     const items = Array.from(container.querySelectorAll('.tailItem')).map((item) => item.textContent)
-    expect(items).toEqual(['Пост с картинкой\u00a0+1\u00a0·', 'Пост с медиа\u00a0+1'])
+    expect(items).toEqual(['Пост с медиа\u00a0+1'])
   })
 
   test('keeps the separators of the small-discussions line inside its items', async () => {

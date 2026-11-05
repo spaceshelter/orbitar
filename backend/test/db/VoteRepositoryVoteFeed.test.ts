@@ -123,7 +123,7 @@ describe('VoteRepository vote feed', () => {
     const since = new Date('2026-09-02T00:00:00.000Z')
 
     await repository.getPageReferences(123, 'received', '', undefined, 201, {
-      types: ['comment'],
+      type: 'comment',
       sign: 'minus',
       since,
     })
@@ -232,7 +232,6 @@ describe('VoteRepository vote feed', () => {
     expect(commentSql).toContain(
       'select c.comment_id id, c.post_id postId, s.subdomain site, left(c.html, 4096) html, c.created_at created, c.rating',
     )
-    // Discussion posts come from getReceivedPostSubjects, once per post.
     expect(commentSql).not.toContain('posts p')
     expect(commentSql).not.toContain('c.source')
     expect(commentSql).not.toContain('c.author_id')

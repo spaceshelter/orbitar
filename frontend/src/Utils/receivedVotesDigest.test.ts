@@ -1,11 +1,16 @@
 import { UserVoteFeedEvent } from '../API/UserAPI'
 import {
   buildReceivedDigest,
+  countPeople,
   DigestSection,
   getPeriodOptions,
   getPeriodSince,
   getWiderPeriod,
   limitPeriod,
+  orderVoters,
+  subjectsOf,
+  sumMinus,
+  sumPlus,
 } from './receivedVotesDigest'
 
 // Labels use the moment locale that DateComponent sets up for the app.
@@ -30,21 +35,17 @@ const vote = (
   votedAt,
 })
 
+const sums = (events: UserVoteFeedEvent[]) => [sumPlus(events), sumMinus(events), countPeople(events)]
+
+const rows = (events: UserVoteFeedEvent[]) => subjectsOf(events).map(({ key, events }) => `${key}:${events.length}`)
+
 const summarize = (sections: DigestSection[]) =>
   sections.map((section) => ({
     label: section.label,
-    plus: section.plus,
-    minus: section.minus,
-    people: section.people,
-    cards: section.cards.map((card) => ({
-      postId: card.postId,
-      plus: card.plus,
-      minus: card.minus,
-      people: card.people,
-      subjects: card.subjects.map((subject) => `${subject.type}:${subject.entityId}:${subject.sum}`),
-    })),
-    karma: section.karma && { plus: section.karma.plus, minus: section.karma.minus, voters: section.karma.voters },
-    tail: section.tail.map((item) => ({ postId: item.postId, plus: item.plus, minus: item.minus, count: item.count })),
+    sums: sums(section.events),
+    cards: section.cards.map((card) => ({ postId: card.key, sums: sums(card.events), rows: rows(card.events) })),
+    karma: section.karma.map((event) => event.voterId),
+    tail: section.tail.map((item) => [item.key, ...sums(item.events)]),
   }))
 
 describe('getPeriodSince', () => {
@@ -120,45 +121,20 @@ describe('buildReceivedDigest', () => {
     expect(summarize(buildReceivedDigest(events, { granularity: 'week', since, now }))).toEqual([
       {
         label: '14–16 сентября',
-        plus: 6,
-        minus: -1,
-        people: 5,
+        sums: [6, -1, 5],
         cards: [
-          {
-            postId: 50,
-            plus: 4,
-            minus: 0,
-            people: 3,
-            subjects: ['comment:501:2', 'post:50:1', 'comment:502:1'],
-          },
-          { postId: 60, plus: 0, minus: -1, people: 1, subjects: ['comment:601:-1'] },
+          { postId: 50, sums: [4, 0, 3], rows: ['comment:501:2', 'post:50:1', 'comment:502:1'] },
+          { postId: 60, sums: [0, -1, 1], rows: ['comment:601:1'] },
         ],
-        karma: { plus: 2, minus: 0, voters: [{ voterId: 5, vote: 2 }] },
+        karma: [5],
         tail: [],
       },
-      {
-        label: '7–13 сентября',
-        plus: 2,
-        minus: 0,
-        people: 1,
-        cards: [],
-        karma: undefined,
-        tail: [{ postId: 70, plus: 2, minus: 0, count: 2 }],
-      },
-      {
-        label: '3–6 сентября',
-        plus: 1,
-        minus: 0,
-        people: 1,
-        cards: [],
-        karma: undefined,
-        tail: [{ postId: 80, plus: 1, minus: 0, count: 1 }],
-      },
+      { label: '7–13 сентября', sums: [2, 0, 1], cards: [], karma: [], tail: [[70, 2, 0, 1]] },
+      { label: '3–6 сентября', sums: [1, 0, 1], cards: [], karma: [], tail: [[80, 1, 0, 1]] },
     ])
   })
 
   test('keeps votes on one comment in one row when votes on other subjects interleave', () => {
-    // The shape that made run-based grouping split one comment into four groups.
     const events = [
       vote('comment', 42, 10, 1, at(9, 16, 14), 50),
       vote('post', 99, 11, 1, at(9, 16, 13)),
@@ -169,10 +145,8 @@ describe('buildReceivedDigest', () => {
 
     const [section] = buildReceivedDigest(events, { granularity: 'week', since, now })
 
-    expect(
-      section.cards.map((card) => card.subjects.map((subject) => `${subject.key}:${subject.events.length}`)),
-    ).toEqual([['comment:42:3']])
-    expect(section.tail.map((item) => item.postId)).toEqual([99])
+    expect(section.cards.map((card) => rows(card.events))).toEqual([['comment:42:3']])
+    expect(section.tail.map((item) => item.key)).toEqual([99])
   })
 
   test('lists minus voters first, then the rest from newest to oldest', () => {
@@ -182,13 +156,7 @@ describe('buildReceivedDigest', () => {
       vote('comment', 501, 9, 1, at(9, 14, 10), 50),
     ]
 
-    const [section] = buildReceivedDigest(events, { granularity: 'week', since, now })
-
-    expect(section.cards[0].subjects[0].voters).toEqual([
-      { voterId: 8, vote: -1 },
-      { voterId: 7, vote: 1 },
-      { voterId: 9, vote: 1 },
-    ])
+    expect(orderVoters(events).map((event) => event.voterId)).toEqual([8, 7, 9])
   })
 
   test('labels month sections with the year and a week spanning two months with both', () => {
