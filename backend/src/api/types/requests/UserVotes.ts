@@ -30,7 +30,6 @@ export type ReceivedPostSubject = {
   id: number
   site: string
   label: string
-  rating: number
 }
 
 export type ReceivedCommentSubject = {
@@ -39,7 +38,6 @@ export type ReceivedCommentSubject = {
   site: string
   excerpt: string
   created: string
-  rating: number
 }
 
 type UserVotesResponseBase = {

@@ -69,9 +69,9 @@ describe('UserAPI.userVotes', () => {
   test('receivedVotes sends type, sign and an ISO lower bound and keeps subjects compact', async () => {
     const { api, postAPIHelper, userAPI } = createUserAPI()
     const abortController = new AbortController()
-    const comment = { id: 20, postId: 10, site: 'main', excerpt: '', rating: 5 }
+    const comment = { id: 20, postId: 10, site: 'main', excerpt: '' }
     const subjects = {
-      posts: { 10: { id: 10, site: 'main', label: 'Post 10', rating: 9 } },
+      posts: { 10: { id: 10, site: 'main', label: 'Post 10' } },
       comments: { 20: { ...comment, created: '2026-09-12T16:06:00.000Z' } },
     }
     api.request.mockResolvedValue({

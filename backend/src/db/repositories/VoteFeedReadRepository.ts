@@ -48,7 +48,6 @@ export type ReceivedPostSubjectRaw = {
   site: string
   title: string
   html: string
-  rating: number
 }
 
 export type ReceivedCommentSubjectRaw = {
@@ -57,7 +56,6 @@ export type ReceivedCommentSubjectRaw = {
   site: string
   html: string
   created: Date
-  rating: number
 }
 
 type VoteFeedBranchSpec = {
@@ -230,15 +228,7 @@ export default class VoteFeedReadRepository {
       params.cursor_voter_id = cursor.voterId
     }
 
-    let rows: Array<{
-      type: VoteFeedEntityType
-      entityId: number
-      postId?: number
-      voterId: number
-      targetUserId: number
-      vote: number
-      votedAt: Date | string
-    }>
+    let rows: Array<Omit<VoteFeedReference, 'votedAt'> & { votedAt: Date | string }>
     try {
       rows = await this.db.fetchAll(query, params)
     } catch (error) {
@@ -268,8 +258,7 @@ export default class VoteFeedReadRepository {
     // instead of whole bodies (string-strip-html tolerates a truncated tail).
     return this.db.fetchAll<ReceivedPostSubjectRaw>(
       `select p.post_id id, s.subdomain site, p.title,
-              if(nullif(trim(p.title), '') is null, left(p.html, 4096), '') html,
-              p.rating
+              if(nullif(trim(p.title), '') is null, left(p.html, 4096), '') html
          from posts p
          join sites s on (s.site_id = p.site_id)
         where p.post_id in (:post_ids)`,
@@ -283,7 +272,7 @@ export default class VoteFeedReadRepository {
     }
     // The same bounded prefix as post labels: the html only feeds a ~72-char excerpt.
     return this.db.fetchAll<ReceivedCommentSubjectRaw>(
-      `select c.comment_id id, c.post_id postId, s.subdomain site, left(c.html, 4096) html, c.created_at created, c.rating
+      `select c.comment_id id, c.post_id postId, s.subdomain site, left(c.html, 4096) html, c.created_at created
          from comments c
          join sites s on (s.site_id = c.site_id)
         where c.comment_id in (:comment_ids)

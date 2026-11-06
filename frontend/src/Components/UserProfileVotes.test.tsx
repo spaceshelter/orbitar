@@ -59,10 +59,11 @@ jest.mock('./PostComponent', () => ({
     post: PostInfo
     onChange?: (id: number, post: Partial<PostInfo>, done: boolean) => void
   }) => (
-    <div data-post-id={post.id}>
+    <div data-post-id={post.id} data-rating={post.rating}>
       <button onClick={() => onChange?.(post.id, { rating: post.rating - (post.vote || 0), vote: 0 }, true)}>
         Снять оценку {post.id}
       </button>
+      <button onClick={() => onChange?.(post.id, { rating: post.rating - 2, vote: -1 }, true)}>Минус {post.id}</button>
     </div>
   ),
 }))
@@ -86,26 +87,9 @@ jest.mock('./ReceivedVotesDigest', () => ({
   default: () => <div data-received-digest />,
 }))
 
-jest.mock('./InternalLinkExpandComponent', () => ({
-  __esModule: true,
-  default: ({ postId, commentId }: { postId: number; commentId?: number }) => (
-    <div data-expanded-post={postId} data-expanded-comment={commentId ?? ''}>
-      expanded {commentId ? `comment ${commentId}` : `post ${postId}`}
-    </div>
-  ),
-}))
-jest.mock('./PostLink', () => ({
-  __esModule: true,
-  default: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
-}))
-
 jest.mock('./Username', () => ({
   __esModule: true,
   default: ({ user }: { user: UserInfo }) => <span>{user.username}</span>,
-}))
-
-jest.mock('./DateComponent', () => ({
-  formatRelativeAgeBucket: () => 'недавно',
 }))
 
 type Deferred<T> = {
@@ -132,10 +116,10 @@ const user = (id: number): UserInfo => ({
   karma: 0,
 })
 
-const post = (id: number, targetUserId = 10): PostInfo => ({
+const post = (id: number): PostInfo => ({
   id,
   site: 'main',
-  author: user(targetUserId),
+  author: user(10),
   created: new Date(Date.UTC(2026, 4, 10)),
   content: `post ${id}`,
   rating: 1,
@@ -144,48 +128,28 @@ const post = (id: number, targetUserId = 10): PostInfo => ({
   vote: 1,
 })
 
-const voteEvent = (
-  type: UserVoteFeedEvent['type'],
-  entityId: number,
-  options: Partial<Omit<UserVoteFeedEvent, 'type' | 'entityId'>> = {},
-): UserVoteFeedEvent => ({
-  type,
-  entityId,
-  postId: options.postId,
-  vote: options.vote ?? 1,
-  votedAt: options.votedAt ?? new Date(Date.UTC(2026, 4, 11, 10, 30 - entityId)),
-  voterId: options.voterId ?? 1,
-  targetUserId: options.targetUserId ?? 10,
+const postEvent = (id: number): UserVoteFeedEvent => ({
+  type: 'post',
+  entityId: id,
+  postId: id,
+  vote: 1,
+  votedAt: new Date(Date.UTC(2026, 4, 11, 10, 30 - id)),
+  voterId: 1,
+  targetUserId: 10,
 })
 
-const postEvent = (id: number, targetUserId = 10): UserVoteFeedEvent =>
-  voteEvent('post', id, { postId: id, targetUserId })
-
-const mineVoteResult = (events: UserVoteFeedEvent[], hasMore = false, nextCursor?: string): UserVotesMineResult => {
-  const posts = events.reduce<Record<number, PostInfo>>((result, event) => {
-    if (event.type === 'post') {
-      result[event.entityId] = post(event.entityId, event.targetUserId)
-    }
-    return result
-  }, {})
-
-  return {
-    direction: 'mine',
-    events,
-    users: {
-      1: user(1),
-      10: user(10),
-      20: user(20),
-    },
-    entities: {
-      posts,
-      comments: {},
-      parentComments: {},
-    },
-    hasMore,
-    nextCursor,
-  }
-}
+const mineVoteResult = (events: UserVoteFeedEvent[], hasMore = false, nextCursor?: string): UserVotesMineResult => ({
+  direction: 'mine',
+  events,
+  users: { 1: user(1), 10: user(10) },
+  entities: {
+    posts: Object.fromEntries(events.map((event) => [event.entityId, post(event.entityId)])),
+    comments: {},
+    parentComments: {},
+  },
+  hasMore,
+  nextCursor,
+})
 
 describe('UserProfileVotes request state', () => {
   let container: HTMLDivElement
@@ -271,7 +235,7 @@ describe('UserProfileVotes request state', () => {
     mockUserVotes
       .mockResolvedValueOnce(mineVoteResult([postEvent(1)], true, 'old-cursor'))
       .mockReturnValueOnce(stalePage.promise)
-      .mockResolvedValueOnce(mineVoteResult([postEvent(10, 20)], true, 'new-cursor'))
+      .mockResolvedValueOnce(mineVoteResult([postEvent(10)], true, 'new-cursor'))
 
     await renderVotes()
     clickButton('Показать ещё')
@@ -387,5 +351,15 @@ describe('UserProfileVotes request state', () => {
 
     expect(renderedPostIds()).toEqual([2])
     expect(container.textContent).not.toContain('2 оценки')
+  })
+
+  test('keeps a changed vote in place with the new rating', async () => {
+    mockUserVotes.mockResolvedValueOnce(mineVoteResult([postEvent(1), postEvent(2)]))
+
+    await renderVotes()
+    clickButton('Минус 1')
+
+    expect(renderedPostIds()).toEqual([1, 2])
+    expect(container.querySelector('[data-post-id="1"]')?.getAttribute('data-rating')).toBe('-1')
   })
 })

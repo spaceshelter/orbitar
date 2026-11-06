@@ -103,7 +103,6 @@ const comment = (id: number, postId: number, excerpt: string): ReceivedCommentSu
   site: 'main',
   excerpt,
   created: new Date(2026, 8, 12, 18, 6),
-  rating: 1,
 })
 
 const page = (
@@ -115,13 +114,13 @@ const page = (
   users: Object.fromEntries(events.map((event) => [event.voterId, user(event.voterId)])),
   subjects: {
     posts: {
-      50: { id: 50, site: 'main', label: 'Селфи-тайм 2', rating: 10 },
-      51: { id: 51, site: 'main', label: 'Мемы', rating: 3 },
-      60: { id: 60, site: 'dev', label: 'Про миграции', rating: 2 },
-      70: { id: 70, site: 'main', label: 'Мелкий пост', rating: 1 },
-      80: { id: 80, site: 'main', label: 'Ещё один небольшой разговор', rating: 1 },
-      90: { id: 90, site: 'main', label: '', rating: 1 },
-      91: { id: 91, site: 'main', label: '', rating: 1 },
+      50: { id: 50, site: 'main', label: 'Селфи-тайм 2' },
+      51: { id: 51, site: 'main', label: 'Мемы' },
+      60: { id: 60, site: 'dev', label: 'Про миграции' },
+      70: { id: 70, site: 'main', label: 'Мелкий пост' },
+      80: { id: 80, site: 'main', label: 'Ещё один небольшой разговор' },
+      90: { id: 90, site: 'main', label: '' },
+      91: { id: 91, site: 'main', label: '' },
     },
     comments: {
       501: comment(501, 50, 'Уйдите в другие посты'),

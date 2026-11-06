@@ -213,9 +213,9 @@ describe('VoteRepository vote feed', () => {
     const db = {
       fetchAll: jest.fn((query: string) => {
         if (query.includes('from posts p')) {
-          return Promise.resolve([{ id: 10, site: 'main', title: 'Post', html: '<p>Post</p>', rating: 5 }])
+          return Promise.resolve([{ id: 10, site: 'main', title: 'Post', html: '<p>Post</p>' }])
         }
-        return Promise.resolve([{ id: 20, postId: 10, site: 'main', postTitle: 'Post', rating: 3 }])
+        return Promise.resolve([{ id: 20, postId: 10, site: 'main', html: '<p>Comment</p>' }])
       }),
     }
     const repository = new VoteFeedReadRepository(db as any)
@@ -226,11 +226,12 @@ describe('VoteRepository vote feed', () => {
     const postSql = normalize(db.fetchAll.mock.calls[0][0])
     expect(postSql).toContain("if(nullif(trim(p.title), '') is null, left(p.html, 4096), '') html")
     expect(postSql).not.toContain('p.source')
+    expect(postSql).not.toContain('rating')
     expect(postSql).not.toContain('p.author_id')
 
     const commentSql = normalize(db.fetchAll.mock.calls[1][0])
     expect(commentSql).toContain(
-      'select c.comment_id id, c.post_id postId, s.subdomain site, left(c.html, 4096) html, c.created_at created, c.rating',
+      'select c.comment_id id, c.post_id postId, s.subdomain site, left(c.html, 4096) html, c.created_at created from',
     )
     expect(commentSql).not.toContain('posts p')
     expect(commentSql).not.toContain('c.source')

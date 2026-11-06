@@ -17,25 +17,11 @@
   padding-bottom: 9px;
 }
 
-.groupTitle {
-  align-items: baseline;
-  display: flex;
-  flex: 1 1 auto;
-  flex-wrap: wrap;
-  gap: 4px;
-  min-width: 0;
-}
-
 .groupCount {
   color: var(--fgSoftest);
   flex: 0 0 auto;
   font-size: 12px;
   white-space: nowrap;
-}
-
-.events {
-  display: flex;
-  flex-direction: column;
 }
 
 .event {
@@ -66,7 +52,6 @@
 }
 
 .empty {
-  color: var(--fg-light-color);
   padding: 24px 0;
 }
 
@@ -84,7 +69,6 @@
   }
 }
 
-// Visually hidden but exposed to assistive tech (the standard clip pattern).
 .srOnly {
   border: 0;
   clip: rect(0 0 0 0);

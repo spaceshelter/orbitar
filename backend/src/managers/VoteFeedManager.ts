@@ -175,20 +175,8 @@ export default class VoteFeedManager {
       ...comments.map((comment) => comment.author),
       ...parentComments.map((comment) => comment.author),
     ])
-    const events = this.filterExistingEvents(
-      refs,
-      (ref) => {
-        if (ref.type === 'post') {
-          return !!postsById[ref.entityId]
-        }
-        if (ref.type === 'comment') {
-          return !!commentsById[ref.entityId]
-        }
-        return !!users[ref.entityId]
-      },
-      forUserId,
-      'mine',
-    )
+    const loaded = { post: postsById, comment: commentsById, user: users }
+    const events = this.filterExistingEvents(refs, loaded, forUserId, 'mine')
 
     return {
       direction: 'mine',
@@ -220,13 +208,7 @@ export default class VoteFeedManager {
     const posts: Record<number, ReceivedPostSubject> = {}
     for (const row of postRows) {
       const id = Number(row.id)
-      const label = truncateLabel(row.title?.trim() || toPlainText(row.html))
-      posts[id] = {
-        id,
-        site: row.site,
-        label,
-        rating: Number(row.rating),
-      }
+      posts[id] = { id, site: row.site, label: truncateLabel(row.title?.trim() || toPlainText(row.html)) }
     }
     const comments: Record<number, ReceivedCommentSubject> = {}
     for (const row of commentRows) {
@@ -237,24 +219,11 @@ export default class VoteFeedManager {
         site: row.site,
         excerpt: truncateLabel(toPlainText(row.html)),
         created: new Date(row.created).toISOString(),
-        rating: Number(row.rating),
       }
     }
 
-    const events = this.filterExistingEvents(
-      refs,
-      (ref) => {
-        if (ref.type === 'post') {
-          return !!posts[ref.entityId]
-        }
-        if (ref.type === 'comment') {
-          return !!comments[ref.entityId]
-        }
-        return !!users[ref.entityId]
-      },
-      forUserId,
-      'received',
-    )
+    const loaded = { post: posts, comment: comments, user: users }
+    const events = this.filterExistingEvents(refs, loaded, forUserId, 'received')
 
     return {
       direction: 'received',
@@ -295,13 +264,13 @@ export default class VoteFeedManager {
 
   private filterExistingEvents(
     refs: VoteFeedReference[],
-    exists: (ref: VoteFeedReference) => boolean,
+    loaded: Record<VoteFeedReference['type'], Record<number, unknown>>,
     forUserId: number,
     direction: VoteFeedDirection,
   ): UserVoteFeedEventRef[] {
     const events: UserVoteFeedEventRef[] = []
     for (const ref of refs) {
-      if (exists(ref)) {
+      if (loaded[ref.type][ref.entityId]) {
         events.push(toEventRef(ref))
       } else {
         this.logger.warn('Dropped vote feed event with missing entity', {

@@ -296,7 +296,7 @@ describe('VoteFeedManager.getVoteFeed', () => {
     const { manager, voteFeedReadRepository, postManager, userManager } = createManager({
       voteFeedReadRepository: {
         getPageReferences: jest.fn().mockResolvedValue(refs),
-        getReceivedPostSubjects: jest.fn().mockResolvedValue([{ id: 10, site: 'main', title: '', html, rating: 9 }]),
+        getReceivedPostSubjects: jest.fn().mockResolvedValue([{ id: 10, site: 'main', title: '', html }]),
       },
     })
 
@@ -312,7 +312,6 @@ describe('VoteFeedManager.getVoteFeed', () => {
       id: 10,
       site: 'main',
       label: expect.stringMatching(/^heavy/),
-      rating: 9,
     })
     expect([...result.subjects.posts[10].label]).toHaveLength(72)
     expect(result.subjects.posts[10].label).toMatch(/heavy…$/)
@@ -335,7 +334,6 @@ describe('VoteFeedManager.getVoteFeed', () => {
             site: 'main',
             html: '<p>Хорошее <b>уточнение</b>,\n   спасибо.</p>',
             created: new Date('2026-05-01T10:00:00.000Z'),
-            rating: 2,
           },
         ]),
       },
@@ -354,7 +352,6 @@ describe('VoteFeedManager.getVoteFeed', () => {
       site: 'main',
       excerpt: 'Хорошее уточнение, спасибо.',
       created: '2026-05-01T10:00:00.000Z',
-      rating: 2,
     })
   })
 
@@ -371,14 +368,13 @@ describe('VoteFeedManager.getVoteFeed', () => {
       site: 'main',
       html: '<p>Ответ</p>',
       created: new Date('2026-05-01T10:00:00.000Z'),
-      rating: 1,
     })
     const { manager, voteFeedReadRepository } = createManager({
       voteFeedReadRepository: {
         getPageReferences: jest.fn().mockResolvedValue(refs),
         getReceivedPostSubjects: jest.fn().mockResolvedValue([
-          { id: 10, site: 'main', title: 'Voted post', html: '', rating: 9 },
-          { id: 77, site: 'main', title: ' ', html: '<p>Кто-нибудь знает, <b>где</b> купить сыр?</p>', rating: 4 },
+          { id: 10, site: 'main', title: 'Voted post', html: '' },
+          { id: 77, site: 'main', title: ' ', html: '<p>Кто-нибудь знает, <b>где</b> купить сыр?</p>' },
         ]),
         getReceivedCommentSubjects: jest.fn().mockResolvedValue([comment(55, 77), comment(56, 77), comment(57, 10)]),
       },
@@ -397,7 +393,6 @@ describe('VoteFeedManager.getVoteFeed', () => {
       id: 77,
       site: 'main',
       label: 'Кто-нибудь знает, где купить сыр?',
-      rating: 4,
     })
   })
 
@@ -414,7 +409,6 @@ describe('VoteFeedManager.getVoteFeed', () => {
             site: 'main',
             html: `<p>${longText}</p>`,
             created: new Date('2026-05-01T10:00:00.000Z'),
-            rating: 1,
           },
         ]),
       },

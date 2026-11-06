@@ -6,7 +6,6 @@ import Button from '@ui/Button'
 import { useVoteFeedPages } from '../API/use/useVoteFeedPages'
 import { getVoteEventKey, UserVoteFeedEvent } from '../API/UserAPI'
 import { useAPI, useAppState } from '../AppState/AppState'
-import { CommentInfo, PostInfo } from '../Types/PostInfo'
 import { pluralize } from '../Utils/utils'
 import { groupVoteFeedEvents } from '../Utils/voteFeedGroups'
 import CommentComponent from './CommentComponent'
@@ -34,12 +33,11 @@ function MineVotesFeed() {
   )
 
   const fetchPage = useCallback(
-    (cursor: string | undefined, signal: AbortSignal) => api.userAPI.userVotes(filter || '', cursor, perpage, signal),
+    (cursor: string | undefined, signal: AbortSignal) => api.userAPI.userVotes(filter, cursor, perpage, signal),
     [api.userAPI, filter],
   )
-  // Previous results stay on screen while only the filter changes: at a 500ms query
-  // budget a too-heavy filter is a normal outcome, and wiping the feed before every
-  // keystroke's request would flash it away.
+  // Results stay while only the filter changes: at a 500ms query budget a too-heavy filter is a normal
+  // outcome, and wiping the feed before every keystroke's request would flash it away.
   const { feed, setFeed, loading, loadingMore, error, loadMoreError, loadMore } = useVoteFeedPages(fetchPage, {
     tables: 'entities',
     timeoutError: 'Фильтр оказался слишком тяжёлым и не уложился в лимит времени — уточните запрос.',
@@ -50,120 +48,56 @@ function MineVotesFeed() {
 
   const groups = useMemo(() => groupVoteFeedEvents(events || []), [events])
 
-  const updateVoteEvent = (event: UserVoteFeedEvent, rating: number, vote?: number) => {
+  const updateVoteEvent = (event: UserVoteFeedEvent, rating: number, vote = 0) => {
     const key = getVoteEventKey(event)
-    const nextVote = vote ?? 0
-    setFeed((currentFeed) => {
-      if (!currentFeed) {
-        return currentFeed
-      }
-
-      if (nextVote === 0) {
-        return {
-          ...currentFeed,
-          events: currentFeed.events.filter((currentEvent) => getVoteEventKey(currentEvent) !== key),
-        }
-      }
-
-      const updatedEvents = currentFeed.events.map((currentEvent) => {
-        if (getVoteEventKey(currentEvent) !== key) {
-          return currentEvent
-        }
-
-        return {
-          ...currentEvent,
-          vote: nextVote,
-        }
-      })
-
-      if (event.type === 'user') {
-        return {
-          ...currentFeed,
-          events: updatedEvents,
-          users: updateRecord(currentFeed.users, event.entityId, { karma: rating, vote: nextVote }),
-        }
-      }
-
-      if (event.type === 'post') {
-        return {
-          ...currentFeed,
-          events: updatedEvents,
-          entities: {
-            ...currentFeed.entities,
-            posts: updateRecord(currentFeed.entities.posts, event.entityId, { rating, vote: nextVote }),
-          },
-        }
-      }
-
+    const id = event.entityId
+    setFeed((current) => {
+      if (!current) return current
+      if (!vote) return { ...current, events: current.events.filter((item) => getVoteEventKey(item) !== key) }
+      const { users, entities } = current
       return {
-        ...currentFeed,
-        events: updatedEvents,
+        ...current,
+        events: current.events.map((item) => (getVoteEventKey(item) === key ? { ...item, vote } : item)),
+        users: event.type === 'user' ? updateRecord(users, id, { karma: rating, vote }) : users,
         entities: {
-          ...currentFeed.entities,
-          comments: updateRecord(currentFeed.entities.comments, event.entityId, { rating, vote: nextVote }),
+          ...entities,
+          posts: event.type === 'post' ? updateRecord(entities.posts, id, { rating, vote }) : entities.posts,
+          comments:
+            event.type === 'comment' ? updateRecord(entities.comments, id, { rating, vote }) : entities.comments,
         },
       }
     })
   }
 
-  const renderPost = (event: UserVoteFeedEvent) => {
-    if (event.type !== 'post' || !feed) {
-      return null
-    }
-    const post = feed.entities.posts[event.entityId]
-    if (!post) {
-      return null
-    }
-    const handleChange = (_id: number, changes: Partial<PostInfo>, postApiCall?: boolean) => {
-      if (postApiCall) {
-        updateVoteEvent(event, changes.rating ?? post.rating, changes.vote)
-      }
-    }
+  const renderEvent = (event: UserVoteFeedEvent) => {
+    if (!feed) return null
+    // A vote is reported twice, optimistically and then confirmed; the feed follows the confirmed one.
+    const onEntityVote =
+      (rating: number) => (_id: number, changes: { rating?: number; vote?: number }, postApiCall?: boolean) =>
+        postApiCall && updateVoteEvent(event, changes.rating ?? rating, changes.vote)
 
-    return <PostComponent post={post} showSite={true} onChange={handleChange} autoCut={LARGE_AUTO_CUT} />
-  }
-
-  const renderComment = (event: UserVoteFeedEvent) => {
-    if (event.type !== 'comment' || !feed) {
-      return null
+    if (event.type === 'post') {
+      const post = feed.entities.posts[event.entityId]
+      if (!post) return null
+      return <PostComponent post={post} showSite={true} onChange={onEntityVote(post.rating)} autoCut={LARGE_AUTO_CUT} />
     }
-    const comment = feed.entities.comments[event.entityId]
-    if (!comment) {
-      return null
-    }
-    const parentComment = comment.parentComment ? feed.entities.parentComments[comment.parentComment] : undefined
-    const handleVote = (_id: number, changes: Partial<CommentInfo>, postApiCall?: boolean) => {
-      if (postApiCall) {
-        updateVoteEvent(event, changes.rating ?? comment.rating, changes.vote)
-      }
-    }
-
-    return (
-      <CommentComponent
-        idx={parentComment ? 1 : 0}
-        parent={parentComment}
-        currentUsername={userInfo?.username}
-        comment={comment}
-        showSite={comment.site !== 'main'}
-        onVote={handleVote}
-      />
-    )
-  }
-
-  const renderUser = (event: UserVoteFeedEvent) => {
-    if (event.type !== 'user' || !feed) {
-      return null
+    if (event.type === 'comment') {
+      const comment = feed.entities.comments[event.entityId]
+      if (!comment) return null
+      const parent = comment.parentComment ? feed.entities.parentComments[comment.parentComment] : undefined
+      return (
+        <CommentComponent
+          idx={parent ? 1 : 0}
+          parent={parent}
+          currentUsername={userInfo?.username}
+          comment={comment}
+          showSite={comment.site !== 'main'}
+          onVote={onEntityVote(comment.rating)}
+        />
+      )
     }
     const user = feed.users[event.entityId]
-    if (!user) {
-      return null
-    }
-    const handleVote = (karma: number, vote?: number, postApiCall?: boolean) => {
-      if (postApiCall) {
-        updateVoteEvent(event, karma, vote)
-      }
-    }
-
+    if (!user) return null
     return (
       <div className={styles.userEvent}>
         <div className={styles.userInfo}>
@@ -175,20 +109,10 @@ function MineVotesFeed() {
           id={user.id}
           double={true}
           rating={{ vote: event.vote, value: user.karma }}
-          onVote={handleVote}
+          onVote={(karma, vote, postApiCall) => postApiCall && updateVoteEvent(event, karma, vote)}
         />
       </div>
     )
-  }
-
-  const renderEvent = (event: UserVoteFeedEvent) => {
-    if (event.type === 'post') {
-      return renderPost(event)
-    }
-    if (event.type === 'comment') {
-      return renderComment(event)
-    }
-    return renderUser(event)
   }
 
   return (
@@ -233,19 +157,17 @@ function MineVotesFeed() {
                   <section key={getVoteEventKey(group[0])}>
                     {group.length > 1 && (
                       <div className={styles.groupHeader}>
-                        <span className={styles.groupTitle}>Оценки в одном обсуждении</span>
+                        <span>Оценки в одном обсуждении</span>
                         <span className={styles.groupCount}>
                           {pluralize(group.length, ['оценка', 'оценки', 'оценок'])}
                         </span>
                       </div>
                     )}
-                    <div className={styles.events}>
-                      {group.map((event) => (
-                        <div className={styles.event} key={getVoteEventKey(event)}>
-                          {renderEvent(event)}
-                        </div>
-                      ))}
-                    </div>
+                    {group.map((event) => (
+                      <div className={styles.event} key={getVoteEventKey(event)}>
+                        {renderEvent(event)}
+                      </div>
+                    ))}
                   </section>
                 ))}
               </div>

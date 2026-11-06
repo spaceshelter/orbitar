@@ -67,10 +67,8 @@ type UserProfileCommentsResult = {
   total: number
 }
 
-export type UserVotesDirection = 'mine' | 'received'
-
 type UserVotesRequest = {
-  direction: UserVotesDirection
+  direction: 'mine' | 'received'
   filter?: string
   cursor?: string
   perpage?: number
@@ -81,7 +79,7 @@ type UserVotesRequest = {
 
 export type ReceivedVoteType = 'post' | 'comment' | 'user'
 
-export type ReceivedVotesQuery = Pick<UserVotesRequest, 'type' | 'sign' | 'cursor'> & { since?: Date; perpage: number }
+type ReceivedVotesQuery = Pick<UserVotesRequest, 'type' | 'sign' | 'cursor'> & { since?: Date; perpage: number }
 
 type UserVoteFeedEventEntity<VotedAt> = {
   type: 'post' | 'comment' | 'user'
@@ -100,7 +98,6 @@ export type ReceivedPostSubject = {
   id: number
   site: string
   label: string
-  rating: number
 }
 
 type ReceivedCommentSubjectEntity = {
@@ -109,7 +106,6 @@ type ReceivedCommentSubjectEntity = {
   site: string
   excerpt: string
   created: string
-  rating: number
 }
 
 export type ReceivedCommentSubject = Omit<ReceivedCommentSubjectEntity, 'created'> & { created: Date }
