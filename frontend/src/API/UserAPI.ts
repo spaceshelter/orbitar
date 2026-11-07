@@ -67,14 +67,19 @@ type UserProfileCommentsResult = {
   total: number
 }
 
-export type UserVotesDirection = 'mine' | 'received'
-
 type UserVotesRequest = {
-  direction: UserVotesDirection
+  direction: 'mine' | 'received'
   filter?: string
   cursor?: string
   perpage?: number
+  type?: ReceivedVoteType
+  sign?: 'minus'
+  since?: string
 }
+
+export type ReceivedVoteType = 'post' | 'comment' | 'user'
+
+type ReceivedVotesQuery = Pick<UserVotesRequest, 'type' | 'sign' | 'cursor'> & { since?: Date; perpage: number }
 
 type UserVoteFeedEventEntity<VotedAt> = {
   type: 'post' | 'comment' | 'user'
@@ -88,20 +93,22 @@ type UserVoteFeedEventEntity<VotedAt> = {
 
 type UserVoteFeedEventRefEntity = UserVoteFeedEventEntity<string>
 
+// A voted post or the post of a voted comment.
 export type ReceivedPostSubject = {
   id: number
   site: string
   label: string
-  rating: number
 }
 
-export type ReceivedCommentSubject = {
+type ReceivedCommentSubjectEntity = {
   id: number
   postId: number
   site: string
-  postTitle?: string
-  rating: number
+  excerpt: string
+  created: string
 }
+
+export type ReceivedCommentSubject = Omit<ReceivedCommentSubjectEntity, 'created'> & { created: Date }
 
 type UserVotesResponseBase = {
   events: UserVoteFeedEventRefEntity[]
@@ -123,7 +130,7 @@ type UserVotesReceivedResponse = UserVotesResponseBase & {
   direction: 'received'
   subjects: {
     posts: Record<number, ReceivedPostSubject>
-    comments: Record<number, ReceivedCommentSubject>
+    comments: Record<number, ReceivedCommentSubjectEntity>
   }
 }
 
@@ -131,7 +138,9 @@ type UserVotesResponse = UserVotesMineResponse | UserVotesReceivedResponse
 
 export type UserVoteFeedEvent = UserVoteFeedEventEntity<Date>
 
-type UserVotesResultBase = {
+export const getVoteEventKey = (event: UserVoteFeedEvent) => `${event.type}:${event.entityId}:${event.voterId}`
+
+export type UserVotesResultBase = {
   events: UserVoteFeedEvent[]
   users: Record<number, UserInfo>
   hasMore: boolean
@@ -154,8 +163,6 @@ export type UserVotesReceivedResult = UserVotesResultBase & {
     comments: Record<number, ReceivedCommentSubject>
   }
 }
-
-export type UserVotesResult = UserVotesMineResult | UserVotesReceivedResult
 
 export type TrialProgressDebugInfo = {
   effectiveKarmaPart: number
@@ -253,57 +260,52 @@ export default class UserAPI {
     return await this.api.request<{ username: string }, UserKarmaResponse>('/user/karma', { username })
   }
 
+  private async voteFeedPage<R extends UserVotesResponse>(request: UserVotesRequest, signal?: AbortSignal) {
+    const result = await this.api.request<UserVotesRequest, R>('/user/votes', request, undefined, signal)
+    return {
+      ...result,
+      events: result.events.map((event) => ({ ...event, votedAt: this.api.fixDate(new Date(event.votedAt)) })),
+    }
+  }
+
   async userVotes(
-    direction: UserVotesDirection,
     filter: string,
     cursor: string | undefined,
     perpage: number,
     signal?: AbortSignal,
-  ): Promise<UserVotesResult> {
-    const result = await this.api.request<UserVotesRequest, UserVotesResponse>(
-      '/user/votes',
-      {
-        direction,
-        cursor,
-        perpage,
-        filter,
-      },
-      undefined,
+  ): Promise<UserVotesMineResult> {
+    const result = await this.voteFeedPage<UserVotesMineResponse>(
+      { direction: 'mine', cursor, perpage, filter },
       signal,
     )
-
-    const base = {
-      events: result.events.map((event) => ({
-        ...event,
-        votedAt: this.api.fixDate(new Date(event.votedAt)),
-      })),
-      users: result.users,
-      hasMore: result.hasMore,
-      nextCursor: result.nextCursor,
-    }
-
-    if (result.direction === 'received') {
-      return {
-        ...base,
-        direction: 'received',
-        subjects: result.subjects,
-      }
-    }
-
     const posts: Record<number, PostInfo> = {}
     this.postAPIHelper.fixPosts(Object.values(result.entities.posts), result.users).forEach((post) => {
       posts[post.id] = post
     })
 
     return {
-      ...base,
-      direction: 'mine',
+      ...result,
       entities: {
         posts,
         comments: this.postAPIHelper.fixCommentsRecords(result.entities.comments, result.users),
         parentComments: this.postAPIHelper.fixCommentsRecords(result.entities.parentComments, result.users),
       },
     }
+  }
+
+  async receivedVotes(
+    { type, sign, since, cursor, perpage }: ReceivedVotesQuery,
+    signal?: AbortSignal,
+  ): Promise<UserVotesReceivedResult> {
+    const result = await this.voteFeedPage<UserVotesReceivedResponse>(
+      { direction: 'received', type, sign, since: since?.toISOString(), cursor, perpage },
+      signal,
+    )
+    const comments: Record<number, ReceivedCommentSubject> = {}
+    Object.values(result.subjects.comments).forEach((comment) => {
+      comments[comment.id] = { ...comment, created: this.api.fixDate(new Date(comment.created)) }
+    })
+    return { ...result, subjects: { ...result.subjects, comments } }
   }
 
   userRestrictions(username: string): Promise<UserRestrictionsResponse> {

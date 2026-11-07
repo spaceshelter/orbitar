@@ -28,6 +28,12 @@ export type VoteFeedReference = {
   votedAt: Date
 }
 
+export type VoteFeedFilterOptions = {
+  type?: VoteFeedEntityType
+  sign?: 'minus'
+  since?: Date
+}
+
 // Keyset cursor: position of the last seen event in the
 // (votedAt, type, entityId, voterId) descending order.
 export type VoteFeedCursor = {
@@ -42,15 +48,14 @@ export type ReceivedPostSubjectRaw = {
   site: string
   title: string
   html: string
-  rating: number
 }
 
 export type ReceivedCommentSubjectRaw = {
   id: number
   postId: number
   site: string
-  postTitle: string
-  rating: number
+  html: string
+  created: Date
 }
 
 type VoteFeedBranchSpec = {
@@ -156,13 +161,17 @@ export default class VoteFeedReadRepository {
     spec: VoteFeedBranchSpec,
     direction: VoteFeedDirection,
     filter: string,
-    cursor?: VoteFeedCursor,
+    cursor: VoteFeedCursor | undefined,
+    options: VoteFeedFilterOptions,
   ): string {
     const filterJoins = filter
       ? `${spec.filterJoins} join users fu on (fu.user_id = ${spec.filterUserColumn[direction]})`
       : ''
     const entityFilter = spec.filterEntityCondition ? `${spec.filterEntityCondition} or ` : ''
     const filterCondition = filter ? `and (${entityFilter}fu.username like :filter or fu.name like :filter)` : ''
+    const voteCondition = options.sign === 'minus' ? `${spec.alias}.vote < 0` : `${spec.alias}.vote != 0`
+    // A range on the feed index's second column: the scan stops at the window start.
+    const sinceCondition = options.since ? `and ${spec.alias}.voted_at >= :since` : ''
 
     // Driving each branch from its feed index lets MySQL 5.7 stop at the
     // branch limit instead of scanning and sorting the user's vote history.
@@ -172,7 +181,8 @@ export default class VoteFeedReadRepository {
               ${spec.joins}
               ${filterJoins}
         where ${spec.whereColumn[direction]} = :user_id
-          and ${spec.alias}.vote != 0
+          and ${voteCondition}
+          ${sinceCondition}
           ${spec.extraConditions}
           ${filterCondition}
           ${this.buildCursorCondition(spec, cursor)}
@@ -186,11 +196,14 @@ export default class VoteFeedReadRepository {
     filter: string,
     cursor: VoteFeedCursor | undefined,
     limit: number,
+    options: VoteFeedFilterOptions = {},
   ): Promise<VoteFeedReference[]> {
-    const union = VOTE_FEED_BRANCHES.map((spec) => this.buildBranch(spec, direction, filter, cursor)).join(
-      '\nunion all\n',
-    )
-    const timeoutHint = filter ? `/*+ MAX_EXECUTION_TIME(${FILTER_MAX_EXECUTION_TIME_MS}) */ ` : ''
+    const union = VOTE_FEED_BRANCHES.filter((spec) => !options.type || spec.type === options.type)
+      .map((spec) => this.buildBranch(spec, direction, filter, cursor, options))
+      .join('\nunion all\n')
+    // `vote` is not in the feed index and ~1% of votes are minuses: a minus-only page can scan far back.
+    const guarded = !!filter || options.sign === 'minus'
+    const timeoutHint = guarded ? `/*+ MAX_EXECUTION_TIME(${FILTER_MAX_EXECUTION_TIME_MS}) */ ` : ''
     const query = `
       select ${timeoutHint}type, entityId, postId, voterId, targetUserId, vote, votedAt
         from (${union}) votes
@@ -206,25 +219,20 @@ export default class VoteFeedReadRepository {
     if (filter) {
       params.filter = `%${escapeLike(filter)}%`
     }
+    if (options.since) {
+      params.since = options.since
+    }
     if (cursor) {
       params.cursor_voted_at = cursor.votedAt
       params.cursor_entity_id = cursor.entityId
       params.cursor_voter_id = cursor.voterId
     }
 
-    let rows: Array<{
-      type: VoteFeedEntityType
-      entityId: number
-      postId?: number
-      voterId: number
-      targetUserId: number
-      vote: number
-      votedAt: Date | string
-    }>
+    let rows: Array<Omit<VoteFeedReference, 'votedAt'> & { votedAt: Date | string }>
     try {
       rows = await this.db.fetchAll(query, params)
     } catch (error) {
-      if (filter && (error as { errno?: number }).errno === ER_QUERY_TIMEOUT) {
+      if (guarded && (error as { errno?: number }).errno === ER_QUERY_TIMEOUT) {
         throw new VoteFeedFilterTimeoutError()
       }
       throw error
@@ -250,8 +258,7 @@ export default class VoteFeedReadRepository {
     // instead of whole bodies (string-strip-html tolerates a truncated tail).
     return this.db.fetchAll<ReceivedPostSubjectRaw>(
       `select p.post_id id, s.subdomain site, p.title,
-              if(nullif(trim(p.title), '') is null, left(p.html, 4096), '') html,
-              p.rating
+              if(nullif(trim(p.title), '') is null, left(p.html, 4096), '') html
          from posts p
          join sites s on (s.site_id = p.site_id)
         where p.post_id in (:post_ids)`,
@@ -263,10 +270,10 @@ export default class VoteFeedReadRepository {
     if (!commentIds.length) {
       return []
     }
+    // The same bounded prefix as post labels: the html only feeds a ~72-char excerpt.
     return this.db.fetchAll<ReceivedCommentSubjectRaw>(
-      `select c.comment_id id, c.post_id postId, s.subdomain site, p.title postTitle, c.rating
+      `select c.comment_id id, c.post_id postId, s.subdomain site, left(c.html, 4096) html, c.created_at created
          from comments c
-         join posts p on (p.post_id = c.post_id)
          join sites s on (s.site_id = c.site_id)
         where c.comment_id in (:comment_ids)
           and c.deleted = 0`,

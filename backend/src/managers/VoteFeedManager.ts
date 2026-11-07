@@ -12,6 +12,7 @@ import { toCommentEntity, toPostEntity, toUserEntity } from '../api/utils/entiti
 import VoteFeedReadRepository, {
   VoteFeedCursor,
   VoteFeedDirection,
+  VoteFeedFilterOptions,
   VoteFeedReference,
 } from '../db/repositories/VoteFeedReadRepository'
 import PostManager from './PostManager'
@@ -23,12 +24,33 @@ export class InvalidVoteFeedCursorError extends Error {
   }
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000
+// «За месяц», the widest minus-only period, is 30 local days; one more day absorbs time zones and DST.
+const MINUS_ONLY_WINDOW_DAYS = 31
+
+export class InvalidVoteFeedWindowError extends Error {
+  constructor() {
+    super(`Minus-only pages need since within the last ${MINUS_ONLY_WINDOW_DAYS} days`)
+  }
+}
+
 const VOTE_FEED_ENTITY_TYPES = ['post', 'comment', 'user']
 
-// Server-side cap keeps received payloads compact; the frontend applies the same
-// visual budget in getCompactText. Sliced over code points so a surrogate pair
-// (emoji) on the boundary is not cut in half.
+// Server-side cap keeps received payloads compact. Sliced over code points so a
+// surrogate pair (emoji) on the boundary is not cut in half.
 const RECEIVED_LABEL_MAX_CHARS = 72
+
+const toPlainText = (html: string) =>
+  stripHtml(html || '')
+    .result.replace(/\s+/g, ' ')
+    .trim()
+
+const truncateLabel = (text: string) => {
+  const characters = [...text]
+  return characters.length <= RECEIVED_LABEL_MAX_CHARS
+    ? text
+    : `${characters.slice(0, RECEIVED_LABEL_MAX_CHARS).join('').trimEnd()}…`
+}
 
 export const encodeVoteFeedCursor = (ref: VoteFeedReference): string =>
   Buffer.from(
@@ -102,7 +124,15 @@ export default class VoteFeedManager {
     filter: string,
     cursor: string | undefined,
     perpage: number,
+    options: VoteFeedFilterOptions = {},
   ): Promise<UserVotesResponse> {
+    // A minus-only page scans every vote in its window, so the window stays within a month.
+    if (
+      options.sign === 'minus' &&
+      (!options.since || Date.now() - options.since.getTime() > MINUS_ONLY_WINDOW_DAYS * DAY_MS)
+    ) {
+      throw new InvalidVoteFeedWindowError()
+    }
     const decodedCursor = cursor ? decodeVoteFeedCursor(cursor) : undefined
     const refs = await this.voteFeedReadRepository.getPageReferences(
       forUserId,
@@ -110,6 +140,7 @@ export default class VoteFeedManager {
       filter,
       decodedCursor,
       perpage + 1,
+      options,
     )
     const hasMore = refs.length > perpage
     const pageRefs = hasMore ? refs.slice(0, perpage) : refs
@@ -144,20 +175,8 @@ export default class VoteFeedManager {
       ...comments.map((comment) => comment.author),
       ...parentComments.map((comment) => comment.author),
     ])
-    const events = this.filterExistingEvents(
-      refs,
-      (ref) => {
-        if (ref.type === 'post') {
-          return !!postsById[ref.entityId]
-        }
-        if (ref.type === 'comment') {
-          return !!commentsById[ref.entityId]
-        }
-        return !!users[ref.entityId]
-      },
-      forUserId,
-      'mine',
-    )
+    const loaded = { post: postsById, comment: commentsById, user: users }
+    const events = this.filterExistingEvents(refs, loaded, forUserId, 'mine')
 
     return {
       direction: 'mine',
@@ -180,54 +199,31 @@ export default class VoteFeedManager {
     nextCursor: string | undefined,
   ): Promise<UserVotesResponse> {
     // loadUsers only needs the refs, so it can ride the same wave as the subjects.
+    const postIds = [...new Set(refs.flatMap((ref) => (ref.postId ? [Number(ref.postId)] : [])))]
     const [postRows, commentRows, users] = await Promise.all([
-      this.voteFeedReadRepository.getReceivedPostSubjects(this.entityIds(refs, 'post')),
+      this.voteFeedReadRepository.getReceivedPostSubjects(postIds),
       this.voteFeedReadRepository.getReceivedCommentSubjects(this.entityIds(refs, 'comment')),
       this.loadUsers(refs),
     ])
     const posts: Record<number, ReceivedPostSubject> = {}
     for (const row of postRows) {
-      const title = row.title?.trim()
-      const label =
-        title ||
-        stripHtml(row.html || '')
-          .result.replace(/\s+/g, ' ')
-          .trim()
       const id = Number(row.id)
-      posts[id] = {
-        id,
-        site: row.site,
-        label: [...label].slice(0, RECEIVED_LABEL_MAX_CHARS).join(''),
-        rating: Number(row.rating),
-      }
+      posts[id] = { id, site: row.site, label: truncateLabel(row.title?.trim() || toPlainText(row.html)) }
     }
     const comments: Record<number, ReceivedCommentSubject> = {}
     for (const row of commentRows) {
       const id = Number(row.id)
-      const postTitle = row.postTitle?.trim()
       comments[id] = {
         id,
         postId: Number(row.postId),
         site: row.site,
-        postTitle: postTitle || undefined,
-        rating: Number(row.rating),
+        excerpt: truncateLabel(toPlainText(row.html)),
+        created: new Date(row.created).toISOString(),
       }
     }
 
-    const events = this.filterExistingEvents(
-      refs,
-      (ref) => {
-        if (ref.type === 'post') {
-          return !!posts[ref.entityId]
-        }
-        if (ref.type === 'comment') {
-          return !!comments[ref.entityId]
-        }
-        return !!users[ref.entityId]
-      },
-      forUserId,
-      'received',
-    )
+    const loaded = { post: posts, comment: comments, user: users }
+    const events = this.filterExistingEvents(refs, loaded, forUserId, 'received')
 
     return {
       direction: 'received',
@@ -268,13 +264,13 @@ export default class VoteFeedManager {
 
   private filterExistingEvents(
     refs: VoteFeedReference[],
-    exists: (ref: VoteFeedReference) => boolean,
+    loaded: Record<VoteFeedReference['type'], Record<number, unknown>>,
     forUserId: number,
     direction: VoteFeedDirection,
   ): UserVoteFeedEventRef[] {
     const events: UserVoteFeedEventRef[] = []
     for (const ref of refs) {
-      if (exists(ref)) {
+      if (loaded[ref.type][ref.entityId]) {
         events.push(toEventRef(ref))
       } else {
         this.logger.warn('Dropped vote feed event with missing entity', {

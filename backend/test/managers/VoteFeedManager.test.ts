@@ -2,6 +2,7 @@ import VoteFeedManager, {
   decodeVoteFeedCursor,
   encodeVoteFeedCursor,
   InvalidVoteFeedCursorError,
+  InvalidVoteFeedWindowError,
 } from '../../src/managers/VoteFeedManager'
 
 describe('vote feed cursor codec', () => {
@@ -182,7 +183,7 @@ describe('VoteFeedManager.getVoteFeed', () => {
 
     const result = await manager.getVoteFeed(123, 'mine', '', undefined, 2)
 
-    expect(voteFeedReadRepository.getPageReferences).toHaveBeenCalledWith(123, 'mine', '', undefined, 3)
+    expect(voteFeedReadRepository.getPageReferences).toHaveBeenCalledWith(123, 'mine', '', undefined, 3, {})
     expect(postManager.getPostsByIds).toHaveBeenCalledWith([11, 10], 123)
     expect(result.events).toHaveLength(2)
     expect(result.hasMore).toBe(true)
@@ -208,6 +209,7 @@ describe('VoteFeedManager.getVoteFeed', () => {
       'abc',
       { votedAt: new Date('2026-05-11T10:00:00.000Z'), type: 'post', entityId: 99, voterId: 301 },
       21,
+      {},
     )
   })
 
@@ -294,7 +296,7 @@ describe('VoteFeedManager.getVoteFeed', () => {
     const { manager, voteFeedReadRepository, postManager, userManager } = createManager({
       voteFeedReadRepository: {
         getPageReferences: jest.fn().mockResolvedValue(refs),
-        getReceivedPostSubjects: jest.fn().mockResolvedValue([{ id: 10, site: 'main', title: '', html, rating: 9 }]),
+        getReceivedPostSubjects: jest.fn().mockResolvedValue([{ id: 10, site: 'main', title: '', html }]),
       },
     })
 
@@ -310,9 +312,9 @@ describe('VoteFeedManager.getVoteFeed', () => {
       id: 10,
       site: 'main',
       label: expect.stringMatching(/^heavy/),
-      rating: 9,
     })
-    expect(result.subjects.posts[10].label.length).toBeLessThanOrEqual(72)
+    expect([...result.subjects.posts[10].label]).toHaveLength(72)
+    expect(result.subjects.posts[10].label).toMatch(/heavy…$/)
     expect(voteFeedReadRepository.getReceivedPostSubjects).toHaveBeenCalledWith([10])
     expect(postManager.getPostsByIds).not.toHaveBeenCalled()
     expect(postManager.getCommentsByIds).not.toHaveBeenCalled()
@@ -320,14 +322,20 @@ describe('VoteFeedManager.getVoteFeed', () => {
     expect(Buffer.byteLength(JSON.stringify(result))).toBeLessThan(25_000)
   })
 
-  test('hydrates compact received comments with their post title', async () => {
+  test('hydrates compact received comments with a plain-text excerpt', async () => {
     const ref = makeRef({ type: 'comment', entityId: 55, postId: 77 })
     const { manager, voteFeedReadRepository } = createManager({
       voteFeedReadRepository: {
         getPageReferences: jest.fn().mockResolvedValue([ref]),
-        getReceivedCommentSubjects: jest
-          .fn()
-          .mockResolvedValue([{ id: 55, postId: 77, site: 'main', postTitle: 'Parent post', rating: 2 }]),
+        getReceivedCommentSubjects: jest.fn().mockResolvedValue([
+          {
+            id: 55,
+            postId: 77,
+            site: 'main',
+            html: '<p>Хорошее <b>уточнение</b>,\n   спасибо.</p>',
+            created: new Date('2026-05-01T10:00:00.000Z'),
+          },
+        ]),
       },
     })
 
@@ -338,13 +346,109 @@ describe('VoteFeedManager.getVoteFeed', () => {
       throw new Error('expected received response')
     }
     expect(voteFeedReadRepository.getReceivedCommentSubjects).toHaveBeenCalledWith([55])
-    expect(result.subjects.comments[55]).toEqual({
+    expect(result.subjects.comments[55]).toStrictEqual({
       id: 55,
       postId: 77,
       site: 'main',
-      postTitle: 'Parent post',
-      rating: 2,
+      excerpt: 'Хорошее уточнение, спасибо.',
+      created: '2026-05-01T10:00:00.000Z',
     })
+  })
+
+  test('loads the posts of commented discussions once, together with the voted posts', async () => {
+    const refs = [
+      makeRef({ entityId: 10 }),
+      makeRef({ type: 'comment', entityId: 55, postId: 77 }),
+      makeRef({ type: 'comment', entityId: 56, postId: 77 }),
+      makeRef({ type: 'comment', entityId: 57, postId: 10 }),
+    ]
+    const comment = (id: number, postId: number) => ({
+      id,
+      postId,
+      site: 'main',
+      html: '<p>Ответ</p>',
+      created: new Date('2026-05-01T10:00:00.000Z'),
+    })
+    const { manager, voteFeedReadRepository } = createManager({
+      voteFeedReadRepository: {
+        getPageReferences: jest.fn().mockResolvedValue(refs),
+        getReceivedPostSubjects: jest.fn().mockResolvedValue([
+          { id: 10, site: 'main', title: 'Voted post', html: '' },
+          { id: 77, site: 'main', title: ' ', html: '<p>Кто-нибудь знает, <b>где</b> купить сыр?</p>' },
+        ]),
+        getReceivedCommentSubjects: jest.fn().mockResolvedValue([comment(55, 77), comment(56, 77), comment(57, 10)]),
+      },
+    })
+
+    const result = await manager.getVoteFeed(123, 'received', '', undefined, 20)
+    if (result.direction !== 'received') {
+      throw new Error('expected received response')
+    }
+
+    expect(voteFeedReadRepository.getReceivedPostSubjects).toHaveBeenCalledTimes(1)
+    expect(voteFeedReadRepository.getReceivedPostSubjects).toHaveBeenCalledWith([10, 77])
+    expect(voteFeedReadRepository.getReceivedCommentSubjects).toHaveBeenCalledWith([55, 56, 57])
+    expect(result.events).toHaveLength(4)
+    expect(result.subjects.posts[77]).toEqual({
+      id: 77,
+      site: 'main',
+      label: 'Кто-нибудь знает, где купить сыр?',
+    })
+  })
+
+  test('cuts received comment excerpts at 72 code points with an ellipsis', async () => {
+    const refs = [makeRef({ type: 'comment', entityId: 1, postId: 77 })]
+    const longText = `${'😀'.repeat(71)}абв`
+    const { manager } = createManager({
+      voteFeedReadRepository: {
+        getPageReferences: jest.fn().mockResolvedValue(refs),
+        getReceivedCommentSubjects: jest.fn().mockResolvedValue([
+          {
+            id: 1,
+            postId: 77,
+            site: 'main',
+            html: `<p>${longText}</p>`,
+            created: new Date('2026-05-01T10:00:00.000Z'),
+          },
+        ]),
+      },
+    })
+
+    const result = await manager.getVoteFeed(123, 'received', '', undefined, 20)
+    if (result.direction !== 'received') {
+      throw new Error('expected received response')
+    }
+
+    expect(result.subjects.comments[1].excerpt).toBe(`${'😀'.repeat(71)}а…`)
+  })
+
+  const DAY_MS = 24 * 60 * 60 * 1000
+
+  test('passes type, sign and time-bound filters through to the reference query', async () => {
+    const since = new Date(Date.now() - 30 * DAY_MS)
+    const { manager, voteFeedReadRepository } = createManager({
+      voteFeedReadRepository: { getPageReferences: jest.fn().mockResolvedValue([]) },
+    })
+
+    await manager.getVoteFeed(123, 'received', '', undefined, 200, { type: 'comment', sign: 'minus', since })
+
+    expect(voteFeedReadRepository.getPageReferences).toHaveBeenCalledWith(123, 'received', '', undefined, 201, {
+      type: 'comment',
+      sign: 'minus',
+      since,
+    })
+  })
+
+  test.each([
+    ['without a lower bound', undefined],
+    ['reaching back more than 31 days', new Date(Date.now() - 32 * DAY_MS)],
+  ])('rejects a minus-only page %s before querying', async (_label, since) => {
+    const { manager, voteFeedReadRepository } = createManager()
+
+    await expect(
+      manager.getVoteFeed(123, 'received', '', undefined, 200, { sign: 'minus', since }),
+    ).rejects.toBeInstanceOf(InvalidVoteFeedWindowError)
+    expect(voteFeedReadRepository.getPageReferences).not.toHaveBeenCalled()
   })
 
   test('drops references whose subject disappeared and logs a warning', async () => {

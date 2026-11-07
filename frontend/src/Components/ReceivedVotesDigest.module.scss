@@ -1,0 +1,376 @@
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 22px;
+
+  // Nested so these win over the UI kit select's own single-class rules.
+  .filterSelect {
+    background-color: var(--dim2);
+    border-radius: 8px;
+    color: var(--fg);
+    // As wide as the chosen option where supported, not as the longest one.
+    field-sizing: content;
+    font-weight: normal;
+    max-width: 100%;
+    padding: 7px 10px;
+    width: auto;
+
+    &:hover {
+      background-color: var(--dim3);
+      color: var(--fgHard);
+    }
+  }
+}
+
+.section {
+  margin-bottom: 28px;
+}
+
+.sectionHeader {
+  align-items: baseline;
+  border-bottom: 1px solid var(--fgAlmostInvisible);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding-bottom: 6px;
+}
+
+.sectionTitle {
+  color: var(--fgMedium);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.sectionSum,
+.cardSum,
+.cardMeta {
+  white-space: nowrap;
+}
+
+.meta,
+.cardMeta,
+.sectionNote,
+.time {
+  color: var(--fgSofter);
+  font-size: 12px;
+}
+
+.meta {
+  margin-left: 6px;
+}
+
+.sectionNote {
+  margin: 6px 0 12px;
+}
+
+.value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.plus {
+  color: var(--primary);
+}
+
+.minus {
+  color: var(--danger);
+}
+
+.zero {
+  color: var(--fgSofter);
+}
+
+.big {
+  font-size: 17px;
+}
+
+.small {
+  font-size: 12px;
+}
+
+.card {
+  // Row columns: the sum, the expand arrow, the text; whatever goes under the text aligns with it.
+  --value-width: 30px;
+  --arrow-width: 10px;
+  --text-indent: calc(var(--value-width) + 10px + var(--arrow-width) + 5px);
+
+  background: var(--dim2);
+  border-radius: 8px;
+  margin-bottom: 10px;
+  padding: 12px 14px;
+  // Keeps a card scrolled into view clear of the fixed top bar.
+  scroll-margin-top: 72px;
+
+  .moreVoters,
+  .expandCard {
+    background: none;
+    color: var(--link);
+    display: inline-block;
+    font-size: 13px;
+    font-weight: normal;
+    height: auto;
+    min-width: 0;
+    padding: 0;
+    vertical-align: baseline;
+
+    &:hover {
+      background: none;
+      color: var(--linkHover);
+    }
+  }
+
+  .expandCard {
+    margin: 6px 0 0 var(--text-indent);
+  }
+}
+
+.sectionNote + .card,
+.sectionHeader + .card {
+  margin-top: 12px;
+}
+
+.cardHeader {
+  align-items: baseline;
+  column-gap: 6px;
+  display: grid;
+  grid-template-areas: 'title sum meta';
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  margin-bottom: 6px;
+
+  @media (max-width: 599px) {
+    grid-template-areas: 'title sum' 'meta .';
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 2px;
+  }
+}
+
+.cardTitleWrap {
+  grid-area: title;
+  margin-right: 6px;
+  min-width: 0;
+}
+
+.cardTitle,
+.cardTitlePlain {
+  color: var(--fgHard);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.cardTitlePlain {
+  grid-area: title;
+}
+
+.cardTitle.generatedTitle,
+.tailLink.generatedTitle {
+  color: var(--fgMedium);
+  font-style: italic;
+}
+
+.site {
+  border: 1px solid var(--fgAlmostInvisible);
+  border-radius: 4px;
+  color: var(--fgSofter);
+  font-size: 12px;
+  margin-left: 8px;
+  padding: 0 5px;
+}
+
+.cardSum {
+  grid-area: sum;
+  text-align: right;
+}
+
+.cardMeta {
+  grid-area: meta;
+}
+
+.subject {
+  border-top: 1px solid var(--fgAlmostInvisible);
+  display: flex;
+  padding: 6px 0;
+}
+
+// Grows for a three-digit sum instead of running into the arrow.
+.subjectValue {
+  flex: 0 0 auto;
+  margin-right: 10px;
+  min-width: var(--value-width);
+  text-align: right;
+}
+
+.subjectMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.karmaRow {
+  flex-direction: column;
+  padding-left: var(--text-indent);
+}
+
+.quote {
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+
+.expandArrow {
+  align-self: flex-start;
+  color: var(--fgMedium);
+  cursor: pointer;
+  flex: 0 0 var(--arrow-width);
+  font-size: 18px;
+  line-height: 1;
+  margin: 1px 5px 0 0;
+  text-align: center;
+  transform-origin: 40% center;
+  transition: transform 0.25s;
+  user-select: none;
+
+  &:hover {
+    color: var(--primaryHover);
+  }
+}
+
+.expandArrowOpen {
+  transform: rotate(90deg);
+}
+
+.subjectKind {
+  color: var(--fgSofter);
+  font-style: italic;
+}
+
+.subjectTime,
+.voters {
+  color: var(--fgSofter);
+  font-size: 13px;
+}
+
+.voters {
+  margin-top: 2px;
+}
+
+.chronology {
+  columns: 2;
+  font-size: 13px;
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+
+  li {
+    padding: 1px 0;
+  }
+
+  @media (max-width: 599px) {
+    columns: 1;
+  }
+}
+
+.time {
+  margin-left: 4px;
+}
+
+.expandedContent {
+  margin-top: 8px;
+}
+
+.tail {
+  border: 1px dashed var(--fgAlmostInvisible);
+  border-radius: 8px;
+  color: var(--fgSofter);
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 8px 14px;
+}
+
+.tailHead {
+  color: var(--fgMedium);
+}
+
+// A long title wraps inside its item instead of pushing the line past the card.
+.tailItem {
+  display: inline-block;
+  max-width: 100%;
+}
+
+.tailLink {
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+
+.empty {
+  background: var(--dim2);
+  border-radius: 8px;
+  color: var(--fgMedium);
+  font-size: 14px;
+  padding: 16px;
+}
+
+.footer,
+.empty {
+  .widenButton {
+    background: var(--dim2);
+    border-radius: 8px;
+    color: var(--fg);
+    font-size: 14px;
+    font-weight: normal;
+    height: auto;
+    opacity: 1;
+    padding: 8px 18px;
+  }
+}
+
+.empty .widenButton {
+  background: var(--dim3);
+  margin-top: 10px;
+}
+
+.footer {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 6px 0 24px;
+}
+
+.errorText {
+  color: var(--danger);
+  font-size: 14px;
+}
+
+@keyframes skeletonPulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.skeleton {
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+// A card with three lines of text, drawn by gradients.
+.skeletonCard {
+  background: var(--dim2) no-repeat;
+  background-image: linear-gradient(var(--dim3), var(--dim3)), linear-gradient(var(--dim3), var(--dim3)),
+    linear-gradient(var(--dim3), var(--dim3));
+  background-position:
+    14px 14px,
+    14px 36px,
+    14px 58px;
+  background-size:
+    52% 12px,
+    64% 12px,
+    44% 12px;
+  border-radius: 8px;
+  height: 84px;
+  margin-bottom: 10px;
+}

@@ -13,6 +13,12 @@ interface Option {
   label: string
 }
 
+/** Options under a heading, rendered as an optgroup */
+interface OptionGroup {
+  label: string
+  options: Option[]
+}
+
 /**
  * Interface for Select component props
  * @interface SelectProps
@@ -20,12 +26,14 @@ interface Option {
 interface SelectProps {
   /** Optional ID attribute for the select element */
   id?: string
+  /** Accessible name, for a select without a visible label */
+  'aria-label'?: string
   /** Currently selected value */
   value: string
   /** Callback function triggered when selection changes */
   onChange: (value: string) => void
-  /** Array of options to display in the dropdown */
-  options: Option[]
+  /** Options to display in the dropdown, alone or in groups */
+  options: Array<Option | OptionGroup>
   /** Optional placeholder text shown when no option is selected */
   placeholder?: string
   /** Whether the select is disabled
@@ -37,6 +45,12 @@ interface SelectProps {
    */
   className?: string
 }
+
+const renderOption = (option: Option) => (
+  <option key={option.value} value={option.value}>
+    {option.label}
+  </option>
+)
 
 /**
  * A customizable select dropdown component
@@ -54,6 +68,7 @@ interface SelectProps {
  */
 const Select: React.FC<SelectProps> = ({
   id,
+  'aria-label': ariaLabel,
   value,
   onChange,
   options,
@@ -64,6 +79,7 @@ const Select: React.FC<SelectProps> = ({
   return (
     <select
       id={id}
+      aria-label={ariaLabel}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
@@ -74,11 +90,15 @@ const Select: React.FC<SelectProps> = ({
           {placeholder}
         </option>
       )}
-      {options.map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label}
-        </option>
-      ))}
+      {options.map((item) =>
+        'options' in item ? (
+          <optgroup key={item.label} label={item.label}>
+            {item.options.map(renderOption)}
+          </optgroup>
+        ) : (
+          renderOption(item)
+        ),
+      )}
     </select>
   )
 }

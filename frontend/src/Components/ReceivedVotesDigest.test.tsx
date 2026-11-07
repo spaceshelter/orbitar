@@ -1,0 +1,554 @@
+import React from 'react'
+
+import { createRoot, Root } from 'react-dom/client'
+import { act } from 'react-dom/test-utils'
+
+import { ReceivedCommentSubject, UserVoteFeedEvent, UserVotesReceivedResult } from '../API/UserAPI'
+import { UserInfo } from '../Types/UserInfo'
+import ReceivedVotesDigest from './ReceivedVotesDigest'
+
+// Dates use the moment locale that DateComponent sets up for the app.
+import './DateComponent'
+
+/* eslint-disable react/forbid-elements -- the UI kit button is mocked with a raw button */
+
+;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+
+const mockReceivedVotes = jest.fn()
+const mockAPI = { userAPI: { receivedVotes: mockReceivedVotes } }
+const mockAppState = { userInfo: { id: 99, username: 'me' } }
+let mockSearchParams = new URLSearchParams({ tab: 'received' })
+const mockSetSearchParams = jest.fn()
+
+jest.mock('../AppState/AppState', () => ({
+  useAPI: () => mockAPI,
+  useAppState: () => mockAppState,
+}))
+
+jest.mock('react-router-dom', () => ({
+  Link: ({ children, to, ...props }: React.ComponentProps<'a'> & { to: string }) => (
+    <a {...props} href={to}>
+      {children}
+    </a>
+  ),
+  useSearchParams: () => [mockSearchParams, mockSetSearchParams],
+}))
+
+jest.mock(
+  '@ui/Button',
+  () => ({
+    __esModule: true,
+    default: ({ variant, size, active, ...props }: React.ComponentProps<'button'> & Record<string, unknown>) => (
+      <button {...props} />
+    ),
+  }),
+  { virtual: true },
+)
+
+jest.mock('@ui/Select', () => jest.requireActual('./UI/Select'), { virtual: true })
+
+jest.mock('./PostLink', () => ({
+  __esModule: true,
+  default: ({
+    post,
+    commentId,
+    children,
+    ...props
+  }: React.ComponentProps<'a'> & { post: { id: number }; commentId?: number }) => (
+    <a {...props} href={`/p${post.id}${commentId ? `#${commentId}` : ''}`}>
+      {children}
+    </a>
+  ),
+}))
+
+jest.mock('./InternalLinkExpandComponent', () => ({
+  __esModule: true,
+  default: ({ postId, commentId }: { postId: number; commentId?: number }) => (
+    <div data-expanded={`${postId}:${commentId ?? ''}`} />
+  ),
+}))
+
+const user = (id: number): UserInfo => ({ id, username: `user-${id}`, name: `User ${id}`, gender: 0, karma: 0 })
+
+const at = (day: number, hour = 12) => new Date(2026, 8, day, hour)
+
+const deferred = <T,>() => {
+  let resolve: (value: T) => void = () => undefined
+  const promise = new Promise<T>((done) => {
+    resolve = done
+  })
+  return { promise, resolve }
+}
+
+const vote = (
+  type: UserVoteFeedEvent['type'],
+  entityId: number,
+  voterId: number,
+  value: number,
+  votedAt: Date,
+  postId?: number,
+): UserVoteFeedEvent => ({
+  type,
+  entityId,
+  postId: type === 'post' ? entityId : postId,
+  voterId,
+  targetUserId: 99,
+  vote: value,
+  votedAt,
+})
+
+const comment = (id: number, postId: number, excerpt: string): ReceivedCommentSubject => ({
+  id,
+  postId,
+  site: 'main',
+  excerpt,
+  created: new Date(2026, 8, 12, 18, 6),
+})
+
+const page = (
+  events: UserVoteFeedEvent[],
+  overrides: Partial<UserVotesReceivedResult> = {},
+): UserVotesReceivedResult => ({
+  direction: 'received',
+  events,
+  users: Object.fromEntries(events.map((event) => [event.voterId, user(event.voterId)])),
+  subjects: {
+    posts: {
+      50: { id: 50, site: 'main', label: 'Селфи-тайм 2' },
+      51: { id: 51, site: 'main', label: 'Мемы' },
+      60: { id: 60, site: 'dev', label: 'Про миграции' },
+      70: { id: 70, site: 'main', label: 'Мелкий пост' },
+      80: { id: 80, site: 'main', label: 'Ещё один небольшой разговор' },
+      90: { id: 90, site: 'main', label: '' },
+      91: { id: 91, site: 'main', label: '' },
+    },
+    comments: {
+      501: comment(501, 50, 'Уйдите в другие посты'),
+      502: comment(502, 50, 'С этого момента'),
+      503: comment(503, 50, 'Третий'),
+      504: comment(504, 50, 'Четвёртый'),
+      505: comment(505, 50, 'Пятый'),
+      511: comment(511, 51, ''),
+      512: comment(512, 51, ''),
+      901: comment(901, 90, 'Ответ'),
+      911: comment(911, 91, 'Ответ'),
+      601: { ...comment(601, 60, 'Кэшем'), site: 'dev' },
+      701: comment(701, 70, 'Ок'),
+      801: comment(801, 80, 'Да'),
+    },
+  },
+  hasMore: false,
+  nextCursor: undefined,
+  ...overrides,
+})
+
+const twoWeeks = [
+  vote('comment', 501, 1, 1, at(16, 10), 50),
+  vote('comment', 501, 2, 1, at(15, 10), 50),
+  vote('post', 50, 3, 1, at(15, 9)),
+  vote('comment', 502, 1, 1, at(14, 18), 50),
+  vote('comment', 601, 4, -1, at(14, 12), 60),
+  vote('user', 99, 5, 2, at(14, 11)),
+  vote('comment', 701, 6, 1, at(13, 20), 70),
+]
+
+describe('ReceivedVotesDigest', () => {
+  let container: HTMLDivElement
+  let root: Root
+
+  const flush = () =>
+    act(async () => {
+      await Promise.resolve()
+    })
+
+  const render = async () => {
+    await act(async () => root.render(<ReceivedVotesDigest />))
+    await flush()
+  }
+
+  const buttonByText = (text: string) =>
+    Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.trim().startsWith(text))
+
+  const click = async (element: Element | undefined) => {
+    expect(element).toBeDefined()
+    await act(async () => {
+      element?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    await flush()
+  }
+
+  const select = (label: string) => container.querySelector<HTMLSelectElement>(`select[aria-label="${label}"]`)
+
+  const selectedText = (label: string) => {
+    const element = select(label)
+    return element?.options[element.selectedIndex]?.textContent
+  }
+
+  const optionTexts = (label: string) => Array.from(select(label)?.options || []).map((option) => option.textContent)
+
+  const groupLabels = (label: string) =>
+    Array.from(select(label)?.querySelectorAll('optgroup') || []).map((group) => group.label)
+
+  const choose = async (label: string, value: string) => {
+    const element = select(label)
+    expect(element).not.toBeNull()
+    await act(async () => {
+      if (element) {
+        element.value = value
+        element.dispatchEvent(new Event('change', { bubbles: true }))
+      }
+    })
+  }
+
+  const sections = () => Array.from(container.querySelectorAll('section'))
+
+  beforeEach(() => {
+    jest.useFakeTimers('modern')
+    jest.setSystemTime(new Date(2026, 8, 16, 15, 0))
+    mockReceivedVotes.mockReset()
+    mockSetSearchParams.mockReset()
+    mockSearchParams = new URLSearchParams({ tab: 'received' })
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+  })
+
+  afterEach(async () => {
+    await act(async () => {
+      root.unmount()
+    })
+    container.remove()
+    jest.useRealTimers()
+  })
+
+  test('loads the last two weeks in large pages and renders discussion cards, karma and a tail', async () => {
+    mockReceivedVotes.mockResolvedValueOnce(page(twoWeeks))
+
+    await render()
+
+    expect(mockReceivedVotes).toHaveBeenCalledWith(
+      { since: new Date(2026, 8, 3), perpage: 200 },
+      expect.any(AbortSignal),
+    )
+    const text = container.textContent || ''
+    expect(selectedText('Какие оценки показывать')).toBe('Все оценки')
+    expect(selectedText('Период')).toBe('За 2 недели')
+    expect(text).toContain('14–16 сентября')
+    expect(text).toContain('Селфи-тайм 2')
+    expect(text).toContain('«Уйдите в другие посты»')
+    expect(text).toContain('Про миграции')
+    expect(text).toContain('−1')
+    expect(text).toContain('Карма профиля')
+    expect(text).toContain('7–13 сентября')
+    expect(text).toContain('Мелкий пост')
+  })
+
+  test('expands a subject inline from its arrow or keyboard and leaves ctrl-click to the link', async () => {
+    mockReceivedVotes.mockResolvedValueOnce(page(twoWeeks))
+    await render()
+    const arrows = () => Array.from(container.querySelectorAll<HTMLElement>('[aria-label="Развернуть"]'))
+
+    await act(async () => {
+      arrows()[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(container.querySelector('[data-expanded="50:501"]')).not.toBeNull()
+
+    // The expanded arrow is now «Свернуть», so the first «Развернуть» is the post row.
+    await act(async () => {
+      arrows()[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    })
+    expect(container.querySelector('[data-expanded="50:"]')).not.toBeNull()
+
+    await act(async () => {
+      container.querySelector('[aria-label="Свернуть"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(container.querySelector('[data-expanded="50:501"]')).toBeNull()
+    expect(container.querySelector('[data-expanded="50:"]')).not.toBeNull()
+
+    const quote = Array.from(container.querySelectorAll('a')).find((link) => link.textContent === '«С этого момента»')
+    const ctrlClick = new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true })
+    await act(async () => {
+      quote?.dispatchEvent(ctrlClick)
+    })
+    expect(ctrlClick.defaultPrevented).toBe(false)
+    expect(container.querySelector('[data-expanded="50:502"]')).toBeNull()
+  })
+
+  test('follows the cursor until a bounded window is fully loaded', async () => {
+    mockReceivedVotes
+      .mockResolvedValueOnce(page(twoWeeks.slice(0, 4), { hasMore: true, nextCursor: 'c2' }))
+      .mockResolvedValueOnce(page(twoWeeks.slice(4)))
+
+    await render()
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(mockReceivedVotes).toHaveBeenCalledTimes(2)
+    expect(mockReceivedVotes.mock.calls[1][0]).toEqual({ since: new Date(2026, 8, 3), cursor: 'c2', perpage: 200 })
+    expect(container.textContent).toContain('Селфи-тайм 2')
+    expect(container.textContent).toContain('Про миграции')
+  })
+
+  test('offers every kind of vote grouped by sign and writes the chosen filters to the URL', async () => {
+    mockReceivedVotes.mockResolvedValueOnce(page(twoWeeks))
+    await render()
+
+    expect(groupLabels('Какие оценки показывать')).toEqual(['Плюсы и минусы', 'Только минусы'])
+    expect(optionTexts('Какие оценки показывать')).toEqual([
+      'Все оценки',
+      'Комментарии',
+      'Посты',
+      'Карма',
+      'Все минусы',
+      'Минусы за комментарии',
+      'Минусы за посты',
+      'Минусы в карму',
+    ])
+
+    await choose('Какие оценки показывать', 'minus:comment')
+    expect(mockSetSearchParams).toHaveBeenLastCalledWith({ tab: 'received', what: 'comment', sign: 'minus' })
+
+    await choose('Период', 'month')
+    expect(mockSetSearchParams).toHaveBeenLastCalledWith({ tab: 'received', period: 'month' })
+  })
+
+  test('reads filters from the URL into the selects', async () => {
+    mockSearchParams = new URLSearchParams({ tab: 'received', what: 'comment', period: 'year' })
+    mockReceivedVotes.mockResolvedValueOnce(page([]))
+
+    await render()
+
+    expect(mockReceivedVotes).toHaveBeenCalledWith(
+      { type: 'comment', since: new Date(2025, 8, 17), perpage: 200 },
+      expect.any(AbortSignal),
+    )
+    expect(selectedText('Какие оценки показывать')).toBe('Комментарии')
+    expect(selectedText('Период')).toBe('За год')
+    expect(container.textContent).toContain('За год таких оценок не было.')
+  })
+
+  test('offers a wider period when the window has no votes', async () => {
+    mockReceivedVotes.mockResolvedValueOnce(page([]))
+    await render()
+
+    expect(container.textContent).toContain('За 2 недели оценок не было.')
+    await click(buttonByText('Показать за месяц'))
+
+    expect(mockSetSearchParams).toHaveBeenCalledWith({ tab: 'received', period: 'month' })
+  })
+
+  test('loads more of an unbounded period on demand instead of following the cursor', async () => {
+    mockSearchParams = new URLSearchParams({ tab: 'received', period: 'all' })
+    mockReceivedVotes
+      .mockResolvedValueOnce(page(twoWeeks.slice(0, 4), { hasMore: true, nextCursor: 'c2' }))
+      .mockResolvedValueOnce(page(twoWeeks.slice(4)))
+
+    await render()
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(mockReceivedVotes).toHaveBeenCalledTimes(1)
+
+    await click(buttonByText('Показать ещё'))
+
+    expect(mockReceivedVotes).toHaveBeenCalledTimes(2)
+    expect(mockReceivedVotes.mock.calls[1][0]).toEqual({ cursor: 'c2', perpage: 200 })
+    expect(container.textContent).toContain('Про миграции')
+  })
+  test('shows a placeholder until the first page arrives', async () => {
+    const first = deferred<UserVotesReceivedResult>()
+    mockReceivedVotes.mockReturnValueOnce(first.promise)
+
+    await render()
+    const placeholder = container.querySelector('.skeleton')
+    expect(placeholder).not.toBeNull()
+    expect(placeholder?.getAttribute('aria-hidden')).toBe('true')
+
+    await act(async () => {
+      first.resolve(page(twoWeeks))
+    })
+    await flush()
+    expect(container.querySelector('.skeleton')).toBeNull()
+    expect(container.textContent).toContain('Селфи-тайм 2')
+  })
+
+  test('holds the oldest section back while it is still being loaded', async () => {
+    const second = deferred<UserVotesReceivedResult>()
+    mockReceivedVotes
+      .mockResolvedValueOnce(page(twoWeeks, { hasMore: true, nextCursor: 'c2' }))
+      .mockReturnValueOnce(second.promise)
+
+    await render()
+    await flush()
+
+    expect(mockReceivedVotes).toHaveBeenCalledTimes(2)
+    expect(container.textContent).toContain('14–16 сентября')
+    expect(container.textContent).not.toContain('7–13 сентября')
+    expect(container.querySelector('.skeleton')).not.toBeNull()
+
+    await act(async () => {
+      second.resolve(page([vote('comment', 801, 7, 1, at(12, 20), 80)]))
+    })
+    await flush()
+    expect(container.textContent).toContain('7–13 сентября')
+    expect(container.textContent).toContain('Ещё один небольшой разговор')
+    expect(container.textContent).not.toContain('Загружена только часть')
+    expect(container.querySelector('.skeleton')).toBeNull()
+  })
+
+  test('marks the oldest section as partial when the automatic loading stops before its end', async () => {
+    const older = [
+      vote('comment', 701, 6, 1, at(13, 20), 70),
+      vote('comment', 801, 7, 1, at(12, 20), 80),
+      vote('comment', 801, 8, 1, at(11, 20), 80),
+      vote('comment', 701, 9, 1, at(10, 20), 70),
+      vote('user', 99, 10, 1, at(9, 20)),
+    ]
+    mockReceivedVotes.mockResolvedValueOnce(
+      page([...twoWeeks.slice(0, 6), older[0]], { hasMore: true, nextCursor: 'c2' }),
+    )
+    older.slice(1).forEach((event, index) => {
+      mockReceivedVotes.mockResolvedValueOnce(page([event], { hasMore: true, nextCursor: `c${index + 3}` }))
+    })
+
+    await render()
+    for (let i = 0; i < 6; i++) {
+      await flush()
+    }
+
+    expect(mockReceivedVotes).toHaveBeenCalledTimes(5)
+    const [current, oldest] = sections()
+    expect(current.textContent).toContain('14–16 сентября')
+    expect(current.textContent).not.toContain('Загружена только часть')
+    expect(oldest.textContent).toContain('7–13 сентября')
+    expect(oldest.textContent).toContain('Загружена только часть оценок за эти дни.')
+    expect(oldest.textContent).toContain('Пока по 1–2 оценки в 2 обсуждениях')
+    expect(buttonByText('Показать ещё')).toBeDefined()
+  })
+
+  test('keeps the loaded votes when loading more fails and retries with the same button', async () => {
+    mockSearchParams = new URLSearchParams({ tab: 'received', period: 'all' })
+    mockReceivedVotes
+      .mockResolvedValueOnce(page(twoWeeks.slice(0, 4), { hasMore: true, nextCursor: 'c2' }))
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce(page(twoWeeks.slice(4)))
+
+    await render()
+    await click(buttonByText('Показать ещё'))
+
+    expect(container.textContent).toContain('Селфи-тайм 2')
+    expect(container.querySelector('[role="alert"]')?.textContent).toBe('Не удалось загрузить ещё оценки')
+    expect(buttonByText('Показать ещё')).toBeUndefined()
+
+    await click(buttonByText('Повторить'))
+
+    expect(mockReceivedVotes).toHaveBeenCalledTimes(3)
+    expect(mockReceivedVotes.mock.calls[2][0]).toEqual({ cursor: 'c2', perpage: 200 })
+    expect(container.textContent).toContain('Про миграции')
+    expect(container.querySelector('[role="alert"]')).toBeNull()
+  })
+
+  test('offers to retry when the first page fails', async () => {
+    mockReceivedVotes.mockRejectedValueOnce(new Error('network')).mockResolvedValueOnce(page(twoWeeks))
+
+    await render()
+    expect(container.querySelector('[role="alert"]')?.textContent).toBe('Не удалось загрузить оценки')
+
+    await click(buttonByText('Повторить'))
+
+    expect(mockReceivedVotes).toHaveBeenCalledTimes(2)
+    expect(mockReceivedVotes.mock.calls[1][0]).toEqual({ since: new Date(2026, 8, 3), perpage: 200 })
+    expect(container.textContent).toContain('Селфи-тайм 2')
+  })
+
+  test('collapses an expanded card with the same toggle', async () => {
+    mockReceivedVotes.mockResolvedValueOnce(
+      page([
+        vote('comment', 501, 1, 1, at(16, 10), 50),
+        vote('comment', 502, 2, 1, at(16, 9), 50),
+        vote('comment', 503, 3, 1, at(16, 8), 50),
+        vote('comment', 504, 4, 1, at(16, 7), 50),
+        vote('comment', 505, 5, -1, at(16, 6), 50),
+      ]),
+    )
+    await render()
+    const rows = () => container.querySelectorAll('article [aria-label="Развернуть"]').length
+
+    expect(rows()).toBe(3)
+    await click(buttonByText('ещё 2 комментария'))
+    expect(rows()).toBe(5)
+
+    const collapse = buttonByText('свернуть')
+    expect(collapse?.getAttribute('aria-expanded')).toBe('true')
+    await click(collapse)
+    expect(rows()).toBe(3)
+    expect(buttonByText('ещё 2 комментария')?.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  test('names comments and untitled posts without text as media, comments with their time', async () => {
+    mockReceivedVotes.mockResolvedValueOnce(
+      page([
+        vote('comment', 511, 1, 1, at(16, 10), 51),
+        vote('comment', 511, 2, 1, at(16, 9), 51),
+        vote('comment', 512, 3, 1, at(16, 8), 51),
+        vote('post', 91, 4, 1, at(16, 7)),
+        vote('post', 91, 5, 1, at(16, 6)),
+        vote('post', 91, 6, 1, at(16, 5)),
+        vote('comment', 901, 7, 1, at(15, 10), 90),
+      ]),
+    )
+    await render()
+
+    expect(container.textContent?.match(/медиа · 12 сент., 18:06/g)).toHaveLength(2)
+    expect(container.textContent).not.toContain('«»')
+    const titles = Array.from(container.querySelectorAll('article header a'))
+    expect(titles.map((title) => title.textContent)).toEqual(['Мемы', 'Пост с медиа'])
+    expect(titles[1].className).toContain('generatedTitle')
+    const items = Array.from(container.querySelectorAll('.tailItem')).map((item) => item.textContent)
+    expect(items).toEqual(['Пост с медиа\u00a0+1'])
+  })
+
+  test('keeps the separators of the small-discussions line inside its items', async () => {
+    mockReceivedVotes.mockResolvedValueOnce(
+      page([vote('comment', 701, 6, 1, at(13, 20), 70), vote('comment', 801, 7, 1, at(12, 20), 80)]),
+    )
+    await render()
+
+    const tail = container.querySelector('.tail')
+    const items = Array.from(container.querySelectorAll('.tailItem')).map((item) => item.textContent)
+    expect(items).toEqual(['«Мелкий пост» +1 ·', '«Ещё один небольшой разговор» +1'])
+    const looseText = Array.from(tail?.childNodes || [])
+      .filter((node) => node.nodeType === Node.TEXT_NODE)
+      .map((node) => node.textContent)
+      .join('')
+    expect(looseText).not.toContain('·')
+  })
+
+  test('limits minus-only views to a month', async () => {
+    mockSearchParams = new URLSearchParams({ tab: 'received', sign: 'minus', period: 'year' })
+    mockReceivedVotes.mockResolvedValueOnce(page([]))
+
+    await render()
+
+    expect(mockReceivedVotes).toHaveBeenCalledWith(
+      { sign: 'minus', since: new Date(2026, 7, 18), perpage: 200 },
+      expect.any(AbortSignal),
+    )
+    expect(selectedText('Период')).toBe('За месяц')
+    expect(container.textContent).toContain('За месяц таких оценок не было.')
+    expect(buttonByText('Показать за')).toBeUndefined()
+    expect(groupLabels('Период')).toEqual(['Минусы — не дальше месяца'])
+    expect(optionTexts('Период')).toEqual(['За неделю', 'За 2 недели', 'За месяц'])
+  })
+
+  test('narrows a long period to a month when only minuses are chosen', async () => {
+    mockSearchParams = new URLSearchParams({ tab: 'received', period: 'year' })
+    mockReceivedVotes.mockResolvedValueOnce(page(twoWeeks))
+    await render()
+
+    await choose('Какие оценки показывать', 'minus:all')
+
+    expect(mockSetSearchParams).toHaveBeenCalledWith({ tab: 'received', sign: 'minus', period: 'month' })
+  })
+})

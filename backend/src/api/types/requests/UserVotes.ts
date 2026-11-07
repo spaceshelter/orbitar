@@ -9,6 +9,10 @@ export type UserVotesRequest = {
   filter?: string
   cursor?: string
   perpage?: number
+  type?: 'post' | 'comment' | 'user'
+  sign?: 'minus'
+  // Joi converts the ISO string to a Date.
+  since?: Date
 }
 
 export type UserVoteFeedEventRef = {
@@ -21,19 +25,19 @@ export type UserVoteFeedEventRef = {
   targetUserId: number
 }
 
+// A voted post or the post of a voted comment.
 export type ReceivedPostSubject = {
   id: number
   site: string
   label: string
-  rating: number
 }
 
 export type ReceivedCommentSubject = {
   id: number
   postId: number
   site: string
-  postTitle?: string
-  rating: number
+  excerpt: string
+  created: string
 }
 
 type UserVotesResponseBase = {

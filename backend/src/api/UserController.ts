@@ -9,7 +9,7 @@ import OAuth2Manager from '../managers/OAuth2Manager'
 import PostManager from '../managers/PostManager'
 import { UserGender, UserRatingBySubsite } from '../managers/types/UserInfo'
 import UserManager from '../managers/UserManager'
-import VoteFeedManager, { InvalidVoteFeedCursorError } from '../managers/VoteFeedManager'
+import VoteFeedManager, { InvalidVoteFeedCursorError, InvalidVoteFeedWindowError } from '../managers/VoteFeedManager'
 import { APIRequest, APIResponse, joiFormat, joiUsername, validate } from './ApiMiddleware'
 import { OAuth2MiddlewareGenerator } from './OAuth2Middleware'
 import { commonRateLimitConfig, heavyFilterRateLimiter, sharedReadRateLimiter } from './RateLimiters'
@@ -82,7 +82,15 @@ export default class UserController {
       direction: Joi.valid('mine', 'received').required(),
       filter: Joi.string().max(120).allow(null, ''),
       cursor: Joi.string().max(255).allow(null, ''),
-      perpage: Joi.number().integer().min(1).max(50).default(20),
+      // Received pages carry compact subjects and can be large; mine pages hydrate full posts and comments.
+      perpage: Joi.number()
+        .integer()
+        .min(1)
+        .default(20)
+        .when('direction', { is: 'received', then: Joi.number().max(200), otherwise: Joi.number().max(50) }),
+      type: Joi.valid('post', 'comment', 'user').when('direction', { is: 'received', otherwise: Joi.forbidden() }),
+      sign: Joi.valid('minus').when('direction', { is: 'received', otherwise: Joi.forbidden() }),
+      since: Joi.date().iso().when('direction', { is: 'received', otherwise: Joi.forbidden() }),
     })
 
     const bioSchema = Joi.object<UserSaveBioRequest>({
@@ -379,7 +387,7 @@ export default class UserController {
     }
 
     const userId = request.session.data.userId
-    const { direction, cursor, perpage, filter } = request.body
+    const { direction, cursor, perpage, filter, type, sign, since } = request.body
 
     try {
       // Barmalini is a shared rotating credential, and anonymization reassigns the
@@ -396,11 +404,15 @@ export default class UserController {
         filter || '',
         cursor || undefined,
         perpage || 20,
+        { type, sign, since },
       )
       return response.success(result)
     } catch (error) {
       if (error instanceof InvalidVoteFeedCursorError) {
         return response.error('invalid-payload', 'Invalid cursor', 400)
+      }
+      if (error instanceof InvalidVoteFeedWindowError) {
+        return response.error('invalid-payload', error.message, 400)
       }
       if (error instanceof VoteFeedFilterTimeoutError) {
         return response.error('filter-timeout', 'Filter is too heavy, narrow the query', 400)
