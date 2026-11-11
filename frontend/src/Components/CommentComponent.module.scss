@@ -135,7 +135,7 @@ $smallShift: 8px;
   margin-top: 8px;
   padding-top: 24px;
   //margin-bottom: 32px;
-  border-left: 1px solid var(--fgAlmostInvisible);
+  border-left: 1px solid var(--commentBorderColor, var(--fgAlmostInvisible));
 
   padding-left: $smallShift;
   @media only screen and (min-width: 990px) {
