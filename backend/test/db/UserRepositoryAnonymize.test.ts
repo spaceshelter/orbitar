@@ -22,11 +22,18 @@ describe('UserRepository.anonymizeAccount', () => {
     expect(updated.find((q) => q.includes('update posts set author_id'))).toBeDefined()
     expect(updated.find((q) => q.includes('update comments set author_id'))).toBeDefined()
 
+    // Search re-index: the user's own content and replies to their comments, before comments are reassigned
+    expect(updated.find((q) => q.includes('update content_source set author_id'))).toContain('indexed = 0')
+    const repliesIndex = updated.findIndex((q) => q.includes('parent.author_id = :user'))
+    expect(updated[repliesIndex]).toContain('set cs.indexed = 0')
+
     const contentSourceIndex = updated.findIndex((query) => query.includes('update content_source'))
     const postsIndex = updated.findIndex((query) => query.includes('update posts set author_id'))
     const commentsIndex = updated.findIndex((query) => query.includes('update comments set author_id'))
     const postVotesIndex = updated.findIndex((query) => query.includes('update post_votes'))
     const commentVotesIndex = updated.findIndex((query) => query.includes('update comment_votes'))
+    expect(contentSourceIndex).toBeLessThan(repliesIndex)
+    expect(repliesIndex).toBeLessThan(postsIndex)
     expect(contentSourceIndex).toBeLessThan(postsIndex)
     expect(postsIndex).toBeLessThan(commentsIndex)
     expect(commentsIndex).toBeLessThan(postVotesIndex)
