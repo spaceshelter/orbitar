@@ -9,12 +9,19 @@ import CommentComponent from '../Components/CommentComponent'
 import { CreateCommentComponentRestricted } from '../Components/CreateCommentComponent'
 import PostComponent from '../Components/PostComponent'
 import Username from '../Components/Username'
+import { getThreadedComments } from '../Components/UserProfileSettings'
 import { CommentInfo, PostInfo, PostLinkInfo } from '../Types/PostInfo'
 import { scrollUnderTopbar } from '../Utils/utils'
+import ThreadedPostPage from './ThreadedPostPage'
 
 import styles from './PostPage.module.css'
 
 export default function PostPage() {
+  const { postId } = useParams<{ postId: string }>()
+  return getThreadedComments() ? <ThreadedPostPage key={postId} /> : <FullPostPage />
+}
+
+function FullPostPage() {
   const params = useParams<{ postId: string }>()
   const [search] = useSearchParams()
   const postId = params.postId ? parseInt(params.postId, 10) : 0

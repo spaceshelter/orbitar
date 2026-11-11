@@ -77,6 +77,10 @@ export function getShowInlineTranslateButton(): boolean {
   return localStorage.getItem('showInlineTranslateButton') === 'true'
 }
 
+export function getThreadedComments(): boolean {
+  return localStorage.getItem('threadedComments') === 'true'
+}
+
 export default function UserProfileSettings(props: UserProfileSettingsProps) {
   useEffect(() => {
     window.scrollTo({ top: 0 })
@@ -94,6 +98,7 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
   const [autoMute, setAutoMute] = useState<boolean>(getAutoMuteVideos())
   const [preferredLang, setPreferredLang] = useState<string>(getPreferredLang())
   const [showInlineTranslateButton, setShowInlineTranslateButton] = useState<boolean>(getShowInlineTranslateButton())
+  const [threadedComments, setThreadedComments] = useState<boolean>(getThreadedComments())
 
   const confirmWrapper = (message: string, callback: () => void) => async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -197,6 +202,10 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
     localStorage.setItem('preferredLang', preferredLang)
   }, [preferredLang])
 
+  useEffect(() => {
+    localStorage.setItem('threadedComments', String(threadedComments))
+  }, [threadedComments])
+
   return (
     <div className={styles.settings}>
       <section className={styles.section}>
@@ -219,6 +228,16 @@ export default function UserProfileSettings(props: UserProfileSettingsProps) {
             {autoMute ? 'Вкл' : 'Выкл'}
           </Button>
         </div>
+      </section>
+
+      <section className={styles.section}>
+        <div className={styles.buttonRow}>
+          <Button onClick={() => setThreadedComments(!threadedComments)}>
+            Загружать комментарии по веткам: <span className={styles.btnSpacer} />
+            {threadedComments ? 'Вкл' : 'Выкл'}
+          </Button>
+        </div>
+        <div>Настройка действует при следующем открытии поста. По умолчанию комментарии загружаются полностью.</div>
       </section>
 
       <section className={styles.section}>

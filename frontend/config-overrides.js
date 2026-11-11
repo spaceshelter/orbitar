@@ -17,7 +17,8 @@ module.exports = function override(config, env) {
         config.plugins.push(new MiniCssExtractPlugin());
     }
 
-    config.module.rules[1].oneOf = [
+    const oneOfRule = config.module.rules.find(rule => Array.isArray(rule.oneOf));
+    oneOfRule.oneOf = [
         {
             test: /\.font\.js/,
             use: [
@@ -26,7 +27,7 @@ module.exports = function override(config, env) {
                 {loader: 'webfonts-loader'}
             ]
         },
-        ...config.module.rules[1].oneOf
+        ...oneOfRule.oneOf
     ];
 
     config.resolve.alias = {

@@ -1,6 +1,6 @@
 import CodeError from '../CodeError'
 import BookmarkRepository from '../db/repositories/BookmarkRepository'
-import CommentRepository from '../db/repositories/CommentRepository'
+import CommentRepository, { CommentIndexRow } from '../db/repositories/CommentRepository'
 import PostRepository from '../db/repositories/PostRepository'
 import { BookmarkRaw } from '../db/types/BookmarkRaw'
 import { CommentRawWithUserData, PostRaw } from '../db/types/PostRaw'
@@ -181,6 +181,19 @@ export default class PostManager {
   async getPostComments(postId: number, forUserId: number, format: ContentFormat): Promise<CommentInfoWithPostData[]> {
     const rawComments = await this.commentRepository.getPostComments(postId, forUserId)
     return await this.convertRawCommentsWithPostData(forUserId, rawComments, format)
+  }
+
+  getPostCommentIndex(postId: number): Promise<CommentIndexRow[]> {
+    return this.commentRepository.getPostCommentIndex(postId)
+  }
+
+  async getPostCommentsByIds(
+    postId: number,
+    forUserId: number,
+    commentIds: number[],
+  ): Promise<CommentInfoWithPostData[]> {
+    const rawComments = await this.commentRepository.getPostCommentsByIds(postId, forUserId, commentIds)
+    return this.convertRawCommentsWithPostData(forUserId, rawComments, 'html')
   }
 
   async getParentCommentsForASetOfComments(

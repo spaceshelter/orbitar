@@ -4,7 +4,7 @@ import { HistoryInfo } from '../Types/HistoryInfo'
 import { CommentInfo, PostInfo } from '../Types/PostInfo'
 import { SiteInfo } from '../Types/SiteInfo'
 import { UserInfo } from '../Types/UserInfo'
-import PostAPI, { CommentEntity, PostEntity } from './PostAPI'
+import PostAPI, { CommentEntity, PostCommentIndexEntry, PostEntity } from './PostAPI'
 
 type FeedPostsResult = {
   posts: PostInfo[]
@@ -25,6 +25,10 @@ type PostResult = {
   site: SiteInfo
   lastCommentId: number
   anonymousUser?: UserInfo
+}
+
+export type ThreadedPostResult = Omit<PostResult, 'comments'> & {
+  commentIndex: PostCommentIndexEntry[]
 }
 
 type PostCommentResult = {
@@ -67,6 +71,28 @@ export default class PostAPIHelper {
       lastCommentId: lastCommentId,
       anonymousUser: response.anonymousUser,
     }
+  }
+
+  async getThreaded(postId: number): Promise<ThreadedPostResult> {
+    const response = await this.postAPI.get(postId, 'html', true, true)
+    const site = this.appState.cache.setSite(response.site)
+    const post = this.fixPosts([response.post], response.users)[0]
+    if (!response.commentIndex) {
+      throw new Error('Для загрузки по веткам требуется обновление сервера')
+    }
+    const commentIndex = response.commentIndex
+    return {
+      post,
+      site,
+      commentIndex,
+      lastCommentId: commentIndex.length ? commentIndex[commentIndex.length - 1].id : 0,
+      anonymousUser: response.anonymousUser,
+    }
+  }
+
+  async getComments(postId: number, ids: number[]): Promise<CommentInfo[]> {
+    const response = await this.postAPI.getComments(postId, ids)
+    return this.fixComments(response.comments, response.users)
   }
 
   async getComment(commentId: number): Promise<CommentInfo> {
