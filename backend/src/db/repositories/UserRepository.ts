@@ -362,10 +362,22 @@ export default class UserRepository {
 
   async anonymizeAccount(userId: number, anonymousUserId: number) {
     await this.db.inTransaction(async (db) => {
-      await db.query('update content_source set author_id = :anon where author_id = :user', {
+      // indexed = 0 makes the search indexer rewrite the Elasticsearch docs, which carry
+      // author_id and parent_comment_author_id; otherwise search keeps attributing them to the user.
+      // Every version is reset because the indexer replays versions in id order.
+      await db.query('update content_source set author_id = :anon, indexed = 0 where author_id = :user', {
         anon: anonymousUserId,
         user: userId,
       })
+      // Replies to the user's comments: must run before comments are reassigned below.
+      await db.query(
+        `update content_source cs
+           join comments c on c.comment_id = cs.ref_id and cs.ref_type = 'comment'
+           join comments parent on parent.comment_id = c.parent_comment_id
+         set cs.indexed = 0
+         where parent.author_id = :user`,
+        { user: userId },
+      )
       await db.query('update posts set author_id = :anon where author_id = :user', {
         anon: anonymousUserId,
         user: userId,
