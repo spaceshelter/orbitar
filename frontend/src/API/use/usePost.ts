@@ -10,6 +10,8 @@ type UsePost = {
   site?: SiteInfo
   post?: PostInfo
   comments?: CommentInfo[]
+  /** Every loaded comment, before the `?new` filter is applied. */
+  rawComments?: CommentInfo[]
   error?: string
   anonymousUser?: UserInfo
 
@@ -158,9 +160,6 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
           setRawComments(result.comments)
 
           setComments(filterComments(result.comments, unreadOnly || false))
-
-          // mark all comments as read
-          api.post.read(postId, result.post.comments, result.lastCommentId).then()
         })
         .catch((error) => {
           console.error('Could not load post', postId, error)
@@ -208,6 +207,7 @@ export function usePost(siteName: string, postId: number, showUnreadOnly?: boole
     site,
     post,
     comments,
+    rawComments,
     error,
     anonymousUser,
     postComment,
