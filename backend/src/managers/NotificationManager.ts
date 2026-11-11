@@ -261,6 +261,37 @@ export default class NotificationManager {
     return true
   }
 
+  async muteUser(forUserId: number, mutedUserId: number) {
+    if (forUserId === mutedUserId) {
+      return false
+    }
+    await this.notificationsRepository.muteUser(forUserId, mutedUserId)
+    // Unread/visible counts change when a user is muted.
+    this.userCache.deleteUserStatsCache(forUserId)
+    return true
+  }
+
+  async unmuteUser(forUserId: number, mutedUserId: number) {
+    await this.notificationsRepository.unmuteUser(forUserId, mutedUserId)
+    this.userCache.deleteUserStatsCache(forUserId)
+  }
+
+  async isMuted(forUserId: number, mutedUserId: number): Promise<boolean> {
+    return this.notificationsRepository.isMuted(forUserId, mutedUserId)
+  }
+
+  async getMutedUsers(forUserId: number): Promise<{ id: number; username: string; gender: number }[]> {
+    const ids = await this.notificationsRepository.getMutedUserIds(forUserId)
+    const users: { id: number; username: string; gender: number }[] = []
+    for (const id of ids) {
+      const user = await this.userCache.getById(id)
+      if (user) {
+        users.push({ id: user.id, username: user.username, gender: user.gender })
+      }
+    }
+    return users
+  }
+
   async setRead(forUserId: number, notificationId: number) {
     await this.notificationsRepository.setRead(forUserId, notificationId)
     this.userCache.deleteUserStatsCache(forUserId)
@@ -294,6 +325,12 @@ export default class NotificationManager {
     }
 
     if (!notification.source.byUserId || !notification.source.commentId) {
+      return
+    }
+
+    // Respect the recipient's mute list: a muted author's push ping is suppressed
+    // (the notification row is still stored, so unmuting restores it in the list).
+    if (await this.notificationsRepository.isMuted(forUserId, notification.source.byUserId)) {
       return
     }
 

@@ -53,4 +53,12 @@ export default class NotificationsAPIHelper {
   subscribe(subscription: PushSubscription) {
     return this.api.subscribe(subscription)
   }
+
+  async muteUser(userId: number) {
+    return await this.api.muteUser(userId)
+  }
+
+  async unmuteUser(userId: number) {
+    return await this.api.unmuteUser(userId)
+  }
 }

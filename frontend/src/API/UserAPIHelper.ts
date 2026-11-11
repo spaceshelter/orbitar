@@ -17,6 +17,7 @@ export type UserProfileResult = {
   publicKey: string
   visitedDaysAgo: number
   hasOwnApps: boolean
+  isMuted: boolean
 }
 
 export default class UserAPIHelper {
