@@ -14,6 +14,37 @@ export default class SiteManager {
     this.userManager = userManager
   }
 
+  /**
+   * Evicts one site (by id or subdomain) or, without a target, every cached site.
+   * Returns the number of cache entries removed (a site is held under its name and its id).
+   */
+  public clearCache(target?: { siteId?: number; site?: string }): number {
+    if (!target || (target.siteId === undefined && target.site === undefined)) {
+      const removed = Object.keys(this.cache).length + Object.keys(this.cacheId).length
+      this.cache = {}
+      this.cacheId = {}
+      return removed
+    }
+    let removed = 0
+    for (const [name, site] of Object.entries(this.cache)) {
+      if (name === target.site || (site !== undefined && site.id === target.siteId)) {
+        delete this.cache[name]
+        removed++
+      }
+    }
+    for (const [id, site] of Object.entries(this.cacheId)) {
+      if (Number(id) === target.siteId || (site !== undefined && site.site === target.site)) {
+        delete this.cacheId[Number(id)]
+        removed++
+      }
+    }
+    return removed
+  }
+
+  public cacheStats(): { byName: number; byId: number } {
+    return { byName: Object.keys(this.cache).length, byId: Object.keys(this.cacheId).length }
+  }
+
   async getSiteByName(siteName: string): Promise<SiteInfo | undefined> {
     let site = this.cache[siteName]
     if (site !== undefined) {

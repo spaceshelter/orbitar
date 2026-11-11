@@ -24,6 +24,15 @@ export default class VoteRepository {
     this.db = db
   }
 
+  /** Ids of every user this voter has a karma vote on (any value, including 0). */
+  async getKarmaVoteTargetIds(voterId: number): Promise<number[]> {
+    const rows = await this.db.fetchAll<{ user_id: number }>(
+      'select user_id from user_karma where voter_id = :voter_id',
+      { voter_id: voterId },
+    )
+    return rows.map((row) => row.user_id)
+  }
+
   async getUserVote(userId: number, byUserId: number): Promise<number> {
     const voteResult = await this.db.fetchOne<{ vote: number }>(
       'select vote from user_karma where user_id=:user_id and voter_id=:voter_id',

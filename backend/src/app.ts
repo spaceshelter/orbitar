@@ -13,6 +13,7 @@ import helmet from 'helmet'
 import jsonStringify from 'safe-stable-stringify'
 import winston from 'winston'
 
+import { startAdminServer } from './admin/AdminServer'
 import { apiMiddleware } from './api/ApiMiddleware'
 import AuthController from './api/AuthController'
 import FeedController from './api/FeedController'
@@ -383,6 +384,14 @@ process.on('unhandledRejection', (reason) => {
         reject(error)
       })
   })
+
+  if (config.adminPort > 0) {
+    await startAdminServer(
+      { userManager, siteManager, feedManager, postManager, inviteManager },
+      config.adminPort,
+      logger.child({ service: 'ADMIN' }),
+    )
+  }
 })()
   .then(() => {
     logger.info('Backend ready')
