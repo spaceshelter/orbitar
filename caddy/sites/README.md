@@ -14,15 +14,15 @@ keep site blocks to plain host names on the default port.
 
 [orbitar-media](https://github.com/spaceshelter/orbitar-media) has a colocated mode (its README, "Next to Orbitar on one
 box") that serves plain HTTP on `172.17.0.1:8090` and leaves TLS to this Caddy. Orbitar links media through the
-host in `MEDIA_HOSTING_URL` and its `b.` and `origin.` subdomains, so the site needs all three:
+host in `MEDIA_HOSTING_URL` and nothing else, so one name is enough:
 
 ```
-media.example.org, b.media.example.org, origin.media.example.org {
+media.example.org {
   reverse_proxy 172.17.0.1:8090
 }
 ```
 
-Point DNS for the three names at this host. Without a `tls` line Caddy gets certificates from Let's Encrypt
+Point DNS for that name at this host. Without a `tls` line Caddy gets certificates from Let's Encrypt
 through the TLS-ALPN challenge on 443 and keeps them in the `caddy_data` volume. That only works for names that
 resolve straight to this host: behind a TLS-terminating proxy (a proxied Cloudflare record, like `orbitar.space`) the
 challenge never reaches Caddy, and port 80 isn't published for HTTP-01, so such a site needs a `tls` line with its own
