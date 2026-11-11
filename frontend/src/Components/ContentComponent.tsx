@@ -295,15 +295,26 @@ function processExpandLink(
 ): void {
   let contentCleanupHandler: CleanupHandler | undefined
   const nextLink = expandButton.nextElementSibling
+
+  if (!nextLink || nextLink.tagName !== 'A') {
+    return
+  }
+
+  // Wrap icon + link in a nowrap span to prevent line break between them
+  const wrapper = document.createElement('span')
+  wrapper.style.whiteSpace = 'nowrap'
+  expandButton.parentNode?.insertBefore(wrapper, expandButton)
+  wrapper.appendChild(expandButton)
+  wrapper.appendChild(nextLink)
+
   // Add click event listener to the expand button
   const listener = (e: Event) => {
-    const link = nextLink as HTMLAnchorElement
     if ((e as MouseEvent).ctrlKey || (e as MouseEvent).metaKey) {
       return true
     }
     e.preventDefault()
-    // after the expand button there is a link
-    const rect = link.nextElementSibling as HTMLDivElement
+    // after the wrapper there may be an expanded rect
+    const rect = wrapper.nextElementSibling as HTMLDivElement
 
     if (rect && rect.className === 'internal-link-rect') {
       // If rect exists, unmount the component and remove the rect
@@ -317,18 +328,16 @@ function processExpandLink(
       const newRect = document.createElement('div')
       newRect.className = 'internal-link-rect'
 
-      // Add the rect after the link
-      link.parentNode?.insertBefore(newRect, link.nextSibling)
+      // Add the rect after the wrapper, not inside it
+      wrapper.parentNode?.insertBefore(newRect, wrapper.nextSibling)
 
       contentCleanupHandler = cleanupRegistry.register(renderWithTheme(newRect, getContent(), appState))
     }
     return false
   }
 
-  if (nextLink && nextLink.tagName === 'A') {
-    expandButton.addEventListener('click', listener)
-    nextLink.addEventListener('click', listener)
-  }
+  expandButton.addEventListener('click', listener)
+  nextLink.addEventListener('click', listener)
 }
 
 function processTelegramEmbed(expandButton: HTMLElement, appState: AppState, cleanupRegistry: CleanupRegistry): void {
